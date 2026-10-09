@@ -1,0 +1,52 @@
+# Fourier: "I will deploy this for Rwanda and Chad clients" — copy this file to
+# application-<client-name>.properties, fill in the placeholders below for that specific client's
+# database/port/domain (same per-client-profile convention as application-niwe.properties), and
+# run with -Dspring-boot.run.profiles=<client-name> (or the equivalent SPRING_PROFILES_ACTIVE env
+# var on whatever server hosts it). The one line that matters for this template specifically is
+# app.accounting.chart-country=CHAD below — everything else here is just a reasonable starting
+# point copied from application-niwe.properties' own shape.
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/pos_app
+spring.datasource.username=postgres
+spring.datasource.password=CHANGE-ME
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.open-in-view=false
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+
+server.port=8080
+
+# CORS: the origin(s) this client's frontend is actually served from (comma-separated if more than one)
+app.cors.allowed-origins=http://CHANGE-ME:PORT,http://localhost:4200
+
+# Fourier: "Add forget password feature" — see application.properties' own comment on this key;
+# the first of the two CORS origins above is where this deployment's frontend is actually served.
+app.frontend-url=http://CHANGE-ME:PORT
+
+# JWT — generate a real random 32+ byte secret per client; never reuse another client's.
+app.jwt.secret=CHANGE-ME-to-a-long-random-string-before-any-real-deployment-32bytesplus
+app.jwt.expiration-minutes=480
+
+# Demo data (admin/cashier users, sample products/categories/register) seeded on first run.
+# Usually false for a real client going live, so they don't see sample data mixed in with real.
+app.seed-demo-data=false
+
+# Fourier: "I want to have possibility of selection on Chart while initiating the app at first
+# time" — this client is Chad-based, so the chart of accounts seeded on first run is the real
+# SYSCOHADA one (512/521 Banques, 701 Ventes, 4431 TVA facturée, etc.) rather than Rwanda's — see
+# AccountService/ChartCountry's own javadoc. The ADMIN now also gets an on-screen setup wizard on
+# first login to confirm this explicitly (see ChartSetupController) — CHAD here is just that
+# wizard's pre-filled suggestion, so get it right before the client's first startup even so, since
+# it saves the admin a click. Changing this property afterward does not re-chart an already-seeded
+# store either way (see AccountService.backfillMissingAccounts's own javadoc).
+app.accounting.chart-country=CHAD
+
+# POS
+# Only used once, on first run, to seed the initial admin-manageable TaxRate row (see
+# com.posapp.tax.TaxRateService and DataSeeder.seedTaxRate) — after that, tax rates live in the
+# database and are managed from Admin > Settings > Taxes, not here. Chad's standard TVA rate is
+# 18% (same fraction as Rwanda's VAT, so the default below is already correct for Chad too) — a
+# reduced 9% rate on specific local products (cement, sugar, oil, soap, textiles, concrete, iron)
+# is set up afterward as its own admin-manageable TaxRate row, same as any other rate would be.
+app.pos.tax-rate=0.18
+app.pos.currency-symbol=FCFA
+app.pos.low-stock-threshold=10

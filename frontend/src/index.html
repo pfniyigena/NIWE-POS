@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>POS</title>
+  <!--
+    Missing until now — and the actual cause of "customer-display/:id is blank". Without a
+    base href, the browser resolves every relative asset URL (main.js, styles.css, ...) against
+    the CURRENT document path rather than the app root. That's invisible for client-side Angular
+    Router navigation (no new page load, so nothing re-resolves), but it breaks any real page
+    load at a multi-segment path — which is exactly what TerminalComponent.openCustomerDisplay()
+    does via window.open('/customer-display/42', '_blank'): the browser loads
+    /customer-display/42 as a fresh document, then tries to fetch "styles.css" relative to
+    /customer-display/ instead of /, gets a 404 (or index.html's own dev-server fallback markup,
+    which the browser then refuses to apply as CSS), and the app's JS bundle never boots — a
+    blank page with no Angular error to show, because Angular itself never started.
+  -->
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="data:;base64,iVBORw0KGgo=">
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

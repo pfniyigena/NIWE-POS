@@ -1,0 +1,704 @@
+/* ==========================================================================
+   Global design tokens — "Dark Pro Terminal" theme, applied app-wide.
+   This whole app IS the POS product now (not a module inside a lighter
+   admin suite, like the earlier Thymeleaf version), so the dark terminal
+   look is the app's only look — see README "Design system" section.
+   ========================================================================== */
+:root {
+  --accent: #2fbe72;
+  --accent-hover: #24a362;
+  --accent-contrast: #0b2417;
+
+  --bg: #12151f;
+  --surface: #1b2030;
+  --surface-alt: #232a3d;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e7e9f0;
+  --muted: #8b93a6;
+  --tab-inactive: #3a4256;
+
+  --danger: #b23a4e;
+  --danger-bg: #3a1620;
+  --danger-border: #5c2331;
+  --danger-text: #f3b4c1;
+  --warning-bg: #3a2e12;
+  --warning-border: #5c4a1d;
+  --warning-text: #f0ce7e;
+  --success-bg: #123a22;
+  --success-border: #1d5c36;
+  --success-text: #7ef0ae;
+
+  --radius: 0.5rem;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 0.5rem 0;
+}
+
+p {
+  margin: 0 0 0.75rem 0;
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+/* Task: "Show stock quantity on Product terminal" — was already referenced (terminal's offline
+   queue row, receipt list) but never actually defined, so those spots silently rendered in the
+   default text color instead of red. Defined now using the same --danger-text token alert-danger
+   already uses, which fixes those pre-existing spots too. */
+.text-danger {
+  color: var(--danger-text);
+}
+
+/* ---- layout shell ---- */
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  /* Fourier: "Make Mobile responsive" — sticky (not fixed) so it keeps the page's own scroll
+     position semantics (no separate scroll container needed) while staying pinned at the top;
+     this also gives the off-canvas .sidebar below a reliable `top: 56px` to anchor against,
+     since that sidebar uses `position: fixed` and would otherwise assume a topbar that never
+     moves, which wasn't true before this pass (the whole page scrolled as one block). */
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+}
+/* Hidden on desktop; shown only below the mobile breakpoint (see the @media block at the bottom
+   of this file), where it toggles ShellComponent's own mobileNavOpen field. */
+.hamburger-btn {
+  display: none;
+}
+.topbar .brand {
+  font-weight: 700;
+  color: var(--text);
+}
+.topbar .spacer {
+  flex: 1;
+}
+.topbar .user-info {
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-shell {
+  display: flex;
+  min-height: calc(100vh - 56px);
+}
+.sidebar {
+  width: 220px;
+  min-height: calc(100vh - 56px);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+}
+/* Fourier: "Add some style on Menus to look good" — a tinted-background + left-accent-bar
+   active state (rather than a flat solid fill), smooth hover transitions, and a muted/bright
+   two-tier color treatment that separates top-level group labels from their indented sublinks,
+   closer to how most modern admin sidebars read. Every value below is an existing CSS variable
+   from :root above (or a color-mix of one), so this stays in step with the rest of the theme —
+   nothing hardcoded that would drift from --accent/--surface/etc if those ever change. */
+.sidenav-link {
+  display: block;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.92rem;
+  margin-bottom: 3px;
+  border-left: 3px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.sidenav-link:hover {
+  background: var(--surface-alt);
+}
+.sidenav-link.active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  border-left-color: var(--accent);
+}
+/* Sublinks read as a secondary tier under their group's own toggle button — muted at rest,
+   brightening on hover, and the same accent treatment as any other active link once selected. */
+.sidenav-link.sidenav-sublink {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.sidenav-link.sidenav-sublink:hover {
+  color: var(--text);
+}
+.sidenav-link.sidenav-sublink.active {
+  color: var(--accent);
+}
+.app-main {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 900px;
+  /* Fourier: "Make Mobile responsive" — "tables scroll horizontally instead of overflowing".
+     No template anywhere wraps its <table> in its own scroll container, but every one of them
+     renders inside this shared .app-main, so giving the scrollbar to this common ancestor covers
+     every admin screen's tables (and anything else that's wider than the viewport) without
+     touching a single component template. Harmless on desktop — it only ever shows a scrollbar
+     when content actually exceeds .app-main's width. */
+  overflow-x: auto;
+}
+.app-main.narrow {
+  max-width: 480px;
+}
+.app-main.wide {
+  max-width: 100%;
+}
+/* Fourier: "Make Mobile responsive" — off-canvas backdrop behind the mobile sidebar; only ever
+   in the DOM while ShellComponent.mobileNavOpen is true (see that component's *ngIf), so this
+   selector only needs to say how it looks, not when it's hidden. */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 900;
+}
+
+/* ---- mobile (admin/back-office shell) ----
+   Fourier: "Make Mobile responsive" — scoped to the sidebar + topbar + content shell that wraps
+   every admin screen: sidebar collapses behind a hamburger below this breakpoint, forms already
+   stack to one column (`.form-control`/`.form-select` are block/full-width — see above), and
+   tables scroll horizontally via `.app-main`'s own overflow-x rule just above. */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .topbar .user-info .user-name {
+    /* Frees up room for the Profile/Log out buttons next to the hamburger + brand on a narrow
+       screen; the buttons themselves (who's who comes from being logged in as them) stay. */
+    display: none;
+  }
+  .hamburger-btn {
+    display: inline-block;
+  }
+  .app-shell {
+    /* .sidebar becomes `position: fixed` below, so it no longer takes up flex space here. */
+    display: block;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 82%;
+    max-width: 300px;
+    /* Topbar is sticky with a higher z-index (1100) and an opaque background, so it visually
+       covers this top strip even though the panel itself starts at the very top of the viewport
+       (simpler than coordinating two independent "where does the panel start" calculations). */
+    padding-top: 68px;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 1000;
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.45);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .app-main {
+    padding: 1rem;
+    max-width: none;
+  }
+  .app-main.narrow,
+  .app-main.wide {
+    max-width: none;
+  }
+  /* Fourier: "POS Cart should also be mobile responsive" — the product grid + cart panel stack
+     into one column instead of sitting side by side (the cart's own fixed width is overridden to
+     full-width below); the product grid keeps its own `max-height:55vh; overflow-y:auto` (set
+     inline in the template) as a scrollable area above the cart, same idea as every other
+     screen's tables scrolling within `.app-main` rather than the whole page growing unbounded. */
+  .pos-terminal-layout {
+    flex-direction: column;
+  }
+  .pos-terminal-layout > * {
+    width: 100%;
+  }
+  .pos-cart-panel {
+    width: 100%;
+    flex-shrink: 1;
+  }
+  /* Fourier: "Checkout need to be also mobile responsive" — the payment/totals split below
+     already wraps into one column on its own (it's `flex-wrap:wrap` with two children whose
+     combined min-widths — 280px + 220px — don't fit a phone screen, so no extra rule is needed
+     for that part); this just stops the fixed-width centered card and its outer padding from
+     eating the little width a phone has to begin with. */
+  .checkout-shell {
+    padding: 0.75rem;
+  }
+  .checkout-card {
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+  }
+}
+
+/* ---- buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--surface-alt);
+  color: var(--text);
+}
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-sm {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.btn-success {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.btn-success:hover {
+  background: var(--accent-hover);
+}
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-outline-primary {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-outline-primary:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.btn-outline-secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted);
+}
+.btn-outline-secondary:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+.btn-outline-danger {
+  background: transparent;
+  border-color: var(--danger-border);
+  color: #e88a98;
+}
+.btn-outline-danger:hover {
+  background: var(--danger-border);
+  color: #fff;
+}
+.btn-link {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  padding: 0.5rem 0;
+}
+.btn-block {
+  width: 100%;
+}
+
+/* ---- forms ---- */
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+.form-control,
+.form-select {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.form-control::placeholder {
+  color: var(--muted);
+}
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.2rem rgba(47, 190, 114, 0.25);
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* ---- cards / tables ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.card-body {
+  padding: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table th,
+table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 0.92rem;
+}
+table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.table-sm th,
+.table-sm td {
+  padding: 0.35rem 0.5rem;
+}
+.text-end {
+  text-align: right;
+}
+
+/* ---- alerts / badges ---- */
+.alert {
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+.alert-danger {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+.alert-warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+.alert-success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-success {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.badge-secondary {
+  background: var(--tab-inactive);
+  color: #fff;
+}
+.badge-danger {
+  background: var(--danger);
+  color: #fff;
+}
+/* Task: "Inventory depth" — purchase order status badges (PARTIALLY_RECEIVED) need a shade between the existing success/secondary/danger set. */
+.badge-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+/* ---- utility ---- */
+.flex {
+  display: flex;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.gap-1 {
+  gap: 0.35rem;
+}
+.gap-2 {
+  gap: 0.6rem;
+}
+.gap-3 {
+  gap: 1rem;
+}
+.mb-1 {
+  margin-bottom: 0.35rem;
+}
+.mb-2 {
+  margin-bottom: 0.6rem;
+}
+.mb-3 {
+  margin-bottom: 1rem;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.align-center {
+  align-items: center;
+}
+.grow {
+  flex: 1;
+}
+
+/* ---- POS terminal-specific pieces (order tabs, category tiles, cart) ---- */
+.pos-tabs {
+  background: var(--surface-alt);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+.pos-tab {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px 4px 0 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: var(--tab-inactive);
+  color: #e5e3f1;
+}
+.pos-tab.active {
+  background: #fff;
+  color: var(--surface-alt);
+}
+.pos-tab:not(.active):hover {
+  background: #4a536b;
+  color: #fff;
+}
+.pos-new-tab {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.pos-new-tab:hover {
+  background: var(--accent-hover);
+}
+.category-tile {
+  min-width: 110px;
+  height: 64px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  cursor: pointer;
+  border: none;
+  opacity: 0.92;
+  flex-shrink: 0;
+}
+.category-tile:hover,
+.category-tile.selected {
+  opacity: 1;
+}
+.category-tile.selected {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+.category-tile.all {
+  background: var(--tab-inactive);
+}
+.cart-col-header {
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.pos-summary-bar {
+  background: var(--surface-alt);
+}
+.pos-payment-btn {
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 14px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+/* Fourier: "POS Cart should also be mobile responsive" — was an inline `width:400px;
+   flex-shrink:0;` on the cart's own card; moved here (same values, so desktop is unchanged) so
+   the mobile media query below can override it with normal stylesheet specificity instead of
+   fighting an inline style. */
+.pos-cart-panel {
+  width: 400px;
+  flex-shrink: 0;
+}
+/* Fourier: "Checkout need to be also mobile responsive" — same "move the fixed inline values into
+   a class so the mobile media query can override them" treatment as .pos-cart-panel above.
+   Desktop keeps the exact same 2rem/720px/1.5rem values that used to be inline. */
+.checkout-shell {
+  min-height: 100vh;
+  padding: 2rem;
+}
+.checkout-card {
+  width: 720px;
+  max-width: 100%;
+  padding: 1.5rem;
+}
+.pos-payment-btn:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.product-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+}
+.product-tile:hover {
+  border-color: var(--accent);
+}
+.product-tile .price {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+/* Task: "Show stock quantity on Product terminal" */
+.product-tile-stock {
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+.product-tile-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 0.35rem;
+  margin: 0 auto 0.4rem;
+  display: block;
+}
+
+/* ---- admin: dashboard stat tiles, category swatches ---- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+.stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+.stat-tile .stat-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.3rem;
+}
+.stat-tile .stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.stat-tile.warn .stat-value {
+  color: var(--warning-text);
+}
+.color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+}
+.color-swatch-input {
+  width: 48px;
+  height: 36px;
+  padding: 2px;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+}
