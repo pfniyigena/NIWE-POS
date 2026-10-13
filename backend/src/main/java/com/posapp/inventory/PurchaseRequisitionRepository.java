@@ -7,4 +7,6 @@ import java.util.List;
 public interface PurchaseRequisitionRepository extends JpaRepository<PurchaseRequisition, Long> {
 
     List<PurchaseRequisition> findAllByOrderByRequestDateDesc();
+
+    List<PurchaseRequisition> findByStatusIn(java.util.Collection<PurchaseRequisitionStatus> statuses);
 }

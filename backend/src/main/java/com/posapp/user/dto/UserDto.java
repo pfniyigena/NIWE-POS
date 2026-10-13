@@ -10,10 +10,18 @@ public record UserDto(Long id, String username, String fullName, String email, S
                        /** Fourier: "Build a full permissions system" — the additive ADMIN-tier powers this user holds; see Permission's own javadoc. */
                        Set<String> permissions,
                        /** Branches this user is limited to; empty = unrestricted. See AppUser.branchIds. */
-                       Set<Long> branchIds) {
+                       Set<Long> branchIds,
+                       /** The admin-defined role this user holds, if any (see CustomRole); null for none. */
+                       Long customRoleId,
+                       String customRoleName,
+                       /** Effective grant codes through that role (MANAGE counts as VIEW too), e.g. INVENTORY_MANAGE, INVENTORY_VIEW. */
+                       Set<String> areas) {
     public static UserDto from(AppUser u) {
         return new UserDto(u.getId(), u.getUsername(), u.getFullName(), u.getEmail(), u.getRole().name(), u.isActive(), u.getPinHash() != null,
                 u.getPermissions().stream().map(Enum::name).collect(Collectors.toSet()),
-                new java.util.HashSet<>(u.getBranchIds()));
+                new java.util.HashSet<>(u.getBranchIds()),
+                u.getCustomRole() != null ? u.getCustomRole().getId() : null,
+                u.getCustomRole() != null ? u.getCustomRole().getName() : null,
+                u.effectiveGrants());
     }
 }

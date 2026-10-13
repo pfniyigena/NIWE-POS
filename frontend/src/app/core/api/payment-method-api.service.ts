@@ -9,6 +9,7 @@ export interface CreatePaymentMethodPayload {
   name: string;
   cash: boolean;
   credit: boolean;
+  roomCharge?: boolean;
   sortOrder: number;
 }
 
@@ -16,6 +17,7 @@ export interface UpdatePaymentMethodPayload {
   name: string;
   cash: boolean;
   credit: boolean;
+  roomCharge?: boolean;
   active: boolean;
   sortOrder: number;
 }

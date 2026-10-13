@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './core/auth.guard';
+import { authGuard, adminGuard, moduleGuard, publicModuleGuard } from './core/auth.guard';
+import { ModuleKey } from './core/api/module-api.service';
+import { PurchaseReportListComponent } from './admin/reports/purchase-report-list.component';
+import { ModulesComponent } from './admin/modules.component';
 import { PublicHomeComponent } from './home/public-home.component';
 import { LoginComponent } from './login/login.component';
 import { ForgotPasswordComponent } from './login/forgot-password.component';
@@ -7,6 +10,7 @@ import { PublicReservationComponent } from './restaurant/public-reservation.comp
 import { PublicHelpDeskComponent } from './helpdesk/public-helpdesk.component';
 import { ResetPasswordComponent } from './login/reset-password.component';
 import { MyProfileComponent } from './account/my-profile.component';
+import { AppearanceComponent } from './account/appearance.component';
 import { ChartCountrySetupComponent } from './setup/chart-country-setup.component';
 import { RegisterListComponent } from './registers/register-list.component';
 import { RegisterFormComponent } from './registers/register-form.component';
@@ -46,6 +50,8 @@ import { CustomerPaymentListComponent } from './admin/customer-payment-list.comp
 import { CustomerPaymentDetailComponent } from './admin/customer-payment-detail.component';
 import { UserListComponent } from './admin/user-list.component';
 import { UserFormComponent } from './admin/user-form.component';
+import { RoleListComponent } from './admin/role-list.component';
+import { RoleFormComponent } from './admin/role-form.component';
 import { ShiftListComponent } from './admin/shift-list.component';
 import { PaymentMethodListComponent } from './admin/payment-method-list.component';
 import { PaymentMethodFormComponent } from './admin/payment-method-form.component';
@@ -87,6 +93,7 @@ import { StockCountDetailComponent } from './admin/stock-count-detail.component'
 import { StockTransferListComponent } from './admin/stock-transfer-list.component';
 import { StockTransferFormComponent } from './admin/stock-transfer-form.component';
 import { InventorySettingsComponent } from './admin/inventory-settings.component';
+import { ReportScheduleListComponent } from './admin/report-schedule-list.component';
 import { PackagingRuleListComponent } from './admin/packaging-rule-list.component';
 import { PackagingRuleFormComponent } from './admin/packaging-rule-form.component';
 import { PackagingBreakdownComponent } from './admin/packaging-breakdown.component';
@@ -103,6 +110,7 @@ import { SubscriptionPlanFormComponent } from './admin/subscription-plan-form.co
 import { SubscriptionListComponent } from './admin/subscription-list.component';
 import { SubscriptionFormComponent } from './admin/subscription-form.component';
 import { SubscriptionDetailComponent } from './admin/subscription-detail.component';
+import { SubscriptionJobSettingsComponent } from './admin/subscription-job-settings.component';
 import { HelpDeskCategoryListComponent } from './admin/helpdesk-category-list.component';
 import { HelpDeskCategoryFormComponent } from './admin/helpdesk-category-form.component';
 import { HelpDeskTicketListComponent } from './admin/helpdesk-ticket-list.component';
@@ -135,6 +143,32 @@ import { ManufacturingOrderFormComponent } from './admin/manufacturing/manufactu
 import { ManufacturingOrderDetailComponent } from './admin/manufacturing/manufacturing-order-detail.component';
 import { ProductionPlanListComponent } from './admin/manufacturing/production-plan-list.component';
 import { ProductionPlanDetailComponent } from './admin/manufacturing/production-plan-detail.component';
+import { InstallmentPlanListComponent } from './admin/installments/plan-list.component';
+import { InstallmentPlanFormComponent } from './admin/installments/plan-form.component';
+import { InstallmentPlanDetailComponent } from './admin/installments/plan-detail.component';
+import { InstallmentSettingsComponent } from './admin/installments/installment-settings.component';
+import { InstallmentReportListComponent } from './admin/installments/installment-report-list.component';
+import { AssetListComponent } from './admin/assets/asset-list.component';
+import { AssetFormComponent } from './admin/assets/asset-form.component';
+import { AssetFromPurchaseComponent } from './admin/assets/asset-from-purchase.component';
+import { AssetDetailComponent } from './admin/assets/asset-detail.component';
+import { AssetCategoryListComponent } from './admin/assets/asset-category-list.component';
+import { EmployeeListComponent } from './admin/hr/employee-list.component';
+import { EmployeeFormComponent } from './admin/hr/employee-form.component';
+import { EmployeeDetailComponent } from './admin/hr/employee-detail.component';
+import { OrgSetupComponent } from './admin/hr/org-setup.component';
+import { OrgChartComponent } from './admin/hr/org-chart.component';
+import { AttendanceComponent } from './admin/hr/attendance.component';
+import { LeavesComponent } from './admin/hr/leaves.component';
+import { LeaveSettingsComponent } from './admin/hr/leave-settings.component';
+import { ContractListComponent } from './admin/hr/contract-list.component';
+import { ContractFormComponent } from './admin/hr/contract-form.component';
+import { PayrollRulesComponent } from './admin/hr/payroll-rules.component';
+import { PayrollRunsComponent } from './admin/hr/payroll-runs.component';
+import { PayrollRunComponent } from './admin/hr/payroll-run.component';
+import { PayslipComponent } from './admin/hr/payslip.component';
+import { HrReportListComponent } from './admin/hr/hr-report-list.component';
+import { AssetReportListComponent } from './admin/reports/asset-report-list.component';
 import { AccountListComponent } from './admin/accounting/account-list.component';
 import { AccountFormComponent } from './admin/accounting/account-form.component';
 import { AccountLedgerComponent } from './admin/accounting/account-ledger.component';
@@ -163,6 +197,19 @@ import { CostCenterActivityComponent } from './admin/accounting/cost-center-acti
 import { ExpenseIncomeReportComponent } from './admin/accounting/expense-income-report.component';
 import { AccountingReportMenuComponent } from './admin/accounting/accounting-report-menu.component';
 import { TableListComponent } from './restaurant/table-list.component';
+import { HotelSettingsComponent } from './hotel/hotel-settings.component';
+import { RoomTypeListComponent } from './hotel/room-type-list.component';
+import { RoomListComponent } from './hotel/room-list.component';
+import { GuestListComponent } from './hotel/guest-list.component';
+import { BookingListComponent } from './hotel/booking-list.component';
+import { BookingFormComponent } from './hotel/booking-form.component';
+import { BookingDetailComponent } from './hotel/booking-detail.component';
+import { HotelInvoiceComponent } from './hotel/hotel-invoice.component';
+import { FrontDeskComponent } from './hotel/front-desk.component';
+import { ReservationGridComponent } from './hotel/reservation-grid.component';
+import { HousekeepingComponent } from './hotel/housekeeping.component';
+import { MaintenanceComponent } from './hotel/maintenance.component';
+import { HotelReportComponent } from './hotel/hotel-report.component';
 import { MenuAdminComponent } from './restaurant/menu-admin.component';
 import { FloorPlanComponent } from './restaurant/floor-plan.component';
 import { TableOrderComponent } from './restaurant/table-order.component';
@@ -177,7 +224,7 @@ import { RestaurantReportListComponent } from './restaurant/restaurant-report-li
 import { RestaurantWastageListComponent } from './restaurant/restaurant-wastage-list.component';
 import { RestaurantWastageFormComponent } from './restaurant/restaurant-wastage-form.component';
 
-export const routes: Routes = [
+const baseRoutes: Routes = [
   { path: 'login', component: LoginComponent },
   // Fourier: "Add forget password feature where user will input the email and he/she can reset
   // the password" — both public, no auth needed (same as 'login' above); AuthController's
@@ -188,11 +235,11 @@ export const routes: Routes = [
   // who is not a staff member at all, so it's public/no auth needed just like 'login' above, but
   // unlike 'login' it's not part of the staff auth flow — it posts to PublicReservationController
   // (/api/public/reservations) and never touches AuthService/the JWT.
-  { path: 'reserve', component: PublicReservationComponent },
+  { path: 'reserve', component: PublicReservationComponent, canActivate: [publicModuleGuard('RESTAURANT')] },
   // Fourier: "Add Help Desk module ... supporting both authenticated and guest ticket creation" —
   // the guest half, same public/no-auth treatment as 'reserve' above; posts to
   // PublicHelpDeskController (/api/public/helpdesk/**), never touches AuthService/the JWT.
-  { path: 'helpdesk', component: PublicHelpDeskComponent },
+  { path: 'helpdesk', component: PublicHelpDeskComponent, canActivate: [publicModuleGuard('HELPDESK')] },
   // Fourier: "it is better to have a home page with look nice like a website" — the root route is
   // now this public landing page, not a straight redirect to 'registers'. PublicHomeComponent
   // itself sends an already-logged-in visitor on to their usual landing (same split LoginComponent
@@ -202,6 +249,8 @@ export const routes: Routes = [
   // Self-service "My Profile" (Task: "Add my profile, change my password") — any logged-in user,
   // not admin-only; there's no id in the path, the backend always resolves "you" from the JWT.
   { path: 'profile', component: MyProfileComponent, canActivate: [authGuard] },
+  // Settings > Appearance: every logged-in user picks their own colour theme.
+  { path: 'settings/appearance', component: AppearanceComponent, canActivate: [authGuard] },
 
   // Fourier: "The Config app.accounting.chart-country can be forgotten easily, what if we add
   // this on the screen then at first time a user select the country?" — the first-run chart-of-
@@ -436,6 +485,8 @@ export const routes: Routes = [
   { path: 'admin/subscription-plans/:id/edit', component: SubscriptionPlanFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/subscriptions', component: SubscriptionListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/subscriptions/new', component: SubscriptionFormComponent, canActivate: [authGuard, adminGuard] },
+  // Daily job settings (billing, reminders, unpaid handling, digest) — before '/:id'.
+  { path: 'admin/subscriptions/job-settings', component: SubscriptionJobSettingsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/subscriptions/:id', component: SubscriptionDetailComponent, canActivate: [authGuard, adminGuard] },
 
   // Fourier: "Add Help Desk module (with its menu) should manage customer and internal support
@@ -459,6 +510,8 @@ export const routes: Routes = [
 
   // Sales > Reports — mirrors admin/inventory/reports's own second-picker pattern.
   { path: 'admin/sales/reports', component: SalesReportListComponent, canActivate: [authGuard, adminGuard] },
+  // Purchases > Reports — same picker pattern.
+  { path: 'admin/purchases/reports', component: PurchaseReportListComponent, canActivate: [authGuard, adminGuard] },
 
   // Fourier: "Every time invoice is ISSUED send try to send email to customer and to configured
   // emails. (Add invoices receiver emails in sales settings)" — its own small settings screen,
@@ -468,6 +521,10 @@ export const routes: Routes = [
   { path: 'admin/staff', component: UserListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/staff/new', component: UserFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/staff/:id/edit', component: UserFormComponent, canActivate: [authGuard, adminGuard] },
+  // Custom roles (Staff > Roles) — admin-only; 'roles' is literal so it never clashes with ':id/edit' above (different segment count).
+  { path: 'admin/staff/roles', component: RoleListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/staff/roles/new', component: RoleFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/staff/roles/:id/edit', component: RoleFormComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'admin/shifts', component: ShiftListComponent, canActivate: [authGuard, adminGuard] },
 
@@ -476,6 +533,8 @@ export const routes: Routes = [
   { path: 'admin/payment-methods/:id/edit', component: PaymentMethodFormComponent, canActivate: [authGuard, adminGuard] },
 
   // Settings > Taxes — admin-manageable tax rates, replacing the old fixed app.pos.tax-rate property.
+  // Settings > Modules: activate optional modules (Hotel, Restaurant, ...); activation is permanent.
+  { path: 'admin/settings/modules', component: ModulesComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/settings/taxes', component: TaxRateListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/settings/taxes/new', component: TaxRateFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/settings/taxes/:id/edit', component: TaxRateFormComponent, canActivate: [authGuard, adminGuard] },
@@ -486,6 +545,8 @@ export const routes: Routes = [
   { path: 'admin/settings/system', component: SystemSettingsComponent, canActivate: [authGuard, adminGuard] },
   // Settings > Email settings (Fourier: "Configure smtp for sending email").
   { path: 'admin/settings/email', component: EmailSettingsComponent, canActivate: [authGuard, adminGuard] },
+  // Settings > Scheduled reports (emailed Excel/PDF reports on a daily/weekly/monthly schedule).
+  { path: 'admin/settings/report-schedules', component: ReportScheduleListComponent, canActivate: [authGuard, adminGuard] },
 
   // Settings > Apps (Task: "This will work as a plugin (or apps) to be installed and configured")
   // — a fixed, code-defined catalog of installable built-in integrations (starting with EFRIS
@@ -536,6 +597,38 @@ export const routes: Routes = [
   // full Accounting/Journals/Expenses/Incomes report batch (Fourier's later, larger follow-up
   // request — see AccountingReportService's own per-method javadoc for each report). ADMIN-only,
   // same tier as every other management module.
+  // Assets Management module (optional; activated in Settings > Modules)
+  { path: 'admin/installments', component: InstallmentPlanListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/installments/new', component: InstallmentPlanFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/installments/settings', component: InstallmentSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/installments/reports', component: InstallmentReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/installments/:id', component: InstallmentPlanDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets', component: AssetListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/new', component: AssetFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/from-purchase', component: AssetFromPurchaseComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/categories', component: AssetCategoryListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/reports', component: AssetReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/:id', component: AssetDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/:id/edit', component: AssetFormComponent, canActivate: [authGuard, adminGuard] },
+  // HR modules (optional; activated in Settings > Modules): Employees, Organizational Structure, Attendance & Leaves, Contracts, Payroll
+  { path: 'admin/hr/employees', component: EmployeeListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/employees/new', component: EmployeeFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/employees/:id', component: EmployeeDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/employees/:id/edit', component: EmployeeFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/org/setup', component: OrgSetupComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/org/chart', component: OrgChartComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/attendance', component: AttendanceComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/leaves', component: LeavesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/leave-settings', component: LeaveSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/contracts', component: ContractListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/contracts/new', component: ContractFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/contracts/:id/edit', component: ContractFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/rules', component: PayrollRulesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/runs', component: PayrollRunsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/runs/:id', component: PayrollRunComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/runs/:id/payslip/:lineId', component: PayslipComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/reports', component: HrReportListComponent, canActivate: [authGuard, adminGuard] },
+
   { path: 'admin/accounting/accounts', component: AccountListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/accounts/new', component: AccountFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/accounts/:id/edit', component: AccountFormComponent, canActivate: [authGuard, adminGuard] },
@@ -654,5 +747,62 @@ export const routes: Routes = [
   { path: 'admin/restaurant/wastage', component: RestaurantWastageListComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/wastage/new', component: RestaurantWastageFormComponent, canActivate: [authGuard] },
 
+  // Hotel management (Fourier: "add hotel management ... integrated with POS, Restaurant, Accounting"). Access comes from the
+  // Hotel area in core/access.ts (settings are admin-only); 'new' / 'walk-in' need Manage. Literal segments are registered before ':id'.
+  { path: 'admin/hotel/settings', component: HotelSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/front-desk', component: FrontDeskComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/bookings', component: BookingListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/bookings/new', component: BookingFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/walk-in', component: BookingFormComponent, data: { walkIn: true }, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/bookings/:id', component: BookingDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/bookings/:id/invoice', component: HotelInvoiceComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/grid', component: ReservationGridComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/housekeeping', component: HousekeepingComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/maintenance', component: MaintenanceComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/guests', component: GuestListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/rooms', component: RoomListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/room-types', component: RoomTypeListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/reports', component: HotelReportComponent, canActivate: [authGuard, adminGuard] },
+
   { path: '**', redirectTo: 'registers' },
 ];
+
+/**
+ * Settings > Modules: every screen of an optional module also needs that module switched on. Added here, by path prefix,
+ * rather than on each route one by one. Hotel > Settings stays reachable so the module can still be configured.
+ */
+const MODULE_PREFIXES: { prefix: string; key: ModuleKey; except?: string[] }[] = [
+  // POS: registers & terminal, sessions, checkout, returns, receipts, shifts, POS reports.
+  { prefix: 'registers', key: 'POS' },
+  { prefix: 'sessions', key: 'POS' },
+  { prefix: 'pos/', key: 'POS' },
+  { prefix: 'checkout', key: 'POS' },
+  { prefix: 'returns', key: 'POS' },
+  { prefix: 'receipts', key: 'POS' },
+  { prefix: 'admin/shifts', key: 'POS' },
+  // admin/reports/:key is the viewer shared by every module's reports, so it is not blocked here (it checks itself).
+  { prefix: 'admin/reports', key: 'POS', except: ['admin/reports/:key'] },
+  { prefix: 'admin/restaurant', key: 'RESTAURANT' },
+  { prefix: 'admin/manufacturing', key: 'MANUFACTURING' },
+  { prefix: 'admin/subscription', key: 'SUBSCRIPTIONS' },
+  { prefix: 'admin/helpdesk', key: 'HELPDESK' },
+  { prefix: 'admin/accounting/expenses', key: 'EXPENSES' },
+  { prefix: 'admin/accounting/recurring-expenses', key: 'EXPENSES' },
+  { prefix: 'admin/accounting/reports/expenses-', key: 'EXPENSES' },
+  { prefix: 'admin/hotel', key: 'HOTEL', except: ['admin/hotel/settings'] },
+  { prefix: 'admin/assets', key: 'ASSETS' },
+  { prefix: 'admin/installments', key: 'INSTALLMENTS' },
+  { prefix: 'admin/hr/employees', key: 'EMPLOYEES' },
+  { prefix: 'admin/hr/reports', key: 'EMPLOYEES' },
+  { prefix: 'admin/hr/org', key: 'ORG_STRUCTURE' },
+  { prefix: 'admin/hr/attendance', key: 'ATTENDANCE' },
+  { prefix: 'admin/hr/leave', key: 'ATTENDANCE' },
+  { prefix: 'admin/hr/contracts', key: 'CONTRACTS' },
+  { prefix: 'admin/hr/payroll', key: 'PAYROLL' },
+];
+
+export const routes: Routes = baseRoutes.map((route) => {
+  const path = route.path ?? '';
+  const rule = MODULE_PREFIXES.find((r) => path.startsWith(r.prefix) && !(r.except ?? []).includes(path));
+  return rule ? { ...route, canActivate: [...(route.canActivate ?? []), moduleGuard(rule.key)] } : route;
+});

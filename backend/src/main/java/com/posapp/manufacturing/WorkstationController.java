@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/manufacturing/workstations")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class WorkstationController {
 
     private final WorkstationService workstationService;
@@ -34,11 +34,13 @@ public class WorkstationController {
         return workstationService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public WorkstationDto create(@Valid @RequestBody WorkstationRequest request) {
         return workstationService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PutMapping("/{id}")
     public WorkstationDto update(@PathVariable Long id, @Valid @RequestBody WorkstationRequest request) {
         return workstationService.update(id, request);

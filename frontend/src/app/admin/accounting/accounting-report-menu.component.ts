@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { ModuleApiService } from '../../core/api/module-api.service';
 
 /**
  * Admin > Accounting > Report Menu — the single picker screen for all four report groups from
@@ -24,7 +25,7 @@ import { ShellComponent } from '../../shared/shell.component';
   template: `
     <app-shell>
       <h3 class="mb-3">Reports</h3>
-      <div *ngFor="let section of sections" class="mb-4">
+      <div *ngFor="let section of visibleSections()" class="mb-4">
         <h5 class="mb-2">{{ section.title }}</h5>
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <a *ngFor="let r of section.reports" class="btn btn-outline-primary" [routerLink]="r.route">{{ r.title }}</a>
@@ -34,6 +35,13 @@ import { ShellComponent } from '../../shared/shell.component';
   `,
 })
 export class AccountingReportMenuComponent {
+  constructor(private modules: ModuleApiService) {}
+
+  /** The Expenses Reports section only shows while the Expenses module is on (Settings > Modules). */
+  visibleSections() {
+    return this.sections.filter((s) => s.title !== 'Expenses Reports' || this.modules.on('EXPENSES'));
+  }
+
   sections = [
     {
       title: 'Accounting Reports',

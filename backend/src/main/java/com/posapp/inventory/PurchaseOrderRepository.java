@@ -9,6 +9,9 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
 
     List<PurchaseOrder> findAllByOrderByOrderDateDesc();
 
+    /** The order that owns a given line (Assets Management: register assets from a received line). */
+    java.util.Optional<PurchaseOrder> findFirstByLinesId(Long lineId);
+
     /** Open orders still expecting goods — the Reorder report counts their outstanding quantity as "on order". */
     List<PurchaseOrder> findByStatusIn(java.util.Collection<PurchaseOrderStatus> statuses);
 

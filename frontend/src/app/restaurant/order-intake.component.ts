@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
+import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
 
 /**
  * Admin/staff > Restaurant > New order (Fourier: "Delivery & takeaway") — the off-premise
@@ -32,13 +33,27 @@ import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.serv
           <button class="btn" [class.btn-primary]="type === 'DELIVERY'" [class.btn-outline-secondary]="type !== 'DELIVERY'" (click)="type = 'DELIVERY'">
             🛵 Delivery
           </button>
+          <button class="btn" *ngIf="hotelApi.enabled()" [class.btn-primary]="type === 'ROOM_SERVICE'" [class.btn-outline-secondary]="type !== 'ROOM_SERVICE'" (click)="chooseRoomService()">
+            🏨 Room service
+          </button>
         </div>
 
+        <ng-container *ngIf="type === 'ROOM_SERVICE'">
+          <label class="form-label">Guest's room</label>
+          <select class="form-control mb-2" [(ngModel)]="bookingId" name="bookingId">
+            <option [ngValue]="null">Choose the guest…</option>
+            <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">Room {{ g.roomNumber }} — {{ g.guestName }}</option>
+          </select>
+          <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="inHouse.length === 0">No guest is checked in right now.</div>
+        </ng-container>
+
+        <ng-container *ngIf="type !== 'ROOM_SERVICE'">
         <label class="form-label">Customer name</label>
         <input class="form-control mb-2" [(ngModel)]="customerName" name="customerName" placeholder="Who's this for?" />
 
         <label class="form-label">Phone</label>
         <input class="form-control mb-2" [(ngModel)]="customerPhone" name="customerPhone" placeholder="Optional" />
+        </ng-container>
 
         <ng-container *ngIf="type === 'DELIVERY'">
           <label class="form-label">Delivery address</label>
@@ -54,7 +69,10 @@ import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.serv
   `,
 })
 export class OrderIntakeComponent {
-  type: 'TAKEAWAY' | 'DELIVERY' = 'TAKEAWAY';
+  type: 'TAKEAWAY' | 'DELIVERY' | 'ROOM_SERVICE' = 'TAKEAWAY';
+  /** Hotel module: in-house guests for room service. */
+  inHouse: InHouseGuest[] = [];
+  bookingId: number | null = null;
   customerName = '';
   customerPhone = '';
   customerAddress = '';
@@ -64,10 +82,34 @@ export class OrderIntakeComponent {
 
   constructor(
     private orderApi: RestaurantOrderApiService,
-    private router: Router
-  ) {}
+    private router: Router,
+    public hotelApi: HotelApiService
+  ) {
+    this.hotelApi.ensureStateLoaded();
+  }
+
+  chooseRoomService(): void {
+    this.type = 'ROOM_SERVICE';
+    this.hotelApi.inHouseGuests().subscribe({ next: (g) => (this.inHouse = g), error: () => (this.inHouse = []) });
+  }
 
   openOrder(): void {
+    if (this.type === 'ROOM_SERVICE') {
+      if (!this.bookingId) {
+        this.error = "Choose the guest's room";
+        return;
+      }
+      this.error = null;
+      this.submitting = true;
+      this.orderApi.openRoomServiceOrder({ bookingId: this.bookingId, notes: this.notes.trim() || null }).subscribe({
+        next: (order) => this.router.navigate(['/admin/restaurant/orders', order.id]),
+        error: (err) => {
+          this.submitting = false;
+          this.error = err?.error?.message ?? 'Failed to open order';
+        },
+      });
+      return;
+    }
     if (!this.customerName.trim()) {
       this.error = 'Customer name is required';
       return;

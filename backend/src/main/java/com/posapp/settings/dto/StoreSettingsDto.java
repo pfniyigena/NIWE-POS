@@ -44,7 +44,15 @@ public record StoreSettingsDto(
         /** Fourier: "Wiring a handful of business events to that same mailer" — see StoreSettings.notificationsEmail's javadoc. */
         String notificationsEmail,
         /** WEIGHTED_AVERAGE / LAST_PURCHASE / MANUAL — see StoreSettings.costingMethod's javadoc. */
-        String costingMethod
+        String costingMethod,
+        /** Daily low-stock digest email — see StoreSettings.lowStockDigestEnabled. */
+        boolean lowStockDigestEnabled,
+        /** Daily automatic DRAFT requisitions — see StoreSettings.autoRequisitionEnabled. */
+        boolean autoRequisitionEnabled,
+        /** "HH:mm" store time — see StoreSettings.stockJobTime. */
+        String stockJobTime,
+        /** ISO date the stock jobs last ran, or null. */
+        String stockJobLastRun
 ) {
     public static StoreSettingsDto from(StoreSettings s) {
         return new StoreSettingsDto(
@@ -75,7 +83,11 @@ public record StoreSettingsDto(
                 s.isSmtpUseSsl(),
                 s.isSmtpSkipCertCheck(),
                 s.getNotificationsEmail(),
-                s.getCostingMethod() != null ? s.getCostingMethod() : "WEIGHTED_AVERAGE"
+                s.getCostingMethod() != null ? s.getCostingMethod() : "WEIGHTED_AVERAGE",
+                s.isLowStockDigestEnabled(),
+                s.isAutoRequisitionEnabled(),
+                s.getStockJobTime() != null ? s.getStockJobTime() : "06:30",
+                s.getStockJobLastRun() != null ? s.getStockJobLastRun().toString() : null
         );
     }
 }

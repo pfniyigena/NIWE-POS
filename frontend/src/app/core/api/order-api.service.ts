@@ -83,8 +83,8 @@ export class OrderApiService {
   }
 
   /** `dueDate` (ISO yyyy-MM-dd) is only meaningful when at least one payment entry is a credit-flagged method — see backend CheckoutRequest.dueDate's javadoc. */
-  checkout(orderId: number, payments: CheckoutPaymentEntry[], dueDate?: string | null): Observable<Order> {
-    return this.http.post<Order>(`${API_BASE}/orders/${orderId}/checkout`, { payments, dueDate: dueDate ?? null });
+  checkout(orderId: number, payments: CheckoutPaymentEntry[], dueDate?: string | null, roomBookingId?: number | null): Observable<Order> {
+    return this.http.post<Order>(`${API_BASE}/orders/${orderId}/checkout`, { payments, dueDate: dueDate ?? null, roomBookingId: roomBookingId ?? null });
   }
 
   /**

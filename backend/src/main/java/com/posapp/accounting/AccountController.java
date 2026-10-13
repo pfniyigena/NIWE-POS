@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounting/accounts")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class AccountController {
 
     private final AccountService accountService;
@@ -40,11 +40,13 @@ public class AccountController {
         return accountService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping
     public AccountDto create(@Valid @RequestBody AccountRequest request) {
         return accountService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PutMapping("/{id}")
     public AccountDto update(@PathVariable Long id, @Valid @RequestBody AccountRequest request) {
         return accountService.update(id, request);

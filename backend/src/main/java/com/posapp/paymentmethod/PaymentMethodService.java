@@ -46,6 +46,7 @@ public class PaymentMethodService {
         pm.setName(request.getName());
         pm.setCash(request.isCash());
         pm.setCredit(request.isCredit());
+        pm.setRoomCharge(request.isRoomCharge());
         pm.setSortOrder(request.getSortOrder());
         pm.setActive(true);
         PaymentMethodEntity saved = repository.save(pm);
@@ -63,6 +64,7 @@ public class PaymentMethodService {
         pm.setName(request.getName());
         pm.setCash(request.isCash());
         pm.setCredit(request.isCredit());
+        pm.setRoomCharge(request.isRoomCharge());
         pm.setActive(request.isActive());
         pm.setSortOrder(request.getSortOrder());
         PaymentMethodEntity saved = repository.save(pm);
@@ -87,6 +89,36 @@ public class PaymentMethodService {
     @Transactional(readOnly = true)
     public Set<String> listCashCodes() {
         return repository.findByCashTrue().stream().map(PaymentMethodEntity::getCode).collect(Collectors.toSet());
+    }
+
+    /** Hotel module: codes whose amount goes on an in-house guest's room bill instead of being collected now. */
+    @Transactional(readOnly = true)
+    public Set<String> listRoomChargeCodes() {
+        return repository.findByRoomChargeTrue().stream().map(PaymentMethodEntity::getCode).collect(Collectors.toSet());
+    }
+
+    /**
+     * Hotel module: makes sure the "Charge to room" tender exists and switches it on or off together with the hotel
+     * module (Hotel > Settings). Created the first time it is needed; an admin can still rename or reorder it.
+     */
+    @Transactional
+    public void setRoomChargeEnabled(boolean enabled) {
+        PaymentMethodEntity pm = repository.findByRoomChargeTrue().stream().findFirst().orElse(null);
+        if (pm == null) {
+            if (!enabled) return;
+            pm = repository.findByCodeIgnoreCase("ROOM").orElse(null);
+            if (pm == null) {
+                pm = new PaymentMethodEntity();
+                pm.setCode("ROOM");
+                pm.setName("Charge to room");
+                pm.setSortOrder(50);
+            }
+            pm.setRoomCharge(true);
+        }
+        if (pm.isActive() != enabled) {
+            pm.setActive(enabled);
+        }
+        repository.save(pm);
     }
 
     /** All codes flagged as store-credit tender, for OrderService's credit-portion computation at checkout. */

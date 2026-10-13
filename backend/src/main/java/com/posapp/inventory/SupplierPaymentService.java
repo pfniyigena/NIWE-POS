@@ -133,11 +133,13 @@ public class SupplierPaymentService {
         return lineGrossBeforeDiscount(line).subtract(lineGross(headerDiscountPercent, line)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private static BigDecimal lineTax(BigDecimal headerDiscountPercent, PurchaseOrderLine line) {
+    /** Public for the Purchases reports (reports/PurchaseReportService), which break a purchase order down by product and category. */
+    public static BigDecimal lineTax(BigDecimal headerDiscountPercent, PurchaseOrderLine line) {
         return TaxMath.taxOnAmount(lineGross(headerDiscountPercent, line), line.getTaxRatePercent(), Boolean.TRUE.equals(line.getTaxInclusive()));
     }
 
-    private static BigDecimal lineNet(BigDecimal headerDiscountPercent, PurchaseOrderLine line) {
+    /** Public for the Purchases reports — see {@link #lineTax}. */
+    public static BigDecimal lineNet(BigDecimal headerDiscountPercent, PurchaseOrderLine line) {
         BigDecimal gross = lineGross(headerDiscountPercent, line);
         return TaxMath.netOfTax(gross, lineTax(headerDiscountPercent, line), Boolean.TRUE.equals(line.getTaxInclusive()));
     }

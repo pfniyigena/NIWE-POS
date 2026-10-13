@@ -30,19 +30,19 @@ public class SupplierPaymentListController {
     }
 
     @GetMapping("/api/supplier-payments")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
     public List<SupplierPaymentDto> allPayments() {
         return supplierPaymentService.paymentHistory();
     }
 
     @GetMapping("/api/supplier-payments/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
     public SupplierPaymentDto getReceipt(@PathVariable Long id) {
         return supplierPaymentService.getPaymentReceipt(id);
     }
 
     @GetMapping("/api/supplier-payments/{id}/pdf")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
         byte[] pdf = supplierPaymentService.pdf(id);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);

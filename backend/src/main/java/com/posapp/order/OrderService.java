@@ -87,6 +87,8 @@ public class OrderService {
     private final com.posapp.salesorder.StockReservationService stockReservationService;
     /** Validates serial numbers typed at the till. */
     private final com.posapp.tracking.TrackingService trackingService;
+    /** Hotel module: puts a POS sale on an in-house guest's room bill. */
+    private final com.posapp.hotel.HotelFolioService hotelFolioService;
 
     public OrderService(OrderRepository orderRepository,
                          CashierSessionRepository cashierSessionRepository,
@@ -108,7 +110,9 @@ public class OrderService {
                          BranchService branchService,
                          com.posapp.branch.BranchAccessService branchAccessService,
                          com.posapp.salesorder.StockReservationService stockReservationService,
-                         com.posapp.tracking.TrackingService trackingService) {
+                         com.posapp.tracking.TrackingService trackingService,
+                         com.posapp.hotel.HotelFolioService hotelFolioService) {
+        this.hotelFolioService = hotelFolioService;
         this.trackingService = trackingService;
         this.stockReservationService = stockReservationService;
         this.orderRepository = orderRepository;
@@ -554,7 +558,7 @@ public class OrderService {
         }
         assertSellingWarehouseAllowed(order);
         validateStockAvailability(order);
-        completeCheckout(order, request.getPayments(), request.getDueDate());
+        completeCheckout(order, request.getPayments(), request.getDueDate(), request.getRoomBookingId());
         SaleOrder saved = orderRepository.save(order);
         // Fourier: "all POS...module will be integrated when accounting is enabled" — posts a
         // balanced journal entry for this sale (revenue/tax/COGS/inventory/cash/AR) once Accounting
@@ -618,15 +622,18 @@ public class OrderService {
      * offline-queued sale is completed by exactly the same rules (credit-limit enforcement
      * included) as one rung online, not a separate, looser copy of them.
      */
-    private void completeCheckout(SaleOrder order, List<CheckoutRequest.PaymentEntry> payments, LocalDate requestedDueDate) {
+    private void completeCheckout(SaleOrder order, List<CheckoutRequest.PaymentEntry> payments, LocalDate requestedDueDate, Long roomBookingId) {
         // Which method codes represent selling on store credit (Task family: "Cash + credit
         // partial payment" / "100% credit sale") — looked up once per checkout, same pattern as
         // aggregate()'s cashCodes lookup, since this is admin-configurable rather than a fixed enum.
         Set<String> creditCodes = paymentMethodService.listCreditCodes();
+        // Hotel module: the tender that puts the amount on an in-house guest's room bill
+        Set<String> roomCodes = paymentMethodService.listRoomChargeCodes();
 
         BigDecimal due = OrderCalculator.total(order);
         BigDecimal tendered = BigDecimal.ZERO;
         BigDecimal creditPortion = BigDecimal.ZERO;
+        BigDecimal roomPortion = BigDecimal.ZERO;
         for (CheckoutRequest.PaymentEntry entry : payments) {
             String method = paymentMethodService.validateActiveCodeOrThrow(entry.getMethod());
             Payment payment = new Payment();
@@ -638,6 +645,19 @@ public class OrderService {
             if (creditCodes.contains(method)) {
                 creditPortion = creditPortion.add(entry.getAmount());
             }
+            if (roomCodes.contains(method)) {
+                roomPortion = roomPortion.add(entry.getAmount());
+            }
+        }
+        if (roomPortion.signum() > 0) {
+            if (roomBookingId == null) {
+                throw ApiException.badRequest("Choose the in-house guest whose room the sale is charged to");
+            }
+            if (roomPortion.compareTo(due) > 0) {
+                throw ApiException.badRequest("The amount charged to the room cannot be more than the sale total");
+            }
+            order.setRoomChargeAmount(roomPortion);
+            order.setRoomBookingId(roomBookingId);
         }
         if (tendered.compareTo(due) < 0) {
             throw ApiException.badRequest("Payments (" + tendered + ") do not cover the amount due (" + due + ")");
@@ -688,6 +708,10 @@ public class OrderService {
         order.setStatus(OrderStatus.COMPLETED);
         order.setInvoiceNumber(invoiceNumber);
         order.setCompletedAt(java.time.Instant.now());
+        if (roomPortion.signum() > 0) {
+            hotelFolioService.chargeToRoom(roomBookingId, com.posapp.hotel.ChargeType.POS, "POS sale " + invoiceNumber,
+                    roomPortion, "POS_ORDER", order.getId());
+        }
     }
 
     /**
@@ -767,7 +791,7 @@ public class OrderService {
             throw ApiException.badRequest("Cannot sync an offline sale with no lines");
         }
 
-        completeCheckout(order, request.getPayments(), request.getDueDate());
+        completeCheckout(order, request.getPayments(), request.getDueDate(), null);
 
         if (request.getClientEstimatedTotal() != null) {
             BigDecimal finalTotal = OrderCalculator.total(order);
@@ -1195,7 +1219,7 @@ public class OrderService {
         boolean isOwnSession = cashierSession != null
                 && cashierSession.getCashier() != null
                 && cashierSession.getCashier().getId().equals(caller.getId());
-        if (isOwnSession || caller.getRole() == Role.ADMIN) {
+        if (isOwnSession || caller.canManage(com.posapp.user.AccessArea.SALES)) {
             return;
         }
         boolean sharesThisShift = cashierSession != null

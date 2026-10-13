@@ -12,7 +12,7 @@ import java.util.Map;
 /** Admin-only, same tier as Purchase Orders themselves. */
 @RestController
 @RequestMapping("/api/purchase-returns")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class PurchaseReturnController {
 
     private final PurchaseReturnService purchaseReturnService;
@@ -44,6 +44,7 @@ public class PurchaseReturnController {
         return purchaseReturnService.returnedQuantitiesForOrder(purchaseOrderId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public PurchaseReturnDto processReturn(@Valid @RequestBody ProcessPurchaseReturnRequest request) {
         return purchaseReturnService.processReturn(request);

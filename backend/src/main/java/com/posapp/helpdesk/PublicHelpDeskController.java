@@ -1,5 +1,7 @@
 package com.posapp.helpdesk;
 
+import com.posapp.modules.ModuleKey;
+import com.posapp.modules.ModuleService;
 import com.posapp.helpdesk.dto.PublicHelpDeskCategoryDto;
 import com.posapp.helpdesk.dto.PublicHelpDeskTicketDto;
 import com.posapp.helpdesk.dto.PublicHelpDeskTicketRequest;
@@ -34,13 +36,17 @@ public class PublicHelpDeskController {
     private final HelpDeskTicketService ticketService;
     private final HelpDeskCategoryService categoryService;
 
-    public PublicHelpDeskController(HelpDeskTicketService ticketService, HelpDeskCategoryService categoryService) {
+    private final ModuleService moduleService;
+
+    public PublicHelpDeskController(HelpDeskTicketService ticketService, HelpDeskCategoryService categoryService, ModuleService moduleService) {
+        this.moduleService = moduleService;
         this.ticketService = ticketService;
         this.categoryService = categoryService;
     }
 
     @GetMapping("/categories")
     public List<PublicHelpDeskCategoryDto> categories() {
+        moduleService.requireEnabled(ModuleKey.HELPDESK);
         return categoryService.listActive().stream()
                 .map(c -> new PublicHelpDeskCategoryDto(c.id(), c.name()))
                 .toList();
@@ -48,11 +54,13 @@ public class PublicHelpDeskController {
 
     @PostMapping("/tickets")
     public PublicHelpDeskTicketDto create(@Valid @RequestBody PublicHelpDeskTicketRequest request) {
+        moduleService.requireEnabled(ModuleKey.HELPDESK);
         return ticketService.createByGuest(request);
     }
 
     @GetMapping("/tickets/lookup")
     public PublicHelpDeskTicketStatusDto lookup(@RequestParam String ticketNumber, @RequestParam String email) {
+        moduleService.requireEnabled(ModuleKey.HELPDESK);
         return ticketService.publicLookup(ticketNumber, email);
     }
 }

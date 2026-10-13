@@ -64,6 +64,16 @@ public class SaleOrder extends BaseEntity {
     private BigDecimal creditAmount;
 
     /**
+     * Hotel module: the portion of this sale put on an in-house guest's room bill ("Charge to room" tender). Like
+     * {@link #creditAmount} it is a snapshot taken at checkout; null for every sale without one. Accounting posts it to
+     * Accounts Receivable instead of Cash.
+     */
+    private BigDecimal roomChargeAmount;
+
+    /** The hotel booking (guest) the room-charge portion was put on; null when there is none. */
+    private Long roomBookingId;
+
+    /**
      * When the credit portion of this sale is due (Task: "Optional due date/payment terms") — set
      * once at checkout from either an explicit request value or Customer.defaultCreditTermDays;
      * never recomputed afterward. Null means "no due date" (never overdue), which is also the only

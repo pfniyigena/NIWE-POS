@@ -1,5 +1,7 @@
 package com.posapp.restaurant;
 
+import com.posapp.modules.ModuleKey;
+import com.posapp.modules.ModuleService;
 import com.posapp.restaurant.dto.PublicReservationDto;
 import com.posapp.restaurant.dto.PublicReservationRequest;
 import com.posapp.restaurant.dto.PublicTableDto;
@@ -34,17 +36,22 @@ public class PublicReservationController {
 
     private final ReservationService reservationService;
 
-    public PublicReservationController(ReservationService reservationService) {
+    private final ModuleService moduleService;
+
+    public PublicReservationController(ReservationService reservationService, ModuleService moduleService) {
+        this.moduleService = moduleService;
         this.reservationService = reservationService;
     }
 
     @GetMapping("/available-tables")
     public List<PublicTableDto> availableTables(@RequestParam LocalDate date) {
+        moduleService.requireEnabled(ModuleKey.RESTAURANT);
         return reservationService.availableTables(date).stream().map(PublicTableDto::from).toList();
     }
 
     @PostMapping
     public PublicReservationDto create(@Valid @RequestBody PublicReservationRequest request) {
+        moduleService.requireEnabled(ModuleKey.RESTAURANT);
         return PublicReservationDto.from(reservationService.create(request.toReservationRequest()));
     }
 }

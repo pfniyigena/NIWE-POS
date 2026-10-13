@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/accounting/chart-setup")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class ChartSetupController {
 
     private final AccountService accountService;
@@ -38,6 +38,7 @@ public class ChartSetupController {
     }
 
     /** Rejects with 409 (via {@code ApiException.conflict}) if the chart was already seeded by the time this is called — see {@code AccountService.seedDefaultChartIfNeeded(ChartCountry)}'s own javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping
     public ChartSetupStatusDto select(@Valid @RequestBody ChartCountrySelectionRequest request) {
         ChartCountry country;

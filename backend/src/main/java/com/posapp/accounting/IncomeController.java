@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounting/incomes")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class IncomeController {
 
     private final IncomeService incomeService;
@@ -29,6 +29,7 @@ public class IncomeController {
         return incomeService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping
     public IncomeDto create(@Valid @RequestBody IncomeRequest request) {
         return incomeService.create(request);

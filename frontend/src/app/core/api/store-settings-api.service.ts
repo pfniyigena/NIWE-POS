@@ -40,6 +40,10 @@ export interface InventorySettingsPayload {
   restaurantLocationId?: number | null;
   /** WEIGHTED_AVERAGE (default) / LAST_PURCHASE / MANUAL. */
   costingMethod?: string;
+  lowStockDigestEnabled?: boolean;
+  autoRequisitionEnabled?: boolean;
+  /** "HH:mm" */
+  stockJobTime?: string;
 }
 
 /**

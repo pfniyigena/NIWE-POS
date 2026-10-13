@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/manufacturing/boms")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class BomController {
 
     private final BomService bomService;
@@ -34,11 +34,13 @@ public class BomController {
         return bomService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public BomDto create(@Valid @RequestBody BomRequest request) {
         return bomService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PutMapping("/{id}")
     public BomDto update(@PathVariable Long id, @Valid @RequestBody BomRequest request) {
         return bomService.update(id, request);

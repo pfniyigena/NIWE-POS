@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/manufacturing/routings")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class RoutingController {
 
     private final RoutingService routingService;
@@ -34,11 +34,13 @@ public class RoutingController {
         return routingService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public RoutingDto create(@Valid @RequestBody RoutingRequest request) {
         return routingService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PutMapping("/{id}")
     public RoutingDto update(@PathVariable Long id, @Valid @RequestBody RoutingRequest request) {
         return routingService.update(id, request);

@@ -54,6 +54,76 @@ public class StoreSettingsService {
         return getOrCreate();
     }
 
+    /** Read-write on purpose: on a brand-new database the first call creates the settings row, which a read-only transaction cannot do. */
+    @Transactional
+    public boolean isCustomRolesSeeded() {
+        return getOrCreate().isCustomRolesSeeded();
+    }
+
+    @Transactional
+    public void markCustomRolesSeeded() {
+        StoreSettings settings = getOrCreate();
+        settings.setCustomRolesSeeded(true);
+        repository.save(settings);
+    }
+
+    /** Saves the Subscriptions > Job settings form. */
+    @Transactional
+    public StoreSettings updateSubscriptionAutomation(com.posapp.settings.dto.SubscriptionAutomationRequest request) {
+        StoreSettings settings = getOrCreate();
+        String time = request.getJobTime() == null || request.getJobTime().isBlank() ? "06:30" : request.getJobTime().trim();
+        if (!time.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
+            throw com.posapp.common.ApiException.badRequest("Run time must look like 06:30 (24-hour HH:mm)");
+        }
+        String action = request.getOverdueAction() == null || request.getOverdueAction().isBlank() ? "NONE" : request.getOverdueAction().trim().toUpperCase();
+        if (!action.equals("NONE") && !action.equals("PAUSE") && !action.equals("CANCEL")) {
+            throw com.posapp.common.ApiException.badRequest("Overdue action must be NONE, PAUSE or CANCEL");
+        }
+        if (request.getReminderDays() < 1 || request.getReminderDays() > 60) {
+            throw com.posapp.common.ApiException.badRequest("Reminder days must be between 1 and 60");
+        }
+        if (request.getOverdueDays() < 1 || request.getOverdueDays() > 365) {
+            throw com.posapp.common.ApiException.badRequest("Overdue days must be between 1 and 365");
+        }
+        if (request.isReminderEnabled() && !request.isReminderCustomer() && !request.isReminderStore()) {
+            throw com.posapp.common.ApiException.badRequest("Choose who receives the reminders: the customer, the store, or both");
+        }
+        settings.setSubscriptionBillingEnabled(request.isBillingEnabled());
+        settings.setSubscriptionJobTime(time);
+        settings.setSubscriptionReminderEnabled(request.isReminderEnabled());
+        settings.setSubscriptionReminderDays(request.getReminderDays());
+        settings.setSubscriptionReminderCustomer(request.isReminderCustomer());
+        settings.setSubscriptionReminderStore(request.isReminderStore());
+        settings.setSubscriptionDigestEnabled(request.isDigestEnabled());
+        settings.setSubscriptionOverdueAction(action);
+        settings.setSubscriptionOverdueDays(request.getOverdueDays());
+        StoreSettings saved = repository.save(settings);
+        auditLogService.record("SUBSCRIPTION_JOB_SETTINGS_UPDATED",
+                "Updated subscription job settings (billing " + (saved.isSubscriptionBillingEnabled() ? "on" : "off")
+                        + ", reminders " + (saved.isSubscriptionReminderEnabled() ? "on" : "off")
+                        + ", digest " + (saved.isSubscriptionDigestEnabled() ? "on" : "off")
+                        + ", overdue " + saved.getSubscriptionOverdueAction() + ", time " + saved.getSubscriptionJobTime() + ")",
+                "StoreSettings", saved.getId());
+        return saved;
+    }
+
+    /** Records that the daily subscription job ran today, and its one-line result. */
+    @Transactional
+    public void markSubscriptionJobRan(java.time.LocalDate date, String summary) {
+        StoreSettings settings = getOrCreate();
+        settings.setSubscriptionJobLastRun(date);
+        settings.setSubscriptionJobLastSummary(summary != null && summary.length() > 480 ? summary.substring(0, 480) : summary);
+        repository.save(settings);
+    }
+
+    /** Records the store-local date the daily stock jobs (low-stock digest / auto requisitions) last ran. */
+    @Transactional
+    public void markStockJobsRan(java.time.LocalDate date) {
+        StoreSettings settings = getOrCreate();
+        settings.setStockJobLastRun(date);
+        repository.save(settings);
+    }
+
     /** Task: "Implement an audit log of who did what and when" — settings changes are one of the curated actions, see AuditLogService's javadoc. */
     @Transactional
     public StoreSettingsDto updateBusinessDetails(BusinessDetailsRequest request) {
@@ -186,12 +256,22 @@ public class StoreSettingsService {
             throw com.posapp.common.ApiException.badRequest("Costing method must be WEIGHTED_AVERAGE, LAST_PURCHASE or MANUAL");
         }
         settings.setCostingMethod(method);
+        settings.setLowStockDigestEnabled(request.isLowStockDigestEnabled());
+        settings.setAutoRequisitionEnabled(request.isAutoRequisitionEnabled());
+        String jobTime = request.getStockJobTime() == null || request.getStockJobTime().isBlank() ? "06:30" : request.getStockJobTime().trim();
+        if (!jobTime.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
+            throw com.posapp.common.ApiException.badRequest("Run time must look like 06:30 (24-hour HH:mm)");
+        }
+        settings.setStockJobTime(jobTime);
         StoreSettings saved = repository.save(settings);
         auditLogService.record("INVENTORY_SETTINGS_UPDATED",
                 "Updated inventory settings (allow negative stock " + (saved.isAllowNegativeStock() ? "on" : "off")
                         + ", product packaging & breakdown " + (saved.isProductBreakdownEnabled() ? "on" : "off")
                         + ", multi-warehouse " + (saved.isMultiWarehouseEnabled() ? "on" : "off")
-                        + ", costing " + saved.getCostingMethod() + ")",
+                        + ", costing " + saved.getCostingMethod()
+                        + ", low-stock digest " + (saved.isLowStockDigestEnabled() ? "on" : "off")
+                        + ", auto requisitions " + (saved.isAutoRequisitionEnabled() ? "on" : "off")
+                        + ", job time " + saved.getStockJobTime() + ")",
                 "StoreSettings", saved.getId());
         return StoreSettingsDto.from(saved);
     }

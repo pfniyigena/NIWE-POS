@@ -12,13 +12,14 @@ import com.posapp.subscription.dto.CreateSubscriptionRequest;
 import com.posapp.subscription.dto.SubscriptionDto;
 import com.posapp.tax.TaxRate;
 import com.posapp.tax.TaxRateService;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ import java.util.List;
  * already covers), billed against a fixed, admin-defined {@link SubscriptionPlan} rather than the
  * product catalog, auto-generating a real {@code Invoice} on each billing date.
  *
- * <p>{@link #generateDueInvoices} is the daily scheduled sweep — same shape as {@code
+ * <p>The daily scheduled sweep lives in {@link SubscriptionAutomationService} (it calls {@link #billDue}) — same shape as {@code
  * RecurringExpenseTemplateService.generateDueTemplates}: every still-ACTIVE subscription whose
  * {@code nextBillingDate} has arrived (or passed — e.g. the app was offline that day) gets billed,
  * each isolated in its own try/catch so one failure never stops the rest. {@link #billNow}
@@ -223,27 +224,79 @@ public class SubscriptionService {
         return SubscriptionDto.from(subscription);
     }
 
+    /** Ids of every ACTIVE subscription whose next billing date has arrived (or passed) — the scheduled sweep's input. */
+    @Transactional(readOnly = true)
+    public List<Long> dueSubscriptionIds(LocalDate today) {
+        return repository.findByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus.ACTIVE, today)
+                .stream().map(Subscription::getId).toList();
+    }
+
+    /** What billing one subscription produced. */
+    public record BillResult(Long subscriptionId, String customerName, BigDecimal price, String invoiceNumber, LocalDate nextBillingDate) {
+    }
+
     /**
-     * Fourier: "Subscriptions Module" — once a day, every still-ACTIVE subscription whose {@code
-     * nextBillingDate} has arrived (or passed) generates its next invoice and advances to its
-     * following billing date. Each subscription is its own independent unit of work, so one
-     * failing never stops the rest — mirrors {@code RecurringExpenseTemplateService}'s own daily
-     * sweep's per-item isolation. Picked 6:30am, half an hour after that sweep's own 6am slot, so
-     * the two never contend over the same moment.
+     * Bills one due subscription in its own transaction (the caller is not transactional), so one failure
+     * never rolls back or poisons the others. Re-checks that it is still ACTIVE and due.
      */
-    @Scheduled(cron = "0 30 6 * * *")
     @Transactional
-    public void generateDueInvoices() {
-        LocalDate today = LocalDate.now();
-        for (Subscription subscription : repository.findByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus.ACTIVE, today)) {
-            try {
-                billOne(subscription);
-            } catch (Exception ex) {
-                auditLogService.record("SUBSCRIPTION_BILLING_FAILED",
-                        "Failed to bill subscription for " + subscription.getCustomerName() + ": " + ex.getMessage(),
-                        "Subscription", subscription.getId());
+    public BillResult billDue(Long id, LocalDate today) {
+        Subscription subscription = getEntityOrThrow(id);
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE || subscription.getNextBillingDate().isAfter(today)) {
+            throw ApiException.badRequest("Subscription is no longer due");
+        }
+        String invoiceNumber = billOne(subscription);
+        return new BillResult(subscription.getId(), subscription.getCustomerName(), subscription.getPrice(), invoiceNumber, subscription.getNextBillingDate());
+    }
+
+    /** An upcoming bill that should be announced. */
+    public record ReminderInfo(Long subscriptionId, String customerName, String customerEmail, String planName,
+                               BigDecimal price, LocalDate nextBillingDate) {
+    }
+
+    /** ACTIVE subscriptions billing within the next {@code days} days (but not today) that have not been reminded for that billing date yet. */
+    @Transactional(readOnly = true)
+    public List<ReminderInfo> reminderCandidates(LocalDate today, int days) {
+        List<ReminderInfo> result = new ArrayList<>();
+        for (Subscription s : repository.findByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus.ACTIVE, today.plusDays(days))) {
+            LocalDate next = s.getNextBillingDate();
+            if (!next.isAfter(today) || next.equals(s.getReminderSentFor())) continue;
+            String email = s.getCustomerId() == null ? null
+                    : customerRepository.findById(s.getCustomerId()).map(Customer::getEmail).orElse(null);
+            result.add(new ReminderInfo(s.getId(), s.getCustomerName(), email,
+                    s.getPlan() != null ? s.getPlan().getName() : "Subscription", s.getPrice(), next));
+        }
+        return result;
+    }
+
+    @Transactional
+    public void markReminderSent(Long id, LocalDate billingDate) {
+        Subscription s = getEntityOrThrow(id);
+        s.setReminderSentFor(billingDate);
+        repository.save(s);
+    }
+
+    /** An ACTIVE subscription holding an issued invoice that has stayed unpaid too long. */
+    public record OverdueInfo(Long subscriptionId, String customerName, String invoiceNumber, LocalDate invoiceDate, BigDecimal outstanding) {
+    }
+
+    /** ACTIVE subscriptions with an ISSUED invoice still unpaid more than {@code days} days after its due date (or invoice date when it has none). */
+    @Transactional(readOnly = true)
+    public List<OverdueInfo> overdueCandidates(LocalDate today, int days, ZoneId zone) {
+        List<OverdueInfo> result = new ArrayList<>();
+        for (Subscription s : repository.findAllByOrderByIdDesc()) {
+            if (s.getStatus() != SubscriptionStatus.ACTIVE) continue;
+            for (InvoiceDto inv : invoiceService.listBySubscriptionId(s.getId())) {
+                if (!"ISSUED".equals(inv.status()) || inv.amountOutstanding() == null || inv.amountOutstanding().signum() <= 0) continue;
+                LocalDate base = inv.dueDate() != null ? inv.dueDate()
+                        : (inv.invoiceDate() != null ? inv.invoiceDate().atZone(zone).toLocalDate() : null);
+                if (base != null && base.plusDays(days).isBefore(today)) {
+                    result.add(new OverdueInfo(s.getId(), s.getCustomerName(), inv.invoiceNumber(), base, inv.amountOutstanding()));
+                    break;
+                }
             }
         }
+        return result;
     }
 
     /**
@@ -266,7 +319,7 @@ public class SubscriptionService {
      * cycles are evenly spaced regardless of which end of each one its due date falls on, so this
      * line needs no branching at all; only the *period label* on the generated invoice does.
      */
-    private void billOne(Subscription subscription) {
+    private String billOne(Subscription subscription) {
         String planName = subscription.getPlan() != null ? subscription.getPlan().getName() : "Subscription";
         LocalDate dueDate = subscription.getNextBillingDate();
         boolean advance = !Boolean.FALSE.equals(subscription.getBillInAdvance());
@@ -292,6 +345,7 @@ public class SubscriptionService {
                         + "' (period " + periodStart + " to " + periodEnd + ") — issued invoice " + invoice.invoiceNumber()
                         + " (next billing " + subscription.getNextBillingDate() + ")",
                 "Subscription", subscription.getId());
+        return invoice.invoiceNumber();
     }
 
     private Subscription getEntityOrThrow(Long id) {

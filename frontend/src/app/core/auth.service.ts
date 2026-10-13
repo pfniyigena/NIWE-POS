@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { API_BASE } from './constants';
 import { LoginResponse, Permission } from './models';
+import { AreaCode, landingFor, needsManage, requiredAreas } from './access';
 
 /** Fourier: "remove this feature where by when I refresh the page you are asking a logged user to login again" — the persisted session key. */
 const STORAGE_KEY = 'pos.auth';
@@ -90,5 +91,42 @@ export class AuthService {
    */
   hasPermission(permission: Permission): boolean {
     return this.currentUser()?.permissions.includes(permission) ?? false;
+  }
+
+  isAdmin(): boolean {
+    return this.currentUser()?.role === 'ADMIN';
+  }
+
+  /** Custom roles: may this user open (read) the given access area? Admins always may. */
+  canView(area: AreaCode): boolean {
+    if (this.isAdmin()) return true;
+    const areas = this.currentUser()?.areas ?? [];
+    return areas.includes(area + '_VIEW') || areas.includes(area + '_MANAGE');
+  }
+
+  /** Custom roles: may this user create/change things in the given access area? Admins always may. */
+  canManage(area: AreaCode): boolean {
+    if (this.isAdmin()) return true;
+    return (this.currentUser()?.areas ?? []).includes(area + '_MANAGE');
+  }
+
+  /** True when the user holds at least one custom-role grant (and is not an admin). */
+  hasAnyArea(): boolean {
+    return !this.isAdmin() && (this.currentUser()?.areas?.length ?? 0) > 0;
+  }
+
+  /** Can this user open the given app path (used by the route guard and the sidebar)? */
+  canAccessPath(path: string): boolean {
+    if (this.isAdmin()) return true;
+    const required = requiredAreas(path);
+    if (required === 'ADMIN') return false;
+    const write = needsManage(path);
+    return required.some((area) => (write ? this.canManage(area) : this.canView(area)));
+  }
+
+  /** Where to send the user right after login. */
+  homePath(posOn = true): string {
+    if (this.isAdmin()) return posOn ? '/registers' : '/admin/dashboard';
+    return landingFor(this.currentUser()?.areas ?? [], posOn);
   }
 }

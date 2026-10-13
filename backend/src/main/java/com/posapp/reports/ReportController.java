@@ -64,15 +64,25 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/reports")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_REPORTS_VIEW')")
 public class ReportController {
 
     private final ReportService reportService;
+    private final PurchaseReportService purchaseReportService;
+    private final SalesReportService salesReportService;
+    private final AssetReportService assetReportService;
+    private final HrReportService hrReportService;
+    private final InstallmentReportService installmentReportService;
     private final ReportExportService exportService;
     private final com.posapp.tracking.TrackingService trackingService;
 
-    public ReportController(ReportService reportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
+    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
         this.reportService = reportService;
+        this.purchaseReportService = purchaseReportService;
+        this.salesReportService = salesReportService;
+        this.assetReportService = assetReportService;
+        this.hrReportService = hrReportService;
+        this.installmentReportService = installmentReportService;
         this.exportService = exportService;
         this.trackingService = trackingService;
     }
@@ -521,6 +531,429 @@ public class ReportController {
         return ResponseEntity.ok(rows);
     }
 
+    // ---- Purchases reports (Purchases > Reports) — see PurchaseReportService. Date range (+ branch) only, like purchase-orders above. ----
+
+    @GetMapping("/purchases-by-supplier")
+    public ResponseEntity<?> purchasesBySupplier(@RequestParam(required = false) LocalDate from,
+                                                 @RequestParam(required = false) LocalDate to,
+                                                 @RequestParam(required = false) Long branchId,
+                                                 @RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.purchasesBySupplier(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Supplier", "Orders", "Qty ordered", "Qty received", "Net cost", "Tax", "Total cost", "Paid", "Outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.supplierName()), String.valueOf(r.orderCount()), String.valueOf(r.quantityOrdered()),
+                        String.valueOf(r.quantityReceived()), money(r.netCost()), money(r.taxCost()), money(r.totalCost()),
+                        money(r.amountPaid()), money(r.amountOutstanding())));
+            }
+            return export("Purchases by Supplier", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/purchases-by-product")
+    public ResponseEntity<?> purchasesByProduct(@RequestParam(required = false) LocalDate from,
+                                                @RequestParam(required = false) LocalDate to,
+                                                @RequestParam(required = false) Long branchId,
+                                                @RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.purchasesByProduct(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("SKU", "Product", "Category", "Qty ordered", "Qty received", "Net cost", "Tax", "Total cost", "Avg unit cost");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.sku()), orDash(r.productName()), orDash(r.categoryName()), String.valueOf(r.quantityOrdered()),
+                        String.valueOf(r.quantityReceived()), money(r.netCost()), money(r.taxCost()), money(r.totalCost()), money(r.averageUnitCost())));
+            }
+            return export("Purchases by Product", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/purchases-by-category")
+    public ResponseEntity<?> purchasesByCategory(@RequestParam(required = false) LocalDate from,
+                                                 @RequestParam(required = false) LocalDate to,
+                                                 @RequestParam(required = false) Long branchId,
+                                                 @RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.purchasesByCategory(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Category", "Qty ordered", "Qty received", "Net cost", "Tax", "Total cost");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.categoryName()), String.valueOf(r.quantityOrdered()), String.valueOf(r.quantityReceived()),
+                        money(r.netCost()), money(r.taxCost()), money(r.totalCost())));
+            }
+            return export("Purchases by Category", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/purchase-bills")
+    public ResponseEntity<?> purchaseBills(@RequestParam(required = false) LocalDate from,
+                                           @RequestParam(required = false) LocalDate to,
+                                           @RequestParam(required = false) Long branchId,
+                                           @RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.bills(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Bill #", "Purchase order", "Supplier", "Status", "Bill date", "Total", "Paid", "Outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.billNumber()), orDash(r.purchaseOrderNumber()), orDash(r.supplierName()), r.status(),
+                        String.valueOf(r.billDate()), money(r.totalAmount()), money(r.amountPaid()), money(r.amountOutstanding())));
+            }
+            return export("Bills", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/purchase-returns")
+    public ResponseEntity<?> purchaseReturns(@RequestParam(required = false) LocalDate from,
+                                             @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(required = false) Long branchId,
+                                             @RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.purchaseReturns(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Return #", "Purchase order", "Supplier", "Return date", "Reason", "Qty", "Refund");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.returnNumber()), orDash(r.purchaseOrderNumber()), orDash(r.supplierName()),
+                        String.valueOf(r.returnDate()), orDash(r.reason()), String.valueOf(r.quantity()), money(r.refundTotal())));
+            }
+            return export("Purchase Returns", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/supplier-payments")
+    public ResponseEntity<?> supplierPayments(@RequestParam(required = false) LocalDate from,
+                                              @RequestParam(required = false) LocalDate to,
+                                              @RequestParam(required = false) Long branchId,
+                                              @RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.supplierPayments(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Receipt #", "Supplier", "Paid at", "Method", "Amount", "Note");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.receiptNumber()), orDash(r.supplierName()), String.valueOf(r.paidAt()), orDash(r.method()),
+                        money(r.amount()), orDash(r.note())));
+            }
+            return export("Supplier Payments", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    /** Snapshot, no date range — what is owed to each supplier today, by age. */
+    @GetMapping("/payables-aging")
+    public ResponseEntity<?> payablesAging(@RequestParam(defaultValue = "json") String format) {
+        var rows = purchaseReportService.payablesAging();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Supplier", "0-30 days", "31-60 days", "61-90 days", "Over 90 days", "Total outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.supplierName()), money(r.days0To30()), money(r.days31To60()), money(r.days61To90()),
+                        money(r.over90Days()), money(r.totalOutstanding())));
+            }
+            return export("Payables Aging", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+
+    // ---- Assets reports (Assets > Reports) — see AssetReportService. The register and the category totals are snapshots (no dates). ----
+
+    @GetMapping("/asset-register")
+    public ResponseEntity<?> assetRegister(@RequestParam(required = false) Long branchId,
+                                           @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.register(branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Tag", "Asset", "Category", "Status", "Purchased", "Cost", "Accumulated depreciation", "Book value", "Branch", "Location", "Assigned to", "Serial no.");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.code(), r.name(), r.categoryName(), r.status(), String.valueOf(r.purchaseDate()), money(r.cost()),
+                        money(r.accumulatedDepreciation()), money(r.bookValue()), orDash(r.branchName()), orDash(r.location()), orDash(r.assignedTo()), orDash(r.serialNumber())));
+            }
+            return export("Asset Register", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/assets-by-category")
+    public ResponseEntity<?> assetsByCategory(@RequestParam(required = false) Long branchId,
+                                              @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.byCategory(branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Category", "Assets", "Cost", "Accumulated depreciation", "Book value");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.categoryName(), String.valueOf(r.assetCount()), money(r.cost()), money(r.accumulatedDepreciation()), money(r.bookValue())));
+            }
+            return export("Assets by Category", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/depreciation-schedule")
+    public ResponseEntity<?> depreciationSchedule(@RequestParam(required = false) LocalDate from,
+                                                  @RequestParam(required = false) LocalDate to,
+                                                  @RequestParam(required = false) Long branchId,
+                                                  @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.depreciationSchedule(assetFrom(from), assetTo(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Month end", "Tag", "Asset", "Category", "Branch", "Depreciation", "Accumulated after", "Book value after");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.periodEnd()), r.code(), r.name(), r.categoryName(), orDash(r.branchName()), money(r.amount()),
+                        money(r.accumulatedAfter()), money(r.bookValueAfter())));
+            }
+            return export("Depreciation Schedule", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/asset-disposals")
+    public ResponseEntity<?> assetDisposals(@RequestParam(required = false) LocalDate from,
+                                            @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(required = false) Long branchId,
+                                            @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.disposals(assetFrom(from), assetTo(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Disposed", "Tag", "Asset", "Category", "Branch", "Cost", "Accumulated depreciation", "Book value", "Proceeds", "Gain / (loss)");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.disposalDate()), r.code(), r.name(), r.categoryName(), orDash(r.branchName()), money(r.cost()),
+                        money(r.accumulatedDepreciation()), money(r.bookValue()), money(r.proceeds()), money(r.gainLoss())));
+            }
+            return export("Asset Disposals", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/asset-transfers")
+    public ResponseEntity<?> assetTransfers(@RequestParam(required = false) LocalDate from,
+                                            @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(required = false) Long branchId,
+                                            @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.transfers(assetFrom(from), assetTo(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Tag", "Asset", "From branch", "To branch", "From location", "To location", "Reason");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(String.valueOf(r.transferDate()), r.code(), r.name(), orDash(r.fromBranch()), orDash(r.toBranch()),
+                        orDash(r.fromLocation()), orDash(r.toLocation()), orDash(r.reason())));
+            }
+            return export("Asset Transfers", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- HR reports (HR > Reports) — see HrReportService. Payroll and contract reports need the Payroll area; the rest need the HR area. ----
+
+    private static final String HR_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_HR_VIEW')";
+    private static final String PAYROLL_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_PAYROLL_VIEW')";
+
+    @PreAuthorize(HR_VIEW)
+    @GetMapping("/employee-directory")
+    public ResponseEntity<?> employeeDirectory(@RequestParam(defaultValue = "json") String format) {
+        var rows = hrReportService.directory(null, null);
+        if (isDownload(format)) {
+            List<String> headers = List.of("No.", "Name", "Job title", "Department", "Reports to", "Branch", "Status", "Hired", "Phone", "Email");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.employeeNumber(), r.name(), orDash(r.jobTitle()), orDash(r.department()), orDash(r.manager()),
+                        orDash(r.branch()), r.status(), String.valueOf(r.hireDate()), orDash(r.phone()), orDash(r.email())));
+            }
+            return export("Employee Directory", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HR_VIEW)
+    @GetMapping("/headcount-by-department")
+    public ResponseEntity<?> headcountByDepartment(@RequestParam(defaultValue = "json") String format) {
+        var rows = hrReportService.headcount();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Department", "Active", "Inactive", "Left", "Total");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.department(), String.valueOf(r.active()), String.valueOf(r.inactive()), String.valueOf(r.left()), String.valueOf(r.total())));
+            }
+            return export("Headcount by Department", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HR_VIEW)
+    @GetMapping("/leave-balances")
+    public ResponseEntity<?> leaveBalances(@RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        int year = (to != null ? to : LocalDate.now(ZoneOffset.UTC)).getYear();
+        var rows = hrReportService.leaveBalances(year);
+        if (isDownload(format)) {
+            List<String> headers = List.of("No.", "Employee", "Leave type", "Entitled (" + year + ")", "Used", "Pending", "Remaining");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.employeeNumber(), r.employee(), r.leaveType(), r.entitled(), r.used().stripTrailingZeros().toPlainString(),
+                        r.pending().stripTrailingZeros().toPlainString(), r.remaining()));
+            }
+            return export("Leave Balances " + year, headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HR_VIEW)
+    @GetMapping("/leave-requests")
+    public ResponseEntity<?> leaveRequestsReport(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                                 @RequestParam(defaultValue = "json") String format) {
+        var rows = hrReportService.leaveRequests(assetFrom(from), assetTo(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("No.", "Employee", "Leave type", "From", "To", "Days", "Status", "Decided by", "Reason");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.employeeNumber(), r.employee(), r.leaveType(), String.valueOf(r.startDate()), String.valueOf(r.endDate()),
+                        r.days().stripTrailingZeros().toPlainString(), r.status(), orDash(r.decidedBy()), orDash(r.reason())));
+            }
+            return export("Leave Requests", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HR_VIEW)
+    @GetMapping("/attendance-summary")
+    public ResponseEntity<?> attendanceSummary(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                               @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = hrReportService.attendance(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("No.", "Employee", "Department", "Expected days", "Present", "Late", "Absent", "Leave days", "Hours", "Overtime hours");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.employeeNumber(), r.employee(), orDash(r.department()), String.valueOf(r.expectedDays()),
+                        String.valueOf(r.presentDays()), String.valueOf(r.lateDays()), String.valueOf(r.absentDays()),
+                        r.leaveDays().stripTrailingZeros().toPlainString(), r.hoursWorked().toPlainString(), r.overtimeHours().toPlainString()));
+            }
+            return export("Attendance Summary", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(PAYROLL_VIEW)
+    @GetMapping("/contracts-expiring")
+    public ResponseEntity<?> contractsExpiring(@RequestParam(required = false) Integer days, @RequestParam(defaultValue = "json") String format) {
+        var rows = hrReportService.contractsExpiring(days != null ? days : 60);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Contract", "Employee", "Type", "Start", "End", "Days left");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.contractNumber(), r.employee(), r.type(), String.valueOf(r.startDate()), String.valueOf(r.endDate()),
+                        r.daysLeft() != null ? String.valueOf(r.daysLeft()) : "—"));
+            }
+            return export("Contracts Expiring", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(PAYROLL_VIEW)
+    @GetMapping("/payroll-register")
+    public ResponseEntity<?> payrollRegister(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(defaultValue = "json") String format) {
+        var rows = hrReportService.payrollRegister(assetFrom(from), assetTo(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Period", "No.", "Employee", "Department", "Gross", "PAYE", "Employee contributions", "Other deductions", "Net pay", "Employer contributions", "Status");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.period(), r.employeeNumber(), r.employee(), orDash(r.department()), money(r.gross()), money(r.paye()),
+                        money(r.employeeContributions()), money(r.otherDeductions()), money(r.net()), money(r.employerContributions()), r.status()));
+            }
+            return export("Payroll Register", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(PAYROLL_VIEW)
+    @GetMapping("/payroll-summary")
+    public ResponseEntity<?> payrollSummary(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(defaultValue = "json") String format) {
+        var rows = hrReportService.payrollSummary(assetFrom(from), assetTo(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Period", "Status", "Employees", "Gross", "PAYE", "Employee contributions", "Other deductions", "Net pay", "Employer contributions", "Total cost");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(java.util.Arrays.asList(r.period(), r.status(), String.valueOf(r.employees()), money(r.gross()), money(r.paye()),
+                        money(r.employeeContributions()), money(r.otherDeductions()), money(r.net()), money(r.employerContributions()), money(r.totalCost())));
+            }
+            return export("Payroll Summary", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Instalment reports (Installments) — see InstallmentReportService. ----
+
+    @GetMapping("/installment-agreements")
+    public ResponseEntity<?> installmentAgreements(@RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        var rows = installmentReportService.agreements(branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Plan", "Customer", "Invoice", "Status", "Instalments", "Paid", "Financed", "Interest", "Total payable", "Paid amount", "Outstanding", "Overdue", "Next due");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.planNumber(), orDash(r.customer()), orDash(r.invoiceNumber()), r.status(), String.valueOf(r.instalments()), String.valueOf(r.paidInstalments()),
+                        money(r.financed()), money(r.interest()), money(r.totalPayable()), money(r.paid()), money(r.outstanding()), money(r.overdue()),
+                        r.nextDue() != null ? String.valueOf(r.nextDue()) : "—"));
+            }
+            return export("Instalment Agreements", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/installments-due")
+    public ResponseEntity<?> installmentsDue(@RequestParam(required = false) Integer days, @RequestParam(required = false) Long branchId,
+                                             @RequestParam(defaultValue = "json") String format) {
+        return dueResponse("Instalments Due", installmentReportService.due(days != null ? days : 30, branchId), format);
+    }
+
+    @GetMapping("/installments-overdue")
+    public ResponseEntity<?> installmentsOverdue(@RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        return dueResponse("Overdue Instalments", installmentReportService.overdue(branchId), format);
+    }
+
+    private ResponseEntity<?> dueResponse(String title, List<com.posapp.reports.dto.InstallmentReportRows.DueRow> rows, String format) {
+        if (isDownload(format)) {
+            List<String> headers = List.of("Plan", "Customer", "Invoice", "Instalment", "Due date", "Amount due", "Paid", "Balance", "Status", "Days overdue");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.planNumber(), orDash(r.customer()), orDash(r.invoiceNumber()), r.instalment(), String.valueOf(r.dueDate()),
+                        money(r.totalDue()), money(r.paid()), money(r.balance()), r.status(), String.valueOf(r.daysOverdue())));
+            }
+            return export(title, headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/installment-collections")
+    public ResponseEntity<?> installmentCollections(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                                    @RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = installmentReportService.collections(start, end, branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Receipt", "Plan", "Customer", "Principal", "Interest and fees", "Total", "Method", "Recorded by");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.paidAt()), orDash(r.receiptNumber()), r.planNumber(), orDash(r.customer()), money(r.principal()),
+                        money(r.interestAndFees()), money(r.total()), orDash(r.method()), orDash(r.recordedBy())));
+            }
+            return export("Instalment Collections", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    private static LocalDate assetFrom(LocalDate from) {
+        return from != null ? from : LocalDate.now(ZoneOffset.UTC).withDayOfYear(1);
+    }
+
+    private static LocalDate assetTo(LocalDate to) {
+        return to != null ? to : LocalDate.now(ZoneOffset.UTC);
+    }
+
     /** Task: "Add Sale order... Then let's have Sale as Menu." Date range only — no register (not tied to one), no category (an order can span several). */
     @GetMapping("/sales-orders")
     public ResponseEntity<?> salesOrders(@RequestParam(required = false) LocalDate from,
@@ -538,6 +971,152 @@ public class ReportController {
                         String.valueOf(r.quantityOrdered()), String.valueOf(r.quantityFulfilled()), money(r.totalAmount()), money(r.amountOutstanding())));
             }
             return export("Sales Orders", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Sales reports (Sales > Reports) — see SalesReportService. Date range (+ branch) only, like sales-orders above. ----
+
+    @GetMapping("/sales-by-customer")
+    public ResponseEntity<?> salesByCustomer(@RequestParam(required = false) LocalDate from,
+                                             @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(required = false) Long branchId,
+                                             @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.salesByCustomer(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Customer", "Orders", "Qty ordered", "Qty fulfilled", "Net amount", "Tax", "Total amount", "Paid", "Outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.customerName()), String.valueOf(r.orderCount()), String.valueOf(r.quantityOrdered()),
+                        String.valueOf(r.quantityFulfilled()), money(r.netAmount()), money(r.taxAmount()), money(r.totalAmount()),
+                        money(r.amountPaid()), money(r.amountOutstanding())));
+            }
+            return export("Sales by Customer", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/sales-by-product")
+    public ResponseEntity<?> salesByProduct(@RequestParam(required = false) LocalDate from,
+                                            @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(required = false) Long branchId,
+                                            @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.salesByProduct(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("SKU", "Product", "Category", "Qty ordered", "Qty fulfilled", "Net amount", "Tax", "Total amount", "Avg unit price");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.sku()), orDash(r.productName()), orDash(r.categoryName()), String.valueOf(r.quantityOrdered()),
+                        String.valueOf(r.quantityFulfilled()), money(r.netAmount()), money(r.taxAmount()), money(r.totalAmount()), money(r.averageUnitPrice())));
+            }
+            return export("Sales by Product", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/sales-by-category")
+    public ResponseEntity<?> salesByCategory(@RequestParam(required = false) LocalDate from,
+                                             @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(required = false) Long branchId,
+                                             @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.salesByCategory(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Category", "Qty ordered", "Qty fulfilled", "Net amount", "Tax", "Total amount");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.categoryName()), String.valueOf(r.quantityOrdered()), String.valueOf(r.quantityFulfilled()),
+                        money(r.netAmount()), money(r.taxAmount()), money(r.totalAmount())));
+            }
+            return export("Sales by Category", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/sales-invoices")
+    public ResponseEntity<?> salesInvoices(@RequestParam(required = false) LocalDate from,
+                                           @RequestParam(required = false) LocalDate to,
+                                           @RequestParam(required = false) Long branchId,
+                                           @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.invoices(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Invoice #", "Sale order", "Customer", "Status", "Invoice date", "Due date", "Total", "Paid", "Outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.invoiceNumber()), orDash(r.salesOrderNumber()), orDash(r.customerName()), r.status(),
+                        String.valueOf(r.invoiceDate()), r.dueDate() == null ? "—" : String.valueOf(r.dueDate()),
+                        money(r.totalAmount()), money(r.amountPaid()), money(r.amountOutstanding())));
+            }
+            return export("Invoices", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/sales-credit-notes")
+    public ResponseEntity<?> salesCreditNotes(@RequestParam(required = false) LocalDate from,
+                                              @RequestParam(required = false) LocalDate to,
+                                              @RequestParam(required = false) Long branchId,
+                                              @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.creditNotes(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Credit note #", "Invoice #", "Customer", "Voided at", "Amount", "Reason", "Payment handling");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.creditNoteNumber()), orDash(r.invoiceNumber()), orDash(r.customerName()),
+                        String.valueOf(r.voidedAt()), money(r.totalAmount()), orDash(r.reason()), orDash(r.paymentDisposition())));
+            }
+            return export("Credit Notes", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/sales-order-returns")
+    public ResponseEntity<?> salesOrderReturns(@RequestParam(required = false) LocalDate from,
+                                               @RequestParam(required = false) LocalDate to,
+                                               @RequestParam(required = false) Long branchId,
+                                               @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.salesReturns(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Return #", "Sale order", "Customer", "Return date", "Reason", "Qty", "Refund");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.returnNumber()), orDash(r.salesOrderNumber()), orDash(r.customerName()),
+                        String.valueOf(r.returnDate()), orDash(r.reason()), String.valueOf(r.quantity()), money(r.refundTotal())));
+            }
+            return export("Sale Order Returns", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/customer-payments")
+    public ResponseEntity<?> customerPaymentsReport(@RequestParam(required = false) LocalDate from,
+                                                    @RequestParam(required = false) LocalDate to,
+                                                    @RequestParam(required = false) Long branchId,
+                                                    @RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.customerPayments(start(from), end(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Receipt #", "Customer", "Paid at", "Method", "Amount", "Note");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.receiptNumber()), orDash(r.customerName()), String.valueOf(r.paidAt()), orDash(r.method()),
+                        money(r.amount()), orDash(r.note())));
+            }
+            return export("Customer Payments", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    /** Snapshot, no date range — what each customer owes today (invoices and sale orders), by age. */
+    @GetMapping("/receivables-aging")
+    public ResponseEntity<?> receivablesAging(@RequestParam(defaultValue = "json") String format) {
+        var rows = salesReportService.receivablesAging();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Customer", "0-30 days", "31-60 days", "61-90 days", "Over 90 days", "Total outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.customerName()), money(r.days0To30()), money(r.days31To60()), money(r.days61To90()),
+                        money(r.over90Days()), money(r.totalOutstanding())));
+            }
+            return export("Receivables Aging", headers, body, format);
         }
         return ResponseEntity.ok(rows);
     }

@@ -184,7 +184,7 @@ interface OfflinePaymentRow {
       </button>
       <span class="text-muted" style="font-size:0.9rem; display:flex; align-items:center; gap:8px; padding-right:8px;">
         {{ session?.registerName ?? '—' }}
-        <a [routerLink]="[exitLink]" style="color:#e7e9f0; margin-left:6px;" title="Exit terminal">↩️ Exit</a>
+        <a [routerLink]="[exitLink]" style="color:var(--text); margin-left:6px;" title="Exit terminal">↩️ Exit</a>
       </span>
     </div>
 
@@ -758,7 +758,7 @@ export class TerminalComponent implements OnInit {
    * them to `/registers` would just bounce them there via adminGuard anyway, one redirect later.
    */
   get exitLink(): string {
-    return this.auth.currentUser()?.role === 'ADMIN' ? '/registers' : '/sessions';
+    return this.auth.isAdmin() || this.auth.canManage('SALES') ? '/registers' : '/sessions';
   }
 
   /** Task 2: "Only Admin will be allowed to gives discount" — gates both discount inputs in the template below. */

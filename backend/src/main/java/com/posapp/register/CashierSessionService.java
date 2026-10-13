@@ -267,7 +267,7 @@ public class CashierSessionService {
      */
     private void requireOwnSessionOrAdmin(CashierSession session, AppUser caller, String message) {
         boolean isOwnSession = session.getCashier() != null && session.getCashier().getId().equals(caller.getId());
-        if (isOwnSession || caller.getRole() == Role.ADMIN) {
+        if (isOwnSession || caller.canManage(com.posapp.user.AccessArea.SALES)) {
             return;
         }
         boolean sharesThisShift = session.getRegisterSession() != null

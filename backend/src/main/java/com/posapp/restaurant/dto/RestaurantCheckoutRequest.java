@@ -13,6 +13,11 @@ public class RestaurantCheckoutRequest {
     @Valid
     private List<PaymentEntry> payments;
 
+    /** Hotel module: the in-house guest's booking, required when any payment entry uses the "Charge to room" method (already known for a room-service order). */
+    private Long roomBookingId;
+
+    public Long getRoomBookingId() { return roomBookingId; }
+    public void setRoomBookingId(Long roomBookingId) { this.roomBookingId = roomBookingId; }
     public List<PaymentEntry> getPayments() { return payments; }
     public void setPayments(List<PaymentEntry> payments) { this.payments = payments; }
 

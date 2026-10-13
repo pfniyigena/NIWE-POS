@@ -97,7 +97,8 @@ public class AccountingService {
         // to the penny; see post()'s Suspense-account fallback for what happens if they don't.
         BigDecimal creditAmount = order.getCreditAmount() != null ? order.getCreditAmount() : BigDecimal.ZERO;
         BigDecimal tendered = order.getPayments().stream().map(com.posapp.order.Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal cashAmount = tendered.subtract(creditAmount);
+        BigDecimal roomChargeAmount = order.getRoomChargeAmount() != null ? order.getRoomChargeAmount() : BigDecimal.ZERO;
+        BigDecimal cashAmount = tendered.subtract(creditAmount).subtract(roomChargeAmount);
         BigDecimal subtotal = com.posapp.order.OrderCalculator.subtotal(order);
         BigDecimal taxTotal = com.posapp.order.OrderCalculator.taxTotal(order);
         BigDecimal cogs = trackedLineCost(order);
@@ -105,6 +106,7 @@ public class AccountingService {
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.CASH, cashAmount, null, true);
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, creditAmount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, roomChargeAmount, "Charged to room", true);
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotal, null, false);
         addIfPositive(lines, AccountService.TAX_PAYABLE, taxTotal, null, false);
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogs, "Cost of goods sold", true);
@@ -414,6 +416,15 @@ public class AccountingService {
         post("CUSTOMER_PAYMENT", payment.getId(), "Payment received from " + payment.getCustomer().getName(), null, lines, payment.getBranchId());
     }
 
+    /** Instalments: the interest and late-fee part of an instalment payment (the principal part is posted as an ordinary invoice payment). Dr Cash / Cr Instalment income. */
+    @Transactional
+    public void postInstallmentCharges(Long paymentId, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.INSTALLMENT_INCOME, amount, null, false);
+        post("INSTALLMENT_CHARGES", paymentId, memo, null, lines, branchId);
+    }
+
     // ---- Restaurant (com.posapp.restaurant) ----
 
     /**
@@ -428,14 +439,176 @@ public class AccountingService {
     @Transactional
     public void postRestaurantSale(Long orderId, String ticketNumber, BigDecimal cashAmount,
                                     BigDecimal subtotal, BigDecimal taxTotal, BigDecimal cogs) {
+        postRestaurantSale(orderId, ticketNumber, cashAmount, BigDecimal.ZERO, subtotal, taxTotal, cogs);
+    }
+
+    /** As above, where {@code roomChargeAmount} of the bill was put on an in-house guest's room bill (Hotel module) — owed by the guest (Accounts Receivable) instead of collected as cash. */
+    @Transactional
+    public void postRestaurantSale(Long orderId, String ticketNumber, BigDecimal cashAmount, BigDecimal roomChargeAmount,
+                                    BigDecimal subtotal, BigDecimal taxTotal, BigDecimal cogs) {
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.CASH, cashAmount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, roomChargeAmount, "Charged to room", true);
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotal, null, false);
         addIfPositive(lines, AccountService.TAX_PAYABLE, taxTotal, null, false);
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogs, "Cost of goods sold", true);
         addIfPositive(lines, AccountService.INVENTORY, cogs, "Inventory relief", false);
 
         post("RESTAURANT_SALE", orderId, "Restaurant sale " + safe(ticketNumber), null, lines);
+    }
+
+    // ---- Hotel (com.posapp.hotel) ----
+
+    /**
+     * Posts room (or hotel service) revenue. Amounts may be negative to reverse or correct an earlier posting.
+     * The guest owes {@code net + tax} (Accounts Receivable, the "guest ledger"); {@code deferredRelease} is the part
+     * of that already sitting in Unearned Room Revenue from a booking-time posting, which is released instead of
+     * being credited again.
+     */
+    @Transactional
+    public void postHotelRevenue(String sourceType, Long sourceId, String memo, BigDecimal net, BigDecimal tax, BigDecimal deferredRelease) {
+        BigDecimal release = deferredRelease == null ? BigDecimal.ZERO : deferredRelease;
+        BigDecimal owed = net.add(tax).subtract(release);
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.UNEARNED_ROOM_REVENUE, release, null, true);
+        addSigned(lines, AccountService.ACCOUNTS_RECEIVABLE, owed, true, "Guest ledger");
+        addSigned(lines, AccountService.ROOM_REVENUE, net, false, null);
+        addSigned(lines, AccountService.TAX_PAYABLE, tax, false, null);
+        post(sourceType, sourceId, memo, null, lines);
+    }
+
+    /** Booking-time posting for the "post at booking and at check-out" mode: the booked value is owed and held as unearned. Negative = reverse. */
+    @Transactional
+    public void postHotelBookingDeferral(Long bookingId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addSigned(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, true, "Booked stay");
+        addSigned(lines, AccountService.UNEARNED_ROOM_REVENUE, amount, false, null);
+        post("HOTEL_BOOKING", bookingId, memo, null, lines);
+    }
+
+    /** A deposit received from a guest: cash in, held for the guest. */
+    @Transactional
+    public void postHotelDeposit(Long bookingId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, amount, null, false);
+        post("HOTEL_DEPOSIT", bookingId, memo, null, lines);
+    }
+
+    /** Held deposits applied against the guest's bill at check-out. */
+    @Transactional
+    public void postHotelDepositApplied(Long bookingId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, amount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Guest ledger", false);
+        post("HOTEL_DEPOSIT_APPLIED", bookingId, memo, null, lines);
+    }
+
+    /** A payment on the guest's bill: cash in, guest ledger down. */
+    @Transactional
+    public void postHotelPayment(Long bookingId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Guest ledger", false);
+        post("HOTEL_PAYMENT", bookingId, memo, null, lines);
+    }
+
+    /** Money handed back: {@code fromDeposits} comes out of held deposits, {@code fromBill} out of an overpayment on the bill. */
+    @Transactional
+    public void postHotelRefund(Long bookingId, String memo, BigDecimal fromDeposits, BigDecimal fromBill) {
+        BigDecimal cash = fromDeposits.add(fromBill);
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, fromDeposits, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, fromBill, "Guest ledger", true);
+        addIfPositive(lines, AccountService.CASH, cash, null, false);
+        post("HOTEL_REFUND", bookingId, memo, null, lines);
+    }
+
+    /** A deposit kept after a cancellation or no-show: recognised as income. */
+    @Transactional
+    public void postHotelDepositForfeited(Long bookingId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, amount, null, true);
+        addIfPositive(lines, AccountService.ROOM_REVENUE, amount, "Forfeited deposit", false);
+        post("HOTEL_DEPOSIT_FORFEIT", bookingId, memo, null, lines);
+    }
+
+    // ---- Assets Management (com.posapp.assets) ----
+
+    /** Buying a fixed asset: cost into Fixed Assets, paid from Cash or owed to suppliers (Accounts Payable). */
+    @Transactional
+    public void postAssetAcquisition(Long assetId, String memo, BigDecimal cost, boolean paidInCash, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.FIXED_ASSETS, cost, null, true);
+        addIfPositive(lines, paidInCash ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, cost, null, false);
+        post("ASSET_ACQUISITION", assetId, memo, null, lines, branchId);
+    }
+
+    /**
+     * An asset that came in on a purchase order: the receipt already put its net cost into Inventory (and the tax into Input
+     * VAT), so this only moves the cost from Inventory to Fixed Assets — nothing is counted twice.
+     */
+    @Transactional
+    public void postAssetFromPurchase(Long purchaseOrderLineId, String memo, BigDecimal cost, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.FIXED_ASSETS, cost, null, true);
+        addIfPositive(lines, AccountService.INVENTORY, cost, "Moved out of inventory", false);
+        post("ASSET_FROM_PURCHASE", purchaseOrderLineId, memo, null, lines, branchId);
+    }
+
+    /** One month's depreciation for all assets of one branch together: expense up, accumulated depreciation up. {@code periodKey} is yyyyMM. */
+    @Transactional
+    public void postAssetDepreciation(Long periodKey, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.DEPRECIATION_EXPENSE, amount, null, true);
+        addIfPositive(lines, AccountService.ACCUMULATED_DEPRECIATION, amount, null, false);
+        post("ASSET_DEPRECIATION", periodKey, memo, null, lines, branchId);
+    }
+
+    /**
+     * Selling or writing off a fixed asset: cost leaves Fixed Assets, its accumulated depreciation is cleared, the
+     * proceeds come in as cash, and the difference to book value is a loss (debit) or gain (credit).
+     */
+    @Transactional
+    public void postAssetDisposal(Long assetId, String memo, BigDecimal cost, BigDecimal accumulatedDepreciation, BigDecimal proceeds, Long branchId) {
+        BigDecimal bookValue = cost.subtract(accumulatedDepreciation);
+        BigDecimal gainLoss = proceeds.subtract(bookValue); // positive = gain
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, proceeds, "Disposal proceeds", true);
+        addIfPositive(lines, AccountService.ACCUMULATED_DEPRECIATION, accumulatedDepreciation, null, true);
+        addSigned(lines, AccountService.ASSET_DISPOSAL_GAIN_LOSS, gainLoss, false, gainLoss.signum() >= 0 ? "Gain on disposal" : "Loss on disposal");
+        addIfPositive(lines, AccountService.FIXED_ASSETS, cost, null, false);
+        post("ASSET_DISPOSAL", assetId, memo, null, lines, branchId);
+    }
+
+    // ---- Payroll (com.posapp.hr) ----
+
+    /**
+     * Approving a payroll run (one entry per branch): gross pay and the employer's contributions are the cost; what is
+     * withheld from employees plus the employer's contributions are owed to the tax and social-security authorities, and
+     * the net salaries are owed to the employees until they are paid.
+     * {@code socialSecurity} and {@code healthOther} include both the employee and the employer parts.
+     */
+    @Transactional
+    public void postPayrollApproval(Long runId, String memo, BigDecimal gross, BigDecimal employerContributions, BigDecimal paye,
+                                    BigDecimal socialSecurity, BigDecimal healthOther, BigDecimal netPay, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.SALARIES_EXPENSE, gross, null, true);
+        addIfPositive(lines, AccountService.EMPLOYER_CONTRIBUTIONS_EXPENSE, employerContributions, null, true);
+        addIfPositive(lines, AccountService.PAYE_PAYABLE, paye, null, false);
+        addIfPositive(lines, AccountService.SOCIAL_SECURITY_PAYABLE, socialSecurity, null, false);
+        addIfPositive(lines, AccountService.HEALTH_OTHER_PAYROLL_PAYABLE, healthOther, null, false);
+        addIfPositive(lines, AccountService.SALARIES_PAYABLE, netPay, null, false);
+        post("PAYROLL", runId, memo, null, lines, branchId);
+    }
+
+    /** Paying out the net salaries of a payroll run (one entry per branch): the salaries owed are settled from cash. */
+    @Transactional
+    public void postPayrollPayment(Long runId, String memo, BigDecimal netPay, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.SALARIES_PAYABLE, netPay, null, true);
+        addIfPositive(lines, AccountService.CASH, netPay, null, false);
+        post("PAYROLL_PAYMENT", runId, memo, null, lines, branchId);
     }
 
     // ---- Expenses / Incomes (com.posapp.accounting itself) ----
@@ -513,6 +686,13 @@ public class AccountingService {
             }
         }
         return total.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** Adds a line on its normal side when positive, or on the opposite side when negative (a reversal); zero adds nothing. */
+    private void addSigned(List<LineSpec> lines, String wellKnownKey, BigDecimal amount, boolean normallyDebit, String description) {
+        if (amount == null || amount.signum() == 0) return;
+        boolean debit = amount.signum() > 0 ? normallyDebit : !normallyDebit;
+        lines.add(new LineSpec(wellKnownKey, amount.abs(), description, debit, null));
     }
 
     private void addIfPositive(List<LineSpec> lines, String wellKnownKey, BigDecimal amount, String description, boolean debit) {

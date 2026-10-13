@@ -9,6 +9,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -73,4 +74,28 @@ public class AppUser extends BaseEntity {
     @CollectionTable(name = "user_branches", joinColumns = @JoinColumn(name = "app_user_id"))
     @Column(name = "branch_id")
     private Set<Long> branchIds = new HashSet<>();
+
+    /**
+     * Optional admin-defined role (e.g. Manager, Accountant) whose area grants are added to this user's access; see
+     * {@link CustomRole}. Ignored for an ADMIN. Eager for the same reason as {@link #permissions}.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "custom_role_id")
+    private CustomRole customRole;
+
+    /** The grant codes (with MANAGE implying VIEW) this user holds through their custom role; empty if none or the role is inactive. */
+    public Set<String> effectiveGrants() {
+        if (customRole == null || !customRole.isActive()) return new HashSet<>();
+        return AccessGrants.effective(customRole.getGrants());
+    }
+
+    /** True for an ADMIN, or a user whose custom role grants at least VIEW on {@code area}. */
+    public boolean canView(AccessArea area) {
+        return role == Role.ADMIN || effectiveGrants().contains(AccessGrants.code(area, AccessLevel.VIEW));
+    }
+
+    /** True for an ADMIN, or a user whose custom role grants MANAGE on {@code area}. */
+    public boolean canManage(AccessArea area) {
+        return role == Role.ADMIN || effectiveGrants().contains(AccessGrants.code(area, AccessLevel.MANAGE));
+    }
 }

@@ -24,7 +24,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/purchase-orders")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class PurchaseOrderController {
 
     private final PurchaseOrderService purchaseOrderService;
@@ -45,26 +45,31 @@ public class PurchaseOrderController {
         return purchaseOrderService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public PurchaseOrderDto create(@Valid @RequestBody PurchaseOrderRequest request) {
         return purchaseOrderService.createDraft(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PutMapping("/{id}")
     public PurchaseOrderDto update(@PathVariable Long id, @Valid @RequestBody PurchaseOrderRequest request) {
         return purchaseOrderService.updateDraft(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/send")
     public PurchaseOrderDto send(@PathVariable Long id) {
         return purchaseOrderService.send(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/cancel")
     public PurchaseOrderDto cancel(@PathVariable Long id) {
         return purchaseOrderService.cancel(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/receive")
     public PurchaseOrderDto receive(@PathVariable Long id, @Valid @RequestBody ReceivePurchaseOrderRequest request) {
         PurchaseOrderDto po = purchaseOrderService.receiveLines(id, request);

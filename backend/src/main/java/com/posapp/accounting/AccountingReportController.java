@@ -66,7 +66,7 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping("/api/accounting/reports")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_REPORTS_VIEW') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class AccountingReportController {
 
     private final AccountingReportService reportService;

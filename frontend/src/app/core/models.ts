@@ -9,6 +9,10 @@ export interface LoginResponse {
   role: 'ADMIN' | 'CASHIER';
   /** Fourier: "Build a full permissions system" — this user's additive grants, so the UI can gate without a separate call. */
   permissions: Permission[];
+  /** Custom roles: the access areas this user's role grants, as codes like 'INVENTORY_MANAGE' / 'REPORTS_VIEW' (empty for admins and plain cashiers). */
+  areas?: string[];
+  /** Name of the custom role, when one is assigned. */
+  customRoleName?: string | null;
 }
 
 export interface Category {
@@ -102,6 +106,10 @@ export interface AppUser {
   permissions: Permission[];
   /** Branches this account is limited to; empty = unrestricted (admins are never limited). */
   branchIds?: number[];
+  /** Custom roles: the admin-defined role assigned to this account, if any. */
+  customRoleId?: number | null;
+  customRoleName?: string | null;
+  areas?: string[];
 }
 
 export interface DashboardSummary {
@@ -431,6 +439,8 @@ export interface PaymentMethodOption {
   cash: boolean;
   /** True if this method represents selling on store credit rather than an immediate tender. See backend PaymentMethodEntity.credit's javadoc. */
   credit: boolean;
+  /** Hotel module: this method puts the amount on an in-house guest's room bill ("Charge to room"). */
+  roomCharge?: boolean;
   /** Task: "Make payment method order dynamic so I can set the first, second on checkout screen" — lower shows first; ties break by name. */
   sortOrder: number;
 }
@@ -645,6 +655,14 @@ export interface StoreSettings {
   notificationsEmail: string | null;
   /** WEIGHTED_AVERAGE / LAST_PURCHASE / MANUAL — how a product's cost follows purchases. */
   costingMethod?: 'WEIGHTED_AVERAGE' | 'LAST_PURCHASE' | 'MANUAL';
+  /** Daily low-stock digest email to notificationsEmail. */
+  lowStockDigestEnabled?: boolean;
+  /** Daily automatic DRAFT purchase requisitions for products at/below their reorder level. */
+  autoRequisitionEnabled?: boolean;
+  /** "HH:mm" in the store time zone, from which the daily stock jobs run. */
+  stockJobTime?: string;
+  /** ISO date the daily stock jobs last ran, or null. */
+  stockJobLastRun?: string | null;
 }
 
 // ---- Accounting (Admin > Accounting) ----
@@ -2305,6 +2323,8 @@ export interface RestaurantOrder {
   total: number;
   paidTotal: number;
   balanceDue: number;
+  /** Hotel module: the room-service / charged-to-room booking, else null. */
+  roomBookingId?: number | null;
 }
 
 /** One row on the Kitchen Display — one order line, with just enough order/table context for the kitchen to know where it's going. */

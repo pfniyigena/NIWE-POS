@@ -48,19 +48,19 @@ public class CatalogController {
     }
 
     @PostMapping("/categories")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public CategoryDto createCategory(@Valid @RequestBody CategoryRequest request) {
         return catalogService.createCategory(request);
     }
 
     @PutMapping("/categories/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public CategoryDto updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
         return catalogService.updateCategory(id, request);
     }
 
     @DeleteMapping("/categories/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public void deleteCategory(@PathVariable Long id) {
         catalogService.deleteCategory(id);
     }
@@ -73,19 +73,19 @@ public class CatalogController {
     }
 
     @PostMapping("/brands")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public BrandDto createBrand(@Valid @RequestBody BrandRequest request) {
         return catalogService.createBrand(request);
     }
 
     @PutMapping("/brands/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public BrandDto updateBrand(@PathVariable Long id, @Valid @RequestBody BrandRequest request) {
         return catalogService.updateBrand(id, request);
     }
 
     @DeleteMapping("/brands/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public void deleteBrand(@PathVariable Long id) {
         catalogService.deleteBrand(id);
     }
@@ -105,7 +105,7 @@ public class CatalogController {
      * requested here.
      */
     @GetMapping("/products/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public PageResponse<ProductDto> listAllProducts(@RequestParam(required = false) String q,
                                                       @RequestParam(defaultValue = "0") int page,
                                                       @RequestParam(defaultValue = "50") int size) {
@@ -114,7 +114,7 @@ public class CatalogController {
 
     /** Single-product fetch for the admin edit form — see CatalogService.getByIdForAdmin's javadoc. */
     @GetMapping("/products/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public ProductDto getProduct(@PathVariable Long id) {
         return catalogService.getByIdForAdmin(id);
     }
@@ -130,20 +130,20 @@ public class CatalogController {
     }
 
     @GetMapping("/products/low-stock")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public List<ProductDto> listLowStock() {
         return catalogService.listLowStockPrimary();
     }
 
     /** Multi-warehouse phase 1 — low stock inside one warehouse; see CatalogService#listLowStockInWarehouse. */
     @GetMapping("/products/low-stock-by-warehouse")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public List<WarehouseLowStockRow> listLowStockInWarehouse(@RequestParam Long warehouseId) {
         return catalogService.listLowStockInWarehouse(warehouseId);
     }
 
     @PostMapping("/products")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public ProductDto createProduct(@Valid @RequestBody ProductRequest request) {
         ProductDto dto = catalogService.createProduct(request);
         // Fourier: "when creating product if the stock quantity is set then it should impact
@@ -155,13 +155,13 @@ public class CatalogController {
     }
 
     @PutMapping("/products/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public ProductDto updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         return catalogService.updateProduct(id, request);
     }
 
     @DeleteMapping("/products/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public void deactivateProduct(@PathVariable Long id) {
         catalogService.deactivateProduct(id);
     }
@@ -169,20 +169,20 @@ public class CatalogController {
     /** Fourier: "barcode/label generation for products that don't already carry a manufacturer barcode" — see CatalogService.generateBarcode's own javadoc. */
     /** The variants generated from a template product. */
     @GetMapping("/products/{id}/variants")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public List<ProductDto> listVariants(@PathVariable Long id) {
         return catalogService.listVariants(id);
     }
 
     /** Generates variants (Size x Colour ...) from a template product — see CatalogService#generateVariants. */
     @PostMapping("/products/{id}/variants")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public com.posapp.catalog.dto.VariantResultDto generateVariants(@PathVariable Long id, @Valid @RequestBody com.posapp.catalog.dto.VariantRequest request) {
         return catalogService.generateVariants(id, request);
     }
 
     @PostMapping("/products/{id}/generate-barcode")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     public ProductDto generateBarcode(@PathVariable Long id) {
         return catalogService.generateBarcode(id);
     }

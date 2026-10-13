@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '../core/auth.service';
+import { ModuleApiService } from '../core/api/module-api.service';
 import { ChartSetupApiService, ChartCountryOption } from '../core/api/chart-setup-api.service';
 
 /**
@@ -66,7 +68,7 @@ export class ChartCountrySetupComponent {
   saving = false;
   error: string | null = null;
 
-  constructor(private chartSetup: ChartSetupApiService, private router: Router) {
+  constructor(private chartSetup: ChartSetupApiService, private router: Router, private auth: AuthService, private modules: ModuleApiService) {
     // Pre-select whatever app.accounting.chart-country already suggests — a sensible default to
     // land on, not a blank form, same courtesy as every other settings screen in this app. The
     // admin can still pick the other one before confirming.
@@ -75,7 +77,7 @@ export class ChartCountrySetupComponent {
         if (!status.needsSelection) {
           // Already set up by the time this screen loaded (e.g. a sale forced the lazy fallback
           // seed, or another tab already finished the wizard) — nothing left to do here.
-          this.router.navigate(['/registers']);
+          this.goHome();
           return;
         }
         this.selected = status.suggestedCountry;
@@ -92,12 +94,17 @@ export class ChartCountrySetupComponent {
     this.chartSetup.select(this.selected).subscribe({
       next: () => {
         this.saving = false;
-        this.router.navigate(['/registers']);
+        this.goHome();
       },
       error: (err) => {
         this.saving = false;
         this.error = err?.error?.message ?? 'Could not set up the chart of accounts';
       },
     });
+  }
+
+  /** Admin landing page: the POS registers when the POS module is on, otherwise the dashboard. */
+  private goHome(): void {
+    this.modules.whenLoaded().subscribe(() => this.router.navigate([this.auth.homePath(this.modules.on('POS'))]));
   }
 }

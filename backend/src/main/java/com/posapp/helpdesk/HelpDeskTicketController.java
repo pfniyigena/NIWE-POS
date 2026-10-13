@@ -17,7 +17,7 @@ import java.util.List;
 /** Admin > Help Desk > Tickets — ADMIN-only, same tier as Subscriptions/Purchases/Sales. */
 @RestController
 @RequestMapping("/api/helpdesk/tickets")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class HelpDeskTicketController {
 
     private final HelpDeskTicketService service;
@@ -41,36 +41,43 @@ public class HelpDeskTicketController {
         return service.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public HelpDeskTicketDto create(@Valid @RequestBody HelpDeskTicketRequest request) {
         return service.createByStaff(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PutMapping("/{id}")
     public HelpDeskTicketDto update(@PathVariable Long id, @Valid @RequestBody HelpDeskTicketRequest request) {
         return service.update(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/assign")
     public HelpDeskTicketDto assign(@PathVariable Long id, @RequestBody(required = false) AssignTicketRequest request) {
         return service.assign(id, request != null ? request.getAssignedToUserId() : null);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/start")
     public HelpDeskTicketDto start(@PathVariable Long id) {
         return service.start(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/resolve")
     public HelpDeskTicketDto resolve(@PathVariable Long id, @RequestBody(required = false) ResolveTicketRequest request) {
         return service.resolve(id, request != null ? request.getResolutionNotes() : null);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/close")
     public HelpDeskTicketDto close(@PathVariable Long id) {
         return service.close(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/reopen")
     public HelpDeskTicketDto reopen(@PathVariable Long id) {
         return service.reopen(id);
@@ -88,6 +95,7 @@ public class HelpDeskTicketController {
         return service.listComments(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/comments")
     public HelpDeskCommentDto addComment(@PathVariable Long id, @Valid @RequestBody AddHelpDeskCommentRequest request) {
         return service.addComment(id, request);

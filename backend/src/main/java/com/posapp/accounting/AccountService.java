@@ -99,6 +99,37 @@ public class AccountService {
      */
     public static final String CUSTOMER_CREDIT_PAYABLE = "CUSTOMER_CREDIT_PAYABLE";
 
+    /** Hotel module: income from room nights and other hotel services (room charges, late check-out, laundry...). Added to existing charts the same zero-migration way as {@link #CUSTOMER_CREDIT_PAYABLE}. */
+    public static final String ROOM_REVENUE = "ROOM_REVENUE";
+    /** Hotel module: money received from a guest before it is applied to their bill (booking deposits). Cleared against the guest's bill at check-out, or refunded. */
+    public static final String GUEST_DEPOSITS = "GUEST_DEPOSITS";
+    /** Hotel module: the value of rooms booked but not yet stayed in (only used when the hotel posts "at booking and at check-out"). Released to room revenue at check-out. */
+    public static final String UNEARNED_ROOM_REVENUE = "UNEARNED_ROOM_REVENUE";
+
+    /** Assets Management module: the cost of equipment, vehicles, furniture and other long-lived assets (at cost, before depreciation). */
+    public static final String FIXED_ASSETS = "FIXED_ASSETS";
+    /** Assets Management module: depreciation charged so far on fixed assets (a credit balance that reduces their value). */
+    public static final String ACCUMULATED_DEPRECIATION = "ACCUMULATED_DEPRECIATION";
+    /** Assets Management module: the monthly depreciation cost. */
+    public static final String DEPRECIATION_EXPENSE = "DEPRECIATION_EXPENSE";
+    /** Assets Management module: the difference between what a disposed asset sold for and its book value (loss = debit, gain = credit). */
+    public static final String ASSET_DISPOSAL_GAIN_LOSS = "ASSET_DISPOSAL_GAIN_LOSS";
+
+    /** Payroll (HR modules): gross salaries and wages cost. */
+    public static final String SALARIES_EXPENSE = "SALARIES_EXPENSE";
+    /** Payroll: employer social-security / payroll-tax contributions (a cost on top of gross pay). */
+    public static final String EMPLOYER_CONTRIBUTIONS_EXPENSE = "EMPLOYER_CONTRIBUTIONS_EXPENSE";
+    /** Payroll: income tax (PAYE / IRPP) withheld from employees, owed to the tax authority. */
+    public static final String PAYE_PAYABLE = "PAYE_PAYABLE";
+    /** Payroll: social-security contributions (RSSB / CNPS) owed. */
+    public static final String SOCIAL_SECURITY_PAYABLE = "SOCIAL_SECURITY_PAYABLE";
+    /** Payroll: health insurance, payroll taxes and other fixed deductions owed to third parties. */
+    public static final String HEALTH_OTHER_PAYROLL_PAYABLE = "HEALTH_OTHER_PAYROLL_PAYABLE";
+    /** Payroll: net salaries approved but not yet paid to employees. */
+    public static final String SALARIES_PAYABLE = "SALARIES_PAYABLE";
+    /** Installments: interest and late fees collected from customers paying an invoice in instalments. */
+    public static final String INSTALLMENT_INCOME = "INSTALLMENT_INCOME";
+
     /** One row of a country's starter chart. {@code wellKnownKey} is null for every account nothing posts to automatically — see Account.wellKnownKey's own javadoc. The 5-arg constructor (no key) is what every such row below actually uses; the 6-arg canonical form is only for a row AccountingService/AccountingReportService resolve by key. */
     private record ChartRow(String wellKnownKey, String code, String name, AccountType type, boolean systemAccount, String description) {
         private ChartRow(String code, String name, AccountType type, boolean systemAccount, String description) {
@@ -120,19 +151,29 @@ public class AccountService {
             new ChartRow(INPUT_VAT_RECOVERABLE, "1150", "Input VAT Recoverable (RRA)", AccountType.ASSET, true,
                     "VAT paid on purchases, reclaimable against VAT collected on sales (see VAT Payable) — not netted automatically, reconcile the two when filing with RRA."),
             new ChartRow(INVENTORY, "1200", "Inventory", AccountType.ASSET, true, null),
+            new ChartRow(FIXED_ASSETS, "1500", "Fixed Assets (Property, Plant and Equipment)", AccountType.ASSET, true,
+                    "Assets Management: cost of equipment, vehicles, furniture and other long-lived assets, before depreciation."),
+            new ChartRow(ACCUMULATED_DEPRECIATION, "1590", "Accumulated Depreciation", AccountType.ASSET, true,
+                    "Assets Management: depreciation charged so far on fixed assets. Normally a credit balance that reduces the value of the assets above."),
             new ChartRow(ACCOUNTS_PAYABLE, "2000", "Accounts Payable", AccountType.LIABILITY, true, null),
             new ChartRow(TAX_PAYABLE, "2100", "VAT Payable (RRA)", AccountType.LIABILITY, true, RWANDA_VAT_DESCRIPTION),
             new ChartRow(ACCRUED_MANUFACTURING_OVERHEAD, "2200", "Accrued Manufacturing Overhead", AccountType.LIABILITY, true, null),
-            new ChartRow("2300", "PAYE Payable (RRA)", AccountType.LIABILITY, false,
+            new ChartRow(PAYE_PAYABLE, "2300", "PAYE Payable (RRA)", AccountType.LIABILITY, false,
                     "Employee income tax withheld from payroll under Rwanda's PAYE bands (0/10/20/30%) — remitted to RRA by the 15th of the following month."),
+            new ChartRow(SALARIES_PAYABLE, "2350", "Salaries Payable", AccountType.LIABILITY, true,
+                    "Payroll: net salaries approved but not yet paid out to employees."),
             new ChartRow("2400", "Withholding Tax Payable (RRA)", AccountType.LIABILITY, false,
                     "Tax withheld on the business's own payments (e.g. 15% on fees to an unregistered supplier, 5% on commercial imports) — owed to RRA until remitted."),
-            new ChartRow("2500", "RSSB Contributions Payable", AccountType.LIABILITY, false,
+            new ChartRow(SOCIAL_SECURITY_PAYABLE, "2500", "RSSB Contributions Payable", AccountType.LIABILITY, false,
                     "Employer + employee pension, maternity and occupational-hazard contributions owed to RSSB until remitted."),
-            new ChartRow("2600", "Staff Medical Insurance Payable (CBHIS)", AccountType.LIABILITY, false,
+            new ChartRow(HEALTH_OTHER_PAYROLL_PAYABLE, "2600", "Staff Medical Insurance Payable (CBHIS)", AccountType.LIABILITY, false,
                     "Staff medical insurance (CBHIS) withheld from payroll, owed until remitted."),
             new ChartRow("2700", "Dividends Payable", AccountType.LIABILITY, false,
                     "Declared dividends not yet paid out, net of the 15% withholding tax due on distribution."),
+            new ChartRow(GUEST_DEPOSITS, "2850", "Guest Deposits", AccountType.LIABILITY, true,
+                    "Hotel: deposits received from guests before they are applied to a bill."),
+            new ChartRow(UNEARNED_ROOM_REVENUE, "2860", "Unearned Room Revenue", AccountType.LIABILITY, true,
+                    "Hotel: value of rooms booked but not yet stayed in (used by the 'post at booking and at check-out' mode)."),
             new ChartRow(CUSTOMER_CREDIT_PAYABLE, "2800", "Customer Credit Payable", AccountType.LIABILITY, true,
                     "Store credit owed back to customers — e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(OWNERS_EQUITY, "3000", "Owner's Equity", AccountType.EQUITY, false, null),
@@ -141,17 +182,26 @@ public class AccountService {
             new ChartRow("3200", "Retained Earnings", AccountType.EQUITY, false,
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),
             new ChartRow(SALES_REVENUE, "4000", "Sales Revenue", AccountType.REVENUE, true, null),
+            new ChartRow(ROOM_REVENUE, "4010", "Hotel Revenue (Rooms and Services)", AccountType.REVENUE, true, null),
             new ChartRow("4100", "Other Income", AccountType.REVENUE, false,
                     "Income outside core sales — interest earned, asset disposals, and similar."),
+            new ChartRow(INSTALLMENT_INCOME, "4150", "Instalment Interest and Late-Fee Income", AccountType.REVENUE, true,
+                    "Interest and late fees collected on customer instalment plans."),
             new ChartRow(COST_OF_GOODS_SOLD, "5000", "Cost of Goods Sold", AccountType.EXPENSE, true, null),
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "5100", "Inventory Shrinkage / Write-off Expense", AccountType.EXPENSE, true, null),
             new ChartRow("5200", "Operating Expenses", AccountType.EXPENSE, false, null),
             new ChartRow("5300", "Rent Expense", AccountType.EXPENSE, false, "Premises rent."),
-            new ChartRow("5400", "Salaries & Wages Expense", AccountType.EXPENSE, false, "Gross payroll cost, before PAYE/RSSB withholding."),
+            new ChartRow(SALARIES_EXPENSE, "5400", "Salaries & Wages Expense", AccountType.EXPENSE, false, "Gross payroll cost, before PAYE/RSSB withholding."),
+            new ChartRow(EMPLOYER_CONTRIBUTIONS_EXPENSE, "5410", "Employer Contributions Expense", AccountType.EXPENSE, true,
+                    "Payroll: the employer's share of pension, maternity, occupational-hazard and similar contributions."),
             new ChartRow("5500", "Utilities Expense", AccountType.EXPENSE, false, "Water, electricity and similar utilities."),
             new ChartRow("5600", "Communication Expense", AccountType.EXPENSE, false, "Airtime, internet and similar communication costs."),
             new ChartRow("5700", "Transport & Fuel Expense", AccountType.EXPENSE, false, "Vehicle fuel and transport costs."),
             new ChartRow("5800", "Professional & Legal Fees", AccountType.EXPENSE, false, "Accounting, legal and consulting fees."),
+            new ChartRow(DEPRECIATION_EXPENSE, "5950", "Depreciation Expense", AccountType.EXPENSE, true,
+                    "Assets Management: the monthly depreciation charge on fixed assets."),
+            new ChartRow(ASSET_DISPOSAL_GAIN_LOSS, "5960", "Gain / Loss on Asset Disposal", AccountType.EXPENSE, true,
+                    "Assets Management: loss (debit) or gain (credit) when a fixed asset is sold or written off."),
             new ChartRow("5850", "Licenses & Government Fees", AccountType.EXPENSE, false, "District trading licence and other government fees."),
             new ChartRow(SUSPENSE, "5900", "Suspense / Rounding Differences", AccountType.EXPENSE, true, null)
     );
@@ -170,37 +220,52 @@ public class AccountService {
             new ChartRow(INPUT_VAT_RECOVERABLE, "4452", "État, TVA récupérable (Input VAT Recoverable)", AccountType.ASSET, true,
                     "TVA paid on purchases, reclaimable against TVA collected on sales (État, TVA facturée) — SYSCOHADA's own 445 'État' sub-account for recoverable VAT; not netted automatically, reconcile the two when filing with the DGI."),
             new ChartRow(INVENTORY, "311", "Marchandises (Inventory)", AccountType.ASSET, true, null),
+            new ChartRow(FIXED_ASSETS, "24", "Matériel, mobilier et agencements (Fixed Assets)", AccountType.ASSET, true,
+                    "Assets Management: cost of equipment, vehicles, furniture and other long-lived assets, before depreciation (SYSCOHADA class 2)."),
+            new ChartRow(ACCUMULATED_DEPRECIATION, "284", "Amortissements du matériel (Accumulated Depreciation)", AccountType.ASSET, true,
+                    "Assets Management: depreciation charged so far on fixed assets. Normally a credit balance that reduces the value of the assets above."),
             new ChartRow(ACCOUNTS_PAYABLE, "401", "Fournisseurs (Accounts Payable)", AccountType.LIABILITY, true, null),
             new ChartRow(TAX_PAYABLE, "4431", "État, TVA facturée (VAT Payable)", AccountType.LIABILITY, true,
                     "18% TVA collected on sales, not yet remitted to Chad's Direction Générale des Impôts (DGI). Input TVA paid on purchases is tracked separately in État, TVA récupérable, not netted against this account automatically — reconcile the two when filing."),
             new ChartRow(ACCRUED_MANUFACTURING_OVERHEAD, "408", "Fournisseurs, factures non parvenues (Accrued Manufacturing Overhead)", AccountType.LIABILITY, true, null),
-            new ChartRow("4472", "Impôts sur salaires — IRPP (Payroll Income Tax Payable)", AccountType.LIABILITY, false,
+            new ChartRow(PAYE_PAYABLE, "4472", "Impôts sur salaires — IRPP (Payroll Income Tax Payable)", AccountType.LIABILITY, false,
                     "Personal income tax (IRPP) withheld from employee pay — owed to the DGI until remitted."),
             // Fourier: hit "value too long for type character varying(255)" on this exact row —
             // Account.description is a plain varchar(255) (no TEXT override, unlike e.g.
             // StoreSettings.logoDataUrl), and the original wording here ran to 277 characters.
             // Shortened to fit comfortably under that limit while keeping the same caveat.
-            new ChartRow("4473", "Taxe sur les salaires et apprentissage (Payroll & Apprenticeship Tax Payable)", AccountType.LIABILITY, false,
+            new ChartRow(HEALTH_OTHER_PAYROLL_PAYABLE, "4473", "Taxe sur les salaires et apprentissage (Payroll & Apprenticeship Tax Payable)", AccountType.LIABILITY, false,
                     "Chad's 7.5% employer payroll tax plus the 1.2% FONAP apprenticeship levy, grouped in one account — SYSCOHADA has no single standard code for this pair; confirm with a local accountant before a statutory filing."),
-            new ChartRow("431", "Sécurité sociale — CNPS (CNPS Contributions Payable)", AccountType.LIABILITY, false,
+            new ChartRow(SOCIAL_SECURITY_PAYABLE, "431", "Sécurité sociale — CNPS (CNPS Contributions Payable)", AccountType.LIABILITY, false,
                     "Employer (16.5%) + employee (3.5%) CNPS contributions owed until remitted."),
+            new ChartRow(SALARIES_PAYABLE, "422", "Personnel, rémunérations dues (Salaries Payable)", AccountType.LIABILITY, true,
+                    "Payroll: net salaries approved but not yet paid out to employees."),
             new ChartRow("465", "Associés, dividendes à payer (Dividends Payable)", AccountType.LIABILITY, false,
                     "Declared dividends not yet paid out."),
+            new ChartRow(GUEST_DEPOSITS, "4191", "Clients, avances reçues (Guest Deposits)", AccountType.LIABILITY, true,
+                    "Hotel: deposits received from guests before they are applied to a bill."),
+            new ChartRow(UNEARNED_ROOM_REVENUE, "477", "Produits constatés d'avance (Unearned Room Revenue)", AccountType.LIABILITY, true,
+                    "Hotel: value of rooms booked but not yet stayed in (used by the 'post at booking and at check-out' mode)."),
             new ChartRow(CUSTOMER_CREDIT_PAYABLE, "419", "Clients créditeurs (Customer Credit Payable)", AccountType.LIABILITY, true,
                     "SYSCOHADA's own account for a customer with a credit balance — store credit owed back, e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(OWNERS_EQUITY, "101", "Capital social (Owner's Equity)", AccountType.EQUITY, false, null),
             new ChartRow("121", "Report à nouveau (Retained Earnings)", AccountType.EQUITY, false,
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),
             new ChartRow(SALES_REVENUE, "701", "Ventes de marchandises (Sales Revenue)", AccountType.REVENUE, true, null),
+            new ChartRow(ROOM_REVENUE, "706", "Services vendus (Hotel Revenue — Rooms and Services)", AccountType.REVENUE, true, null),
             new ChartRow("758", "Produits divers (Other Income)", AccountType.REVENUE, false,
                     "Income outside core sales — interest earned, asset disposals, and similar."),
+            new ChartRow(INSTALLMENT_INCOME, "771", "Intérêts de prêts et créances (Instalment Interest and Late-Fee Income)", AccountType.REVENUE, true,
+                    "Interest and late fees collected on customer instalment plans."),
             new ChartRow(COST_OF_GOODS_SOLD, "601", "Achats de marchandises (Cost of Goods Sold)", AccountType.EXPENSE, true,
                     "This app posts cost of goods sold directly per sale rather than through SYSCOHADA's own period-end stock-variation mechanic (603) — 601 is used here as the straightforward 'cost of merchandise sold' account."),
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "658", "Charges diverses (Inventory Shrinkage / Write-off Expense)", AccountType.EXPENSE, true, null),
             new ChartRow("628", "Autres charges externes (Operating Expenses)", AccountType.EXPENSE, false, null),
             new ChartRow("622", "Locations et charges locatives (Rent Expense)", AccountType.EXPENSE, false, "Premises rent."),
-            new ChartRow("661", "Rémunérations directes versées au personnel (Salaries & Wages Expense)", AccountType.EXPENSE, false,
+            new ChartRow(SALARIES_EXPENSE, "661", "Rémunérations directes versées au personnel (Salaries & Wages Expense)", AccountType.EXPENSE, false,
                     "Gross payroll cost, before IRPP/CNPS withholding."),
+            new ChartRow(EMPLOYER_CONTRIBUTIONS_EXPENSE, "664", "Charges sociales (Employer Contributions Expense)", AccountType.EXPENSE, true,
+                    "Payroll: the employer's CNPS contribution, payroll tax and FONAP levy."),
             new ChartRow("605", "Eau et électricité (Utilities Expense)", AccountType.EXPENSE, false, "Water, electricity and similar utilities."),
             new ChartRow("6281", "Frais de télécommunications (Communication Expense)", AccountType.EXPENSE, false, "Telephone, internet and similar communication costs."),
             new ChartRow("6181", "Voyages et déplacements (Transport & Fuel Expense)", AccountType.EXPENSE, false,
@@ -208,6 +273,10 @@ public class AccountService {
             new ChartRow("6324", "Honoraires (Professional & Legal Fees)", AccountType.EXPENSE, false, "Accounting, legal and consulting fees."),
             new ChartRow("6412", "Patentes, licences et taxes annexes (Licenses & Government Fees)", AccountType.EXPENSE, false,
                     "Chad's annual business licence (patente) and other government fees."),
+            new ChartRow(DEPRECIATION_EXPENSE, "681", "Dotations aux amortissements d'exploitation (Depreciation Expense)", AccountType.EXPENSE, true,
+                    "Assets Management: the monthly depreciation charge on fixed assets."),
+            new ChartRow(ASSET_DISPOSAL_GAIN_LOSS, "81", "Résultat de cession d'immobilisations (Gain / Loss on Asset Disposal)", AccountType.EXPENSE, true,
+                    "Assets Management: loss (debit) or gain (credit) when a fixed asset is sold or written off. SYSCOHADA splits this between accounts 81 and 82; confirm with a local accountant before a statutory filing."),
             new ChartRow(SUSPENSE, "471", "Comptes d'attente (Suspense / Rounding Differences)", AccountType.EXPENSE, true, null)
     );
 

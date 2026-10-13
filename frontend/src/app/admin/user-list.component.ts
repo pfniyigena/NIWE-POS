@@ -23,6 +23,7 @@ import { AuthService } from '../core/auth.service';
             <th>Username</th>
             <th>Full name</th>
             <th>Role</th>
+            <th>Custom role</th>
             <th>Status</th>
             <th>Extra permissions</th>
             <th>PIN</th>
@@ -34,6 +35,10 @@ import { AuthService } from '../core/auth.service';
             <td>{{ u.username }}</td>
             <td>{{ u.fullName }}</td>
             <td>{{ u.role }}</td>
+            <td>
+              <span *ngIf="u.customRoleName">{{ u.customRoleName }}</span>
+              <span class="text-muted" *ngIf="!u.customRoleName">—</span>
+            </td>
             <td>
               <span class="badge badge-success" *ngIf="u.active">Active</span>
               <span class="badge badge-secondary" *ngIf="!u.active">Inactive</span>
@@ -54,7 +59,7 @@ import { AuthService } from '../core/auth.service';
             </td>
           </tr>
           <tr *ngIf="users.length === 0">
-            <td colspan="7" class="text-muted">No staff accounts yet.</td>
+            <td colspan="8" class="text-muted">No staff accounts yet.</td>
           </tr>
         </tbody>
       </table>

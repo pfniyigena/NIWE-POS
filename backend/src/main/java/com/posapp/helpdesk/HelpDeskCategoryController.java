@@ -11,7 +11,7 @@ import java.util.List;
 /** Admin > Help Desk > Categories — ADMIN-only, same tier as every other back-office module. */
 @RestController
 @RequestMapping("/api/helpdesk/categories")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class HelpDeskCategoryController {
 
     private final HelpDeskCategoryService service;
@@ -25,16 +25,19 @@ public class HelpDeskCategoryController {
         return service.listAll();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public HelpDeskCategoryDto create(@Valid @RequestBody HelpDeskCategoryRequest request) {
         return service.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PutMapping("/{id}")
     public HelpDeskCategoryDto update(@PathVariable Long id, @Valid @RequestBody HelpDeskCategoryRequest request) {
         return service.update(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);

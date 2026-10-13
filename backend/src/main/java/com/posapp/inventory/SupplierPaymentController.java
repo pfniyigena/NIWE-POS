@@ -34,13 +34,13 @@ public class SupplierPaymentController {
     }
 
     @GetMapping("/outstanding-orders")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
     public List<OutstandingPurchaseOrderDto> outstandingOrders(@PathVariable Long supplierId) {
         return supplierPaymentService.listOutstandingOrders(supplierId);
     }
 
     @PostMapping("/payments")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     public SupplierPaymentDto recordPayment(@PathVariable Long supplierId,
                                              @Valid @RequestBody RecordSupplierPaymentRequest request,
                                              @AuthenticationPrincipal AppUserPrincipal principal) {
@@ -48,7 +48,7 @@ public class SupplierPaymentController {
     }
 
     @GetMapping("/payments")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
     public List<SupplierPaymentDto> paymentHistory(@PathVariable Long supplierId) {
         return supplierPaymentService.paymentHistory(supplierId);
     }

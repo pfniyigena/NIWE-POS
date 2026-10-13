@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { ModuleApiService } from '../core/api/module-api.service';
+import { InstallmentSummaryComponent } from './installments/installment-summary.component';
 import { DashboardApiService } from '../core/api/dashboard-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
@@ -12,7 +14,7 @@ import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../co
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -51,6 +53,14 @@ import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../co
             <div class="stat-value">{{ s.lowStockProducts.length }}</div>
           </div>
         </div>
+
+        <ng-container *ngIf="modules.on('INSTALLMENTS')">
+          <div class="flex justify-between align-center mb-2">
+            <h4 style="margin:0;">Installments</h4>
+            <a class="btn btn-sm btn-outline-primary" routerLink="/admin/installments">Open</a>
+          </div>
+          <app-installment-summary></app-installment-summary>
+        </ng-container>
 
         <div class="flex justify-between align-center mb-2">
           <h4 style="margin:0;">Low-stock products</h4>
@@ -135,7 +145,8 @@ export class AdminDashboardComponent implements OnInit {
     private dashboardApi: DashboardApiService,
     private warehouseApi: WarehouseApiService,
     private catalogApi: CatalogApiService,
-    private branchApi: BranchApiService
+    private branchApi: BranchApiService,
+    public modules: ModuleApiService
   ) {}
 
   ngOnInit(): void {

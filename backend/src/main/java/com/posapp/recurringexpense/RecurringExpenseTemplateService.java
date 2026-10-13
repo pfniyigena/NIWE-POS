@@ -9,6 +9,8 @@ import com.posapp.accounting.ExpenseService;
 import com.posapp.accounting.dto.ExpenseRequest;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
+import com.posapp.modules.ModuleKey;
+import com.posapp.modules.ModuleService;
 import com.posapp.recurringexpense.dto.RecurringExpenseTemplateDto;
 import com.posapp.recurringexpense.dto.RecurringExpenseTemplateRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -37,12 +39,15 @@ public class RecurringExpenseTemplateService {
     private final CostCenterRepository costCenterRepository;
     private final ExpenseService expenseService;
     private final AuditLogService auditLogService;
+    private final ModuleService moduleService;
 
     public RecurringExpenseTemplateService(RecurringExpenseTemplateRepository repository,
                                             AccountRepository accountRepository,
                                             CostCenterRepository costCenterRepository,
                                             ExpenseService expenseService,
-                                            AuditLogService auditLogService) {
+                                            AuditLogService auditLogService,
+                                            ModuleService moduleService) {
+        this.moduleService = moduleService;
         this.repository = repository;
         this.accountRepository = accountRepository;
         this.costCenterRepository = costCenterRepository;
@@ -113,6 +118,10 @@ public class RecurringExpenseTemplateService {
     @Scheduled(cron = "0 0 6 * * *")
     @Transactional
     public void generateDueTemplates() {
+        // Settings > Modules: while Expenses is switched off nothing is generated; due templates catch up once it is switched on.
+        if (!moduleService.isEnabled(ModuleKey.EXPENSES)) {
+            return;
+        }
         LocalDate today = LocalDate.now();
         for (RecurringExpenseTemplate template : repository.findByActiveTrueAndNextRunDateLessThanEqual(today)) {
             try {

@@ -15,6 +15,8 @@ export interface CreateUserPayload {
   permissions: Permission[];
   /** Limit this account to these branches; empty/omitted = all branches. */
   branchIds?: number[];
+  /** Optional custom role (Staff > Roles); ignored for an Admin. */
+  customRoleId?: number | null;
 }
 
 export interface UpdateUserPayload {
@@ -24,6 +26,9 @@ export interface UpdateUserPayload {
   active: boolean;
   permissions: Permission[];
   branchIds?: number[];
+  customRoleId?: number | null;
+  /** Always true from the staff form: tells the backend customRoleId is intentional, so null clears the role. */
+  customRoleProvided?: boolean;
 }
 
 /** Staff/user account management — every endpoint here is ADMIN-only on the backend. */

@@ -83,7 +83,7 @@ export class CustomerFormComponent implements OnInit {
 
   /** Task: "Only Admin can enable Customer Credit" — gates the Store credit section's inputs; see the template comment above it. */
   get isAdmin(): boolean {
-    return this.auth.currentUser()?.role === 'ADMIN';
+    return this.auth.canManage('SALES');
   }
 
   ngOnInit(): void {

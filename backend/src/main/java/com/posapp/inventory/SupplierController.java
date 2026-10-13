@@ -11,7 +11,7 @@ import java.util.List;
 /** Admin-only throughout — same tier as Products/Categories, since only the "new purchase order" form (also admin-only) ever needs a supplier. */
 @RestController
 @RequestMapping("/api/suppliers")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ANY')")
 public class SupplierController {
 
     private final SupplierService supplierService;
@@ -31,16 +31,19 @@ public class SupplierController {
         return supplierService.listActive();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public SupplierDto create(@Valid @RequestBody SupplierRequest request) {
         return supplierService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PutMapping("/{id}")
     public SupplierDto update(@PathVariable Long id, @Valid @RequestBody SupplierRequest request) {
         return supplierService.update(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         supplierService.delete(id);

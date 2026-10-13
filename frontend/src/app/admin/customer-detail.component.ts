@@ -94,7 +94,7 @@ export class CustomerDetailComponent implements OnInit {
   constructor(private customerApi: CustomerApiService, private route: ActivatedRoute, private auth: AuthService) {}
 
   get isAdmin(): boolean {
-    return this.auth.currentUser()?.role === 'ADMIN';
+    return this.auth.canManage('SALES');
   }
 
   ngOnInit(): void {

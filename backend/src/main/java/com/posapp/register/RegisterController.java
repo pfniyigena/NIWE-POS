@@ -25,20 +25,20 @@ public class RegisterController {
     }
 
     /** Register add/modify is ADMIN-only (Change 4) — anyone logged in can still list registers. */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/registers")
     public RegisterDto createRegister(@Valid @RequestBody RegisterRequest request) {
         return registerService.createRegister(request);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PutMapping("/registers/{id}")
     public RegisterDto updateRegister(@PathVariable Long id, @Valid @RequestBody RegisterRequest request) {
         return registerService.updateRegister(id, request);
     }
 
     /** Opening/closing a shift is ADMIN-only (Change 3) — cashiers join an already-open shift with their PIN instead (see CashierSessionController). */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/registers/{id}/sessions")
     public SessionDto openSession(@PathVariable Long id,
                                    @Valid @RequestBody OpenSessionRequest request,
@@ -56,7 +56,7 @@ public class RegisterController {
         return registerService.getSession(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/sessions/{id}/close")
     public SessionDto closeSession(@PathVariable Long id, @Valid @RequestBody CloseSessionRequest request) {
         return registerService.closeSession(id, request);

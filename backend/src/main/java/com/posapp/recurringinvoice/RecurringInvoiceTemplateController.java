@@ -13,7 +13,7 @@ import java.util.Map;
 /** Admin > Sales > Recurring invoices — ADMIN-only, same tier as Invoices/Subscriptions. */
 @RestController
 @RequestMapping("/api/recurring-invoices")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
 public class RecurringInvoiceTemplateController {
 
     private final RecurringInvoiceTemplateService service;
@@ -33,22 +33,26 @@ public class RecurringInvoiceTemplateController {
         return service.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping
     public RecurringInvoiceTemplateDto create(@Valid @RequestBody RecurringInvoiceTemplateRequest request) {
         return service.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PutMapping("/{id}")
     public RecurringInvoiceTemplateDto update(@PathVariable Long id, @Valid @RequestBody RecurringInvoiceTemplateRequest request) {
         return service.update(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/active")
     public RecurringInvoiceTemplateDto setActive(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
         return service.setActive(id, Boolean.TRUE.equals(body.get("active")));
     }
 
     /** Generates this template's next invoice right now, without waiting for the daily scheduled sweep. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/run-now")
     public RecurringInvoiceTemplateDto runNow(@PathVariable Long id) {
         return service.runNow(id);

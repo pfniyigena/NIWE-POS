@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { ModuleApiService } from '../core/api/module-api.service';
 import { AuthService } from '../core/auth.service';
 
 @Component({
@@ -49,7 +50,7 @@ export class LoginComponent {
   error: string | null = null;
   loading = false;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private auth: AuthService, private router: Router, private modules: ModuleApiService) {}
 
   submit(): void {
     this.error = null;
@@ -60,8 +61,8 @@ export class LoginComponent {
         // Registers & Terminal is ADMIN-only now (a cashier browsing it could open the terminal
         // for a shift nobody assigned them — see app.routes.ts); land a cashier on Sessions
         // instead, where their own assigned session (if any) is what they'd want to see first.
-        const landing = this.auth.currentUser()?.role === 'ADMIN' ? '/registers' : '/sessions';
-        this.router.navigate([landing]);
+        // The POS screens exist only while the POS module is on (Settings > Modules), so wait for that to be known.
+        this.modules.whenLoaded().subscribe(() => this.router.navigate([this.auth.homePath(this.modules.on('POS'))]));
       },
       error: (err) => {
         this.loading = false;

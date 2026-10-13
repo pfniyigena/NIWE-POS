@@ -16,6 +16,13 @@
   --text: #e7e9f0;
   --muted: #8b93a6;
   --tab-inactive: #3a4256;
+  --tab-text: #e5e3f1;
+  --tab-active-bg: #fff;
+  --tab-active-text: var(--surface-alt);
+  --tab-hover-bg: #4a536b;
+  --tab-hover-text: #fff;
+  --danger-soft: #e88a98;
+  color-scheme: dark;
 
   --danger: #b23a4e;
   --danger-bg: #3a1620;
@@ -30,6 +37,110 @@
 
   --radius: 0.5rem;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ==========================================================================
+   Selectable themes. The default (no data-theme attribute, or "navy") is the
+   :root block above; every other theme only overrides the variables below.
+   ThemeService sets <html data-theme="..."> per user — see core/theme.service.ts.
+   Dark themes change just the background tones; light themes also flip text,
+   borders, status colours and the accent so contrast holds on white.
+   ========================================================================== */
+:root[data-theme='charcoal'] {
+  --bg: #121212;
+  --surface: #1c1c1e;
+  --surface-alt: #262628;
+  --tab-inactive: #3a3a3d;
+  --tab-hover-bg: #4a4a4e;
+}
+:root[data-theme='black'] {
+  --bg: #000000;
+  --surface: #0d0d0f;
+  --surface-alt: #17171a;
+  --tab-inactive: #2a2a2e;
+  --tab-hover-bg: #3a3a40;
+}
+:root[data-theme='slate'] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-alt: #273449;
+  --tab-inactive: #3b4a63;
+  --tab-hover-bg: #4b5c78;
+}
+:root[data-theme='forest'] {
+  --bg: #0f1a15;
+  --surface: #16251e;
+  --surface-alt: #1e3228;
+  --tab-inactive: #2f4a3c;
+  --tab-hover-bg: #3d5f4d;
+}
+:root[data-theme='plum'] {
+  --bg: #17121f;
+  --surface: #211a2c;
+  --surface-alt: #2b2238;
+  --tab-inactive: #43365a;
+  --tab-hover-bg: #54456f;
+}
+:root[data-theme='warm'] {
+  --bg: #1a1512;
+  --surface: #251e19;
+  --surface-alt: #30271f;
+  --tab-inactive: #4a3d32;
+  --tab-hover-bg: #5b4a3c;
+}
+:root[data-theme='white'],
+:root[data-theme='paper'],
+:root[data-theme='grey'],
+:root[data-theme='sky'] {
+  color-scheme: light;
+  --accent: #1f9d5a;
+  --accent-hover: #178048;
+  --accent-contrast: #ffffff;
+  --border: rgba(0, 0, 0, 0.12);
+  --text: #1f2430;
+  --muted: #667085;
+  --tab-inactive: #dfe3ea;
+  --tab-text: #3a4256;
+  --tab-active-bg: #ffffff;
+  --tab-active-text: #1f2430;
+  --tab-hover-bg: #cfd5df;
+  --tab-hover-text: #111827;
+  --danger: #c0364d;
+  --danger-bg: #fdecee;
+  --danger-border: #f4c2ca;
+  --danger-text: #9a1f33;
+  --danger-soft: #b23a4e;
+  --warning-bg: #fff6dc;
+  --warning-border: #f0d98a;
+  --warning-text: #7a5a05;
+  --success-bg: #e6f6ec;
+  --success-border: #b5e2c5;
+  --success-text: #14633a;
+}
+:root[data-theme='white'] {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-alt: #eef0f4;
+}
+:root[data-theme='paper'] {
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --surface-alt: #f1ece3;
+}
+:root[data-theme='grey'] {
+  --bg: #e9ecf1;
+  --surface: #f7f8fa;
+  --surface-alt: #dde1e8;
+}
+:root[data-theme='sky'] {
+  --bg: #e3f2fc;
+  --surface: #ffffff;
+  --surface-alt: #d3e9f8;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-contrast: #ffffff;
+  --tab-inactive: #c5e0f3;
+  --tab-hover-bg: #b3d5ee;
 }
 
 * {
@@ -343,7 +454,7 @@ p {
 .btn-outline-danger {
   background: transparent;
   border-color: var(--danger-border);
-  color: #e88a98;
+  color: var(--danger-soft);
 }
 .btn-outline-danger:hover {
   background: var(--danger-border);
@@ -462,7 +573,7 @@ table th {
 }
 .badge-secondary {
   background: var(--tab-inactive);
-  color: #fff;
+  color: var(--tab-text);
 }
 .badge-danger {
   background: var(--danger);
@@ -527,15 +638,15 @@ table th {
   font-size: 0.9rem;
   cursor: pointer;
   background: var(--tab-inactive);
-  color: #e5e3f1;
+  color: var(--tab-text);
 }
 .pos-tab.active {
-  background: #fff;
-  color: var(--surface-alt);
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
 }
 .pos-tab:not(.active):hover {
-  background: #4a536b;
-  color: #fff;
+  background: var(--tab-hover-bg);
+  color: var(--tab-hover-text);
 }
 .pos-new-tab {
   background: var(--accent);

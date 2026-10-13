@@ -37,7 +37,9 @@ public record RestaurantOrderDto(
         BigDecimal taxTotal,
         BigDecimal total,
         BigDecimal paidTotal,
-        BigDecimal balanceDue
+        BigDecimal balanceDue,
+        /** Hotel module: room-service / charged-to-room booking, else null. */
+        Long roomBookingId
 ) {
     public static RestaurantOrderDto from(RestaurantOrder order) {
         var table = order.getTable();
@@ -73,7 +75,8 @@ public record RestaurantOrderDto(
                 taxTotal,
                 total,
                 paidTotal,
-                total.subtract(paidTotal)
+                total.subtract(paidTotal),
+                order.getRoomBookingId()
         );
     }
 }

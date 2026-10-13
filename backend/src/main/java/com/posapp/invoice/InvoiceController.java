@@ -20,7 +20,7 @@ import java.util.List;
 /** Admin-only throughout, same tier as Sale Orders. */
 @RestController
 @RequestMapping("/api/invoices")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
@@ -60,47 +60,55 @@ public class InvoiceController {
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/from-sales-order/{salesOrderId}")
     public InvoiceDto generate(@PathVariable Long salesOrderId) {
         return invoiceService.generate(salesOrderId);
     }
 
     /** Fourier: "someone can create invoice (with invoice lines) without creating sales order" — a brand-new standalone invoice, starting as DRAFT. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping
     public InvoiceDto createDraft(@Valid @RequestBody InvoiceRequest request) {
         return invoiceService.createDraft(request);
     }
 
     /** Only while DRAFT — see InvoiceService.updateDraft's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PutMapping("/{id}")
     public InvoiceDto updateDraft(@PathVariable Long id, @Valid @RequestBody InvoiceRequest request) {
         return invoiceService.updateDraft(id, request);
     }
 
     /** DRAFT -&gt; ISSUED — see InvoiceService.issue's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/issue")
     public InvoiceDto issue(@PathVariable Long id) {
         return invoiceService.issue(id);
     }
 
     /** Only while DRAFT — a draft was never a real document, see InvoiceService.deleteDraft's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @DeleteMapping("/{id}")
     public void deleteDraft(@PathVariable Long id) {
         invoiceService.deleteDraft(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/void")
     public InvoiceDto voidInvoice(@PathVariable Long id, @RequestBody VoidInvoiceRequest request) {
         return invoiceService.voidInvoice(id, request.getReason());
     }
 
     /** Fourier: "CANCEL/CREDIT PAID INVOICE → Create Credit Note → Handle the payment → Refund OR → Customer Credit" — see InvoiceService.cancelPaidInvoice's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/cancel-paid")
     public InvoiceDto cancelPaidInvoice(@PathVariable Long id, @Valid @RequestBody CancelPaidInvoiceRequest request) {
         return invoiceService.cancelPaidInvoice(id, request);
     }
 
     /** Fourier: "sending other documents like ... invoices ... to the customer's email" — see InvoiceService.emailToCustomer's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/email")
     public void email(@PathVariable Long id, @RequestBody(required = false) EmailDocumentRequest request) {
         invoiceService.emailToCustomer(id, request != null ? request.getEmail() : null);
@@ -114,6 +122,7 @@ public class InvoiceController {
     }
 
     /** Fourier: "Let record payment per invoice not per customer (all outstanding invoices)" — see InvoiceService.recordPayment's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/payments")
     public CustomerPaymentDto recordPayment(@PathVariable Long id,
                                              @Valid @RequestBody RecordInvoicePaymentRequest request,

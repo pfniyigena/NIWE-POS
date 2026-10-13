@@ -33,7 +33,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/reports")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_REPORTS_VIEW') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class HelpDeskReportController {
 
     private final HelpDeskTicketService ticketService;

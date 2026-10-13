@@ -23,4 +23,7 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethodEnti
 
     /** Used by OrderService to know which method codes represent selling on store credit. */
     List<PaymentMethodEntity> findByCreditTrue();
+
+    /** Hotel module: tenders that put the amount on an in-house guest's room bill. */
+    List<PaymentMethodEntity> findByRoomChargeTrue();
 }

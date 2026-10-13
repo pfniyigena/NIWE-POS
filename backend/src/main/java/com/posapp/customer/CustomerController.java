@@ -49,7 +49,7 @@ public class CustomerController {
     public CustomerDto create(@Valid @RequestBody CustomerRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
         Customer customer = new Customer();
         applyBasicFields(customer, request);
-        if (principal.getUser().getRole() == Role.ADMIN) {
+        if (principal.getUser().canManage(com.posapp.user.AccessArea.SALES)) {
             applyCreditFields(customer, request);
         }
         return CustomerDto.from(customerRepository.save(customer));
@@ -61,7 +61,7 @@ public class CustomerController {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Customer not found: " + id));
         applyBasicFields(customer, request);
-        if (principal.getUser().getRole() == Role.ADMIN) {
+        if (principal.getUser().canManage(com.posapp.user.AccessArea.SALES)) {
             applyCreditFields(customer, request);
         }
         return CustomerDto.from(customerRepository.save(customer));

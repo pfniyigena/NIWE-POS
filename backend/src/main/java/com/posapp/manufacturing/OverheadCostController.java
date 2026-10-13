@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/manufacturing/overhead-costs")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class OverheadCostController {
 
     private final OverheadCostService overheadCostService;
@@ -34,11 +34,13 @@ public class OverheadCostController {
         return overheadCostService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public OverheadCostDto create(@Valid @RequestBody OverheadCostRequest request) {
         return overheadCostService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PutMapping("/{id}")
     public OverheadCostDto update(@PathVariable Long id, @Valid @RequestBody OverheadCostRequest request) {
         return overheadCostService.update(id, request);

@@ -18,6 +18,24 @@ public class InventorySettingsRequest {
     /** WEIGHTED_AVERAGE (default), LAST_PURCHASE or MANUAL — see StoreSettings.costingMethod's javadoc. */
     private String costingMethod = "WEIGHTED_AVERAGE";
 
+    /** Daily low-stock digest email — see StoreSettings.lowStockDigestEnabled. */
+    private boolean lowStockDigestEnabled = false;
+
+    /** Daily automatic DRAFT requisitions — see StoreSettings.autoRequisitionEnabled. */
+    private boolean autoRequisitionEnabled = false;
+
+    /** "HH:mm" in the store time zone — see StoreSettings.stockJobTime. */
+    private String stockJobTime = "06:30";
+
+    public boolean isLowStockDigestEnabled() { return lowStockDigestEnabled; }
+    public void setLowStockDigestEnabled(boolean v) { this.lowStockDigestEnabled = v; }
+
+    public boolean isAutoRequisitionEnabled() { return autoRequisitionEnabled; }
+    public void setAutoRequisitionEnabled(boolean v) { this.autoRequisitionEnabled = v; }
+
+    public String getStockJobTime() { return stockJobTime; }
+    public void setStockJobTime(String v) { this.stockJobTime = v; }
+
     public String getCostingMethod() { return costingMethod; }
     public void setCostingMethod(String costingMethod) { this.costingMethod = costingMethod; }
 

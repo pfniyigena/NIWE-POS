@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { LocationChoice, LocationChoicesService } from '../core/api/location-choices.service';
+import { StockAutomationApiService, StockAutomationResult } from '../core/api/stock-automation-api.service';
 
 /**
  * Admin > Inventory > Settings (Task: "Inventory Setting (Example: allow negative stock)").
@@ -71,6 +72,39 @@ import { LocationChoice, LocationChoicesService } from '../core/api/location-cho
             leaves cost alone (edit it on the product). Landed cost on receiving needs weighted average or last purchase.
           </div>
         </div>
+        <h5 class="mt-4 mb-2">Daily stock jobs</h5>
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" name="lowStockDigestEnabled" [(ngModel)]="lowStockDigestEnabled" /> Email a daily low-stock digest
+          </label>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            One email a day to the notifications address (Settings &gt; Email) listing every product below its
+            low-stock threshold or at/below its reorder level. Nothing is sent on a day when nothing is low.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" name="autoRequisitionEnabled" [(ngModel)]="autoRequisitionEnabled" /> Draft purchase requisitions automatically
+          </label>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            Each day, creates one DRAFT purchase requisition for the products at or below their reorder level
+            (the same suggestions as the Reorder screen). It never submits or approves anything, and skips products
+            already on an open requisition, so an unreviewed draft is not repeated.
+          </div>
+        </div>
+        <div class="form-group" *ngIf="lowStockDigestEnabled || autoRequisitionEnabled">
+          <label class="form-label">Run from (store time)</label>
+          <input class="form-control" style="max-width:140px;" type="time" name="stockJobTime" [(ngModel)]="stockJobTime" />
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            Runs once a day, from this time. If the server was off then, it runs when it is next up the same day.
+            <span *ngIf="stockJobLastRun"> Last ran on {{ stockJobLastRun }}.</span>
+          </div>
+          <button class="btn btn-outline-primary btn-sm mt-2" type="button" [disabled]="running || saving" (click)="runNow()">
+            {{ running ? 'Running…' : 'Run now' }}
+          </button>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Save first if you just changed the switches above — Run now uses the saved settings.</div>
+          <div class="alert alert-info mt-2" *ngIf="runResult">{{ runResult.message }}</div>
+        </div>
         <!-- Multi-warehouse phase 4 — which location Restaurant orders and wastage draw stock from.
              Shown only when there is a real choice (or one is already saved, so it can be changed back). -->
         <div class="form-group" *ngIf="locationChoices.length > 2 || restaurantLocationId !== null">
@@ -102,9 +136,19 @@ export class InventorySettingsComponent implements OnInit {
   multiWarehouseEnabled = false;
   restaurantLocationId: number | null = null;
   costingMethod = 'WEIGHTED_AVERAGE';
+  lowStockDigestEnabled = false;
+  autoRequisitionEnabled = false;
+  stockJobTime = '06:30';
+  stockJobLastRun: string | null = null;
+  running = false;
+  runResult: StockAutomationResult | null = null;
   locationChoices: LocationChoice[] = [];
 
-  constructor(private settingsApi: StoreSettingsApiService, private locationChoicesService: LocationChoicesService) {}
+  constructor(
+    private settingsApi: StoreSettingsApiService,
+    private locationChoicesService: LocationChoicesService,
+    private stockAutomationApi: StockAutomationApiService,
+  ) {}
 
   ngOnInit(): void {
     this.locationChoicesService.load().subscribe((c) => (this.locationChoices = c));
@@ -115,6 +159,10 @@ export class InventorySettingsComponent implements OnInit {
         this.multiWarehouseEnabled = s.multiWarehouseEnabled;
         this.restaurantLocationId = s.restaurantLocationId ?? null;
         this.costingMethod = s.costingMethod ?? 'WEIGHTED_AVERAGE';
+        this.lowStockDigestEnabled = !!s.lowStockDigestEnabled;
+        this.autoRequisitionEnabled = !!s.autoRequisitionEnabled;
+        this.stockJobTime = s.stockJobTime ?? '06:30';
+        this.stockJobLastRun = s.stockJobLastRun ?? null;
         this.loaded = true;
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load inventory settings'),
@@ -132,6 +180,9 @@ export class InventorySettingsComponent implements OnInit {
         multiWarehouseEnabled: this.multiWarehouseEnabled,
         restaurantLocationId: this.restaurantLocationId,
         costingMethod: this.costingMethod,
+        lowStockDigestEnabled: this.lowStockDigestEnabled,
+        autoRequisitionEnabled: this.autoRequisitionEnabled,
+        stockJobTime: this.stockJobTime || '06:30',
       })
       .subscribe({
         next: () => {
@@ -143,5 +194,21 @@ export class InventorySettingsComponent implements OnInit {
           this.error = err?.error?.message ?? 'Failed to save inventory settings';
         },
       });
+  }
+
+  runNow(): void {
+    this.error = null;
+    this.runResult = null;
+    this.running = true;
+    this.stockAutomationApi.run().subscribe({
+      next: (r) => {
+        this.running = false;
+        this.runResult = r;
+      },
+      error: (err) => {
+        this.running = false;
+        this.error = err?.error?.message ?? 'Failed to run the stock jobs';
+      },
+    });
   }
 }

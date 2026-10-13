@@ -223,6 +223,76 @@ public class StoreSettings extends BaseEntity {
     @jakarta.persistence.Column(name = "costing_method")
     private String costingMethod = "WEIGHTED_AVERAGE";
 
+    /**
+     * Daily low-stock digest email: one email to {@link #notificationsEmail} listing every product at or
+     * below its low-stock threshold or reorder level (see {@code com.posapp.inventory.StockAutomationService}).
+     * Off by default; silently skipped while no notifications email / SMTP is configured.
+     */
+    @Column(name = "low_stock_digest_enabled", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean lowStockDigestEnabled = false;
+
+    /**
+     * Daily automatic reorder: creates one DRAFT purchase requisition for every product at or below its
+     * reorder level that is not already on an open requisition. Never submits or approves anything.
+     */
+    @Column(name = "auto_requisition_enabled", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean autoRequisitionEnabled = false;
+
+    /** Time of day ("HH:mm", store time zone) from which the digest / auto-requisition run each day. Null = 06:30. */
+    @Column(name = "stock_job_time", length = 5)
+    private String stockJobTime = "06:30";
+
+    /** Store-local date on which the stock jobs last ran, so they run once a day (and catch up after downtime). */
+    @Column(name = "stock_job_last_run")
+    private java.time.LocalDate stockJobLastRun;
+
+    /** True once the ready-made Manager and Accountant roles have been created (so deleting them never brings them back). */
+    @Column(name = "custom_roles_seeded", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean customRolesSeeded = false;
+
+    // ---- Subscription jobs (Admin > Subscriptions > Job settings; see com.posapp.subscription.SubscriptionAutomationService) ----
+
+    /** Bills due subscriptions in the daily job. On by default — that is how billing always worked. */
+    @Column(name = "subscription_billing_enabled", nullable = false, columnDefinition = "boolean default true not null")
+    private boolean subscriptionBillingEnabled = true;
+
+    /** "HH:mm" (store time zone) from which the daily subscription job runs. */
+    @Column(name = "subscription_job_time", length = 5)
+    private String subscriptionJobTime = "06:30";
+
+    @Column(name = "subscription_job_last_run")
+    private java.time.LocalDate subscriptionJobLastRun;
+
+    /** One-line result of the last run, shown on the Subscriptions screens. */
+    @Column(name = "subscription_job_last_summary", length = 500)
+    private String subscriptionJobLastSummary;
+
+    /** Email an upcoming-billing reminder a few days before a subscription is billed. */
+    @Column(name = "subscription_reminder_enabled", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean subscriptionReminderEnabled = false;
+
+    @Column(name = "subscription_reminder_days", nullable = false, columnDefinition = "integer default 3 not null")
+    private int subscriptionReminderDays = 3;
+
+    /** Send the reminder to the customer's email address (when they have one). */
+    @Column(name = "subscription_reminder_customer", nullable = false, columnDefinition = "boolean default true not null")
+    private boolean subscriptionReminderCustomer = true;
+
+    /** Also send the reminder to the store's notifications email. */
+    @Column(name = "subscription_reminder_store", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean subscriptionReminderStore = false;
+
+    /** Email the notifications address a summary of what the daily job did (billed, failed, reminders, paused/cancelled). */
+    @Column(name = "subscription_digest_enabled", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean subscriptionDigestEnabled = false;
+
+    /** NONE (default), PAUSE or CANCEL a subscription whose issued invoice stays unpaid for {@link #subscriptionOverdueDays} days. */
+    @Column(name = "subscription_overdue_action", length = 10, columnDefinition = "varchar(10) default 'NONE'")
+    private String subscriptionOverdueAction = "NONE";
+
+    @Column(name = "subscription_overdue_days", nullable = false, columnDefinition = "integer default 30 not null")
+    private int subscriptionOverdueDays = 30;
+
     // ---- Accounting setup (Fourier: "The Config app.accounting.chart-country can be forgotten
     // easily, what if we add this on the screen then at first time a user select the country?") ----
 

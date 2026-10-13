@@ -10,6 +10,7 @@ public class UpdatePaymentMethodRequest {
 
     private boolean cash = false;
     private boolean credit = false;
+    private boolean roomCharge = false;
     private boolean active = true;
 
     /** Task: "Make payment method order dynamic" — lower shows first at checkout; ties break by name. */
@@ -21,6 +22,8 @@ public class UpdatePaymentMethodRequest {
     public void setCash(boolean cash) { this.cash = cash; }
     public boolean isCredit() { return credit; }
     public void setCredit(boolean credit) { this.credit = credit; }
+    public boolean isRoomCharge() { return roomCharge; }
+    public void setRoomCharge(boolean roomCharge) { this.roomCharge = roomCharge; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public int getSortOrder() { return sortOrder; }

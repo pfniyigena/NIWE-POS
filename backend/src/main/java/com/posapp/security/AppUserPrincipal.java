@@ -34,9 +34,15 @@ public class AppUserPrincipal implements UserDetails {
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Area authorities (AREA_<AREA>_VIEW / AREA_<AREA>_MANAGE / AREA_ANY) come from the user's custom role — see CustomRole.
+        Stream<SimpleGrantedAuthority> areas = user.getRole() == com.posapp.user.Role.ADMIN
+                ? Stream.<SimpleGrantedAuthority>empty()
+                : com.posapp.user.AccessGrants.authorities(user.effectiveGrants()).stream().map(SimpleGrantedAuthority::new);
         return Stream.concat(
-                Stream.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
-                user.getPermissions().stream().map(p -> new SimpleGrantedAuthority("PERM_" + p.name()))
+                Stream.concat(
+                        Stream.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
+                        user.getPermissions().stream().map(p -> new SimpleGrantedAuthority("PERM_" + p.name()))),
+                areas
         ).collect(Collectors.toList());
     }
 

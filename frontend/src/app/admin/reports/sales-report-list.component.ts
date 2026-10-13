@@ -7,9 +7,9 @@ import { REPORT_DEFS } from '../../core/report-defs';
 /**
  * Admin > Sales > Reports — mirrors InventoryReportListComponent's own "second, smaller picker"
  * pattern (same REPORT_DEFS data, same shared ReportViewerComponent at `/admin/reports/:key`),
- * just scoped to the new Sales sidenav group instead. Today this only holds the Sales Orders
- * report (`section: 'Sales'` in report-defs.ts); Customer Statement/Customer Payments have their
- * own dedicated screens reached directly from the Sales group, same as they always have.
+ * just scoped to the new Sales sidenav group instead. Holds every `section: 'Sales'` report in report-defs.ts: Sales
+ * Orders, and the ones built by SalesReportService (by customer / product / category, invoices, credit notes, sale
+ * order returns, customer payments, receivables aging). Customer Statement has its own dedicated screen.
  */
 @Component({
   selector: 'app-sales-report-list',

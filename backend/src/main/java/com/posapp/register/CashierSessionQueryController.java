@@ -40,7 +40,7 @@ public class CashierSessionQueryController {
     @GetMapping
     public List<CashierSessionDto> list(@AuthenticationPrincipal AppUserPrincipal principal) {
         var caller = principal.getUser();
-        return caller.getRole() == Role.ADMIN
+        return caller.canManage(com.posapp.user.AccessArea.SALES)
                 ? cashierSessionService.listAll()
                 : cashierSessionService.listMine(caller);
     }

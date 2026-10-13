@@ -21,6 +21,7 @@ public class BranchController {
         this.branchService = branchService;
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ANY')")
     @GetMapping
     public List<BranchDto> listAll() {
         return branchService.listAll();

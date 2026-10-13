@@ -23,6 +23,8 @@ export interface UpdateRestaurantLinePayload {
 
 export interface RestaurantCheckoutPayload {
   payments: { method: string; amount: number }[];
+  /** Hotel module: required when a payment uses the "Charge to room" method (a room-service order already knows its guest). */
+  roomBookingId?: number | null;
 }
 
 /** Fourier: "Delivery & takeaway" — opens a TAKEAWAY or DELIVERY order (no table). */
@@ -68,6 +70,11 @@ export class RestaurantOrderApiService {
 
   openTakeawayOrder(payload: OpenOffPremiseOrderPayload): Observable<RestaurantOrder> {
     return this.http.post<RestaurantOrder>(`${API_BASE}/restaurant/orders/takeaway`, payload);
+  }
+
+  /** Hotel module: a room-service order for a checked-in guest. */
+  openRoomServiceOrder(payload: { bookingId: number; notes?: string | null }): Observable<RestaurantOrder> {
+    return this.http.post<RestaurantOrder>(`${API_BASE}/restaurant/orders/room-service`, payload);
   }
 
   openDeliveryOrder(payload: OpenOffPremiseOrderPayload): Observable<RestaurantOrder> {

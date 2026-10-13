@@ -66,6 +66,19 @@ public class PurchaseRequisitionService {
         return PurchaseRequisitionDto.from(getEntityOrThrow(id));
     }
 
+    /** Ids of products already waiting on a requisition that is still open (draft, pending approval or approved but not yet converted). */
+    @Transactional(readOnly = true)
+    public java.util.Set<Long> openRequisitionProductIds() {
+        java.util.Set<Long> ids = new java.util.HashSet<>();
+        for (PurchaseRequisition r : purchaseRequisitionRepository.findByStatusIn(java.util.List.of(
+                PurchaseRequisitionStatus.DRAFT, PurchaseRequisitionStatus.PENDING_APPROVAL, PurchaseRequisitionStatus.APPROVED))) {
+            for (PurchaseRequisitionLine line : r.getLines()) {
+                if (line.getProduct() != null) ids.add(line.getProduct().getId());
+            }
+        }
+        return ids;
+    }
+
     @Transactional
     public PurchaseRequisitionDto createDraft(PurchaseRequisitionRequest request) {
         PurchaseRequisition r = new PurchaseRequisition();

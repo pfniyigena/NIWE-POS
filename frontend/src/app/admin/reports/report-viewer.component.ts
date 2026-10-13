@@ -9,6 +9,7 @@ import { RegisterApiService } from '../../core/api/register-api.service';
 import { CatalogApiService } from '../../core/api/catalog-api.service';
 import { WarehouseApiService } from '../../core/api/warehouse-api.service';
 import { BranchApiService } from '../../core/api/branch-api.service';
+import { ModuleApiService, ModuleKey } from '../../core/api/module-api.service';
 import { REPORT_DEFS, ReportColumn, ReportDef, reportListRouteForSection } from '../../core/report-defs';
 import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../core/models';
 
@@ -181,7 +182,8 @@ export class ReportViewerComponent implements OnInit {
     private registerApi: RegisterApiService,
     private catalogApi: CatalogApiService,
     private warehouseApi: WarehouseApiService,
-    private branchApi: BranchApiService
+    private branchApi: BranchApiService,
+    private modules: ModuleApiService
   ) {}
 
   ngOnInit(): void {
@@ -192,6 +194,20 @@ export class ReportViewerComponent implements OnInit {
       return;
     }
     this.backRoute = reportListRouteForSection(this.def.section);
+    // The POS and Assets reports belong to optional modules (this viewer is shared by every module's reports).
+    const hrModules: Record<string, ModuleKey> = {
+      'employee-directory': 'EMPLOYEES', 'headcount-by-department': 'EMPLOYEES', 'leave-balances': 'ATTENDANCE', 'leave-requests': 'ATTENDANCE',
+      'attendance-summary': 'ATTENDANCE', 'contracts-expiring': 'CONTRACTS', 'payroll-register': 'PAYROLL', 'payroll-summary': 'PAYROLL',
+    };
+    const moduleKey: ModuleKey | null = this.def.section.startsWith('POS') ? 'POS' : this.def.section === 'Installments' ? 'INSTALLMENTS' : this.def.section === 'Assets' ? 'ASSETS' : this.def.section === 'HR' ? hrModules[this.def.key] ?? 'EMPLOYEES' : null;
+    if (moduleKey) {
+      this.modules.whenLoaded().subscribe(() => {
+        if (!this.modules.on(moduleKey)) {
+          this.error = `The ${moduleKey === 'POS' ? 'POS' : moduleKey === 'ASSETS' ? 'Assets Management' : moduleKey === 'INSTALLMENTS' ? 'Installments' : 'required HR'} module is not activated (Settings > Modules).`;
+          this.def = null;
+        }
+      });
+    }
 
     // Default to the last 30 days so "Run report" produces something useful without the user
     // having to think about a range first.

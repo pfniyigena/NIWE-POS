@@ -140,7 +140,7 @@ export class ReservationListComponent implements OnInit {
   ) {}
 
   get isAdmin(): boolean {
-    return this.auth.currentUser()?.role === 'ADMIN';
+    return this.auth.canManage('OPERATIONS');
   }
 
   ngOnInit(): void {

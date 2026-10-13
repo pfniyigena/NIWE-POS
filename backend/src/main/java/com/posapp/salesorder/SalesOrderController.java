@@ -31,7 +31,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/sales-orders")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW')")
 public class SalesOrderController {
 
     private final SalesOrderService salesOrderService;
@@ -59,26 +59,31 @@ public class SalesOrderController {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping
     public SalesOrderDto create(@Valid @RequestBody SalesOrderRequest request) {
         return salesOrderService.createDraft(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PutMapping("/{id}")
     public SalesOrderDto update(@PathVariable Long id, @Valid @RequestBody SalesOrderRequest request) {
         return salesOrderService.updateDraft(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/{id}/confirm")
     public SalesOrderDto confirm(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean override) {
         return salesOrderService.confirm(id, override);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/{id}/cancel")
     public SalesOrderDto cancel(@PathVariable Long id) {
         return salesOrderService.cancel(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/{id}/fulfill")
     public SalesOrderDto fulfill(@PathVariable Long id, @Valid @RequestBody FulfillSalesOrderRequest request) {
         SalesOrderDto so = salesOrderService.fulfillLines(id, request);

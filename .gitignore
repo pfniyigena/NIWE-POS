@@ -1,0 +1,10 @@
+# Angular frontend
+/frontend/.angular/
+/frontend/node_modules/
+/frontend/dist/
+# IDE and metadata
+/.metadata/
+/.sonarlint/
+# Backend (Java / Spring Boot)
+/backend/.settings/
+/backend/target/

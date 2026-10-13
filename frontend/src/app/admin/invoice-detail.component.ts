@@ -9,6 +9,8 @@ import { openPdfForPrint } from '../core/download-file';
 import { Branch, Invoice, PaymentDisposition, PaymentMethodOption } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf } from '../core/branch-util';
+import { ModuleApiService } from '../core/api/module-api.service';
+import { InstallmentApiService, InstallmentPlanSummary } from '../core/api/installment-api.service';
 
 /**
  * Admin > Sales > Invoices > detail — `/admin/invoices/:id`, reached from the invoice list or
@@ -78,6 +80,10 @@ import { branchNameOf } from '../core/branch-util';
             <a class="btn btn-outline-primary" *ngIf="o.status === 'ISSUED' && o.customerId && o.amountOutstanding > 0" [routerLink]="['/admin/invoices', o.id, 'record-payment']">
               Record payment
             </a>
+            <a class="btn btn-outline-primary" *ngIf="modules.on('INSTALLMENTS') && o.status === 'ISSUED' && o.customerId && o.amountOutstanding > 0 && !hasActivePlan()" routerLink="/admin/installments/new" [queryParams]="{ invoiceId: o.id }">
+              Pay in instalments
+            </a>
+            <a class="btn btn-outline-secondary" *ngFor="let p of plans" [routerLink]="['/admin/installments', p.id]">Plan {{ p.planNumber }} ({{ p.status }})</a>
             <!-- Fourier: "VOID INVOICE → Only allowed when there is NO payment" — hidden (not just blocked server-side) once anything has been paid, in favor of the Cancel & credit action below. -->
             <button class="btn btn-outline-danger" *ngIf="o.status === 'ISSUED' && !hasPayment(o)" (click)="showVoidForm = !showVoidForm">Void invoice</button>
             <!-- Fourier: "CANCEL/CREDIT PAID INVOICE → Create Credit Note → Handle the payment → Refund OR → Customer Credit" — the separate path for an invoice Void invoice would otherwise refuse. -->
@@ -251,8 +257,13 @@ export class InvoiceDetailComponent implements OnInit {
     private router: Router,
     private invoiceApi: InvoiceApiService,
     private paymentMethodApi: PaymentMethodApiService,
-    private branchApi: BranchApiService
+    private branchApi: BranchApiService,
+    public modules: ModuleApiService,
+    private installmentApi: InstallmentApiService
   ) {}
+
+  /** Installments module: this invoice's instalment plans (loaded once the invoice is). */
+  plans: InstallmentPlanSummary[] = [];
 
   ngOnInit(): void {
     this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
@@ -271,9 +282,18 @@ export class InvoiceDetailComponent implements OnInit {
     return inv.amountPaid > 0;
   }
 
+  hasActivePlan(): boolean {
+    return this.plans.some((p) => p.status === 'ACTIVE');
+  }
+
   load(id: number): void {
     this.invoiceApi.getById(id).subscribe({
-      next: (inv) => (this.inv = inv),
+      next: (inv) => {
+        this.inv = inv;
+        this.modules.whenLoaded().subscribe(() => {
+          if (this.modules.on('INSTALLMENTS')) this.installmentApi.forInvoice(inv.id).subscribe({ next: (p) => (this.plans = p), error: () => (this.plans = []) });
+        });
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load invoice'),
     });
   }

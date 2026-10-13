@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { SubscriptionApiService } from '../core/api/subscription-api.service';
+import { SubscriptionAutomationApiService } from '../core/api/subscription-automation-api.service';
 import { Subscription } from '../core/models';
 
 /**
  * Admin > Sales > Subscriptions — one customer's own enrollment in a SubscriptionPlan. Billing is
  * automatic (daily sweep auto-generates an ISSUED invoice on each due date — see backend
- * SubscriptionService.generateDueInvoices), with "Bill now" as a manual escape hatch and
+ * SubscriptionAutomationService), with "Bill now" as a manual escape hatch and
  * pause/resume/cancel for lifecycle control (see backend Subscription's javadoc).
  *
  * <p>Supports the same `?customerId=&customerName=` arrival convention as InvoiceListComponent,
@@ -27,10 +28,12 @@ import { Subscription } from '../core/models';
           <a *ngIf="customerName" class="text-muted" routerLink="/admin/subscriptions" style="font-size:0.85rem;">Show every customer's subscriptions</a>
         </div>
         <div class="flex gap-2">
+          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/job-settings">Job settings</a>
           <a class="btn btn-outline-primary" routerLink="/admin/subscription-plans">Plans</a>
           <a class="btn btn-primary" routerLink="/admin/subscriptions/new">+ New subscription</a>
         </div>
       </div>
+      <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="jobSummary">Daily billing job — last run: {{ jobSummary }}</div>
       <table class="table-sm">
         <thead>
           <tr>
@@ -71,7 +74,13 @@ export class SubscriptionListComponent implements OnInit {
   customerId: number | null = null;
   customerName: string | null = null;
 
-  constructor(private subscriptionApi: SubscriptionApiService, private route: ActivatedRoute) {}
+  jobSummary: string | null = null;
+
+  constructor(
+    private subscriptionApi: SubscriptionApiService,
+    private automationApi: SubscriptionAutomationApiService,
+    private route: ActivatedRoute,
+  ) {}
 
   ngOnInit(): void {
     const customerIdParam = this.route.snapshot.queryParamMap.get('customerId');
@@ -79,6 +88,7 @@ export class SubscriptionListComponent implements OnInit {
       this.customerId = Number(customerIdParam);
       this.customerName = this.route.snapshot.queryParamMap.get('customerName') ?? `#${customerIdParam}`;
     }
+    this.automationApi.get().subscribe({ next: (a) => (this.jobSummary = a.lastSummary), error: () => (this.jobSummary = null) });
     this.subscriptionApi.listAll(this.customerId ?? undefined).subscribe({
       next: (s) => (this.subscriptions = s),
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load subscriptions'),

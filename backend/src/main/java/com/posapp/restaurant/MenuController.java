@@ -35,19 +35,19 @@ public class MenuController {
     }
 
     @PostMapping("/categories")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public MenuCategoryDto createCategory(@Valid @RequestBody MenuCategoryRequest request) {
         return menuService.createCategory(request);
     }
 
     @PutMapping("/categories/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public MenuCategoryDto updateCategory(@PathVariable Long id, @Valid @RequestBody MenuCategoryRequest request) {
         return menuService.updateCategory(id, request);
     }
 
     @DeleteMapping("/categories/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public void deleteCategory(@PathVariable Long id) {
         menuService.deleteCategory(id);
     }
@@ -58,19 +58,19 @@ public class MenuController {
     }
 
     @PostMapping("/items")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public MenuItemDto addItem(@Valid @RequestBody MenuItemRequest request) {
         return menuService.addItem(request);
     }
 
     @PutMapping("/items/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public MenuItemDto updateItem(@PathVariable Long id, @Valid @RequestBody MenuItemRequest request) {
         return menuService.updateItem(id, request);
     }
 
     @DeleteMapping("/items/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public void removeItem(@PathVariable Long id) {
         menuService.removeItem(id);
     }

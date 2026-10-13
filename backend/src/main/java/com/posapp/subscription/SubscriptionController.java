@@ -15,7 +15,7 @@ import java.util.List;
 /** Admin > Sales > Subscriptions — ADMIN-only, same tier as Invoices/Sale orders. */
 @RestController
 @RequestMapping("/api/subscriptions")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class SubscriptionController {
 
     private final SubscriptionService service;
@@ -35,27 +35,32 @@ public class SubscriptionController {
         return service.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping
     public SubscriptionDto create(@Valid @RequestBody CreateSubscriptionRequest request) {
         return service.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/pause")
     public SubscriptionDto pause(@PathVariable Long id) {
         return service.pause(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/resume")
     public SubscriptionDto resume(@PathVariable Long id) {
         return service.resume(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/cancel")
     public SubscriptionDto cancel(@PathVariable Long id, @RequestBody(required = false) CancelSubscriptionRequest request) {
         return service.cancel(id, request != null ? request.getReason() : null);
     }
 
     /** Bills this one subscription right now, without waiting for the daily scheduled sweep. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/bill-now")
     public SubscriptionDto billNow(@PathVariable Long id) {
         return service.billNow(id);

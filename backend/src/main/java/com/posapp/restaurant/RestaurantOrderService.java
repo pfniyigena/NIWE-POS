@@ -88,13 +88,16 @@ public class RestaurantOrderService {
     private final BomService bomService;
     /** Multi-warehouse phase 4 — the configured kitchen location (null = primary warehouse stock). */
     private final WarehouseService warehouseService;
+    /** Hotel module: puts a bill on an in-house guest's room bill, and finds in-house guests for room service. */
+    private final com.posapp.hotel.HotelFolioService hotelFolioService;
 
     public RestaurantOrderService(RestaurantOrderRepository orderRepository, DiningTableRepository tableRepository,
                                    MenuItemRepository menuItemRepository, UserRepository userRepository,
                                    CatalogService catalogService, PaymentMethodService paymentMethodService,
                                    AccountingService accountingService, StoreSettingsService storeSettingsService,
                                    AuditLogService auditLogService, BomService bomService,
-                                   WarehouseService warehouseService) {
+                                   WarehouseService warehouseService, com.posapp.hotel.HotelFolioService hotelFolioService) {
+        this.hotelFolioService = hotelFolioService;
         this.orderRepository = orderRepository;
         this.tableRepository = tableRepository;
         this.menuItemRepository = menuItemRepository;
@@ -176,6 +179,28 @@ public class RestaurantOrderService {
         order.setDeliveryStatus(DeliveryStatus.AWAITING_DRIVER);
         RestaurantOrder saved = orderRepository.save(order);
         auditLogService.record("RESTAURANT_ORDER_OPENED", "Opened delivery order for " + saved.getCustomerName(), "RestaurantOrder", saved.getId());
+        return RestaurantOrderDto.from(saved);
+    }
+
+    /**
+     * Hotel module: opens a room-service order for a checked-in guest. It runs through the kitchen like a takeaway order and, at checkout,
+     * is charged to the guest's room bill (the cashier can still take payment another way if the guest prefers to pay at the door).
+     */
+    @Transactional
+    public RestaurantOrderDto openRoomServiceOrder(com.posapp.restaurant.dto.OpenRoomServiceOrderRequest request) {
+        com.posapp.hotel.dto.HotelDtos.InHouseDto guest = hotelFolioService.inHouseGuest(request.getBookingId());
+        RestaurantOrder order = new RestaurantOrder();
+        order.setOrderType(RestaurantOrderType.TAKEAWAY);
+        order.setCustomerName(guest.guestName());
+        order.setGuestCount(1);
+        order.setNotes(request.getNotes());
+        order.setRoomBookingId(guest.bookingId());
+        order.setRoomLabel(guest.roomNumber() + " — " + guest.guestName());
+        if (request.getServerId() != null) {
+            order.setServer(userRepository.findById(request.getServerId()).orElse(null));
+        }
+        RestaurantOrder saved = orderRepository.save(order);
+        auditLogService.record("RESTAURANT_ORDER_OPENED", "Opened room service order for room " + guest.roomNumber(), "RestaurantOrder", saved.getId());
         return RestaurantOrderDto.from(saved);
     }
 
@@ -357,8 +382,14 @@ public class RestaurantOrderService {
         }
         BigDecimal due = RestaurantOrderCalculator.total(order);
         BigDecimal tendered = BigDecimal.ZERO;
+        // Hotel module: the "Charge to room" tender puts its amount on an in-house guest's bill instead of collecting it now.
+        java.util.Set<String> roomCodes = paymentMethodService.listRoomChargeCodes();
+        BigDecimal roomPortion = BigDecimal.ZERO;
         for (RestaurantCheckoutRequest.PaymentEntry entry : request.getPayments()) {
             String method = paymentMethodService.validateActiveCodeOrThrow(entry.getMethod());
+            if (roomCodes.contains(method)) {
+                roomPortion = roomPortion.add(entry.getAmount());
+            }
             RestaurantPayment payment = new RestaurantPayment();
             payment.setOrder(order);
             payment.setMethod(method);
@@ -368,6 +399,16 @@ public class RestaurantOrderService {
         }
         if (tendered.compareTo(due) < 0) {
             throw ApiException.badRequest("Payments (" + tendered + ") do not cover the amount due (" + due + ")");
+        }
+        Long roomBookingId = request.getRoomBookingId() != null ? request.getRoomBookingId() : order.getRoomBookingId();
+        if (roomPortion.signum() > 0) {
+            if (roomBookingId == null) {
+                throw ApiException.badRequest("Choose the in-house guest whose room the bill is charged to");
+            }
+            if (roomPortion.compareTo(due) > 0) {
+                throw ApiException.badRequest("The amount charged to the room cannot be more than the bill");
+            }
+            hotelFolioService.inHouseGuest(roomBookingId); // fails early, before stock moves, if the guest has left
         }
         boolean allowNegativeStock = storeSettingsService.getSettings().allowNegativeStock();
         if (!allowNegativeStock) {
@@ -435,8 +476,15 @@ public class RestaurantOrderService {
         RestaurantOrder saved = orderRepository.save(order);
         BigDecimal subtotal = RestaurantOrderCalculator.subtotal(saved);
         BigDecimal taxTotal = RestaurantOrderCalculator.taxTotal(saved);
-        accountingService.postRestaurantSale(saved.getId(), saved.getTicketNumber(), tendered, subtotal, taxTotal,
-                cogs.setScale(2, RoundingMode.HALF_UP));
+        accountingService.postRestaurantSale(saved.getId(), saved.getTicketNumber(), tendered.subtract(roomPortion), roomPortion,
+                subtotal, taxTotal, cogs.setScale(2, RoundingMode.HALF_UP));
+        if (roomPortion.signum() > 0) {
+            boolean roomService = saved.getRoomLabel() != null;
+            saved.setRoomBookingId(roomBookingId);
+            orderRepository.save(saved);
+            hotelFolioService.chargeToRoom(roomBookingId, roomService ? com.posapp.hotel.ChargeType.ROOM_SERVICE : com.posapp.hotel.ChargeType.RESTAURANT,
+                    (roomService ? "Room service " : "Restaurant ") + saved.getTicketNumber(), roomPortion, "RESTAURANT_ORDER", saved.getId());
+        }
         auditLogService.record("RESTAURANT_ORDER_CHECKED_OUT", "Checked out order " + saved.getTicketNumber() + " (" + due + ")", "RestaurantOrder", saved.getId());
         return RestaurantOrderDto.from(saved);
     }

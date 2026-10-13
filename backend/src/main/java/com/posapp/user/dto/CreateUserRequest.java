@@ -44,4 +44,10 @@ public class CreateUserRequest {
     public void setRole(String role) { this.role = role; }
     public Set<String> getPermissions() { return permissions; }
     public void setPermissions(Set<String> permissions) { this.permissions = permissions; }
+
+    /** Optional admin-defined role (see CustomRole); ignored for an ADMIN. */
+    private Long customRoleId;
+
+    public Long getCustomRoleId() { return customRoleId; }
+    public void setCustomRoleId(Long customRoleId) { this.customRoleId = customRoleId; }
 }

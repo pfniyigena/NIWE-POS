@@ -41,6 +41,10 @@ public class PaymentMethodEntity extends BaseEntity {
      */
     private boolean credit = false;
 
+    /** Hotel module: a tender that puts the amount on an in-house guest's room bill (folio) instead of collecting money now. */
+    @jakarta.persistence.Column(name = "room_charge", columnDefinition = "boolean default false not null")
+    private boolean roomCharge = false;
+
     /**
      * Display order in the checkout/refund method list (Task: "Make payment method order dynamic
      * so I can set the first, second on checkout screen") — lower shows first. Ties (including

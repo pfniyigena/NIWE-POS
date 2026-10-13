@@ -7,6 +7,7 @@ import { OrderApiService, CheckoutPaymentEntry } from '../core/api/order-api.ser
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
 import { CustomerCreditApiService } from '../core/api/customer-credit-api.service';
 import { CreditSummary, Order, PaymentMethod, PaymentMethodOption } from '../core/models';
+import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
 
 /** One row per active payment method — see the class doc comment for how `selected` drives the UI. */
 interface PaymentRow {
@@ -16,6 +17,8 @@ interface PaymentRow {
   amount: number | null;
   /** True for the (normally single) method flagged store-credit — see PaymentMethodOption.credit. Drives the availableCredit cap and the due-date input. */
   credit: boolean;
+  /** Hotel module: this method charges the amount to an in-house guest's room bill. */
+  roomCharge: boolean;
 }
 
 @Component({
@@ -79,6 +82,14 @@ interface PaymentRow {
             <p class="text-muted" style="font-size:0.85rem;" *ngIf="creditRowSelected() && creditSummary?.creditEnabled">
               Available credit: {{ creditSummary?.availableCredit | number: '1.2-2' }}
             </p>
+            <div class="form-group mb-2" *ngIf="roomRowSelected()">
+              <label class="form-label">Charge to which room?</label>
+              <select class="form-control" name="roomBooking" [(ngModel)]="roomBookingId">
+                <option [ngValue]="null">Choose the guest…</option>
+                <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">Room {{ g.roomNumber }} — {{ g.guestName }}</option>
+              </select>
+              <div class="text-muted" style="font-size:0.8rem;" *ngIf="inHouse.length === 0">No guest is checked in right now.</div>
+            </div>
             <div class="form-group mb-2" *ngIf="creditRowSelected() && creditSummary?.creditEnabled">
               <label class="form-label">Due date (optional — defaults to this customer's own payment term, if any)</label>
               <app-date-picker [(ngModel)]="dueDate" ></app-date-picker>
@@ -131,13 +142,17 @@ export class CheckoutComponent implements OnInit {
   creditSummary: CreditSummary | null = null;
   /** Task: "Optional due date/payment terms" — only sent to checkout when a credit row is selected. */
   dueDate: string | null = null;
+  /** Hotel module: the in-house guests a "Charge to room" payment can go to, and the one chosen. */
+  inHouse: InHouseGuest[] = [];
+  roomBookingId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private orderApi: OrderApiService,
     private paymentMethodApi: PaymentMethodApiService,
-    private customerCreditApi: CustomerCreditApiService
+    private customerCreditApi: CustomerCreditApiService,
+    private hotelApi: HotelApiService
   ) {}
 
   ngOnInit(): void {
@@ -165,8 +180,16 @@ export class CheckoutComponent implements OnInit {
         selected: i === defaultIndex,
         amount: i === defaultIndex ? (this.order?.total ?? null) : null,
         credit: m.credit,
+        roomCharge: !!m.roomCharge,
       }));
+      if (this.paymentRows.some((r) => r.roomCharge)) {
+        this.hotelApi.inHouseGuests().subscribe({ next: (g) => (this.inHouse = g), error: () => (this.inHouse = []) });
+      }
     });
+  }
+
+  roomRowSelected(): boolean {
+    return this.paymentRows.some((r) => r.selected && r.roomCharge);
   }
 
   creditRowSelected(): boolean {
@@ -250,10 +273,14 @@ export class CheckoutComponent implements OnInit {
       return;
     }
 
+    if (this.roomRowSelected() && !this.roomBookingId) {
+      this.error = 'Choose the guest whose room this is charged to.';
+      return;
+    }
     this.error = null;
     this.submitting = true;
     const dueDate = this.creditRowSelected() ? this.dueDate : null;
-    this.orderApi.checkout(this.orderId, payments, dueDate).subscribe({
+    this.orderApi.checkout(this.orderId, payments, dueDate, this.roomRowSelected() ? this.roomBookingId : null).subscribe({
       next: () => {
         this.submitting = false;
         // Task: "Complete sale should automatically open the print dialog, then return to the

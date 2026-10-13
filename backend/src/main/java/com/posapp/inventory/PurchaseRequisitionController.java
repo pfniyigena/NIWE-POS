@@ -19,7 +19,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/purchase-requisitions")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class PurchaseRequisitionController {
 
     private final PurchaseRequisitionService purchaseRequisitionService;
@@ -38,16 +38,19 @@ public class PurchaseRequisitionController {
         return purchaseRequisitionService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public PurchaseRequisitionDto create(@Valid @RequestBody PurchaseRequisitionRequest request) {
         return purchaseRequisitionService.createDraft(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PutMapping("/{id}")
     public PurchaseRequisitionDto update(@PathVariable Long id, @Valid @RequestBody PurchaseRequisitionRequest request) {
         return purchaseRequisitionService.updateDraft(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/submit")
     public PurchaseRequisitionDto submit(@PathVariable Long id) {
         return purchaseRequisitionService.submit(id);
@@ -65,12 +68,14 @@ public class PurchaseRequisitionController {
         return purchaseRequisitionService.reject(id, body.get("reason"));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/cancel")
     public PurchaseRequisitionDto cancel(@PathVariable Long id) {
         return purchaseRequisitionService.cancel(id);
     }
 
     /** Returns the newly-created Purchase Order (not the requisition) so the frontend can navigate straight to it — see PurchaseRequisitionService.convertToPurchaseOrder's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/convert")
     public PurchaseOrderDto convert(@PathVariable Long id, @Valid @RequestBody ConvertRequisitionRequest request) {
         return purchaseRequisitionService.convertToPurchaseOrder(id, request);

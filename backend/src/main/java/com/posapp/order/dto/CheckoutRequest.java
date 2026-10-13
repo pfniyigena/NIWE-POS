@@ -23,6 +23,11 @@ public class CheckoutRequest {
      */
     private LocalDate dueDate;
 
+    /** Hotel module: the in-house guest's booking, required when any payment entry uses the "Charge to room" method. */
+    private Long roomBookingId;
+
+    public Long getRoomBookingId() { return roomBookingId; }
+    public void setRoomBookingId(Long roomBookingId) { this.roomBookingId = roomBookingId; }
     public List<PaymentEntry> getPayments() { return payments; }
     public void setPayments(List<PaymentEntry> payments) { this.payments = payments; }
     public LocalDate getDueDate() { return dueDate; }

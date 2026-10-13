@@ -12,7 +12,7 @@ import java.util.Map;
 /** Admin-only, same tier as Sales Orders themselves — this is a back-office flow, not a terminal one. */
 @RestController
 @RequestMapping("/api/sales-order-returns")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW')")
 public class SalesOrderReturnController {
 
     private final SalesOrderReturnService salesOrderReturnService;
@@ -44,6 +44,7 @@ public class SalesOrderReturnController {
         return salesOrderReturnService.returnedQuantitiesForOrder(salesOrderId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping
     public SalesOrderReturnDto processReturn(@Valid @RequestBody ProcessSalesOrderReturnRequest request) {
         return salesOrderReturnService.processReturn(request);

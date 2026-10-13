@@ -190,11 +190,13 @@ public class SalesOrderService {
         return lineGrossBeforeDiscount(line).subtract(lineGross(headerDiscountPercent, line)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private static BigDecimal lineTax(BigDecimal headerDiscountPercent, SalesOrderLine line) {
+    /** Public for the Sales reports (reports/SalesReportService), which break a sale order down by product and category. */
+    public static BigDecimal lineTax(BigDecimal headerDiscountPercent, SalesOrderLine line) {
         return TaxMath.taxOnAmount(lineGross(headerDiscountPercent, line), line.getTaxRatePercent(), Boolean.TRUE.equals(line.getTaxInclusive()));
     }
 
-    private static BigDecimal lineNet(BigDecimal headerDiscountPercent, SalesOrderLine line) {
+    /** Public for the Sales reports — see {@link #lineTax}. */
+    public static BigDecimal lineNet(BigDecimal headerDiscountPercent, SalesOrderLine line) {
         return TaxMath.netOfTax(lineGross(headerDiscountPercent, line), lineTax(headerDiscountPercent, line), Boolean.TRUE.equals(line.getTaxInclusive()));
     }
 

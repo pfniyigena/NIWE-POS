@@ -22,19 +22,19 @@ public class TrackingController {
     }
 
     @GetMapping("/products/{productId}/batches")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public List<BatchDto> batches(@PathVariable Long productId) {
         return trackingService.batchesForProduct(productId);
     }
 
     @GetMapping("/products/{productId}/serials")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public List<SerialDto> serials(@PathVariable Long productId) {
         return trackingService.serialsForProduct(productId);
     }
 
     @GetMapping("/serials")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
     public List<SerialDto> searchSerials(@RequestParam(required = false) String q) {
         return trackingService.searchSerials(q);
     }

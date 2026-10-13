@@ -45,7 +45,7 @@ import { JournalEntry } from '../../core/models';
           </tr>
           <tr *ngIf="entries.length === 0">
             <td colspan="6" class="text-muted">
-              No journal entries yet — they'll appear here automatically once Accounting is enabled (Admin &gt; Accounting &gt; Settings) and a sale, purchase, payment or production run is recorded.
+              No journal entries yet — they'll appear here automatically once a sale, purchase, payment or production run is recorded.
             </td>
           </tr>
         </tbody>

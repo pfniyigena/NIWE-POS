@@ -36,4 +36,15 @@ public class UpdateUserRequest {
     public void setActive(boolean active) { this.active = active; }
     public Set<String> getPermissions() { return permissions; }
     public void setPermissions(Set<String> permissions) { this.permissions = permissions; }
+
+    /** Optional admin-defined role (see CustomRole); ignored for an ADMIN. */
+    private Long customRoleId;
+    /** True when the form is sending customRoleId on purpose (null then means "no custom role"); false/omitted leaves it unchanged. */
+    private boolean customRoleProvided;
+
+    public boolean isCustomRoleProvided() { return customRoleProvided; }
+    public void setCustomRoleProvided(boolean customRoleProvided) { this.customRoleProvided = customRoleProvided; }
+
+    public Long getCustomRoleId() { return customRoleId; }
+    public void setCustomRoleId(Long customRoleId) { this.customRoleId = customRoleId; }
 }

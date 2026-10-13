@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/manufacturing/production-plans")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_VIEW')")
 public class ProductionPlanController {
 
     private final ProductionPlanService productionPlanService;
@@ -31,11 +31,13 @@ public class ProductionPlanController {
         return productionPlanService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/generate")
     public ProductionPlanDto generate(@Valid @RequestBody GenerateProductionPlanRequest request) {
         return productionPlanService.generate(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{planId}/lines/{lineId}/generate-order")
     public ManufacturingOrderDto generateOrder(@PathVariable Long planId, @PathVariable Long lineId,
                                                 @Valid @RequestBody GenerateOrderFromPlanLineRequest request) {

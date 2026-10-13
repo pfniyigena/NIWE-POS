@@ -57,7 +57,7 @@ public class ReservationController {
     }
 
     /** ADMIN-only (Fourier: "the reservation can be cancelled anytime by admin"). */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     @PostMapping("/{id}/cancel")
     public ReservationDto cancel(@PathVariable Long id) {
         return reservationService.cancel(id);

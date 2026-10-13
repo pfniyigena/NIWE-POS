@@ -15,7 +15,7 @@ import { RegisterSummary } from '../core/models';
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Registers</h3>
-        <a *ngIf="auth.currentUser()?.role === 'ADMIN'" class="btn btn-primary" routerLink="/registers/new">+ New register</a>
+        <a *ngIf="auth.canManage('SALES')" class="btn btn-primary" routerLink="/registers/new">+ New register</a>
       </div>
       <table>
         <thead>
@@ -40,8 +40,8 @@ import { RegisterSummary } from '../core/models';
             </td>
             <td class="flex gap-2">
               <a *ngIf="r.openSessionId" class="btn btn-sm btn-success" [routerLink]="['/pos', r.openSessionId]">Go to terminal</a>
-              <a *ngIf="!r.openSessionId && auth.currentUser()?.role === 'ADMIN'" class="btn btn-sm btn-outline-primary" [routerLink]="['/registers', r.id, 'open-session']">Open session</a>
-              <a *ngIf="auth.currentUser()?.role === 'ADMIN'" [routerLink]="['/registers', r.id, 'edit']">Edit</a>
+              <a *ngIf="!r.openSessionId && auth.canManage('SALES')" class="btn btn-sm btn-outline-primary" [routerLink]="['/registers', r.id, 'open-session']">Open session</a>
+              <a *ngIf="auth.canManage('SALES')" [routerLink]="['/registers', r.id, 'edit']">Edit</a>
             </td>
           </tr>
           <tr *ngIf="registers.length === 0">

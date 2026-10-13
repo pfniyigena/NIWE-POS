@@ -48,13 +48,13 @@ public class CashierSessionController {
      * required — the admin-side equivalent of "Switch cashier" at the terminal, for when the
      * admin doesn't have that cashier's PIN in hand (or isn't at the physical terminal at all).
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/assign")
     public CashierSessionDto assign(@PathVariable Long registerSessionId, @Valid @RequestBody AssignCashierRequest request) {
         return cashierSessionService.assignCashier(registerSessionId, request.getCashierId());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW')")
     @GetMapping
     public List<CashierSessionDto> list(@PathVariable Long registerSessionId) {
         return cashierSessionService.listForShift(registerSessionId);
@@ -69,7 +69,7 @@ public class CashierSessionController {
     }
 
     /** Admin bulk action: end every open cashier session on this shift without closing the shift itself. */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/close-all")
     public List<CashierSessionDto> closeAll(@PathVariable Long registerSessionId) {
         return cashierSessionService.closeAllForShift(registerSessionId);

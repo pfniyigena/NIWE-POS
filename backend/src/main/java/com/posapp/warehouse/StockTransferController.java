@@ -17,7 +17,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/stock-transfers")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class StockTransferController {
 
     private final StockTransferService stockTransferService;
@@ -31,6 +31,7 @@ public class StockTransferController {
         return stockTransferService.listAll();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public StockTransferDto create(@Valid @RequestBody StockTransferRequest request) {
         return stockTransferService.create(request);

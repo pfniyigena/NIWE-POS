@@ -26,6 +26,7 @@ public class TaxRateController {
         this.taxRateService = taxRateService;
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ANY')")
     @GetMapping
     public List<TaxRateDto> listAll() {
         return taxRateService.listAll();

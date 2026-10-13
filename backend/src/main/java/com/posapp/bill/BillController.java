@@ -17,7 +17,7 @@ import java.util.List;
 /** Fourier: "same workflow as Sale order" — admin-only throughout, same tier as Purchase Orders/Invoices. */
 @RestController
 @RequestMapping("/api/bills")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_VIEW')")
 public class BillController {
 
     private final BillService billService;
@@ -57,23 +57,27 @@ public class BillController {
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/from-purchase-order/{purchaseOrderId}")
     public BillDto generate(@PathVariable Long purchaseOrderId) {
         return billService.generate(purchaseOrderId);
     }
 
     /** DRAFT -&gt; ISSUED — see BillService.issue's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/issue")
     public BillDto issue(@PathVariable Long id) {
         return billService.issue(id);
     }
 
     /** Only while DRAFT — a draft was never a real document, see BillService.deleteDraft's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @DeleteMapping("/{id}")
     public void deleteDraft(@PathVariable Long id) {
         billService.deleteDraft(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/void")
     public BillDto voidBill(@PathVariable Long id, @RequestBody VoidBillRequest request) {
         return billService.voidBill(id, request.getReason());
@@ -87,6 +91,7 @@ public class BillController {
     }
 
     /** Fourier: "same workflow as Sale order" — see BillService.recordPayment's javadoc. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')")
     @PostMapping("/{id}/payments")
     public SupplierPaymentDto recordPayment(@PathVariable Long id,
                                              @Valid @RequestBody RecordBillPaymentRequest request,

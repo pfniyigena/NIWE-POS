@@ -35,6 +35,11 @@ import { PaymentMethodApiService } from '../core/api/payment-method-api.service'
             <input type="checkbox" name="credit" [(ngModel)]="credit" /> Store credit (selling with this method sells on the customer's tab)
           </label>
         </div>
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" name="roomCharge" [(ngModel)]="roomCharge" /> Charge to room (hotel — the amount goes on an in-house guest's room bill)
+          </label>
+        </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
             <input type="checkbox" name="active" [(ngModel)]="active" /> Active (shown at checkout/returns)
@@ -61,6 +66,7 @@ export class PaymentMethodFormComponent implements OnInit {
   name = '';
   cash = false;
   credit = false;
+  roomCharge = false;
   active = true;
   sortOrder = 0;
   error: string | null = null;
@@ -83,6 +89,7 @@ export class PaymentMethodFormComponent implements OnInit {
           this.name = found.name;
           this.cash = found.cash;
           this.credit = found.credit;
+          this.roomCharge = !!found.roomCharge;
           this.active = found.active;
           this.sortOrder = found.sortOrder;
         }
@@ -94,8 +101,8 @@ export class PaymentMethodFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     const call = this.id
-      ? this.paymentMethodApi.update(this.id, { name: this.name, cash: this.cash, credit: this.credit, active: this.active, sortOrder: this.sortOrder })
-      : this.paymentMethodApi.create({ code: this.code, name: this.name, cash: this.cash, credit: this.credit, sortOrder: this.sortOrder });
+      ? this.paymentMethodApi.update(this.id, { name: this.name, cash: this.cash, credit: this.credit, roomCharge: this.roomCharge, active: this.active, sortOrder: this.sortOrder })
+      : this.paymentMethodApi.create({ code: this.code, name: this.name, cash: this.cash, credit: this.credit, roomCharge: this.roomCharge, sortOrder: this.sortOrder });
     call.subscribe({
       next: () => this.router.navigate(['/admin/payment-methods']),
       error: (err) => (this.error = err?.error?.message ?? 'Failed to save payment method'),

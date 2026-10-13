@@ -39,7 +39,8 @@ import { PaymentMethodOption } from '../core/models';
             </td>
             <td>
               <span class="badge badge-success" *ngIf="m.credit">Credit</span>
-              <span class="text-muted" *ngIf="!m.credit">—</span>
+              <span class="badge badge-warning" *ngIf="m.roomCharge">Room charge</span>
+              <span class="text-muted" *ngIf="!m.credit && !m.roomCharge">—</span>
             </td>
             <td>
               <span class="badge badge-success" *ngIf="m.active">Active</span>

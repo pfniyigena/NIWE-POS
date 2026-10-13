@@ -116,4 +116,8 @@ public class Subscription extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    /** The nextBillingDate a billing reminder email was last sent for, so each upcoming bill is announced only once. */
+    @Column(name = "reminder_sent_for")
+    private LocalDate reminderSentFor;
 }

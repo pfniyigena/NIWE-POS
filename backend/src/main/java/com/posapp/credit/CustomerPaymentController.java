@@ -28,20 +28,20 @@ public class CustomerPaymentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW') or hasAuthority('AREA_BILLING_VIEW')")
     public List<CustomerPaymentDto> allPayments() {
         return customerCreditService.paymentHistory();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW') or hasAuthority('AREA_BILLING_VIEW')")
     public CustomerPaymentDto getReceipt(@PathVariable Long id) {
         return customerCreditService.getPaymentReceipt(id);
     }
 
     /** Fourier: "Change payment receipt printout. Make a PDF with A4" — see CustomerCreditService.pdf's javadoc. */
     @GetMapping("/{id}/pdf")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW') or hasAuthority('AREA_BILLING_VIEW')")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
         byte[] pdf = customerCreditService.pdf(id);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);

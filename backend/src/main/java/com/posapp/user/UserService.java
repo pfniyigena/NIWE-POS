@@ -26,8 +26,11 @@ public class UserService {
     private final AuditLogService auditLogService;
     /** Validates the branch ids assigned to a user. */
     private final BranchService branchService;
+    private final CustomRoleRepository customRoleRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuditLogService auditLogService, BranchService branchService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuditLogService auditLogService, BranchService branchService,
+                       CustomRoleRepository customRoleRepository) {
+        this.customRoleRepository = customRoleRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditLogService = auditLogService;
@@ -66,10 +69,12 @@ public class UserService {
         user.setActive(true);
         user.setPermissions(parsePermissions(request.getPermissions()));
         user.setBranchIds(parseBranchIds(request.getBranchIds()));
+        user.setCustomRole(resolveCustomRole(request.getCustomRoleId(), user.getRole()));
         AppUser saved = userRepository.save(user);
         auditLogService.record("USER_CREATED",
                 "Created user " + saved.getUsername() + " (" + saved.getFullName() + ", role " + saved.getRole() + ")"
-                        + (saved.getPermissions().isEmpty() ? "" : ", permissions " + saved.getPermissions()),
+                        + (saved.getPermissions().isEmpty() ? "" : ", permissions " + saved.getPermissions())
+                        + (saved.getCustomRole() == null ? "" : ", custom role " + saved.getCustomRole().getName()),
                 "AppUser", saved.getId());
         return UserDto.from(saved);
     }
@@ -99,8 +104,16 @@ public class UserService {
         if (request.getBranchIds() != null) {
             user.setBranchIds(parseBranchIds(request.getBranchIds()));
         }
+        String oldCustomRole = user.getCustomRole() == null ? null : user.getCustomRole().getName();
+        if (request.isCustomRoleProvided() || user.getRole() == Role.ADMIN) {
+            user.setCustomRole(resolveCustomRole(request.isCustomRoleProvided() ? request.getCustomRoleId() : null, user.getRole()));
+        }
         AppUser saved = userRepository.save(user);
         StringBuilder description = new StringBuilder("Updated user ").append(saved.getUsername());
+        String newCustomRole = saved.getCustomRole() == null ? null : saved.getCustomRole().getName();
+        if (!java.util.Objects.equals(oldCustomRole, newCustomRole)) {
+            description.append(", custom role ").append(oldCustomRole == null ? "none" : oldCustomRole).append(" -> ").append(newCustomRole == null ? "none" : newCustomRole);
+        }
         if (oldRole != saved.getRole()) {
             description.append(": role ").append(oldRole).append(" -> ").append(saved.getRole());
         }
@@ -232,6 +245,12 @@ public class UserService {
         } catch (IllegalArgumentException | NullPointerException ex) {
             throw ApiException.badRequest("Unknown role: " + raw);
         }
+    }
+
+    /** A custom role only applies to a non-admin account (an ADMIN is already unrestricted); null clears it. */
+    private CustomRole resolveCustomRole(Long id, Role role) {
+        if (id == null || role == Role.ADMIN) return null;
+        return customRoleRepository.findById(id).orElseThrow(() -> ApiException.notFound("Role not found: " + id));
     }
 
     /** Fourier: "Build a full permissions system" — null/empty is a perfectly normal "no extra grants", not an error. */

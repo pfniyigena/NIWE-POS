@@ -63,6 +63,12 @@ public class RestaurantOrderController {
         return orderService.openTakeawayOrder(request);
     }
 
+    /** Hotel module: a room-service order for a checked-in guest. */
+    @PostMapping("/orders/room-service")
+    public RestaurantOrderDto openRoomServiceOrder(@Valid @RequestBody com.posapp.restaurant.dto.OpenRoomServiceOrderRequest request) {
+        return orderService.openRoomServiceOrder(request);
+    }
+
     @PostMapping("/orders/delivery")
     public RestaurantOrderDto openDeliveryOrder(@Valid @RequestBody OpenOffPremiseOrderRequest request) {
         return orderService.openDeliveryOrder(request);

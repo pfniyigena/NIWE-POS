@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounting/journal-entries")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class JournalEntryController {
 
     private final JournalEntryService journalEntryService;
@@ -29,6 +29,7 @@ public class JournalEntryController {
         return journalEntryService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping
     public JournalEntryDto create(@Valid @RequestBody CreateJournalEntryRequest request) {
         return journalEntryService.createManual(request);

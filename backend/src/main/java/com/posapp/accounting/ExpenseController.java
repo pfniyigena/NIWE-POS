@@ -18,7 +18,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/accounting/expenses")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class ExpenseController {
 
     private final ExpenseService expenseService;
@@ -37,12 +37,14 @@ public class ExpenseController {
         return expenseService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping
     public ExpenseDto create(@Valid @RequestBody ExpenseRequest request) {
         return expenseService.create(request);
     }
 
     /** Only while PENDING — see ExpenseService.update. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PutMapping("/{id}")
     public ExpenseDto update(@PathVariable Long id, @Valid @RequestBody ExpenseRequest request) {
         return expenseService.update(id, request);
@@ -70,6 +72,7 @@ public class ExpenseController {
     }
 
     /** Records that an APPROVED, still-unpaid bill has since been paid off — see ExpenseService.settle. Open to any admin (not maker-checker gated — settling is a separate real-world event, not a sign-off on the original claim). */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping("/{id}/settle")
     public ExpenseDto settle(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         LocalDate settledDate = body != null && body.get("settledDate") != null ? LocalDate.parse(body.get("settledDate")) : null;

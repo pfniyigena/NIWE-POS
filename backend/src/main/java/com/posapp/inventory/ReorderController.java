@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reorder")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class ReorderController {
 
     private final ReorderService service;
@@ -25,6 +25,7 @@ public class ReorderController {
         return service.suggestions();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/requisition")
     public PurchaseRequisitionDto createRequisition(@Valid @RequestBody ReorderRequisitionRequest request) {
         return service.createRequisition(request);

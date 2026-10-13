@@ -41,7 +41,8 @@ public class AuthController {
         var user = principal.getUser();
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name(), user.getId());
         var permissionNames = user.getPermissions().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
-        return new LoginResponse(token, user.getId(), user.getUsername(), user.getFullName(), user.getRole().name(), permissionNames);
+        return new LoginResponse(token, user.getId(), user.getUsername(), user.getFullName(), user.getRole().name(), permissionNames,
+                user.effectiveGrants(), user.getCustomRole() != null ? user.getCustomRole().getName() : null);
     }
 
     /** Fourier: "user will input the email and he/she can reset the password" — always returns 200 with no body, whether or not that email is actually registered (see PasswordResetService.requestReset's javadoc). */

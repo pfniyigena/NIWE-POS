@@ -19,7 +19,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/stock-adjustments")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class StockAdjustmentController {
 
     private final StockAdjustmentService stockAdjustmentService;
@@ -33,6 +33,7 @@ public class StockAdjustmentController {
         return stockAdjustmentService.listAll();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public StockAdjustmentDto create(@Valid @RequestBody StockAdjustmentRequest request) {
         return stockAdjustmentService.create(request);

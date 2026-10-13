@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
 import { MenuApiService } from '../core/api/menu-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
+import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
 import { MenuCategory, MenuItem, PaymentMethodOption, RestaurantOrder } from '../core/models';
 
 interface PaymentRow {
@@ -175,6 +176,14 @@ interface PaymentRow {
                 <input class="form-control" type="number" style="width:120px;" min="0" step="0.01" [(ngModel)]="row.amount" [name]="'amount' + i" />
                 <button class="btn btn-sm btn-outline-danger" (click)="removePaymentRow(i)">✕</button>
               </div>
+              <div class="form-group mb-2" *ngIf="roomRowSelected()">
+                <label class="form-label">Charge to which room?</label>
+                <select class="form-select" [(ngModel)]="roomBookingId" name="roomBooking">
+                  <option [ngValue]="null">Choose the guest…</option>
+                  <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">Room {{ g.roomNumber }} — {{ g.guestName }}</option>
+                </select>
+                <div class="text-muted" style="font-size:0.8rem;" *ngIf="inHouse.length === 0">No guest is checked in right now.</div>
+              </div>
               <div class="flex gap-2 mb-2">
                 <button class="btn btn-sm btn-outline-secondary" (click)="addPaymentRow()">+ Add payment</button>
                 <span class="text-muted" style="align-self:center;">
@@ -237,6 +246,9 @@ export class TableOrderComponent implements OnInit {
   checkingOut = false;
   paymentMethods: PaymentMethodOption[] = [];
   paymentRows: PaymentRow[] = [];
+  /** Hotel module: guests a "Charge to room" payment can go to (a room-service order already has its guest). */
+  inHouse: InHouseGuest[] = [];
+  roomBookingId: number | null = null;
 
   /**
    * Fourier: "Include split & merge bills." "Custom" is the original free-form payment rows;
@@ -258,6 +270,7 @@ export class TableOrderComponent implements OnInit {
     private orderApi: RestaurantOrderApiService,
     private menuApi: MenuApiService,
     private paymentMethodApi: PaymentMethodApiService,
+    private hotelApi: HotelApiService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -275,6 +288,9 @@ export class TableOrderComponent implements OnInit {
     this.paymentMethodApi.listActive().subscribe({
       next: (methods) => {
         this.paymentMethods = methods;
+        if (methods.some((m) => m.roomCharge)) {
+          this.hotelApi.inHouseGuests().subscribe({ next: (g) => (this.inHouse = g), error: () => (this.inHouse = []) });
+        }
       },
       error: () => {},
     });
@@ -282,7 +298,10 @@ export class TableOrderComponent implements OnInit {
 
   loadOrder(): void {
     this.orderApi.getById(this.orderId).subscribe({
-      next: (o) => (this.order = o),
+      next: (o) => {
+        this.order = o;
+        if (o.roomBookingId && !this.roomBookingId) this.roomBookingId = o.roomBookingId;
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load order'),
     });
   }
@@ -412,12 +431,22 @@ export class TableOrderComponent implements OnInit {
     this.error = null;
   }
 
+  /** Hotel module: is any payment row on the "Charge to room" method? */
+  roomRowSelected(): boolean {
+    const roomCodes = this.paymentMethods.filter((m) => m.roomCharge).map((m) => m.code);
+    return this.paymentRows.some((r) => roomCodes.includes(r.method));
+  }
+
   doCheckout(): void {
     if (!this.order) return;
     if (this.paymentRows.length === 0) this.addPaymentRow();
+    if (this.roomRowSelected() && !this.roomBookingId) {
+      this.error = 'Choose the guest whose room this is charged to.';
+      return;
+    }
     this.error = null;
     this.checkingOut = true;
-    this.orderApi.checkout(this.orderId, { payments: this.paymentRows }).subscribe({
+    this.orderApi.checkout(this.orderId, { payments: this.paymentRows, roomBookingId: this.roomRowSelected() ? this.roomBookingId : null }).subscribe({
       next: (o) => {
         this.order = o;
         this.checkingOut = false;

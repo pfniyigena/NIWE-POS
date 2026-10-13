@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { UserApiService } from '../core/api/user-api.service';
 import { Branch, Permission } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
+import { CustomRole, RoleApiService } from '../core/api/role-api.service';
 
 /** One checklist row — see this component's own PERMISSION_OPTIONS for the fixed set. */
 interface PermissionOption {
@@ -48,6 +49,17 @@ interface PermissionOption {
             <option value="CASHIER">Cashier</option>
             <option value="ADMIN">Admin</option>
           </select>
+        </div>
+        <div class="form-group" *ngIf="role === 'CASHIER'">
+          <label class="form-label">Custom role</label>
+          <select class="form-select" name="customRoleId" [(ngModel)]="customRoleId">
+            <option [ngValue]="null">None — plain cashier</option>
+            <option *ngFor="let r of customRoles" [ngValue]="r.id">{{ r.name }}{{ r.active ? '' : ' (inactive)' }}</option>
+          </select>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            Gives this account the access of a role you built under Staff &gt; Roles (for example a Manager or an Accountant)
+            on top of normal cashier work. Admins always have full access.
+          </div>
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
@@ -100,6 +112,8 @@ export class UserFormComponent implements OnInit {
   permissions: Permission[] = [];
   branches: Branch[] = [];
   branchIds: number[] = [];
+  customRoles: CustomRole[] = [];
+  customRoleId: number | null = null;
   error: string | null = null;
 
   /** Fourier: "Build a full permissions system" — the fixed set this app currently supports. */
@@ -115,12 +129,14 @@ export class UserFormComponent implements OnInit {
   constructor(
     private userApi: UserApiService,
     private branchApi: BranchApiService,
+    private roleApi: RoleApiService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
+    this.roleApi.list().subscribe({ next: (r) => (this.customRoles = r), error: () => {} });
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) return;
     this.id = Number(idParam);
@@ -135,6 +151,7 @@ export class UserFormComponent implements OnInit {
           this.active = found.active;
           this.permissions = [...(found.permissions ?? [])];
           this.branchIds = [...(found.branchIds ?? [])];
+          this.customRoleId = found.customRoleId ?? null;
         }
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff account'),
@@ -159,6 +176,11 @@ export class UserFormComponent implements OnInit {
     this.branchIds = checked ? (this.branchIds.includes(id) ? this.branchIds : [...this.branchIds, id]) : this.branchIds.filter((x) => x !== id);
   }
 
+  /** A custom role only applies to a Cashier account — an Admin already has everything. */
+  private effectiveCustomRoleId(): number | null {
+    return this.role === 'ADMIN' ? null : this.customRoleId;
+  }
+
   /** Admins are never limited, so any stale selection is dropped when saving one. */
   private effectiveBranchIds(): number[] {
     return this.role === 'ADMIN' ? [] : this.branchIds;
@@ -168,7 +190,7 @@ export class UserFormComponent implements OnInit {
     this.error = null;
     if (this.id) {
       this.userApi
-        .update(this.id, { fullName: this.fullName, email: this.email || null, role: this.role, active: this.active, permissions: this.permissions, branchIds: this.effectiveBranchIds() })
+        .update(this.id, { fullName: this.fullName, email: this.email || null, role: this.role, active: this.active, permissions: this.permissions, branchIds: this.effectiveBranchIds(), customRoleId: this.effectiveCustomRoleId(), customRoleProvided: true })
         .subscribe({
           next: () => this.router.navigate(['/admin/staff']),
           error: (err) => (this.error = err?.error?.message ?? 'Failed to save staff account'),
@@ -183,6 +205,7 @@ export class UserFormComponent implements OnInit {
           role: this.role,
           permissions: this.permissions,
           branchIds: this.effectiveBranchIds(),
+          customRoleId: this.effectiveCustomRoleId(),
         })
         .subscribe({
           next: () => this.router.navigate(['/admin/staff']),

@@ -68,6 +68,17 @@ public class RestaurantOrder extends BaseEntity {
 
     private String notes;
 
+    /**
+     * Hotel module: the in-house guest's booking when this is a room-service order, or the booking the bill was charged to
+     * at checkout. Null for every ordinary order (and for every row created before the hotel module existed).
+     */
+    @jakarta.persistence.Column(name = "room_booking_id")
+    private Long roomBookingId;
+
+    /** Hotel module: "101 — Jane Doe", shown on the kitchen ticket for a room-service order. */
+    @jakarta.persistence.Column(name = "room_label")
+    private String roomLabel;
+
     private Instant openedAt = Instant.now();
     private Instant closedAt;
 
@@ -109,6 +120,9 @@ public class RestaurantOrder extends BaseEntity {
     public String displayLabel() {
         if (table != null) {
             return table.getName();
+        }
+        if (roomLabel != null && !roomLabel.isBlank()) {
+            return "Room service — " + roomLabel;
         }
         String prefix = orderType == RestaurantOrderType.DELIVERY ? "Delivery" : "Takeaway";
         return (customerName != null && !customerName.isBlank()) ? prefix + " — " + customerName : prefix;

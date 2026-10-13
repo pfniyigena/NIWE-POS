@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounting/cost-centers")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_VIEW')")
 public class CostCenterController {
 
     private final CostCenterService costCenterService;
@@ -34,11 +34,13 @@ public class CostCenterController {
         return costCenterService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PostMapping
     public CostCenterDto create(@Valid @RequestBody CostCenterRequest request) {
         return costCenterService.create(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_ACCOUNTING_MANAGE')")
     @PutMapping("/{id}")
     public CostCenterDto update(@PathVariable Long id, @Valid @RequestBody CostCenterRequest request) {
         return costCenterService.update(id, request);

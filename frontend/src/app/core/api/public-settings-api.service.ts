@@ -12,4 +12,9 @@ export class PublicSettingsApiService {
   branding(): Observable<PublicBranding> {
     return this.http.get<PublicBranding>(`${API_BASE}/public/settings/branding`);
   }
+
+  /** Which public services are available — {RESTAURANT: bool, HELPDESK: bool}; follows Settings > Modules. */
+  modules(): Observable<Record<string, boolean>> {
+    return this.http.get<Record<string, boolean>>(`${API_BASE}/public/modules`);
+  }
 }

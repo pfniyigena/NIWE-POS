@@ -20,4 +20,7 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
 
     /** Email-uniqueness check in UserService, same shape as existsByUsernameIgnoreCase. */
     boolean existsByEmailIgnoreCase(String email);
+
+    /** How many users hold a given custom role — blocks deleting a role that is still in use. */
+    long countByCustomRoleId(Long customRoleId);
 }

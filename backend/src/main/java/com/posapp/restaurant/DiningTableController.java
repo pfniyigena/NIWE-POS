@@ -32,13 +32,13 @@ public class DiningTableController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public DiningTableDto create(@Valid @RequestBody TableRequest request) {
         return tableService.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public DiningTableDto update(@PathVariable Long id, @Valid @RequestBody TableRequest request) {
         return tableService.update(id, request);
     }

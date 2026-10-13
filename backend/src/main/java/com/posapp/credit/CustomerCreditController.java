@@ -37,14 +37,14 @@ public class CustomerCreditController {
 
     /** Task: "Payment allocation to orders" — the Record Payment screen's allocation table. */
     @GetMapping("/outstanding-orders")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW') or hasAuthority('AREA_BILLING_VIEW')")
     public List<OutstandingOrderDto> outstandingOrders(@PathVariable Long customerId) {
         return customerCreditService.listOutstandingOrders(customerId);
     }
 
     /** Task family: "Customer payment later" / "Partial settlement" / "Multiple payments against one order". */
     @PostMapping("/payments")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE') or hasAuthority('AREA_BILLING_MANAGE')")
     public CustomerPaymentDto recordPayment(@PathVariable Long customerId,
                                              @Valid @RequestBody RecordPaymentRequest request,
                                              @AuthenticationPrincipal AppUserPrincipal principal) {
@@ -53,7 +53,7 @@ public class CustomerCreditController {
 
     /** Task: "Payment history". */
     @GetMapping("/payments")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_VIEW') or hasAuthority('AREA_BILLING_VIEW')")
     public List<CustomerPaymentDto> paymentHistory(@PathVariable Long customerId) {
         return customerCreditService.paymentHistory(customerId);
     }

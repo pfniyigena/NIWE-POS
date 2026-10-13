@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 /** Which admin group a sidenav route belongs to — see SidenavStateService.defaultGroupForUrl. */
 const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
+  { group: 'purchases', prefixes: ['/admin/purchases'] },
   { group: 'pos', prefixes: ['/registers', '/sessions', '/returns', '/receipts', '/admin/shifts', '/admin/reports'] },
   // 'customers' renamed to 'sales' (Task: "Then let have Sale as Menu and Move Customers into
   // Sales") — '/admin/sales' covers /admin/sales-orders and /admin/sales/reports in one prefix,
@@ -16,10 +17,19 @@ const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
   // Expenses split out of Accounting into its own top-level group (Fourier: "I prefer to have
   // the Expenses as module separate from Accounting").
   { group: 'expenses', prefixes: ['/admin/accounting/expenses', '/admin/accounting/recurring-expenses'] },
+  { group: 'hotel', prefixes: ['/admin/hotel'] },
+  { group: 'assets', prefixes: ['/admin/assets'] },
+  { group: 'installments', prefixes: ['/admin/installments'] },
+  { group: 'employees', prefixes: ['/admin/hr/employees', '/admin/hr/reports'] },
+  { group: 'org', prefixes: ['/admin/hr/org'] },
+  { group: 'attendance', prefixes: ['/admin/hr/attendance', '/admin/hr/leave'] },
+  { group: 'contracts', prefixes: ['/admin/hr/contracts'] },
+  { group: 'payroll', prefixes: ['/admin/hr/payroll'] },
+  { group: 'subscriptions', prefixes: ['/admin/subscription'] },
   { group: 'users', prefixes: ['/admin/staff'] },
   {
     group: 'settings',
-    prefixes: ['/admin/payment-methods', '/admin/settings', '/admin/apps', '/admin/audit-log'],
+    prefixes: ['/admin/payment-methods', '/admin/settings', '/settings/appearance', '/admin/apps', '/admin/audit-log'],
   },
 ];
 

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { ModuleApiService } from '../core/api/module-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 
 /** One tile on the public home page's "What would you like to do?" grid — see PublicHomeComponent's own javadoc. */
@@ -11,6 +12,8 @@ interface PublicLink {
   description: string;
   route: string;
   linkLabel: string;
+  /** The module that must be switched on for this tile to show (Settings > Modules). */
+  module: 'RESTAURANT' | 'HELPDESK';
 }
 
 /**
@@ -39,14 +42,14 @@ interface PublicLink {
             <img *ngIf="logoDataUrl" [src]="logoDataUrl" alt="" style="height:48px; width:48px; object-fit:contain; border-radius:0.4rem; background:#fff;" />
             <h1 style="margin:0; font-size:1.8rem;">{{ businessName || 'Welcome' }}</h1>
           </div>
-          <p class="public-home-tagline">Reservations, support, and more — all in one place.</p>
+          <p class="public-home-tagline">{{ links.length ? 'Reservations, support, and more — all in one place.' : 'Welcome.' }}</p>
           <a class="btn btn-primary" routerLink="/login">Staff Login</a>
         </div>
       </header>
 
       <main class="public-home-main">
-        <h2 class="mb-3" style="text-align:center;">What would you like to do?</h2>
-        <div class="public-home-grid">
+        <h2 class="mb-3" style="text-align:center;" *ngIf="links.length">What would you like to do?</h2>
+        <div class="public-home-grid" *ngIf="links.length">
           <a *ngFor="let link of links" class="card public-home-card" [routerLink]="link.route">
             <div class="public-home-card-icon">{{ link.icon }}</div>
             <h3 class="mb-1">{{ link.title }}</h3>
@@ -98,19 +101,25 @@ export class PublicHomeComponent implements OnInit {
   year = new Date().getFullYear();
 
   /** Grows by one entry per new public feature — nothing else on this page needs to change. */
-  links: PublicLink[] = [
-    { icon: '🍽️', title: 'Reserve a table', description: 'Book a table for an upcoming visit.', route: '/reserve', linkLabel: 'Reserve now' },
-    { icon: '🎫', title: 'Help Desk', description: 'Submit a support request or check an existing ticket.', route: '/helpdesk', linkLabel: 'Open Help Desk' },
+  private allLinks: PublicLink[] = [
+    { icon: '🍽️', title: 'Reserve a table', description: 'Book a table for an upcoming visit.', route: '/reserve', linkLabel: 'Reserve now', module: 'RESTAURANT' },
+    { icon: '🎫', title: 'Help Desk', description: 'Submit a support request or check an existing ticket.', route: '/helpdesk', linkLabel: 'Open Help Desk', module: 'HELPDESK' },
   ];
 
-  constructor(private auth: AuthService, private router: Router, private publicSettingsApi: PublicSettingsApiService) {}
+  /** Only the services whose module is switched on (Settings > Modules); empty until that is known. */
+  links: PublicLink[] = [];
+
+  constructor(private auth: AuthService, private router: Router, private publicSettingsApi: PublicSettingsApiService, private modules: ModuleApiService) {}
 
   ngOnInit(): void {
     if (this.auth.isLoggedIn()) {
-      const landing = this.auth.currentUser()?.role === 'ADMIN' ? '/registers' : '/sessions';
-      this.router.navigate([landing]);
+      this.modules.whenLoaded().subscribe(() => this.router.navigate([this.auth.homePath(this.modules.on('POS'))]));
       return;
     }
+    this.publicSettingsApi.modules().subscribe({
+      next: (m) => (this.links = this.allLinks.filter((l) => m[l.module])),
+      error: () => (this.links = []),
+    });
     this.publicSettingsApi.branding().subscribe({
       next: (b) => {
         this.businessName = b.businessName;

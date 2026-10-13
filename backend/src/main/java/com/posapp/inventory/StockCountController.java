@@ -17,7 +17,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/stock-counts")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_VIEW')")
 public class StockCountController {
 
     private final StockCountService service;
@@ -36,31 +36,37 @@ public class StockCountController {
         return service.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping
     public StockCountDto start(@Valid @RequestBody StockCountRequest request) {
         return service.start(request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PutMapping("/{id}/counts")
     public StockCountDto saveCounts(@PathVariable Long id, @RequestBody StockCountSaveRequest request) {
         return service.saveCounts(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/lines")
     public StockCountDto addLine(@PathVariable Long id, @Valid @RequestBody StockCountAddLineRequest request) {
         return service.addLine(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @DeleteMapping("/{id}/lines/{lineId}")
     public StockCountDto removeLine(@PathVariable Long id, @PathVariable Long lineId) {
         return service.removeLine(id, lineId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/submit")
     public StockCountDto submit(@PathVariable Long id) {
         return service.submit(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/reopen")
     public StockCountDto reopen(@PathVariable Long id) {
         return service.reopen(id);
@@ -72,6 +78,7 @@ public class StockCountController {
         return service.approve(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_INVENTORY_MANAGE')")
     @PostMapping("/{id}/cancel")
     public StockCountDto cancel(@PathVariable Long id) {
         return service.cancel(id);
