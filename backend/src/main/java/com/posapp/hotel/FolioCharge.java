@@ -42,6 +42,9 @@ public class FolioCharge extends BaseEntity {
     @Column(name = "revenue_posted")
     private boolean revenuePosted = false;
 
+    /** Which bill of the stay this line is on (1 unless the folio has been split). */
+    @Column(name = "bill_no")
+    private int billNo = 1;
     private boolean voided = false;
     private String voidReason;
 }

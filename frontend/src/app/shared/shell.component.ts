@@ -434,8 +434,13 @@ import { HotelApiService } from '../core/api/hotel-api.service';
               <a *ngIf="canSee('/admin/hotel/housekeeping')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/housekeeping" routerLinkActive="active"><span class="sidenav-icon">🧹</span> Housekeeping</a>
               <a *ngIf="canSee('/admin/hotel/maintenance')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/maintenance" routerLinkActive="active"><span class="sidenav-icon">🔧</span> Maintenance</a>
               <a *ngIf="canSee('/admin/hotel/guests')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/guests" routerLinkActive="active"><span class="sidenav-icon">🧳</span> Guests</a>
+              <a *ngIf="canSee('/admin/hotel/guest-register')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/guest-register" routerLinkActive="active"><span class="sidenav-icon">📒</span> Guest register</a>
               <a *ngIf="canSee('/admin/hotel/rooms')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/rooms" routerLinkActive="active"><span class="sidenav-icon">🚪</span> Rooms</a>
               <a *ngIf="canSee('/admin/hotel/room-types')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/room-types" routerLinkActive="active"><span class="sidenav-icon">🛏️</span> Room types</a>
+              <a *ngIf="canSee('/admin/hotel/rates')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/rates" routerLinkActive="active"><span class="sidenav-icon">💲</span> Rates</a>
+              <a *ngIf="canSee('/admin/hotel/companies')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/companies" routerLinkActive="active"><span class="sidenav-icon">🏢</span> Company accounts</a>
+              <a *ngIf="canSee('/admin/hotel/groups')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/groups" routerLinkActive="active"><span class="sidenav-icon">👥</span> Groups</a>
+              <a *ngIf="canSee('/admin/hotel/online')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/online" routerLinkActive="active"><span class="sidenav-icon">🌐</span> Online booking</a>
               <a *ngIf="canSee('/admin/hotel/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
             </ng-container>
             <a *ngIf="canSee('/admin/hotel/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>

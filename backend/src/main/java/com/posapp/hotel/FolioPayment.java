@@ -1,6 +1,7 @@
 package com.posapp.hotel;
 
 import com.posapp.common.BaseEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -29,4 +30,7 @@ public class FolioPayment extends BaseEntity {
     private BigDecimal amount = BigDecimal.ZERO;
     private String reference;
     private String note;
+    /** Which bill of the stay this money was taken for. */
+    @Column(name = "bill_no")
+    private int billNo = 1;
 }

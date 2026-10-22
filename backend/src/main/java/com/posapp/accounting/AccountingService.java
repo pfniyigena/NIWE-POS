@@ -612,6 +612,71 @@ public class AccountingService {
         post("HOTEL_DEPOSIT_FORFEIT", bookingId, memo, null, lines);
     }
 
+    /** A guest bill sent to a company at check-out: what the guest ledger held now sits on the company's account (city ledger). */
+    @Transactional
+    public void postHotelCityLedger(Long companyBillId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "City ledger", true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Guest ledger", false);
+        post("HOTEL_CITY_LEDGER", companyBillId, memo, null, lines);
+    }
+
+    /** Money received from a company against its city-ledger balance. */
+    @Transactional
+    public void postHotelCompanyReceipt(Long receiptId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "City ledger", false);
+        post("HOTEL_COMPANY_RECEIPT", receiptId, memo, null, lines);
+    }
+
+    // ---- Hotel group master account ----
+
+    /** A member's bill charged to the group at check-out: the guest ledger is cleared onto the group's ledger. */
+    @Transactional
+    public void postHotelGroupBill(Long entryId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Group ledger", true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Guest ledger", false);
+        post("HOTEL_GROUP_BILL", entryId, memo, null, lines);
+    }
+
+    /** Money received from the group and held against its coming bills. Dr Cash / Cr Guest deposits. */
+    @Transactional
+    public void postHotelGroupDeposit(Long entryId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, amount, null, false);
+        post("HOTEL_GROUP_DEPOSIT", entryId, memo, null, lines);
+    }
+
+    /** The group's held deposit set against what it owes. Dr Guest deposits / Cr group ledger. */
+    @Transactional
+    public void postHotelGroupApplied(Long entryId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, amount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Group ledger", false);
+        post("HOTEL_GROUP_APPLIED", entryId, memo, null, lines);
+    }
+
+    /** Money received from the group against what it owes. Dr Cash / Cr group ledger. */
+    @Transactional
+    public void postHotelGroupPayment(Long entryId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, "Group ledger", false);
+        post("HOTEL_GROUP_PAYMENT", entryId, memo, null, lines);
+    }
+
+    /** A held group deposit given back. Dr Guest deposits / Cr Cash. */
+    @Transactional
+    public void postHotelGroupRefund(Long entryId, String memo, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.GUEST_DEPOSITS, amount, null, true);
+        addIfPositive(lines, AccountService.CASH, amount, null, false);
+        post("HOTEL_GROUP_REFUND", entryId, memo, null, lines);
+    }
+
     // ---- Law firm client money (com.posapp.law) ----
 
     /** Client money paid into the trust account: it is the client's, not the firm's. Dr Client trust bank / Cr Client money held. */

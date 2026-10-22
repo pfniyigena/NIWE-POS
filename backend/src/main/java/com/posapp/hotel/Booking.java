@@ -50,14 +50,31 @@ public class Booking extends BaseEntity {
     private int adults = 1;
     private int children = 0;
 
-    /** Agreed room price per night before tax (defaults from the room, can be negotiated). */
+    /** Agreed room price per night before tax. FIXED: applies to every night. AUTO: the average of the stored nights (for display). */
     private BigDecimal nightlyRate = BigDecimal.ZERO;
     /** Snapshot of the room type's extra-person rate and included occupancy when the booking was made. */
     private BigDecimal extraPersonRate = BigDecimal.ZERO;
     private int baseOccupancy = 2;
 
+    /** The group this booking belongs to (null for an ordinary booking). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    private HotelGroup group;
+
+    /** The bill the room nights go on (a company bill for a corporate stay). */
+    @Column(name = "room_bill_no")
+    private int roomBillNo = 1;
+
     @Enumerated(EnumType.STRING)
     private BookingStatus status = BookingStatus.BOOKED;
+
+    /** AUTO: each night is priced from the rate rules and stored in {@link BookingNight}; FIXED: {@link #nightlyRate} applies to every night. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RateMode rateMode = RateMode.FIXED;
+
+    /** The rate plan the stay was sold under (null = the standard rate). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    private RatePlan ratePlan;
 
     /** Walk-in, phone, website, agent... free text. */
     private String source;
@@ -89,4 +106,17 @@ public class Booking extends BaseEntity {
         if (checkInDate == null || checkOutDate == null) return 1;
         return Math.max(1, ChronoUnit.DAYS.between(checkInDate, checkOutDate));
     }
+
+    // ---- online booking and guest e-mails (HO-8)
+
+    /** Short code the guest quotes (with their phone number) to look up or cancel an online booking. */
+    @Column(unique = true)
+    private String confirmationCode;
+    private boolean online = false;
+    /** Deposit the guest must pay to keep an online booking; the hold is released when it is not received in time. */
+    private BigDecimal depositDue;
+    private Instant holdExpiresAt;
+    private Instant confirmationMailedAt;
+    private Instant prearrivalMailedAt;
+    private Instant thanksMailedAt;
 }

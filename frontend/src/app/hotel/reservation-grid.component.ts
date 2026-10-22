@@ -24,7 +24,7 @@ import { addDays, errMsg, today } from './hotel-util';
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div style="overflow-x:auto;" *ngIf="grid">
-        <table style="min-width:900px; table-layout:fixed;">
+        <table class="no-stack" style="min-width:900px; table-layout:fixed;">
           <thead>
             <tr>
               <th style="width:130px;">Room</th>

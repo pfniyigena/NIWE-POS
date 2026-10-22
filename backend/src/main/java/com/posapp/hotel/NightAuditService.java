@@ -30,9 +30,15 @@ public class NightAuditService {
     private final HotelFolioService folioService;
     private final HotelClock clock;
     private final AuditLogService auditLogService;
+    private final RoomService roomService;
+
+    private final HousekeepingService housekeepingService;
 
     public NightAuditService(HotelSettingsService settingsService, BookingRepository bookingRepository, RoomRepository roomRepository,
-                             HotelFolioService folioService, HotelClock clock, AuditLogService auditLogService) {
+                             HotelFolioService folioService, HotelClock clock, AuditLogService auditLogService, RoomService roomService,
+                             HousekeepingService housekeepingService) {
+        this.housekeepingService = housekeepingService;
+        this.roomService = roomService;
         this.settingsService = settingsService;
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
@@ -46,6 +52,7 @@ public class NightAuditService {
         try {
             HotelSettings settings = settingsService.entity();
             if (!settings.isEnabled()) return;
+            roomService.refreshAllOutOfOrder();
             LocalDateTime now = clock.now();
             LocalDate today = now.toLocalDate();
             if (today.equals(settings.getAuditLastRun())) return;
@@ -66,6 +73,7 @@ public class NightAuditService {
     @Transactional
     public AuditResult runNow() {
         LocalDate today = clock.today();
+        roomService.refreshAllOutOfOrder();
         List<Booking> inHouse = bookingRepository.findByStatusOrderByCheckInDateAscIdAsc(BookingStatus.CHECKED_IN);
         int nights = 0;
         for (Booking booking : inHouse) {
@@ -78,6 +86,7 @@ public class NightAuditService {
         }
         String message = "Night audit for " + today + ": " + inHouse.size() + " in-house stay" + (inHouse.size() == 1 ? "" : "s") + " checked, "
                 + nights + " night" + (nights == 1 ? "" : "s") + " charged.";
+        housekeepingService.startOfDay();
         settingsService.markAuditRan(today, message);
         auditLogService.record("HOTEL_NIGHT_AUDIT", message);
         return new AuditResult(inHouse.size(), nights, message);

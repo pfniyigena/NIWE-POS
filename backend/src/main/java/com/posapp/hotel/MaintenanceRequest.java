@@ -35,6 +35,17 @@ public class MaintenanceRequest extends BaseEntity {
 
     private boolean blocksRoom = false;
 
+    /** First night the room is out of sale (empty = right away) and the date it is back (empty = when the request is marked done). */
+    private java.time.LocalDate blockFrom;
+
+    private java.time.LocalDate blockUntil;
+
+    /** Does this request keep the room out of sale on the given night? */
+    public boolean blocksNight(java.time.LocalDate night) {
+        if (!blocksRoom || status == MaintenanceStatus.DONE) return false;
+        return (blockFrom == null || !night.isBefore(blockFrom)) && (blockUntil == null || night.isBefore(blockUntil));
+    }
+
     private String reportedBy;
     private Instant resolvedAt;
 

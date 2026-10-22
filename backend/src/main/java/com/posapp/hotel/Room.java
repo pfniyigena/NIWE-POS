@@ -41,6 +41,9 @@ public class Room extends BaseEntity {
     /** True while an open maintenance request blocks the room — it cannot be booked into or checked into. */
     private boolean outOfOrder = false;
 
+    /** Do not disturb: the guest does not want the stay-over service today (reset by the night audit). */
+    private boolean dnd = false;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 

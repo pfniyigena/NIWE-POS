@@ -321,6 +321,15 @@ import { ReservationGridComponent } from './hotel/reservation-grid.component';
 import { HousekeepingComponent } from './hotel/housekeeping.component';
 import { MaintenanceComponent } from './hotel/maintenance.component';
 import { HotelReportComponent } from './hotel/hotel-report.component';
+import { OnlineSettingsComponent } from './hotel/online-settings.component';
+import { PublicHotelComponent } from './hotel/public-hotel.component';
+import { GuestProfileComponent } from './hotel/guest-profile.component';
+import { GuestDuplicatesComponent } from './hotel/guest-duplicates.component';
+import { GuestRegisterComponent } from './hotel/guest-register.component';
+import { GroupListComponent } from './hotel/group-list.component';
+import { GroupDetailComponent } from './hotel/group-detail.component';
+import { CompanyAccountsComponent } from './hotel/company-accounts.component';
+import { HotelRatesComponent } from './hotel/rates.component';
 import { MenuAdminComponent } from './restaurant/menu-admin.component';
 import { FloorPlanComponent } from './restaurant/floor-plan.component';
 import { TableOrderComponent } from './restaurant/table-order.component';
@@ -353,6 +362,8 @@ const baseRoutes: Routes = [
   // (/api/public/reservations) and never touches AuthService/the JWT.
   { path: 'reserve', component: PublicReservationComponent, canActivate: [publicModuleGuard('RESTAURANT')] },
   { path: 'book', component: PublicBookingComponent, canActivate: [publicModuleGuard('BOOKING')] },
+  // The hotel's public booking page: open to anyone while the Hotel module and Hotel > Online booking are on.
+  { path: 'stay', component: PublicHotelComponent, canActivate: [publicModuleGuard('HOTEL')] },
   // The public listings website (Real Estate): open to anyone while the module is on and the website switch in Real Estate > Settings is on.
   { path: 'listings', component: PublicListingsComponent, canActivate: [publicModuleGuard('REAL_ESTATE')] },
   { path: 'listings/:id', component: PublicListingDetailComponent, canActivate: [publicModuleGuard('REAL_ESTATE')] },
@@ -1007,9 +1018,17 @@ const baseRoutes: Routes = [
   { path: 'admin/hotel/housekeeping', component: HousekeepingComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hotel/maintenance', component: MaintenanceComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hotel/guests', component: GuestListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/guests/duplicates', component: GuestDuplicatesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/guests/:id', component: GuestProfileComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/guest-register', component: GuestRegisterComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hotel/rooms', component: RoomListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hotel/room-types', component: RoomTypeListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/rates', component: HotelRatesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/companies', component: CompanyAccountsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/groups', component: GroupListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/groups/:id', component: GroupDetailComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hotel/reports', component: HotelReportComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hotel/online', component: OnlineSettingsComponent, canActivate: [authGuard, adminGuard] },
 
   { path: '**', redirectTo: 'registers' },
 ];

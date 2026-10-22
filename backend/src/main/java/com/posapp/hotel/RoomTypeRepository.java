@@ -10,4 +10,6 @@ public interface RoomTypeRepository extends JpaRepository<RoomType, Long> {
     boolean existsByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
+    java.util.Optional<RoomType> findByIcalToken(String icalToken);
 }

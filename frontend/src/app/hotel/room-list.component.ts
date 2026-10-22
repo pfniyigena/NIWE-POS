@@ -4,15 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { HotelApiService, Room, RoomType } from '../core/api/hotel-api.service';
+import { ListState } from '../core/api/list-state';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { PagerComponent } from '../shared/pager.component';
 import { errMsg } from './hotel-util';
 
 /** Hotel > Rooms: the physical rooms, each with a type (rate comes from the type unless the room has its own). */
 @Component({
   selector: 'app-room-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
-    <app-shell>
+    <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
         <h3>Rooms</h3>
         <button class="btn btn-primary" (click)="startNew()" *ngIf="!editing" [disabled]="types.length === 0">+ New room</button>
@@ -43,10 +46,17 @@ import { errMsg } from './hotel-util';
         </div>
       </form>
 
-      <table>
+      <app-list-filter exportPath="/hotel/rooms/export" [exportExtra]="extra" [extraActive]="roomTypeId !== null" placeholder="Search room, floor, type, guest" [statuses]="statuses" statusAll="All rooms" [dates]="false" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <div class="flex gap-2 mb-3 align-center" *ngIf="types.length > 1">
+        <select class="form-select type-filter" style="width:auto;" [(ngModel)]="roomTypeId" (ngModelChange)="typeChanged()" name="rt" title="Room type">
+          <option [ngValue]="null">All room types</option>
+          <option *ngFor="let t of allTypes" [ngValue]="t.id">{{ t.name }}</option>
+        </select>
+      </div>
+      <table class="table-sm">
         <thead><tr><th>Room</th><th>Type</th><th>Rate</th><th>State</th><th>Cleaning</th><th></th></tr></thead>
         <tbody>
-          <tr *ngFor="let r of rooms">
+          <tr *ngFor="let r of list.rows">
             <td><strong>{{ r.number }}</strong><span class="text-muted" *ngIf="r.floor"> · floor {{ r.floor }}</span></td>
             <td>{{ r.roomTypeName }}</td>
             <td>{{ r.rate | number: '1.2-2' }}<span class="text-muted" *ngIf="r.rateOverride !== null"> (own)</span></td>
@@ -62,15 +72,23 @@ import { errMsg } from './hotel-util';
               <button class="btn btn-sm btn-outline-danger" (click)="remove(r)">Delete</button>
             </td>
           </tr>
-          <tr *ngIf="rooms.length === 0"><td colspan="6" class="text-muted">No rooms yet.</td></tr>
         </tbody>
       </table>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || roomTypeId ? 'No rooms match these filters.' : 'No rooms yet.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class RoomListComponent implements OnInit {
-  rooms: Room[] = [];
   types: RoomType[] = [];
+  allTypes: RoomType[] = [];
+  roomTypeId: number | null = null;
+  extra: Record<string, string | number | null | undefined> = {};
+  statuses = [
+    { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }, { value: 'OUT_OF_ORDER', label: 'Out of order' }, { value: 'INACTIVE', label: 'Not in use' },
+    { value: 'DIRTY', label: 'Dirty' }, { value: 'CLEANING', label: 'Being cleaned' }, { value: 'CLEAN', label: 'Clean' }, { value: 'INSPECTED', label: 'Inspected' },
+  ];
+  list = new ListState<Room>((f, p, sz) => this.api.page<Room>('rooms', f, p, sz, { roomTypeId: this.roomTypeId }), 'Failed to load rooms');
   editing: { id: number | null } | null = null;
   form: any = {};
   error: string | null = null;
@@ -78,12 +96,23 @@ export class RoomListComponent implements OnInit {
   constructor(private api: HotelApiService) {}
 
   ngOnInit(): void {
-    this.api.roomTypes().subscribe((t) => (this.types = t.filter((x) => x.active)));
+    this.api.roomTypes().subscribe((t) => { this.allTypes = t; this.types = t.filter((x) => x.active); });
     this.load();
   }
 
   load(): void {
-    this.api.rooms().subscribe({ next: (r) => (this.rooms = r), error: (e) => (this.error = errMsg(e, 'Failed to load rooms')) });
+    this.list.load();
+  }
+
+  typeChanged(): void {
+    this.extra = { roomTypeId: this.roomTypeId };
+    this.list.page = 0;
+    this.list.load();
+  }
+
+  clearedExtra(): void {
+    this.roomTypeId = null;
+    this.extra = {};
   }
 
   startNew(): void {

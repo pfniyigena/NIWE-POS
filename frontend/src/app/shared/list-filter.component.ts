@@ -65,6 +65,8 @@ export class ListFilterComponent implements OnInit, OnDestroy {
   @Input() statusParam = 'status';
   /** Fixed extra parameters of the screen (a customer id when the list is one customer's). */
   @Input() exportExtra: Record<string, string | number | null | undefined> = {};
+  /** True while the screen has a choice of its own set beside the bar (a room type, a priority), so "Clear filters" shows and the export says filtered. */
+  @Input() extraActive = false;
   exporting = false;
   exportError: string | null = null;
 
@@ -81,7 +83,7 @@ export class ListFilterComponent implements OnInit, OnDestroy {
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   get active(): boolean {
-    return isFiltered(this.f);
+    return isFiltered(this.f) || this.extraActive;
   }
 
   typed(): void {

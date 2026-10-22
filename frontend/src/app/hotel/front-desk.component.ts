@@ -4,13 +4,14 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { AuthService } from '../core/auth.service';
 import { Booking, HotelApiService, HotelDashboard } from '../core/api/hotel-api.service';
+import { HotelExportComponent } from './hotel-export.component';
 import { errMsg } from './hotel-util';
 
 /** Hotel > Front desk: today's numbers, who is arriving, who is in-house, who is due to leave. */
 @Component({
   selector: 'app-front-desk',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, RouterLink, ShellComponent, HotelExportComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
@@ -32,18 +33,19 @@ import { errMsg } from './hotel-util';
         <div class="stat-tile" [class.warn]="d.outOfOrder > 0"><div class="stat-label">Out of order</div><div class="stat-value">{{ d.outOfOrder }}</div></div>
       </div>
 
-      <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
+      <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <button class="btn" [ngClass]="tab === 'arrivals' ? 'btn-primary' : 'btn-outline-secondary'" (click)="tab = 'arrivals'">Arrivals ({{ arrivals.length }})</button>
         <button class="btn" [ngClass]="tab === 'inhouse' ? 'btn-primary' : 'btn-outline-secondary'" (click)="tab = 'inhouse'">In-house ({{ inHouse.length }})</button>
         <button class="btn" [ngClass]="tab === 'departures' ? 'btn-primary' : 'btn-outline-secondary'" (click)="tab = 'departures'">Departures ({{ departures.length }})</button>
+        <app-hotel-export style="margin-left:auto;" [path]="'/hotel/front-desk/' + listName() + '/export'" [name]="listName()"></app-hotel-export>
       </div>
 
-      <table>
+      <table class="table-sm">
         <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th class="text-end">Balance</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let b of rows()">
             <td><a [routerLink]="['/admin/hotel/bookings', b.id]">{{ b.bookingNumber }}</a></td>
-            <td>{{ b.guestName }}<div class="text-muted" style="font-size:0.8rem;">{{ b.guestPhone }}</div></td>
+            <td>{{ b.guestName }}<span class="badge badge-warning vip-badge" style="margin-left:0.3rem;" *ngIf="b.guestVip">VIP</span><span class="badge badge-danger black-badge" style="margin-left:0.3rem;" *ngIf="b.guestBlacklisted">Blacklisted</span><div class="text-muted" style="font-size:0.8rem;">{{ b.guestPhone }}</div><div class="text-muted guest-prefs" style="font-size:0.8rem;" *ngIf="b.guestPreferences">★ {{ b.guestPreferences }}</div></td>
             <td>{{ b.roomNumber || '—' }}<div class="text-muted" style="font-size:0.8rem;">{{ b.roomTypeName }}</div></td>
             <td>{{ b.checkInDate }} → {{ b.checkOutDate }}</td>
             <td class="text-end">{{ b.balance | number: '1.2-2' }}</td>
@@ -71,6 +73,10 @@ export class FrontDeskComponent implements OnInit {
     this.api.arrivals().subscribe({ next: (a) => (this.arrivals = a), error: fail });
     this.api.inHouse().subscribe({ next: (a) => (this.inHouse = a), error: fail });
     this.api.departures().subscribe({ next: (a) => (this.departures = a), error: fail });
+  }
+
+  listName(): string {
+    return this.tab === 'arrivals' ? 'arrivals' : this.tab === 'inhouse' ? 'in-house' : 'departures';
   }
 
   rows(): Booking[] {

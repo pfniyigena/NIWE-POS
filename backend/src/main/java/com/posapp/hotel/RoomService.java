@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +25,15 @@ public class RoomService {
     private final BookingRepository bookingRepository;
     private final MaintenanceRequestRepository maintenanceRepository;
     private final AuditLogService auditLogService;
+    private final HotelClock clock;
+
+    private final HousekeepingService housekeepingService;
 
     public RoomService(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository, BookingRepository bookingRepository,
-                       MaintenanceRequestRepository maintenanceRepository, AuditLogService auditLogService) {
+                       MaintenanceRequestRepository maintenanceRepository, AuditLogService auditLogService, HotelClock clock,
+                       HousekeepingService housekeepingService) {
+        this.housekeepingService = housekeepingService;
+        this.clock = clock;
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
@@ -178,6 +185,7 @@ public class RoomService {
         if (request.housekeeper() != null) room.setHousekeeper(blankToNull(request.housekeeper()));
         if (request.note() != null) room.setHousekeepingNote(blankToNull(request.note()));
         Room saved = roomRepository.save(room);
+        housekeepingService.roomStatusChanged(saved, status);
         auditLogService.record("HOUSEKEEPING_UPDATED", "Room " + saved.getNumber() + " marked " + status, "Room", saved.getId());
         return toDto(saved, occupantsByRoom().get(id));
     }
@@ -197,15 +205,64 @@ public class RoomService {
         return map;
     }
 
-    /** Recomputes the out-of-order flag from open blocking maintenance requests. */
+    /** Recomputes the out-of-order flag: true while an open blocking maintenance request covers today. */
     @Transactional
     public void refreshOutOfOrder(Long roomId) {
         Room room = getOrThrow(roomId);
-        boolean blocked = maintenanceRepository.existsByRoomIdAndBlocksRoomTrueAndStatusNot(roomId, MaintenanceStatus.DONE);
+        LocalDate today = clock.today();
+        boolean blocked = maintenanceRepository.findByRoomIdAndBlocksRoomTrueAndStatusNot(roomId, MaintenanceStatus.DONE).stream()
+                .anyMatch(m -> m.blocksNight(today));
         if (room.isOutOfOrder() != blocked) {
             room.setOutOfOrder(blocked);
             roomRepository.save(room);
         }
+    }
+
+    /** Brings every room's out-of-order flag up to date (a dated block starts or ends with the calendar, not with a click). */
+    @Transactional
+    public int refreshAllOutOfOrder() {
+        LocalDate today = clock.today();
+        Map<Long, Boolean> blockedNow = new HashMap<>();
+        for (MaintenanceRequest m : maintenanceRepository.findByBlocksRoomTrueAndStatusNot(MaintenanceStatus.DONE)) {
+            if (m.blocksNight(today)) blockedNow.put(m.getRoom().getId(), true);
+        }
+        int changed = 0;
+        for (Room room : roomRepository.findAllByOrderByNumberAsc()) {
+            boolean blocked = blockedNow.containsKey(room.getId());
+            if (room.isOutOfOrder() != blocked) {
+                room.setOutOfOrder(blocked);
+                roomRepository.save(room);
+                changed++;
+            }
+        }
+        return changed;
+    }
+
+    /** Open blocking repair requests by room id: what the availability checks need to know which nights a room cannot be sold. */
+    Map<Long, List<MaintenanceRequest>> openBlocks() {
+        Map<Long, List<MaintenanceRequest>> map = new HashMap<>();
+        for (MaintenanceRequest m : maintenanceRepository.findByBlocksRoomTrueAndStatusNot(MaintenanceStatus.DONE)) {
+            map.computeIfAbsent(m.getRoom().getId(), k -> new java.util.ArrayList<>()).add(m);
+        }
+        return map;
+    }
+
+    /** True if an open repair keeps the room out of sale on that night. */
+    static boolean blockedOn(Map<Long, List<MaintenanceRequest>> blocks, Long roomId, LocalDate night) {
+        List<MaintenanceRequest> list = blocks.get(roomId);
+        if (list == null) return false;
+        for (MaintenanceRequest m : list) {
+            if (m.blocksNight(night)) return true;
+        }
+        return false;
+    }
+
+    /** The first night in [from, to) the room is out of sale, or null. */
+    static LocalDate firstBlockedNight(Map<Long, List<MaintenanceRequest>> blocks, Long roomId, LocalDate from, LocalDate to) {
+        for (LocalDate night = from; night.isBefore(to); night = night.plusDays(1)) {
+            if (blockedOn(blocks, roomId, night)) return night;
+        }
+        return null;
     }
 
     RoomDto toDto(Room r, Booking occupant) {
@@ -213,7 +270,7 @@ public class RoomService {
                 r.getRateOverride(), r.getHousekeepingStatus() == null ? HousekeepingStatus.CLEAN.name() : r.getHousekeepingStatus().name(),
                 r.getHousekeeper(), r.getHousekeepingNote(), r.isOutOfOrder(), r.isActive(), r.getNotes(),
                 occupant != null, occupant != null ? occupant.getId() : null,
-                occupant != null ? occupant.getGuest().getFullName() : null, occupant != null ? occupant.getCheckOutDate() : null);
+                occupant != null ? occupant.getGuest().getFullName() : null, occupant != null ? occupant.getCheckOutDate() : null, r.isDnd());
     }
 
     private static String blankToNull(String value) {

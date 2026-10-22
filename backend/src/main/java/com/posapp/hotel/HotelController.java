@@ -10,7 +10,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import com.posapp.common.ListPaging;
 
 /**
  * Everything under /api/hotel. Reading needs the Hotel area (view); changing things needs manage. Exceptions, on purpose:
@@ -34,10 +39,13 @@ public class HotelController {
     private final MaintenanceService maintenanceService;
     private final NightAuditService nightAuditService;
     private final HotelReportService reportService;
+    private final RateService rateService;
 
     public HotelController(HotelSettingsService settingsService, ModuleService moduleService, RoomService roomService, GuestService guestService,
                            BookingService bookingService, FrontDeskService frontDeskService, HotelFolioService folioService,
-                           MaintenanceService maintenanceService, NightAuditService nightAuditService, HotelReportService reportService) {
+                           MaintenanceService maintenanceService, NightAuditService nightAuditService, HotelReportService reportService,
+                           RateService rateService) {
+        this.rateService = rateService;
         this.settingsService = settingsService;
         this.moduleService = moduleService;
         this.roomService = roomService;
@@ -66,7 +74,9 @@ public class HotelController {
             moduleService.setEnabled(ModuleKey.HOTEL, request.enabled());
         }
         return settingsService.update(new HotelSettingsRequest(null, request.postingMode(), request.taxPercent(),
-                request.checkInTime(), request.checkOutTime(), request.auditTime()));
+                request.checkInTime(), request.checkOutTime(), request.auditTime(), request.cancelFreeDays(), request.cancelFeeNights(),
+                request.noShowFeeNights(), request.earlyDepartureFeeNights(), request.lateCheckoutFrom(), request.lateCheckoutPercent(),
+                request.taxOnFees()));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -119,9 +129,28 @@ public class HotelController {
         roomService.deleteType(id);
     }
 
+    /** Rooms. Filters and paging are optional; with none, every room (the pickers rely on that). status: OCCUPIED, VACANT, OUT_OF_ORDER, INACTIVE or a housekeeping status. */
     @GetMapping("/rooms")
-    public List<RoomDto> rooms() {
-        return roomService.listRooms();
+    public ResponseEntity<List<RoomDto>> rooms(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+                                               @RequestParam(required = false) Long roomTypeId, @RequestParam(required = false) String floor,
+                                               @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        List<RoomDto> rows = roomService.listRooms().stream()
+                .filter(r -> ListPaging.has(q, r.number(), r.floor(), r.roomTypeName(), r.occupantGuest(), r.housekeeper()))
+                .filter(r -> ListPaging.sameId(roomTypeId, r.roomTypeId()))
+                .filter(r -> floor == null || floor.isBlank() || floor.trim().equalsIgnoreCase(r.floor()))
+                .filter(r -> roomMatches(r, status)).toList();
+        return ListPaging.of(rows, page, size);
+    }
+
+    private static boolean roomMatches(RoomDto r, String status) {
+        if (status == null || status.isBlank()) return true;
+        return switch (status.trim().toUpperCase()) {
+            case "OCCUPIED" -> r.occupied();
+            case "VACANT" -> r.active() && !r.occupied() && !r.outOfOrder();
+            case "OUT_OF_ORDER" -> r.outOfOrder();
+            case "INACTIVE" -> !r.active();
+            default -> r.housekeepingStatus() != null && r.housekeepingStatus().equalsIgnoreCase(status.trim());
+        };
     }
 
     @GetMapping("/rooms/{id}")
@@ -156,8 +185,13 @@ public class HotelController {
     // ---- guests ----
 
     @GetMapping("/guests")
-    public List<GuestDto> guests(@RequestParam(required = false) String q) {
-        return guestService.search(q);
+    public ResponseEntity<List<GuestDto>> guests(@RequestParam(required = false) String q, @RequestParam(required = false) Integer page,
+                                                 @RequestParam(required = false) Integer size) {
+        if (size == null) {
+            return ResponseEntity.ok(guestService.search(q));
+        }
+        Page<GuestDto> result = guestService.page(q, page == null ? 0 : page, Math.min(size, ListPaging.MAX));
+        return ResponseEntity.ok().header(ListPaging.TOTAL, String.valueOf(result.getTotalElements())).body(result.getContent());
     }
 
     @GetMapping("/guests/{id}")
@@ -183,17 +217,110 @@ public class HotelController {
         guestService.delete(id);
     }
 
+    // ---- rates (HO-2) ----
+
+    @GetMapping("/rate-plans")
+    public List<RatePlanDto> ratePlans() {
+        return rateService.listPlans();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/rate-plans")
+    public RatePlanDto createRatePlan(@Valid @RequestBody RatePlanRequest request) {
+        return rateService.createPlan(request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/rate-plans/{id}")
+    public RatePlanDto updateRatePlan(@PathVariable Long id, @Valid @RequestBody RatePlanRequest request) {
+        return rateService.updatePlan(id, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/rate-plans/{id}")
+    public void deleteRatePlan(@PathVariable Long id) {
+        rateService.deletePlan(id);
+    }
+
+    @GetMapping("/rate-rules")
+    public List<RateRuleDto> rateRules() {
+        return rateService.listRules();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/rate-rules")
+    public RateRuleDto createRateRule(@Valid @RequestBody RateRuleRequest request) {
+        return rateService.createRule(request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/rate-rules/{id}")
+    public RateRuleDto updateRateRule(@PathVariable Long id, @Valid @RequestBody RateRuleRequest request) {
+        return rateService.updateRule(id, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/rate-rules/{id}")
+    public void deleteRateRule(@PathVariable Long id) {
+        rateService.deleteRule(id);
+    }
+
+    /** What a stay would cost, night by night — the figures a booking made now would get. */
+    @GetMapping("/quote")
+    public QuoteDto quote(@RequestParam Long roomTypeId, @RequestParam(required = false) Long roomId,
+                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                          @RequestParam(required = false) Long ratePlanId, @RequestParam(required = false) Integer adults,
+                          @RequestParam(required = false) Integer children) {
+        return rateService.quote(roomTypeId, roomId, from, to, ratePlanId, adults, children);
+    }
+
+    /** The nightly price of one room type for every day in the range, and how many rooms of it are still free that night. */
+    @GetMapping("/rate-calendar")
+    public RateCalendarDto rateCalendar(@RequestParam Long roomTypeId,
+                                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                                        @RequestParam(required = false) Long ratePlanId) {
+        RoomType type = rateService.type(roomTypeId);
+        RatePlan plan = rateService.planOrNull(ratePlanId);
+        List<RateService.NightPrice> prices = rateService.calendarPrices(type, from, to, plan);
+        Map<LocalDate, Integer> free = new HashMap<>();
+        for (TypeAvailability t : bookingService.availability(from, to.plusDays(1)).types()) {
+            if (t.roomTypeId().equals(roomTypeId)) t.days().forEach(day -> free.put(day.date(), day.available()));
+        }
+        List<RateCalendarDay> days = prices.stream().map(p -> new RateCalendarDay(p.date(), p.rate(), p.ruleName(), free.getOrDefault(p.date(), 0))).toList();
+        return new RateCalendarDto(type.getId(), type.getName(), type.getBaseRate(), plan == null ? null : plan.getId(), plan == null ? null : plan.getName(), days);
+    }
+
     // ---- bookings and availability ----
 
+    /**
+     * Bookings. With {@code size} this is one page (X-Total-Count tells how many matched); without it the old behaviour: the newest
+     * {@code limit} bookings. {@code from}/{@code to} are arrival dates.
+     */
     @GetMapping("/bookings")
-    public List<BookingDto> bookings(@RequestParam(required = false) String status, @RequestParam(required = false) String q,
-                                     @RequestParam(defaultValue = "100") int limit) {
-        return bookingService.list(status, q, limit);
+    public ResponseEntity<List<BookingDto>> bookings(@RequestParam(required = false) String status, @RequestParam(required = false) String q,
+                                                     @RequestParam(defaultValue = "100") int limit,
+                                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                                                     @RequestParam(required = false) Long roomTypeId, @RequestParam(required = false) String source,
+                                                     @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        if (size == null && from == null && to == null && roomTypeId == null && source == null) {
+            return ResponseEntity.ok(bookingService.list(status, q, limit));
+        }
+        Page<BookingDto> result = bookingService.page(status, q, from, to, roomTypeId, source, page == null ? 0 : page, size == null ? 0 : Math.min(size, ListPaging.MAX));
+        return ResponseEntity.ok().header(ListPaging.TOTAL, String.valueOf(result.getTotalElements())).body(result.getContent());
     }
 
     @GetMapping("/bookings/{id}")
     public BookingDto booking(@PathVariable Long id) {
         return bookingService.get(id);
+    }
+
+    /** The price of each planned night of the booking, as sold. */
+    @GetMapping("/bookings/{id}/nights")
+    public List<QuoteNightDto> bookingNights(@PathVariable Long id) {
+        return folioService.nights(id);
     }
 
     @PreAuthorize(MANAGE)
@@ -315,8 +442,15 @@ public class HotelController {
     // ---- maintenance ----
 
     @GetMapping("/maintenance")
-    public List<MaintenanceDto> maintenance() {
-        return maintenanceService.list();
+    public ResponseEntity<List<MaintenanceDto>> maintenance(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+                                                            @RequestParam(required = false) String priority, @RequestParam(required = false) Long roomId,
+                                                            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        List<MaintenanceDto> rows = maintenanceService.list().stream()
+                .filter(m -> ListPaging.has(q, m.roomNumber(), m.title(), m.description(), m.reportedBy()))
+                .filter(m -> ListPaging.is(status, m.status()))
+                .filter(m -> ListPaging.is(priority, m.priority()))
+                .filter(m -> ListPaging.sameId(roomId, m.roomId())).toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @PreAuthorize(MANAGE)

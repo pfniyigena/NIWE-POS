@@ -66,6 +66,28 @@ import { errMsg } from './hotel-util';
             <input class="form-control" style="max-width:140px;" type="time" name="audit" [(ngModel)]="s.auditTime" />
           </div>
         </div>
+
+        <div class="card fee-policy" style="padding:1rem; margin:1rem 0;">
+          <h4 style="font-size:1rem; margin-bottom:0.4rem;">Cancellation and fee policy</h4>
+          <p class="text-muted" style="font-size:0.85rem;">Leave a field at 0 (or empty) for no fee. Fees are charged in room-rate nights, and the front desk can waive any fee when it happens.</p>
+          <div class="flex gap-3" style="flex-wrap:wrap;">
+            <div class="form-group"><label class="form-label">Free cancellation until (days before arrival)</label>
+              <input class="form-control" style="max-width:140px;" type="number" min="0" max="365" name="cfd" [(ngModel)]="s.cancelFreeDays" /></div>
+            <div class="form-group"><label class="form-label">Late cancellation fee (nights)</label>
+              <input class="form-control" style="max-width:140px;" type="number" min="0" max="30" name="cfn" [(ngModel)]="s.cancelFeeNights" /></div>
+            <div class="form-group"><label class="form-label">No-show fee (nights)</label>
+              <input class="form-control" style="max-width:140px;" type="number" min="0" max="30" name="nsn" [(ngModel)]="s.noShowFeeNights" /></div>
+            <div class="form-group"><label class="form-label">Early departure fee (nights)</label>
+              <input class="form-control" style="max-width:140px;" type="number" min="0" max="30" name="edn" [(ngModel)]="s.earlyDepartureFeeNights" /></div>
+          </div>
+          <div class="flex gap-3" style="flex-wrap:wrap;">
+            <div class="form-group"><label class="form-label">Late check-out fee applies after</label>
+              <input class="form-control" style="max-width:140px;" type="time" name="lco" [(ngModel)]="s.lateCheckoutFrom" /></div>
+            <div class="form-group"><label class="form-label">Late check-out fee (% of a night)</label>
+              <input class="form-control" style="max-width:140px;" type="number" min="0" max="100" step="0.01" name="lcp" [(ngModel)]="s.lateCheckoutPercent" /></div>
+          </div>
+          <label><input type="checkbox" name="tof" [(ngModel)]="s.taxOnFees" /> Add the hotel tax to fees</label>
+        </div>
         <button class="btn btn-primary" type="submit" [disabled]="saving">Save</button>
       </form>
 
@@ -83,7 +105,8 @@ import { errMsg } from './hotel-util';
   `,
 })
 export class HotelSettingsComponent implements OnInit {
-  s: HotelSettings = { enabled: false, postingMode: 'NIGHTLY', taxPercent: 0, checkInTime: '14:00', checkOutTime: '12:00', auditTime: '03:00', auditLastRun: null, auditLastSummary: null };
+  s: HotelSettings = { enabled: false, postingMode: 'NIGHTLY', taxPercent: 0, checkInTime: '14:00', checkOutTime: '12:00', auditTime: '03:00', auditLastRun: null, auditLastSummary: null,
+    cancelFreeDays: 0, cancelFeeNights: 0, noShowFeeNights: 0, earlyDepartureFeeNights: 0, lateCheckoutFrom: null, lateCheckoutPercent: 0, taxOnFees: false };
   loaded = false;
   /** Once Hotel is active it stays active — the checkbox is locked. */
   activated = false;
@@ -116,6 +139,13 @@ export class HotelSettingsComponent implements OnInit {
         checkInTime: this.s.checkInTime,
         checkOutTime: this.s.checkOutTime,
         auditTime: this.s.auditTime,
+        cancelFreeDays: Number(this.s.cancelFreeDays) || 0,
+        cancelFeeNights: Number(this.s.cancelFeeNights) || 0,
+        noShowFeeNights: Number(this.s.noShowFeeNights) || 0,
+        earlyDepartureFeeNights: Number(this.s.earlyDepartureFeeNights) || 0,
+        lateCheckoutFrom: this.s.lateCheckoutFrom || '',
+        lateCheckoutPercent: Number(this.s.lateCheckoutPercent) || 0,
+        taxOnFees: !!this.s.taxOnFees,
       })
       .subscribe({
         next: (s) => {

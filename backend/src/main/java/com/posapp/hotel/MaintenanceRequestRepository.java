@@ -10,4 +10,8 @@ public interface MaintenanceRequestRepository extends JpaRepository<MaintenanceR
     boolean existsByRoomIdAndBlocksRoomTrueAndStatusNot(Long roomId, MaintenanceStatus status);
 
     long countByRoomId(Long roomId);
+
+    List<MaintenanceRequest> findByBlocksRoomTrueAndStatusNot(MaintenanceStatus status);
+
+    List<MaintenanceRequest> findByRoomIdAndBlocksRoomTrueAndStatusNot(Long roomId, MaintenanceStatus status);
 }

@@ -3,16 +3,29 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { HotelApiService, OccupancyReport } from '../core/api/hotel-api.service';
+import { HotelExportComponent } from './hotel-export.component';
 import { addDays, errMsg, iso, today } from './hotel-util';
+import { RptDailyComponent } from './rpt-daily.component';
+import { RptSourcesComponent } from './rpt-sources.component';
+import { RptForecastComponent } from './rpt-forecast.component';
+import { RptAuditComponent } from './rpt-audit.component';
 
 /** Hotel > Reports: occupancy, average daily rate (ADR) and revenue per available room (RevPAR) for any date range. */
 @Component({
   selector: 'app-hotel-report',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [CommonModule, FormsModule, ShellComponent, HotelExportComponent, RptDailyComponent, RptSourcesComponent, RptForecastComponent, RptAuditComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Hotel report</h3>
+      <h3 class="mb-3">Hotel reports</h3>
+      <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
+        <button *ngFor="let t of tabs" class="btn rpt-tab" [attr.data-tab]="t.key" [ngClass]="tab === t.key ? 'btn-primary' : 'btn-outline-secondary'" (click)="tab = t.key">{{ t.label }}</button>
+      </div>
+      <app-rpt-daily *ngIf="tab === 'daily'"></app-rpt-daily>
+      <app-rpt-sources *ngIf="tab === 'sources'"></app-rpt-sources>
+      <app-rpt-forecast *ngIf="tab === 'forecast'"></app-rpt-forecast>
+      <app-rpt-audit *ngIf="tab === 'audit'"></app-rpt-audit>
+      <ng-container *ngIf="tab === 'occupancy'">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 align-center mb-3" style="flex-wrap:wrap;">
         <label class="form-label" style="margin:0;">From</label>
@@ -23,6 +36,7 @@ import { addDays, errMsg, iso, today } from './hotel-util';
         <button class="btn btn-outline-secondary" (click)="preset(7)">Last 7 days</button>
         <button class="btn btn-outline-secondary" (click)="preset(30)">Last 30 days</button>
         <button class="btn btn-outline-secondary" (click)="thisMonth()">This month</button>
+        <app-hotel-export *ngIf="r" style="margin-left:auto;" path="/hotel/reports/occupancy/export" name="occupancy" [filters]="{ from: r.from, to: r.to }"></app-hotel-export>
       </div>
       <ng-container *ngIf="r">
         <div class="stat-grid">
@@ -44,10 +58,19 @@ import { addDays, errMsg, iso, today } from './hotel-util';
           Based on the room charges on guests' bills ({{ r.roomCount }} rooms in use). ADR = room revenue ÷ nights sold; RevPAR = room revenue ÷ nights available.
         </p>
       </ng-container>
+      </ng-container>
     </app-shell>
   `,
 })
 export class HotelReportComponent implements OnInit {
+  tabs = [
+    { key: 'daily', label: 'Day report' },
+    { key: 'occupancy', label: 'Occupancy' },
+    { key: 'sources', label: 'By source' },
+    { key: 'forecast', label: 'Forecast' },
+    { key: 'audit', label: 'Night audit' },
+  ];
+  tab = 'daily';
   from = '';
   to = today();
   r: OccupancyReport | null = null;

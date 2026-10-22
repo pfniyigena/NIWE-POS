@@ -3,18 +3,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { HotelApiService, RoomType } from '../core/api/hotel-api.service';
+import { HotelExportComponent } from './hotel-export.component';
 import { errMsg } from './hotel-util';
 
 /** Hotel > Room types: one nightly rate per type (plus an optional charge for each guest above the included number). */
 @Component({
   selector: 'app-room-type-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [CommonModule, FormsModule, ShellComponent, HotelExportComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
         <h3>Room types</h3>
-        <button class="btn btn-primary" (click)="startNew()" *ngIf="!editing">+ New room type</button>
+        <div class="flex gap-2 align-center">
+          <app-hotel-export path="/hotel/room-types/export" name="room-types"></app-hotel-export>
+          <button class="btn btn-primary" (click)="startNew()" *ngIf="!editing">+ New room type</button>
+        </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 

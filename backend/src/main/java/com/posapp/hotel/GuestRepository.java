@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface GuestRepository extends JpaRepository<Guest, Long> {
+public interface GuestRepository extends JpaRepository<Guest, Long>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Guest> {
 
     @Query("select g from Guest g where lower(g.fullName) like lower(concat('%', :q, '%')) "
             + "or lower(coalesce(g.phone, '')) like lower(concat('%', :q, '%')) "
@@ -16,4 +16,14 @@ public interface GuestRepository extends JpaRepository<Guest, Long> {
     List<Guest> search(@Param("q") String q, Pageable pageable);
 
     List<Guest> findAllByOrderByFullNameAsc(Pageable pageable);
+
+    List<Guest> findByBlacklistedTrueAndIdNumberIgnoreCase(String idNumber);
+
+    List<Guest> findByBlacklistedTrueAndPhone(String phone);
+
+    List<Guest> findByBlacklistedTrueOrderByFullNameAsc();
+
+    List<Guest> findAllByOrderByIdAsc();
+
+    List<Guest> findByPhoneAndFullNameIgnoreCaseOrderByIdAsc(String phone, String fullName);
 }

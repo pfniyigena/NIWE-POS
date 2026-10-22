@@ -32,4 +32,12 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long
     /** Every line tagged with any cost center, in range — the "Cost Centers" journals report's raw input (see AccountingReportService.costCenterActivity). */
     @Query("select l from JournalEntryLine l where l.costCenter is not null and l.entry.entryDate between :from and :to")
     List<JournalEntryLine> findAllLinesWithCostCenterInRange(@Param("from") Instant from, @Param("to") Instant to);
+
+    /**
+     * What the Hotel posted in a period, summed by the entry's source, the account's stable key and the line's own label (for example the
+     * guest ledger and the city ledger are both Accounts Receivable). Each row: source type, account key, line description, debits, credits.
+     */
+    @Query("select e.sourceType, a.wellKnownKey, l.description, coalesce(sum(l.debit), 0), coalesce(sum(l.credit), 0) from JournalEntryLine l join l.entry e join l.account a "
+            + "where e.sourceType like 'HOTEL%' and e.entryDate >= :from and e.entryDate < :to group by e.sourceType, a.wellKnownKey, l.description")
+    List<Object[]> hotelPostings(@Param("from") Instant from, @Param("to") Instant to);
 }

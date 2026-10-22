@@ -29,8 +29,14 @@ public class FrontDeskService {
     private final HotelClock clock;
     private final AuditLogService auditLogService;
 
+    private final HousekeepingService housekeepingService;
+    private final GuestService guestService;
+
     public FrontDeskService(BookingRepository bookingRepository, RoomRepository roomRepository, BookingService bookingService,
-                            RoomService roomService, HotelFolioService folioService, HotelClock clock, AuditLogService auditLogService) {
+                            RoomService roomService, HotelFolioService folioService, HotelClock clock, AuditLogService auditLogService,
+                            HousekeepingService housekeepingService, GuestService guestService) {
+        this.guestService = guestService;
+        this.housekeepingService = housekeepingService;
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.bookingService = bookingService;
@@ -80,6 +86,7 @@ public class FrontDeskService {
         if (booking.getStatus() != BookingStatus.BOOKED) {
             throw ApiException.badRequest("Only a booking that is waiting for the guest can be checked in");
         }
+        guestService.refuseIfBlacklisted(booking.getGuest());
         LocalDate today = clock.today();
         if (booking.getCheckInDate().isAfter(today)) {
             throw ApiException.badRequest("This guest is not due until " + booking.getCheckInDate()
@@ -122,7 +129,7 @@ public class FrontDeskService {
         Room room = roomService.getOrThrow(request.roomId());
         BookingRequest booking = new BookingRequest(request.guestId(), request.guest(), room.getRoomType().getId(), room.getId(),
                 clock.today(), request.checkOutDate(), request.adults(), request.children(), request.nightlyRate(), "Walk-in",
-                request.notes(), request.depositAmount(), request.depositMethod());
+                request.notes(), request.depositAmount(), request.depositMethod(), request.ratePlanId());
         BookingDto created = bookingService.create(booking);
         return checkIn(created.id(), new CheckInRequest(room.getId(), request.adults(), request.children(), false));
     }
@@ -146,6 +153,7 @@ public class FrontDeskService {
         if (room != null) {
             room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
             roomRepository.save(room);
+            housekeepingService.roomVacated(room);
         }
         auditLogService.record("HOTEL_CHECK_OUT", booking.getGuest().getFullName() + " checked out of room "
                 + (room != null ? room.getNumber() : "?") + " (" + booking.getBookingNumber() + ")", "Booking", booking.getId());
@@ -179,6 +187,7 @@ public class FrontDeskService {
         if (old != null) {
             old.setHousekeepingStatus(HousekeepingStatus.DIRTY);
             roomRepository.save(old);
+            housekeepingService.roomVacated(old);
         }
         auditLogService.record("HOTEL_ROOM_MOVE", booking.getBookingNumber() + ": " + note, "Booking", booking.getId());
         return folioService.toDto(booking);

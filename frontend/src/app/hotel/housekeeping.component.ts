@@ -3,15 +3,27 @@ import { CommonModule } from '@angular/common';
 import { ShellComponent } from '../shared/shell.component';
 import { HotelApiService, HousekeepingStatus, Room } from '../core/api/hotel-api.service';
 import { errMsg } from './hotel-util';
+import { HkBoardComponent } from './hk-board.component';
+import { HkLostFoundComponent } from './hk-lost-found.component';
+import { HkSuppliesComponent } from './hk-supplies.component';
+import { HkSetupComponent } from './hk-setup.component';
 
 /** Hotel > Housekeeping: every room by cleaning state. One click moves a room along: dirty → cleaning → clean → inspected. */
 @Component({
   selector: 'app-housekeeping',
   standalone: true,
-  imports: [CommonModule, ShellComponent],
+  imports: [CommonModule, ShellComponent, HkBoardComponent, HkLostFoundComponent, HkSuppliesComponent, HkSetupComponent],
   template: `
     <app-shell>
       <h3 class="mb-3">Housekeeping</h3>
+      <div class="flex gap-2 mb-3 hk-tabs" style="flex-wrap:wrap;">
+        <button class="btn btn-sm" *ngFor="let t of tabs" [ngClass]="tab === t.code ? 'btn-primary' : 'btn-outline-secondary'" [attr.data-tab]="t.code" (click)="tab = t.code">{{ t.label }}</button>
+      </div>
+      <app-hk-board *ngIf="tab === 'board'"></app-hk-board>
+      <app-hk-lost-found *ngIf="tab === 'found'"></app-hk-lost-found>
+      <app-hk-supplies *ngIf="tab === 'supplies'"></app-hk-supplies>
+      <app-hk-setup *ngIf="tab === 'setup'"></app-hk-setup>
+      <ng-container *ngIf="tab === 'rooms'">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
         <button class="btn btn-sm" *ngFor="let f of filters" [ngClass]="filter === f.code ? 'btn-primary' : 'btn-outline-secondary'" (click)="filter = f.code">{{ f.label }} ({{ count(f.code) }})</button>
@@ -26,6 +38,7 @@ import { errMsg } from './hotel-util';
           <div style="font-size:0.8rem; margin:0.3rem 0;">
             <span *ngIf="r.outOfOrder" class="text-danger">Out of order</span>
             <span *ngIf="!r.outOfOrder && r.occupied">Occupied · {{ r.occupantGuest }}</span>
+            <span *ngIf="r.dnd" class="badge badge-secondary dnd-badge" style="margin-left:0.25rem;">DND</span>
             <span *ngIf="!r.outOfOrder && !r.occupied" class="text-muted">Vacant</span>
           </div>
           <div class="text-muted" style="font-size:0.75rem;" *ngIf="r.housekeeper">By {{ r.housekeeper }}</div>
@@ -38,12 +51,15 @@ import { errMsg } from './hotel-util';
         </div>
       </div>
       <p class="text-muted" *ngIf="shown().length === 0">No rooms in this view.</p>
+      </ng-container>
     </app-shell>
   `,
 })
 export class HousekeepingComponent implements OnInit {
   rooms: Room[] = [];
   filter = 'ALL';
+  tab = 'board';
+  tabs = [{ code: 'board', label: "Today's board" }, { code: 'rooms', label: 'Rooms' }, { code: 'found', label: 'Lost & found' }, { code: 'supplies', label: 'Minibar & linen' }, { code: 'setup', label: 'Setup' }];
   error: string | null = null;
   filters = [
     { code: 'ALL', label: 'All' },

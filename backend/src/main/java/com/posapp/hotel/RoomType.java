@@ -36,4 +36,10 @@ public class RoomType extends BaseEntity {
     private String amenities;
 
     private boolean active = true;
+
+    /** Offered on the public booking page. */
+    private boolean onlineVisible = true;
+
+    /** Secret in the address of this room type's iCal feed; null until a feed is first asked for. */
+    private String icalToken;
 }

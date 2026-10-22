@@ -36,6 +36,12 @@ public class HotelSettingsService {
         return all.isEmpty() ? repository.save(new HotelSettings()) : all.get(0);
     }
 
+    /** Read-only peek for public pages: does not create the row. */
+    @Transactional(readOnly = true)
+    public List<HotelSettings> entityIfAny() {
+        return repository.findAll();
+    }
+
     @Transactional
     public HotelSettingsDto get() {
         return toDto(entity());
@@ -82,6 +88,20 @@ public class HotelSettingsService {
         if (request.checkInTime() != null) settings.setCheckInTime(validTime(request.checkInTime(), "Check-in time"));
         if (request.checkOutTime() != null) settings.setCheckOutTime(validTime(request.checkOutTime(), "Check-out time"));
         if (request.auditTime() != null) settings.setAuditTime(validTime(request.auditTime(), "Night audit time"));
+        if (request.cancelFreeDays() != null) settings.setCancelFreeDays(inRange(request.cancelFreeDays(), 0, 365, "Free cancellation days"));
+        if (request.cancelFeeNights() != null) settings.setCancelFeeNights(inRange(request.cancelFeeNights(), 0, 30, "Late cancellation fee nights"));
+        if (request.noShowFeeNights() != null) settings.setNoShowFeeNights(inRange(request.noShowFeeNights(), 0, 30, "No-show fee nights"));
+        if (request.earlyDepartureFeeNights() != null) settings.setEarlyDepartureFeeNights(inRange(request.earlyDepartureFeeNights(), 0, 30, "Early departure fee nights"));
+        if (request.lateCheckoutFrom() != null) {
+            settings.setLateCheckoutFrom(request.lateCheckoutFrom().isBlank() ? null : validTime(request.lateCheckoutFrom(), "Late check-out time"));
+        }
+        if (request.lateCheckoutPercent() != null) {
+            if (request.lateCheckoutPercent().signum() < 0 || request.lateCheckoutPercent().compareTo(new BigDecimal("100")) > 0) {
+                throw ApiException.badRequest("The late check-out fee must be between 0 and 100 percent of a night");
+            }
+            settings.setLateCheckoutPercent(request.lateCheckoutPercent());
+        }
+        if (request.taxOnFees() != null) settings.setTaxOnFees(request.taxOnFees());
         if (request.enabled() != null) {
             settings.setEnabled(request.enabled());
             paymentMethodService.setRoomChargeEnabled(request.enabled());
@@ -100,6 +120,11 @@ public class HotelSettingsService {
         repository.save(settings);
     }
 
+    private static int inRange(int value, int min, int max, String label) {
+        if (value < min || value > max) throw ApiException.badRequest(label + " must be between " + min + " and " + max);
+        return value;
+    }
+
     private static String validTime(String value, String label) {
         try {
             return LocalTime.parse(value.trim()).toString();
@@ -111,6 +136,8 @@ public class HotelSettingsService {
     static HotelSettingsDto toDto(HotelSettings s) {
         return new HotelSettingsDto(s.isEnabled(), (s.getPostingMode() == null ? PostingMode.NIGHTLY : s.getPostingMode()).name(),
                 s.getTaxPercent() == null ? BigDecimal.ZERO : s.getTaxPercent(), s.getCheckInTime(), s.getCheckOutTime(),
-                s.getAuditTime(), s.getAuditLastRun(), s.getAuditLastSummary());
+                s.getAuditTime(), s.getAuditLastRun(), s.getAuditLastSummary(), s.getCancelFreeDays(), s.getCancelFeeNights(),
+                s.getNoShowFeeNights(), s.getEarlyDepartureFeeNights(), s.getLateCheckoutFrom(),
+                s.getLateCheckoutPercent() == null ? BigDecimal.ZERO : s.getLateCheckoutPercent(), s.isTaxOnFees());
     }
 }
