@@ -525,15 +525,67 @@ public class AccountingService {
     @Transactional
     public void postRestaurantSale(Long orderId, String ticketNumber, BigDecimal cashAmount, BigDecimal roomChargeAmount,
                                     BigDecimal subtotal, BigDecimal taxTotal, BigDecimal cogs) {
+        postRestaurantSale(orderId, ticketNumber, cashAmount, roomChargeAmount, subtotal, taxTotal, cogs, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+    }
+
+    /**
+     * As above for a bill with a service charge, a tip and/or rounding. {@code subtotal} is the items after discounts (the discount is
+     * simply never booked as revenue). The service charge is its own revenue; the tip is not income, it is owed to the staff; the
+     * rounding difference is signed (positive = the guest paid a little more than the bill before rounding).
+     */
+    @Transactional
+    public void postRestaurantSale(Long orderId, String ticketNumber, BigDecimal cashAmount, BigDecimal roomChargeAmount,
+                                    BigDecimal subtotal, BigDecimal taxTotal, BigDecimal cogs,
+                                    BigDecimal serviceCharge, BigDecimal tip, BigDecimal roundingAdjustment) {
+        postRestaurantSale(orderId, ticketNumber, cashAmount, roomChargeAmount, subtotal, taxTotal, cogs, serviceCharge, tip, roundingAdjustment, BigDecimal.ZERO);
+    }
+
+    /** As above where {@code depositApplied} of the bill was already paid as a reservation deposit (released from Reservation Deposits instead of collected as cash). */
+    @Transactional
+    public void postRestaurantSale(Long orderId, String ticketNumber, BigDecimal cashAmount, BigDecimal roomChargeAmount,
+                                    BigDecimal subtotal, BigDecimal taxTotal, BigDecimal cogs,
+                                    BigDecimal serviceCharge, BigDecimal tip, BigDecimal roundingAdjustment, BigDecimal depositApplied) {
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.CASH, cashAmount, null, true);
+        addIfPositive(lines, AccountService.RESTAURANT_DEPOSITS, depositApplied, "Reservation deposit applied", true);
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, roomChargeAmount, "Charged to room", true);
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotal, null, false);
+        addIfPositive(lines, AccountService.SERVICE_CHARGE_REVENUE, serviceCharge, null, false);
         addIfPositive(lines, AccountService.TAX_PAYABLE, taxTotal, null, false);
+        addIfPositive(lines, AccountService.TIPS_PAYABLE, tip, "Tips for the staff", false);
+        if (roundingAdjustment != null && roundingAdjustment.signum() != 0) {
+            addSigned(lines, AccountService.ROUNDING_DIFFERENCE, roundingAdjustment, false, "Bill rounding");
+        }
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogs, "Cost of goods sold", true);
         addIfPositive(lines, AccountService.INVENTORY, cogs, "Inventory relief", false);
 
         post("RESTAURANT_SALE", orderId, "Restaurant sale " + safe(ticketNumber), null, lines);
+    }
+
+    /**
+     * A restaurant reservation deposit moving: RECEIVED (cash in, owed to the guest), REFUNDED (cash back out), FORFEITED (the guest loses it,
+     * it becomes income). {@code sourceType} keeps the three kinds apart in the journal.
+     */
+    @Transactional
+    public void postRestaurantDeposit(String move, Long reservationId, String code, BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) return;
+        List<LineSpec> lines = new ArrayList<>();
+        switch (move) {
+            case "RECEIVED" -> {
+                addIfPositive(lines, AccountService.CASH, amount, null, true);
+                addIfPositive(lines, AccountService.RESTAURANT_DEPOSITS, amount, null, false);
+            }
+            case "REFUNDED" -> {
+                addIfPositive(lines, AccountService.RESTAURANT_DEPOSITS, amount, null, true);
+                addIfPositive(lines, AccountService.CASH, amount, "Deposit refunded", false);
+            }
+            case "FORFEITED" -> {
+                addIfPositive(lines, AccountService.RESTAURANT_DEPOSITS, amount, null, true);
+                addIfPositive(lines, AccountService.FORFEITED_DEPOSIT_INCOME, amount, null, false);
+            }
+            default -> throw new IllegalArgumentException("Unknown deposit move " + move);
+        }
+        post("RESTAURANT_DEPOSIT_" + move, reservationId, "Reservation deposit " + move.toLowerCase() + " " + safe(code), null, lines);
     }
 
     // ---- Hotel (com.posapp.hotel) ----

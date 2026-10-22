@@ -33,8 +33,8 @@ public class DiningTableService {
     }
 
     private Long openOrderIdFor(Long tableId) {
-        return orderRepository.findByTableIdAndStatus(tableId, RestaurantOrderStatus.OPEN)
-                .map(RestaurantOrder::getId).orElse(null);
+        return orderRepository.findByTableIdAndStatusOrderByIdAsc(tableId, RestaurantOrderStatus.OPEN).stream()
+                .map(RestaurantOrder::getId).findFirst().orElse(null);
     }
 
     @Transactional
@@ -63,7 +63,7 @@ public class DiningTableService {
     @Transactional
     public DiningTableDto setStatus(Long id, TableStatusRequest request) {
         DiningTable table = getOrThrow(id);
-        if (orderRepository.findByTableIdAndStatus(id, RestaurantOrderStatus.OPEN).isPresent()) {
+        if (!orderRepository.findByTableIdAndStatusOrderByIdAsc(id, RestaurantOrderStatus.OPEN).isEmpty()) {
             throw ApiException.badRequest("This table has an open order — close or cancel it before changing the table's status directly");
         }
         TableStatus status;

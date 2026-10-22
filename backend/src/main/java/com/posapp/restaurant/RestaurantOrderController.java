@@ -30,8 +30,10 @@ import java.util.List;
 public class RestaurantOrderController {
 
     private final RestaurantOrderService orderService;
+    private final RestaurantCheckService checkService;
 
-    public RestaurantOrderController(RestaurantOrderService orderService) {
+    public RestaurantOrderController(RestaurantOrderService orderService, RestaurantCheckService checkService) {
+        this.checkService = checkService;
         this.orderService = orderService;
     }
 
@@ -47,8 +49,19 @@ public class RestaurantOrderController {
 
     /** Restaurant Receipts screen (lookup + reprint) — open to any logged-in user, same as the POS terminal's own Receipts screen. */
     @GetMapping("/orders/closed")
-    public List<RestaurantOrderDto> listClosed() {
-        return orderService.listClosed();
+    public org.springframework.http.ResponseEntity<List<RestaurantOrderDto>> listClosed(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String q,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String status,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String type,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String method,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Long serverId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer size) {
+        boolean filtered = (q != null && !q.isBlank()) || (status != null && !status.isBlank()) || (type != null && !type.isBlank())
+                || (method != null && !method.isBlank()) || serverId != null || from != null || to != null;
+        return com.posapp.common.ListPaging.of(orderService.closedFiltered(q, status, type, method, serverId, from, to, size == null && !filtered), page, size);
     }
 
     @PostMapping("/tables/{tableId}/orders")
@@ -106,13 +119,73 @@ public class RestaurantOrderController {
     }
 
     @DeleteMapping("/orders/{id}/lines/{lineId}")
-    public RestaurantOrderDto removeLine(@PathVariable Long id, @PathVariable Long lineId) {
-        return orderService.removeLine(id, lineId);
+    public RestaurantOrderDto removeLine(@PathVariable Long id, @PathVariable Long lineId, @org.springframework.web.bind.annotation.RequestParam(required = false) String reason) {
+        return orderService.removeLine(id, lineId, reason);
+    }
+
+    /** Gives one item free (manager only), with a reason. */
+    @PostMapping("/orders/{id}/lines/{lineId}/comp")
+    public RestaurantOrderDto comp(@PathVariable Long id, @PathVariable Long lineId, @RequestBody java.util.Map<String, String> body) {
+        return orderService.compLine(id, lineId, body == null ? null : body.get("reason"));
+    }
+
+    @DeleteMapping("/orders/{id}/lines/{lineId}/comp")
+    public RestaurantOrderDto uncomp(@PathVariable Long id, @PathVariable Long lineId) {
+        return orderService.uncompLine(id, lineId);
+    }
+
+    /** Splits the chosen items off into a new check at the same table; returns the new check. */
+    @PostMapping("/orders/{id}/split")
+    public RestaurantOrderDto split(@PathVariable Long id, @RequestBody com.posapp.restaurant.dto.CheckLineSelection body) {
+        return checkService.split(id, body);
+    }
+
+    /** Moves the chosen items onto another open bill; returns the receiving bill. */
+    @PostMapping("/orders/{id}/transfer")
+    public RestaurantOrderDto transfer(@PathVariable Long id, @RequestBody com.posapp.restaurant.dto.CheckLineSelection body) {
+        return checkService.transfer(id, body);
+    }
+
+    @PostMapping("/orders/{id}/move-table")
+    public RestaurantOrderDto moveTable(@PathVariable Long id, @RequestBody java.util.Map<String, Long> body) {
+        return checkService.moveTable(id, body == null ? null : body.get("tableId"));
+    }
+
+    /** Records that the receipt was printed (from the second print it is marked as a copy and logged). */
+    @PostMapping("/orders/{id}/print")
+    public RestaurantOrderDto print(@PathVariable Long id) {
+        return checkService.recordPrint(id);
+    }
+
+    /** Sets or removes the order discount (a percentage or an amount, with a reason). Above the restaurant's limit a manager must do it. */
+    @org.springframework.web.bind.annotation.PutMapping("/orders/{id}/discount")
+    public RestaurantOrderDto setDiscount(@PathVariable Long id, @RequestBody com.posapp.restaurant.dto.OrderDiscountRequest request) {
+        return orderService.setOrderDiscount(id, request);
+    }
+
+    /** Waives or restores the service charge on one order (waiving needs a manager). */
+    @org.springframework.web.bind.annotation.PutMapping("/orders/{id}/service-charge")
+    public RestaurantOrderDto setServiceCharge(@PathVariable Long id, @RequestBody com.posapp.restaurant.dto.ServiceChargeRequest request) {
+        return orderService.setServiceChargeWaived(id, request.isWaived());
     }
 
     @PostMapping("/orders/{id}/send-to-kitchen")
     public RestaurantOrderDto sendToKitchen(@PathVariable Long id) {
         return orderService.sendToKitchen(id);
+    }
+
+    /** Releases the waiting lines of a course (and earlier ones) to the kitchen. */
+    @PostMapping("/orders/{id}/fire-course")
+    public RestaurantOrderDto fireCourse(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> body) {
+        Integer course = body == null ? null : body.get("course");
+        if (course == null) throw com.posapp.common.ApiException.badRequest("Say which course to fire");
+        return orderService.fireCourse(id, course);
+    }
+
+    /** Sets the allergens the guests at this order cannot have. */
+    @org.springframework.web.bind.annotation.PutMapping("/orders/{id}/guest-allergens")
+    public RestaurantOrderDto setGuestAllergens(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        return orderService.setGuestAllergens(id, body == null ? null : body.get("allergens"));
     }
 
     @PostMapping("/orders/{id}/checkout")
@@ -121,8 +194,8 @@ public class RestaurantOrderController {
     }
 
     @PostMapping("/orders/{id}/cancel")
-    public RestaurantOrderDto cancel(@PathVariable Long id) {
-        return orderService.cancel(id);
+    public RestaurantOrderDto cancel(@PathVariable Long id, @RequestBody(required = false) java.util.Map<String, String> body) {
+        return orderService.cancel(id, body == null ? null : body.get("reason"));
     }
 
     @PostMapping("/orders/{id}/merge")

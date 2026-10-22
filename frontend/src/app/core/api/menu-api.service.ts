@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
-import { MenuCategory, MenuItem } from '../models';
+import { MenuCategory, MenuItem, OptionGroup } from '../models';
 
 export interface MenuCategoryPayload {
   name: string;
@@ -17,6 +17,10 @@ export interface MenuItemPayload {
   active: boolean;
   priceOverride?: number | null;
   station?: string | null;
+  allergens?: string | null;
+  defaultCourse?: number | null;
+  /** Minutes the kitchen should need; blank leaves it, 0 clears it. */
+  prepMinutes?: number | null;
 }
 
 /** Admin > Restaurant > Menu (Fourier: "Menu & menu categories," reusing existing products). */
@@ -51,6 +55,24 @@ export class MenuApiService {
 
   updateItem(id: number, payload: MenuItemPayload): Observable<MenuItem> {
     return this.http.put<MenuItem>(`${API_BASE}/restaurant/menu/items/${id}`, payload);
+  }
+
+  /** Marks an item sold out (86'd) or back on; any signed-in user may. */
+  setSoldOut(id: number, soldOut: boolean, reason?: string | null): Observable<MenuItem> {
+    return this.http.post<MenuItem>(`${API_BASE}/restaurant/menu/items/${id}/sold-out`, { soldOut, reason: reason || null });
+  }
+
+  allergens(): Observable<string[]> {
+    return this.http.get<string[]>(`${API_BASE}/restaurant/menu/allergens`);
+  }
+
+  listOptions(itemId: number): Observable<OptionGroup[]> {
+    return this.http.get<OptionGroup[]>(`${API_BASE}/restaurant/menu/items/${itemId}/options`);
+  }
+
+  /** Saves the whole set of option groups of one item. */
+  saveOptions(itemId: number, groups: OptionGroup[]): Observable<OptionGroup[]> {
+    return this.http.put<OptionGroup[]>(`${API_BASE}/restaurant/menu/items/${itemId}/options`, groups);
   }
 
   removeItem(id: number): Observable<void> {

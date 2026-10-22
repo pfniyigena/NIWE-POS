@@ -18,6 +18,25 @@ export interface PublicReservationPayload {
   reservedFor: string;
   tableId: number;
   notes?: string | null;
+  guestEmail?: string | null;
+}
+
+export interface PublicReservationInfo {
+  restaurantName: string;
+  openTime: string;
+  closeTime: string;
+  slotMinutes: number;
+  turnMinutes: number;
+  bookingDaysAhead: number;
+  depositPerGuest: number;
+  today: string;
+  timeZone: string;
+}
+
+export interface PublicSlot {
+  time: string;
+  label: string;
+  tablesFree: number;
 }
 
 export interface PublicReservationConfirmation {
@@ -30,6 +49,9 @@ export interface PublicReservationConfirmation {
   notes: string | null;
   /** The "reservation number" — see backend PublicReservationDto's own javadoc. */
   confirmationCode: string;
+  durationMinutes?: number;
+  depositAmount?: number;
+  depositStatus?: string;
 }
 
 /**
@@ -41,9 +63,21 @@ export interface PublicReservationConfirmation {
 export class PublicReservationApiService {
   constructor(private http: HttpClient) {}
 
-  /** date is an ISO 'YYYY-MM-DD' string. */
-  availableTables(date: string): Observable<PublicTable[]> {
-    return this.http.get<PublicTable[]>(`${API_BASE}/public/reservations/available-tables`, { params: { date } });
+  info(): Observable<PublicReservationInfo> {
+    return this.http.get<PublicReservationInfo>(`${API_BASE}/public/reservations/info`);
+  }
+
+  /** The times still open on a date for a party. */
+  slots(date: string, partySize: number): Observable<PublicSlot[]> {
+    return this.http.get<PublicSlot[]>(`${API_BASE}/public/reservations/slots`, { params: { date, partySize } });
+  }
+
+  /** date is an ISO 'YYYY-MM-DD' string; with `at` (an ISO instant) only the tables free for that sitting. */
+  availableTables(date: string, at?: string, partySize?: number): Observable<PublicTable[]> {
+    const params: Record<string, string> = { date };
+    if (at) params['at'] = at;
+    if (partySize) params['partySize'] = String(partySize);
+    return this.http.get<PublicTable[]>(`${API_BASE}/public/reservations/available-tables`, { params });
   }
 
   create(payload: PublicReservationPayload): Observable<PublicReservationConfirmation> {

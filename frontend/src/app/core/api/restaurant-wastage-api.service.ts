@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { RestaurantWastage, RestaurantWastageReason } from '../models';
 
 export interface RestaurantWastagePayload {
@@ -20,6 +22,11 @@ export interface RestaurantWastagePayload {
 @Injectable({ providedIn: 'root' })
 export class RestaurantWastageApiService {
   constructor(private http: HttpClient) {}
+
+  /** One page of the filtered list (search, status, dates; the total comes back in X-Total-Count). */
+  page(f: ListFilter, page: number, size: number, extra: Record<string, string | number | boolean | null | undefined> = {}): Observable<PageResult<RestaurantWastage>> {
+    return pagedList<RestaurantWastage>(this.http, `${API_BASE}/restaurant/wastage`, f, page, size, extra);
+  }
 
   listAll(): Observable<RestaurantWastage[]> {
     return this.http.get<RestaurantWastage[]>(`${API_BASE}/restaurant/wastage`);

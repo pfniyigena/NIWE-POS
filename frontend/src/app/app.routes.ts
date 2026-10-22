@@ -343,6 +343,18 @@ import { RestaurantOrdersComponent } from './restaurant/restaurant-orders.compon
 import { RestaurantReportListComponent } from './restaurant/restaurant-report-list.component';
 import { RestaurantWastageListComponent } from './restaurant/restaurant-wastage-list.component';
 import { RestaurantWastageFormComponent } from './restaurant/restaurant-wastage-form.component';
+import { OnlineOrdersComponent } from './restaurant/online-orders.component';
+import { OnlineSetupComponent } from './restaurant/online-setup.component';
+import { QrPrintComponent } from './restaurant/qr-print.component';
+import { PublicOrderComponent } from './restaurant/public-order.component';
+import { OrderTrackComponent } from './restaurant/order-track.component';
+import { SalesAnalysisComponent } from './restaurant/sales-analysis.component';
+import { EndOfDayComponent } from './restaurant/end-of-day.component';
+import { EndOfDayPrintComponent } from './restaurant/end-of-day-print.component';
+import { KitchenExpoComponent } from './restaurant/kitchen-expo.component';
+import { WaitlistComponent } from './restaurant/waitlist.component';
+import { RestaurantVoidsComponent } from './restaurant/restaurant-voids.component';
+import { RestaurantSettingsComponent } from './restaurant/restaurant-settings.component';
 
 const baseRoutes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -1004,6 +1016,19 @@ const baseRoutes: Routes = [
   // (no ':id' segment exists to collide with), kept for consistency with the orders block above.
   { path: 'admin/restaurant/wastage', component: RestaurantWastageListComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/wastage/new', component: RestaurantWastageFormComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/online-orders', component: OnlineOrdersComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/online-setup', component: OnlineSetupComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/qr-print', component: QrPrintComponent, canActivate: [authGuard] },
+  { path: 'menu/:token', component: PublicOrderComponent, canActivate: [publicModuleGuard('RESTAURANT')] },
+  { path: 'order', component: PublicOrderComponent, canActivate: [publicModuleGuard('RESTAURANT')] },
+  { path: 'order/track/:code', component: OrderTrackComponent, canActivate: [publicModuleGuard('RESTAURANT')] },
+  { path: 'admin/restaurant/analysis', component: SalesAnalysisComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/end-of-day', component: EndOfDayComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/end-of-day/print/:date', component: EndOfDayPrintComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/kitchen/expo', component: KitchenExpoComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/waitlist', component: WaitlistComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/voids', component: RestaurantVoidsComponent, canActivate: [authGuard] },
+  { path: 'admin/restaurant/settings', component: RestaurantSettingsComponent, canActivate: [authGuard, adminGuard] },
 
   // Hotel management (Fourier: "add hotel management ... integrated with POS, Restaurant, Accounting"). Access comes from the
   // Hotel area in core/access.ts (settings are admin-only); 'new' / 'walk-in' need Manage. Literal segments are registered before ':id'.

@@ -42,6 +42,8 @@ public class PublicReservationRequest {
 
     private String notes;
 
+    private String guestEmail;
+
     public String getGuestName() { return guestName; }
     public void setGuestName(String guestName) { this.guestName = guestName; }
     public String getGuestPhone() { return guestPhone; }
@@ -55,6 +57,9 @@ public class PublicReservationRequest {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 
+    public String getGuestEmail() { return guestEmail; }
+    public void setGuestEmail(String guestEmail) { this.guestEmail = guestEmail; }
+
     /** Converts to the internal {@link ReservationRequest} that {@code ReservationService.create} expects. */
     public ReservationRequest toReservationRequest() {
         ReservationRequest request = new ReservationRequest();
@@ -64,6 +69,7 @@ public class PublicReservationRequest {
         request.setReservedFor(reservedFor);
         request.setNotes(notes);
         request.setTableId(tableId);
+        request.setGuestEmail(guestEmail);
         return request;
     }
 }

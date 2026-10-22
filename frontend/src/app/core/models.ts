@@ -2294,6 +2294,42 @@ export interface MenuItem {
   hasRecipe: boolean;
   /** Free-text kitchen prep area (Fourier: "Kitchen stations") — null means unassigned. */
   station: string | null;
+  /** Allergen tags, comma separated (for example "GLUTEN,DAIRY"). */
+  allergens?: string | null;
+  /** The course this item normally comes in (1 to 5). */
+  defaultCourse?: number;
+  /** Choices the guest can make for this item (sizes, extras...). */
+  optionGroups?: OptionGroup[];
+  /** Minutes the kitchen should need (null = the restaurant's usual). */
+  prepMinutes?: number | null;
+  /** Sold out ("86'd"): cannot be ordered. */
+  soldOut?: boolean;
+  soldOutReason?: string | null;
+}
+
+export interface MenuOption {
+  id?: number | null;
+  name: string;
+  priceDelta: number;
+  active: boolean;
+}
+
+export interface OptionGroup {
+  id?: number | null;
+  name: string;
+  required: boolean;
+  /** The most options that may be picked (1 = choose one, 0 = no limit). */
+  maxSelect: number;
+  active: boolean;
+  options: MenuOption[];
+}
+
+/** What was picked for an ordered line. */
+export interface RestaurantLineOption {
+  optionId: number | null;
+  groupName: string | null;
+  name: string;
+  priceDelta: number;
 }
 
 /** One ordered item on a RestaurantOrder — see the backend's RestaurantOrderLine class javadoc for the snapshot convention. */
@@ -2308,10 +2344,33 @@ export interface RestaurantOrderLine {
   lineTax: number;
   /** What this line contributes to RestaurantOrder.total, whatever its tax's inclusive/exclusive setting — summing it across a set of lines is exactly their fair share of the bill. See the backend's RestaurantOrderLineDto.lineGrandTotal javadoc. */
   lineGrandTotal: number;
+  /** Price x quantity before any discount. */
+  grossTotal?: number;
+  /** Everything taken off this line: its own discount plus its share of the order discount. */
+  discountTotal?: number;
+  discountPercent?: number;
+  discountReason?: string | null;
   notes: string | null;
   kitchenStatus: 'PENDING' | 'SENT' | 'PREPARING' | 'READY' | 'SERVED';
   /** Snapshotted kitchen prep area (Fourier: "Kitchen stations") — null if the menu item had none assigned. */
   station: string | null;
+  options?: RestaurantLineOption[];
+  /** The options' price for one unit (already in the line total). */
+  optionsPrice?: number;
+  course?: number;
+  /** True while the line waits for its course to be fired. */
+  held?: boolean;
+  allergens?: string | null;
+  /** Allergens of this line that a guest cannot have, else null. */
+  allergyConflict?: string | null;
+  /** The menu item this line was ordered from (null on old lines). */
+  menuItemId?: number | null;
+  /** Seat at the table (optional). */
+  seat?: number | null;
+  /** Given free by a manager. */
+  comped?: boolean;
+  /** How many times the dish was sent back to the kitchen. */
+  remakeCount?: number;
 }
 
 /** One tender against a RestaurantOrder's bill — several of these is what makes split billing possible. */
@@ -2324,6 +2383,9 @@ export interface RestaurantPayment {
 /** A dine-in "tab" opened against one DiningTable — see the backend's RestaurantOrder class javadoc for why this is separate from the walk-up POS terminal's own SaleOrder. */
 export interface RestaurantOrder {
   id: number;
+  /** STAFF, QR (ordered from the table) or WEB (online takeaway / delivery). */
+  source?: string;
+  onlineOrderCode?: string | null;
   tableId: number | null;
   tableName: string | null;
   status: 'OPEN' | 'CLOSED' | 'CANCELLED';
@@ -2354,6 +2416,85 @@ export interface RestaurantOrder {
   balanceDue: number;
   /** Hotel module: the room-service / charged-to-room booking, else null. */
   roomBookingId?: number | null;
+  /** Everything taken off the bill by discounts. */
+  discountTotal?: number;
+  orderDiscountPercent?: number;
+  orderDiscountAmount?: number;
+  discountReason?: string | null;
+  discountBy?: string | null;
+  serviceChargePercent?: number;
+  /** The service charge in money (0 when waived). */
+  serviceCharge?: number;
+  serviceChargeWaived?: boolean;
+  roundingAdjustment?: number;
+  tipAmount?: number;
+  changeGiven?: number;
+  /** The highest course released to the kitchen so far. */
+  firedCourse?: number;
+  /** Allergens the guests told us about (comma separated). */
+  guestAllergens?: string | null;
+  /** "Check 2" once the bill has been split. */
+  checkLabel?: string | null;
+  parentOrderId?: number | null;
+  /** How many times the receipt was printed. */
+  printCount?: number;
+  cancelReason?: string | null;
+  /** A reservation deposit already paid and taken off this bill. */
+  depositApplied?: number;
+}
+
+/** One row of the voids and comps log. */
+export interface RestaurantVoidEntry {
+  id: number;
+  type: 'VOID' | 'COMP' | 'CANCEL' | 'REPRINT';
+  orderId: number | null;
+  orderLabel: string | null;
+  description: string | null;
+  quantity: number;
+  amount: number;
+  reason: string | null;
+  byUser: string | null;
+  approvedBy: string | null;
+  createdAt: string;
+}
+
+/** The restaurant's pricing rules (Admin > Restaurant > Settings). */
+export interface RestaurantSettings {
+  serviceChargePercent: number;
+  serviceChargeDineIn: boolean;
+  serviceChargeTakeaway: boolean;
+  serviceChargeDelivery: boolean;
+  serviceChargeVatPercent: number;
+  discountLimitPercent: number;
+  tipsEnabled: boolean;
+  tipPresets: string;
+  roundingUnit: number;
+  /** Comma separated quick notes the waiter can tap for the kitchen. */
+  notePresets?: string;
+  openTime?: string;
+  closeTime?: string;
+  slotMinutes?: number;
+  turnMinutes?: number;
+  bookingDaysAhead?: number;
+  depositPerGuest?: number;
+  depositRefundHours?: number;
+  reminderHours?: number;
+  graceMinutes?: number;
+  noShowBlockCount?: number;
+  reminderTemplate?: string;
+  defaultPrepMinutes?: number;
+  kitchenWarnPercent?: number;
+  onlineEnabled?: boolean;
+  qrEnabled?: boolean;
+  onlineTakeaway?: boolean;
+  onlineDelivery?: boolean;
+  onlinePaused?: boolean;
+  onlineAutoAcceptTables?: boolean;
+  onlinePrepMinutes?: number;
+  onlineMinOrder?: number;
+  onlineMaxPending?: number;
+  onlineExpireMinutes?: number;
+  onlineMessage?: string | null;
 }
 
 /** One row on the Kitchen Display — one order line, with just enough order/table context for the kitchen to know where it's going. */
@@ -2368,6 +2509,64 @@ export interface KitchenTicket {
   orderOpenedAt: string;
   /** Snapshotted kitchen prep area (Fourier: "Kitchen stations") — null if the menu item had none assigned; grouped as "Unassigned" in the station filter. */
   station: string | null;
+  course?: number;
+  options?: string[];
+  allergens?: string | null;
+  guestAllergens?: string | null;
+  allergyConflict?: string | null;
+  sentAt?: string | null;
+  readyAt?: string | null;
+  targetMinutes?: number;
+  elapsedMinutes?: number;
+  urgency?: 'OK' | 'WARN' | 'LATE';
+  remakeCount?: number;
+  seat?: number | null;
+  guestCount?: number;
+}
+
+/** One order on the expo (pass) screen. */
+export interface ExpoOrder {
+  orderId: number;
+  label: string;
+  orderType: string;
+  guestCount: number;
+  serverName: string | null;
+  oldestSentAt: string;
+  oldestMinutes: number;
+  allReady: boolean;
+  readyCount: number;
+  cookingCount: number;
+  heldCount: number;
+  waitingOn: string[];
+  urgency: 'OK' | 'WARN' | 'LATE';
+  guestAllergens: string | null;
+  lines: ExpoLine[];
+}
+
+export interface ExpoLine {
+  lineId: number;
+  description: string;
+  quantity: number;
+  station: string;
+  status: 'SENT' | 'PREPARING' | 'READY';
+  course: number;
+  seat: number | null;
+  options: string[];
+  notes: string | null;
+  urgency: 'OK' | 'WARN' | 'LATE';
+  elapsedMinutes: number;
+  targetMinutes: number;
+  allergyConflict: string | null;
+}
+
+export interface KitchenSummary {
+  stations: { station: string; waiting: number; cooking: number; ready: number; late: number; warn: number; averagePrepMinutes: number; doneToday: number }[];
+  waiting: number;
+  cooking: number;
+  ready: number;
+  late: number;
+  oldestMinutes: number;
+  soldOut: string[];
 }
 
 /** A booking for a future dine-in visit (Fourier: "Reservations") — free-text guest details, not tied to an existing Customer. */
@@ -2384,6 +2583,51 @@ export interface Reservation {
   restaurantOrderId: number | null;
   /** The "reservation number" (Fourier: "To use the reserved table, you need to enter reservation number"). */
   confirmationCode: string | null;
+  /** How long the table is held, in minutes. */
+  durationMinutes?: number;
+  endsAt?: string;
+  guestEmail?: string | null;
+  depositAmount?: number;
+  depositStatus?: 'NONE' | 'REQUIRED' | 'HELD' | 'APPLIED' | 'REFUNDED' | 'FORFEITED';
+  depositMethod?: string | null;
+  remindedAt?: string | null;
+  source?: 'STAFF' | 'ONLINE';
+  cancelReason?: string | null;
+  noShowAt?: string | null;
+  /** Bookings under the same phone number that ended as no-shows / were seated. */
+  guestNoShows?: number;
+  guestVisits?: number;
+}
+
+/** One bookable time on a day, with how many tables could take the party. */
+export interface ReservationSlot {
+  time: string;
+  label: string;
+  tablesFree: number;
+}
+
+export interface ReservationReminder {
+  text: string;
+  emailed: boolean;
+  note: string | null;
+}
+
+/** A party waiting at the door for a table. */
+export interface WaitlistEntry {
+  id: number;
+  guestName: string;
+  guestPhone: string | null;
+  partySize: number;
+  notes: string | null;
+  status: 'WAITING' | 'NOTIFIED' | 'SEATED' | 'LEFT';
+  quotedMinutes: number;
+  addedAt: string;
+  notifiedAt: string | null;
+  closedAt: string | null;
+  orderId: number | null;
+  position: number;
+  waitedMinutes: number;
+  tableReady: string | null;
 }
 
 /* ---------------------------------------------------------------------------------------------
@@ -2716,3 +2960,139 @@ export interface SupplierPrice {
   validTo: string | null;
   note: string | null;
 }
+
+// ---------------------------------------------------------------- Restaurant sales analysis and end of day (RS-7)
+
+export interface AnalysisTotals {
+  checks: number; parties: number; covers: number; itemsSold: number;
+  gross: number; discounts: number; netSales: number; serviceCharge: number; tax: number; rounding: number; billed: number; tips: number;
+  averageCheck: number; averagePerCover: number; cost: number; profit: number; marginPercent: number; averageMinutesAtTable: number;
+}
+export interface AnalysisHour { hour: number; checks: number; covers: number; netSales: number; }
+export interface AnalysisWeekday { day: number; name: string; days: number; checks: number; covers: number; netSales: number; averageNetPerDay: number; }
+export interface AnalysisDay { date: string; checks: number; covers: number; netSales: number; billed: number; }
+export interface AnalysisType { type: string; checks: number; covers: number; netSales: number; billed: number; averageCheck: number; }
+export interface AnalysisPayment { method: string; checks: number; amount: number; percent: number; }
+export interface AnalysisItem {
+  productId: number; name: string; category: string; quantity: number; netSales: number; salesPercent: number; cost: number; profit: number;
+  marginPercent: number; unitProfit: number; popularity: number; classification: 'STAR' | 'PLOWHORSE' | 'PUZZLE' | 'DOG' | null;
+}
+export interface AnalysisCategory { categoryId: number | null; name: string; quantity: number; netSales: number; salesPercent: number; cost: number; profit: number; marginPercent: number; }
+export interface AnalysisServer {
+  serverId: number | null; name: string; checks: number; covers: number; netSales: number; averageCheck: number; serviceCharge: number; tips: number;
+  discounts: number; voids: number; voidAmount: number; comps: number; compAmount: number;
+}
+export interface AnalysisTable { tableId: number; name: string; section: string | null; seats: number; parties: number; covers: number; turnsPerDay: number; averageMinutes: number; netSales: number; salesPerCover: number; }
+export interface AnalysisControl { type: string; count: number; amount: number; }
+export interface RestaurantAnalysis {
+  from: string; to: string; totals: AnalysisTotals; hours: AnalysisHour[]; weekdays: AnalysisWeekday[]; days: AnalysisDay[]; types: AnalysisType[];
+  payments: AnalysisPayment[]; items: AnalysisItem[]; categories: AnalysisCategory[]; servers: AnalysisServer[]; tables: AnalysisTable[]; controls: AnalysisControl[];
+}
+
+export interface EodSales {
+  checks: number; parties: number; covers: number; itemsSold: number; gross: number; discounts: number; netSales: number; serviceCharge: number; tax: number;
+  rounding: number; billed: number; tips: number; depositApplied: number; collected: number;
+}
+export interface EodPayment { method: string; kind: 'CASH' | 'ROOM' | 'OTHER' | 'DEPOSIT'; checks: number; amount: number; }
+export interface EodTax { label: string; base: number; tax: number; }
+export interface EodTip { server: string; checks: number; tips: number; }
+export interface EodDeposit { kind: string; count: number; amount: number; cashAmount: number; }
+export interface EodCash {
+  openingFloat: number; cashSales: number; depositsIn: number; depositsOut: number; paidIn: number; paidOut: number; tipsPaid: number; expected: number;
+  counted: number | null; variance: number | null; floatKept: number | null; banked: number | null;
+}
+export interface EodCashEvent { id: number; at: string; kind: string; method: string | null; amount: number; label: string | null; reason: string | null; by: string | null; }
+export interface EndOfDay {
+  date: string; closed: boolean; zNumber: number | null; closedBy: string | null; closedAt: string | null; changedSinceClose: boolean;
+  sales: EodSales; types: AnalysisType[]; taxes: EodTax[]; payments: EodPayment[]; tips: EodTip[]; deposits: EodDeposit[]; controls: AnalysisControl[];
+  openOrders: { count: number; value: number; labels: string[] }; cash: EodCash; cashEvents: EodCashEvent[]; notes: string | null;
+}
+export interface DayCloseRow {
+  id: number; zNumber: number; date: string; status: 'CLOSED' | 'REOPENED'; checks: number; netSales: number; totalBilled: number; tips: number;
+  cashExpected: number; cashCounted: number; variance: number; banked: number; closedBy: string | null; closedAt: string | null; notes: string | null;
+  reopenedBy: string | null; reopenReason: string | null;
+}
+
+// ---- RS-8: QR menu and online ordering
+export interface PublicOption { id: number; name: string; priceDelta: number }
+export interface PublicOptionGroup { id: number; name: string; required: boolean; maxSelect: number; options: PublicOption[] }
+export interface PublicItem { id: number; name: string; price: number; allergens: string | null; available: boolean; unavailableReason: string | null; groups: PublicOptionGroup[] }
+export interface PublicCategory { id: number; name: string; items: PublicItem[] }
+export interface PublicZone { id: number; name: string; fee: number; minOrder: number; extraMinutes: number }
+export interface PublicMenu {
+  restaurantName: string;
+  message: string | null;
+  paused: boolean;
+  openNow: boolean;
+  openTime: string;
+  closeTime: string;
+  mode: string | null;
+  tableName: string | null;
+  tableOrdering: boolean;
+  takeaway: boolean;
+  delivery: boolean;
+  minOrder: number;
+  prepMinutes: number;
+  categories: PublicCategory[];
+  zones: PublicZone[];
+}
+export interface PublicOrderLine { menuItemId: number; quantity: number; notes?: string | null; optionIds?: number[] }
+export interface PublicOrderPayload {
+  mode: string;
+  tableToken?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  customerAddress?: string | null;
+  zoneId?: number | null;
+  notes?: string | null;
+  lines: PublicOrderLine[];
+  website?: string | null;
+}
+export interface OnlineTrackLine { name: string; quantity: number; options: string | null; notes: string | null; lineTotal: number }
+export interface OnlineTrack {
+  code: string;
+  mode: string;
+  status: string;
+  stage: string;
+  stageText: string;
+  etaMinutes: number | null;
+  firstName: string | null;
+  tableName: string | null;
+  zoneName: string | null;
+  deliveryFee: number;
+  subtotal: number;
+  total: number;
+  rejectReason: string | null;
+  placedAt: string;
+  lines: OnlineTrackLine[];
+  restaurantName: string;
+}
+export interface OnlineOrder {
+  id: number;
+  code: string;
+  mode: string;
+  status: string;
+  source: string;
+  tableId: number | null;
+  tableName: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  customerAddress: string | null;
+  zoneName: string | null;
+  deliveryFee: number;
+  notes: string | null;
+  estimatedTotal: number;
+  etaMinutes: number | null;
+  createdAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  rejectReason: string | null;
+  restaurantOrderId: number | null;
+  waitingMinutes: number;
+  lines: OnlineTrackLine[];
+  problem: string | null;
+}
+export interface DeliveryZone { id: number; name: string; fee: number; minOrder: number; extraMinutes: number; active: boolean; sortOrder: number }
+export interface TableQr { tableId: number; name: string; section: string | null; active: boolean; token: string; path: string }

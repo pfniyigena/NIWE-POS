@@ -39,7 +39,38 @@ public record RestaurantOrderDto(
         BigDecimal paidTotal,
         BigDecimal balanceDue,
         /** Hotel module: room-service / charged-to-room booking, else null. */
-        Long roomBookingId
+        Long roomBookingId,
+        /** Everything taken off the bill by discounts (line discounts and the order discount). */
+        BigDecimal discountTotal,
+        BigDecimal orderDiscountPercent,
+        BigDecimal orderDiscountAmount,
+        String discountReason,
+        String discountBy,
+        BigDecimal serviceChargePercent,
+        /** The service charge in money (0 when waived or not charged). */
+        BigDecimal serviceCharge,
+        boolean serviceChargeWaived,
+        /** What rounding added to (or took from) the bill. */
+        BigDecimal roundingAdjustment,
+        /** The tip given at checkout. */
+        BigDecimal tipAmount,
+        /** The change handed back at checkout. */
+        BigDecimal changeGiven,
+        /** The highest course released to the kitchen so far. */
+        int firedCourse,
+        /** Allergens the guests told us about (comma separated). */
+        String guestAllergens,
+        /** "Check 2" once the bill has been split, else null. */
+        String checkLabel,
+        Long parentOrderId,
+        /** How many times the receipt has been printed. */
+        int printCount,
+        String cancelReason,
+        /** A reservation deposit already paid and taken off this bill. */
+        BigDecimal depositApplied,
+        /** STAFF, QR or WEB: where the order came from. */
+        String source,
+        String onlineOrderCode
 ) {
     public static RestaurantOrderDto from(RestaurantOrder order) {
         var table = order.getTable();
@@ -47,7 +78,10 @@ public record RestaurantOrderDto(
         var driver = order.getDriver();
         BigDecimal subtotal = RestaurantOrderCalculator.subtotal(order);
         BigDecimal taxTotal = RestaurantOrderCalculator.taxTotal(order);
-        BigDecimal total = subtotal.add(taxTotal);
+        BigDecimal total = RestaurantOrderCalculator.total(order);
+        BigDecimal tip = order.getTipAmount() == null ? BigDecimal.ZERO : order.getTipAmount();
+        BigDecimal deposit = order.getDepositApplied() == null ? BigDecimal.ZERO : order.getDepositApplied();
+        BigDecimal depositUsed = deposit.min(total.max(BigDecimal.ZERO));
         BigDecimal paidTotal = order.getPayments().stream().map(RestaurantPayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         return new RestaurantOrderDto(
                 order.getId(),
@@ -75,8 +109,28 @@ public record RestaurantOrderDto(
                 taxTotal,
                 total,
                 paidTotal,
-                total.subtract(paidTotal),
-                order.getRoomBookingId()
+                total.add(tip).subtract(paidTotal).subtract(depositUsed),
+                order.getRoomBookingId(),
+                RestaurantOrderCalculator.discountTotal(order),
+                order.getDiscountPercent(),
+                order.getDiscountAmount(),
+                order.getDiscountReason(),
+                order.getDiscountBy(),
+                order.getServiceChargePercent(),
+                RestaurantOrderCalculator.serviceCharge(order),
+                order.isServiceChargeWaived(),
+                RestaurantOrderCalculator.roundingAdjustment(order),
+                tip,
+                order.getChangeGiven(),
+                order.getFiredCourse(),
+                order.getGuestAllergens(),
+                order.getCheckLabel(),
+                order.getParentOrderId(),
+                order.getPrintCount(),
+                order.getCancelReason(),
+                deposit,
+                order.getSource() == null ? "STAFF" : order.getSource(),
+                order.getOnlineOrderCode()
         );
     }
 }

@@ -126,12 +126,19 @@ import { HotelApiService } from '../core/api/hotel-api.service';
           <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/orders/new" routerLinkActive="active"><span class="sidenav-icon">🥡</span> Takeaway/Delivery</a>
           <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/deliveries" routerLinkActive="active"><span class="sidenav-icon">🛵</span> Deliveries board</a>
           <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/kitchen" routerLinkActive="active"><span class="sidenav-icon">🍳</span> Kitchen display</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/kitchen/expo" routerLinkActive="active"><span class="sidenav-icon">🛎️</span> Expo</a>
           <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/reservations" routerLinkActive="active"><span class="sidenav-icon">📅</span> Reservations</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/online-orders" routerLinkActive="active"><span class="sidenav-icon">📲</span> Online orders</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/waitlist" routerLinkActive="active"><span class="sidenav-icon">⏳</span> Waiting list</a>
           <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/receipts" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Receipts</a>
           <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/wastage" routerLinkActive="active"><span class="sidenav-icon">🗑️</span> Wastage</a>
+          <a *ngIf="canSee('/admin/restaurant/voids')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/voids" routerLinkActive="active"><span class="sidenav-icon">🚫</span> Voids &amp; comps</a>
+          <a *ngIf="canSee('/admin/restaurant/analysis')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/analysis" routerLinkActive="active"><span class="sidenav-icon">📈</span> Sales analysis</a>
+          <a *ngIf="canSee('/admin/restaurant/end-of-day')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/end-of-day" routerLinkActive="active"><span class="sidenav-icon">🧾</span> End of day</a>
           <a *ngIf="canSee('/admin/restaurant/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
           <a *ngIf="canSee('/admin/restaurant/tables')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/tables" routerLinkActive="active"><span class="sidenav-icon">🪑</span> Tables</a>
           <a *ngIf="canSee('/admin/restaurant/menu')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/menu" routerLinkActive="active"><span class="sidenav-icon">📋</span> Menu</a>
+          <a *ngIf="canSee('/admin/restaurant/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
         </ng-container>
         <!-- Time Tracking group: optional module (Settings > Modules). "My time" is for every signed-in user; the rest follows the Operations / Billing areas. -->
         <button type="button" *ngIf="modules.on('TIME_TRACKING')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('time')">

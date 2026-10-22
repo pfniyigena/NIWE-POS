@@ -34,4 +34,21 @@ public class DiningTable extends BaseEntity {
 
     /** Soft-disable a table without deleting it — same convention as Category/Brand/PaymentMethod's own active flags. */
     private boolean active = true;
+
+    /** Printed on the table's QR code: the address guests scan is /menu/{qrToken}. Made when the table is saved the first time; a manager can replace it. */
+    @Column(length = 24, unique = true)
+    private String qrToken;
+
+    @jakarta.persistence.PrePersist
+    void makeQrToken() {
+        if (qrToken == null) qrToken = newToken();
+    }
+
+    public static String newToken() {
+        String alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+        java.security.SecureRandom r = new java.security.SecureRandom();
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < 12; i++) b.append(alphabet.charAt(r.nextInt(alphabet.length())));
+        return b.toString();
+    }
 }

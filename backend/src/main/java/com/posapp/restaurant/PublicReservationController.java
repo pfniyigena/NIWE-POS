@@ -3,6 +3,8 @@ package com.posapp.restaurant;
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
 import com.posapp.restaurant.dto.PublicReservationDto;
+import com.posapp.restaurant.dto.ReservationInfoDto;
+import com.posapp.restaurant.dto.ReservationSlotDto;
 import com.posapp.restaurant.dto.PublicReservationRequest;
 import com.posapp.restaurant.dto.PublicTableDto;
 import jakarta.validation.Valid;
@@ -43,15 +45,30 @@ public class PublicReservationController {
         this.reservationService = reservationService;
     }
 
-    @GetMapping("/available-tables")
-    public List<PublicTableDto> availableTables(@RequestParam LocalDate date) {
+    /** Opening hours, how far ahead guests can book, and the deposit — what the page needs before asking anything. */
+    @GetMapping("/info")
+    public ReservationInfoDto info() {
         moduleService.requireEnabled(ModuleKey.RESTAURANT);
-        return reservationService.availableTables(date).stream().map(PublicTableDto::from).toList();
+        return reservationService.info();
+    }
+
+    /** The times still open on a date for this party size. */
+    @GetMapping("/slots")
+    public List<ReservationSlotDto> slots(@RequestParam LocalDate date, @RequestParam(required = false) Integer partySize) {
+        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        return reservationService.slots(date, partySize);
+    }
+
+    @GetMapping("/available-tables")
+    public List<PublicTableDto> availableTables(@RequestParam(required = false) LocalDate date, @RequestParam(required = false) java.time.Instant at,
+                                                @RequestParam(required = false) Integer partySize) {
+        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        return reservationService.availableTables(date, at, partySize).stream().map(PublicTableDto::from).toList();
     }
 
     @PostMapping
     public PublicReservationDto create(@Valid @RequestBody PublicReservationRequest request) {
         moduleService.requireEnabled(ModuleKey.RESTAURANT);
-        return PublicReservationDto.from(reservationService.create(request.toReservationRequest()));
+        return PublicReservationDto.from(reservationService.createOnline(request.toReservationRequest()));
     }
 }

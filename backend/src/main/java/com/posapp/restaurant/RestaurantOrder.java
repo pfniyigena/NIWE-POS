@@ -1,5 +1,6 @@
 package com.posapp.restaurant;
 
+import java.math.BigDecimal;
 import com.posapp.common.BaseEntity;
 import com.posapp.user.AppUser;
 import jakarta.persistence.CascadeType;
@@ -85,6 +86,20 @@ public class RestaurantOrder extends BaseEntity {
     /** Assigned at checkout — own numbering, same "own prefix, own sequence" convention as SaleOrder/Quotation/Invoice's own document numbers. */
     private String ticketNumber;
 
+    /** Order discount: a percentage of the bill or a fixed amount (never both), with the reason and who gave it. */
+    private BigDecimal discountPercent = BigDecimal.ZERO;
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+    private String discountReason;
+    private String discountBy;
+    /** Copied from the restaurant settings when the order is opened. */
+    private BigDecimal serviceChargePercent = BigDecimal.ZERO;
+    private BigDecimal serviceChargeVatPercent = BigDecimal.ZERO;
+    private boolean serviceChargeWaived = false;
+    private BigDecimal roundingUnit = BigDecimal.ZERO;
+    /** Set at checkout: the tip the guest added, and the change handed back. */
+    private BigDecimal tipAmount = BigDecimal.ZERO;
+    private BigDecimal changeGiven = BigDecimal.ZERO;
+
     /**
      * Fourier: warehouse filter on Stock Movement History — which warehouse this order drew took stock
      * from, snapshotted when it happened (the Main warehouse is stored as null, which is also what
@@ -102,9 +117,32 @@ public class RestaurantOrder extends BaseEntity {
     @jakarta.persistence.Column(name = "branch_id")
     private Long branchId;
 
+    /** When this check was split off another one, the id of the first check of the table's party (else null). */
+    private Long parentOrderId;
+    /** "Check 1", "Check 2"... once an order has been split; null for an ordinary order. */
+    private String checkLabel;
+    /** How many times the receipt was printed; from the second print it is marked as a copy. */
+    private int printCount = 0;
+    /** A reservation deposit taken off this bill, and the reservation it came from. */
+    private java.math.BigDecimal depositApplied = java.math.BigDecimal.ZERO;
+    private Long depositReservationId;
+    /** STAFF, QR (scanned at the table) or WEB (takeaway / delivery page). */
+    private String source = "STAFF";
+    private String onlineOrderCode;
+    private String cancelReason;
+    private String cancelledBy;
+
+    /** The highest course already released to the kitchen; pending lines of later courses are held. */
+    private int firedCourse = 1;
+
+    /** Allergens the guests at this order have told us about (comma separated tags). */
+    private String guestAllergens;
+
+    @jakarta.persistence.OrderBy("id ASC")
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<RestaurantOrderLine> lines = new ArrayList<>();
 
+    @jakarta.persistence.OrderBy("id ASC")
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<RestaurantPayment> payments = new ArrayList<>();
 
@@ -119,7 +157,7 @@ public class RestaurantOrder extends BaseEntity {
      */
     public String displayLabel() {
         if (table != null) {
-            return table.getName();
+            return checkLabel != null && !checkLabel.isBlank() ? table.getName() + " · " + checkLabel : table.getName();
         }
         if (roomLabel != null && !roomLabel.isBlank()) {
             return "Room service — " + roomLabel;

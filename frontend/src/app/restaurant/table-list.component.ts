@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HotelExportComponent } from '../hotel/hotel-export.component';
 import { ShellComponent } from '../shared/shell.component';
 import { DiningTableApiService } from '../core/api/dining-table-api.service';
 import { DiningTable } from '../core/models';
@@ -9,13 +10,16 @@ import { DiningTable } from '../core/models';
 @Component({
   selector: 'app-table-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [CommonModule, FormsModule, ShellComponent, HotelExportComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Tables</h3>
-        <button class="btn btn-primary" (click)="startNew()">+ New table</button>
+        <div class="flex gap-2 align-center">
+          <app-hotel-export path="/restaurant/tables/export" name="restaurant-tables"></app-hotel-export>
+          <button class="btn btn-primary" (click)="startNew()">+ New table</button>
+        </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="editing">

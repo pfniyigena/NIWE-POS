@@ -113,6 +113,17 @@ public class AccountService {
     /** Hotel module: the value of rooms booked but not yet stayed in (only used when the hotel posts "at booking and at check-out"). Released to room revenue at check-out. */
     public static final String UNEARNED_ROOM_REVENUE = "UNEARNED_ROOM_REVENUE";
 
+    /** Restaurant: the service charge added to the bill (kept apart from food and drink sales). */
+    public static final String SERVICE_CHARGE_REVENUE = "SERVICE_CHARGE_REVENUE";
+    /** Restaurant: tips collected from guests and still owed to the staff. */
+    public static final String TIPS_PAYABLE = "TIPS_PAYABLE";
+    /** Restaurant: deposits taken for table reservations, held until applied to the bill or refunded. */
+    public static final String RESTAURANT_DEPOSITS = "RESTAURANT_DEPOSITS";
+    /** Restaurant: reservation deposits the guest lost (no-show or late cancellation). */
+    public static final String FORFEITED_DEPOSIT_INCOME = "FORFEITED_DEPOSIT_INCOME";
+    /** Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (income or cost, depending on the sign). */
+    public static final String ROUNDING_DIFFERENCE = "ROUNDING_DIFFERENCE";
+
     /** Assets Management module: the cost of equipment, vehicles, furniture and other long-lived assets (at cost, before depreciation). */
     public static final String FIXED_ASSETS = "FIXED_ASSETS";
     /** Assets Management module: depreciation charged so far on fixed assets (a credit balance that reduces their value). */
@@ -195,6 +206,12 @@ public class AccountService {
                     "Hotel: deposits received from guests before they are applied to a bill."),
             new ChartRow(UNEARNED_ROOM_REVENUE, "2860", "Unearned Room Revenue", AccountType.LIABILITY, true,
                     "Hotel: value of rooms booked but not yet stayed in (used by the 'post at booking and at check-out' mode)."),
+            new ChartRow(RESTAURANT_DEPOSITS, "2855", "Restaurant Reservation Deposits", AccountType.LIABILITY, true,
+                    "Restaurant: deposits taken for table reservations, until they are applied to the bill or refunded."),
+            new ChartRow(FORFEITED_DEPOSIT_INCOME, "4170", "Forfeited Reservation Deposits", AccountType.REVENUE, true,
+                    "Restaurant: deposits kept when a guest does not show up or cancels too late."),
+            new ChartRow(TIPS_PAYABLE, "2890", "Tips Payable", AccountType.LIABILITY, true,
+                    "Restaurant: tips collected from guests and still owed to the staff."),
             new ChartRow(CUSTOMER_CREDIT_PAYABLE, "2800", "Customer Credit Payable", AccountType.LIABILITY, true,
                     "Store credit owed back to customers — e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(GIFT_CARD_LIABILITY, "2880", "Gift Card Liability", AccountType.LIABILITY, true,
@@ -206,6 +223,8 @@ public class AccountService {
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),
             new ChartRow(SALES_REVENUE, "4000", "Sales Revenue", AccountType.REVENUE, true, null),
             new ChartRow(ROOM_REVENUE, "4010", "Hotel Revenue (Rooms and Services)", AccountType.REVENUE, true, null),
+            new ChartRow(SERVICE_CHARGE_REVENUE, "4020", "Service Charge Revenue", AccountType.REVENUE, true,
+                    "Restaurant: the service charge added to guests' bills."),
             new ChartRow("4100", "Other Income", AccountType.REVENUE, false,
                     "Income outside core sales — interest earned, asset disposals, and similar."),
             new ChartRow(INSTALLMENT_INCOME, "4150", "Instalment Interest and Late-Fee Income", AccountType.REVENUE, true,
@@ -216,6 +235,8 @@ public class AccountService {
             new ChartRow(REWARDS_EXPENSE, "5970", "Customer Rewards Expense", AccountType.EXPENSE, true,
                     "Loyalty points customers paid with, and gift cards given away free."),
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "5100", "Inventory Shrinkage / Write-off Expense", AccountType.EXPENSE, true, null),
+            new ChartRow(ROUNDING_DIFFERENCE, "5860", "Rounding Differences", AccountType.EXPENSE, true,
+                    "Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (a credit balance means rounding gained money)."),
             new ChartRow("5200", "Operating Expenses", AccountType.EXPENSE, false, null),
             new ChartRow("5300", "Rent Expense", AccountType.EXPENSE, false, "Premises rent."),
             new ChartRow(REPAIRS_MAINTENANCE_EXPENSE, "5210", "Repairs & Maintenance Expense", AccountType.EXPENSE, true,
@@ -281,6 +302,12 @@ public class AccountService {
                     "Hotel: deposits received from guests before they are applied to a bill."),
             new ChartRow(UNEARNED_ROOM_REVENUE, "477", "Produits constatés d'avance (Unearned Room Revenue)", AccountType.LIABILITY, true,
                     "Hotel: value of rooms booked but not yet stayed in (used by the 'post at booking and at check-out' mode)."),
+            new ChartRow(RESTAURANT_DEPOSITS, "4196", "Clients, acomptes réservations (Restaurant Reservation Deposits)", AccountType.LIABILITY, true,
+                    "Restaurant : acomptes reçus pour les réservations de table, jusqu'à imputation sur l'addition ou remboursement."),
+            new ChartRow(FORFEITED_DEPOSIT_INCOME, "7582", "Produits divers (Forfeited Reservation Deposits)", AccountType.REVENUE, true,
+                    "Restaurant : acomptes conservés en cas d'absence ou d'annulation tardive."),
+            new ChartRow(TIPS_PAYABLE, "4213", "Personnel, pourboires à reverser (Tips Payable)", AccountType.LIABILITY, true,
+                    "Restaurant: tips collected from guests and still owed to the staff."),
             new ChartRow(CUSTOMER_CREDIT_PAYABLE, "419", "Clients créditeurs (Customer Credit Payable)", AccountType.LIABILITY, true,
                     "SYSCOHADA's own account for a customer with a credit balance — store credit owed back, e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(GIFT_CARD_LIABILITY, "4195", "Clients, bons d'achat (Gift Card Liability)", AccountType.LIABILITY, true,
@@ -290,6 +317,8 @@ public class AccountService {
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),
             new ChartRow(SALES_REVENUE, "701", "Ventes de marchandises (Sales Revenue)", AccountType.REVENUE, true, null),
             new ChartRow(ROOM_REVENUE, "706", "Services vendus (Hotel Revenue — Rooms and Services)", AccountType.REVENUE, true, null),
+            new ChartRow(SERVICE_CHARGE_REVENUE, "7061", "Services vendus, service (Service Charge Revenue)", AccountType.REVENUE, true,
+                    "Restaurant: the service charge added to guests' bills."),
             new ChartRow("758", "Produits divers (Other Income)", AccountType.REVENUE, false,
                     "Income outside core sales — interest earned, asset disposals, and similar."),
             new ChartRow(INSTALLMENT_INCOME, "771", "Intérêts de prêts et créances (Instalment Interest and Late-Fee Income)", AccountType.REVENUE, true,
@@ -301,6 +330,8 @@ public class AccountService {
             new ChartRow(REWARDS_EXPENSE, "6285", "Autres charges externes (Customer Rewards Expense)", AccountType.EXPENSE, true,
                     "Loyalty points customers paid with, and gift cards given away free."),
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "658", "Charges diverses (Inventory Shrinkage / Write-off Expense)", AccountType.EXPENSE, true, null),
+            new ChartRow(ROUNDING_DIFFERENCE, "6588", "Écarts d'arrondi (Rounding Differences)", AccountType.EXPENSE, true,
+                    "Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (a credit balance means rounding gained money)."),
             new ChartRow("628", "Autres charges externes (Operating Expenses)", AccountType.EXPENSE, false, null),
             new ChartRow("622", "Locations et charges locatives (Rent Expense)", AccountType.EXPENSE, false, "Premises rent."),
             new ChartRow(REPAIRS_MAINTENANCE_EXPENSE, "624", "Entretien, réparations et maintenance (Repairs & Maintenance Expense)", AccountType.EXPENSE, true,

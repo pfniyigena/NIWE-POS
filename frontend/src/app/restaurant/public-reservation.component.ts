@@ -1,19 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { PublicReservationApiService, PublicReservationConfirmation, PublicTable } from '../core/api/public-reservation-api.service';
+import { PublicReservationApiService, PublicReservationConfirmation, PublicReservationInfo, PublicSlot, PublicTable } from '../core/api/public-reservation-api.service';
 
 /**
  * Fourier: "Public be able to make reservation", then "Public reservations should show available
  * table for that day. The person then book table. Once Booked it can not be used by anyone. To
- * use the reserved table, you need to enter reservation number." Mirrors LoginComponent's own
- * chrome-free centered-card layout (no <app-shell>, since an anonymous visitor has no sidenav).
- * Flow: pick a date → fetch that day's available tables (PublicReservationApiService.availableTables,
- * which hits the one other unauthenticated endpoint) → pick a table → fill in guest details → book.
- * The confirmation screen shows the reservation number prominently — that's the ONE time the guest
- * ever sees it, and staff later look the booking up by that same number (ReservationListComponent's
- * "Seat by reservation number" card) rather than by picking it out of a list.
+ * use the reserved table, you need to enter reservation number." Chrome-free centered card (an
+ * anonymous visitor has no sidenav).
+ *
+ * <p>Flow: party size and date → the times still open that day (inside the restaurant's hours) →
+ * the tables free at that time → name, phone, optional e-mail → book. The confirmation shows the
+ * reservation number prominently, and the deposit the guest is asked to bring when there is one.
  */
 @Component({
   selector: 'app-public-reservation',
@@ -21,31 +20,43 @@ import { PublicReservationApiService, PublicReservationConfirmation, PublicTable
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem 0;">
-      <div class="card" style="width:440px; padding:2rem;">
+      <div class="card" style="width:480px; max-width:96vw; padding:2rem;">
         <ng-container *ngIf="!confirmation">
-          <h3 class="mb-3" style="text-align:center;">Reserve a table</h3>
+          <h3 class="mb-1" style="text-align:center;">Reserve a table</h3>
+          <p class="text-muted pr-hours" style="text-align:center; font-size:0.85rem;" *ngIf="info">{{ info.restaurantName }} · open {{ info.openTime }}–{{ info.closeTime }}</p>
           <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
           <form (ngSubmit)="submit()">
-            <div class="form-group mb-2">
-              <label class="form-label">Date</label>
-              <input class="form-control" type="date" name="date" [(ngModel)]="date" [min]="today" (ngModelChange)="onDateChange()" required />
+            <div class="flex gap-2 mb-2">
+              <div class="form-group" style="flex:1;">
+                <label class="form-label">Date</label>
+                <input class="form-control pr-date" type="date" name="date" [(ngModel)]="date" [min]="today" [max]="maxDate" (ngModelChange)="onChange()" required />
+              </div>
+              <div class="form-group" style="width:110px;">
+                <label class="form-label">Guests</label>
+                <input class="form-control pr-party" type="number" min="1" max="50" name="partySize" [(ngModel)]="partySize" (ngModelChange)="onChange()" required />
+              </div>
             </div>
 
             <ng-container *ngIf="date">
               <div class="form-group mb-2">
-                <label class="form-label">Available tables</label>
-                <div *ngIf="loadingTables" class="text-muted">Checking availability…</div>
-                <div *ngIf="!loadingTables && tables.length === 0" class="text-muted">
-                  No tables available on that date — try another day.
+                <label class="form-label">Time</label>
+                <div *ngIf="loadingSlots" class="text-muted">Checking the day…</div>
+                <div *ngIf="!loadingSlots && openSlots.length === 0" class="text-muted pr-noslots">No tables are free that day for {{ partySize }} — try another day or fewer guests.</div>
+                <div *ngIf="!loadingSlots && openSlots.length > 0" class="flex gap-1" style="flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm pr-slot" *ngFor="let s of openSlots"
+                    [class.btn-primary]="slot?.time === s.time" [class.btn-outline-secondary]="slot?.time !== s.time"
+                    (click)="pickSlot(s)">{{ s.label }}</button>
                 </div>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="slot">
+              <div class="form-group mb-2">
+                <label class="form-label">Table</label>
+                <div *ngIf="loadingTables" class="text-muted">Checking tables…</div>
+                <div *ngIf="!loadingTables && tables.length === 0" class="text-muted">No table is free at that time — pick another time.</div>
                 <div *ngIf="!loadingTables && tables.length > 0" class="flex gap-2" style="flex-wrap:wrap;">
-                  <label
-                    *ngFor="let t of tables"
-                    class="btn"
-                    [class.btn-primary]="tableId === t.id"
-                    [class.btn-outline-secondary]="tableId !== t.id"
-                    style="cursor:pointer;"
-                  >
+                  <label *ngFor="let t of tables" class="btn pr-table" [class.btn-primary]="tableId === t.id" [class.btn-outline-secondary]="tableId !== t.id" style="cursor:pointer;">
                     <input type="radio" name="tableId" [value]="t.id" [(ngModel)]="tableId" style="display:none;" />
                     {{ t.name }} <span *ngIf="t.section">({{ t.section }})</span> — seats {{ t.capacity }}
                   </label>
@@ -55,26 +66,25 @@ import { PublicReservationApiService, PublicReservationConfirmation, PublicTable
 
             <ng-container *ngIf="tableId">
               <div class="form-group mb-2">
-                <label class="form-label">Time</label>
-                <input class="form-control" type="time" name="time" [(ngModel)]="time" required />
-              </div>
-              <div class="form-group mb-2">
                 <label class="form-label">Name</label>
-                <input class="form-control" name="guestName" [(ngModel)]="guestName" required />
+                <input class="form-control pr-name" name="guestName" [(ngModel)]="guestName" required />
               </div>
               <div class="form-group mb-2">
                 <label class="form-label">Phone number</label>
-                <input class="form-control" name="guestPhone" [(ngModel)]="guestPhone" required />
+                <input class="form-control pr-phone" name="guestPhone" [(ngModel)]="guestPhone" required />
               </div>
               <div class="form-group mb-2">
-                <label class="form-label">Party size</label>
-                <input class="form-control" type="number" min="1" name="partySize" [(ngModel)]="partySize" required />
+                <label class="form-label">E-mail (optional — for a reminder)</label>
+                <input class="form-control pr-email" type="email" name="guestEmail" [(ngModel)]="guestEmail" />
               </div>
-              <div class="form-group mb-3">
+              <div class="form-group mb-2">
                 <label class="form-label">Notes (optional)</label>
                 <textarea class="form-control" rows="2" name="notes" [(ngModel)]="notes"></textarea>
               </div>
-              <button class="btn btn-primary btn-block" type="submit" [disabled]="loading">
+              <p class="text-muted pr-deposit-note" style="font-size:0.85rem;" *ngIf="deposit() > 0">
+                A deposit of <strong>{{ deposit() | number: '1.0-2' }}</strong> is asked for this booking. You pay it at the restaurant and it comes off your bill.
+              </p>
+              <button class="btn btn-primary btn-block pr-book" type="submit" [disabled]="loading">
                 {{ loading ? 'Booking…' : 'Book table' }}
               </button>
             </ng-container>
@@ -84,12 +94,13 @@ import { PublicReservationApiService, PublicReservationConfirmation, PublicTable
           <h3 class="mb-3" style="text-align:center;">Reservation confirmed</h3>
           <p>
             Thanks, {{ c.guestName }} — your table{{ c.tableName ? ' (' + c.tableName + ')' : '' }} for {{ c.partySize }} on
-            {{ c.reservedFor | date: 'medium' }} is booked.
+            {{ c.reservedFor | date: 'EEEE d MMMM, HH:mm' }} is booked<span *ngIf="c.durationMinutes"> (held for {{ c.durationMinutes }} minutes)</span>.
           </p>
           <div class="card" style="padding:1rem; text-align:center; margin:1rem 0;">
             <div class="text-muted" style="font-size:0.8rem;">Your reservation number</div>
-            <div style="font-size:1.5rem; font-weight:600; letter-spacing:0.05em;">{{ c.confirmationCode }}</div>
+            <div class="pr-code" style="font-size:1.5rem; font-weight:600; letter-spacing:0.05em;">{{ c.confirmationCode }}</div>
           </div>
+          <p class="pr-deposit" *ngIf="(c.depositAmount ?? 0) > 0">Please bring a deposit of <strong>{{ c.depositAmount | number: '1.0-2' }}</strong>. It comes off your bill.</p>
           <p class="text-muted" style="font-size:0.85rem;">
             Keep this number — staff will ask for it when you arrive to seat your table.
           </p>
@@ -101,17 +112,23 @@ import { PublicReservationApiService, PublicReservationConfirmation, PublicTable
     </div>
   `,
 })
-export class PublicReservationComponent {
+export class PublicReservationComponent implements OnInit {
+  info: PublicReservationInfo | null = null;
   today = new Date().toISOString().slice(0, 10);
+  maxDate = '';
   date = '';
-  time = '';
+  partySize = 2;
+  slots: PublicSlot[] = [];
+  openSlots: PublicSlot[] = [];
+  slot: PublicSlot | null = null;
+  loadingSlots = false;
   tables: PublicTable[] = [];
   tableId: number | null = null;
   loadingTables = false;
 
   guestName = '';
   guestPhone = '';
-  partySize = 2;
+  guestEmail = '';
   notes = '';
   error: string | null = null;
   loading = false;
@@ -119,16 +136,56 @@ export class PublicReservationComponent {
 
   constructor(private publicReservationApi: PublicReservationApiService) {}
 
-  onDateChange(): void {
+  ngOnInit(): void {
+    this.publicReservationApi.info().subscribe({
+      next: (i) => {
+        this.info = i;
+        this.today = i.today;
+        const max = new Date(i.today + 'T00:00:00');
+        max.setDate(max.getDate() + i.bookingDaysAhead);
+        this.maxDate = max.toISOString().slice(0, 10);
+      },
+      error: () => {},
+    });
+  }
+
+  deposit(): number {
+    return (this.info?.depositPerGuest ?? 0) * (this.partySize || 1);
+  }
+
+  /** The date or the party changed: the times (and everything after them) have to be looked up again. */
+  onChange(): void {
+    this.slot = null;
     this.tableId = null;
     this.tables = [];
-    if (!this.date) return;
+    this.slots = [];
+    this.openSlots = [];
+    if (!this.date || !this.partySize || this.partySize < 1) return;
+    this.loadingSlots = true;
+    this.error = null;
+    this.publicReservationApi.slots(this.date, this.partySize).subscribe({
+      next: (s) => {
+        this.loadingSlots = false;
+        this.slots = s;
+        this.openSlots = s.filter((x) => x.tablesFree > 0);
+      },
+      error: (err) => {
+        this.loadingSlots = false;
+        this.error = err?.error?.message ?? 'Failed to check availability';
+      },
+    });
+  }
+
+  pickSlot(s: PublicSlot): void {
+    this.slot = s;
+    this.tableId = null;
+    this.tables = [];
     this.loadingTables = true;
     this.error = null;
-    this.publicReservationApi.availableTables(this.date).subscribe({
-      next: (tables) => {
+    this.publicReservationApi.availableTables(this.date, s.time, this.partySize).subscribe({
+      next: (t) => {
         this.loadingTables = false;
-        this.tables = tables;
+        this.tables = t;
       },
       error: (err) => {
         this.loadingTables = false;
@@ -138,17 +195,12 @@ export class PublicReservationComponent {
   }
 
   submit(): void {
-    if (!this.date || !this.tableId) {
-      this.error = 'Please choose a date and a table.';
+    if (!this.slot || !this.tableId) {
+      this.error = 'Please choose a time and a table.';
       return;
     }
-    if (!this.time || !this.guestName.trim() || !this.guestPhone.trim()) {
-      this.error = 'Please fill in your name, phone number, and a time.';
-      return;
-    }
-    const reservedForIso = new Date(`${this.date}T${this.time}`).toISOString();
-    if (new Date(reservedForIso).getTime() <= Date.now()) {
-      this.error = 'Please choose a date/time in the future.';
+    if (!this.guestName.trim() || !this.guestPhone.trim()) {
+      this.error = 'Please fill in your name and phone number.';
       return;
     }
     this.error = null;
@@ -157,8 +209,9 @@ export class PublicReservationComponent {
       .create({
         guestName: this.guestName.trim(),
         guestPhone: this.guestPhone.trim(),
+        guestEmail: this.guestEmail.trim() || null,
         partySize: this.partySize || 1,
-        reservedFor: reservedForIso,
+        reservedFor: this.slot.time,
         tableId: this.tableId,
         notes: this.notes || null,
       })

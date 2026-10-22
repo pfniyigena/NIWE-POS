@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface DiningTableRepository extends JpaRepository<DiningTable, Long> {
     List<DiningTable> findAllByOrderByNameAsc();
+
+    java.util.Optional<DiningTable> findByQrToken(String qrToken);
 }

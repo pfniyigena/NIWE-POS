@@ -24,9 +24,21 @@ public record MenuItemDto(
          */
         boolean hasRecipe,
         /** Free-text kitchen prep area (Fourier: "Kitchen stations") — see MenuItem.station's javadoc. */
-        String station
+        String station,
+        String allergens,
+        int defaultCourse,
+        /** The choices a guest can make for this item (sizes, extras...), with add-on prices. */
+        java.util.List<OptionGroupDto> optionGroups,
+        /** Minutes the kitchen should need (null = the restaurant default). */
+        Integer prepMinutes,
+        boolean soldOut,
+        String soldOutReason
 ) {
     public static MenuItemDto from(MenuItem item, boolean hasRecipe) {
+        return from(item, hasRecipe, java.util.List.of());
+    }
+
+    public static MenuItemDto from(MenuItem item, boolean hasRecipe, java.util.List<OptionGroupDto> groups) {
         var category = item.getCategory();
         Product product = item.getProduct();
         ProductDto productDto = product != null ? ProductDto.from(product) : null;
@@ -42,7 +54,13 @@ public record MenuItemDto(
                 item.getPriceOverride(),
                 effective,
                 hasRecipe,
-                item.getStation()
+                item.getStation(),
+                item.getAllergens(),
+                item.getDefaultCourse() <= 0 ? 1 : item.getDefaultCourse(),
+                groups,
+                item.getPrepMinutes(),
+                item.isSoldOut(),
+                item.getSoldOutReason()
         );
     }
 }

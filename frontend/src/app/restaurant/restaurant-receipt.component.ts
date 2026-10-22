@@ -19,7 +19,7 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="order as o">
-      <h3 style="text-align:center; margin-bottom:0;">Receipt</h3>
+      <h3 style="text-align:center; margin-bottom:0;">Receipt<span class="r-copy" *ngIf="(o.printCount ?? 0) > 1"> — COPY {{ (o.printCount ?? 1) - 1 }}</span></h3>
       <div *ngIf="settings as s" style="text-align:center; margin:8px 0 12px;">
         <img *ngIf="s.logoDataUrl" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
         <div *ngIf="s.businessName" style="font-weight:700; font-size:1.1rem;">{{ s.businessName }}</div>
@@ -42,9 +42,13 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
             <td style="padding:4px 0;">
               {{ l.description }}
               <div style="color:#666; font-size:0.8rem;">
-                {{ l.quantity }} &times; {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.station"> &middot; {{ l.station }}</span>
+                {{ l.quantity }} &times; {{ l.unitPrice + (l.optionsPrice ?? 0) | number: '1.2-2' }}<span *ngIf="l.station"> &middot; {{ l.station }}</span>
+              </div>
+              <div class="r-options" style="color:#666; font-size:0.8rem;" *ngIf="l.options && l.options.length > 0">
+                <span *ngFor="let o2 of l.options; let last = last">{{ o2.name }}<span *ngIf="o2.priceDelta !== 0"> ({{ o2.priceDelta > 0 ? '+' : '' }}{{ o2.priceDelta | number: '1.2-2' }})</span><span *ngIf="!last">, </span></span>
               </div>
               <div style="color:#666; font-size:0.8rem;" *ngIf="l.notes">{{ l.notes }}</div>
+              <div style="color:#666; font-size:0.8rem;" *ngIf="(l.discountTotal ?? 0) > 0">discount −{{ l.discountTotal | number: '1.2-2' }}</div>
             </td>
             <td style="text-align:right; padding:4px 0; vertical-align:top;">{{ l.lineGrandTotal | number: '1.2-2' }}</td>
           </tr>
@@ -53,17 +57,33 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
       <hr />
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
+          <tr class="r-discount" *ngIf="(o.discountTotal ?? 0) > 0">
+            <td>Discounts given<span *ngIf="o.discountReason"> ({{ o.discountReason }})</span></td>
+            <td style="text-align:right;">−{{ o.discountTotal | number: '1.2-2' }}</td>
+          </tr>
           <tr>
             <td>Subtotal</td>
             <td style="text-align:right;">{{ o.subtotal | number: '1.2-2' }}</td>
+          </tr>
+          <tr class="r-service" *ngIf="(o.serviceCharge ?? 0) > 0">
+            <td>Service charge ({{ o.serviceChargePercent }}%)</td>
+            <td style="text-align:right;">{{ o.serviceCharge | number: '1.2-2' }}</td>
           </tr>
           <tr>
             <td>Tax</td>
             <td style="text-align:right;">{{ o.taxTotal | number: '1.2-2' }}</td>
           </tr>
+          <tr class="r-rounding" *ngIf="(o.roundingAdjustment ?? 0) !== 0">
+            <td>Rounding</td>
+            <td style="text-align:right;">{{ o.roundingAdjustment | number: '1.2-2' }}</td>
+          </tr>
           <tr style="font-weight:700;">
             <td>Total</td>
             <td style="text-align:right;">{{ o.total | number: '1.2-2' }}</td>
+          </tr>
+          <tr class="r-tip" *ngIf="(o.tipAmount ?? 0) > 0">
+            <td>Tip</td>
+            <td style="text-align:right;">{{ o.tipAmount | number: '1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
@@ -72,6 +92,14 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
       <div *ngFor="let p of o.payments" style="display:flex; justify-content:space-between; font-size:0.9rem;">
         <span>{{ p.method }}</span>
         <span>{{ p.amount | number: '1.2-2' }}</span>
+      </div>
+      <div class="r-deposit" *ngIf="(o.depositApplied ?? 0) > 0" style="display:flex; justify-content:space-between; font-size:0.9rem;">
+        <span>Reservation deposit (paid earlier)</span>
+        <span>{{ o.depositApplied | number: '1.2-2' }}</span>
+      </div>
+      <div class="r-change" *ngIf="(o.changeGiven ?? 0) > 0" style="display:flex; justify-content:space-between; font-size:0.9rem; color:#666;">
+        <span>Change given</span>
+        <span>{{ o.changeGiven | number: '1.2-2' }}</span>
       </div>
 
       <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">Thank you!</p>
@@ -135,7 +163,19 @@ export class RestaurantReceiptComponent implements OnInit {
     });
   }
 
+  /** Records the print first (the second and later prints are marked as copies and logged), then opens the print dialog. */
   print(): void {
-    window.print();
+    const o = this.order;
+    if (o && o.status === 'CLOSED') {
+      this.orderApi.recordPrint(o.id).subscribe({
+        next: (updated) => {
+          this.order = updated;
+          setTimeout(() => window.print(), 50);
+        },
+        error: () => window.print(),
+      });
+    } else {
+      window.print();
+    }
   }
 }

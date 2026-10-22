@@ -62,6 +62,16 @@ public class RestaurantWastageService {
     }
 
     @Transactional(readOnly = true)
+    public List<RestaurantWastageDto> filtered(String q, String status, String reason, java.time.LocalDate from, java.time.LocalDate to) {
+        return wastageRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(w -> status == null || status.isBlank() || (w.getStatus() != null && w.getStatus().name().equalsIgnoreCase(status.trim())))
+                .filter(w -> reason == null || reason.isBlank() || (w.getReason() != null && w.getReason().name().equalsIgnoreCase(reason.trim())))
+                .filter(w -> com.posapp.common.ListPaging.between(w.getCreatedAt(), from, to))
+                .filter(w -> com.posapp.common.ListPaging.has(q, w.getProductName(), w.getNote()))
+                .map(RestaurantWastageDto::from).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<RestaurantWastageDto> listAll() {
         return wastageRepository.findAllByOrderByCreatedAtDesc().stream().map(RestaurantWastageDto::from).toList();
     }

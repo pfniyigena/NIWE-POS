@@ -44,4 +44,19 @@ public class MenuItem extends BaseEntity {
      * every other line field, so a later edit here never rewrites an already-fired ticket.
      */
     private String station;
+
+    /** Allergen tags (comma separated, from {@link RestaurantAllergens}) shown on the order screen and the kitchen ticket. */
+    private String allergens;
+
+    /** The course this item normally comes in (1 = first, up to 5); a waiter can change it per order. */
+    private int defaultCourse = 1;
+
+    /** How many minutes the kitchen should need for this item; null uses the restaurant's default. Tickets turn amber and then red against it. */
+    private Integer prepMinutes;
+
+    /** Sold out ("86'd"): it cannot be added to an order until it is switched back on. */
+    private boolean soldOut = false;
+    private String soldOutReason;
+    private java.time.Instant soldOutAt;
+    private String soldOutBy;
 }

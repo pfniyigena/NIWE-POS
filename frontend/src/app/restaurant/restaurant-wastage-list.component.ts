@@ -1,10 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { RestaurantWastageApiService } from '../core/api/restaurant-wastage-api.service';
 import { RestaurantWastage } from '../core/models';
 import { AuthService } from '../core/auth.service';
+import { ListState } from '../core/api/list-state';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { PagerComponent } from '../shared/pager.component';
 
 /**
  * Admin > Restaurant > Wastage — Fourier: "Restaurants need a dedicated wastage module." Mirrors
@@ -18,13 +22,20 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-restaurant-wastage-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Restaurant wastage</h3>
         <a class="btn btn-primary" routerLink="/admin/restaurant/wastage/new">+ Record wastage</a>
+      </div>
+      <app-list-filter exportPath="/restaurant/wastage/export" [exportExtra]="extra" [extraActive]="reason !== ''" placeholder="Search item or note" [statuses]="statuses" statusAll="All statuses" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <div class="flex gap-2 mb-3 align-center">
+        <select class="form-select reason-filter" style="width:auto;" [(ngModel)]="reason" (ngModelChange)="extraChanged()" name="reason" title="Reason">
+          <option value="">All reasons</option>
+          <option *ngFor="let r of reasons" [value]="r">{{ r.replace('_', ' ') | titlecase }}</option>
+        </select>
       </div>
       <table>
         <thead>
@@ -40,7 +51,7 @@ import { AuthService } from '../core/auth.service';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let w of entries">
+          <tr *ngFor="let w of list.rows">
             <td>{{ w.createdAt | date: 'medium' }}</td>
             <td>{{ w.productName }}</td>
             <td class="text-end" style="color: var(--danger-text)">-{{ w.quantity }}</td>
@@ -62,16 +73,19 @@ import { AuthService } from '../core/auth.service';
               </ng-container>
             </td>
           </tr>
-          <tr *ngIf="entries.length === 0">
-            <td [attr.colspan]="isAdmin ? 8 : 7" class="text-muted">No wastage recorded yet.</td>
-          </tr>
         </tbody>
       </table>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || reason ? 'No wastage matches these filters.' : 'No wastage recorded yet.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class RestaurantWastageListComponent implements OnInit {
-  entries: RestaurantWastage[] = [];
+  statuses = [{ value: 'PENDING', label: 'Pending' }, { value: 'CONFIRMED', label: 'Confirmed' }, { value: 'REJECTED', label: 'Rejected' }];
+  reasons = ['SPOILAGE', 'BURNT_OR_OVERCOOKED', 'DROPPED_OR_SPILLED', 'EXPIRED', 'PREP_TRIM', 'CUSTOMER_COMPLAINT', 'OTHER'];
+  reason = '';
+  extra: Record<string, string | number | null | undefined> = {};
+  list = new ListState<RestaurantWastage>((f, p, sz) => this.wastageApi.page(f, p, sz, { reason: this.reason }), 'Failed to load wastage records');
   error: string | null = null;
   busyId: number | null = null;
 
@@ -86,10 +100,18 @@ export class RestaurantWastageListComponent implements OnInit {
   }
 
   load(): void {
-    this.wastageApi.listAll().subscribe({
-      next: (w) => (this.entries = w),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load wastage records'),
-    });
+    this.list.load();
+  }
+
+  extraChanged(): void {
+    this.extra = { reason: this.reason };
+    this.list.page = 0;
+    this.list.load();
+  }
+
+  clearedExtra(): void {
+    this.reason = '';
+    this.extra = {};
   }
 
   confirm(w: RestaurantWastage): void {

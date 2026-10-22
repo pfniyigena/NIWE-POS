@@ -4,6 +4,8 @@ import com.posapp.restaurant.dto.MenuCategoryDto;
 import com.posapp.restaurant.dto.MenuCategoryRequest;
 import com.posapp.restaurant.dto.MenuItemDto;
 import com.posapp.restaurant.dto.MenuItemRequest;
+import com.posapp.restaurant.dto.OptionGroupDto;
+import com.posapp.restaurant.dto.OptionGroupRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -67,6 +69,28 @@ public class MenuController {
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
     public MenuItemDto updateItem(@PathVariable Long id, @Valid @RequestBody MenuItemRequest request) {
         return menuService.updateItem(id, request);
+    }
+
+    /** Mark an item sold out or back on — open to any signed-in user. */
+    @PostMapping("/items/{id}/sold-out")
+    public MenuItemDto soldOut(@PathVariable Long id, @RequestBody com.posapp.restaurant.dto.SoldOutRequest request) {
+        return menuService.setSoldOut(id, request.isSoldOut(), request.getReason());
+    }
+
+    @GetMapping("/allergens")
+    public List<String> allergens() {
+        return RestaurantAllergens.ALL;
+    }
+
+    @GetMapping("/items/{id}/options")
+    public List<OptionGroupDto> listOptions(@PathVariable Long id) {
+        return menuService.listOptions(id);
+    }
+
+    @PutMapping("/items/{id}/options")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
+    public List<OptionGroupDto> saveOptions(@PathVariable Long id, @RequestBody List<OptionGroupRequest> groups) {
+        return menuService.saveOptions(id, groups);
     }
 
     @DeleteMapping("/items/{id}")

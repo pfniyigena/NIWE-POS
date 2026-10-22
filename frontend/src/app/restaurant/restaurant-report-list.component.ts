@@ -20,6 +20,13 @@ import { REPORT_DEFS } from '../core/report-defs';
   template: `
     <app-shell>
       <h3 class="mb-3">Restaurant Reports</h3>
+      <div class="mb-4">
+        <h5 class="mb-2">Analysis and cash-up</h5>
+        <div class="flex gap-2" style="flex-wrap:wrap;">
+          <a class="btn btn-primary" routerLink="/admin/restaurant/analysis">Sales analysis</a>
+          <a class="btn btn-primary" routerLink="/admin/restaurant/end-of-day">End of day (cash-up)</a>
+        </div>
+      </div>
       <div *ngFor="let group of groups" class="mb-4">
         <h5 class="mb-2">{{ group.title }}</h5>
         <div class="flex gap-2" style="flex-wrap:wrap;">

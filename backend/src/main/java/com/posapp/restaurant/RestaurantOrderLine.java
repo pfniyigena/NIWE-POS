@@ -44,6 +44,35 @@ public class RestaurantOrderLine extends BaseEntity {
     /** Special instructions for the kitchen ("no onions", "extra spicy"...) — free text, never validated. */
     private String notes;
 
+    /** A discount on this line, in percent, with the reason and who gave it. */
+    private BigDecimal discountPercent = BigDecimal.ZERO;
+    private String discountReason;
+    private String discountBy;
+
+    /** What the guest added on top of the plain item, copied at order time. */
+    @jakarta.persistence.OrderBy("id ASC")
+    @jakarta.persistence.OneToMany(mappedBy = "line", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
+    private java.util.List<RestaurantOrderLineOption> options = new java.util.ArrayList<>();
+
+    /** Sum of the picked options' prices for ONE unit; added to the unit price in every figure. */
+    private BigDecimal optionsPrice = BigDecimal.ZERO;
+
+    /** Which course this line belongs to (1 = first). Lines of a later course wait until the course is fired. */
+    private int course = 1;
+
+    /** Which seat at the table ordered this (optional), so a bill can be split by seat. */
+    private Integer seat;
+
+    /** Given free by a manager (a 100% discount with a reason). */
+    private boolean comped = false;
+
+    /** The menu item this line was ordered from (used to check its options later). */
+    private Long menuItemId;
+
+    /** Allergen tags copied from the menu item at order time. */
+    private String allergens;
+
     @Enumerated(EnumType.STRING)
     private KitchenStatus kitchenStatus = KitchenStatus.PENDING;
 
@@ -63,4 +92,27 @@ public class RestaurantOrderLine extends BaseEntity {
      */
     private Integer stockBefore;
     private Integer stockAfter;
+
+    /** Snapshot of MenuItem.prepMinutes (null = the restaurant default at the time it is read). */
+    private Integer prepMinutes;
+    /** When the ticket reached the kitchen, started, was ready and was served. */
+    private java.time.Instant sentAt;
+    private java.time.Instant preparingAt;
+    private java.time.Instant readyAt;
+    private java.time.Instant servedAt;
+    /** How many times the dish was sent back to be made again. */
+    private int remakeCount = 0;
+
+    /** Moves the ticket to a new status and stamps the time, so the kitchen's waiting times can be worked out. */
+    public void moveTo(KitchenStatus status) {
+        java.time.Instant now = java.time.Instant.now();
+        this.kitchenStatus = status;
+        switch (status) {
+            case PENDING -> { sentAt = null; preparingAt = null; readyAt = null; servedAt = null; }
+            case SENT -> { if (sentAt == null) sentAt = now; preparingAt = null; readyAt = null; servedAt = null; }
+            case PREPARING -> { if (sentAt == null) sentAt = now; if (preparingAt == null) preparingAt = now; readyAt = null; servedAt = null; }
+            case READY -> { if (sentAt == null) sentAt = now; readyAt = now; servedAt = null; }
+            case SERVED -> { if (sentAt == null) sentAt = now; if (readyAt == null) readyAt = now; servedAt = now; }
+        }
+    }
 }

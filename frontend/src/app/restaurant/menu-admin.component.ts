@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HotelExportComponent } from '../hotel/hotel-export.component';
 import { ShellComponent } from '../shared/shell.component';
 import { MenuApiService } from '../core/api/menu-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
-import { MenuCategory, MenuItem, Product } from '../core/models';
+import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
 
 /**
  * Admin > Restaurant > Menu (Fourier: "Menu & menu categories," reusing existing products — the
@@ -15,11 +16,14 @@ import { MenuCategory, MenuItem, Product } from '../core/models';
 @Component({
   selector: 'app-menu-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [CommonModule, FormsModule, ShellComponent, HotelExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <h3 class="mb-3">Menu</h3>
+      <div class="flex justify-between align-center mb-3">
+        <h3>Menu</h3>
+        <app-hotel-export path="/restaurant/menu/items/export" name="restaurant-menu"></app-hotel-export>
+      </div>
       <div class="flex gap-3" style="align-items:flex-start;">
         <div class="card" style="padding:1rem; flex:0 0 280px;">
           <div class="flex justify-between align-center mb-2">
@@ -68,12 +72,16 @@ import { MenuCategory, MenuItem, Product } from '../core/models';
                 <tr>
                   <th>Product</th>
                   <th>Station</th>
+                  <th>Course</th>
+                  <th>Prep (min)</th>
+                  <th>Choices &amp; allergens</th>
                   <th class="text-end">Menu price</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of items">
+                <ng-container *ngFor="let item of items">
+                <tr class="menu-row">
                   <td>
                     {{ item.product?.name }}
                     <span *ngIf="item.hasRecipe" class="text-muted" title="Has a bill of materials — checkout consumes its ingredients (Admin > Manufacturing > Bill of materials)">🍳 recipe</span>
@@ -88,6 +96,19 @@ import { MenuCategory, MenuItem, Product } from '../core/models';
                       (ngModelChange)="setStation(item, $event)"
                     />
                   </td>
+                  <td>
+                    <select class="form-select form-select-sm mi-course" style="width:90px;" [ngModel]="item.defaultCourse ?? 1" (ngModelChange)="setCourse(item, $event)" [name]="'course' + item.id">
+                      <option *ngFor="let c of [1,2,3,4,5]" [ngValue]="c">Course {{ c }}</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" class="form-control form-control-sm mi-prep" style="width:80px;" min="0" max="240" placeholder="usual" [ngModel]="item.prepMinutes" (change)="setPrep(item, $any($event.target).value)" [name]="'prep' + item.id" />
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-secondary mi-expand" (click)="toggleDetail(item)">
+                      {{ item.optionGroups?.length ?? 0 }} group{{ (item.optionGroups?.length ?? 0) === 1 ? '' : 's' }}<span *ngIf="item.allergens"> · {{ pretty(item.allergens) }}</span>
+                    </button>
+                  </td>
                   <td class="text-end">
                     <input
                       type="number"
@@ -99,10 +120,49 @@ import { MenuCategory, MenuItem, Product } from '../core/models';
                       (ngModelChange)="setPriceOverride(item, $event)"
                     />
                   </td>
-                  <td><button class="btn btn-sm btn-outline-danger" (click)="removeItem(item)">Remove</button></td>
+                  <td class="flex gap-1">
+                    <button class="btn btn-sm mi-soldout" [class.btn-danger]="item.soldOut" [class.btn-outline-secondary]="!item.soldOut" (click)="toggleSoldOut(item)">{{ item.soldOut ? 'Sold out — put back' : 'Sold out?' }}</button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="removeItem(item)">Remove</button>
+                  </td>
                 </tr>
+                <tr class="item-detail" *ngIf="detailId === item.id">
+                  <td colspan="8" style="background:var(--hover, rgba(0,0,0,0.03)); padding:0.75rem;">
+                    <div class="mb-3">
+                      <strong>Allergens</strong>
+                      <div class="flex gap-3" style="flex-wrap:wrap;">
+                        <label *ngFor="let a of allergenList"><input type="checkbox" class="ma-chk" [attr.data-al]="a" [(ngModel)]="alSel[a]" [name]="'ma' + a" /> {{ pretty(a) }}</label>
+                      </div>
+                      <button class="btn btn-sm btn-primary mt-1 ma-save" (click)="saveAllergens(item)">Save allergens</button>
+                    </div>
+                    <div>
+                      <strong>Choices</strong>
+                      <span class="text-muted" style="font-size:0.85rem;"> — sizes, cooking, extras. Each option can add to the price.</span>
+                      <div class="card mb-2 mt-1 mo-group" style="padding:0.5rem;" *ngFor="let g of editGroups; let gi = index">
+                        <div class="flex gap-2 align-center mb-1" style="flex-wrap:wrap;">
+                          <input class="form-control form-control-sm mo-gname" style="width:160px;" placeholder="Group, e.g. Size" [(ngModel)]="g.name" [name]="'gn' + gi" />
+                          <label><input type="checkbox" class="mo-req" [(ngModel)]="g.required" [name]="'gr' + gi" /> Must choose</label>
+                          <label>Up to <input type="number" class="form-control form-control-sm mo-max" min="0" max="20" style="width:60px; display:inline-block;" [(ngModel)]="g.maxSelect" [name]="'gm' + gi" /></label>
+                          <label><input type="checkbox" [(ngModel)]="g.active" [name]="'ga' + gi" /> On</label>
+                          <button class="btn btn-sm btn-outline-danger mo-gdel" (click)="editGroups.splice(gi, 1)">Remove group</button>
+                        </div>
+                        <div class="flex gap-2 align-center mb-1" *ngFor="let o of g.options; let oi = index">
+                          <input class="form-control form-control-sm mo-oname" style="width:160px;" placeholder="Option" [(ngModel)]="o.name" [name]="'on' + gi + '_' + oi" />
+                          <input class="form-control form-control-sm mo-oprice" type="number" step="0.01" style="width:100px;" placeholder="+ price" [(ngModel)]="o.priceDelta" [name]="'op' + gi + '_' + oi" />
+                          <label><input type="checkbox" [(ngModel)]="o.active" [name]="'oa' + gi + '_' + oi" /> On</label>
+                          <button class="btn btn-sm btn-outline-danger mo-odel" (click)="g.options.splice(oi, 1)">✕</button>
+                        </div>
+                        <div><button class="btn btn-sm btn-outline-secondary mo-add-opt" (click)="g.options.push({ name: '', priceDelta: 0, active: true })">+ Option</button></div>
+                      </div>
+                      <div class="flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary mo-add-group" (click)="addGroup()">+ Group</button>
+                        <button class="btn btn-sm btn-primary mo-save" (click)="saveOptions(item)">Save choices</button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                </ng-container>
                 <tr *ngIf="items.length === 0">
-                  <td colspan="4" class="text-muted">No items yet — search for a product above to add one.</td>
+                  <td colspan="6" class="text-muted">No items yet — search for a product above to add one.</td>
                 </tr>
               </tbody>
             </table>
@@ -145,6 +205,11 @@ export class MenuAdminComponent implements OnInit {
   editingCategory = false;
   categoryName = '';
 
+  detailId: number | null = null;
+  editGroups: OptionGroup[] = [];
+  allergenList: string[] = [];
+  alSel: Record<string, boolean> = {};
+
   productSearch = '';
   productResults: Product[] = [];
   private searchDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -156,6 +221,7 @@ export class MenuAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCategories();
+    this.menuApi.allergens().subscribe({ next: (a) => (this.allergenList = a), error: () => (this.allergenList = []) });
   }
 
   loadCategories(): void {
@@ -280,6 +346,97 @@ export class MenuAdminComponent implements OnInit {
           error: (err) => (this.error = err?.error?.message ?? 'Failed to update station'),
         });
     }, 400);
+  }
+
+  pretty(csv: string | null | undefined): string {
+    return (csv ?? '')
+      .split(',')
+      .filter((x) => x)
+      .map((x) => x.charAt(0) + x.slice(1).toLowerCase())
+      .join(', ');
+  }
+
+  private payloadFor(item: MenuItem, extra: Record<string, unknown> = {}) {
+    return {
+      categoryId: this.selectedCategory!.id,
+      productId: item.product!.id,
+      sortOrder: item.sortOrder,
+      active: item.active,
+      priceOverride: item.priceOverride,
+      station: item.station,
+      allergens: item.allergens ?? null,
+      defaultCourse: item.defaultCourse ?? 1,
+      ...extra,
+    };
+  }
+
+  setPrep(item: MenuItem, raw: string): void {
+    if (!this.selectedCategory || !item.product) return;
+    this.error = null;
+    const minutes = raw === '' || raw === null ? 0 : Number(raw);
+    this.menuApi.updateItem(item.id, this.payloadFor(item, { prepMinutes: minutes })).subscribe({
+      next: () => this.loadItems(),
+      error: (err) => {
+        this.error = err?.error?.message ?? 'Failed to update the preparation time';
+        this.loadItems();
+      },
+    });
+  }
+
+  toggleSoldOut(item: MenuItem): void {
+    this.error = null;
+    const next = !item.soldOut;
+    const reason = next ? (window.prompt('Why is it sold out? (optional)', '') ?? '') : '';
+    this.menuApi.setSoldOut(item.id, next, reason).subscribe({
+      next: () => this.loadItems(),
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to update the item'),
+    });
+  }
+
+  setCourse(item: MenuItem, course: number): void {
+    if (!this.selectedCategory || !item.product) return;
+    this.error = null;
+    this.menuApi.updateItem(item.id, this.payloadFor(item, { defaultCourse: course })).subscribe({
+      next: () => this.loadItems(),
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to update the course'),
+    });
+  }
+
+  toggleDetail(item: MenuItem): void {
+    if (this.detailId === item.id) {
+      this.detailId = null;
+      return;
+    }
+    this.detailId = item.id;
+    const have = (item.allergens ?? '').split(',');
+    this.alSel = {};
+    for (const a of this.allergenList) this.alSel[a] = have.includes(a);
+    this.editGroups = JSON.parse(JSON.stringify(item.optionGroups ?? []));
+  }
+
+  saveAllergens(item: MenuItem): void {
+    if (!this.selectedCategory || !item.product) return;
+    this.error = null;
+    const chosen = this.allergenList.filter((a) => this.alSel[a]).join(',');
+    this.menuApi.updateItem(item.id, this.payloadFor(item, { allergens: chosen })).subscribe({
+      next: () => this.loadItems(),
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to save the allergens'),
+    });
+  }
+
+  addGroup(): void {
+    this.editGroups.push({ name: '', required: false, maxSelect: 1, active: true, options: [{ name: '', priceDelta: 0, active: true }] });
+  }
+
+  saveOptions(item: MenuItem): void {
+    this.error = null;
+    this.menuApi.saveOptions(item.id, this.editGroups).subscribe({
+      next: (groups) => {
+        this.editGroups = JSON.parse(JSON.stringify(groups));
+        this.loadItems();
+      },
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to save the choices'),
+    });
   }
 
   removeItem(item: MenuItem): void {

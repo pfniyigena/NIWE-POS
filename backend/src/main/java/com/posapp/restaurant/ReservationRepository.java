@@ -3,6 +3,7 @@ package com.posapp.restaurant;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     boolean existsByConfirmationCode(String confirmationCode);
 
-    /** Backs both the public availability check and the once-per-day table-exclusivity check — see ReservationService.assertTableAvailable/availableTables. */
+    /** Bookings of the given statuses that start inside a window — what the table-clash check looks at. */
+    List<Reservation> findByStatusInAndReservedForBetween(Collection<ReservationStatus> statuses, Instant from, Instant to);
+
     List<Reservation> findByStatusAndReservedForBetween(ReservationStatus status, Instant from, Instant to);
+
+    List<Reservation> findByStatus(ReservationStatus status);
 }

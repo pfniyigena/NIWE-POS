@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
-import { DiningTable, Reservation, RestaurantOrder } from '../models';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
+import { DiningTable, Reservation, ReservationReminder, ReservationSlot, RestaurantOrder } from '../models';
 
 export interface ReservationPayload {
   guestName: string;
@@ -12,12 +14,22 @@ export interface ReservationPayload {
   reservedFor: string;
   tableId?: number | null;
   notes?: string | null;
+  durationMinutes?: number | null;
+  guestEmail?: string | null;
+  depositAmount?: number | null;
+  /** Payment method code: take the deposit now. */
+  depositMethod?: string | null;
 }
 
 /** Admin/staff > Restaurant > Reservations (Fourier: "Reservations"). */
 @Injectable({ providedIn: 'root' })
 export class ReservationApiService {
   constructor(private http: HttpClient) {}
+
+  /** One page of the filtered list (search, status, dates; the total comes back in X-Total-Count). */
+  page(f: ListFilter, page: number, size: number, extra: Record<string, string | number | boolean | null | undefined> = {}): Observable<PageResult<Reservation>> {
+    return pagedList<Reservation>(this.http, `${API_BASE}/restaurant/reservations`, f, page, size, extra);
+  }
 
   listAll(): Observable<Reservation[]> {
     return this.http.get<Reservation[]>(`${API_BASE}/restaurant/reservations`);
@@ -36,9 +48,43 @@ export class ReservationApiService {
     return this.http.put<Reservation>(`${API_BASE}/restaurant/reservations/${id}`, payload);
   }
 
-  /** ADMIN-only server-side (Fourier: "the reservation can be cancelled anytime by admin"). */
-  cancel(id: number): Observable<Reservation> {
-    return this.http.post<Reservation>(`${API_BASE}/restaurant/reservations/${id}/cancel`, {});
+  /** The tables free for a party at one time. */
+  tablesAt(at: string, partySize: number): Observable<DiningTable[]> {
+    return this.http.get<DiningTable[]>(`${API_BASE}/restaurant/reservations/available-tables`, { params: { at, partySize } });
+  }
+
+  /** The bookable times on a date for a party. */
+  slots(date: string, partySize: number): Observable<ReservationSlot[]> {
+    return this.http.get<ReservationSlot[]>(`${API_BASE}/restaurant/reservations/slots`, { params: { date, partySize } });
+  }
+
+  /** ADMIN-only server-side (Fourier: "the reservation can be cancelled anytime by admin"). A held deposit is refunded or kept as chosen (blank = by the refund window). */
+  cancel(id: number, reason?: string | null, deposit?: 'REFUND' | 'FORFEIT' | '' | null): Observable<Reservation> {
+    return this.http.post<Reservation>(`${API_BASE}/restaurant/reservations/${id}/cancel`, { reason: reason || null, deposit: deposit || null });
+  }
+
+  noShow(id: number): Observable<Reservation> {
+    return this.http.post<Reservation>(`${API_BASE}/restaurant/reservations/${id}/no-show`, {});
+  }
+
+  markNoShows(): Observable<{ marked: number }> {
+    return this.http.post<{ marked: number }>(`${API_BASE}/restaurant/reservations/mark-no-shows`, {});
+  }
+
+  takeDeposit(id: number, method: string, amount?: number | null): Observable<Reservation> {
+    return this.http.post<Reservation>(`${API_BASE}/restaurant/reservations/${id}/deposit`, { method, amount: amount ?? null });
+  }
+
+  remindersDue(): Observable<Reservation[]> {
+    return this.http.get<Reservation[]>(`${API_BASE}/restaurant/reservations/reminders`);
+  }
+
+  reminder(id: number, send: boolean): Observable<ReservationReminder> {
+    return this.http.post<ReservationReminder>(`${API_BASE}/restaurant/reservations/${id}/reminder`, { send });
+  }
+
+  markReminded(id: number): Observable<Reservation> {
+    return this.http.post<Reservation>(`${API_BASE}/restaurant/reservations/${id}/reminded`, {});
   }
 
   /** Turns a booking into a real, open RestaurantOrder the moment the party arrives. */

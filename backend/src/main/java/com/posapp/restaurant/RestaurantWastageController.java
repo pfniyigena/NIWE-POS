@@ -35,8 +35,15 @@ public class RestaurantWastageController {
     }
 
     @GetMapping
-    public List<RestaurantWastageDto> listAll() {
-        return wastageService.listAll();
+    public org.springframework.http.ResponseEntity<List<RestaurantWastageDto>> listAll(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String q,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String status,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String reason,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(wastageService.filtered(q, status, reason, from, to), page, size);
     }
 
     @PostMapping
