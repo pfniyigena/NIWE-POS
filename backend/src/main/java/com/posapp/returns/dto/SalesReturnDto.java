@@ -39,7 +39,10 @@ public record SalesReturnDto(
         /** How much of the refund went back onto gift cards and as loyalty points (the points, and their money value); the rest is in refundMethod. */
         BigDecimal giftCardRefund,
         BigDecimal loyaltyRefund,
-        int pointsRefund
+        int pointsRefund,
+        String processedBy,
+        String approvedBy,
+        boolean voidReturn
 ) {
     public static SalesReturnDto from(SalesReturn r) {
         var order = r.getOrder();
@@ -71,7 +74,10 @@ public record SalesReturnDto(
                 r.getEfrisResponse(),
                 r.getGiftCardRefund(),
                 r.getLoyaltyRefund(),
-                r.getPointsRefund()
+                r.getPointsRefund(),
+                r.getProcessedBy(),
+                r.getApprovedBy(),
+                r.isVoidReturn()
         );
     }
 }

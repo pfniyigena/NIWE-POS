@@ -97,6 +97,15 @@ import { HotelApiService } from '../core/api/hotel-api.service';
           <a *ngIf="canSee('/admin/shifts')" class="sidenav-link" routerLink="/admin/shifts" routerLinkActive="active"
             ><span class="sidenav-icon">⏱️</span> Shifts</a
           >
+          <a *ngIf="canSee('/admin/pos-log')" class="sidenav-link" routerLink="/admin/pos-log" routerLinkActive="active"
+            ><span class="sidenav-icon">↩️</span> Voids &amp; returns</a
+          >
+          <a *ngIf="canSee('/admin/cash-movements')" class="sidenav-link" routerLink="/admin/cash-movements" routerLinkActive="active"
+            ><span class="sidenav-icon">💵</span> Cash movements</a
+          >
+          <a *ngIf="canSee('/admin/pos-settings')" class="sidenav-link" routerLink="/admin/pos-settings" routerLinkActive="active"
+            ><span class="sidenav-icon">⚙️</span> POS settings</a
+          >
           <!-- POS Reports (Task: "Add POS Report..."): a picker of Sales-Transactions/Profit reports, each with its own filters + Excel/PDF export. ADMIN-only, like every other reporting screen. -->
           <a *ngIf="canSee('/admin/reports')" class="sidenav-link" routerLink="/admin/reports" routerLinkActive="active"
             ><span class="sidenav-icon">📈</span> Reports</a

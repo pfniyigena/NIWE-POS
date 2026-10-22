@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 /** Which admin group a sidenav route belongs to — see SidenavStateService.defaultGroupForUrl. */
 const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
   { group: 'purchases', prefixes: ['/admin/purchases'] },
-  { group: 'pos', prefixes: ['/registers', '/sessions', '/returns', '/receipts', '/admin/shifts', '/admin/reports'] },
+  { group: 'pos', prefixes: ['/registers', '/sessions', '/returns', '/receipts', '/admin/pos-log', '/admin/cash-movements', '/admin/pos-settings', '/cash-control', '/admin/shifts', '/admin/reports'] },
   // 'customers' renamed to 'sales' (Task: "Then let have Sale as Menu and Move Customers into
   // Sales") — '/admin/sales' covers /admin/sales-orders and /admin/sales/reports in one prefix,
   // alongside the customer-facing screens that moved into this group.

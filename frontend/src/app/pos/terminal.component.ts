@@ -20,7 +20,7 @@ import * as OfflineCalc from '../core/offline/offline-calculator';
 import { GiftCardRow, GiftCardsApiService } from '../core/api/giftcards-api.service';
 import { LoyaltyApiService, LoyaltyBalance } from '../core/api/loyalty-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
-import { CashierSession, Category, CreditSummary, Customer, Order, OrderLine, PaymentMethodOption, Product, RegisterSession } from '../core/models';
+import { CashierSession, Category, CreditSummary, Customer, Order, OrderLine, PaymentMethodOption, PosSettings, Product, RegisterSession } from '../core/models';
 
 /** One offline payment-method row — same shape as checkout.component.ts's PaymentRow, for the inline offline payment step. */
 interface OfflinePaymentRow {
@@ -177,6 +177,22 @@ interface OfflinePaymentRow {
       >
         🧾 Receipts
       </button>
+      <a
+        class="btn btn-sm btn-outline-secondary till-cash-btn"
+        style="margin-right:8px;"
+        [routerLink]="['/cash-control', sessionId]"
+        title="Money paid in or out of the drawer, drops into the safe, and cash counts"
+      >
+        💵 Cash
+      </a>
+      <a
+        class="btn btn-sm btn-outline-secondary till-xreport-btn"
+        style="margin-right:8px;"
+        [routerLink]="['/sessions', sessionId, 'x-report']"
+        title="X report: how the shift stands right now (nothing is closed)"
+      >
+        📄 X report
+      </a>
       <button
         class="btn btn-sm btn-outline-secondary till-giftcard-btn"
         style="margin-right:8px;"
@@ -496,6 +512,13 @@ interface OfflinePaymentRow {
                         {{ l.priceNote }}: <s>{{ l.listPrice | number: '1.2-2' }}</s> {{ l.unitPrice | number: '1.2-2' }} each
                       </div>
                       <!-- CP-8b: which promotion took something off this line. -->
+                      <div class="line-override-note text-muted" *ngIf="l.priceOverridden" style="font-size:0.78rem;">
+                        Price changed: <s>{{ l.originalUnitPrice | number: '1.2-2' }}</s> {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.priceOverrideReason"> ({{ l.priceOverrideReason }})</span>
+                        <button class="btn btn-sm btn-link line-price-reset" style="padding:0 4px;" (click)="resetPrice(l)" title="Put the normal price back">↺</button>
+                      </div>
+                      <div class="line-discount-note text-muted" *ngIf="l.discountPercent > 0 && l.discountReason" style="font-size:0.78rem;">
+                        Discount: {{ l.discountReason }}<span *ngIf="l.discountApprovedBy"> (approved by {{ l.discountApprovedBy }})</span>
+                      </div>
                       <div class="line-promo-note" *ngIf="l.promoNote" style="font-size:0.78rem; color:var(--success, #1a7f37);">
                         🏷 {{ l.promoNote }} (−{{ l.promoPercent | number: '1.0-2' }}%)
                       </div>
@@ -522,10 +545,10 @@ interface OfflinePaymentRow {
                           style="width:65px; padding:0.2rem 0.4rem;"
                           placeholder="disc %"
                           [ngModel]="l.discountPercent"
-                          [disabled]="!canDiscount"
-                          [title]="canDiscount ? '' : 'Only an admin (or someone granted the discount-override permission) can apply a discount'"
+                          [title]="canDiscount ? '' : 'A manager approves a discount above the cashier allowance'"
                           (change)="updateDiscount(l, $event)"
                         />
+                        <button class="btn btn-sm btn-outline-secondary line-price-btn" (click)="openPanel('price', l)" title="Change the price">✎</button>
                         <button class="btn btn-sm btn-outline-danger" (click)="removeLine(l)" title="Remove">🗑</button>
                       </div>
                       <!-- Serial-numbered products: type or scan the serial of each unit sold (comma-separated).
@@ -558,6 +581,13 @@ interface OfflinePaymentRow {
                     <td>Tax</td>
                     <td class="text-end">{{ order.taxTotal | number: '1.2-2' }}</td>
                   </tr>
+                  <tr class="order-discount-row" *ngIf="order.orderDiscountPercent && order.orderDiscountPercent > 0">
+                    <td>
+                      Discount on the sale ({{ order.orderDiscountPercent | number: '1.0-2' }}%)<span class="text-muted" *ngIf="order.orderDiscountReason"> — {{ order.orderDiscountReason }}</span>
+                      <button class="btn btn-sm btn-link order-discount-remove" style="padding:0 4px;" (click)="clearOrderDiscount()" title="Take this discount off">✕</button>
+                    </td>
+                    <td class="text-end">−{{ order.orderDiscountValue | number: '1.2-2' }}</td>
+                  </tr>
                   <tr class="promo-saved-row" *ngIf="order.promoSavings && order.promoSavings > 0" style="color:var(--success, #1a7f37);">
                     <td>Saved with promotions</td>
                     <td class="text-end">{{ order.promoSavings | number: '1.2-2' }}</td>
@@ -580,7 +610,31 @@ interface OfflinePaymentRow {
                 </div>
               </div>
 
+              <!-- PO-5: one small form for the three things a cashier may need a reason or a manager's PIN for: a line discount, a changed price, a discount on the whole sale. -->
+              <div class="till-approval card" *ngIf="panel" style="margin:8px; padding:10px;">
+                <strong class="mb-2">{{ panel.kind === 'price' ? 'Change the price of ' + (panel.line?.description || '') : panel.kind === 'order' ? 'Discount on the whole sale' : 'Discount on ' + (panel.line?.description || '') }}</strong>
+                <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
+                  <select class="form-select form-select-sm till-panel-mode" style="width:auto;" *ngIf="panel.kind === 'order'" [(ngModel)]="panel.mode" name="pmode">
+                    <option value="percent">Percent</option>
+                    <option value="amount">Amount</option>
+                  </select>
+                  <input class="form-control form-control-sm till-panel-value" style="width:110px;" type="number" min="0" step="0.01" [(ngModel)]="panel.value" name="pvalue"
+                    [placeholder]="panel.kind === 'price' ? 'New price' : panel.mode === 'amount' ? 'Amount' : 'Percent'" />
+                  <select class="form-select form-select-sm till-panel-reason" style="width:auto;" [(ngModel)]="panel.reason" name="preason">
+                    <option value="">Reason…</option>
+                    <option *ngFor="let r of reasonsFor(panel.kind)" [value]="r">{{ r }}</option>
+                  </select>
+                  <input class="form-control form-control-sm till-panel-pin" style="width:140px;" type="password" autocomplete="off" *ngIf="panel.needPin" [(ngModel)]="panel.pin" name="ppin" placeholder="Manager PIN" />
+                </div>
+                <div class="text-danger till-panel-error mb-2" style="font-size:0.85rem;" *ngIf="panel.error">{{ panel.error }}</div>
+                <div class="flex gap-2">
+                  <button class="btn btn-sm btn-primary till-panel-apply" [disabled]="panel.busy || panel.value === ''" (click)="submitPanel()">Apply</button>
+                  <button class="btn btn-sm btn-outline-secondary till-panel-cancel" (click)="panel = null">Cancel</button>
+                </div>
+              </div>
+
               <div class="flex gap-2" style="padding:8px;">
+                <button class="btn btn-outline-secondary till-order-discount-btn" (click)="openPanel('order')" [disabled]="order.lines.length === 0" title="Give a discount on the whole sale">% Discount</button>
                 <button class="btn btn-outline-secondary" (click)="hold()" [disabled]="order.lines.length === 0" title="Hold this sale and start a new one">⏸ Hold</button>
                 <button class="btn btn-outline-danger" (click)="discard()" title="Discard this order — cannot be undone">🗑 Discard</button>
                 <a
@@ -904,6 +958,7 @@ export class TerminalComponent implements OnInit {
   ngOnInit(): void {
     this.sessionId = Number(this.route.snapshot.paramMap.get('sessionId'));
     this.registerApi.getSession(this.sessionId).subscribe((s) => (this.session = s));
+    this.registerApi.posSettings().subscribe({ next: (s) => (this.posSettings = s), error: () => {} });
     this.catalogApi.listCategories().subscribe((c) => (this.categories = c));
     this.customerApi.list().subscribe((c) => {
       this.customers = c;
@@ -1336,13 +1391,80 @@ export class TerminalComponent implements OnInit {
    * see the template — but the server never trusts that alone).
    */
   updateDiscount(line: OrderLine, event: Event): void {
-    if (!this.currentOrder || !this.canDiscount) return;
+    if (!this.currentOrder) return;
+    if (this.panel && this.panel.line?.id === line.id) return; // the panel for this line is already open
     const raw = Number((event.target as HTMLInputElement).value);
-    const value = isNaN(raw) ? 0 : Math.min(this.effectiveMaxDiscountPercent, Math.max(0, raw));
+    const value = isNaN(raw) ? 0 : Math.min(this.canDiscount ? this.effectiveMaxDiscountPercent : 100, Math.max(0, raw));
     this.orderApi.updateLine(this.currentOrder.id, line.id, { discountPercent: value }).subscribe({
       next: (updated) => this.applyUpdatedOrder(updated),
-      error: (err) => this.handleError(err),
+      error: (err) => {
+        const msg: string = err?.error?.message ?? '';
+        // PO-5: a reason or a manager's PIN is wanted: ask for it in the panel and send it again.
+        if (msg.includes('Manager approval needed') || msg.includes('reason')) {
+          this.panel = { kind: 'discount', line, value: String(value), mode: 'percent', reason: '', pin: '', needPin: msg.includes('Manager approval needed'), error: msg, busy: false };
+          if (this.currentOrder) this.currentOrder = { ...this.currentOrder }; // show the old value again in the box
+        } else {
+          this.handleError(err);
+        }
+      },
     });
+  }
+
+  /** PO-5 panel state: what is being asked (line discount, price change, discount on the whole sale). */
+  panel: { kind: 'discount' | 'price' | 'order'; line?: OrderLine; value: string; mode: 'percent' | 'amount'; reason: string; pin: string; needPin: boolean; error: string | null; busy: boolean } | null = null;
+  posSettings: PosSettings | null = null;
+
+  reasonsFor(kind: string): string[] {
+    const raw = kind === 'price' ? 'Damaged item,Price match,Manager special,Clearance,Other' : this.posSettings?.discountReasons ?? '';
+    return raw.split(',').map((r) => r.trim()).filter((r) => r);
+  }
+
+  openPanel(kind: 'price' | 'order', line?: OrderLine): void {
+    this.panel = { kind, line, value: kind === 'price' && line ? String(line.unitPrice) : '', mode: 'percent', reason: '', pin: '', needPin: false, error: null, busy: false };
+  }
+
+  submitPanel(): void {
+    const p = this.panel;
+    const order = this.currentOrder;
+    if (!p || !order) return;
+    const n = Number(p.value);
+    if (isNaN(n) || n < 0) {
+      p.error = 'Enter a number';
+      return;
+    }
+    p.busy = true;
+    p.error = null;
+    const reason = p.reason || undefined;
+    const pin = p.pin || undefined;
+    const done = {
+      next: (updated: Order) => {
+        this.panel = null;
+        this.applyUpdatedOrder(updated);
+      },
+      error: (err: any) => {
+        p.busy = false;
+        const msg: string = err?.error?.message ?? 'Could not apply that';
+        if (msg.includes('Manager approval needed')) p.needPin = true;
+        p.error = msg;
+      },
+    };
+    if (p.kind === 'order') {
+      this.orderApi.setOrderDiscount(order.id, { ...(p.mode === 'amount' ? { amount: n } : { percent: n }), reason, approverPin: pin }).subscribe(done);
+    } else if (p.kind === 'price' && p.line) {
+      this.orderApi.updateLine(order.id, p.line.id, { unitPrice: n, priceReason: reason, approverPin: pin }).subscribe(done);
+    } else if (p.line) {
+      this.orderApi.updateLine(order.id, p.line.id, { discountPercent: n, discountReason: reason, approverPin: pin }).subscribe(done);
+    }
+  }
+
+  clearOrderDiscount(): void {
+    if (!this.currentOrder) return;
+    this.orderApi.clearOrderDiscount(this.currentOrder.id).subscribe({ next: (u) => this.applyUpdatedOrder(u), error: (err) => this.handleError(err) });
+  }
+
+  resetPrice(line: OrderLine): void {
+    if (!this.currentOrder) return;
+    this.orderApi.updateLine(this.currentOrder.id, line.id, { resetPrice: true }).subscribe({ next: (u) => this.applyUpdatedOrder(u), error: (err) => this.handleError(err) });
   }
 
   removeLine(line: OrderLine): void {

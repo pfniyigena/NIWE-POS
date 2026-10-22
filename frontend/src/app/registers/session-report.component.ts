@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
-import { SessionReport, StoreSettings } from '../core/models';
+import { CashMovement, SessionReport, StoreSettings } from '../core/models';
 
 /**
  * The Z-report — `/sessions/:id/report`. Task: "Add print session report (Z-report) same we
@@ -80,6 +80,18 @@ import { SessionReport, StoreSettings } from '../core/models';
             <td style="padding:3px 0;">Cash refunds</td>
             <td style="text-align:right; padding:3px 0;">&minus;{{ r.cashRefundsOut | number: '1.2-2' }}</td>
           </tr>
+          <tr *ngIf="r.paidIn">
+            <td style="padding:3px 0;">Paid in</td>
+            <td style="text-align:right; padding:3px 0;">{{ r.paidIn | number: '1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="r.paidOut">
+            <td style="padding:3px 0;">Paid out</td>
+            <td style="text-align:right; padding:3px 0;">&minus;{{ r.paidOut | number: '1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="r.drops">
+            <td style="padding:3px 0;">Dropped into the safe</td>
+            <td style="text-align:right; padding:3px 0;">&minus;{{ r.drops | number: '1.2-2' }}</td>
+          </tr>
         </tbody>
       </table>
 
@@ -127,6 +139,17 @@ import { SessionReport, StoreSettings } from '../core/models';
         </tbody>
       </table>
 
+      <p *ngIf="r.session.varianceNote" style="font-size:0.85rem; margin:6px 0 0;">Note: {{ r.session.varianceNote }}</p>
+      <ng-container *ngIf="movements(r).length">
+        <hr />
+        <p style="text-align:center; font-weight:700; margin:0 0 6px; font-size:0.9rem;">Cash in and out</p>
+        <div *ngFor="let m of movements(r)" style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:3px;">
+          <span>{{ m.createdAt | date: 'HH:mm' }} {{ kindLabel(m.kind) }} — {{ m.reason }}{{ m.note ? ' (' + m.note + ')' : '' }}</span>
+          <span>{{ m.kind === 'PAID_IN' ? '' : '−' }}{{ m.amount | number: '1.2-2' }}</span>
+        </div>
+      </ng-container>
+      <p *ngIf="r.session.closedBy" style="font-size:0.8rem; color:#666; margin:8px 0 0;">Closed by {{ r.session.closedBy }}</p>
+
       <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">— End of Z-Report —</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
@@ -170,6 +193,14 @@ export class SessionReportComponent implements OnInit, OnDestroy {
   settings: StoreSettings | null = null;
 
   /** Set only when session-close.component.ts navigates here right after closing a shift — same convention as checkout/return-form's own `?autoPrint=1`. */
+  movements(r: SessionReport): CashMovement[] {
+    return (r.cashMovements ?? []).filter((m) => !m.voided && m.kind !== 'COUNT');
+  }
+
+  kindLabel(kind: string): string {
+    return kind === 'PAID_IN' ? 'Paid in' : kind === 'PAID_OUT' ? 'Paid out' : 'Drop';
+  }
+
   private autoPrint = false;
   /** Dismissing the auto-print dialog lands back on the admin Shifts screen — same place the manual "Back to Shifts" link below goes, now that this report is reached from there rather than the plain "Sessions" screen (see this class's own doc comment). */
   private readonly afterPrintHandler = () => this.router.navigate(['/admin/shifts']);

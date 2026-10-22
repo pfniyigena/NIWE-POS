@@ -32,6 +32,12 @@ public interface OrderRepository extends JpaRepository<SaleOrder, Long> {
     /** Used by the "Receipts" screen — most recent completed sales, newest first, capped so the list stays fast. */
     List<SaleOrder> findTop200ByStatusOrderByCompletedAtDesc(OrderStatus status);
 
+    /** Carts that were dropped (VOIDED), newest first: behind the voids and returns log. */
+    List<SaleOrder> findByStatusOrderByUpdatedAtDesc(OrderStatus status);
+
+    /** Every sale with this status, newest first: behind the filtered, paged receipts list and its exports. */
+    List<SaleOrder> findByStatusOrderByCompletedAtDesc(OrderStatus status);
+
     /** Same, scoped to one till session — used when Receipts is opened from inside the terminal. */
     List<SaleOrder> findTop200BySessionIdAndStatusOrderByCompletedAtDesc(Long sessionId, OrderStatus status);
 

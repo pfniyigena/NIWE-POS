@@ -22,6 +22,7 @@ import com.posapp.register.Register;
 import com.posapp.returns.dto.ProcessReturnRequest;
 import com.posapp.returns.dto.SalesReturnDto;
 import com.posapp.settings.StoreSettingsService;
+import com.posapp.user.AppUser;
 import com.posapp.warehouse.Warehouse;
 import com.posapp.warehouse.WarehouseLocation;
 import com.posapp.branch.BranchService;
@@ -65,6 +66,9 @@ public class ReturnsService {
     private final BranchService branchService;
     private final com.posapp.giftcards.GiftCardService giftCardService;
     private final com.posapp.loyalty.LoyaltyService loyaltyService;
+    private final com.posapp.register.PosSettingsService posSettingsService;
+    private final com.posapp.register.ManagerApprovalService approvalService;
+    private final com.posapp.register.CashierSessionRepository cashierSessionRepository;
 
     public ReturnsService(SalesReturnRepository salesReturnRepository,
                            SalesReturnLineRepository salesReturnLineRepository,
@@ -80,7 +84,13 @@ public class ReturnsService {
                            WarehouseService warehouseService,
                            BranchService branchService,
                            com.posapp.giftcards.GiftCardService giftCardService,
-                           com.posapp.loyalty.LoyaltyService loyaltyService) {
+                           com.posapp.loyalty.LoyaltyService loyaltyService,
+                           com.posapp.register.PosSettingsService posSettingsService,
+                           com.posapp.register.ManagerApprovalService approvalService,
+                           com.posapp.register.CashierSessionRepository cashierSessionRepository) {
+        this.posSettingsService = posSettingsService;
+        this.approvalService = approvalService;
+        this.cashierSessionRepository = cashierSessionRepository;
         this.giftCardService = giftCardService;
         this.loyaltyService = loyaltyService;
         this.salesReturnRepository = salesReturnRepository;
@@ -144,6 +154,18 @@ public class ReturnsService {
         return salesReturnRepository.findAllByOrderByReturnDateDesc().stream().map(SalesReturnDto::from).toList();
     }
 
+    /** Returns with filters: text (invoice, return number, customer, reason), refund method, register and the day returned. */
+    @Transactional(readOnly = true)
+    public List<SalesReturnDto> filteredReturns(String q, String method, Long registerId, java.time.LocalDate from, java.time.LocalDate to) {
+        return salesReturnRepository.findAllByOrderByReturnDateDesc().stream()
+                .filter(r -> com.posapp.common.ListPaging.between(r.getReturnDate(), from, to))
+                .filter(r -> method == null || method.isBlank() || method.equalsIgnoreCase(r.getRefundMethod()))
+                .map(SalesReturnDto::from)
+                .filter(d -> registerId == null || registerId.equals(d.registerId()))
+                .filter(d -> com.posapp.common.ListPaging.has(q, d.invoiceNumber(), d.returnNumber(), d.customerName(), d.reason()))
+                .toList();
+    }
+
     /** Task: "print out the return" — a single return's own detail, including its line items, for the return receipt. */
     @Transactional(readOnly = true)
     public SalesReturnDto getById(Long id) {
@@ -178,15 +200,54 @@ public class ReturnsService {
         return salesReturnRepository.sumCashRefundsForSession(sessionId, cashCodes);
     }
 
+    /** The returns that count against one shift's drawer and report. */
+    @Transactional(readOnly = true)
+    public List<SalesReturn> returnsForSession(Long sessionId) {
+        return salesReturnRepository.findForSession(sessionId);
+    }
+
     @Transactional
-    public SalesReturnDto processReturn(ProcessReturnRequest request) {
+    public SalesReturnDto processReturn(ProcessReturnRequest request, AppUser caller) {
+        return processReturn(request, caller, false);
+    }
+
+    /** The shift whose drawer pays a refund made now: the caller's own open shift, else the sale's own shift if it is still open, else none. */
+    private com.posapp.register.RegisterSession drawerFor(SaleOrder order, AppUser caller) {
+        if (caller != null) {
+            for (com.posapp.register.CashierSession cs : cashierSessionRepository.findByCashierIdAndStatusOrderByStartedAtDesc(caller.getId(), com.posapp.register.CashierSessionStatus.OPEN)) {
+                if (cs.getRegisterSession() != null && cs.getRegisterSession().getStatus() == com.posapp.register.SessionStatus.OPEN) return cs.getRegisterSession();
+            }
+        }
+        com.posapp.register.RegisterSession own = order.getSession();
+        return own != null && own.getStatus() == com.posapp.register.SessionStatus.OPEN ? own : null;
+    }
+
+    /**
+     * {@code voidMode}: the refund of a voided sale (the void already checked its own rules and approval, so the return window and limit do not apply again).
+     */
+    private SalesReturnDto processReturn(ProcessReturnRequest request, AppUser caller, boolean voidMode) {
         SaleOrder order = orderService.getCompletedOrderById(request.getOrderId());
         String refundMethod = paymentMethodService.validateActiveCodeOrThrow(request.getRefundMethod());
+        com.posapp.register.PosSettings cfg = posSettingsService.entity();
+        String why = request.getReason() == null ? "" : request.getReason().trim();
+        if (!voidMode && cfg.isReturnReasonRequired() && why.isEmpty()) throw ApiException.badRequest("Choose the reason for the return");
+        if (why.length() > 200) throw ApiException.badRequest("The reason is too long (200 characters at most)");
+        if (order.getVoidedAt() != null) throw ApiException.badRequest("That sale was voided; it has already been refunded");
+        String approvedBy = null;
+        String needs = null;
+        if (!voidMode && cfg.getReturnWindowDays() > 0 && order.getCompletedAt() != null
+                && order.getCompletedAt().isBefore(Instant.now().minus(java.time.Duration.ofDays(cfg.getReturnWindowDays())))) {
+            needs = "This sale is more than " + cfg.getReturnWindowDays() + " days old, outside the return window";
+        }
 
         SalesReturn salesReturn = new SalesReturn();
         salesReturn.setOrder(order);
         salesReturn.setRefundMethod(refundMethod);
-        salesReturn.setReason(request.getReason());
+        salesReturn.setReason(why.isEmpty() ? null : why);
+        com.posapp.register.RegisterSession drawer = drawerFor(order, caller);
+        salesReturn.setRegisterSessionId(drawer == null ? null : drawer.getId());
+        salesReturn.setProcessedBy(caller == null ? null : caller.getUsername());
+        salesReturn.setVoidReturn(voidMode);
         // This return's own EFRIS erp_code — same "POS-" + millis shape OrderService uses for
         // invoiceNumber, assigned right away since (unlike an order) a return has no draft/open
         // state to defer this to. See SalesReturn.returnNumber's javadoc.
@@ -273,6 +334,22 @@ public class ReturnsService {
 
         salesReturn.setRefundTotal(subtotalRefund.add(taxRefund));
 
+        if (!voidMode && needs == null && cfg.getReturnApprovalOver().signum() > 0 && salesReturn.getRefundTotal().compareTo(cfg.getReturnApprovalOver()) > 0) {
+            needs = "A refund of " + salesReturn.getRefundTotal().setScale(2, RoundingMode.HALF_UP).toPlainString() + " is above the limit of "
+                    + cfg.getReturnApprovalOver().setScale(2, RoundingMode.HALF_UP).toPlainString();
+        }
+        if (needs != null) {
+            if (com.posapp.register.ManagerApprovalService.canApprove(caller, com.posapp.register.ManagerApprovalService.Kind.VOID_RETURN)) {
+                approvedBy = caller.getUsername();
+            } else {
+                if (request.getApproverPin() == null || request.getApproverPin().isBlank()) {
+                    throw ApiException.forbidden("Manager approval needed: " + needs + ". A manager must sign in or type their PIN.");
+                }
+                approvedBy = approvalService.approverByPin(request.getApproverPin(), com.posapp.register.ManagerApprovalService.Kind.VOID_RETURN).getUsername();
+            }
+        }
+        salesReturn.setApprovedBy(approvedBy);
+
         SalesReturn saved = salesReturnRepository.save(salesReturn);
         splitRefund(saved, order);
         // Task: "Implement an audit log of who did what and when" — processing a return is a curated action, see AuditLogService's javadoc.
@@ -287,6 +364,71 @@ public class ReturnsService {
         boolean refundMethodIsCredit = paymentMethodService.listCreditCodes().contains(refundMethod);
         accountingService.postPosReturn(saved, refundMethod, refundMethodIsCredit, subtotalRefund, taxRefund, cogsReversal);
 
+        return SalesReturnDto.from(saved);
+    }
+
+    /**
+     * Voiding a completed sale (a wrong sale caught at the till): the whole sale is refunded through the normal return, so stock goes back, Accounting is reversed, gift cards
+     * and points are given back and the EFRIS credit note is made exactly as for a return; the sale stays on record, marked voided with who, why and who approved.
+     * By default only while the sale's shift is open (afterwards it is a return) and only with a manager's approval.
+     */
+    @Transactional
+    public SalesReturnDto voidSale(com.posapp.returns.dto.VoidSaleRequest request, AppUser caller) {
+        SaleOrder order = orderService.getCompletedOrderById(request.getOrderId());
+        com.posapp.register.PosSettings cfg = posSettingsService.entity();
+        String why = request.getReason() == null ? "" : request.getReason().trim();
+        if (why.isEmpty()) throw ApiException.badRequest("Say why the sale is being voided");
+        if (why.length() > 200) throw ApiException.badRequest("The reason is too long (200 characters at most)");
+        if (order.getVoidedAt() != null) throw ApiException.badRequest("That sale is already voided");
+        if (!salesReturnRepository.findByOrderIdOrderByReturnDateAsc(order.getId()).isEmpty()) {
+            throw ApiException.badRequest("Part of that sale was already returned; process a return for the rest instead");
+        }
+        if (order.getCreditAmount() != null && order.getCreditAmount().signum() > 0) {
+            throw ApiException.badRequest("That sale was partly sold on credit; use a return so the customer's balance is dealt with");
+        }
+        if (order.getRoomChargeAmount() != null && order.getRoomChargeAmount().signum() > 0) {
+            throw ApiException.badRequest("That sale was charged to a room; use a return so the room bill is dealt with");
+        }
+        if (cfg.isVoidSameShiftOnly() && (order.getSession() == null || order.getSession().getStatus() != com.posapp.register.SessionStatus.OPEN)) {
+            throw ApiException.badRequest("That sale belongs to a shift that is already closed; process a return instead");
+        }
+        String approvedBy = null;
+        if (cfg.isVoidRequiresApproval()) {
+            if (com.posapp.register.ManagerApprovalService.canApprove(caller, com.posapp.register.ManagerApprovalService.Kind.VOID_RETURN)) {
+                approvedBy = caller.getUsername();
+            } else {
+                if (request.getApproverPin() == null || request.getApproverPin().isBlank()) {
+                    throw ApiException.forbidden("Manager approval needed: voiding a sale. A manager must sign in or type their PIN.");
+                }
+                approvedBy = approvalService.approverByPin(request.getApproverPin(), com.posapp.register.ManagerApprovalService.Kind.VOID_RETURN).getUsername();
+            }
+        }
+        // how the money goes back: as asked, else the way most of it came in
+        String method = request.getRefundMethod();
+        if (method == null || method.isBlank()) {
+            method = order.getPayments().stream().filter(p -> !com.posapp.order.Tenders.isSpecial(p.getMethod()))
+                    .max(java.util.Comparator.comparing(com.posapp.order.Payment::getAmount)).map(com.posapp.order.Payment::getMethod).orElse(null);
+            if (method == null) method = paymentMethodService.listCashCodes().stream().findFirst().orElseThrow(() -> ApiException.badRequest("Choose how to refund"));
+        }
+        ProcessReturnRequest full = new ProcessReturnRequest();
+        full.setOrderId(order.getId());
+        full.setRefundMethod(method);
+        full.setReason("Void: " + why);
+        List<ProcessReturnRequest.ReturnLineEntry> lines = new java.util.ArrayList<>();
+        for (OrderLine l : order.getLines()) {
+            ProcessReturnRequest.ReturnLineEntry e = new ProcessReturnRequest.ReturnLineEntry();
+            e.setOrderLineId(l.getId());
+            e.setQuantity(l.getQuantity());
+            lines.add(e);
+        }
+        full.setLines(lines);
+        SalesReturnDto done = processReturn(full, caller, true);
+        orderService.markVoided(order.getId(), why, caller == null ? null : caller.getUsername(), approvedBy);
+        SalesReturn saved = salesReturnRepository.findById(done.id()).orElseThrow();
+        saved.setApprovedBy(approvedBy);
+        salesReturnRepository.save(saved);
+        auditLogService.record("SALE_VOIDED_AFTER_SALE", "Voided sale " + (order.getInvoiceNumber() == null ? "#" + order.getId() : order.getInvoiceNumber()) + " (" + done.refundTotal() + "): " + why
+                + (approvedBy == null ? "" : " — approved by " + approvedBy), "SaleOrder", order.getId());
         return SalesReturnDto.from(saved);
     }
 

@@ -105,6 +105,9 @@ export class UserListComponent implements OnInit {
       APPROVE_STOCK_ADJUSTMENT: 'Approve stock adjustments',
       APPROVE_PURCHASE_REQUISITION: 'Approve requisitions',
       OVERRIDE_DISCOUNT_CAP: 'Override discount cap',
+      APPROVE_POS_VOID_RETURN: 'Approve voids/returns',
+      APPROVE_POS_PRICE: 'Approve price changes',
+      APPROVE_POS_CASH: 'Approve paid-outs',
     };
     return (u.permissions ?? []).map((p) => labels[p] ?? p).join(', ');
   }

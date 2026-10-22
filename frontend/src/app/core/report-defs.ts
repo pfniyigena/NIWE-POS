@@ -20,7 +20,7 @@ export interface ReportColumn {
 export interface ReportDef {
   key: string;
   title: string;
-  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management';
+  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management';
   /** Path segment under /api/reports/ — see ReportController. */
   endpoint: string;
   columns: ReportColumn[];
@@ -90,6 +90,106 @@ export function reportListRouteForSection(section: ReportDef['section']): string
 }
 
 export const REPORT_DEFS: ReportDef[] = [
+  // PO-7: POS operations reports (how the tills and the people on them performed).
+  {
+    key: 'pos-by-cashier',
+    title: 'POS Sales by Cashier',
+    section: 'POS Operations',
+    endpoint: 'pos-by-cashier',
+    branchFilter: true,
+    categoryFilter: false,
+    columns: [
+      { key: 'cashierName', label: 'Cashier', format: 'text' },
+      { key: 'shifts', label: 'Shifts', format: 'int' },
+      { key: 'saleCount', label: 'Sales', format: 'int' },
+      { key: 'itemCount', label: 'Items', format: 'int' },
+      { key: 'grandTotal', label: 'Sales total', format: 'money' },
+      { key: 'discounts', label: 'Discounts', format: 'money' },
+      { key: 'refundCount', label: 'Returns', format: 'int' },
+      { key: 'refundTotal', label: 'Refunded', format: 'money' },
+      { key: 'voidCount', label: 'Voided sales', format: 'int' },
+      { key: 'netSales', label: 'Net sales', format: 'money' },
+      { key: 'averageSale', label: 'Average sale', format: 'money' },
+    ],
+  },
+  {
+    key: 'pos-by-hour',
+    title: 'POS Sales by Hour',
+    section: 'POS Operations',
+    endpoint: 'pos-by-hour',
+    branchFilter: true,
+    categoryFilter: false,
+    columns: [
+      { key: 'hour', label: 'Hour', format: 'text' },
+      { key: 'saleCount', label: 'Sales', format: 'int' },
+      { key: 'itemCount', label: 'Items', format: 'int' },
+      { key: 'grandTotal', label: 'Sales total', format: 'money' },
+      { key: 'averageSale', label: 'Average sale', format: 'money' },
+      { key: 'sharePercent', label: 'Share of sales', format: 'percent' },
+    ],
+  },
+  {
+    key: 'pos-by-payment',
+    title: 'POS Sales by Payment Method',
+    section: 'POS Operations',
+    endpoint: 'pos-by-payment',
+    branchFilter: true,
+    categoryFilter: false,
+    columns: [
+      { key: 'method', label: 'Payment method', format: 'text' },
+      { key: 'paymentCount', label: 'Payments', format: 'int' },
+      { key: 'amount', label: 'Received', format: 'money' },
+      { key: 'refundCount', label: 'Refunds', format: 'int' },
+      { key: 'refundAmount', label: 'Refunded', format: 'money' },
+      { key: 'netAmount', label: 'Net', format: 'money' },
+      { key: 'sharePercent', label: 'Share of takings', format: 'percent' },
+    ],
+  },
+  {
+    key: 'pos-exceptions',
+    title: 'POS Exceptions (voids, returns, discounts, price changes, reprints)',
+    section: 'POS Operations',
+    endpoint: 'pos-exceptions',
+    categoryFilter: false,
+    columns: [
+      { key: 'at', label: 'When', format: 'date' },
+      { key: 'type', label: 'Type', format: 'text' },
+      { key: 'reference', label: 'Reference', format: 'text' },
+      { key: 'customer', label: 'Customer', format: 'text' },
+      { key: 'registerName', label: 'Register', format: 'text' },
+      { key: 'by', label: 'By', format: 'text' },
+      { key: 'amount', label: 'Amount', format: 'money' },
+      { key: 'reason', label: 'Reason', format: 'text' },
+      { key: 'approvedBy', label: 'Approved by', format: 'text' },
+    ],
+  },
+  {
+    key: 'pos-shift-comparison',
+    title: 'POS Shift Comparison',
+    section: 'POS Operations',
+    endpoint: 'pos-shift-comparison',
+    branchFilter: true,
+    categoryFilter: false,
+    columns: [
+      { key: 'shiftId', label: 'Shift', format: 'hash' },
+      { key: 'zNumber', label: 'Z no.', format: 'text' },
+      { key: 'registerName', label: 'Register', format: 'text' },
+      { key: 'cashierName', label: 'Cashier', format: 'text' },
+      { key: 'openedAt', label: 'Opened', format: 'date' },
+      { key: 'closedAt', label: 'Closed', format: 'date' },
+      { key: 'saleCount', label: 'Sales', format: 'int' },
+      { key: 'grandTotal', label: 'Sales total', format: 'money' },
+      { key: 'averageSale', label: 'Average sale', format: 'money' },
+      { key: 'itemsPerSale', label: 'Items per sale', format: 'money' },
+      { key: 'discounts', label: 'Discounts', format: 'money' },
+      { key: 'refundTotal', label: 'Refunds', format: 'money' },
+      { key: 'voidCount', label: 'Voided', format: 'int' },
+      { key: 'expectedCash', label: 'Expected cash', format: 'moneyN' },
+      { key: 'countedCash', label: 'Counted cash', format: 'moneyN' },
+      { key: 'variance', label: 'Cash difference', format: 'moneyN' },
+      { key: 'salesVsAveragePercent', label: 'Versus average shift', format: 'percentN' },
+    ],
+  },
   {
     key: 'category-sales',
     title: 'Total POS Categories Sales',

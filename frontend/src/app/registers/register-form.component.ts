@@ -5,7 +5,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
-import { Warehouse, WarehouseLocation } from '../core/models';
+import { UserApiService } from '../core/api/user-api.service';
+import { AppUser, Warehouse, WarehouseLocation } from '../core/models';
 
 @Component({
   selector: 'app-register-form',
@@ -51,6 +52,36 @@ import { Warehouse, WarehouseLocation } from '../core/models';
             location, same as today.
           </div>
         </div>
+        <h5 class="mb-2" style="margin-top:1.25rem;">Till rules</h5>
+        <div class="form-group">
+          <label style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="checkbox" class="rg-active" name="active" [(ngModel)]="active" />
+            <span>In use</span>
+          </label>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            Switch a till off to stop new shifts from being opened on it (for example while it is being repaired).
+            Its past sales and reports stay as they are. A till with an open shift has to be closed first.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Usual opening float</label>
+          <input class="form-control rg-default-float" type="number" step="0.01" min="0" name="defaultFloat" [(ngModel)]="defaultFloat" placeholder="No suggestion" />
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Filled in automatically when a shift is opened here.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Highest opening float allowed</label>
+          <input class="form-control rg-max-float" type="number" step="0.01" min="0" name="maxFloat" [(ngModel)]="maxFloat" placeholder="No limit" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Who can work this till</label>
+          <div class="text-muted" style="font-size:0.8rem; margin-bottom:0.35rem;">
+            Tick the people who may sell here. Leave all unticked to let anyone who can sell use it. Managers can always work any till.
+          </div>
+          <label *ngFor="let u of staff" style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.2rem;">
+            <input type="checkbox" class="rg-cashier" [checked]="allowedIds.includes(u.id)" (change)="toggleCashier(u.id)" [name]="'cashier' + u.id" />
+            <span>{{ u.fullName }}</span>
+          </label>
+        </div>
         <div class="flex gap-2">
           <button class="btn btn-primary" type="submit">Save</button>
           <a class="btn btn-link" routerLink="/registers">Cancel</a>
@@ -67,11 +98,17 @@ export class RegisterFormComponent implements OnInit {
   warehouses: Warehouse[] = [];
   defaultLocationId: number | null = null;
   locations: WarehouseLocation[] = [];
+  active = true;
+  defaultFloat: number | null = null;
+  maxFloat: number | null = null;
+  allowedIds: number[] = [];
+  staff: AppUser[] = [];
   error: string | null = null;
 
   constructor(
     private registerApi: RegisterApiService,
     private warehouseApi: WarehouseApiService,
+    private userApi: UserApiService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -80,6 +117,10 @@ export class RegisterFormComponent implements OnInit {
     this.warehouseApi.listAll().subscribe({
       next: (w) => (this.warehouses = w.filter((x) => x.active)),
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load warehouses'),
+    });
+    this.userApi.list().subscribe({
+      next: (u) => (this.staff = u.filter((x) => x.active)),
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff list'),
     });
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) return;
@@ -92,11 +133,19 @@ export class RegisterFormComponent implements OnInit {
           this.location = found.location ?? '';
           this.warehouseId = found.warehouseId;
           this.defaultLocationId = found.defaultLocationId;
+          this.active = found.active !== false;
+          this.defaultFloat = found.defaultFloat ?? null;
+          this.maxFloat = found.maxFloat ?? null;
+          this.allowedIds = [...(found.allowedCashierIds ?? [])];
           this.loadLocations();
         }
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load register'),
     });
+  }
+
+  toggleCashier(id: number): void {
+    this.allowedIds = this.allowedIds.includes(id) ? this.allowedIds.filter((x) => x !== id) : [...this.allowedIds, id];
   }
 
   /** Reloads this warehouse's own locations whenever the admin picks a different one — the previous selection almost never belongs to the new warehouse, so it's cleared rather than silently kept. */
@@ -121,7 +170,16 @@ export class RegisterFormComponent implements OnInit {
 
   submit(): void {
     this.error = null;
-    const payload = { name: this.name, location: this.location, warehouseId: this.warehouseId, defaultLocationId: this.defaultLocationId };
+    const payload = {
+      name: this.name,
+      location: this.location,
+      warehouseId: this.warehouseId,
+      defaultLocationId: this.defaultLocationId,
+      active: this.active,
+      defaultFloat: this.defaultFloat === null || (this.defaultFloat as unknown) === '' ? null : Number(this.defaultFloat),
+      maxFloat: this.maxFloat === null || (this.maxFloat as unknown) === '' ? null : Number(this.maxFloat),
+      allowedCashierIds: this.allowedIds,
+    };
     if (this.id) {
       this.registerApi.updateRegister(this.id, payload).subscribe({
         next: () => this.router.navigate(['/registers']),

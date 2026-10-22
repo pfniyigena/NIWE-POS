@@ -31,6 +31,21 @@ public class RegisterSession extends BaseEntity {
     private BigDecimal countedCash;
     private BigDecimal cashVariance;
 
+    /** What the system expected in the drawer when the shift was closed (float + cash sales - cash refunds + paid in - paid out - drops). */
+    private BigDecimal expectedCash;
+    /** Why the count was off, when it was. */
+    private String varianceNote;
+    private String closedBy;
+    /** The Z report's number: 1, 2, 3... per register, given when the shift is closed. */
+    private Integer zNumber;
+    /** The Z report as it stood when the shift was closed (JSON); reprints show this, never the live figures. */
+    @jakarta.persistence.Column(columnDefinition = "text")
+    private String zSnapshot;
+    private int zPrints;
+    /** The notes and coins counted at closing, as JSON [{value,count}], when a denomination count was made. */
+    @jakarta.persistence.Column(columnDefinition = "text")
+    private String countDetail;
+
     @Enumerated(EnumType.STRING)
     private SessionStatus status = SessionStatus.OPEN;
 }

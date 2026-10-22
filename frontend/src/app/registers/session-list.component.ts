@@ -59,6 +59,7 @@ import { CashierSession } from '../core/models';
             <td class="flex gap-2">
               <a [routerLink]="['/cashier-sessions', cs.id, 'orders']">Orders</a>
               <a *ngIf="cs.status === 'OPEN' && cs.registerSessionId" [routerLink]="['/pos', cs.registerSessionId]">Terminal</a>
+              <a *ngIf="cs.status === 'OPEN' && cs.registerSessionId" [routerLink]="['/cash-control', cs.registerSessionId]">Cash</a>
               <a *ngIf="cs.status !== 'OPEN'" [routerLink]="['/cashier-sessions', cs.id, 'report']">Report</a>
               <button *ngIf="cs.status === 'OPEN'" class="btn btn-sm btn-outline-danger" (click)="closeSession(cs)">Close</button>
             </td>

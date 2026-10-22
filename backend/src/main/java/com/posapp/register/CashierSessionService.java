@@ -54,7 +54,21 @@ public class CashierSessionService {
      * A cashier limited to certain branches (see AppUser.branchIds) can only work a shift whose
      * register belongs to one of them; admins and unrestricted users always can.
      */
+    /**
+     * When the till has a list of allowed cashiers, only they (and managers) can work it.
+     * Empty list = anyone.
+     */
+    public void assertCashierAllowed(Register register, AppUser cashier) {
+        if (register == null || register.getAllowedCashiers() == null || register.getAllowedCashiers().isEmpty()) return;
+        if (ManagerApprovalService.isManager(cashier)) return;
+        boolean listed = register.getAllowedCashiers().stream().anyMatch(u -> u.getId().equals(cashier.getId()));
+        if (!listed) {
+            throw ApiException.forbidden("'" + cashier.getFullName() + "' is not allowed to work at " + register.getName());
+        }
+    }
+
     private void assertBranchAccess(RegisterSession shift, AppUser cashier) {
+        assertCashierAllowed(shift.getRegister(), cashier);
         Long branchId = warehouseService.branchIdOf(shift.getRegister() != null ? shift.getRegister().getWarehouse() : null);
         if (!branchAccessService.canAccess(cashier, branchId)) {
             throw ApiException.forbidden("'" + cashier.getFullName() + "' isn't assigned to the branch this till belongs to");

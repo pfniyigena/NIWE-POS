@@ -149,6 +149,35 @@ public class AccountingService {
         post("POS_RETURN", salesReturn.getId(), "POS return " + safe(salesReturn.getReturnNumber()) + " (" + refundMethod + ")", null, lines, salesReturn.getBranchId());
     }
 
+    // ---- POS cash control (com.posapp.register) ----
+
+    /**
+     * Cash put into or taken out of a till drawer by hand. {@code counterKey} is the well-known account on the other side
+     * (null = a plain transfer between the drawer and the safe or bank, which is all one pooled cash account, so nothing is posted).
+     * {@code reverse} undoes an earlier entry (a manager voiding a mistaken movement).
+     */
+    @Transactional
+    public void postTillMovement(Long movementId, boolean paidIn, String counterKey, BigDecimal amount, String memo, Long branchId, boolean reverse) {
+        if (counterKey == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        boolean cashDebit = paidIn != reverse;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, cashDebit);
+        addIfPositive(lines, counterKey, amount, null, !cashDebit);
+        post(reverse ? "TILL_MOVEMENT_VOID" : "TILL_MOVEMENT", movementId, (reverse ? "Voided: " : "") + memo, null, lines, branchId);
+    }
+
+    /** The count at the end of a shift came to {@code variance} more (positive) or less (negative) than expected. */
+    @Transactional
+    public void postTillVariance(Long sessionId, BigDecimal variance, String memo, Long branchId) {
+        if (variance == null || variance.signum() == 0) return;
+        BigDecimal amount = variance.abs();
+        boolean over = variance.signum() > 0;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, over);
+        addIfPositive(lines, AccountService.CASH_OVER_SHORT, amount, over ? "Cash over" : "Cash short", !over);
+        post("TILL_VARIANCE", sessionId, memo, null, lines, branchId);
+    }
+
     // ---- Gift cards (com.posapp.giftcards) ----
 
     /**

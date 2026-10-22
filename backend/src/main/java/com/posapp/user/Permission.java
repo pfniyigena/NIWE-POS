@@ -23,5 +23,11 @@ public enum Permission {
     /** Approve/reject a PENDING {@code com.posapp.accounting.Expense}, and void an already-APPROVED one — see ExpenseController. */
     APPROVE_EXPENSE,
     /** Confirm/reject a PENDING {@code com.posapp.warehouse.StockTransfer} — see StockTransferController. */
-    APPROVE_STOCK_TRANSFER
+    APPROVE_STOCK_TRANSFER,
+    /** Approve a void or a large return at the till by typing a PIN, without being given every manager right — see ManagerApprovalService.canApprove. */
+    APPROVE_POS_VOID_RETURN,
+    /** Approve a hand-changed price at the till by PIN. */
+    APPROVE_POS_PRICE,
+    /** Approve a large paid-out and cancel a mistaken cash movement. */
+    APPROVE_POS_CASH
 }

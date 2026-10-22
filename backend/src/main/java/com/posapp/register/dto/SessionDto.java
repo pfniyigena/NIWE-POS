@@ -19,7 +19,12 @@ public record SessionDto(
         BigDecimal cashVariance,
         String status,
         int saleCount,
-        BigDecimal grossSales
+        BigDecimal grossSales,
+        BigDecimal expectedCash,
+        String varianceNote,
+        String closedBy,
+        String countDetail,
+        Integer zNumber
 ) {
     /** Used by the "Shifts" admin screen and the plain Sessions list — sales totals for this shift, computed by the caller (OrderService.computeSessionTotals) so this DTO doesn't need to depend on the order package's service. */
     public static SessionDto from(RegisterSession s, SessionTotals totals) {
@@ -38,7 +43,12 @@ public record SessionDto(
                 s.getCashVariance(),
                 s.getStatus().name(),
                 totals.saleCount(),
-                totals.grossSales()
+                totals.grossSales(),
+                s.getExpectedCash(),
+                s.getVarianceNote(),
+                s.getClosedBy(),
+                s.getCountDetail(),
+                s.getZNumber()
         );
     }
 }

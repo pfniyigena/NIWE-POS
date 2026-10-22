@@ -113,6 +113,32 @@ public class SaleOrder extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String syncNote;
 
+    /** Set when a manager voided this completed sale: it stays on record, fully refunded by a linked return. */
+    private Instant voidedAt;
+    private String voidReason;
+    private String voidedBy;
+    private String voidApprovedBy;
+
+    /** How many times this receipt was printed at the till (the first is the original, later ones are marked COPY). */
+    @jakarta.persistence.Column(name = "print_count", nullable = false)
+    private int printCount = 0;
+
+    /**
+     * A discount on the whole sale, given at the till. {@link #orderDiscountPercent} is what money math uses (every line is cut by it, after the
+     * line's own discount and promotions); when the cashier typed an amount, {@link #orderDiscountAmount} keeps it and the percent is worked out again
+     * whenever the lines change.
+     */
+    @jakarta.persistence.Column(name = "order_discount_percent", nullable = false)
+    private BigDecimal orderDiscountPercent = BigDecimal.ZERO;
+    @jakarta.persistence.Column(name = "order_discount_amount")
+    private BigDecimal orderDiscountAmount;
+    @jakarta.persistence.Column(name = "order_discount_reason")
+    private String orderDiscountReason;
+    @jakarta.persistence.Column(name = "order_discount_by")
+    private String orderDiscountBy;
+    @jakarta.persistence.Column(name = "order_discount_approved_by")
+    private String orderDiscountApprovedBy;
+
     /**
      * Fourier: warehouse filter on Stock Movement History — which warehouse this sale took stock
      * from, snapshotted when it happened (the Main warehouse is stored as null, which is also what

@@ -124,6 +124,9 @@ export class UserFormComponent implements OnInit {
     { value: 'OVERRIDE_DISCOUNT_CAP', label: 'Override the store-wide discount cap', hint: 'Apply a discount at checkout, and exceed the configured maximum discount.' },
     { value: 'APPROVE_EXPENSE', label: 'Approve/reject Expenses', hint: 'Approve or reject an expense awaiting approval, and void an already-approved one.' },
     { value: 'APPROVE_STOCK_TRANSFER', label: 'Approve/reject Stock transfers', hint: 'Review a logged transfer between warehouses — moves the stock or discards it.' },
+    { value: 'APPROVE_POS_VOID_RETURN', label: 'Approve voids and returns at the till', hint: 'Approve a void or a large return by typing a PIN, without any other manager right.' },
+    { value: 'APPROVE_POS_PRICE', label: 'Approve price changes at the till', hint: 'Approve a hand-changed price by typing a PIN.' },
+    { value: 'APPROVE_POS_CASH', label: 'Approve big paid-outs and cash corrections', hint: 'Approve a large paid-out, and cancel a mistaken cash movement.' },
   ];
 
   constructor(

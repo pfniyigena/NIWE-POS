@@ -25,7 +25,13 @@ public record OrderLineDto(
         String priceNote,
         /** What promotions took off this line (percent, after the cashier's discount) and which promotions. */
         BigDecimal promoPercent,
-        String promoNote
+        String promoNote,
+        /** Why the discount was given and who approved it; whether the price was changed by hand and what it was. */
+        String discountReason,
+        String discountApprovedBy,
+        boolean priceOverridden,
+        BigDecimal originalUnitPrice,
+        String priceOverrideReason
 ) {
     public static OrderLineDto from(OrderLine line) {
         return new OrderLineDto(
@@ -45,7 +51,12 @@ public record OrderLineDto(
                 line.getListPrice(),
                 line.getPriceNote(),
                 line.getPromoPercent(),
-                line.getPromoNote()
+                line.getPromoNote(),
+                line.getDiscountReason(),
+                line.getDiscountApprovedBy(),
+                line.isPriceOverridden(),
+                line.getOriginalUnitPrice(),
+                line.getPriceOverrideReason()
         );
     }
 }

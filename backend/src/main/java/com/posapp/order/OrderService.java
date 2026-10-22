@@ -94,6 +94,8 @@ public class OrderService {
     private final com.posapp.promotions.PromotionService promotionService;
     private final com.posapp.giftcards.GiftCardService giftCardService;
     private final com.posapp.loyalty.LoyaltyService loyaltyService;
+    private final com.posapp.register.PosSettingsService posSettingsService;
+    private final com.posapp.register.ManagerApprovalService approvalService;
 
     public OrderService(OrderRepository orderRepository,
                          CashierSessionRepository cashierSessionRepository,
@@ -120,7 +122,11 @@ public class OrderService {
                          com.posapp.pricing.PricingService pricingService,
                          com.posapp.promotions.PromotionService promotionService,
                          com.posapp.giftcards.GiftCardService giftCardService,
-                         com.posapp.loyalty.LoyaltyService loyaltyService) {
+                         com.posapp.loyalty.LoyaltyService loyaltyService,
+                         com.posapp.register.PosSettingsService posSettingsService,
+                         com.posapp.register.ManagerApprovalService approvalService) {
+        this.posSettingsService = posSettingsService;
+        this.approvalService = approvalService;
         this.giftCardService = giftCardService;
         this.loyaltyService = loyaltyService;
         this.pricingService = pricingService;
@@ -335,6 +341,41 @@ public class OrderService {
     }
 
     /**
+     * The receipts list with filters. With no filter at all it is the same latest-200 list as before; any filter searches every completed sale.
+     * {@code kind}: OFFLINE (rung offline), SYNC_ISSUE (replay left a note), EFRIS_FAILED, CREDIT (part on account), ROOM_CHARGE.
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDto> completedFiltered(String q, String kind, String method, Long registerId, Long cashierId, Long customerId, Long sessionId,
+                                            java.time.LocalDate from, java.time.LocalDate to) {
+        boolean filtered = (q != null && !q.isBlank()) || (kind != null && !kind.isBlank()) || (method != null && !method.isBlank()) || registerId != null
+                || cashierId != null || customerId != null || from != null || to != null;
+        if (!filtered) {
+            return listRecentCompletedOrders(sessionId);
+        }
+        return orderRepository.findByStatusOrderByCompletedAtDesc(OrderStatus.COMPLETED).stream()
+                .filter(o -> sessionId == null || (o.getSession() != null && sessionId.equals(o.getSession().getId())))
+                .filter(o -> registerId == null || (o.getSession() != null && o.getSession().getRegister() != null && registerId.equals(o.getSession().getRegister().getId())))
+                .filter(o -> cashierId == null || (o.getCashierSession() != null && o.getCashierSession().getCashier() != null && cashierId.equals(o.getCashierSession().getCashier().getId())))
+                .filter(o -> customerId == null || (o.getCustomer() != null && customerId.equals(o.getCustomer().getId())))
+                .filter(o -> com.posapp.common.ListPaging.between(o.getCompletedAt(), from, to))
+                .filter(o -> method == null || method.isBlank() || o.getPayments().stream().anyMatch(p -> method.equalsIgnoreCase(p.getMethod())))
+                .filter(o -> kind == null || kind.isBlank() || switch (kind.toUpperCase()) {
+                    case "OFFLINE" -> o.getOfflineQueuedAt() != null;
+                    case "SYNC_ISSUE" -> o.getSyncNote() != null && !o.getSyncNote().isBlank();
+                    case "EFRIS_FAILED" -> o.getEfrisError() != null && !o.getEfrisError().isBlank();
+                    case "CREDIT" -> o.getCreditAmount() != null && o.getCreditAmount().signum() > 0;
+                    case "ROOM_CHARGE" -> o.getRoomChargeAmount() != null && o.getRoomChargeAmount().signum() > 0;
+                    case "VOIDED" -> o.getVoidedAt() != null;
+                    default -> true;
+                })
+                .filter(o -> branchAccessService.canAccess(o.getBranchId()))
+                .map(OrderDto::from)
+                .filter(d -> com.posapp.common.ListPaging.has(q, d.invoiceNumber(), d.customerName(), d.cashierName(), d.registerName(), d.note(),
+                        d.lines().stream().map(l -> l.description()).reduce("", (a, b) -> a + " " + b)))
+                .toList();
+    }
+
+    /**
      * Starts a new tab under a specific cashier's own working session — {@code cashierSessionId}
      * comes from {@code CashierSessionService.getOrStartMine}/{@code joinShift}, never a raw
      * RegisterSession id, so every tab is tied to whichever cashier is actually working it.
@@ -357,7 +398,7 @@ public class OrderService {
         SaleOrder order = getOpenOrderOrThrow(orderId, caller);
         Product product = catalogService.getActiveProductOrThrow(request.getProductId());
         mergeOrAddLine(order, product, request.getQuantity());
-        promotionService.apply(order);
+        applyPromotionsAndDiscount(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -366,14 +407,14 @@ public class OrderService {
         SaleOrder order = getOpenOrderOrThrow(orderId, caller);
         Product product = catalogService.getByBarcodeOrThrow(request.getBarcode());
         mergeOrAddLine(order, product, Math.max(1, request.getQuantity()));
-        promotionService.apply(order);
+        applyPromotionsAndDiscount(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
     private void mergeOrAddLine(SaleOrder order, Product product, int quantity) {
         order.getLines().stream()
                 .filter(l -> l.getProduct() != null && l.getProduct().getId().equals(product.getId())
-                        && BigDecimal.ZERO.compareTo(l.getDiscountPercent()) == 0)
+                        && BigDecimal.ZERO.compareTo(l.getDiscountPercent()) == 0 && !l.isPriceOverridden())
                 .findFirst()
                 .ifPresentOrElse(
                         existing -> {
@@ -434,8 +475,22 @@ public class OrderService {
             applyPricing(order, line);
         }
         if (request.getDiscountPercent() != null) {
-            validateDiscount(request.getDiscountPercent(), caller);
-            line.setDiscountPercent(request.getDiscountPercent());
+            BigDecimal pct = request.getDiscountPercent();
+            String why = clean(request.getDiscountReason(), 80, "The reason");
+            String approvedBy = authorizeDiscount(pct, why, request.getApproverPin(), caller);
+            boolean given = pct.signum() > 0;
+            line.setDiscountPercent(pct);
+            line.setDiscountReason(given ? why : null);
+            line.setDiscountApprovedBy(given ? approvedBy : null);
+            if (given) {
+                auditLogService.record("DISCOUNT_GIVEN", "Discount of " + pct.stripTrailingZeros().toPlainString() + "% on " + line.getDescription() + (why == null ? "" : " (" + why + ")")
+                        + (approvedBy == null ? "" : ", approved by " + approvedBy), "SaleOrder", order.getId());
+            }
+        }
+        if (Boolean.TRUE.equals(request.getResetPrice())) {
+            resetPrice(order, line);
+        } else if (request.getUnitPrice() != null) {
+            overridePrice(line, request, caller);
         }
         if (request.getSerialNumbers() != null) {
             if (line.getProduct() == null || com.posapp.tracking.TrackingService.modeOf(line.getProduct()) != com.posapp.tracking.TrackingMode.SERIAL) {
@@ -444,7 +499,7 @@ public class OrderService {
             List<String> serials = trackingService.cleanSerials(line.getProduct(), request.getSerialNumbers());
             line.setSerialNumbers(serials.isEmpty() ? null : String.join("\n", serials));
         }
-        promotionService.apply(order);
+        applyPromotionsAndDiscount(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -495,6 +550,150 @@ public class OrderService {
         }
     }
 
+
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+
+    /** Promotions, then the whole-sale discount (worked out again when it was typed as an amount and the lines changed). */
+    private void applyPromotionsAndDiscount(SaleOrder order) {
+        promotionService.apply(order);
+        if (order.getOrderDiscountAmount() == null) return;
+        order.setOrderDiscountPercent(BigDecimal.ZERO);
+        BigDecimal base = OrderCalculator.total(order);
+        if (base.signum() <= 0) return;
+        BigDecimal pct = order.getOrderDiscountAmount().multiply(HUNDRED).divide(base, 4, java.math.RoundingMode.HALF_UP).min(HUNDRED);
+        order.setOrderDiscountPercent(pct);
+    }
+
+    private static String clean(String raw, int max, String what) {
+        if (raw == null || raw.isBlank()) return null;
+        String t = raw.trim();
+        if (t.length() > max) throw ApiException.badRequest(what + " is too long (" + max + " characters at most)");
+        return t;
+    }
+
+    /**
+     * Who may give how much discount at the till. An admin or a holder of the discount-override right gives it alone; anyone else only up to the
+     * allowance in the POS settings, and above that a manager approves with their PIN. The store's maximum still applies, unless the person giving or
+     * approving holds the override right. Returns the approving manager's username when one was needed, else null.
+     */
+    private String authorizeDiscount(BigDecimal percent, String reason, String pin, AppUser caller) {
+        if (percent == null || percent.signum() == 0) return null;
+        if (percent.signum() < 0 || percent.compareTo(HUNDRED) > 0) throw ApiException.badRequest("Discount must be between 0 and 100");
+        com.posapp.register.PosSettings cfg = posSettingsService.entity();
+        boolean override = caller.getPermissions() != null && caller.getPermissions().contains(Permission.OVERRIDE_DISCOUNT_CAP);
+        boolean alone = caller.getRole() == Role.ADMIN || override;
+        String approvedBy = null;
+        boolean approverOverride = false;
+        if (!alone && percent.compareTo(cfg.getCashierDiscountMax()) > 0) {
+            if (pin == null || pin.isBlank()) {
+                throw ApiException.forbidden("Manager approval needed: a discount of " + percent.stripTrailingZeros().toPlainString() + "% is more than a cashier may give"
+                        + (cfg.getCashierDiscountMax().signum() > 0 ? " (up to " + cfg.getCashierDiscountMax().stripTrailingZeros().toPlainString() + "%)" : "")
+                        + ". A manager must sign in or type their PIN.");
+            }
+            AppUser approver = approvalService.approverByPin(pin);
+            approvedBy = approver.getUsername();
+            approverOverride = approver.getPermissions() != null && approver.getPermissions().contains(Permission.OVERRIDE_DISCOUNT_CAP);
+        }
+        if (cfg.isDiscountReasonRequired() && reason == null) throw ApiException.badRequest("Choose the reason for the discount");
+        if (!override && !approverOverride) {
+            BigDecimal max = storeSettingsService.getSettings().maxDiscountPercent();
+            if (max == null) max = HUNDRED;
+            if (percent.compareTo(max) > 0) throw ApiException.badRequest("Discount cannot exceed the configured maximum of " + max + "%");
+        }
+        return approvedBy;
+    }
+
+    /** A manager changes the price of a line by hand: always with a reason; never below cost unless the approver holds the override right. */
+    private void overridePrice(OrderLine line, UpdateLineRequest request, AppUser caller) {
+        com.posapp.register.PosSettings cfg = posSettingsService.entity();
+        if (!cfg.isPriceOverrideAllowed()) throw ApiException.forbidden("Changing a price at the till is switched off in the POS settings");
+        BigDecimal price = request.getUnitPrice();
+        if (price.signum() <= 0 || price.compareTo(BigDecimal.valueOf(1_000_000_000)) > 0) throw ApiException.badRequest("The price must be above zero");
+        AppUser authority = caller;
+        if (!com.posapp.register.ManagerApprovalService.canApprove(caller, com.posapp.register.ManagerApprovalService.Kind.PRICE)) {
+            if (request.getApproverPin() == null || request.getApproverPin().isBlank()) {
+                throw ApiException.forbidden("Manager approval needed: changing a price. A manager must sign in or type their PIN.");
+            }
+            authority = approvalService.approverByPin(request.getApproverPin(), com.posapp.register.ManagerApprovalService.Kind.PRICE);
+        }
+        String why = clean(request.getPriceReason(), 80, "The reason");
+        if (why == null) throw ApiException.badRequest("Say why the price is being changed");
+        boolean override = authority.getPermissions() != null && authority.getPermissions().contains(Permission.OVERRIDE_DISCOUNT_CAP);
+        if (cfg.isPriceBelowCostBlocked() && !override && line.getUnitCost() != null && price.compareTo(line.getUnitCost()) < 0) {
+            throw ApiException.badRequest("That price is below the item's cost (" + line.getUnitCost().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString() + ")");
+        }
+        if (!line.isPriceOverridden()) line.setOriginalUnitPrice(line.getUnitPrice());
+        BigDecimal before = line.getUnitPrice();
+        line.setUnitPrice(price.setScale(2, java.math.RoundingMode.HALF_UP));
+        line.setPriceOverridden(true);
+        line.setPriceOverrideReason(why);
+        line.setPriceOverrideBy(caller.getUsername());
+        line.setPriceOverrideApprovedBy(authority.getUsername());
+        line.setPriceNote("Price changed at the till");
+        auditLogService.record("PRICE_OVERRIDE", "Price of " + line.getDescription() + " changed from " + before.toPlainString() + " to " + price.toPlainString() + " (" + why + "), approved by "
+                + authority.getUsername(), "SaleOrder", line.getOrder() == null ? null : line.getOrder().getId());
+    }
+
+    private void resetPrice(SaleOrder order, OrderLine line) {
+        if (!line.isPriceOverridden()) return;
+        line.setPriceOverridden(false);
+        line.setOriginalUnitPrice(null);
+        line.setPriceOverrideReason(null);
+        line.setPriceOverrideBy(null);
+        line.setPriceOverrideApprovedBy(null);
+        applyPricing(order, line);
+    }
+
+    /** A discount on the whole sale: a percent or an amount. */
+    @Transactional
+    public OrderDto setOrderDiscount(Long orderId, OrderDiscountRequest request, AppUser caller) {
+        SaleOrder order = getOpenOrderOrThrow(orderId, caller);
+        if (order.getLines().isEmpty()) throw ApiException.badRequest("Add items before giving a discount");
+        boolean hasPct = request.getPercent() != null;
+        boolean hasAmt = request.getAmount() != null;
+        if (hasPct == hasAmt) throw ApiException.badRequest("Give either a percent or an amount");
+        order.setOrderDiscountPercent(BigDecimal.ZERO);
+        order.setOrderDiscountAmount(null);
+        promotionService.apply(order);
+        BigDecimal base = OrderCalculator.total(order);
+        BigDecimal pct;
+        BigDecimal amount = null;
+        if (hasPct) {
+            pct = request.getPercent().setScale(4, java.math.RoundingMode.HALF_UP);
+        } else {
+            amount = request.getAmount();
+            if (amount.signum() < 0) throw ApiException.badRequest("The discount cannot be negative");
+            if (amount.compareTo(base) > 0) throw ApiException.badRequest("The discount is more than the sale (" + base.toPlainString() + ")");
+            pct = base.signum() <= 0 ? BigDecimal.ZERO : amount.multiply(HUNDRED).divide(base, 4, java.math.RoundingMode.HALF_UP);
+        }
+        String why = clean(request.getReason(), 80, "The reason");
+        String approvedBy = authorizeDiscount(pct, why, request.getApproverPin(), caller);
+        boolean given = pct.signum() > 0;
+        order.setOrderDiscountPercent(pct);
+        order.setOrderDiscountAmount(given ? amount : null);
+        order.setOrderDiscountReason(given ? why : null);
+        order.setOrderDiscountBy(given ? caller.getUsername() : null);
+        order.setOrderDiscountApprovedBy(given ? approvedBy : null);
+        applyPromotionsAndDiscount(order);
+        OrderDto saved = OrderDto.from(orderRepository.save(order));
+        if (given) {
+            auditLogService.record("ORDER_DISCOUNT", "Discount of " + pct.stripTrailingZeros().toPlainString() + "% on the whole sale" + (why == null ? "" : " (" + why + ")")
+                    + (approvedBy == null ? "" : ", approved by " + approvedBy), "SaleOrder", order.getId());
+        }
+        return saved;
+    }
+
+    @Transactional
+    public OrderDto clearOrderDiscount(Long orderId, AppUser caller) {
+        SaleOrder order = getOpenOrderOrThrow(orderId, caller);
+        order.setOrderDiscountPercent(BigDecimal.ZERO);
+        order.setOrderDiscountAmount(null);
+        order.setOrderDiscountReason(null);
+        order.setOrderDiscountBy(null);
+        order.setOrderDiscountApprovedBy(null);
+        return OrderDto.from(orderRepository.save(order));
+    }
+
     @Transactional
     public OrderDto removeLine(Long orderId, Long lineId, AppUser caller) {
         SaleOrder order = getOpenOrderOrThrow(orderId, caller);
@@ -502,7 +701,7 @@ public class OrderService {
         if (!removed) {
             throw ApiException.notFound("Line not found on this order: " + lineId);
         }
-        promotionService.apply(order);
+        applyPromotionsAndDiscount(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -520,7 +719,7 @@ public class OrderService {
         for (OrderLine line : order.getLines()) {
             applyPricing(order, line);
         }
-        promotionService.apply(order);
+        applyPromotionsAndDiscount(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -540,7 +739,7 @@ public class OrderService {
 
     /** Prices the line again for the order's customer and the line's current quantity. */
     private void applyPricing(SaleOrder order, OrderLine line) {
-        if (line.getProduct() == null) {
+        if (line.getProduct() == null || line.isPriceOverridden()) {
             return;
         }
         com.posapp.pricing.PricingDtos.Resolved priced = pricingService.resolve(order.getCustomer(), line.getProduct(), line.getQuantity());
@@ -614,7 +813,7 @@ public class OrderService {
         assertSellingWarehouseAllowed(order);
         validateStockAvailability(order);
         // Promotions are worked out again right before the total is fixed: a promotion may have ended, or reached its limit, since the cart was built.
-        promotionService.apply(order);
+        applyPromotionsAndDiscount(order);
         completeCheckout(order, request.getPayments(), request.getDueDate(), request.getRoomBookingId());
         SaleOrder saved = orderRepository.save(order);
         promotionService.recordUses(saved);
@@ -1179,6 +1378,17 @@ public class OrderService {
     @Transactional(readOnly = true)
     public SaleOrder getCompletedOrderById(Long orderId) {
         return requireCompleted(getOrderOrThrow(orderId));
+    }
+
+    /** A completed sale was voided: kept on record with who, why and when (its refund is the linked return). */
+    @Transactional
+    public void markVoided(Long orderId, String reason, String by, String approvedBy) {
+        SaleOrder order = requireCompleted(getOrderOrThrow(orderId));
+        order.setVoidedAt(java.time.Instant.now());
+        order.setVoidReason(reason);
+        order.setVoidedBy(by);
+        order.setVoidApprovedBy(approvedBy);
+        orderRepository.save(order);
     }
 
     private SaleOrder requireCompleted(SaleOrder order) {

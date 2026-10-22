@@ -5,9 +5,17 @@ import com.posapp.warehouse.Warehouse;
 import com.posapp.warehouse.WarehouseLocation;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import com.posapp.user.AppUser;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Fourier: "I want to make sure that the terminal will be registered on warehouse. But the stock
@@ -50,4 +58,21 @@ public class Register extends BaseEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     private WarehouseLocation defaultLocation;
+
+    /** A switched-off till cannot open a new shift; its history stays. Existing registers stay on. */
+    private boolean active = true;
+
+    /** The float this till normally starts with: pre-filled when a shift is opened. Null means no suggestion. */
+    private BigDecimal defaultFloat;
+
+    /** The most a shift may be opened with at this till. Null means no limit. */
+    private BigDecimal maxFloat;
+
+    /**
+     * When not empty, only these people (and managers) can work this till; empty means anyone
+     * allowed to sell. See CashierSessionService.assertCashierAllowed.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "register_cashier", joinColumns = @JoinColumn(name = "register_id"), inverseJoinColumns = @JoinColumn(name = "app_user_id"))
+    private Set<AppUser> allowedCashiers = new HashSet<>();
 }

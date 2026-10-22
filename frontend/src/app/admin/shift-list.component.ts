@@ -6,7 +6,10 @@ import { ShellComponent } from '../shared/shell.component';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { CashierSessionApiService } from '../core/api/cashier-session-api.service';
 import { UserApiService } from '../core/api/user-api.service';
-import { AppUser, CashierSession, RegisterSession } from '../core/models';
+import { AppUser, CashierSession, RegisterSession, RegisterSummary } from '../core/models';
+import { ListState } from '../core/api/list-state';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { PagerComponent } from '../shared/pager.component';
 
 /**
  * Admin-only oversight of every till shift (register session) across the store — the plain
@@ -16,22 +19,26 @@ import { AppUser, CashierSession, RegisterSession } from '../core/models';
 @Component({
   selector: 'app-shift-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Shifts</h3>
-        <select class="form-select" style="width:auto;" [(ngModel)]="statusFilter">
-          <option value="ALL">All shifts</option>
-          <option value="OPEN">Open only</option>
-          <option value="CLOSED">Closed only</option>
+      </div>
+      <app-list-filter exportPath="/sessions/export" [exportExtra]="extra" [extraActive]="registerId !== ''" placeholder="Search register or cashier" [statuses]="statuses" statusAll="All shifts" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <div class="flex gap-2 mb-3 align-center">
+        <select class="form-select sh-register" style="width:auto;" [(ngModel)]="registerId" (ngModelChange)="extraChanged()" name="register" title="Register">
+          <option value="">Any register</option>
+          <option *ngFor="let r of registers" [value]="r.id">{{ r.name }}</option>
         </select>
+        <span class="text-muted" style="font-size:0.85rem;">Dates filter by the day the shift was opened.</span>
       </div>
       <table>
         <thead>
           <tr>
             <th>Register</th>
+            <th>Z</th>
             <th>Cashier</th>
             <th>Opened</th>
             <th>Closed</th>
@@ -42,9 +49,10 @@ import { AppUser, CashierSession, RegisterSession } from '../core/models';
           </tr>
         </thead>
         <tbody>
-          <ng-container *ngFor="let s of filteredShifts()">
+          <ng-container *ngFor="let s of list.rows">
             <tr>
               <td>{{ s.registerName }}</td>
+              <td>{{ s.zNumber ? '#' + s.zNumber : '—' }}</td>
               <td>{{ s.cashierName }}</td>
               <td>{{ s.openedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
               <td>{{ s.closedAt ? (s.closedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</td>
@@ -55,14 +63,16 @@ import { AppUser, CashierSession, RegisterSession } from '../core/models';
               <td class="text-end">{{ s.cashVariance != null ? (s.cashVariance | number: '1.2-2') : '—' }}</td>
               <td class="flex gap-2">
                 <a *ngIf="s.status === 'OPEN'" [routerLink]="['/sessions', s.id, 'close']">Force close</a>
-                <a *ngIf="s.status === 'CLOSED'" [routerLink]="['/sessions', s.id, 'report']">Report</a>
+                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/cash-control', s.id]">Cash</a>
+                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/sessions', s.id, 'x-report']">X report</a>
+                <a *ngIf="s.status === 'CLOSED'" [routerLink]="['/sessions', s.id, 'z-report']">Z report</a>
                 <button class="btn btn-sm btn-outline-secondary" (click)="toggleCashiers(s.id)">
                   {{ expandedShiftId === s.id ? '▾' : '▸' }} Cashiers
                 </button>
               </td>
             </tr>
             <tr *ngIf="expandedShiftId === s.id">
-              <td colspan="8" style="padding:0.5rem 1rem; background:rgba(255,255,255,0.03);">
+              <td colspan="9" style="padding:0.5rem 1rem; background:rgba(255,255,255,0.03);">
                 <div class="text-muted" *ngIf="!cashierSessionsByShift[s.id]">Loading…</div>
                 <div
                   class="flex justify-between align-center mb-2"
@@ -118,17 +128,19 @@ import { AppUser, CashierSession, RegisterSession } from '../core/models';
               </td>
             </tr>
           </ng-container>
-          <tr *ngIf="filteredShifts().length === 0">
-            <td colspan="8" class="text-muted">No shifts match this filter.</td>
-          </tr>
         </tbody>
       </table>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || registerId ? 'No shifts match these filters.' : 'No shifts yet.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class ShiftListComponent implements OnInit {
-  shifts: RegisterSession[] = [];
-  statusFilter: 'ALL' | 'OPEN' | 'CLOSED' = 'ALL';
+  statuses = [{ value: 'OPEN', label: 'Open only' }, { value: 'CLOSED', label: 'Closed only' }];
+  registers: RegisterSummary[] = [];
+  registerId = '';
+  extra: Record<string, string | number | null | undefined> = {};
+  list = new ListState<RegisterSession>((f, p, sz) => this.registerApi.sessionsPage(f, p, sz, { registerId: this.registerId }), 'Failed to load shifts');
   error: string | null = null;
 
   /** Which shift's cashier-session breakdown is expanded, and what's been loaded for it (lazily, per row). */
@@ -146,19 +158,23 @@ export class ShiftListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.registerApi.listSessions().subscribe({
-      next: (s) => (this.shifts = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load shifts'),
-    });
+    this.list.load();
+    this.registerApi.listRegisters().subscribe({ next: (r) => (this.registers = r), error: () => {} });
     this.userApi.list().subscribe({
       next: (users) => (this.activeStaff = users.filter((u) => u.active)),
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff list'),
     });
   }
 
-  filteredShifts(): RegisterSession[] {
-    if (this.statusFilter === 'ALL') return this.shifts;
-    return this.shifts.filter((s) => s.status === this.statusFilter);
+  extraChanged(): void {
+    this.extra = { registerId: this.registerId };
+    this.list.page = 0;
+    this.list.load();
+  }
+
+  clearedExtra(): void {
+    this.registerId = '';
+    this.extra = {};
   }
 
   /** Shows which cashiers worked a shift (their own PIN-joined sessions) — loaded on demand, once per shift. */

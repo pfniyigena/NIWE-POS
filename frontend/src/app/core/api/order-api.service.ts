@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
 import { Order, PaymentMethod } from '../models';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 
 export interface CheckoutPaymentEntry {
   method: PaymentMethod;
@@ -65,8 +67,35 @@ export class OrderApiService {
     return this.http.post<Order>(`${API_BASE}/orders/${orderId}/lines/by-barcode`, { barcode, quantity });
   }
 
-  updateLine(orderId: number, lineId: number, changes: { quantity?: number; discountPercent?: number; serialNumbers?: string[] }): Observable<Order> {
+  updateLine(
+    orderId: number,
+    lineId: number,
+    changes: {
+      quantity?: number;
+      discountPercent?: number;
+      serialNumbers?: string[];
+      discountReason?: string;
+      approverPin?: string;
+      unitPrice?: number;
+      priceReason?: string;
+      resetPrice?: boolean;
+    }
+  ): Observable<Order> {
     return this.http.patch<Order>(`${API_BASE}/orders/${orderId}/lines/${lineId}`, changes);
+  }
+
+  /** A discount on the whole sale: a percent or an amount, with a reason and (when needed) a manager's PIN. */
+  setOrderDiscount(orderId: number, body: { percent?: number; amount?: number; reason?: string; approverPin?: string }): Observable<Order> {
+    return this.http.post<Order>(`${API_BASE}/orders/${orderId}/discount`, body);
+  }
+
+  /** The receipt is being printed: 0 for the original, 1, 2... for reprints. */
+  recordPrint(orderId: number): Observable<{ copyNumber: number; printCount: number }> {
+    return this.http.post<{ copyNumber: number; printCount: number }>(`${API_BASE}/orders/${orderId}/receipt-print`, {});
+  }
+
+  clearOrderDiscount(orderId: number): Observable<Order> {
+    return this.http.delete<Order>(`${API_BASE}/orders/${orderId}/discount`);
   }
 
   removeLine(orderId: number, lineId: number): Observable<Order> {
@@ -107,6 +136,11 @@ export class OrderApiService {
   listCompleted(sessionId?: number): Observable<Order[]> {
     const query = sessionId != null ? `?sessionId=${sessionId}` : '';
     return this.http.get<Order[]>(`${API_BASE}/orders/completed${query}`);
+  }
+
+  /** Receipts list with search, filters and pages (PO-1). */
+  completedPage(f: ListFilter, page: number, size: number, extra: Record<string, string | number | null | undefined> = {}): Observable<PageResult<Order>> {
+    return pagedList<Order>(this.http, `${API_BASE}/orders/completed`, f, page, size, extra);
   }
 
   /** Task: "local queuing of sales that sync once connectivity returns" — replays one whole sale rung offline. Idempotent by `clientTempId`; see OfflineSyncService. */

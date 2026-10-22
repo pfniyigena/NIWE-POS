@@ -6,7 +6,8 @@ import { ShellComponent } from '../shared/shell.component';
 import { OrderApiService } from '../core/api/order-api.service';
 import { ReturnsApiService } from '../core/api/returns-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
-import { Order, PaymentMethodOption } from '../core/models';
+import { RegisterApiService } from '../core/api/register-api.service';
+import { Order, PaymentMethodOption, PosSettings } from '../core/models';
 
 interface ReturnRow {
   lineId: number;
@@ -78,9 +79,17 @@ interface ReturnRow {
           </div>
           <div class="grow">
             <label class="form-label">Reason</label>
-            <input class="form-control" [(ngModel)]="reason" />
+            <select class="form-select rf-reason" [(ngModel)]="reason" name="reason">
+              <option value="">{{ settings?.returnReasonRequired ? 'Choose a reason…' : 'No reason given' }}</option>
+              <option *ngFor="let r of reasons" [value]="r">{{ r }}</option>
+            </select>
+          </div>
+          <div class="grow" *ngIf="needPin">
+            <label class="form-label">Manager's PIN</label>
+            <input class="form-control rf-pin" type="password" [(ngModel)]="approverPin" name="approverPin" autocomplete="off" placeholder="A manager types their PIN to approve" />
           </div>
         </div>
+        <p class="text-muted" *ngIf="settings && settings.returnWindowDays > 0">Returns after {{ settings.returnWindowDays }} days need a manager's approval.</p>
         <button class="btn btn-danger" (click)="submit()">Process return</button>
       </div>
     </app-shell>
@@ -96,15 +105,27 @@ export class ReturnFormComponent implements OnInit {
   paymentMethods: PaymentMethodOption[] = [];
   refundMethod = 'CASH';
   reason = '';
+  approverPin = '';
+  needPin = false;
+  settings: PosSettings | null = null;
+  reasons: string[] = [];
 
   constructor(
     private orderApi: OrderApiService,
     private returnsApi: ReturnsApiService,
     private paymentMethodApi: PaymentMethodApiService,
+    private registerApi: RegisterApiService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.registerApi.posSettings().subscribe({
+      next: (s) => {
+        this.settings = s;
+        this.reasons = (s.returnReasons ?? '').split(',').map((r) => r.trim()).filter((r) => r);
+      },
+      error: () => {},
+    });
     this.paymentMethodApi.listActive().subscribe((methods) => {
       this.paymentMethods = methods;
       if (methods.length > 0) {
@@ -157,12 +178,15 @@ export class ReturnFormComponent implements OnInit {
     }
     this.error = null;
     this.returnsApi
-      .process({ orderId: this.order.id, lines, refundMethod: this.refundMethod, reason: this.reason })
+      .process({ orderId: this.order.id, lines, refundMethod: this.refundMethod, reason: this.reason, approverPin: this.approverPin || undefined })
       .subscribe({
         // Task: "print out the return" — go straight to the printable receipt and auto-print it,
         // same convention as checkout.component.ts navigating to receipt.component.ts after a sale.
         next: (r) => this.router.navigate(['/returns', r.id, 'receipt'], { queryParams: { autoPrint: '1' } }),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to process return'),
+        error: (err) => {
+          this.error = err?.error?.message ?? 'Failed to process return';
+          if (this.error?.includes('Manager approval needed')) this.needPin = true;
+        },
       });
   }
 }

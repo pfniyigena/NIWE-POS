@@ -1,35 +1,57 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { OrderApiService } from '../core/api/order-api.service';
-import { Order } from '../core/models';
+import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
+import { RegisterApiService } from '../core/api/register-api.service';
+import { Order, PaymentMethodOption, RegisterSummary } from '../core/models';
+import { ReturnsApiService } from '../core/api/returns-api.service';
+import { ListState } from '../core/api/list-state';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { PagerComponent } from '../shared/pager.component';
 
 /**
- * Recent completed sales — lookup + reprint. Open to any logged-in user (a cashier reprinting a
- * receipt for a customer doesn't need admin rights), unlike the /admin/* management screens.
+ * Completed sales: lookup + reprint. Open to any logged-in user (a cashier reprinting a receipt for a customer doesn't need admin rights).
+ * Search by invoice, customer, cashier, register or product; filter by day, payment method, register and kind (rung offline, sync problem,
+ * EFRIS failed, on credit, charged to a room); 25 to a page; Excel, PDF and CSV of the same filtered list for those with Sales view.
  */
 @Component({
   selector: 'app-receipt-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
       <h3 class="mb-3">Receipts</h3>
+      <app-list-filter exportPath="/orders/completed/export" [exportExtra]="extra" [extraActive]="method !== '' || registerId !== ''" placeholder="Search invoice, customer, cashier, product" [statuses]="kinds" statusAll="All sales" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
+        <select class="form-select rl-method" style="width:auto;" [(ngModel)]="method" (ngModelChange)="extraChanged()" name="method" title="Payment method">
+          <option value="">Any payment method</option>
+          <option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option>
+        </select>
+        <select class="form-select rl-register" style="width:auto;" [(ngModel)]="registerId" (ngModelChange)="extraChanged()" name="register" title="Register">
+          <option value="">Any register</option>
+          <option *ngFor="let r of registers" [value]="r.id">{{ r.name }}</option>
+        </select>
+        <span class="text-muted" style="font-size:0.85rem;">Dates filter by the day the sale was completed. With no filter the latest 200 sales show.</span>
+      </div>
       <table>
         <thead>
           <tr>
             <th>Date</th>
             <th>Invoice</th>
             <th>Customer</th>
+            <th>Cashier</th>
             <th class="text-end">Total</th>
             <th>Payment</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let o of orders">
+          <ng-container *ngFor="let o of list.rows">
+          <tr class="rl-row">
             <td>
               {{ o.completedAt | date: 'yyyy-MM-dd HH:mm' }}
               <!-- Task: "local queuing of sales that sync once connectivity returns" — this sale was rung offline and replayed once back online. -->
@@ -38,30 +60,107 @@ import { Order } from '../core/models';
             </td>
             <td>{{ o.invoiceNumber }}</td>
             <td>{{ o.customerName }}</td>
+            <td>{{ o.cashierName }}</td>
             <td class="text-end">{{ o.total | number: '1.2-2' }}</td>
             <td>
               <span *ngFor="let p of o.payments; let last = last">{{ p.method }}{{ !last ? ' + ' : '' }}</span>
             </td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/receipt', o.id]">View / Reprint</a></td>
+            <td class="flex gap-2">
+              <span *ngIf="(o.printCount || 0) > 1" class="text-muted rl-printed" style="font-size:0.8rem;" title="Times the receipt was printed">printed ×{{ o.printCount }}</span>
+              <span *ngIf="o.voidedAt" class="badge badge-secondary rl-voided" [title]="'Voided by ' + (o.voidedBy || '') + ': ' + (o.voidReason || '')">VOIDED</span>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/receipt', o.id]">View / Reprint</a>
+              <button *ngIf="!o.voidedAt" class="btn btn-sm btn-outline-danger rl-void" (click)="startVoid(o)">Void</button>
+            </td>
           </tr>
-          <tr *ngIf="orders.length === 0">
-            <td colspan="6" class="text-muted">No completed sales yet.</td>
+          <tr *ngIf="voiding && voiding.id === o.id" class="rl-void-row">
+            <td colspan="7" style="background:rgba(255,255,255,0.03);">
+              <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
+                <strong>Void {{ o.invoiceNumber }} ({{ o.total | number: '1.2-2' }})</strong>
+                <span class="text-muted">The whole sale is refunded and stays on record as voided.</span>
+              </div>
+              <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
+                <input class="form-control rl-void-reason" style="width:280px;" placeholder="Why is it being voided?" [(ngModel)]="voidReason" name="voidReason" maxlength="200" />
+                <input *ngIf="needPin" class="form-control rl-void-pin" style="width:160px;" type="password" placeholder="Manager PIN" [(ngModel)]="voidPin" name="voidPin" autocomplete="off" />
+                <button class="btn btn-danger btn-sm rl-void-confirm" (click)="confirmVoid()" [disabled]="busy || !voidReason.trim()">Void this sale</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="voiding = null">Cancel</button>
+              </div>
+              <div class="text-danger mt-2 rl-void-error" *ngIf="voidError">{{ voidError }}</div>
+            </td>
           </tr>
+          </ng-container>
         </tbody>
       </table>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || method || registerId ? 'No sales match these filters.' : 'No completed sales yet.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class ReceiptListComponent implements OnInit {
-  orders: Order[] = [];
-  error: string | null = null;
+  kinds = [
+    { value: 'OFFLINE', label: 'Rung offline' },
+    { value: 'SYNC_ISSUE', label: 'Sync problem' },
+    { value: 'EFRIS_FAILED', label: 'EFRIS failed' },
+    { value: 'CREDIT', label: 'Part on credit' },
+    { value: 'ROOM_CHARGE', label: 'Charged to a room' },
+    { value: 'VOIDED', label: 'Voided sales' },
+  ];
+  voiding: Order | null = null;
+  voidReason = '';
+  voidPin = '';
+  needPin = false;
+  busy = false;
+  voidError: string | null = null;
+  methods: PaymentMethodOption[] = [];
+  registers: RegisterSummary[] = [];
+  method = '';
+  registerId = '';
+  extra: Record<string, string | number | null | undefined> = {};
+  list = new ListState<Order>((f, p, sz) => this.orderApi.completedPage(f, p, sz, { method: this.method, registerId: this.registerId }), 'Failed to load receipts');
 
-  constructor(private orderApi: OrderApiService) {}
+  constructor(private orderApi: OrderApiService, private methodApi: PaymentMethodApiService, private registerApi: RegisterApiService, private returnsApi: ReturnsApiService) {}
 
   ngOnInit(): void {
-    this.orderApi.listCompleted().subscribe({
-      next: (o) => (this.orders = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load receipts'),
+    this.list.load();
+    this.methodApi.listAll().subscribe({ next: (m) => (this.methods = m), error: () => {} });
+    this.registerApi.listRegisters().subscribe({ next: (r) => (this.registers = r), error: () => {} });
+  }
+
+  startVoid(o: Order): void {
+    this.voiding = o;
+    this.voidReason = '';
+    this.voidPin = '';
+    this.needPin = false;
+    this.voidError = null;
+  }
+
+  confirmVoid(): void {
+    if (!this.voiding) return;
+    this.busy = true;
+    this.voidError = null;
+    this.returnsApi.voidSale({ orderId: this.voiding.id, reason: this.voidReason.trim(), approverPin: this.voidPin || undefined }).subscribe({
+      next: () => {
+        this.busy = false;
+        this.voiding = null;
+        this.list.load();
+      },
+      error: (err) => {
+        this.busy = false;
+        const msg: string = err?.error?.message ?? 'Could not void the sale';
+        if (msg.includes('Manager approval needed')) this.needPin = true;
+        this.voidError = msg;
+      },
     });
+  }
+
+  extraChanged(): void {
+    this.extra = { method: this.method, registerId: this.registerId };
+    this.list.page = 0;
+    this.list.load();
+  }
+
+  clearedExtra(): void {
+    this.method = '';
+    this.registerId = '';
+    this.extra = {};
   }
 }

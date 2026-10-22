@@ -19,8 +19,12 @@ public class ReturnsController {
     }
 
     @GetMapping
-    public List<SalesReturnDto> listReturns() {
-        return returnsService.listReturns();
+    public org.springframework.http.ResponseEntity<List<SalesReturnDto>> listReturns(@RequestParam(required = false) String q, @RequestParam(required = false) String method,
+            @RequestParam(required = false) Long registerId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(returnsService.filteredReturns(q, method, registerId, from, to), page, size);
     }
 
     /** Task: "print out the return" — one return's own detail (including its lines) for the return receipt. */
@@ -41,8 +45,15 @@ public class ReturnsController {
     }
 
     @PostMapping
-    public SalesReturnDto processReturn(@Valid @RequestBody ProcessReturnRequest request) {
-        SalesReturnDto processed = returnsService.processReturn(request);
+    public SalesReturnDto processReturn(@Valid @RequestBody ProcessReturnRequest request, @org.springframework.security.core.annotation.AuthenticationPrincipal com.posapp.security.AppUserPrincipal principal) {
+        SalesReturnDto processed = returnsService.processReturn(request, principal.getUser());
+        return returnsService.submitToEfrisIfApplicable(processed.id());
+    }
+
+    /** Void a completed sale (refund it in full and keep it on record, marked voided). */
+    @PostMapping("/void-sale")
+    public SalesReturnDto voidSale(@Valid @RequestBody com.posapp.returns.dto.VoidSaleRequest request, @org.springframework.security.core.annotation.AuthenticationPrincipal com.posapp.security.AppUserPrincipal principal) {
+        SalesReturnDto processed = returnsService.voidSale(request, principal.getUser());
         return returnsService.submitToEfrisIfApplicable(processed.id());
     }
 

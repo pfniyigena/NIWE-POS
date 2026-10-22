@@ -40,7 +40,7 @@ export class ReportListComponent {
   // Inventory > Reports now (InventoryReportListComponent), not listed here too. The section
   // stays in report-defs.ts itself (ReportViewerComponent still looks reports up there by key
   // regardless of which picker links to them); this array just controls what renders on *this* page.
-  sections = ['POS Sales-Transactions', 'POS Profit', 'POS Credit'] as const;
+  sections = ['POS Sales-Transactions', 'POS Profit', 'POS Credit', 'POS Operations'] as const;
 
   bySection(section: string) {
     return this.reports.filter((r) => r.section === section);

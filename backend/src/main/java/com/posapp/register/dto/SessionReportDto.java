@@ -19,6 +19,11 @@ public record SessionReportDto(
          * cashier" (or an admin's "assign") brought a teammate onto the same till during this
          * shift. See {@link CashierSessionReportDto}'s own javadoc for what each entry means.
          */
-        List<CashierSessionReportDto> cashierSessions
+        List<CashierSessionReportDto> cashierSessions,
+        /** Cash put in and taken out of the drawer by hand during the shift (voided ones included, marked), and their totals. */
+        BigDecimal paidIn,
+        BigDecimal paidOut,
+        BigDecimal drops,
+        List<CashMovementDto> cashMovements
 ) {
 }

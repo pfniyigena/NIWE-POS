@@ -21,12 +21,17 @@ public class ProcessReturnRequest {
 
     private String reason;
 
+    /** A manager's PIN, typed at the till when the return needs approval and the cashier is not a manager. */
+    private String approverPin;
+
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
     public List<ReturnLineEntry> getLines() { return lines; }
     public void setLines(List<ReturnLineEntry> lines) { this.lines = lines; }
     public String getRefundMethod() { return refundMethod; }
     public void setRefundMethod(String refundMethod) { this.refundMethod = refundMethod; }
+    public String getApproverPin() { return approverPin; }
+    public void setApproverPin(String approverPin) { this.approverPin = approverPin; }
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
 

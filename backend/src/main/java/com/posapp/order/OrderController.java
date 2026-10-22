@@ -14,8 +14,10 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final ReceiptPrintService receiptPrintService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, ReceiptPrintService receiptPrintService) {
+        this.receiptPrintService = receiptPrintService;
         this.orderService = orderService;
     }
 
@@ -71,8 +73,13 @@ public class OrderController {
      * from inside the terminal); omit it for the app-wide standalone Receipts page.
      */
     @GetMapping("/orders/completed")
-    public List<OrderDto> listRecentCompletedOrders(@RequestParam(required = false) Long sessionId) {
-        return orderService.listRecentCompletedOrders(sessionId);
+    public org.springframework.http.ResponseEntity<List<OrderDto>> listRecentCompletedOrders(@RequestParam(required = false) Long sessionId,
+            @RequestParam(required = false) String q, @RequestParam(required = false) String status, @RequestParam(required = false) String method,
+            @RequestParam(required = false) Long registerId, @RequestParam(required = false) Long cashierId, @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(orderService.completedFiltered(q, status, method, registerId, cashierId, customerId, sessionId, from, to), page, size);
     }
 
     @PostMapping("/orders/{id}/lines")
@@ -91,6 +98,23 @@ public class OrderController {
     public OrderDto updateLine(@PathVariable Long id, @PathVariable Long lineId, @RequestBody UpdateLineRequest request,
                                 @AuthenticationPrincipal AppUserPrincipal principal) {
         return orderService.updateLine(id, lineId, request, principal.getUser());
+    }
+
+    /** A discount on the whole sale (percent or amount, with a reason; a manager's PIN when the cashier is not allowed it alone). */
+    @PostMapping("/orders/{id}/discount")
+    public OrderDto setOrderDiscount(@PathVariable Long id, @RequestBody com.posapp.order.dto.OrderDiscountRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return orderService.setOrderDiscount(id, request, principal.getUser());
+    }
+
+    /** A receipt is being printed: the first time is the original, later times are COPY 1, 2... */
+    @PostMapping("/orders/{id}/receipt-print")
+    public ReceiptPrintService.Printed receiptPrint(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return receiptPrintService.record(id, principal.getUser());
+    }
+
+    @DeleteMapping("/orders/{id}/discount")
+    public OrderDto clearOrderDiscount(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return orderService.clearOrderDiscount(id, principal.getUser());
     }
 
     @DeleteMapping("/orders/{id}/lines/{lineId}")

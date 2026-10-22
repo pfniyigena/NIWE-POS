@@ -16,6 +16,9 @@ public interface CashierSessionRepository extends JpaRepository<CashierSession, 
     /** Used by RegisterService.closeSession to end every still-open cashier session when the shift closes. */
     List<CashierSession> findByRegisterSessionIdAndStatus(Long registerSessionId, CashierSessionStatus status);
 
+    /** The cashier's open sessions: which drawer they are working at. */
+    List<CashierSession> findByCashierIdAndStatusOrderByStartedAtDesc(Long cashierId, CashierSessionStatus status);
+
     /** Used by the "Sessions" screen for an ADMIN caller — every cashier session that has ever existed, across every shift. */
     List<CashierSession> findAllByOrderByStartedAtDesc();
 

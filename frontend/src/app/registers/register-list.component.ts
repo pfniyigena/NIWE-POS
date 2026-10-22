@@ -24,6 +24,8 @@ import { RegisterSummary } from '../core/models';
             <th>Location</th>
             <th>Warehouse</th>
             <th>Location</th>
+            <th>Float</th>
+            <th>Cashiers</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -34,18 +36,21 @@ import { RegisterSummary } from '../core/models';
             <td>{{ r.location }}</td>
             <td>{{ r.warehouseName || '— (primary)' }}</td>
             <td>{{ r.defaultLocationName || '— (default)' }}</td>
+            <td class="rl-float">{{ r.defaultFloat !== null ? (r.defaultFloat | number: '1.0-2') : '—' }}<span class="text-muted" *ngIf="r.maxFloat !== null"> (max {{ r.maxFloat | number: '1.0-2' }})</span></td>
+            <td class="rl-cashiers">{{ r.allowedCashierNames.length ? r.allowedCashierNames.join(', ') : 'Anyone' }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="r.openSessionId">Open session</span>
-              <span class="badge badge-secondary" *ngIf="!r.openSessionId">Closed</span>
+              <span class="badge badge-warning rl-off" *ngIf="!r.active">Switched off</span>
+              <span class="badge badge-success" *ngIf="r.active && r.openSessionId">Open session</span>
+              <span class="badge badge-secondary" *ngIf="r.active && !r.openSessionId">Closed</span>
             </td>
             <td class="flex gap-2">
               <a *ngIf="r.openSessionId" class="btn btn-sm btn-success" [routerLink]="['/pos', r.openSessionId]">Go to terminal</a>
-              <a *ngIf="!r.openSessionId && auth.canManage('SALES')" class="btn btn-sm btn-outline-primary" [routerLink]="['/registers', r.id, 'open-session']">Open session</a>
+              <a *ngIf="r.active && !r.openSessionId && auth.canManage('SALES')" class="btn btn-sm btn-outline-primary" [routerLink]="['/registers', r.id, 'open-session']">Open session</a>
               <a *ngIf="auth.canManage('SALES')" [routerLink]="['/registers', r.id, 'edit']">Edit</a>
             </td>
           </tr>
           <tr *ngIf="registers.length === 0">
-            <td colspan="6" class="text-muted">No registers yet.</td>
+            <td colspan="8" class="text-muted">No registers yet.</td>
           </tr>
         </tbody>
       </table>

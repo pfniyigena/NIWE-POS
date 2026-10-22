@@ -85,6 +85,9 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/sales-order-returns', areas: ['SALES'] },
   { prefix: 'admin/quotations', areas: ['SALES'] },
   { prefix: 'admin/shifts', areas: ['SALES'] },
+  { prefix: 'admin/cash-movements', areas: ['SALES'] },
+  { prefix: 'admin/pos-log', areas: ['SALES'] },
+  { prefix: 'admin/pos-settings', areas: ['SALES'] },
   { prefix: 'registers', areas: ['SALES'] },
 
   // Inventory and purchasing.

@@ -92,14 +92,39 @@ public class OrderLine extends BaseEntity {
 
     /** The cashier's discount and the promotions' discount together, as one percent: 100 - (100-d)(100-p)/100. */
     public BigDecimal effectiveDiscountPercent() {
+        return effectiveDiscountPercent(order == null || order.getOrderDiscountPercent() == null ? BigDecimal.ZERO : order.getOrderDiscountPercent());
+    }
+
+    /** The same, as if the whole-sale discount were {@code o} percent (used to show what that discount is worth). */
+    public BigDecimal effectiveDiscountPercent(BigDecimal o) {
         BigDecimal d = discountPercent == null ? BigDecimal.ZERO : discountPercent;
         BigDecimal p = promoPercent == null ? BigDecimal.ZERO : promoPercent;
-        if (p.signum() == 0) {
+        if (p.signum() == 0 && o.signum() == 0) {
             return d;
         }
         BigDecimal hundred = BigDecimal.valueOf(100);
-        return hundred.subtract(hundred.subtract(d).multiply(hundred.subtract(p)).divide(hundred, 10, java.math.RoundingMode.HALF_UP));
+        BigDecimal kept = hundred.subtract(d).multiply(hundred.subtract(p)).divide(hundred, 10, java.math.RoundingMode.HALF_UP)
+                .multiply(hundred.subtract(o)).divide(hundred, 10, java.math.RoundingMode.HALF_UP);
+        return hundred.subtract(kept);
     }
+
+    /** Why the cashier's discount was given, and the manager who approved it when one had to. */
+    @jakarta.persistence.Column(name = "discount_reason")
+    private String discountReason;
+    @jakarta.persistence.Column(name = "discount_approved_by")
+    private String discountApprovedBy;
+
+    /** The price was changed by hand at the till: the price it had, why, who did it and who approved it. */
+    @jakarta.persistence.Column(name = "price_overridden", nullable = false)
+    private boolean priceOverridden = false;
+    @jakarta.persistence.Column(name = "original_unit_price")
+    private BigDecimal originalUnitPrice;
+    @jakarta.persistence.Column(name = "price_override_reason")
+    private String priceOverrideReason;
+    @jakarta.persistence.Column(name = "price_override_by")
+    private String priceOverrideBy;
+    @jakarta.persistence.Column(name = "price_override_approved_by")
+    private String priceOverrideApprovedBy;
 
     /**
      * Task 6: "Any transaction affecting stock should be shown to Stock Movement History (Pos

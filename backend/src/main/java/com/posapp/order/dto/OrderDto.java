@@ -62,7 +62,17 @@ public record OrderDto(
         BigDecimal promoSavings,
         /** Loyalty points this sale earned and the customer's balance after it; null when none. */
         Integer loyaltyEarned,
-        Integer loyaltyBalance
+        Integer loyaltyBalance,
+        Instant voidedAt,
+        String voidReason,
+        String voidedBy,
+        /** The discount on the whole sale: percent, what it took off, why, who gave it and who approved it. */
+        BigDecimal orderDiscountPercent,
+        BigDecimal orderDiscountValue,
+        String orderDiscountReason,
+        String orderDiscountBy,
+        String orderDiscountApprovedBy,
+        int printCount
 ) {
     public static OrderDto from(SaleOrder order) {
         var customer = order.getCustomer();
@@ -116,7 +126,16 @@ public record OrderDto(
                 com.posapp.promotions.PromotionService.appliedList(order).stream()
                         .map(com.posapp.promotions.PromotionDtos.Applied::amount).reduce(BigDecimal.ZERO, BigDecimal::add),
                 order.getLoyaltyEarned(),
-                order.getLoyaltyBalance()
+                order.getLoyaltyBalance(),
+                order.getVoidedAt(),
+                order.getVoidReason(),
+                order.getVoidedBy(),
+                order.getOrderDiscountPercent(),
+                OrderCalculator.orderDiscountValue(order),
+                order.getOrderDiscountReason(),
+                order.getOrderDiscountBy(),
+                order.getOrderDiscountApprovedBy(),
+                order.getPrintCount()
         );
     }
 }

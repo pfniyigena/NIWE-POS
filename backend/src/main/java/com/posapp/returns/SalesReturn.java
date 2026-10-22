@@ -23,6 +23,13 @@ public class SalesReturn extends BaseEntity {
     private String refundMethod;
 
     private String reason;
+    /** The shift whose drawer paid this refund (the one open at the till when it was processed); null when none was. */
+    private Long registerSessionId;
+    private String processedBy;
+    /** The manager who approved it, when it needed one. */
+    private String approvedBy;
+    /** True when this return is the refund of a voided sale. */
+    private boolean voidReturn;
     private Instant returnDate = Instant.now();
     private BigDecimal refundTotal = BigDecimal.ZERO;
 

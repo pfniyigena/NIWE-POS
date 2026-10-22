@@ -8,7 +8,8 @@ import { BranchApiService } from '../core/api/branch-api.service';
 import { ReturnsApiService } from '../core/api/returns-api.service';
 import { EfrisApiService } from '../core/api/efris-api.service';
 import { EfrisChadApiService } from '../core/api/efris-chad-api.service';
-import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } from '../core/models';
+import { RegisterApiService } from '../core/api/register-api.service';
+import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, StoreSettings } from '../core/models';
 
 /**
  * Deliberately light/printable, unlike the rest of this (otherwise all-dark) app: a dark
@@ -19,7 +20,8 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="receipt" *ngIf="order as o">
+    <div class="receipt" [class.paper-58]="paper === '58'" *ngIf="order as o">
+      <p class="receipt-copy" *ngIf="copyNumber > 0" style="text-align:center; font-weight:700; border:2px solid #000; padding:2px; margin:0 0 6px;">*** COPY {{ copyNumber }} — not the original ***</p>
       <!-- Fourier's own follow-up: "those two logos ... right at the top of receipt. Better put
            Receipt Label in center" — moved here from the SDC INFORMATION footer (where it first
            landed) to the very top of the printout, revenue-authority logo on the left and EFRIS on
@@ -53,7 +55,7 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
            until the GET resolves and every field on it is nullable, so this whole block degrades
            gracefully to nothing extra when nothing has been configured yet (unchanged behavior). -->
       <div *ngIf="settings as s" style="text-align:center; margin:8px 0 12px;">
-        <img *ngIf="s.logoDataUrl" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
+        <img *ngIf="s.logoDataUrl && (cfg?.receiptShowLogo ?? true)" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
         <div *ngIf="s.businessName" style="font-weight:700; font-size:1.1rem;">{{ s.businessName }}</div>
         <!-- Branches: a branch's own name/address/contact/tax id replace the business-wide ones when it has them; its receipt header prints beneath. -->
         <div *ngIf="branchInfo as b" style="font-size:0.9rem; font-weight:600;">{{ b.name }}</div>
@@ -63,12 +65,17 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
         </div>
         <div *ngIf="branchInfo?.taxId || s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ branchInfo?.taxId || s.taxId }}</div>
         <div *ngIf="branchInfo?.receiptHeader" style="font-size:0.8rem; color:#444; white-space:pre-line; margin-top:4px;">{{ branchInfo?.receiptHeader }}</div>
+        <div *ngIf="cfg?.receiptHeader" class="receipt-header-extra" style="font-size:0.8rem; color:#444; white-space:pre-line; margin-top:4px;">{{ cfg?.receiptHeader }}</div>
       </div>
       <p style="text-align:center; margin:4px 0 12px;">{{ o.invoiceNumber }}</p>
       <p style="text-align:center; margin:0 0 8px; color:#666; font-size:0.85rem;">
         {{ o.registerName }} &middot; served by {{ o.cashierName }}
       </p>
       <p style="margin:0 0 8px;">Customer: {{ o.customerName }}</p>
+      <p class="receipt-voided" *ngIf="o.voidedAt" style="margin:0 0 8px; text-align:center; font-weight:700; border:2px solid #000; padding:4px;">
+        *** VOIDED {{ o.voidedAt | date: 'yyyy-MM-dd HH:mm' }} ***
+        <span style="display:block; font-weight:400; font-size:0.8rem;">{{ o.voidReason }}</span>
+      </p>
       <!-- Task: "local queuing of sales that sync once connectivity returns" — this sale was rung
            offline (network was down at the terminal) and only actually created on the server once
            connectivity returned; flagged here rather than silently printing an ordinary receipt. -->
@@ -126,6 +133,10 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
           <tr style="font-weight:700;">
             <td>Total</td>
             <td style="text-align:right;">{{ o.total | number: '1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="o.orderDiscountPercent && o.orderDiscountPercent > 0" class="receipt-order-discount" style="font-size:0.8rem; color:#666;">
+            <td>Includes a discount of {{ o.orderDiscountPercent | number: '1.0-2' }}%<span *ngIf="o.orderDiscountReason"> ({{ o.orderDiscountReason }})</span></td>
+            <td style="text-align:right;">−{{ o.orderDiscountValue | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="o.promoSavings && o.promoSavings > 0" class="receipt-promo-saved" style="font-size:0.8rem; color:#666;">
             <td>You saved with promotions</td>
@@ -196,7 +207,12 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
         </div>
       </div>
 
-      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">Thank you!</p>
+      <div *ngIf="cfg?.receiptShowQr && !o.sdcId && invoiceQrDataUrl" class="receipt-qr" style="text-align:center; margin-top:8px;">
+        <img [src]="invoiceQrDataUrl" alt="Receipt QR code" style="width:100px; height:100px;" />
+        <div style="font-size:0.7rem; color:#666;">{{ o.invoiceNumber }}</div>
+      </div>
+
+      <p class="receipt-footer" *ngIf="footerText" style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem; white-space:pre-line;">{{ footerText }}</p>
 
       <div class="no-print" *ngIf="emailError || emailSent" style="margin-top:10px;">
         <p *ngIf="emailError" style="color:#b00020; font-size:0.85rem;">{{ emailError }}</p>
@@ -227,6 +243,16 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
         max-width: 380px;
         margin: 0 auto;
         padding: 24px 16px;
+      }
+      /* 58 mm thermal roll: narrower and a little smaller type. */
+      .receipt.paper-58 {
+        max-width: 58mm;
+        padding: 6px 4px;
+        font-size: 11px;
+      }
+      .receipt.paper-58 table,
+      .receipt.paper-58 td {
+        font-size: 11px !important;
       }
       hr {
         border: none;
@@ -283,6 +309,21 @@ export class ReceiptComponent implements OnInit, OnDestroy {
    */
   qrCodeDataUrl: string | null = null;
 
+  /** PO-6: the receipt rules from POS settings (footer, header text, paper, logo, QR); null until loaded, when the old layout shows. */
+  cfg: PosSettings | null = null;
+  invoiceQrDataUrl: string | null = null;
+  /** 0 for the original; 1, 2... once a reprint is being printed. */
+  copyNumber = 0;
+  private pageStyle: HTMLStyleElement | null = null;
+
+  get paper(): string {
+    return this.cfg?.receiptPaper ?? '80';
+  }
+
+  get footerText(): string {
+    return this.cfg ? this.cfg.receiptFooter : 'Thank you!';
+  }
+
   /**
    * Task: "On EFRIS setting add two logo (URA LOGO, EFRIS LOGO) ... added left and right on the
    * printout" — fetched by `loadEfrisLogos` once the order's `registerId` is known. Null (and the
@@ -327,7 +368,8 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     private branchApi: BranchApiService,
     private returnsApi: ReturnsApiService,
     private efrisApi: EfrisApiService,
-    private efrisChadApi: EfrisChadApiService
+    private efrisChadApi: EfrisChadApiService,
+    private registerApi: RegisterApiService
   ) {}
 
   ngOnInit(): void {
@@ -337,6 +379,14 @@ export class ReceiptComponent implements OnInit, OnDestroy {
       next: (s) => (this.settings = s),
       error: () => (this.settings = null), // header just falls back to plain "Receipt" — never blocks printing
     });
+    this.registerApi.posSettings().subscribe({
+      next: (c) => {
+        this.cfg = c;
+        this.applyPageSize();
+        if (this.order) this.generateInvoiceQr(this.order);
+      },
+      error: () => (this.cfg = null), // the standard layout and "Thank you!" — never blocks printing
+    });
     this.returnsApi.returnedQuantitiesForOrder(orderId).subscribe({
       next: (qtys) => (this.returnedQuantities = qtys),
       error: () => (this.returnedQuantities = {}), // no lines get marked — never blocks printing
@@ -344,6 +394,7 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     this.orderApi.getOrder(orderId).subscribe((o) => {
       this.order = o;
       this.generateQrCode(o);
+      this.generateInvoiceQr(o);
       this.loadEfrisLogos(o);
       const startAutoPrint = () => {
         if (this.autoPrint) {
@@ -351,7 +402,7 @@ export class ReceiptComponent implements OnInit, OnDestroy {
           // page") — `afterprint` fires once it's dismissed either way (printed or cancelled),
           // which is what sends the cashier back to the terminal to start the next order.
           window.addEventListener('afterprint', this.afterPrintHandler);
-          setTimeout(() => window.print(), 150);
+          setTimeout(() => this.printCounted(), 150);
         }
       };
       if (o.branchId != null) {
@@ -374,10 +425,47 @@ export class ReceiptComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     window.removeEventListener('afterprint', this.afterPrintHandler);
+    this.pageStyle?.remove();
   }
 
   print(): void {
-    window.print();
+    this.printCounted();
+  }
+
+  /** Counts the printing first (the first is the original, later ones are COPY n), then opens the print dialog; if counting fails the receipt still prints. */
+  private printCounted(): void {
+    if (!this.order) {
+      window.print();
+      return;
+    }
+    this.orderApi.recordPrint(this.order.id).subscribe({
+      next: (r) => {
+        this.copyNumber = r.copyNumber;
+        if (this.order) this.order = { ...this.order, printCount: r.printCount };
+        setTimeout(() => window.print(), 120);
+      },
+      error: () => window.print(),
+    });
+  }
+
+  /** The browser prints on the paper size given by @page: set it to the roll width chosen in the POS settings. */
+  private applyPageSize(): void {
+    this.pageStyle?.remove();
+    const width = this.paper === '58' ? '58mm' : '80mm';
+    const el = document.createElement('style');
+    el.setAttribute('data-receipt-page', width);
+    el.textContent = `@media print { @page { size: ${width} auto; margin: 3mm; } }`;
+    document.head.appendChild(el);
+    this.pageStyle = el;
+  }
+
+  /** A QR code of the invoice number (setting): scanning it at the returns desk finds the sale. */
+  private generateInvoiceQr(o: Order): void {
+    this.invoiceQrDataUrl = null;
+    if (!this.cfg?.receiptShowQr || o.sdcId || !o.invoiceNumber) return;
+    QRCode.toDataURL(o.invoiceNumber, { margin: 1, width: 200 })
+      .then((u) => (this.invoiceQrDataUrl = u))
+      .catch(() => (this.invoiceQrDataUrl = null));
   }
 
   /**

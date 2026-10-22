@@ -20,17 +20,19 @@ import { AppUser } from '../core/models';
     <app-shell [narrow]="true">
       <h3 class="mb-3">Open session</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="text-muted so-register" *ngIf="registerName" style="margin-bottom:0.75rem;">{{ registerName }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
           <label class="form-label">Assign to</label>
           <select class="form-select" name="cashierId" [(ngModel)]="cashierId" required>
             <option [ngValue]="null" disabled>Select a staff member…</option>
-            <option *ngFor="let u of activeStaff" [ngValue]="u.id">{{ u.fullName }}</option>
+            <option *ngFor="let u of eligibleStaff()" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Opening cash float</label>
-          <input class="form-control" type="number" step="0.01" name="openingFloat" [(ngModel)]="openingFloat" />
+          <input class="form-control so-float" type="number" step="0.01" name="openingFloat" [(ngModel)]="openingFloat" />
+          <div class="text-muted so-float-hint" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="maxFloat !== null">The most this till may open with is {{ maxFloat | number: '1.0-2' }}.</div>
         </div>
         <div class="flex gap-2">
           <button class="btn btn-success" type="submit" [disabled]="!cashierId">Open till</button>
@@ -45,6 +47,9 @@ export class SessionOpenComponent implements OnInit {
   openingFloat = 0;
   cashierId: number | null = null;
   activeStaff: AppUser[] = [];
+  registerName = '';
+  maxFloat: number | null = null;
+  allowedIds: number[] = [];
   error: string | null = null;
 
   constructor(
@@ -56,10 +61,28 @@ export class SessionOpenComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerId = Number(this.route.snapshot.paramMap.get('id'));
+    this.registerApi.listRegisters().subscribe({
+      next: (rs) => {
+        const r = rs.find((x) => x.id === this.registerId);
+        if (!r) return;
+        this.registerName = r.name;
+        this.maxFloat = r.maxFloat;
+        this.allowedIds = r.allowedCashierIds ?? [];
+        if (r.defaultFloat !== null && r.defaultFloat !== undefined) this.openingFloat = r.defaultFloat;
+        if (!r.active) this.error = 'This register is switched off, so a shift cannot be opened on it.';
+      },
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the register'),
+    });
     this.userApi.list().subscribe({
       next: (users) => (this.activeStaff = users.filter((u) => u.active)),
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff list'),
     });
+  }
+
+  /** A till with a list of allowed cashiers only offers those (a manager can still be picked by the backend's own rule). */
+  eligibleStaff(): AppUser[] {
+    if (!this.allowedIds.length) return this.activeStaff;
+    return this.activeStaff.filter((u) => this.allowedIds.includes(u.id) || u.role === 'ADMIN');
   }
 
   submit(): void {

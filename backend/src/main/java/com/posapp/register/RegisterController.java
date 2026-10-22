@@ -47,8 +47,12 @@ public class RegisterController {
     }
 
     @GetMapping("/sessions")
-    public List<SessionDto> listSessions() {
-        return registerService.listSessions();
+    public org.springframework.http.ResponseEntity<List<SessionDto>> listSessions(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long registerId, @RequestParam(required = false) Long cashierId,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(registerService.filteredSessions(q, status, registerId, cashierId, from, to), page, size);
     }
 
     @GetMapping("/sessions/{id}")
@@ -58,8 +62,8 @@ public class RegisterController {
 
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
     @PostMapping("/sessions/{id}/close")
-    public SessionDto closeSession(@PathVariable Long id, @Valid @RequestBody CloseSessionRequest request) {
-        return registerService.closeSession(id, request);
+    public SessionDto closeSession(@PathVariable Long id, @Valid @RequestBody CloseSessionRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return registerService.closeSession(id, request, principal.getUser());
     }
 
     @GetMapping("/sessions/{id}/report")

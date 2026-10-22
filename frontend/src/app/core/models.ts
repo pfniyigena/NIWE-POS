@@ -1,5 +1,5 @@
 /** Fourier: "Build a full permissions system" — additive ADMIN-tier powers a non-admin can be individually granted. Mirrors the backend's Permission enum. */
-export type Permission = 'CONFIRM_RESTAURANT_WASTAGE' | 'APPROVE_STOCK_ADJUSTMENT' | 'APPROVE_PURCHASE_REQUISITION' | 'OVERRIDE_DISCOUNT_CAP' | 'APPROVE_EXPENSE' | 'APPROVE_STOCK_TRANSFER';
+export type Permission = 'CONFIRM_RESTAURANT_WASTAGE' | 'APPROVE_STOCK_ADJUSTMENT' | 'APPROVE_PURCHASE_REQUISITION' | 'OVERRIDE_DISCOUNT_CAP' | 'APPROVE_EXPENSE' | 'APPROVE_STOCK_TRANSFER' | 'APPROVE_POS_VOID_RETURN' | 'APPROVE_POS_PRICE' | 'APPROVE_POS_CASH';
 
 export interface LoginResponse {
   token: string;
@@ -151,6 +151,15 @@ export interface RegisterSummary {
   defaultLocationId: number | null;
   defaultLocationName: string | null;
   openSessionId: number | null;
+  /** PO-8: a switched-off till cannot open a new shift. */
+  active: boolean;
+  /** PO-8: pre-filled when a shift is opened; null = no suggestion. */
+  defaultFloat: number | null;
+  /** PO-8: the most a shift may open with; null = no limit. */
+  maxFloat: number | null;
+  /** PO-8: empty = anyone may work this till. */
+  allowedCashierIds: number[];
+  allowedCashierNames: string[];
 }
 
 export interface RegisterSession {
@@ -167,6 +176,129 @@ export interface RegisterSession {
   status: 'OPEN' | 'CLOSED';
   saleCount: number;
   grossSales: number;
+  /** What the drawer was expected to hold when the shift was closed. */
+  expectedCash?: number | null;
+  varianceNote?: string | null;
+  closedBy?: string | null;
+  /** Notes and coins counted at closing, as JSON [{value,count}]. */
+  countDetail?: string | null;
+  zNumber?: number | null;
+}
+
+/** Cash paid in, paid out or dropped into the safe, or a count made during the shift (PO-2). */
+export interface CashMovement {
+  id: number;
+  sessionId: number;
+  registerName: string;
+  kind: 'PAID_IN' | 'PAID_OUT' | 'DROP' | 'COUNT';
+  reasonCode: string | null;
+  reason: string;
+  amount: number;
+  expectedCash: number | null;
+  variance: number | null;
+  note: string | null;
+  byUser: string;
+  approvedBy: string | null;
+  voided: boolean;
+  voidReason: string | null;
+  voidedBy: string | null;
+  createdAt: string;
+  countDetail: string | null;
+}
+
+export interface CashSummary {
+  sessionId: number;
+  registerName: string;
+  status: 'OPEN' | 'CLOSED';
+  openingFloat: number;
+  cashSales: number;
+  cashRefunds: number;
+  paidIn: number;
+  paidOut: number;
+  drops: number;
+  expectedCash: number;
+  paidOutApprovalOver: number;
+  dropAlertAmount: number;
+  dropAlert: boolean;
+  denominationCountRequired: boolean;
+  movements: CashMovement[];
+}
+
+export interface PosSettings {
+  varianceTolerance: number;
+  varianceNoteRequired: boolean;
+  denominationCountRequired: boolean;
+  paidOutApprovalOver: number;
+  dropAlertAmount: number;
+  voidRequiresApproval: boolean;
+  voidSameShiftOnly: boolean;
+  returnWindowDays: number;
+  returnApprovalOver: number;
+  returnReasonRequired: boolean;
+  /** Comma-separated reasons offered when a sale is returned. */
+  returnReasons: string;
+  cashierDiscountMax: number;
+  discountReasonRequired: boolean;
+  /** Comma-separated reasons offered when a discount is given. */
+  discountReasons: string;
+  priceOverrideAllowed: boolean;
+  priceBelowCostBlocked: boolean;
+  receiptHeader: string | null;
+  receiptFooter: string;
+  /** Receipt paper: '80' or '58' (mm). */
+  receiptPaper: '80' | '58';
+  receiptShowLogo: boolean;
+  receiptShowQr: boolean;
+}
+
+/** One line of the voids-and-returns log. */
+export interface PosException {
+  type: 'VOID' | 'RETURN' | 'DROPPED_CART' | 'DISCOUNT' | 'PRICE_OVERRIDE' | 'REPRINT';
+  at: string;
+  ref: string;
+  orderId: number | null;
+  returnId: number | null;
+  customer: string;
+  by: string | null;
+  registerName: string;
+  registerId: number | null;
+  amount: number;
+  reason: string | null;
+  approvedBy: string | null;
+  sessionId: number | null;
+}
+
+/** The X report (shift so far) and the Z report (closed shift, numbered and frozen). */
+export interface ShiftReport {
+  type: 'X' | 'Z';
+  sessionId: number;
+  zNumber: number | null;
+  registerName: string;
+  cashierName: string;
+  openedAt: string;
+  closedAt: string | null;
+  generatedAt: string;
+  closedBy: string | null;
+  copyNumber: number;
+  sales: { count: number; items: number; shelfValue: number; discounts: number; netSales: number; tax: number; totalSales: number; averageSale: number };
+  payments: { method: string; name: string; cash: boolean; count: number; amount: number }[];
+  taxes: { code: string; ratePercent: number | null; net: number; tax: number }[];
+  refunds: { count: number; total: number; byMethod: { method: string; name: string; cash: boolean; count: number; amount: number }[] };
+  drawer: {
+    openingFloat: number; cashSales: number; cashRefunds: number; paidIn: number; paidOut: number; drops: number; expectedCash: number;
+    countedCash: number | null; variance: number | null; varianceNote: string | null; countDetail: string | null;
+  };
+  controls: {
+    discountedSales: number; discounts: number; abandonedCarts: number; abandonedValue: number; offlineSales: number; creditSales: number;
+    roomCharges: number; giftCardsSold: number; voidedCashMovements: number;
+  };
+  cashiers: { name: string; status: string; startedAt: string; endedAt: string | null; sales: number; total: number }[];
+  cashMovements: CashMovement[];
+}
+
+export interface Denomination {
+  value: number;
+  count: number;
 }
 
 /**
@@ -219,6 +351,10 @@ export interface SessionReport {
   expectedCash: number;
   /** Task: "The report for register_session (Shift) should show all cashier_session (session report)" — oldest first. */
   cashierSessions: CashierSessionReport[];
+  paidIn: number;
+  paidOut: number;
+  drops: number;
+  cashMovements: CashMovement[];
 }
 
 /**
@@ -268,6 +404,12 @@ export interface OrderLine {
   /** What promotions took off this line (percent, after the cashier's discount) and which promotions. */
   promoPercent?: number;
   promoNote?: string | null;
+  /** Why the discount was given and who approved it; a price changed by hand (the price it had and why). */
+  discountReason?: string | null;
+  discountApprovedBy?: string | null;
+  priceOverridden?: boolean;
+  originalUnitPrice?: number | null;
+  priceOverrideReason?: string | null;
 }
 
 export interface Payment {
@@ -336,6 +478,18 @@ export interface Order {
   /** Loyalty points this sale earned and the customer's balance after it (null when the programme was off). */
   loyaltyEarned?: number | null;
   loyaltyBalance?: number | null;
+  /** Set when the sale was voided after payment (refunded in full and kept on record). */
+  voidedAt?: string | null;
+  voidReason?: string | null;
+  voidedBy?: string | null;
+  /** The discount on the whole sale: percent, what it took off, why, who gave it and who approved it. */
+  orderDiscountPercent?: number;
+  orderDiscountValue?: number;
+  orderDiscountReason?: string | null;
+  orderDiscountBy?: string | null;
+  orderDiscountApprovedBy?: string | null;
+  /** How many times the receipt was printed (the first is the original, later ones are COPY). */
+  printCount?: number;
 }
 
 export interface AppliedPromotion {
@@ -430,6 +584,9 @@ export interface SalesReturn {
   loyaltyRefund?: number;
   pointsRefund?: number;
   reason: string | null;
+  processedBy?: string | null;
+  approvedBy?: string | null;
+  voidReturn?: boolean;
   lines: SalesReturnLine[];
   /** Task: "The return will also integrate with EFRIS" — lets the return receipt fetch the original sale's terminal's EFRIS logos, same as the sale receipt does. Null for a return whose order has no session/register at all. */
   registerId: number | null;

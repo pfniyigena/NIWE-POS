@@ -21,7 +21,7 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
      * collection (an empty JPQL `in ()` is invalid); guard and return ZERO before calling.
      */
     @Query("select coalesce(sum(r.refundTotal - r.giftCardRefund - r.loyaltyRefund), 0) from SalesReturn r " +
-           "where r.refundMethod in :cashCodes and r.order.session.id = :sessionId")
+           "where r.refundMethod in :cashCodes and (r.registerSessionId = :sessionId or (r.registerSessionId is null and r.order.session.id = :sessionId))")
     BigDecimal sumCashRefundsForSession(Long sessionId, Collection<String> cashCodes);
 
     /** Money already given back as loyalty points on earlier returns of one sale (not counting the return being processed). */
@@ -30,4 +30,10 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
 
     @Query("select coalesce(sum(r.pointsRefund), 0) from SalesReturn r where r.order.id = :orderId and r.id <> :exceptReturnId")
     Number sumPointsRefundForOrder(Long orderId, Long exceptReturnId);
+
+    List<SalesReturn> findByOrderIdOrderByReturnDateAsc(Long orderId);
+
+    /** Every return made against sales of one shift, oldest first. */
+    @Query("select r from SalesReturn r where r.registerSessionId = :sessionId or (r.registerSessionId is null and r.order.session.id = :sessionId) order by r.returnDate asc")
+    List<SalesReturn> findForSession(Long sessionId);
 }

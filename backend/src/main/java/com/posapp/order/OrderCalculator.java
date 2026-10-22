@@ -24,8 +24,11 @@ public final class OrderCalculator {
     }
 
     public static BigDecimal lineTotal(OrderLine line) {
+        return lineTotalAt(line, line.effectiveDiscountPercent());
+    }
+
+    private static BigDecimal lineTotalAt(OrderLine line, BigDecimal discount) {
         BigDecimal gross = line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity()));
-        BigDecimal discount = line.effectiveDiscountPercent();
         BigDecimal factor = BigDecimal.ONE.subtract(discount.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
         return gross.multiply(factor).setScale(SCALE, RoundingMode.HALF_UP);
     }
@@ -101,6 +104,23 @@ public final class OrderCalculator {
 
     public static BigDecimal total(SaleOrder order) {
         return subtotal(order).add(taxTotal(order)).setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    /** What the customer would pay if the whole-sale discount were {@code orderPercent} (tax included): the sale's value before that discount, when 0. */
+    public static BigDecimal totalWithOrderDiscount(SaleOrder order, BigDecimal orderPercent) {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (OrderLine l : order.getLines()) {
+            BigDecimal t = lineTotalAt(l, l.effectiveDiscountPercent(orderPercent));
+            BigDecimal tax = taxOnAmount(t, l.getTaxRatePercent(), Boolean.TRUE.equals(l.getTaxInclusive()));
+            sum = sum.add(Boolean.TRUE.equals(l.getTaxInclusive()) ? t : t.add(tax));
+        }
+        return sum.setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    /** What the whole-sale discount took off, tax included. */
+    public static BigDecimal orderDiscountValue(SaleOrder order) {
+        if (order.getOrderDiscountPercent() == null || order.getOrderDiscountPercent().signum() == 0) return BigDecimal.ZERO.setScale(SCALE);
+        return totalWithOrderDiscount(order, BigDecimal.ZERO).subtract(total(order)).max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     public static int totalQuantity(SaleOrder order) {

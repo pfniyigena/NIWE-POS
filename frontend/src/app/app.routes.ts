@@ -60,6 +60,11 @@ import { UserFormComponent } from './admin/user-form.component';
 import { RoleListComponent } from './admin/role-list.component';
 import { RoleFormComponent } from './admin/role-form.component';
 import { ShiftListComponent } from './admin/shift-list.component';
+import { PosLogComponent } from './admin/pos-log.component';
+import { ShiftXzReportComponent } from './registers/shift-xz-report.component';
+import { CashControlComponent } from './registers/cash-control.component';
+import { CashMovementListComponent } from './admin/cash-movement-list.component';
+import { PosSettingsComponent } from './admin/pos-settings.component';
 import { PaymentMethodListComponent } from './admin/payment-method-list.component';
 import { PaymentMethodFormComponent } from './admin/payment-method-form.component';
 import { TaxRateListComponent } from './admin/tax-rate-list.component';
@@ -417,6 +422,8 @@ const baseRoutes: Routes = [
   { path: 'sessions', component: SessionListComponent, canActivate: [authGuard] },
   { path: 'sessions/:id/close', component: SessionCloseComponent, canActivate: [authGuard, adminGuard] },
   { path: 'sessions/:id/report', component: SessionReportComponent, canActivate: [authGuard] },
+  { path: 'sessions/:id/x-report', component: ShiftXzReportComponent, data: { kind: 'x' }, canActivate: [authGuard] },
+  { path: 'sessions/:id/z-report', component: ShiftXzReportComponent, data: { kind: 'z' }, canActivate: [authGuard] },
   { path: 'cashier-sessions/:id/orders', component: CashierSessionOrdersComponent, canActivate: [authGuard] },
   // Task: "We need to differentiate CashierSession Z Report with RegisterSession Z Report" — this
   // cashier's own report, separate from the whole shift's at 'sessions/:id/report' above.
@@ -678,6 +685,10 @@ const baseRoutes: Routes = [
   { path: 'admin/staff/roles/:id/edit', component: RoleFormComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'admin/shifts', component: ShiftListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/pos-log', component: PosLogComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'cash-control/:id', component: CashControlComponent, canActivate: [authGuard] },
+  { path: 'admin/cash-movements', component: CashMovementListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/pos-settings', component: PosSettingsComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'admin/payment-methods', component: PaymentMethodListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/payment-methods/new', component: PaymentMethodFormComponent, canActivate: [authGuard, adminGuard] },
@@ -1071,6 +1082,10 @@ const MODULE_PREFIXES: { prefix: string; key: ModuleKey; except?: string[] }[] =
   { prefix: 'returns', key: 'POS' },
   { prefix: 'receipts', key: 'POS' },
   { prefix: 'admin/shifts', key: 'POS' },
+  { prefix: 'admin/pos-log', key: 'POS' },
+  { prefix: 'cash-control', key: 'POS' },
+  { prefix: 'admin/cash-movements', key: 'POS' },
+  { prefix: 'admin/pos-settings', key: 'POS' },
   // admin/reports/:key is the viewer shared by every module's reports, so it is not blocked here (it checks itself).
   { prefix: 'admin/reports', key: 'POS', except: ['admin/reports/:key'] },
   { prefix: 'admin/restaurant', key: 'RESTAURANT' },

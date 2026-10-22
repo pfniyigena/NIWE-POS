@@ -123,6 +123,10 @@ public class AccountService {
     public static final String FORFEITED_DEPOSIT_INCOME = "FORFEITED_DEPOSIT_INCOME";
     /** Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (income or cost, depending on the sign). */
     public static final String ROUNDING_DIFFERENCE = "ROUNDING_DIFFERENCE";
+    /** POS: what a till count came to above (credit) or below (debit) what the system expected when the shift was closed. */
+    public static final String CASH_OVER_SHORT = "CASH_OVER_SHORT";
+    /** POS: small expenses paid in cash out of the till drawer (cleaning, transport, supplies). */
+    public static final String TILL_EXPENSE = "TILL_EXPENSE";
 
     /** Assets Management module: the cost of equipment, vehicles, furniture and other long-lived assets (at cost, before depreciation). */
     public static final String FIXED_ASSETS = "FIXED_ASSETS";
@@ -237,6 +241,10 @@ public class AccountService {
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "5100", "Inventory Shrinkage / Write-off Expense", AccountType.EXPENSE, true, null),
             new ChartRow(ROUNDING_DIFFERENCE, "5860", "Rounding Differences", AccountType.EXPENSE, true,
                     "Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (a credit balance means rounding gained money)."),
+            new ChartRow(CASH_OVER_SHORT, "5870", "Cash Over / Short", AccountType.EXPENSE, true,
+                    "POS: the difference found when a till is counted at the end of a shift (a debit balance is cash missing, a credit balance is cash over)."),
+            new ChartRow(TILL_EXPENSE, "5220", "Till Paid-out Expenses", AccountType.EXPENSE, true,
+                    "POS: small expenses paid in cash out of a till drawer during a shift."),
             new ChartRow("5200", "Operating Expenses", AccountType.EXPENSE, false, null),
             new ChartRow("5300", "Rent Expense", AccountType.EXPENSE, false, "Premises rent."),
             new ChartRow(REPAIRS_MAINTENANCE_EXPENSE, "5210", "Repairs & Maintenance Expense", AccountType.EXPENSE, true,
@@ -332,6 +340,10 @@ public class AccountService {
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "658", "Charges diverses (Inventory Shrinkage / Write-off Expense)", AccountType.EXPENSE, true, null),
             new ChartRow(ROUNDING_DIFFERENCE, "6588", "Écarts d'arrondi (Rounding Differences)", AccountType.EXPENSE, true,
                     "Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (a credit balance means rounding gained money)."),
+            new ChartRow(CASH_OVER_SHORT, "6589", "Écarts de caisse (Cash Over / Short)", AccountType.EXPENSE, true,
+                    "POS: the difference found when a till is counted at the end of a shift (a debit balance is cash missing, a credit balance is cash over)."),
+            new ChartRow(TILL_EXPENSE, "6189", "Menues dépenses de caisse (Till Paid-out Expenses)", AccountType.EXPENSE, true,
+                    "POS: small expenses paid in cash out of a till drawer during a shift."),
             new ChartRow("628", "Autres charges externes (Operating Expenses)", AccountType.EXPENSE, false, null),
             new ChartRow("622", "Locations et charges locatives (Rent Expense)", AccountType.EXPENSE, false, "Premises rent."),
             new ChartRow(REPAIRS_MAINTENANCE_EXPENSE, "624", "Entretien, réparations et maintenance (Repairs & Maintenance Expense)", AccountType.EXPENSE, true,
