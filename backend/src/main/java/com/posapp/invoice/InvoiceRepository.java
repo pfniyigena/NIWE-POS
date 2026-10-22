@@ -33,4 +33,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     /** Fourier: "Add Recurring Invoice" — every invoice ever generated for one recurring invoice template, newest first; backs its own "Generated invoices" history view. */
     List<Invoice> findByRecurringInvoiceTemplateIdOrderByInvoiceDateDesc(Long recurringInvoiceTemplateId);
+
+    /** True when this customer already has an opening balance that has not been voided (a customer can have only one). */
+    @org.springframework.data.jpa.repository.Query("select count(i) > 0 from Invoice i where i.customerId = :customerId and i.openingBalance = true and i.status <> com.posapp.invoice.InvoiceStatus.VOID")
+    boolean existsOpeningBalance(@org.springframework.data.repository.query.Param("customerId") Long customerId);
 }

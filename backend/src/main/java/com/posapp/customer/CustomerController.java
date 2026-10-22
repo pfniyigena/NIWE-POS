@@ -1,5 +1,9 @@
 package com.posapp.customer;
 
+import org.springframework.http.ResponseEntity;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.common.ListPaging;
 import com.posapp.common.ApiException;
 import com.posapp.customer.dto.CustomerDto;
 import com.posapp.customer.dto.CustomerRequest;
@@ -33,8 +37,14 @@ public class CustomerController {
 
     /** Open to any logged-in user — the terminal's customer picker needs this list. */
     @GetMapping
-    public List<CustomerDto> list() {
-        return customerRepository.findAll().stream().map(CustomerDto::from).toList();
+    public ResponseEntity<List<CustomerDto>> list(@RequestParam(required = false) String q,
+            @RequestParam(required = false) Boolean credit,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        List<CustomerDto> rows = customerRepository.findAll().stream().map(CustomerDto::from)
+                .filter(x -> ListPaging.has(q, x.name(), x.phone(), x.email(), x.taxId()))
+                .filter(x -> credit == null || credit == x.creditEnabled())
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     /** Fourier: "add one button (View) on customer then put all others buttons on view form" — backs CustomerDetailComponent's own single-record load, same convention as every other module's detail page (SalesOrderController/InvoiceController getById), rather than fetching the whole list and finding one client-side. Open to any logged-in user, same as {@link #list}. */

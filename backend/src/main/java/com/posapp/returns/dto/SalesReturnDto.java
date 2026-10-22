@@ -35,7 +35,11 @@ public record SalesReturnDto(
         /** Set only when an attempted EFRIS submission failed — see SalesReturn.efrisError's javadoc. */
         String efrisError,
         /** The raw EFRIS response body from the most recent attempt — see SalesReturn.efrisResponse's javadoc. */
-        String efrisResponse
+        String efrisResponse,
+        /** How much of the refund went back onto gift cards and as loyalty points (the points, and their money value); the rest is in refundMethod. */
+        BigDecimal giftCardRefund,
+        BigDecimal loyaltyRefund,
+        int pointsRefund
 ) {
     public static SalesReturnDto from(SalesReturn r) {
         var order = r.getOrder();
@@ -64,7 +68,10 @@ public record SalesReturnDto(
                 r.getMrcData(),
                 r.getEfrisSubmittedAt(),
                 r.getEfrisError(),
-                r.getEfrisResponse()
+                r.getEfrisResponse(),
+                r.getGiftCardRefund(),
+                r.getLoyaltyRefund(),
+                r.getPointsRefund()
         );
     }
 }

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { Supplier } from '../models';
 
 export interface SupplierPayload {
@@ -40,5 +42,9 @@ export class SupplierApiService {
   /** Hard-deletes an unreferenced supplier, or deactivates one that already has purchase order history — see the backend SupplierService.delete's javadoc. */
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${API_BASE}/suppliers/${id}`);
+  }
+
+  page(f: ListFilter, page: number, size: number, active?: boolean | null): Observable<PageResult<Supplier>> {
+    return pagedList<Supplier>(this.http, `${API_BASE}/suppliers`, f, page, size, { active: active ?? null });
   }
 }

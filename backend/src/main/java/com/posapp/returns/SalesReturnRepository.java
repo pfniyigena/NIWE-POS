@@ -20,7 +20,14 @@ public interface SalesReturnRepository extends JpaRepository<SalesReturn, Long> 
      * PaymentMethodService.listCashCodes) — the caller must not invoke this with an empty
      * collection (an empty JPQL `in ()` is invalid); guard and return ZERO before calling.
      */
-    @Query("select coalesce(sum(r.refundTotal), 0) from SalesReturn r " +
+    @Query("select coalesce(sum(r.refundTotal - r.giftCardRefund - r.loyaltyRefund), 0) from SalesReturn r " +
            "where r.refundMethod in :cashCodes and r.order.session.id = :sessionId")
     BigDecimal sumCashRefundsForSession(Long sessionId, Collection<String> cashCodes);
+
+    /** Money already given back as loyalty points on earlier returns of one sale (not counting the return being processed). */
+    @Query("select coalesce(sum(r.loyaltyRefund), 0) from SalesReturn r where r.order.id = :orderId and r.id <> :exceptReturnId")
+    BigDecimal sumLoyaltyRefundForOrder(Long orderId, Long exceptReturnId);
+
+    @Query("select coalesce(sum(r.pointsRefund), 0) from SalesReturn r where r.order.id = :orderId and r.id <> :exceptReturnId")
+    Number sumPointsRefundForOrder(Long orderId, Long exceptReturnId);
 }

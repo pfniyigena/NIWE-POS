@@ -8,3 +8,7 @@
 # Backend (Java / Spring Boot)
 /backend/.settings/
 /backend/target/
+# NIWE license tool: keys, the register and issued licenses never go into git
+*.niwelic
+niwe-license-private.key
+licenses.csv

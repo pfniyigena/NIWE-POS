@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { BranchApiService } from '../../core/api/branch-api.service';
+import { ModuleApiService } from '../../core/api/module-api.service';
 import { Branch } from '../../core/models';
 import { AssetApiService, AssetTransfer, DepreciationEntry, FixedAsset } from '../../core/api/asset-api.service';
 
@@ -23,6 +24,7 @@ import { AssetApiService, AssetTransfer, DepreciationEntry, FixedAsset } from '.
           </h3>
           <div class="flex gap-2">
             <a class="btn btn-outline-primary" routerLink="/admin/assets">Back</a>
+            <a class="btn btn-outline-primary" *ngIf="modules.on('WORK_ORDERS')" routerLink="/admin/work-orders" [queryParams]="{ assetId: asset.id }">Maintenance history</a>
             <a class="btn btn-outline-primary" *ngIf="asset.status !== 'DISPOSED'" [routerLink]="['/admin/assets', asset.id, 'edit']">Edit</a>
             <button class="btn btn-outline-primary" type="button" *ngIf="asset.status !== 'DISPOSED'" (click)="transferring = !transferring; disposing = false">Transfer…</button>
             <button class="btn btn-outline-primary" type="button" *ngIf="asset.status !== 'DISPOSED'" (click)="disposing = !disposing; transferring = false">Dispose…</button>
@@ -139,7 +141,7 @@ export class AssetDetailComponent implements OnInit {
   busy = false;
   disposal = { date: new Date().toISOString().slice(0, 10), proceeds: 0 as number | null, note: '' };
 
-  constructor(private api: AssetApiService, private branchApi: BranchApiService, private route: ActivatedRoute, private router: Router) {}
+  constructor(private api: AssetApiService, private branchApi: BranchApiService, private route: ActivatedRoute, private router: Router, public modules: ModuleApiService) {}
 
   ngOnInit(): void {
     this.branchApi.loadChoices().subscribe((b) => (this.branches = b));

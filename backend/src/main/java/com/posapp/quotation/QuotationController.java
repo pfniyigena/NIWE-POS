@@ -1,5 +1,9 @@
 package com.posapp.quotation;
 
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.branch.BranchService;
+import com.posapp.common.ListPaging;
 import com.posapp.email.EmailDocumentRequest;
 import com.posapp.quotation.dto.QuotationDto;
 import com.posapp.quotation.dto.QuotationRequest;
@@ -20,13 +24,24 @@ public class QuotationController {
 
     private final QuotationService quotationService;
 
-    public QuotationController(QuotationService quotationService) {
+    private final BranchService branchService;
+
+    public QuotationController(QuotationService quotationService, BranchService branchService) {
+        this.branchService = branchService;
         this.quotationService = quotationService;
     }
 
     @GetMapping
-    public List<QuotationDto> listAll() {
-        return quotationService.listAll();
+    public ResponseEntity<List<QuotationDto>> listAll(@RequestParam(required = false) Long customerId, @RequestParam(required = false) String q, @RequestParam(required = false) String status, @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<QuotationDto> rows = quotationService.listAll().stream()
+                .filter(x -> ListPaging.has(q, x.quoteNumber(), x.customerName()))
+                .filter(x -> ListPaging.is(status, x.status()))
+                .filter(x -> ListPaging.sameId(customerId, x.customerId()))
+                .filter(x -> ListPaging.branch(x.branchId(), branchId, hq))
+                .filter(x -> ListPaging.between(x.quoteDate(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/{id}")

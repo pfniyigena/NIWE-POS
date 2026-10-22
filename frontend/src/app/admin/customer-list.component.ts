@@ -2,20 +2,24 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PagerComponent } from '../shared/pager.component';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { ListState } from '../core/api/list-state';
 import { CustomerApiService } from '../core/api/customer-api.service';
 import { Customer } from '../core/models';
 
 @Component({
   selector: 'app-customer-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell>
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Customers</h3>
         <a class="btn btn-primary" routerLink="/admin/customers/new">+ New customer</a>
       </div>
+      <app-list-filter exportKind="customers" placeholder="Search name, phone, e-mail, tax no.…" [statuses]="[]" statusAll="All statuses" [dates]="false" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -28,7 +32,7 @@ import { Customer } from '../core/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let c of customers">
+          <tr *ngFor="let c of list.rows">
             <td>{{ c.name }}</td>
             <td>{{ c.phone }}</td>
             <td>{{ c.email }}</td>
@@ -44,24 +48,23 @@ import { Customer } from '../core/models';
               <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/customers', c.id]">View</a>
             </td>
           </tr>
-          <tr *ngIf="customers.length === 0">
-            <td colspan="6" class="text-muted">No customers yet.</td>
+          <tr *ngIf="list.loaded && list.rows.length === 0">
+            <td colspan="6" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No customers yet.</ng-template></td>
           </tr>
         </tbody>
       </table>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class CustomerListComponent implements OnInit {
-  customers: Customer[] = [];
   error: string | null = null;
+
+  list = new ListState<Customer>((f, p, sz) => this.customerApi.page(f, p, sz), 'Failed to load customers');
 
   constructor(private customerApi: CustomerApiService) {}
 
   ngOnInit(): void {
-    this.customerApi.list().subscribe({
-      next: (c) => (this.customers = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load customers'),
-    });
+    this.list.load();
   }
 }

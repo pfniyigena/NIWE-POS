@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PagerComponent } from '../shared/pager.component';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { ListState } from '../core/api/list-state';
 import { PurchaseOrderApiService } from '../core/api/purchase-order-api.service';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../core/branch-util';
@@ -12,20 +15,17 @@ import { Branch, PurchaseOrder } from '../core/models';
 @Component({
   selector: 'app-purchase-order-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Purchase orders</h3>
         <div class="flex gap-2 align-center">
-          <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="branchFilter" title="Branch">
-            <option [ngValue]="null">All branches</option>
-            <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
-          </select>
           <a class="btn btn-primary" routerLink="/admin/purchase-orders/new">+ New purchase order</a>
         </div>
       </div>
+      <app-list-filter exportKind="purchase-orders" placeholder="Search order no., supplier, bill…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -40,7 +40,7 @@ import { Branch, PurchaseOrder } from '../core/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let po of shown">
+          <tr *ngFor="let po of list.rows">
             <td>{{ po.orderNumber }}</td>
             <td>{{ po.supplierName }}</td>
             <td>{{ po.orderDate | date: 'medium' }}</td>
@@ -56,26 +56,24 @@ import { Branch, PurchaseOrder } from '../core/models';
               <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/purchase-orders', po.id, 'print']" target="_blank">Print</a>
             </td>
           </tr>
-          <tr *ngIf="orders.length === 0">
-            <td colspan="7" class="text-muted">No purchase orders yet.</td>
+          <tr *ngIf="list.loaded && list.rows.length === 0">
+            <td colspan="7" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No purchase orders yet.</ng-template></td>
           </tr>
         </tbody>
       </table>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class PurchaseOrderListComponent implements OnInit {
-  orders: PurchaseOrder[] = [];
   error: string | null = null;
-  /** Branch filter + column — only shown with more than one active branch. */
+  /** Branch column + choice — only shown with more than one active branch. */
   branches: Branch[] = [];
-  branchFilter: number | null = null;
 
+  list = new ListState<PurchaseOrder>((f, p, sz) => this.purchaseOrderApi.page(f, p, sz), 'Failed to load purchase orders');
+  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'SENT', label: 'Sent' }, { value: 'PARTIALLY_RECEIVED', label: 'Partially received' }, { value: 'RECEIVED', label: 'Received' }, { value: 'CANCELLED', label: 'Cancelled' }];
   constructor(private purchaseOrderApi: PurchaseOrderApiService, private branchApi: BranchApiService) {}
 
-  get shown(): PurchaseOrder[] {
-    return this.branchFilter == null ? this.orders : this.orders.filter((o) => effectiveBranchId(o.branchId, this.branches) === this.branchFilter);
-  }
 
   branchName(id: number | null | undefined): string {
     return branchNameOf(id, this.branches);
@@ -83,10 +81,7 @@ export class PurchaseOrderListComponent implements OnInit {
 
   ngOnInit(): void {
     this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
-    this.purchaseOrderApi.listAll().subscribe({
-      next: (o) => (this.orders = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load purchase orders'),
-    });
+    this.list.load();
   }
 
   statusLabel(status: string): string {

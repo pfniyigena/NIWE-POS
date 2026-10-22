@@ -105,6 +105,19 @@ public class OrderController {
         return orderService.setCustomer(id, request, principal.getUser());
     }
 
+    /** Adds a coupon code to the cart; refused with a specific message when the coupon cannot be used. */
+    @PostMapping("/orders/{id}/coupons")
+    public OrderDto addCoupon(@PathVariable Long id, @RequestBody java.util.Map<String, String> body,
+                               @AuthenticationPrincipal AppUserPrincipal principal) {
+        return orderService.addCoupon(id, body == null ? null : body.get("code"), principal.getUser());
+    }
+
+    @DeleteMapping("/orders/{id}/coupons/{code}")
+    public OrderDto removeCoupon(@PathVariable Long id, @PathVariable String code,
+                                  @AuthenticationPrincipal AppUserPrincipal principal) {
+        return orderService.removeCoupon(id, code, principal.getUser());
+    }
+
     @PostMapping("/orders/{id}/park")
     public OrderDto park(@PathVariable Long id, @RequestBody ParkRequest request,
                           @AuthenticationPrincipal AppUserPrincipal principal) {

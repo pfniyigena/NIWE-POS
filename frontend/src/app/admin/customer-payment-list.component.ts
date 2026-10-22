@@ -2,6 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PagerComponent } from '../shared/pager.component';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { ListFilter, ListState, localPage } from '../core/api/list-state';
+import { PageResult } from '../core/api/paged';
+import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
+import { Observable, map } from 'rxjs';
 import { CustomerCreditApiService } from '../core/api/customer-credit-api.service';
 import { CustomerPayment } from '../core/models';
 
@@ -28,10 +34,10 @@ import { CustomerPayment } from '../core/models';
 @Component({
   selector: 'app-customer-payment-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <div>
           <h3 style="margin-bottom:0;">{{ customerName ? 'Payments for ' + customerName : 'Customer payments' }}</h3>
@@ -39,6 +45,7 @@ import { CustomerPayment } from '../core/models';
         </div>
         <a class="btn btn-link" routerLink="/admin/customers">Back to customers</a>
       </div>
+      <app-list-filter [exportKind]="customerId == null ? 'customer-payments' : ''" statusParam="method" placeholder="Search customer, receipt no., note…" [statuses]="methods" statusAll="All methods" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -55,7 +62,7 @@ import { CustomerPayment } from '../core/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of payments">
+          <tr *ngFor="let p of list.rows">
             <td>
               <span class="badge" [class.badge-secondary]="p.source === 'POS_SALE'">
                 {{ p.source === 'POS_SALE' ? 'POS sale' : 'Settlement' }}
@@ -83,24 +90,33 @@ import { CustomerPayment } from '../core/models';
               <a *ngIf="p.id" class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/customer-payments', p.id]">View details</a>
             </td>
           </tr>
-          <tr *ngIf="payments.length === 0">
-            <td colspan="10" class="text-muted">
-              {{ customerName ? 'No payments for ' + customerName + ' yet.' : 'No customer payments recorded yet.' }}
-            </td>
+          <tr *ngIf="list.loaded && list.rows.length === 0">
+            <td colspan="10" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>{{ customerName ? 'No payments for ' + customerName + ' yet.' : 'No customer payments recorded yet.' }}</ng-template></td>
           </tr>
         </tbody>
       </table>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class CustomerPaymentListComponent implements OnInit {
-  payments: CustomerPayment[] = [];
   error: string | null = null;
   /** Fourier: "on the customer ... view button" — set from `?customerId=&customerName=`, null for the store-wide list. */
   customerId: number | null = null;
   customerName: string | null = null;
 
-  constructor(private creditApi: CustomerCreditApiService, private route: ActivatedRoute) {}
+  list = new ListState<CustomerPayment>((f, p, sz) => this.fetchPage(f, p, sz), 'Failed to load customer payments');
+  methods: { value: string; label: string }[] = [];
+
+  /** The store-wide list is paged by the server; one customer's own history comes whole and is paged here. */
+  private fetchPage(f: ListFilter, p: number, sz: number): Observable<PageResult<CustomerPayment>> {
+    if (this.customerId == null) return this.creditApi.allPaymentsPage(f, p, sz);
+    return this.creditApi.paymentHistory(this.customerId).pipe(
+      map((all) => localPage(all, f, p, sz, (x) => [x.customerName, x.receiptNumber, x.note], (x) => x.paidAt, (x) => x.method)),
+    );
+  }
+
+  constructor(private creditApi: CustomerCreditApiService, private route: ActivatedRoute, private methodApi: PaymentMethodApiService) {}
 
   ngOnInit(): void {
     const customerIdParam = this.route.snapshot.queryParamMap.get('customerId');
@@ -108,10 +124,7 @@ export class CustomerPaymentListComponent implements OnInit {
       this.customerId = Number(customerIdParam);
       this.customerName = this.route.snapshot.queryParamMap.get('customerName') ?? `#${customerIdParam}`;
     }
-    const source$ = this.customerId != null ? this.creditApi.paymentHistory(this.customerId) : this.creditApi.allPayments();
-    source$.subscribe({
-      next: (p) => (this.payments = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load customer payments'),
-    });
+    this.methodApi.listAll().subscribe({ next: (m) => (this.methods = m.map((x) => ({ value: x.code, label: x.name }))), error: () => (this.methods = []) });
+    this.list.load();
   }
 }

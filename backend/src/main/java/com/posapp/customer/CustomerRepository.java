@@ -1,6 +1,9 @@
 package com.posapp.customer;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,4 +28,12 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
      * app depends on being exact.
      */
     Optional<Customer> findFirstByEmailIgnoreCase(String email);
+
+    /** Booking: the customer a guest's phone number belongs to, if any. */
+    Optional<Customer> findFirstByPhone(String phone);
+
+    /** The customer row, locked for the rest of the transaction so two sales cannot spend the same loyalty points. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Customer c where c.id = :id")
+    Optional<Customer> lockById(Long id);
 }

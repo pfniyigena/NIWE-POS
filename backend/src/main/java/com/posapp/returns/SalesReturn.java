@@ -26,6 +26,11 @@ public class SalesReturn extends BaseEntity {
     private Instant returnDate = Instant.now();
     private BigDecimal refundTotal = BigDecimal.ZERO;
 
+    /** The part of the refund that went back onto the gift card(s) that paid for the sale, and the part given back as loyalty points (its money value, and the points). The rest is refunded in {@link #refundMethod}. */
+    private BigDecimal giftCardRefund = BigDecimal.ZERO;
+    private BigDecimal loyaltyRefund = BigDecimal.ZERO;
+    private int pointsRefund = 0;
+
     @OneToMany(mappedBy = "salesReturn", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SalesReturnLine> lines = new ArrayList<>();
 

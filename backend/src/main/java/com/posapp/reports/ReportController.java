@@ -73,16 +73,24 @@ public class ReportController {
     private final AssetReportService assetReportService;
     private final HrReportService hrReportService;
     private final InstallmentReportService installmentReportService;
+    private final TimeReportService timeReportService;
+    private final WorkOrderReportService workOrderReportService;
+    private final BookingReportService bookingReportService;
+    private final LawReportService lawReportService;
     private final ReportExportService exportService;
     private final com.posapp.tracking.TrackingService trackingService;
 
-    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
+    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
         this.reportService = reportService;
         this.purchaseReportService = purchaseReportService;
         this.salesReportService = salesReportService;
         this.assetReportService = assetReportService;
         this.hrReportService = hrReportService;
         this.installmentReportService = installmentReportService;
+        this.timeReportService = timeReportService;
+        this.workOrderReportService = workOrderReportService;
+        this.bookingReportService = bookingReportService;
+        this.lawReportService = lawReportService;
         this.exportService = exportService;
         this.trackingService = trackingService;
     }
@@ -946,6 +954,93 @@ public class ReportController {
         return ResponseEntity.ok(rows);
     }
 
+    // ---- Time tracking reports — see TimeReportService. ----
+
+    private static String dec(java.math.BigDecimal v) {
+        return v == null ? "—" : v.stripTrailingZeros().toPlainString();
+    }
+
+    @GetMapping("/time-timesheets")
+    public ResponseEntity<?> timeTimesheets(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = timeReportService.timesheets(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Person", "Hours", "Billable hours", "Non-billable hours", "Billable amount", "Not yet approved", "Invoiced hours");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.person(), dec(r.hours()), dec(r.billableHours()), dec(r.nonBillableHours()), money(r.billableAmount()), dec(r.pendingHours()), dec(r.invoicedHours())));
+            }
+            return export("Timesheet Summary", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/time-project-hours")
+    public ResponseEntity<?> timeProjectHours(@RequestParam(defaultValue = "json") String format) {
+        var rows = timeReportService.projectHours();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Project", "Customer", "Status", "Budget hours", "Hours logged", "Billable hours", "% of budget", "Hours left", "Invoiced", "Not yet invoiced");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.project(), orDash(r.customer()), r.status(), dec(r.budgetHours()), dec(r.hoursLogged()), dec(r.billableHours()), dec(r.percentOfBudget()),
+                        dec(r.hoursLeft()), money(r.billedAmount()), money(r.unbilledAmount())));
+            }
+            return export("Project Hours vs Budget", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/time-unbilled")
+    public ResponseEntity<?> timeUnbilled(@RequestParam(defaultValue = "json") String format) {
+        var rows = timeReportService.unbilled();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Project", "Customer", "Entries", "Hours", "Amount", "Oldest entry");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.project(), orDash(r.customer()), String.valueOf(r.entries()), dec(r.hours()), money(r.amount()), r.oldest() != null ? String.valueOf(r.oldest()) : "—"));
+            }
+            return export("Unbilled Time", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/time-utilisation")
+    public ResponseEntity<?> timeUtilisation(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = timeReportService.utilisation(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Person", "Available hours", "Hours logged", "Billable hours", "Utilisation %", "Billable %");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.person(), dec(r.capacityHours()), dec(r.loggedHours()), dec(r.billableHours()), dec(r.utilisationPercent()), dec(r.billablePercent())));
+            }
+            return export("Utilisation", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/time-entries")
+    public ResponseEntity<?> timeEntries(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                         @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = timeReportService.entries(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Person", "Project", "Customer", "Task", "Description", "Hours", "Billable", "Rate", "Amount", "Status");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.date()), r.person(), r.project(), orDash(r.customer()), orDash(r.task()), orDash(r.description()), dec(r.hours()), r.billable(),
+                        money(r.rate()), money(r.amount()), r.status()));
+            }
+            return export("Time Entries", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
     private static LocalDate assetFrom(LocalDate from) {
         return from != null ? from : LocalDate.now(ZoneOffset.UTC).withDayOfYear(1);
     }
@@ -1320,5 +1415,252 @@ public class ReportController {
 
     private static String orDash(String value) {
         return value == null || value.isBlank() ? "—" : value;
+    }
+
+    // ---- Work order reports — see WorkOrderReportService. ----
+
+    @GetMapping("/work-orders")
+    public ResponseEntity<?> workOrders(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                        @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = workOrderReportService.workOrders(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Number", "Type", "Status", "Priority", "Title", "Customer", "Asset", "Assigned to", "Requested", "Due", "Hours",
+                    "Parts cost", "External cost", "Invoice");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.number(), r.type(), r.status(), r.priority(), r.title(), orDash(r.customer()), orDash(r.asset()), orDash(r.assignedTo()),
+                        String.valueOf(r.requested()), r.due() == null ? "—" : r.due().toString(), dec(r.hours()), money(r.partsCost()), money(r.externalCost()),
+                        orDash(r.invoice())));
+            }
+            return export("Work Orders", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/work-order-profit")
+    public ResponseEntity<?> workOrderProfit(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = workOrderReportService.profitability(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Number", "Title", "Customer", "Completed", "Invoiced", "Parts cost", "External cost", "Hours", "Margin", "Margin %");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.number(), r.title(), orDash(r.customer()), String.valueOf(r.completed()), money(r.revenue()), money(r.partsCost()),
+                        money(r.externalCost()), dec(r.hours()), money(r.margin()), dec(r.marginPercent())));
+            }
+            return export("Work Order Profitability", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/work-order-assets")
+    public ResponseEntity<?> workOrderAssets(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = workOrderReportService.assetCosts(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Asset", "Jobs", "Hours", "Parts cost", "External cost", "Total cost", "Last job");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.asset()), String.valueOf(r.jobs()), dec(r.hours()), money(r.partsCost()), money(r.externalCost()), money(r.totalCost()),
+                        r.lastJob() == null ? "—" : r.lastJob().toString()));
+            }
+            return export("Maintenance Cost by Asset", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/work-order-overdue")
+    public ResponseEntity<?> workOrderOverdue(@RequestParam(defaultValue = "json") String format) {
+        var rows = workOrderReportService.overdue();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Number", "Title", "Customer", "Assigned to", "Priority", "Status", "Due", "Days overdue");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.number(), r.title(), orDash(r.customer()), orDash(r.assignedTo()), r.priority(), r.status(), String.valueOf(r.due()),
+                        String.valueOf(r.daysOverdue())));
+            }
+            return export("Overdue Work Orders", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Booking reports — see BookingReportService. ----
+
+    @GetMapping("/booking-appointments")
+    public ResponseEntity<?> bookingAppointments(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                                 @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = bookingReportService.appointments(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Time", "Number", "Service", "Customer", "Staff", "Room / equipment", "Status", "Price", "Paid", "Invoice");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.date()), r.time(), r.number(), r.service(), r.customer(), orDash(r.staff()), orDash(r.resource()), r.status(),
+                        money(r.price()), money(r.paid()), orDash(r.invoice())));
+            }
+            return export("Appointments", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/booking-utilisation")
+    public ResponseEntity<?> bookingUtilisation(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                                @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = bookingReportService.utilisation(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Type", "Name", "Appointments", "Booked hours", "Available hours", "Utilisation %");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.type(), r.name(), String.valueOf(r.appointments()), dec(r.bookedHours()), dec(r.availableHours()), dec(r.utilisationPercent())));
+            }
+            return export("Booking Utilisation", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/booking-services")
+    public ResponseEntity<?> bookingServices(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = bookingReportService.services(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Service", "Booked", "Completed", "Cancelled", "No-shows", "No-show %", "Value");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.service(), String.valueOf(r.booked()), String.valueOf(r.completed()), String.valueOf(r.cancelled()), String.valueOf(r.noShows()),
+                        dec(r.noShowPercent()), money(r.value())));
+            }
+            return export("Bookings by Service", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Law firm reports — see LawReportService. ----
+
+    @GetMapping("/law-matters")
+    public ResponseEntity<?> lawMatters(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                        @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfYear(1);
+        var rows = lawReportService.matters(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Number", "Title", "Client", "Practice area", "Status", "Lead", "Opened", "Closed", "Billing", "Open tasks", "Next deadline");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.number(), r.title(), orDash(r.client()), orDash(r.practiceArea()), r.status(), orDash(r.lead()), String.valueOf(r.opened()),
+                        r.closed() != null ? r.closed().toString() : "-", r.billing(), String.valueOf(r.openTasks()), r.nextDeadline() != null ? r.nextDeadline().toString() : "-"));
+            }
+            return export("Law Matters", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/law-deadlines")
+    public ResponseEntity<?> lawDeadlines(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                          @RequestParam(defaultValue = "json") String format) {
+        LocalDate start = from != null ? from : LocalDate.now(ZoneOffset.UTC);
+        LocalDate end = to != null ? to : start.plusDays(30);
+        var rows = lawReportService.deadlines(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Due", "Time", "Type", "Status", "Deadline", "Matter", "Client", "Assigned to", "Overdue");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.due()), orDash(r.time()), r.type(), r.status(), r.title(), r.matter(), orDash(r.client()), orDash(r.assignedTo()), r.overdue()));
+            }
+            return export("Law Deadlines", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/law-billing")
+    public ResponseEntity<?> lawBilling(@RequestParam(defaultValue = "true") boolean openOnly, @RequestParam(defaultValue = "json") String format) {
+        var rows = lawReportService.billing(openOnly);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Matter", "Title", "Client", "Billing", "Status", "Hours", "Unbilled time", "Unbilled costs", "Fixed-fee stages to bill", "Billed", "Paid", "Outstanding", "Retainer left");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.number(), r.title(), orDash(r.client()), r.billing(), r.status(), String.valueOf(r.hours()), String.valueOf(r.unbilledTime()),
+                        String.valueOf(r.unbilledCosts()), String.valueOf(r.stagesPlanned()), String.valueOf(r.billed()), String.valueOf(r.paid()), String.valueOf(r.outstanding()),
+                        String.valueOf(r.retainerBalance())));
+            }
+            return export("Law Billing", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/law-fees")
+    public ResponseEntity<?> lawFees(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                     @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = lawReportService.fees(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Matter", "Title", "Client", "Kind", "Invoice", "Invoice status", "Fees", "Costs", "Retainer applied", "Billed", "Paid", "Outstanding");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.date()), r.matter(), r.title(), orDash(r.client()), r.kind(), orDash(r.invoice()), orDash(r.invoiceStatus()),
+                        String.valueOf(r.fees()), String.valueOf(r.costs()), String.valueOf(r.retainerApplied()), String.valueOf(r.amount()), String.valueOf(r.paid()),
+                        String.valueOf(r.outstanding())));
+            }
+            return export("Law Fees Billed", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/law-trust-balances")
+    public ResponseEntity<?> lawTrustBalances(@RequestParam(defaultValue = "true") boolean heldOnly, @RequestParam(defaultValue = "json") String format) {
+        var rows = lawReportService.trustBalances(heldOnly);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Matter", "Title", "Client", "Status", "Held", "Waiting to be paid out", "Last activity");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.matter(), r.title(), orDash(r.client()), r.status(), String.valueOf(r.balance()), String.valueOf(r.pending()), String.valueOf(r.lastActivity())));
+            }
+            return export("Client Money Held", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/law-trust-ledger")
+    public ResponseEntity<?> lawTrustLedger(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = lawReportService.trustLedger(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Number", "Matter", "Client", "Type", "Party", "Reference", "Money in", "Money out", "Balance");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.date()), r.number(), r.matter(), orDash(r.client()), r.type(), orDash(r.party()), orDash(r.reference()),
+                        r.moneyIn() == null ? "" : String.valueOf(r.moneyIn()), r.moneyOut() == null ? "" : String.valueOf(r.moneyOut()), String.valueOf(r.balance())));
+            }
+            return export("Client Money Ledger", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/law-workload")
+    public ResponseEntity<?> lawWorkload(@RequestParam(defaultValue = "json") String format) {
+        var rows = lawReportService.workload();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Lawyer", "Matters led", "Matters on", "Open tasks", "Overdue tasks", "Deadlines (next 30 days)", "Overdue deadlines");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.lawyer(), String.valueOf(r.mattersLed()), String.valueOf(r.mattersOn()), String.valueOf(r.openTasks()), String.valueOf(r.overdueTasks()),
+                        String.valueOf(r.deadlinesNext30()), String.valueOf(r.overdueDeadlines())));
+            }
+            return export("Law Workload", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
     }
 }

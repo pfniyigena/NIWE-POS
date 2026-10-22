@@ -62,6 +62,9 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select>
           </div>
+          <div class="form-group" style="margin:0;" *ngIf="def.openOnlyToggle">
+            <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="includeClosed" (ngModelChange)="hasRun && run()" /> {{ def.openOnlyToggle }}</label>
+          </div>
           <div class="form-group" style="margin:0;" *ngIf="def.branchFilter && branches.length > 1">
             <label class="form-label">Branch</label>
             <select class="form-select" [(ngModel)]="filter.branchId">
@@ -164,6 +167,8 @@ export class ReportViewerComponent implements OnInit {
   branches: Branch[] = [];
 
   filter: ReportFilter = { from: null, to: null, registerId: null, branchId: null, categoryId: null, productId: null };
+  /** Law Firm reports with ReportDef.openOnlyToggle: also list closed matters. */
+  includeClosed = false;
 
   /** Fourier: "can we have Stock Movement History for a specific product" — search-to-select, same pattern as BomFormComponent's own component-line search. */
   selectedProductName = '';
@@ -199,11 +204,11 @@ export class ReportViewerComponent implements OnInit {
       'employee-directory': 'EMPLOYEES', 'headcount-by-department': 'EMPLOYEES', 'leave-balances': 'ATTENDANCE', 'leave-requests': 'ATTENDANCE',
       'attendance-summary': 'ATTENDANCE', 'contracts-expiring': 'CONTRACTS', 'payroll-register': 'PAYROLL', 'payroll-summary': 'PAYROLL',
     };
-    const moduleKey: ModuleKey | null = this.def.section.startsWith('POS') ? 'POS' : this.def.section === 'Installments' ? 'INSTALLMENTS' : this.def.section === 'Assets' ? 'ASSETS' : this.def.section === 'HR' ? hrModules[this.def.key] ?? 'EMPLOYEES' : null;
+    const moduleKey: ModuleKey | null = this.def.section.startsWith('POS') ? 'POS' : this.def.section === 'Installments' ? 'INSTALLMENTS' : this.def.section === 'Time Tracking' ? 'TIME_TRACKING' : this.def.section === 'Work Orders' ? 'WORK_ORDERS' : this.def.section === 'Booking' ? 'BOOKING' : this.def.section === 'Law Firm' ? 'LAW_FIRM' : this.def.section === 'Real Estate' ? 'REAL_ESTATE' : this.def.section === 'Property Management' ? 'PROPERTY_MANAGEMENT' : this.def.section === 'Assets' ? 'ASSETS' : this.def.section === 'HR' ? hrModules[this.def.key] ?? 'EMPLOYEES' : null;
     if (moduleKey) {
       this.modules.whenLoaded().subscribe(() => {
         if (!this.modules.on(moduleKey)) {
-          this.error = `The ${moduleKey === 'POS' ? 'POS' : moduleKey === 'ASSETS' ? 'Assets Management' : moduleKey === 'INSTALLMENTS' ? 'Installments' : 'required HR'} module is not activated (Settings > Modules).`;
+          this.error = `The ${moduleKey === 'POS' ? 'POS' : moduleKey === 'ASSETS' ? 'Assets Management' : moduleKey === 'INSTALLMENTS' ? 'Installments' : moduleKey === 'TIME_TRACKING' ? 'Time Tracking' : moduleKey === 'WORK_ORDERS' ? 'Work Orders' : moduleKey === 'BOOKING' ? 'Booking' : moduleKey === 'LAW_FIRM' ? 'Law Firm' : moduleKey === 'REAL_ESTATE' ? 'Real Estate' : moduleKey === 'PROPERTY_MANAGEMENT' ? 'Property Management' : 'required HR'} module is not activated (Settings > Modules).`;
           this.def = null;
         }
       });
@@ -293,6 +298,7 @@ export class ReportViewerComponent implements OnInit {
 
   run(): void {
     if (!this.def) return;
+    this.filter.openOnly = this.def.openOnlyToggle ? !this.includeClosed : null;
     this.error = null;
     this.loading = true;
     this.reportApi.run(this.def.endpoint, this.filter).subscribe({
@@ -310,6 +316,7 @@ export class ReportViewerComponent implements OnInit {
 
   exportAs(format: 'xlsx' | 'pdf'): void {
     if (!this.def) return;
+    this.filter.openOnly = this.def.openOnlyToggle ? !this.includeClosed : null;
     this.error = null;
     this.exporting = true;
     this.reportApi.download(this.def.endpoint, this.filter, format).subscribe({
@@ -335,7 +342,7 @@ export class ReportViewerComponent implements OnInit {
   }
 
   isNumeric(col: ReportColumn): boolean {
-    return col.format === 'int' || col.format === 'money' || col.format === 'percent';
+    return col.format === 'int' || col.format === 'money' || col.format === 'percent' || col.format === 'moneyN' || col.format === 'percentN';
   }
 
   cellText(row: Record<string, any>, col: ReportColumn): string {
@@ -345,6 +352,10 @@ export class ReportViewerComponent implements OnInit {
         return value == null ? '0.00' : Number(value).toFixed(2);
       case 'percent':
         return value == null ? '0%' : `${Number(value).toFixed(2)}%`;
+      case 'moneyN':
+        return value == null ? '—' : Number(value).toFixed(2);
+      case 'percentN':
+        return value == null ? '—' : `${Number(value).toFixed(1)}%`;
       case 'int':
         return value == null ? '0' : String(value);
       case 'hash':

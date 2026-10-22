@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PagerComponent } from '../shared/pager.component';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { ListState } from '../core/api/list-state';
 import { SupplierApiService } from '../core/api/supplier-api.service';
 import { Supplier } from '../core/models';
 
@@ -9,10 +12,10 @@ import { Supplier } from '../core/models';
 @Component({
   selector: 'app-supplier-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Suppliers</h3>
         <div class="flex gap-2">
@@ -21,6 +24,7 @@ import { Supplier } from '../core/models';
           <a class="btn btn-primary" routerLink="/admin/suppliers/new">+ New supplier</a>
         </div>
       </div>
+      <app-list-filter exportKind="suppliers" statusParam="active" placeholder="Search name, contact, phone, e-mail…" [statuses]="statuses" statusAll="All suppliers" [dates]="false" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -34,7 +38,7 @@ import { Supplier } from '../core/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let s of suppliers">
+          <tr *ngFor="let s of list.rows">
             <td>{{ s.name }}</td>
             <td>{{ s.contactName }}</td>
             <td>{{ s.phone }}</td>
@@ -51,18 +55,20 @@ import { Supplier } from '../core/models';
               <button class="btn btn-sm btn-outline-danger" (click)="remove(s)">Delete</button>
             </td>
           </tr>
-          <tr *ngIf="suppliers.length === 0">
-            <td colspan="7" class="text-muted">No suppliers yet.</td>
+          <tr *ngIf="list.loaded && list.rows.length === 0">
+            <td colspan="7" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No suppliers yet.</ng-template></td>
           </tr>
         </tbody>
       </table>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class SupplierListComponent implements OnInit {
-  suppliers: Supplier[] = [];
   error: string | null = null;
 
+  list = new ListState<Supplier>((f, p, sz) => this.supplierApi.page(f, p, sz, f.status === '' ? null : f.status === 'true'), 'Failed to load suppliers');
+  statuses = [{ value: 'true', label: 'Active only' }, { value: 'false', label: 'Inactive only' }];
   constructor(private supplierApi: SupplierApiService) {}
 
   ngOnInit(): void {
@@ -70,10 +76,7 @@ export class SupplierListComponent implements OnInit {
   }
 
   load(): void {
-    this.supplierApi.listAll().subscribe({
-      next: (s) => (this.suppliers = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load suppliers'),
-    });
+    this.list.load();
   }
 
   /** Backend either hard-deletes (no PO history) or falls back to deactivating (see SupplierService.delete) — either way this just reloads to show whichever happened. */

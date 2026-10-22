@@ -13,7 +13,7 @@
 
     <groupId>com.posapp</groupId>
     <artifactId>pos-app</artifactId>
-    <version>1.0.0</version>
+    <version>1.5.0</version>
     <name>pos-app</name>
     <description>Standalone POS backend (Angular frontend, Spring Boot REST API, PostgreSQL)</description>
     <packaging>jar</packaging>
@@ -93,6 +93,17 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <!-- Database migrations: every schema change is a numbered SQL file in src/main/resources/db/migration
+             (see "Database migrations (Flyway)" in the README). Versions are managed by Spring Boot's BOM.
+             flyway-database-postgresql is the PostgreSQL support module Flyway 10+ needs. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>

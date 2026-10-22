@@ -55,6 +55,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Client portal: sign-in is open; everything else needs a portal token (never a firm user's).
+                        .requestMatchers("/api/portal/auth/**").permitAll()
+                        .requestMatchers("/api/portal/**").hasAuthority("ROLE_PORTAL_CLIENT")
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         // Fourier: "Public be able to make reservation" — opened up for
@@ -82,6 +85,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        // The browser may read these on a cross-origin call (X-Total-Count: the size of a paged list; Content-Disposition: the name of a downloaded file).
+        configuration.setExposedHeaders(List.of("X-Total-Count", "Content-Disposition"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

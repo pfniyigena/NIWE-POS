@@ -1,0 +1,3 @@
+# NIWE license public key (Ed25519, base64 of the X.509 SubjectPublicKeyInfo).
+# Put the single line printed by "java LicenseTool.java keygen" here, below this comment, then rebuild.
+# With no key in this file no license can be installed and only the core modules (Sales, Purchases, Accounting) work.

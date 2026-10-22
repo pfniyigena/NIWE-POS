@@ -136,6 +136,8 @@ export interface Customer {
   defaultCreditTermDays: number | null;
   /** The customer the terminal pre-selects on a brand-new cart instead of leaving it with no customer at all — see Customer.walkIn's backend javadoc. At most one customer has this true in practice. */
   walkIn: boolean;
+  /** The customer group (and so the price list) this customer buys at; null = normal prices. */
+  customerGroupId?: number | null;
 }
 
 export interface RegisterSummary {
@@ -260,12 +262,21 @@ export interface OrderLine {
   /** Serial numbers typed for this line (one per text line) and the product's tracking mode. */
   serialNumbers?: string | null;
   trackingMode?: 'NONE' | 'BATCH' | 'SERIAL';
+  /** The normal price and the price list the price came from, when a price list changed it. */
+  listPrice?: number | null;
+  priceNote?: string | null;
+  /** What promotions took off this line (percent, after the cashier's discount) and which promotions. */
+  promoPercent?: number;
+  promoNote?: string | null;
 }
 
 export interface Payment {
   id: number;
   method: string;
   amount: number;
+  /** A gift card payment: the card, masked (****1234). A points payment: "120 pts". */
+  reference?: string | null;
+  points?: number | null;
 }
 
 export interface Order {
@@ -318,6 +329,20 @@ export interface Order {
   efrisError: string | null;
   /** Branch this sale belongs to; null on sales older than branches (= head office). Drives the receipt's branch header. */
   branchId?: number | null;
+  /** Coupon codes on this cart, and what promotions took off it (a coupon missing from the list is not applying yet). */
+  couponCodes?: string[];
+  promotions?: AppliedPromotion[];
+  promoSavings?: number;
+  /** Loyalty points this sale earned and the customer's balance after it (null when the programme was off). */
+  loyaltyEarned?: number | null;
+  loyaltyBalance?: number | null;
+}
+
+export interface AppliedPromotion {
+  promotionId: number;
+  name: string;
+  couponCode: string | null;
+  amount: number;
 }
 
 /** One terminal's (Register's) EFRIS connection — Task: "EFRIS_setting for one terminal". Each till talks to its own local EFRIS device/URL, not one store-wide endpoint. */
@@ -400,6 +425,10 @@ export interface SalesReturn {
   returnDate: string;
   refundTotal: number;
   refundMethod: string;
+  /** The part of the refund that went back onto gift cards, back as loyalty points (money and points), and so did not leave the till. */
+  giftCardRefund?: number;
+  loyaltyRefund?: number;
+  pointsRefund?: number;
   reason: string | null;
   lines: SalesReturnLine[];
   /** Task: "The return will also integrate with EFRIS" — lets the return receipt fetch the original sale's terminal's EFRIS logos, same as the sale receipt does. Null for a return whose order has no session/register at all. */

@@ -14,7 +14,9 @@ public record CustomerDto(
         BigDecimal creditLimit,
         Integer defaultCreditTermDays,
         /** See Customer.walkIn's javadoc — the terminal pre-selects whichever customer has this set. */
-        boolean walkIn
+        boolean walkIn,
+        /** The customer group (price list) this customer buys at; null = normal prices. */
+        Long customerGroupId
 ) {
     public static CustomerDto from(Customer c) {
         return new CustomerDto(
@@ -26,7 +28,8 @@ public record CustomerDto(
                 c.isCreditEnabled(),
                 c.getCreditLimit(),
                 c.getDefaultCreditTermDays(),
-                c.isWalkIn()
+                c.isWalkIn(),
+                c.getCustomerGroupId()
         );
     }
 }

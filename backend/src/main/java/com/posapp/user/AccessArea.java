@@ -10,7 +10,7 @@ public enum AccessArea {
     SALES("Sales and customers", "Customers, customer credit, sales orders and returns, quotations, registers, sessions and shifts."),
     BILLING("Billing and payments", "Invoices, bills, customer and supplier payments, recurring invoices and recurring expenses."),
     INVENTORY("Inventory and purchasing", "Products, categories, suppliers, purchase orders and requisitions, stock adjustments, counts and transfers, warehouses, packaging, batch and serial tracking."),
-    OPERATIONS("Operations", "Manufacturing, restaurant, subscriptions and help desk."),
+    OPERATIONS("Operations", "Manufacturing, restaurant, subscriptions, help desk, and time tracking (projects, approval of time)."),
     ACCOUNTING("Accounting", "Chart of accounts, journal entries, expenses, incomes and cost centers."),
     HOTEL("Hotel", "Room types and rooms, guests, reservations, front desk (check-in, check-out, guest bills), housekeeping, maintenance and hotel reports."),
     HR("Human resources", "Employees, departments and positions, attendance, leave requests and approvals, public holidays and HR reports (without salaries)."),

@@ -26,4 +26,11 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
 
     /** Every voided bill, store-wide, newest-voided first — the accounts-payable mirror of {@code InvoiceRepository.findByStatusOrderByVoidedAtDesc}; backs {@code BillService.listRefunds}. */
     List<Bill> findByStatusOrderByVoidedAtDesc(BillStatus status);
+
+    /** True when this supplier already has an opening balance that has not been voided (a supplier can have only one). */
+    @org.springframework.data.jpa.repository.Query("select count(b) > 0 from Bill b where b.supplierId = :supplierId and b.openingBalance = true and b.status <> com.posapp.bill.BillStatus.VOID")
+    boolean existsOpeningBalance(@org.springframework.data.repository.query.Param("supplierId") Long supplierId);
+
+    /** Bills with no purchase order behind them (opening balances) for one supplier. */
+    List<Bill> findBySupplierIdAndPurchaseOrderIdIsNullOrderByBillDateAsc(Long supplierId);
 }

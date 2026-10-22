@@ -9,4 +9,7 @@ public interface StockReceiptRepository extends JpaRepository<StockReceipt, Long
 
     /** Powers ReportService.stockMovementHistory — see StockAdjustmentRepository's sibling method for the same shape. */
     List<StockReceipt> findByCreatedAtBetweenOrderByCreatedAtDesc(Instant from, Instant to);
+
+    /** Everything received so far against one purchase order, oldest first (the goods-received note lists these). */
+    List<StockReceipt> findByPurchaseOrderIdOrderByCreatedAtAsc(Long purchaseOrderId);
 }

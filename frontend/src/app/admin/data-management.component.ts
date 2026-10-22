@@ -3,10 +3,52 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { BackupApiService, BackupFile } from '../core/api/backup-api.service';
-import { DataImportExportApiService, ImportResult } from '../core/api/data-import-export-api.service';
+import { DataImportExportApiService, ImportKind, ImportResult } from '../core/api/data-import-export-api.service';
 import { downloadBlob } from '../core/download-file';
 
-type ImportKind = 'products' | 'customers' | 'opening-stock';
+interface ImportInfo {
+  kind: ImportKind;
+  label: string;
+  help: string;
+}
+
+interface ImportGroup {
+  title: string;
+  intro: string;
+  items: ImportInfo[];
+}
+
+const IMPORT_GROUPS: ImportGroup[] = [
+  {
+    title: 'Lists',
+    intro: 'Load your suppliers, categories, brands, products and customers. Do these first, because the balances below refer to them by name.',
+    items: [
+      { kind: 'suppliers', label: 'Suppliers', help: 'A supplier with the same name and phone is skipped, not duplicated.' },
+      { kind: 'categories', label: 'Categories', help: 'Name and an optional colour like #3366cc.' },
+      { kind: 'brands', label: 'Brands', help: 'One brand name per row.' },
+      { kind: 'products', label: 'Products', help: 'New categories and brands named in the file are created for you; the check tells you which.' },
+      { kind: 'customers', label: 'Customers', help: 'A customer already on file is skipped.' },
+    ],
+  },
+  {
+    title: 'Opening position',
+    intro: 'What you had on the day you started using the system. Each balance is dated, posted against Owner\'s Equity (so it does not count as sales or purchases), and then collected or paid through the normal screens.',
+    items: [
+      { kind: 'opening-stock', label: 'Opening stock', help: 'Quantities already on the shelf.' },
+      { kind: 'customer-balances', label: 'What customers owe you', help: 'One row per customer, with the date it is owed as of. The customer must already exist. Only one opening balance per customer.' },
+      { kind: 'supplier-balances', label: 'What you owe suppliers', help: 'One row per supplier, with the date it is owed as of. The supplier must already exist. Only one opening balance per supplier.' },
+      { kind: 'ledger-balances', label: 'Ledger opening balances', help: 'Cash and bank, equipment, loans, owner capital and so on: one row per account code with a debit or a credit, all with the same date. Posted together as one balanced entry, so every row must be right or nothing is imported. Receivables and payables come from the two files above.' },
+    ],
+  },
+];
+
+const ALL_KINDS: ImportKind[] = ['products', 'customers', 'suppliers', 'categories', 'brands', 'opening-stock', 'customer-balances', 'supplier-balances', 'ledger-balances'];
+
+function emptyRecord<T>(value: T): Record<ImportKind, T> {
+  const r = {} as Record<ImportKind, T>;
+  for (const k of ALL_KINDS) r[k] = value;
+  return r;
+}
 
 /**
  * Admin > Data (Fourier: "no backup/restore or bulk import-export anywhere in the backend ...
@@ -86,39 +128,78 @@ type ImportKind = 'products' | 'customers' | 'opening-stock';
       <div class="card" style="padding:1rem; margin-bottom:1.5rem;">
         <h4 class="mb-2" style="font-size:1.05rem;">Bulk import</h4>
         <p class="text-muted" style="font-size:0.85rem;">
-          Load products, customers, or opening stock quantities from a CSV file. A row that conflicts with
-          existing data is skipped and reported below — the rest of the file still imports.
+          Load data from a CSV file. Press <strong>Check file</strong> first: it shows exactly what would happen and saves nothing.
+          Then press <strong>Import</strong> to do it. A row that cannot be used is skipped and listed with the reason; the rest of the file still imports.
         </p>
 
-        <div *ngFor="let kind of importKinds" class="form-group" style="border-top:1px solid var(--border-color, #ddd); padding-top:0.75rem;">
-          <label class="form-label">{{ importLabel(kind) }}</label>
-          <div class="flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="downloadTemplate(kind)">Download template</button>
+        <div *ngFor="let group of importGroups" style="margin-top:1rem;">
+          <h5 style="font-size:0.95rem; margin-bottom:0.25rem;">{{ group.title }}</h5>
+          <p class="text-muted" style="font-size:0.8rem;">{{ group.intro }}</p>
+
+          <div *ngFor="let info of group.items" class="form-group imp-block" [attr.data-kind]="info.kind" style="border-top:1px solid var(--border-color, #ddd); padding-top:0.75rem;">
+            <label class="form-label">{{ info.label }}</label>
+            <div class="text-muted" style="font-size:0.8rem;">{{ info.help }}</div>
+            <div class="flex gap-2" style="margin-top:0.25rem;">
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="downloadTemplate(info.kind)">Download template</button>
+            </div>
+            <label *ngIf="info.kind === 'ledger-balances'" class="imp-equity" style="display:flex; gap:0.4rem; align-items:center; margin-top:0.4rem; font-size:0.85rem;">
+              <input type="checkbox" [(ngModel)]="balanceToEquity" name="balanceToEquity" /> Put any difference in Owner's Equity
+            </label>
+            <div class="flex gap-2" style="margin-top:0.5rem; flex-wrap:wrap;">
+              <input type="file" accept=".csv" [id]="'imp-file-' + info.kind" (change)="onImportFileSelected($event, info.kind)" />
+              <button class="btn btn-outline-primary imp-check" [disabled]="!importFiles[info.kind] || importing[info.kind]" (click)="check(info.kind)">
+                {{ importing[info.kind] ? 'Working…' : 'Check file' }}
+              </button>
+            </div>
+            <div class="alert alert-danger" *ngIf="importErrors[info.kind]" style="margin-top:0.5rem;">{{ importErrors[info.kind] }}</div>
+
+            <div *ngIf="importResults[info.kind] as res" class="imp-result" style="margin-top:0.5rem;">
+              <div class="alert alert-info" *ngIf="res.dryRun">
+                <strong>Nothing saved yet.</strong>
+                {{ res.total }} row(s) read: {{ res.imported }} can be imported, {{ res.skipped }} will be skipped.
+              </div>
+              <div class="alert alert-success" *ngIf="!res.dryRun">
+                Imported {{ res.imported }}, skipped {{ res.skipped }}.
+              </div>
+              <div *ngFor="let note of res.notes" class="text-muted" style="font-size:0.85rem;">{{ note }}</div>
+
+              <div *ngIf="res.skippedRows.length > 0" style="margin-top:0.5rem;">
+                <div style="font-weight:600; font-size:0.85rem;">Rows that will be skipped</div>
+                <table>
+                  <thead><tr><th>Row</th><th>Reason</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let r of res.skippedRows">
+                      <td [attr.data-label]="'Row'">{{ r.rowNumber }}</td>
+                      <td [attr.data-label]="'Reason'">{{ r.reason }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div *ngIf="res.dryRun && res.accepted && res.accepted.length > 0" style="margin-top:0.5rem;">
+                <div style="font-weight:600; font-size:0.85rem;">
+                  What will be created
+                  <span class="text-muted" *ngIf="res.imported > res.accepted.length">(first {{ res.accepted.length }} of {{ res.imported }})</span>
+                </div>
+                <table>
+                  <thead><tr><th>Row</th><th>Will be created</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let r of res.accepted">
+                      <td [attr.data-label]="'Row'">{{ r.rowNumber }}</td>
+                      <td [attr.data-label]="'Will be created'">{{ r.reason }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="flex gap-2" style="margin-top:0.5rem;" *ngIf="res.dryRun">
+                <button class="btn btn-primary imp-confirm" [disabled]="res.imported === 0 || importing[info.kind]" (click)="confirmImport(info.kind)">
+                  {{ importing[info.kind] ? 'Importing…' : 'Import ' + res.imported + ' row(s)' }}
+                </button>
+                <button class="btn btn-outline-secondary" (click)="clearImport(info.kind)">Cancel</button>
+              </div>
+            </div>
           </div>
-          <div class="flex gap-2" style="margin-top:0.5rem;">
-            <input type="file" accept=".csv" (change)="onImportFileSelected($event, kind)" />
-            <button class="btn btn-outline-primary" [disabled]="!importFiles[kind] || importing[kind]" (click)="runImport(kind)">
-              {{ importing[kind] ? 'Importing…' : 'Import' }}
-            </button>
-          </div>
-          <div class="alert alert-danger" *ngIf="importErrors[kind]" style="margin-top:0.5rem;">{{ importErrors[kind] }}</div>
-          <div class="alert alert-success" *ngIf="importResults[kind]" style="margin-top:0.5rem;">
-            Imported {{ importResults[kind]!.imported }}, skipped {{ importResults[kind]!.skipped }}.
-          </div>
-          <table *ngIf="importResults[kind] && importResults[kind]!.skippedRows.length > 0" style="margin-top:0.5rem;">
-            <thead>
-              <tr>
-                <th>Row</th>
-                <th>Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let r of importResults[kind]!.skippedRows">
-                <td>{{ r.rowNumber }}</td>
-                <td>{{ r.reason }}</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
 
@@ -158,11 +239,12 @@ export class DataManagementComponent implements OnInit {
   restoreUploadFile: File | null = null;
 
   // ---- Bulk import ----
-  importKinds: ImportKind[] = ['products', 'customers', 'opening-stock'];
-  importFiles: Record<ImportKind, File | null> = { products: null, customers: null, 'opening-stock': null };
-  importing: Record<ImportKind, boolean> = { products: false, customers: false, 'opening-stock': false };
-  importResults: Record<ImportKind, ImportResult | null> = { products: null, customers: null, 'opening-stock': null };
-  importErrors: Record<ImportKind, string | null> = { products: null, customers: null, 'opening-stock': null };
+  importGroups = IMPORT_GROUPS;
+  balanceToEquity = false;
+  importFiles: Record<ImportKind, File | null> = emptyRecord<File | null>(null);
+  importing: Record<ImportKind, boolean> = emptyRecord(false);
+  importResults: Record<ImportKind, ImportResult | null> = emptyRecord<ImportResult | null>(null);
+  importErrors: Record<ImportKind, string | null> = emptyRecord<string | null>(null);
 
   // ---- Export & year-end archive ----
   archiveYear = new Date().getFullYear();
@@ -172,17 +254,6 @@ export class DataManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBackups();
-  }
-
-  importLabel(kind: ImportKind): string {
-    switch (kind) {
-      case 'products':
-        return 'Products';
-      case 'customers':
-        return 'Customers';
-      case 'opening-stock':
-        return 'Opening stock';
-    }
   }
 
   formatSize(bytes: number): string {
@@ -291,42 +362,51 @@ export class DataManagementComponent implements OnInit {
 
   // ---- Bulk import ----
 
-  /** Fourier: "a button to download a template to upload" — a filled-in example CSV with the exact columns that importer expects. */
   downloadTemplate(kind: ImportKind): void {
-    const call =
-      kind === 'products'
-        ? this.dataApi.downloadProductsTemplate()
-        : kind === 'customers'
-        ? this.dataApi.downloadCustomersTemplate()
-        : this.dataApi.downloadOpeningStockTemplate();
-    call.subscribe({ next: (blob) => downloadBlob(blob, `${kind}-import-template.csv`) });
+    this.dataApi.downloadTemplate(kind).subscribe({ next: (blob) => downloadBlob(blob, `${kind}-import-template.csv`) });
   }
 
   onImportFileSelected(event: Event, kind: ImportKind): void {
     const input = event.target as HTMLInputElement;
     this.importFiles[kind] = input.files && input.files.length > 0 ? input.files[0] : null;
+    this.importResults[kind] = null;
+    this.importErrors[kind] = null;
   }
 
-  runImport(kind: ImportKind): void {
+  /** Step 1: read the file and show what would happen. Nothing is saved. */
+  check(kind: ImportKind): void {
+    this.run(kind, true);
+  }
+
+  /** Step 2: do it for real (the file is read again, so the result matches what the check showed unless the data changed in between). */
+  confirmImport(kind: ImportKind): void {
+    this.run(kind, false);
+  }
+
+  clearImport(kind: ImportKind): void {
+    this.importResults[kind] = null;
+    this.importErrors[kind] = null;
+  }
+
+  private run(kind: ImportKind, dryRun: boolean): void {
     const file = this.importFiles[kind];
     if (!file) return;
     this.importErrors[kind] = null;
-    this.importResults[kind] = null;
     this.importing[kind] = true;
-    const call =
-      kind === 'products'
-        ? this.dataApi.importProducts(file)
-        : kind === 'customers'
-        ? this.dataApi.importCustomers(file)
-        : this.dataApi.importOpeningStock(file);
-    call.subscribe({
+    this.dataApi.importFile(kind, file, dryRun, kind === 'ledger-balances' && this.balanceToEquity).subscribe({
       next: (result) => {
         this.importing[kind] = false;
         this.importResults[kind] = result;
+        if (!dryRun) {
+          this.importFiles[kind] = null;
+          const el = document.getElementById('imp-file-' + kind) as HTMLInputElement | null;
+          if (el) el.value = '';
+        }
       },
       error: (err) => {
         this.importing[kind] = false;
-        this.importErrors[kind] = err?.error?.message ?? 'Import failed';
+        this.importResults[kind] = null;
+        this.importErrors[kind] = err?.error?.message ?? (dryRun ? 'Could not check the file' : 'Import failed');
       },
     });
   }

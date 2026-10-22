@@ -17,6 +17,9 @@ import { OfflineSyncService } from '../core/offline/offline-sync.service';
 import { OfflineDbService } from '../core/offline/offline-db.service';
 import { QueuedOfflineLine, QueuedOfflinePayment, QueuedOfflineSale } from '../core/offline/offline-models';
 import * as OfflineCalc from '../core/offline/offline-calculator';
+import { GiftCardRow, GiftCardsApiService } from '../core/api/giftcards-api.service';
+import { LoyaltyApiService, LoyaltyBalance } from '../core/api/loyalty-api.service';
+import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
 import { CashierSession, Category, CreditSummary, Customer, Order, OrderLine, PaymentMethodOption, Product, RegisterSession } from '../core/models';
 
 /** One offline payment-method row — same shape as checkout.component.ts's PaymentRow, for the inline offline payment step. */
@@ -175,6 +178,15 @@ interface OfflinePaymentRow {
         🧾 Receipts
       </button>
       <button
+        class="btn btn-sm btn-outline-secondary till-giftcard-btn"
+        style="margin-right:8px;"
+        (click)="openGiftCard()"
+        [disabled]="offline || !cashierSession"
+        title="Check a gift card's balance, sell a new one or add money to one — requires connectivity"
+      >
+        🎫 Gift card
+      </button>
+      <button
         class="btn btn-sm btn-outline-secondary"
         style="margin-right:8px;"
         (click)="openCustomerDisplay()"
@@ -192,6 +204,60 @@ interface OfflinePaymentRow {
       📴 Offline — the product grid is working from the catalog as of the last sync, and any tab that
       was already open on the server is frozen until you're back online. Start a sale below and it'll
       queue locally, then sync automatically the moment connectivity returns.
+    </div>
+
+    <!-- CP-8c: gift cards at the till. Money taken here goes into this cashier's session; the card is owed back as goods, not counted as sales. -->
+    <div class="till-gc-overlay" *ngIf="showGiftCard" style="position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:50; display:flex; align-items:center; justify-content:center; padding:12px;">
+      <div class="card till-gc-panel" style="width:100%; max-width:460px; max-height:90vh; overflow:auto; padding:16px;">
+        <div class="flex justify-between align-center mb-2">
+          <h4 style="margin:0;">Gift card</h4>
+          <button class="btn btn-link till-gc-close" (click)="closeGiftCard()">Close</button>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button class="btn btn-sm till-gc-tab-check" [class.btn-primary]="gcTab === 'check'" [class.btn-outline-secondary]="gcTab !== 'check'" (click)="gcTab = 'check'; gcErr = null; gcMsg = null">Check / add money</button>
+          <button class="btn btn-sm till-gc-tab-sell" [class.btn-primary]="gcTab === 'sell'" [class.btn-outline-secondary]="gcTab !== 'sell'" (click)="gcTab = 'sell'; gcErr = null; gcMsg = null">Sell a new card</button>
+        </div>
+        <div class="alert alert-danger till-gc-error" *ngIf="gcErr" style="padding:6px 10px;">{{ gcErr }}</div>
+        <div class="alert alert-success till-gc-msg" *ngIf="gcMsg" style="padding:6px 10px;">{{ gcMsg }}</div>
+
+        <div *ngIf="gcTab === 'check'">
+          <div class="flex gap-2 mb-2">
+            <input class="form-control till-gc-code" placeholder="Gift card code" [(ngModel)]="gcCode" (keyup.enter)="lookupGiftCard()" autocomplete="off" />
+            <button class="btn btn-outline-primary till-gc-lookup" (click)="lookupGiftCard()">Check</button>
+          </div>
+          <div *ngIf="gcCard" class="till-gc-card mb-2">
+            <div>Balance: <strong class="till-gc-balance">{{ gcCard.balance | number: '1.2-2' }}</strong></div>
+            <div class="text-muted" style="font-size:0.85rem;">
+              <span *ngIf="gcCard.status === 'BLOCKED'">Blocked. </span><span *ngIf="gcCard.expired">Expired {{ gcCard.expiresOn }}. </span><span *ngIf="!gcCard.expired && gcCard.expiresOn">Expires {{ gcCard.expiresOn }}. </span><span *ngIf="gcCard.recipientName">For {{ gcCard.recipientName }}.</span>
+            </div>
+            <div class="mt-2" *ngIf="gcCard.usable">
+              <label class="form-label">Add money</label>
+              <div class="flex gap-2" style="flex-wrap:wrap;">
+                <input class="form-control till-gc-top-amount" type="number" min="0" step="0.01" style="max-width:140px;" placeholder="Amount" [(ngModel)]="gcTopAmount" />
+                <select class="form-control till-gc-top-method" style="max-width:170px;" [(ngModel)]="gcMethod">
+                  <option *ngFor="let m of gcMethods" [value]="m.code">{{ m.name }}</option>
+                </select>
+                <button class="btn btn-primary till-gc-top" [disabled]="gcBusy" (click)="topUpGiftCard()">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="gcTab === 'sell'">
+          <div class="form-group mb-2"><label class="form-label">Amount</label><input class="form-control till-gc-sell-amount" type="number" min="0" step="0.01" [(ngModel)]="gcSellAmount" /></div>
+          <div class="form-group mb-2"><label class="form-label">Paid by</label>
+            <select class="form-control till-gc-sell-method" [(ngModel)]="gcMethod">
+              <option *ngFor="let m of gcMethods" [value]="m.code">{{ m.name }}</option>
+            </select></div>
+          <div class="form-group mb-2"><label class="form-label">For (optional)</label><input class="form-control till-gc-sell-recipient" [(ngModel)]="gcRecipient" /></div>
+          <button class="btn btn-primary till-gc-sell" [disabled]="gcBusy" (click)="sellGiftCard()">Sell card</button>
+          <div class="till-gc-new mt-3" *ngIf="gcNewCard" style="padding:10px; border:2px dashed var(--border, #bbb); text-align:center;">
+            <div class="text-muted" style="font-size:0.85rem;">Give the customer this code</div>
+            <div style="font-size:1.4rem; font-weight:700; letter-spacing:1px;" class="till-gc-new-code">{{ gcNewCard.code }}</div>
+            <div>Balance {{ gcNewCard.balance | number: '1.2-2' }}</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="app-shell" *ngIf="showOfflineQueue">
@@ -381,6 +447,11 @@ interface OfflinePaymentRow {
                   <span *ngIf="!creditSummary.creditEnabled">Not enabled for credit</span>
                 </div>
 
+                <!-- CP-8c: the customer's loyalty points; spent on the payment screen. -->
+                <div class="till-points" style="font-size:0.8rem; margin-top:2px; color:var(--success, #1a7f37);" *ngIf="customerId && loyalty && loyalty.enabled && loyalty.points > 0">
+                  ⭐ {{ loyalty.points }} points (worth {{ loyalty.value | number: '1.2-2' }})
+                </div>
+
                 <div class="card" style="margin-top:6px; padding:8px;" *ngIf="showAddCustomer">
                   <div class="alert alert-danger" style="padding:4px 8px; font-size:0.85rem;" *ngIf="addCustomerError">
                     {{ addCustomerError }}
@@ -420,6 +491,14 @@ interface OfflinePaymentRow {
                   <tr *ngFor="let l of order.lines">
                     <td>
                       <div>{{ l.description }}</div>
+                      <!-- CP-8: the customer buys at a price list: show the normal price crossed out and which list the price is from. -->
+                      <div class="text-muted line-price-note" *ngIf="l.priceNote" style="font-size:0.78rem;">
+                        {{ l.priceNote }}: <s>{{ l.listPrice | number: '1.2-2' }}</s> {{ l.unitPrice | number: '1.2-2' }} each
+                      </div>
+                      <!-- CP-8b: which promotion took something off this line. -->
+                      <div class="line-promo-note" *ngIf="l.promoNote" style="font-size:0.78rem; color:var(--success, #1a7f37);">
+                        🏷 {{ l.promoNote }} (−{{ l.promoPercent | number: '1.0-2' }}%)
+                      </div>
                       <div class="flex gap-1 mt-1">
                         <input
                           type="number"
@@ -479,8 +558,27 @@ interface OfflinePaymentRow {
                     <td>Tax</td>
                     <td class="text-end">{{ order.taxTotal | number: '1.2-2' }}</td>
                   </tr>
+                  <tr class="promo-saved-row" *ngIf="order.promoSavings && order.promoSavings > 0" style="color:var(--success, #1a7f37);">
+                    <td>Saved with promotions</td>
+                    <td class="text-end">{{ order.promoSavings | number: '1.2-2' }}</td>
+                  </tr>
                 </tbody>
               </table>
+
+              <!-- CP-8b: coupon codes. A code with no saving yet stays on the cart and starts working when the right items are added. -->
+              <div class="promo-box" style="padding:6px 8px;">
+                <div class="flex gap-1">
+                  <input class="form-control form-control-sm promo-coupon-input" style="text-transform:uppercase;" placeholder="Coupon code" [(ngModel)]="couponInput" (keyup.enter)="addCoupon()" autocomplete="off" />
+                  <button class="btn btn-sm btn-outline-primary promo-coupon-add" [disabled]="!couponInput.trim()" (click)="addCoupon()">Apply</button>
+                </div>
+                <div class="promo-coupon-error" *ngIf="couponError" style="color:var(--danger, #c0392b); font-size:0.8rem; margin-top:2px;">{{ couponError }}</div>
+                <div class="promo-chip flex align-center gap-1" *ngFor="let code of order.couponCodes" [attr.data-code]="code" style="font-size:0.85rem; margin-top:4px;">
+                  <code>{{ code }}</code>
+                  <span *ngIf="couponAmount(order, code) > 0" style="color:var(--success, #1a7f37);">saves {{ couponAmount(order, code) | number: '1.2-2' }}</span>
+                  <span *ngIf="couponAmount(order, code) <= 0" class="text-muted">not applying yet</span>
+                  <button class="btn btn-sm btn-link promo-coupon-remove" (click)="removeCoupon(code)" title="Take this coupon off">✕</button>
+                </div>
+              </div>
 
               <div class="flex gap-2" style="padding:8px;">
                 <button class="btn btn-outline-secondary" (click)="hold()" [disabled]="order.lines.length === 0" title="Hold this sale and start a new one">⏸ Hold</button>
@@ -686,6 +784,9 @@ export class TerminalComponent implements OnInit {
   searchTerm = '';
   barcodeText = '';
   customerId: number | null = null;
+  /** Coupon code box on the cart (CP-8b). */
+  couponInput = '';
+  couponError: string | null = null;
 
   /**
    * Task: "since we have a default customer 'Walk-in Customer' it is better to set this customer
@@ -700,6 +801,21 @@ export class TerminalComponent implements OnInit {
 
   /** Task: "Customer balance on POS screen" — refreshed whenever the current order's customer changes. */
   creditSummary: CreditSummary | null = null;
+  /** CP-8c: the customer's loyalty points, and the gift card panel's state. */
+  loyalty: LoyaltyBalance | null = null;
+  showGiftCard = false;
+  gcTab: 'check' | 'sell' = 'check';
+  gcCode = '';
+  gcCard: GiftCardRow | null = null;
+  gcErr: string | null = null;
+  gcMsg: string | null = null;
+  gcBusy = false;
+  gcTopAmount: number | null = null;
+  gcSellAmount: number | null = null;
+  gcRecipient = '';
+  gcMethod = '';
+  gcMethods: PaymentMethodOption[] = [];
+  gcNewCard: GiftCardRow | null = null;
 
   /**
    * Fourier's own two-part request: Task 1 "configure the max discount" (System settings) + Task
@@ -749,7 +865,10 @@ export class TerminalComponent implements OnInit {
     private terminalSession: TerminalSessionService,
     private connectivity: ConnectivityService,
     private offlineSync: OfflineSyncService,
-    private offlineDb: OfflineDbService
+    private offlineDb: OfflineDbService,
+    private giftCardsApi: GiftCardsApiService,
+    private loyaltyApi: LoyaltyApiService,
+    private paymentMethodApi: PaymentMethodApiService
   ) {}
 
   /**
@@ -1045,9 +1164,93 @@ export class TerminalComponent implements OnInit {
   /** Task: "Customer balance on POS screen" — null (hidden) for a walk-in with no customer selected. */
   private refreshCreditSummary(): void {
     this.creditSummary = null;
+    this.loyalty = null;
     if (this.customerId) {
       this.customerCreditApi.creditSummary(this.customerId).subscribe((s) => (this.creditSummary = s));
+      this.loyaltyApi.balance(this.customerId).subscribe({ next: (b) => (this.loyalty = b), error: () => (this.loyalty = null) });
     }
+  }
+
+  // ---- CP-8c: gift cards at the till ----
+
+  openGiftCard(): void {
+    this.showGiftCard = true;
+    this.gcTab = 'check';
+    this.gcCode = '';
+    this.gcCard = null;
+    this.gcErr = null;
+    this.gcMsg = null;
+    this.gcNewCard = null;
+    this.gcTopAmount = null;
+    this.gcSellAmount = null;
+    this.gcRecipient = '';
+    if (this.gcMethods.length === 0) {
+      this.paymentMethodApi.listActive().subscribe((m) => {
+        this.gcMethods = m.filter((x) => !x.credit && !x.roomCharge);
+        const cash = this.gcMethods.find((x) => x.cash) ?? this.gcMethods[0];
+        this.gcMethod = cash ? cash.code : '';
+      });
+    }
+  }
+
+  closeGiftCard(): void {
+    this.showGiftCard = false;
+  }
+
+  lookupGiftCard(): void {
+    this.gcErr = null;
+    this.gcMsg = null;
+    this.gcCard = null;
+    if (!this.gcCode.trim()) {
+      this.gcErr = "Enter the gift card's code.";
+      return;
+    }
+    this.giftCardsApi.lookup(this.gcCode.trim()).subscribe({
+      next: (c) => (this.gcCard = c),
+      error: (err) => (this.gcErr = err?.error?.message ?? 'Could not look the card up'),
+    });
+  }
+
+  topUpGiftCard(): void {
+    if (!this.gcCard || !this.cashierSession) return;
+    this.gcErr = null;
+    this.gcMsg = null;
+    this.gcBusy = true;
+    this.giftCardsApi.topUp(this.gcCard.id, { amount: Number(this.gcTopAmount) || 0, paymentMethod: this.gcMethod, cashierSessionId: this.cashierSession.id }).subscribe({
+      next: (c) => {
+        this.gcBusy = false;
+        this.gcCard = c;
+        this.gcTopAmount = null;
+        this.gcMsg = 'Money added. The card now has ' + c.balance + '.';
+      },
+      error: (err) => {
+        this.gcBusy = false;
+        this.gcErr = err?.error?.message ?? 'Could not add money';
+      },
+    });
+  }
+
+  sellGiftCard(): void {
+    if (!this.cashierSession) return;
+    this.gcErr = null;
+    this.gcMsg = null;
+    this.gcNewCard = null;
+    this.gcBusy = true;
+    this.giftCardsApi
+      .sell({ amount: Number(this.gcSellAmount) || 0, paymentMethod: this.gcMethod, recipientName: this.gcRecipient || null, cashierSessionId: this.cashierSession.id })
+      .subscribe({
+        next: (c) => {
+          this.gcBusy = false;
+          this.gcNewCard = c;
+          this.gcSellAmount = null;
+          this.gcRecipient = '';
+          this.gcMsg = 'Card sold.';
+        },
+        error: (err) => {
+          this.gcBusy = false;
+          this.gcErr = err?.error?.message ?? 'Could not sell the card';
+        },
+      });
   }
 
   private applyUpdatedOrder(updated: Order): void {
@@ -1145,6 +1348,33 @@ export class TerminalComponent implements OnInit {
   removeLine(line: OrderLine): void {
     if (!this.currentOrder) return;
     this.orderApi.removeLine(this.currentOrder.id, line.id).subscribe({
+      next: (updated) => this.applyUpdatedOrder(updated),
+      error: (err) => this.handleError(err),
+    });
+  }
+
+  /** What the coupon takes off the cart so far (0 when it is on the cart but not applying yet). */
+  couponAmount(order: Order, code: string): number {
+    const p = (order.promotions ?? []).find((x) => x.couponCode === code);
+    return p ? p.amount : 0;
+  }
+
+  addCoupon(): void {
+    if (!this.currentOrder || !this.couponInput.trim()) return;
+    this.couponError = null;
+    this.orderApi.addCoupon(this.currentOrder.id, this.couponInput.trim()).subscribe({
+      next: (updated) => {
+        this.couponInput = '';
+        this.applyUpdatedOrder(updated);
+      },
+      error: (err) => (this.couponError = err?.status === 0 ? 'Connection lost. Try the coupon again once you are back online.' : err?.error?.message ?? 'That coupon cannot be used'),
+    });
+  }
+
+  removeCoupon(code: string): void {
+    if (!this.currentOrder) return;
+    this.couponError = null;
+    this.orderApi.removeCoupon(this.currentOrder.id, code).subscribe({
       next: (updated) => this.applyUpdatedOrder(updated),
       error: (err) => this.handleError(err),
     });

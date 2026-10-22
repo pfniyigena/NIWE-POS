@@ -67,6 +67,9 @@ public class QuotationService {
     /** Fourier: "Wiring a handful of business events to that same mailer" — see {@link #alertExpiringQuotations}. */
     private final int quotationExpiryWarningDays;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.pricing.PricingService pricingService;
+
     public QuotationService(QuotationRepository quotationRepository,
                              CustomerRepository customerRepository,
                              CatalogService catalogService,
@@ -409,7 +412,7 @@ public class QuotationService {
             line.setProduct(product);
             line.setProductName(product.getName());
             line.setQuantity(entry.getQuantity());
-            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : product.getUnitPrice());
+            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : pricingService.resolve(q.getCustomer(), product, Math.max(1, entry.getQuantity())).unitPrice());
             // Fourier: "Same for discount (but discount should be activate in the setting or
             // configuration) and it will be per line" — validated/capped (including whether the
             // feature is even turned on) before ever reaching the line.

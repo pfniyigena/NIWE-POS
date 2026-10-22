@@ -95,6 +95,7 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
             <td style="padding:4px 0;">
               {{ l.description }}
               <div style="color:#666; font-size:0.8rem;">{{ l.quantity }} &times; {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.discountPercent"> (−{{ l.discountPercent }}%)</span><span *ngIf="l.taxInclusive"> (tax incl.)</span></div>
+              <div *ngIf="l.promoNote" class="receipt-promo" style="color:#666; font-size:0.8rem;">{{ l.promoNote }} (−{{ l.promoPercent | number: '1.0-2' }}%)</div>
               <!-- Task: "on the receipt which was returned, I should mark it as returned" — plain text,
                    not color, since this is a monochrome-printable receipt. -->
               <div *ngIf="returnedQuantities[l.id]" style="font-weight:700; font-size:0.8rem;">
@@ -126,13 +127,20 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, StoreSettings } f
             <td>Total</td>
             <td style="text-align:right;">{{ o.total | number: '1.2-2' }}</td>
           </tr>
+          <tr *ngIf="o.promoSavings && o.promoSavings > 0" class="receipt-promo-saved" style="font-size:0.8rem; color:#666;">
+            <td>You saved with promotions</td>
+            <td style="text-align:right;">{{ o.promoSavings | number: '1.2-2' }}</td>
+          </tr>
         </tbody>
       </table>
       <hr />
       <p style="margin:0 0 4px; font-weight:600;">Payment</p>
       <div *ngFor="let p of o.payments" style="display:flex; justify-content:space-between; font-size:0.9rem;">
-        <span>{{ p.method }}</span>
+        <span>{{ p.method === 'GIFT_CARD' ? 'Gift card' : p.method === 'LOYALTY' ? 'Loyalty points' : p.method }}<span *ngIf="p.reference" class="receipt-pay-ref" style="color:#666;"> ({{ p.reference }})</span></span>
         <span>{{ p.amount | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="o.loyaltyEarned || o.loyaltyBalance" class="receipt-loyalty" style="font-size:0.8rem; color:#666; margin-top:4px;">
+        <span *ngIf="o.loyaltyEarned">Points earned: {{ o.loyaltyEarned }}. </span><span *ngIf="o.loyaltyBalance != null">Points balance: {{ o.loyaltyBalance }}</span>
       </div>
 
       <!-- EFRIS (Rwanda RRA e-invoicing) fiscal receipt data — Fourier's own layout spec, printed

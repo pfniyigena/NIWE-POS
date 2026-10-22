@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { CustomerApiService } from '../core/api/customer-api.service';
 import { AuthService } from '../core/auth.service';
+import { GroupRow, PricingApiService } from '../core/api/pricing-api.service';
 
 @Component({
   selector: 'app-customer-form',
@@ -30,6 +31,14 @@ import { AuthService } from '../core/auth.service';
         <div class="form-group">
           <label class="form-label">Tax ID</label>
           <input class="form-control" name="taxId" [(ngModel)]="taxId" />
+        </div>
+        <!-- CP-8: the customer group decides which price list this customer buys at. Only someone who manages Sales can change it. -->
+        <div class="form-group" *ngIf="isAdmin && groups.length > 0">
+          <label class="form-label">Customer group (price list)</label>
+          <select class="form-select cust-group" name="customerGroupId" [(ngModel)]="customerGroupId">
+            <option [ngValue]="null">None (normal prices)</option>
+            <option *ngFor="let g of groups" [ngValue]="g.id">{{ g.name }}{{ g.priceListName ? ' - ' + g.priceListName : '' }}</option>
+          </select>
         </div>
         <hr />
         <!-- Task: "Only Admin can enable Customer Credit" (earlier pass) stays true even though
@@ -72,13 +81,17 @@ export class CustomerFormComponent implements OnInit {
   creditEnabled = false;
   creditLimit: number | null = 0;
   defaultCreditTermDays: number | null = null;
+  customerGroupId: number | null = null;
+  private originalGroupId: number | null = null;
+  groups: GroupRow[] = [];
   error: string | null = null;
 
   constructor(
     private customerApi: CustomerApiService,
     private route: ActivatedRoute,
     private router: Router,
-    private auth: AuthService
+    private auth: AuthService,
+    private pricingApi: PricingApiService
   ) {}
 
   /** Task: "Only Admin can enable Customer Credit" — gates the Store credit section's inputs; see the template comment above it. */
@@ -87,6 +100,9 @@ export class CustomerFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.isAdmin) {
+      this.pricingApi.groups().subscribe({ next: (g) => (this.groups = g.filter((x) => x.active || x.id === this.customerGroupId)), error: () => (this.groups = []) });
+    }
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) return;
     this.id = Number(idParam);
@@ -101,6 +117,8 @@ export class CustomerFormComponent implements OnInit {
           this.creditEnabled = found.creditEnabled;
           this.creditLimit = found.creditLimit;
           this.defaultCreditTermDays = found.defaultCreditTermDays;
+          this.customerGroupId = found.customerGroupId ?? null;
+          this.originalGroupId = this.customerGroupId;
         }
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load customer'),
@@ -122,7 +140,16 @@ export class CustomerFormComponent implements OnInit {
       ? this.customerApi.update(this.id, payload)
       : this.customerApi.create(payload);
     call.subscribe({
-      next: () => this.router.navigate(['/admin/customers']),
+      next: (saved) => {
+        if (this.isAdmin && this.customerGroupId !== this.originalGroupId) {
+          this.pricingApi.assign([saved.id], this.customerGroupId).subscribe({
+            next: () => this.router.navigate(['/admin/customers']),
+            error: (err) => (this.error = err?.error?.message ?? 'The customer was saved, but the group could not be set'),
+          });
+        } else {
+          this.router.navigate(['/admin/customers']);
+        }
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to save customer'),
     });
   }

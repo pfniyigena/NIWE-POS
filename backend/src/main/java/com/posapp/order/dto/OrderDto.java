@@ -55,7 +55,14 @@ public record OrderDto(
         /** The raw EFRIS response body from the most recent attempt — see SaleOrder.efrisResponse's javadoc. */
         String efrisResponse,
         /** The branch this sale belongs to (null on sales older than branches = head office) — the receipt uses it to print the branch header. */
-        Long branchId
+        Long branchId,
+        /** Coupon codes typed on this cart, and what promotions took off it (the amount is 0 for a coupon that is not applying yet). */
+        List<String> couponCodes,
+        List<com.posapp.promotions.PromotionDtos.Applied> promotions,
+        BigDecimal promoSavings,
+        /** Loyalty points this sale earned and the customer's balance after it; null when none. */
+        Integer loyaltyEarned,
+        Integer loyaltyBalance
 ) {
     public static OrderDto from(SaleOrder order) {
         var customer = order.getCustomer();
@@ -103,7 +110,13 @@ public record OrderDto(
                 order.getEfrisSubmittedAt(),
                 order.getEfrisError(),
                 order.getEfrisResponse(),
-                order.getBranchId()
+                order.getBranchId(),
+                com.posapp.promotions.PromotionService.couponList(order),
+                com.posapp.promotions.PromotionService.appliedList(order),
+                com.posapp.promotions.PromotionService.appliedList(order).stream()
+                        .map(com.posapp.promotions.PromotionDtos.Applied::amount).reduce(BigDecimal.ZERO, BigDecimal::add),
+                order.getLoyaltyEarned(),
+                order.getLoyaltyBalance()
         );
     }
 }

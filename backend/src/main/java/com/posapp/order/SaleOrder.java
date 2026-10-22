@@ -130,6 +130,20 @@ public class SaleOrder extends BaseEntity {
     @jakarta.persistence.Column(name = "branch_id")
     private Long branchId;
 
+    /** Loyalty points this sale earned for its customer, and the customer's balance right after (null when the program was off or the customer was walk-in). */
+    @jakarta.persistence.Column(name = "loyalty_earned")
+    private Integer loyaltyEarned;
+    @jakarta.persistence.Column(name = "loyalty_balance")
+    private Integer loyaltyBalance;
+
+    /** Coupon codes the cashier typed on this cart, comma separated. */
+    @jakarta.persistence.Column(name = "coupon_codes")
+    private String couponCodes;
+
+    /** What promotions took off this cart, one "promotionId|name|code|amount" line per promotion (see PromotionService). */
+    @jakarta.persistence.Column(name = "promotion_summary", columnDefinition = "text")
+    private String promotionSummary;
+
     /**
      * EFRIS (Rwanda RRA e-invoicing) fiscal receipt data — Fourier's own follow-up spec: "When
      * installing EFRIS the system will add the following column to SaleOrder." All eight fields

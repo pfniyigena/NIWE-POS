@@ -263,7 +263,7 @@ public class SupplierPaymentService {
         if (bill.getStatus() != BillStatus.ISSUED) {
             return BigDecimal.ZERO;
         }
-        BigDecimal returned = purchaseReturnRepository.sumRefundTotalForPurchaseOrder(bill.getPurchaseOrderId());
+        BigDecimal returned = bill.getPurchaseOrderId() == null ? BigDecimal.ZERO : purchaseReturnRepository.sumRefundTotalForPurchaseOrder(bill.getPurchaseOrderId());
         BigDecimal outstanding = bill.getTotalAmount().subtract(returned).subtract(amountPaidForBill(bill));
         return outstanding.compareTo(BigDecimal.ZERO) > 0 ? outstanding : BigDecimal.ZERO;
     }
@@ -277,10 +277,15 @@ public class SupplierPaymentService {
     /** Sum of {@link #amountOwedForOrder} across every purchase order ever placed with this supplier. */
     @Transactional(readOnly = true)
     public BigDecimal outstandingBalance(Long supplierId) {
-        return purchaseOrderRepository.findAllByOrderByOrderDateDesc().stream()
+        BigDecimal orders = purchaseOrderRepository.findAllByOrderByOrderDateDesc().stream()
                 .filter(po -> po.getSupplier() != null && po.getSupplier().getId().equals(supplierId))
                 .map(this::amountOwedForOrder)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Bills with no purchase order behind them (opening balances) are owed too.
+        BigDecimal standalone = billRepository.findBySupplierIdAndPurchaseOrderIdIsNullOrderByBillDateAsc(supplierId).stream()
+                .map(this::outstandingForBill)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return orders.add(standalone);
     }
 
     /**

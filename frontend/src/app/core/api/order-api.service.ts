@@ -7,6 +7,10 @@ import { Order, PaymentMethod } from '../models';
 export interface CheckoutPaymentEntry {
   method: PaymentMethod;
   amount: number;
+  /** Gift card payments: the card's code. */
+  giftCardCode?: string;
+  /** Loyalty payments: the points being spent (the server works out their value). */
+  points?: number;
 }
 
 /**
@@ -71,6 +75,14 @@ export class OrderApiService {
 
   setCustomer(orderId: number, customerId: number | null): Observable<Order> {
     return this.http.post<Order>(`${API_BASE}/orders/${orderId}/customer`, { customerId });
+  }
+
+  addCoupon(orderId: number, code: string): Observable<Order> {
+    return this.http.post<Order>(`${API_BASE}/orders/${orderId}/coupons`, { code });
+  }
+
+  removeCoupon(orderId: number, code: string): Observable<Order> {
+    return this.http.delete<Order>(`${API_BASE}/orders/${orderId}/coupons/${encodeURIComponent(code)}`);
   }
 
   park(orderId: number, note: string): Observable<Order> {

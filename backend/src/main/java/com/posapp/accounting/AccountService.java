@@ -99,6 +99,13 @@ public class AccountService {
      */
     public static final String CUSTOMER_CREDIT_PAYABLE = "CUSTOMER_CREDIT_PAYABLE";
 
+    /** Gift cards sold and not yet spent: money the store owes back in goods. Not income until it is spent (or the card expires and the balance is released). Added to existing charts the same zero-migration way as {@link #CUSTOMER_CREDIT_PAYABLE}. */
+    public static final String GIFT_CARD_LIABILITY = "GIFT_CARD_LIABILITY";
+    /** Loyalty points customers paid with, and gift cards given away free: the cost of rewards to customers. */
+    public static final String REWARDS_EXPENSE = "REWARDS_EXPENSE";
+    /** Balance left on expired gift cards that the store released from what it owes. */
+    public static final String GIFT_CARD_BREAKAGE = "GIFT_CARD_BREAKAGE";
+
     /** Hotel module: income from room nights and other hotel services (room charges, late check-out, laundry...). Added to existing charts the same zero-migration way as {@link #CUSTOMER_CREDIT_PAYABLE}. */
     public static final String ROOM_REVENUE = "ROOM_REVENUE";
     /** Hotel module: money received from a guest before it is applied to their bill (booking deposits). Cleared against the guest's bill at check-out, or refunded. */
@@ -129,6 +136,12 @@ public class AccountService {
     public static final String SALARIES_PAYABLE = "SALARIES_PAYABLE";
     /** Installments: interest and late fees collected from customers paying an invoice in instalments. */
     public static final String INSTALLMENT_INCOME = "INSTALLMENT_INCOME";
+    /** Work Orders: parts used on internal maintenance and repair jobs. */
+    public static final String REPAIRS_MAINTENANCE_EXPENSE = "REPAIRS_MAINTENANCE_EXPENSE";
+    /** Law firm module: the bank account that holds clients' money, kept apart from the firm's own cash and bank. */
+    public static final String TRUST_BANK = "TRUST_BANK";
+    /** Law firm module: what the firm owes its clients for money it holds for them (always equal to the trust bank account). */
+    public static final String CLIENT_MONEY_HELD = "CLIENT_MONEY_HELD";
 
     /** One row of a country's starter chart. {@code wellKnownKey} is null for every account nothing posts to automatically — see Account.wellKnownKey's own javadoc. The 5-arg constructor (no key) is what every such row below actually uses; the 6-arg canonical form is only for a row AccountingService/AccountingReportService resolve by key. */
     private record ChartRow(String wellKnownKey, String code, String name, AccountType type, boolean systemAccount, String description) {
@@ -148,6 +161,8 @@ public class AccountService {
     private static final List<ChartRow> RWANDA_CHART = List.of(
             new ChartRow(CASH, "1000", "Cash and Bank", AccountType.ASSET, true, null),
             new ChartRow(ACCOUNTS_RECEIVABLE, "1100", "Accounts Receivable", AccountType.ASSET, true, null),
+            new ChartRow(TRUST_BANK, "1010", "Client Trust Bank Account", AccountType.ASSET, true,
+                    "Law firm: the bank account that holds clients' money. It is not the firm's money; it always matches Client Money Held."),
             new ChartRow(INPUT_VAT_RECOVERABLE, "1150", "Input VAT Recoverable (RRA)", AccountType.ASSET, true,
                     "VAT paid on purchases, reclaimable against VAT collected on sales (see VAT Payable) — not netted automatically, reconcile the two when filing with RRA."),
             new ChartRow(INVENTORY, "1200", "Inventory", AccountType.ASSET, true, null),
@@ -156,6 +171,8 @@ public class AccountService {
             new ChartRow(ACCUMULATED_DEPRECIATION, "1590", "Accumulated Depreciation", AccountType.ASSET, true,
                     "Assets Management: depreciation charged so far on fixed assets. Normally a credit balance that reduces the value of the assets above."),
             new ChartRow(ACCOUNTS_PAYABLE, "2000", "Accounts Payable", AccountType.LIABILITY, true, null),
+            new ChartRow(CLIENT_MONEY_HELD, "2870", "Client Money Held", AccountType.LIABILITY, true,
+                    "Law firm: money held in the trust account for clients, owed back to them until it is paid out or moved to the firm as a fee."),
             new ChartRow(TAX_PAYABLE, "2100", "VAT Payable (RRA)", AccountType.LIABILITY, true, RWANDA_VAT_DESCRIPTION),
             new ChartRow(ACCRUED_MANUFACTURING_OVERHEAD, "2200", "Accrued Manufacturing Overhead", AccountType.LIABILITY, true, null),
             new ChartRow(PAYE_PAYABLE, "2300", "PAYE Payable (RRA)", AccountType.LIABILITY, false,
@@ -176,6 +193,8 @@ public class AccountService {
                     "Hotel: value of rooms booked but not yet stayed in (used by the 'post at booking and at check-out' mode)."),
             new ChartRow(CUSTOMER_CREDIT_PAYABLE, "2800", "Customer Credit Payable", AccountType.LIABILITY, true,
                     "Store credit owed back to customers — e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
+            new ChartRow(GIFT_CARD_LIABILITY, "2880", "Gift Card Liability", AccountType.LIABILITY, true,
+                    "Gift cards sold and not yet spent: owed to customers in goods, not income until spent."),
             new ChartRow(OWNERS_EQUITY, "3000", "Owner's Equity", AccountType.EQUITY, false, null),
             new ChartRow("3100", "Share Capital", AccountType.EQUITY, false,
                     "Capital contributed by shareholders in exchange for equity — for an incorporated business."),
@@ -187,10 +206,16 @@ public class AccountService {
                     "Income outside core sales — interest earned, asset disposals, and similar."),
             new ChartRow(INSTALLMENT_INCOME, "4150", "Instalment Interest and Late-Fee Income", AccountType.REVENUE, true,
                     "Interest and late fees collected on customer instalment plans."),
+            new ChartRow(GIFT_CARD_BREAKAGE, "4160", "Expired Gift Card Income", AccountType.REVENUE, true,
+                    "Balance left on expired gift cards, released from Gift Card Liability."),
             new ChartRow(COST_OF_GOODS_SOLD, "5000", "Cost of Goods Sold", AccountType.EXPENSE, true, null),
+            new ChartRow(REWARDS_EXPENSE, "5970", "Customer Rewards Expense", AccountType.EXPENSE, true,
+                    "Loyalty points customers paid with, and gift cards given away free."),
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "5100", "Inventory Shrinkage / Write-off Expense", AccountType.EXPENSE, true, null),
             new ChartRow("5200", "Operating Expenses", AccountType.EXPENSE, false, null),
             new ChartRow("5300", "Rent Expense", AccountType.EXPENSE, false, "Premises rent."),
+            new ChartRow(REPAIRS_MAINTENANCE_EXPENSE, "5210", "Repairs & Maintenance Expense", AccountType.EXPENSE, true,
+                    "Work Orders: the cost of spare parts and materials used on internal maintenance and repair jobs."),
             new ChartRow(SALARIES_EXPENSE, "5400", "Salaries & Wages Expense", AccountType.EXPENSE, false, "Gross payroll cost, before PAYE/RSSB withholding."),
             new ChartRow(EMPLOYER_CONTRIBUTIONS_EXPENSE, "5410", "Employer Contributions Expense", AccountType.EXPENSE, true,
                     "Payroll: the employer's share of pension, maternity, occupational-hazard and similar contributions."),
@@ -217,6 +242,8 @@ public class AccountService {
             new ChartRow(CASH, "521", "Banques et Caisse (Cash & Bank)", AccountType.ASSET, true,
                     "Pooled cash, bank and mobile-money tender for GL purposes — this app doesn't split by payment method, or by SYSCOHADA's own Banques (521) / Caisse (571) distinction."),
             new ChartRow(ACCOUNTS_RECEIVABLE, "411", "Clients (Accounts Receivable)", AccountType.ASSET, true, null),
+            new ChartRow(TRUST_BANK, "5211", "Banque, compte des fonds clients (Client Trust Bank Account)", AccountType.ASSET, true,
+                    "Law firm: the bank account that holds clients' money. It is not the firm's money; it always matches Client Money Held."),
             new ChartRow(INPUT_VAT_RECOVERABLE, "4452", "État, TVA récupérable (Input VAT Recoverable)", AccountType.ASSET, true,
                     "TVA paid on purchases, reclaimable against TVA collected on sales (État, TVA facturée) — SYSCOHADA's own 445 'État' sub-account for recoverable VAT; not netted automatically, reconcile the two when filing with the DGI."),
             new ChartRow(INVENTORY, "311", "Marchandises (Inventory)", AccountType.ASSET, true, null),
@@ -225,6 +252,8 @@ public class AccountService {
             new ChartRow(ACCUMULATED_DEPRECIATION, "284", "Amortissements du matériel (Accumulated Depreciation)", AccountType.ASSET, true,
                     "Assets Management: depreciation charged so far on fixed assets. Normally a credit balance that reduces the value of the assets above."),
             new ChartRow(ACCOUNTS_PAYABLE, "401", "Fournisseurs (Accounts Payable)", AccountType.LIABILITY, true, null),
+            new ChartRow(CLIENT_MONEY_HELD, "4192", "Clients, fonds détenus (Client Money Held)", AccountType.LIABILITY, true,
+                    "Law firm: money held in the trust account for clients, owed back to them until it is paid out or moved to the firm as a fee."),
             new ChartRow(TAX_PAYABLE, "4431", "État, TVA facturée (VAT Payable)", AccountType.LIABILITY, true,
                     "18% TVA collected on sales, not yet remitted to Chad's Direction Générale des Impôts (DGI). Input TVA paid on purchases is tracked separately in État, TVA récupérable, not netted against this account automatically — reconcile the two when filing."),
             new ChartRow(ACCRUED_MANUFACTURING_OVERHEAD, "408", "Fournisseurs, factures non parvenues (Accrued Manufacturing Overhead)", AccountType.LIABILITY, true, null),
@@ -248,6 +277,8 @@ public class AccountService {
                     "Hotel: value of rooms booked but not yet stayed in (used by the 'post at booking and at check-out' mode)."),
             new ChartRow(CUSTOMER_CREDIT_PAYABLE, "419", "Clients créditeurs (Customer Credit Payable)", AccountType.LIABILITY, true,
                     "SYSCOHADA's own account for a customer with a credit balance — store credit owed back, e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
+            new ChartRow(GIFT_CARD_LIABILITY, "4195", "Clients, bons d'achat (Gift Card Liability)", AccountType.LIABILITY, true,
+                    "Gift cards sold and not yet spent: owed to customers in goods, not income until spent."),
             new ChartRow(OWNERS_EQUITY, "101", "Capital social (Owner's Equity)", AccountType.EQUITY, false, null),
             new ChartRow("121", "Report à nouveau (Retained Earnings)", AccountType.EQUITY, false,
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),
@@ -257,11 +288,17 @@ public class AccountService {
                     "Income outside core sales — interest earned, asset disposals, and similar."),
             new ChartRow(INSTALLMENT_INCOME, "771", "Intérêts de prêts et créances (Instalment Interest and Late-Fee Income)", AccountType.REVENUE, true,
                     "Interest and late fees collected on customer instalment plans."),
+            new ChartRow(GIFT_CARD_BREAKAGE, "7581", "Produits divers (Expired Gift Card Income)", AccountType.REVENUE, true,
+                    "Balance left on expired gift cards, released from Gift Card Liability."),
             new ChartRow(COST_OF_GOODS_SOLD, "601", "Achats de marchandises (Cost of Goods Sold)", AccountType.EXPENSE, true,
                     "This app posts cost of goods sold directly per sale rather than through SYSCOHADA's own period-end stock-variation mechanic (603) — 601 is used here as the straightforward 'cost of merchandise sold' account."),
+            new ChartRow(REWARDS_EXPENSE, "6285", "Autres charges externes (Customer Rewards Expense)", AccountType.EXPENSE, true,
+                    "Loyalty points customers paid with, and gift cards given away free."),
             new ChartRow(INVENTORY_SHRINKAGE_EXPENSE, "658", "Charges diverses (Inventory Shrinkage / Write-off Expense)", AccountType.EXPENSE, true, null),
             new ChartRow("628", "Autres charges externes (Operating Expenses)", AccountType.EXPENSE, false, null),
             new ChartRow("622", "Locations et charges locatives (Rent Expense)", AccountType.EXPENSE, false, "Premises rent."),
+            new ChartRow(REPAIRS_MAINTENANCE_EXPENSE, "624", "Entretien, réparations et maintenance (Repairs & Maintenance Expense)", AccountType.EXPENSE, true,
+                    "Work Orders: the cost of spare parts and materials used on internal maintenance and repair jobs."),
             new ChartRow(SALARIES_EXPENSE, "661", "Rémunérations directes versées au personnel (Salaries & Wages Expense)", AccountType.EXPENSE, false,
                     "Gross payroll cost, before IRPP/CNPS withholding."),
             new ChartRow(EMPLOYER_CONTRIBUTIONS_EXPENSE, "664", "Charges sociales (Employer Contributions Expense)", AccountType.EXPENSE, true,

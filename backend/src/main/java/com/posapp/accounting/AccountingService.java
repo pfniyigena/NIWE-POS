@@ -74,10 +74,12 @@ public class AccountingService {
     private final CostCenterRepository costCenterRepository;
     private final AccountService accountService;
     private final AuditLogService auditLogService;
+    private final com.posapp.controls.AccountingLockService lockService;
 
     public AccountingService(AccountRepository accountRepository, JournalEntryRepository journalEntryRepository,
                               CostCenterRepository costCenterRepository, AccountService accountService,
-                              AuditLogService auditLogService) {
+                              AuditLogService auditLogService, com.posapp.controls.AccountingLockService lockService) {
+        this.lockService = lockService;
         this.accountRepository = accountRepository;
         this.journalEntryRepository = journalEntryRepository;
         this.costCenterRepository = costCenterRepository;
@@ -98,7 +100,12 @@ public class AccountingService {
         BigDecimal creditAmount = order.getCreditAmount() != null ? order.getCreditAmount() : BigDecimal.ZERO;
         BigDecimal tendered = order.getPayments().stream().map(com.posapp.order.Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal roomChargeAmount = order.getRoomChargeAmount() != null ? order.getRoomChargeAmount() : BigDecimal.ZERO;
-        BigDecimal cashAmount = tendered.subtract(creditAmount).subtract(roomChargeAmount);
+        // Paid from a gift card: the store stops owing that money (Gift Card Liability) and it becomes sales. Paid with points: a rewards expense.
+        BigDecimal giftCardAmount = order.getPayments().stream().filter(p -> com.posapp.order.Tenders.GIFT_CARD.equals(p.getMethod()))
+                .map(com.posapp.order.Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal pointsAmount = order.getPayments().stream().filter(p -> com.posapp.order.Tenders.LOYALTY.equals(p.getMethod()))
+                .map(com.posapp.order.Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal cashAmount = tendered.subtract(creditAmount).subtract(roomChargeAmount).subtract(giftCardAmount).subtract(pointsAmount);
         BigDecimal subtotal = com.posapp.order.OrderCalculator.subtotal(order);
         BigDecimal taxTotal = com.posapp.order.OrderCalculator.taxTotal(order);
         BigDecimal cogs = trackedLineCost(order);
@@ -107,6 +114,8 @@ public class AccountingService {
         addIfPositive(lines, AccountService.CASH, cashAmount, null, true);
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, creditAmount, null, true);
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, roomChargeAmount, "Charged to room", true);
+        addIfPositive(lines, AccountService.GIFT_CARD_LIABILITY, giftCardAmount, "Paid with gift card", true);
+        addIfPositive(lines, AccountService.REWARDS_EXPENSE, pointsAmount, "Paid with loyalty points", true);
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotal, null, false);
         addIfPositive(lines, AccountService.TAX_PAYABLE, taxTotal, null, false);
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogs, "Cost of goods sold", true);
@@ -120,18 +129,51 @@ public class AccountingService {
     public void postPosReturn(com.posapp.returns.SalesReturn salesReturn, String refundMethod, boolean refundMethodIsCredit,
                                BigDecimal subtotalRefund, BigDecimal taxRefund, BigDecimal cogsReversal) {
         BigDecimal totalRefund = subtotalRefund.add(taxRefund);
+        // The part of the refund that went back onto gift cards / as loyalty points does not leave as cash.
+        BigDecimal giftBack = salesReturn.getGiftCardRefund() == null ? BigDecimal.ZERO : salesReturn.getGiftCardRefund();
+        BigDecimal pointsBack = salesReturn.getLoyaltyRefund() == null ? BigDecimal.ZERO : salesReturn.getLoyaltyRefund();
+        BigDecimal otherRefund = totalRefund.subtract(giftBack).subtract(pointsBack);
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotalRefund, "Revenue reversal", true);
         addIfPositive(lines, AccountService.TAX_PAYABLE, taxRefund, "Tax reversal", true);
+        addIfPositive(lines, AccountService.GIFT_CARD_LIABILITY, giftBack, "Refunded onto gift card", false);
+        addIfPositive(lines, AccountService.REWARDS_EXPENSE, pointsBack, "Loyalty points given back", false);
         if (refundMethodIsCredit) {
-            addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, totalRefund, null, false);
+            addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, otherRefund, null, false);
         } else {
-            addIfPositive(lines, AccountService.CASH, totalRefund, null, false);
+            addIfPositive(lines, AccountService.CASH, otherRefund, null, false);
         }
         addIfPositive(lines, AccountService.INVENTORY, cogsReversal, "Inventory restocked", true);
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogsReversal, "Cost of goods sold reversal", false);
 
         post("POS_RETURN", salesReturn.getId(), "POS return " + safe(salesReturn.getReturnNumber()) + " (" + refundMethod + ")", null, lines, salesReturn.getBranchId());
+    }
+
+    // ---- Gift cards (com.posapp.giftcards) ----
+
+    /**
+     * A gift card sold, or topped up: the money in (cash, bank, mobile money) is owed back in goods, so it is a liability, not sales.
+     * A card given away free ({@code paid = false}) is a rewards expense instead, still a liability until spent.
+     */
+    @Transactional
+    public void postGiftCardSold(Long txnId, String cardCode, BigDecimal amount, boolean paid) {
+        List<LineSpec> lines = new ArrayList<>();
+        if (paid) {
+            addIfPositive(lines, AccountService.CASH, amount, null, true);
+        } else {
+            addIfPositive(lines, AccountService.REWARDS_EXPENSE, amount, "Gift card given free", true);
+        }
+        addIfPositive(lines, AccountService.GIFT_CARD_LIABILITY, amount, null, false);
+        post("GIFT_CARD_SOLD", txnId, "Gift card " + cardCode + (paid ? " sold" : " issued free"), null, lines);
+    }
+
+    /** The balance left on expired cards is no longer owed: out of the liability, into income. */
+    @Transactional
+    public void postGiftCardReleased(Long sourceId, BigDecimal amount) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.GIFT_CARD_LIABILITY, amount, null, true);
+        addIfPositive(lines, AccountService.GIFT_CARD_BREAKAGE, amount, null, false);
+        post("GIFT_CARD_RELEASED", sourceId, "Expired gift card balances released", null, lines);
     }
 
     // ---- Sale Orders (com.posapp.salesorder) ----
@@ -195,6 +237,12 @@ public class AccountingService {
         BigDecimal tax = com.posapp.invoice.InvoiceService.taxAmount(invoice);
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, invoice.getTotalAmount(), null, true);
+        if (invoice.isOpeningBalance()) {
+            // An opening balance is what the customer already owed before the books started: Owner's Equity, not a sale.
+            addIfPositive(lines, AccountService.OWNERS_EQUITY, invoice.getTotalAmount(), "Opening balance", false);
+            post("INVOICE_OPENING", invoice.getId(), "Opening balance " + invoice.getInvoiceNumber() + " for " + safe(invoice.getCustomerName()), invoice.getInvoiceDate(), lines, invoice.getBranchId());
+            return;
+        }
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotal, null, false);
         addIfPositive(lines, AccountService.TAX_PAYABLE, tax, null, false);
 
@@ -217,6 +265,12 @@ public class AccountingService {
         BigDecimal subtotal = com.posapp.invoice.InvoiceService.subtotalAmount(invoice);
         BigDecimal tax = com.posapp.invoice.InvoiceService.taxAmount(invoice);
         List<LineSpec> lines = new ArrayList<>();
+        if (invoice.isOpeningBalance()) {
+            addIfPositive(lines, AccountService.OWNERS_EQUITY, invoice.getTotalAmount(), "Opening balance void", true);
+            addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, invoice.getTotalAmount(), null, false);
+            post("INVOICE_VOID", invoice.getId(), "Voided opening balance " + invoice.getInvoiceNumber(), null, lines, invoice.getBranchId());
+            return;
+        }
         addIfPositive(lines, AccountService.SALES_REVENUE, subtotal, "Invoice void", true);
         addIfPositive(lines, AccountService.TAX_PAYABLE, tax, "Invoice void", true);
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, invoice.getTotalAmount(), null, false);
@@ -289,6 +343,17 @@ public class AccountingService {
         addIfPositive(lines, AccountService.ACCOUNTS_PAYABLE, total, null, false);
 
         post("PURCHASE_RECEIPT", purchaseOrder.getId(), "Received against purchase order " + purchaseOrder.getOrderNumber(), null, lines, purchaseOrder.getBranchId());
+    }
+
+    /** A supplier's opening balance (a bill with no purchase order): Owner's Equity is debited and Accounts Payable credited, dated the bill date. Reversed with {@code reverse = true}. */
+    @Transactional
+    public void postBillOpening(com.posapp.bill.Bill bill, boolean reverse) {
+        if (bill.getTotalAmount() == null || bill.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) return;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.OWNERS_EQUITY, bill.getTotalAmount(), "Opening balance", !reverse);
+        addIfPositive(lines, AccountService.ACCOUNTS_PAYABLE, bill.getTotalAmount(), null, reverse);
+        post(reverse ? "BILL_OPENING_VOID" : "BILL_OPENING", bill.getId(), (reverse ? "Voided opening balance " : "Opening balance ") + bill.getBillNumber() + " for " + safe(bill.getSupplierName()),
+                reverse ? null : bill.getBillDate(), lines, bill.getBranchId());
     }
 
     /**
@@ -425,6 +490,20 @@ public class AccountingService {
         post("INSTALLMENT_CHARGES", paymentId, memo, null, lines, branchId);
     }
 
+    /**
+     * Work Orders: parts taken from stock for a job. A customer job charges Cost of Goods Sold (the revenue is posted when the
+     * invoice is issued); an internal job charges Repairs and Maintenance Expense. {@code reversal} undoes an earlier posting
+     * (the job was reopened).
+     */
+    @Transactional
+    public void postWorkOrderParts(Long workOrderId, String memo, BigDecimal cost, boolean customerJob, boolean reversal, Long branchId) {
+        String expense = customerJob ? AccountService.COST_OF_GOODS_SOLD : AccountService.REPAIRS_MAINTENANCE_EXPENSE;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, reversal ? AccountService.INVENTORY : expense, cost, null, true);
+        addIfPositive(lines, reversal ? expense : AccountService.INVENTORY, cost, null, false);
+        post(reversal ? "WORK_ORDER_PARTS_REVERSAL" : "WORK_ORDER_PARTS", workOrderId, memo, null, lines, branchId);
+    }
+
     // ---- Restaurant (com.posapp.restaurant) ----
 
     /**
@@ -533,6 +612,53 @@ public class AccountingService {
         post("HOTEL_DEPOSIT_FORFEIT", bookingId, memo, null, lines);
     }
 
+    // ---- Law firm client money (com.posapp.law) ----
+
+    /** Client money paid into the trust account: it is the client's, not the firm's. Dr Client trust bank / Cr Client money held. */
+    @Transactional
+    public void postLawTrustDeposit(Long txId, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.TRUST_BANK, amount, null, true);
+        addIfPositive(lines, AccountService.CLIENT_MONEY_HELD, amount, null, false);
+        post("LAW_TRUST_DEPOSIT", txId, memo, null, lines, branchId);
+    }
+
+    /** Client money paid out of the trust account to the client or to someone for them (or a deposit taken back). Dr Client money held / Cr Client trust bank. */
+    @Transactional
+    public void postLawTrustPayout(Long txId, String sourceType, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CLIENT_MONEY_HELD, amount, null, true);
+        addIfPositive(lines, AccountService.TRUST_BANK, amount, null, false);
+        post(sourceType, txId, memo, null, lines, branchId);
+    }
+
+    /**
+     * Client money moved from the trust account to the firm to pay its invoice. The invoice payment itself (Dr Cash / Cr Accounts
+     * Receivable) is posted when the payment is recorded; this entry is the trust side: the client's money is no longer held for
+     * them and the trust bank gives it up. Dr Client money held / Cr Client trust bank.
+     */
+    @Transactional
+    public void postLawTrustFeeTransfer(Long txId, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CLIENT_MONEY_HELD, amount, "Fees taken from client money", true);
+        addIfPositive(lines, AccountService.TRUST_BANK, amount, null, false);
+        post("LAW_TRUST_FEE_TRANSFER", txId, memo, null, lines, branchId);
+    }
+
+    /** The general-ledger balance of a well-known account today (zero when there is no chart yet). {@code debitNormal} says which side is positive. */
+    @Transactional(readOnly = true)
+    public BigDecimal balanceOf(String wellKnownKey, boolean debitNormal) {
+        return accountRepository.findByWellKnownKey(wellKnownKey).map(account -> {
+            BigDecimal debit = BigDecimal.ZERO;
+            BigDecimal credit = BigDecimal.ZERO;
+            for (JournalEntryLine line : journalEntryRepository.findLinesForAccountUpTo(account.getId(), java.time.Instant.now())) {
+                debit = debit.add(line.getDebit());
+                credit = credit.add(line.getCredit());
+            }
+            return debitNormal ? debit.subtract(credit) : credit.subtract(debit);
+        }).orElse(BigDecimal.ZERO);
+    }
+
     // ---- Assets Management (com.posapp.assets) ----
 
     /** Buying a fixed asset: cost into Fixed Assets, paid from Cash or owed to suppliers (Accounts Payable). */
@@ -623,7 +749,7 @@ public class AccountingService {
     public void postExpense(Expense expense) {
         Long costCenterId = expense.getCostCenter() != null ? expense.getCostCenter().getId() : null;
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, expense.getAccount().getCode(), expense.getAmount(), expense.getMemo(), true, costCenterId);
+        addAccountLine(lines, expense.getAccount(), expense.getAmount(), expense.getMemo(), true, costCenterId);
         addIfPositive(lines, expense.isPaid() ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, expense.getAmount(), null, false);
 
         post("EXPENSE", expense.getId(), "Expense — " + safe(expense.getPayeeName()), toInstant(expense.getExpenseDate()), lines, expense.getBranchId());
@@ -641,7 +767,7 @@ public class AccountingService {
         Long costCenterId = expense.getCostCenter() != null ? expense.getCostCenter().getId() : null;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, expense.isPaid() ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, expense.getAmount(), "Expense void", true);
-        addIfPositive(lines, expense.getAccount().getCode(), expense.getAmount(), "Expense void — " + safe(expense.getMemo()), false, costCenterId);
+        addAccountLine(lines, expense.getAccount(), expense.getAmount(), "Expense void — " + safe(expense.getMemo()), false, costCenterId);
 
         post("EXPENSE_VOID", expense.getId(), "Void of expense — " + safe(expense.getPayeeName()), null, lines, expense.getBranchId());
     }
@@ -667,7 +793,7 @@ public class AccountingService {
         Long costCenterId = income.getCostCenter() != null ? income.getCostCenter().getId() : null;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, income.isReceived() ? AccountService.CASH : AccountService.ACCOUNTS_RECEIVABLE, income.getAmount(), null, true);
-        addIfPositive(lines, income.getAccount().getCode(), income.getAmount(), income.getMemo(), false, costCenterId);
+        addAccountLine(lines, income.getAccount(), income.getAmount(), income.getMemo(), false, costCenterId);
 
         post("INCOME", income.getId(), "Income — " + safe(income.getPayeeName()), toInstant(income.getIncomeDate()), lines, income.getBranchId());
     }
@@ -706,6 +832,16 @@ public class AccountingService {
         }
     }
 
+    /**
+     * A line on the very account the user picked (an expense category, an income category), not on a well-known one. These used to pass the account's display code as if it
+     * were a well-known key, which only works while the two happen to be the same; with a country chart (Rwanda, Chad) they differ and approving an expense failed.
+     */
+    private void addAccountLine(List<LineSpec> lines, Account account, BigDecimal amount, String description, boolean debit, Long costCenterId) {
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            lines.add(new LineSpec(null, amount, description, debit, costCenterId, account));
+        }
+    }
+
     private String safe(String value) {
         return value != null ? value : "";
     }
@@ -732,6 +868,7 @@ public class AccountingService {
         if (lineSpecs.isEmpty()) {
             return;
         }
+        lockService.assertOpen(entryDate);
         BigDecimal totalDebit = BigDecimal.ZERO;
         BigDecimal totalCredit = BigDecimal.ZERO;
         for (LineSpec spec : lineSpecs) {
@@ -753,7 +890,7 @@ public class AccountingService {
         entry.setSourceId(sourceId);
         entry.setBranchId(branchId);
         for (LineSpec spec : lineSpecs) {
-            Account account = accountService.getByWellKnownKeyOrThrow(spec.wellKnownKey());
+            Account account = spec.account() != null ? spec.account() : accountService.getByWellKnownKeyOrThrow(spec.wellKnownKey());
             JournalEntryLine line = new JournalEntryLine();
             line.setEntry(entry);
             line.setAccount(account);
@@ -769,6 +906,9 @@ public class AccountingService {
         auditLogService.record("JOURNAL_ENTRY_POSTED", memo, "JournalEntry", saved.getId());
     }
 
-    private record LineSpec(String wellKnownKey, BigDecimal amount, String description, boolean debit, Long costCenterId) {
+    private record LineSpec(String wellKnownKey, BigDecimal amount, String description, boolean debit, Long costCenterId, Account account) {
+        LineSpec(String wellKnownKey, BigDecimal amount, String description, boolean debit, Long costCenterId) {
+            this(wellKnownKey, amount, description, debit, costCenterId, null);
+        }
     }
 }

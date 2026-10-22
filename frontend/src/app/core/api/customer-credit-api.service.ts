@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { CreditSummary, CustomerPayment, OutstandingOrder, RecordPaymentRequest } from '../models';
 
 /**
@@ -46,5 +48,10 @@ export class CustomerCreditApiService {
   /** Fourier: "Change payment receipt printout. Make a PDF with A4" — open in a new tab via openPdfForPrint, same pattern as InvoiceApiService.pdf. ADMIN-only. */
   pdf(paymentId: number): Observable<Blob> {
     return this.http.get(`${API_BASE}/customer-payments/${paymentId}/pdf`, { responseType: 'blob' });
+  }
+
+  /** One page of the store-wide payment history; the search bar's "status" choice is the payment method here. */
+  allPaymentsPage(f: ListFilter, page: number, size: number): Observable<PageResult<CustomerPayment>> {
+    return pagedList<CustomerPayment>(this.http, `${API_BASE}/customer-payments`, { ...f, status: '' }, page, size, { method: f.status || null });
   }
 }

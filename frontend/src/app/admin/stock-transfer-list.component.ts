@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PaperButtonComponent } from '../shared/paper-button.component';
 import { StockTransferApiService } from '../core/api/stock-transfer-api.service';
 import { StockTransfer } from '../core/models';
 import { AuthService } from '../core/auth.service';
@@ -19,7 +20,7 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-stock-transfer-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -37,6 +38,7 @@ import { AuthService } from '../core/auth.service';
             <th>To</th>
             <th>Note</th>
             <th>Status</th>
+            <th>Paper</th>
             <th *ngIf="canApprove"></th>
           </tr>
         </thead>
@@ -60,6 +62,7 @@ import { AuthService } from '../core/auth.service';
                 <span *ngIf="t.receiveNote"> ({{ t.receiveNote }})</span>
               </div>
             </td>
+            <td><app-paper-button class="paper-transfer" label="Transfer note" cls="btn-sm btn-outline-secondary" [path]="'/stock-transfers/' + t.id + '/note'" file="stock-transfer.pdf"></app-paper-button></td>
             <td *ngIf="canApprove" class="flex gap-2">
               <ng-container *ngIf="t.status === 'PENDING'">
                 <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="confirm(t)">{{ t.interBranch ? 'Dispatch' : 'Confirm' }}</button>
@@ -80,7 +83,7 @@ import { AuthService } from '../core/auth.service';
             </td>
           </tr>
           <tr *ngIf="transfers.length === 0">
-            <td [attr.colspan]="canApprove ? 8 : 7" class="text-muted">No stock transfers yet.</td>
+            <td [attr.colspan]="canApprove ? 9 : 8" class="text-muted">No stock transfers yet.</td>
           </tr>
         </tbody>
       </table>

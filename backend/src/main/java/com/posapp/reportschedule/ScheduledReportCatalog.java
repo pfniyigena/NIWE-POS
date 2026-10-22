@@ -120,6 +120,44 @@ public final class ScheduledReportCatalog {
                 (c, p) -> c.installmentsOverdue(p.branchId(), p.format())));
         add(new Def("installment-collections", "Instalment collections", "Installments", true, false, false, true, false, null,
                 (c, p) -> c.installmentCollections(p.from(), p.to(), p.branchId(), p.format())));
+        add(new Def("time-timesheets", "Timesheet summary", "Time Tracking", true, false, false, false, false, null,
+                (c, p) -> c.timeTimesheets(p.from(), p.to(), p.format())));
+        add(new Def("time-project-hours", "Project hours vs budget", "Time Tracking", false, false, false, false, false, null,
+                (c, p) -> c.timeProjectHours(p.format())));
+        add(new Def("time-unbilled", "Unbilled time", "Time Tracking", false, false, false, false, false, null,
+                (c, p) -> c.timeUnbilled(p.format())));
+        add(new Def("time-utilisation", "Utilisation", "Time Tracking", true, false, false, false, false, null,
+                (c, p) -> c.timeUtilisation(p.from(), p.to(), p.format())));
+        add(new Def("time-entries", "Time entries", "Time Tracking", true, false, false, false, false, null,
+                (c, p) -> c.timeEntries(p.from(), p.to(), p.format())));
+        add(new Def("work-orders", "Work orders", "Work Orders", true, false, false, false, false, null,
+                (c, p) -> c.workOrders(p.from(), p.to(), p.format())));
+        add(new Def("work-order-profit", "Work order profitability", "Work Orders", true, false, false, false, false, null,
+                (c, p) -> c.workOrderProfit(p.from(), p.to(), p.format())));
+        add(new Def("work-order-assets", "Maintenance cost by asset", "Work Orders", true, false, false, false, false, null,
+                (c, p) -> c.workOrderAssets(p.from(), p.to(), p.format())));
+        add(new Def("work-order-overdue", "Overdue work orders", "Work Orders", false, false, false, false, false, null,
+                (c, p) -> c.workOrderOverdue(p.format())));
+        add(new Def("booking-appointments", "Appointments", "Booking", true, false, false, false, false, null,
+                (c, p) -> c.bookingAppointments(p.from(), p.to(), p.format())));
+        add(new Def("booking-utilisation", "Booking utilisation", "Booking", true, false, false, false, false, null,
+                (c, p) -> c.bookingUtilisation(p.from(), p.to(), p.format())));
+        add(new Def("booking-services", "Bookings by service", "Booking", true, false, false, false, false, null,
+                (c, p) -> c.bookingServices(p.from(), p.to(), p.format())));
+        add(new Def("law-matters", "Law matters", "Law Firm", true, false, false, false, false, null,
+                (c, p) -> c.lawMatters(p.from(), p.to(), p.format())));
+        add(new Def("law-deadlines", "Law deadlines", "Law Firm", true, false, false, false, false, null,
+                (c, p) -> c.lawDeadlines(p.from(), p.to(), p.format())));
+        add(new Def("law-billing", "Law billing and work in progress", "Law Firm", false, false, false, false, false, null,
+                (c, p) -> c.lawBilling(true, p.format())));
+        add(new Def("law-fees", "Law fees billed", "Law Firm", true, false, false, false, false, null,
+                (c, p) -> c.lawFees(p.from(), p.to(), p.format())));
+        add(new Def("law-trust-balances", "Client money held", "Law Firm", false, false, false, false, false, null,
+                (c, p) -> c.lawTrustBalances(true, p.format())));
+        add(new Def("law-trust-ledger", "Client money ledger", "Law Firm", true, false, false, false, false, null,
+                (c, p) -> c.lawTrustLedger(p.from(), p.to(), p.format())));
+        add(new Def("law-workload", "Law workload", "Law Firm", false, false, false, false, false, null,
+                (c, p) -> c.lawWorkload(p.format())));
         add(new Def("employee-directory", "Employee directory", "HR", false, false, false, false, false, null,
                 (c, p) -> c.employeeDirectory(p.format())));
         add(new Def("headcount-by-department", "Headcount by department", "HR", false, false, false, false, false, null,

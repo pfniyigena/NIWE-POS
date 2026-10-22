@@ -4,7 +4,7 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 import { API_BASE } from '../constants';
 import { HotelApiService } from './hotel-api.service';
 
-export type ModuleKey = 'SALES' | 'PURCHASES' | 'ACCOUNTING' | 'POS' | 'HOTEL' | 'RESTAURANT' | 'MANUFACTURING' | 'SUBSCRIPTIONS' | 'HELPDESK' | 'EXPENSES' | 'ASSETS' | 'INSTALLMENTS' | 'EMPLOYEES' | 'ORG_STRUCTURE' | 'ATTENDANCE' | 'CONTRACTS' | 'PAYROLL';
+export type ModuleKey = 'SALES' | 'PURCHASES' | 'ACCOUNTING' | 'POS' | 'HOTEL' | 'RESTAURANT' | 'MANUFACTURING' | 'SUBSCRIPTIONS' | 'HELPDESK' | 'EXPENSES' | 'ASSETS' | 'INSTALLMENTS' | 'TIME_TRACKING' | 'WORK_ORDERS' | 'BOOKING' | 'LAW_FIRM' | 'REAL_ESTATE' | 'PROPERTY_MANAGEMENT' | 'EMPLOYEES' | 'ORG_STRUCTURE' | 'ATTENDANCE' | 'CONTRACTS' | 'PAYROLL';
 
 export interface ModuleInfo {
   key: ModuleKey;
@@ -16,7 +16,18 @@ export interface ModuleInfo {
   core: boolean;
   /** Modules this one works together with: switching it on switches them on too. */
   requires: ModuleKey[];
+  /** Is the module part of the installed license? Core modules always are. */
+  licensed: boolean;
+  /**
+   * CORE, ACTIVE (licensed and switched on), AVAILABLE (licensed, not yet activated), LOCKED (not in the license),
+   * REQUESTED (locked, a request to NIWE is waiting) or EXPIRED (in a license that has run out).
+   */
+  state: ModuleState;
+  /** When the waiting request was made (REQUESTED only). */
+  requestedAt: string | null;
 }
+
+export type ModuleState = 'CORE' | 'ACTIVE' | 'AVAILABLE' | 'LOCKED' | 'REQUESTED' | 'EXPIRED';
 
 /**
  * Settings > Modules: which optional modules are switched on. The sidebar and route guard read this. Every module counts as

@@ -12,13 +12,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final DashboardOverviewService overviewService;
 
-    public DashboardController(DashboardService dashboardService) {
+    public DashboardController(DashboardService dashboardService, DashboardOverviewService overviewService) {
         this.dashboardService = dashboardService;
+        this.overviewService = overviewService;
     }
 
     @GetMapping("/summary")
     public DashboardSummaryDto summary(@org.springframework.web.bind.annotation.RequestParam(required = false) Long branchId) {
         return dashboardService.summary(branchId);
+    }
+
+    /** Things to act on, sales against last week, who owes, bills to pay, top sellers. {@code branchId} narrows till sales, invoices issued and collections; stock, bills and approvals stay business-wide. */
+    @GetMapping("/overview")
+    public com.posapp.dashboard.DashboardOverviewDtos.Overview overview(@org.springframework.web.bind.annotation.RequestParam(required = false) Long branchId) {
+        return overviewService.overview(branchId);
     }
 }

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { Quotation, QuotationPayload, SalesOrder } from '../models';
 
 /** Fourier: "Add Quotation ... without touching warehousing." Admin-only, mirrors SalesOrderApiService's shape. */
@@ -55,5 +57,9 @@ export class QuotationApiService {
   /** Fourier: "Add print A4 on Quotation and Label it as proforma" — an A4 PDF of this quotation, for opening in a new tab to print (see download-file.ts's openPdfForPrint). Headed "Proforma Invoice" on the printed page itself — see the backend DocumentPdfService.quotationPdf's javadoc. */
   pdf(id: number): Observable<Blob> {
     return this.http.get(`${API_BASE}/quotations/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  page(f: ListFilter, page: number, size: number): Observable<PageResult<Quotation>> {
+    return pagedList<Quotation>(this.http, `${API_BASE}/quotations`, f, page, size);
   }
 }

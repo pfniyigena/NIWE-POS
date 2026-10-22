@@ -24,8 +24,14 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/helpdesk/settings', areas: 'ADMIN' },
   { prefix: 'admin/subscriptions/job-settings', areas: 'ADMIN' },
   { prefix: 'admin/installments/settings', areas: 'ADMIN' },
+  { prefix: 'admin/time/settings', areas: 'ADMIN' },
   { prefix: 'admin/sales/settings', areas: 'ADMIN' },
   { prefix: 'admin/hotel/settings', areas: 'ADMIN' },
+  { prefix: 'admin/law/settings', areas: 'ADMIN' },
+  { prefix: 'admin/realestate/settings', areas: 'ADMIN' },
+  { prefix: 'admin/propertymgmt/settings', areas: 'ADMIN' },
+  { prefix: 'admin/law/trust/reconcile', areas: ['BILLING'] },
+  { prefix: 'admin/booking/settings', areas: 'ADMIN' },
 
   // Recording a payment is billing work even when it starts from a customer or supplier page.
   { pattern: /^admin\/suppliers\/[^/]+\/record-payment$/, areas: ['BILLING'] },
@@ -40,6 +46,13 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/purchases/reports', areas: ['REPORTS'] },
   { prefix: 'admin/assets/reports', areas: ['REPORTS', 'ACCOUNTING'] },
   { prefix: 'admin/installments/reports', areas: ['REPORTS', 'BILLING'] },
+  { prefix: 'admin/time/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/work-orders/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/booking/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/law/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/realestate/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/propertymgmt/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/time/billing', areas: ['BILLING'] },
   { prefix: 'admin/inventory/reports', areas: ['REPORTS'] },
   { prefix: 'admin/restaurant/reports', areas: ['REPORTS'] },
   { prefix: 'admin/hotel/reports', areas: ['REPORTS', 'HOTEL'] },
@@ -60,10 +73,15 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/installments', areas: ['BILLING'] },
   { prefix: 'admin/supplier-payments', areas: ['BILLING'] },
   { prefix: 'admin/customer-payments', areas: ['SALES', 'BILLING'] },
+  { prefix: 'admin/collections', areas: ['SALES', 'BILLING'] },
 
   // Sales and customers.
   { prefix: 'admin/customers', areas: ['SALES'] },
   { prefix: 'admin/sales-orders', areas: ['SALES'] },
+  { prefix: 'admin/pricing', areas: ['SALES'] },
+  { prefix: 'admin/promotions', areas: ['SALES'] },
+  { prefix: 'admin/gift-cards', areas: ['SALES'] },
+  { prefix: 'admin/loyalty', areas: ['SALES'] },
   { prefix: 'admin/sales-order-returns', areas: ['SALES'] },
   { prefix: 'admin/quotations', areas: ['SALES'] },
   { prefix: 'admin/shifts', areas: ['SALES'] },
@@ -102,9 +120,15 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/subscription-plans', areas: ['OPERATIONS'] },
   { prefix: 'admin/subscriptions', areas: ['OPERATIONS'] },
   { prefix: 'admin/helpdesk', areas: ['OPERATIONS'] },
+  { prefix: 'admin/time', areas: ['OPERATIONS'] },
+  { prefix: 'admin/work-orders', areas: ['OPERATIONS'] },
+  { prefix: 'admin/booking', areas: ['OPERATIONS'] },
+  { prefix: 'admin/law', areas: ['OPERATIONS'] },
+  { prefix: 'admin/realestate', areas: ['OPERATIONS'] },
+  { prefix: 'admin/propertymgmt', areas: ['OPERATIONS'] },
 ];
 
-const WRITE_SEGMENTS = new Set(['new', 'edit', 'record-payment', 'open-session', 'chart-country', 'walk-in', 'from-purchase']);
+const WRITE_SEGMENTS = new Set(['new', 'edit', 'record-payment', 'open-session', 'chart-country', 'walk-in', 'from-purchase', 'approvals', 'billing', 'reconcile']);
 
 function normalise(path: string): string {
   const noQuery = path.split('?')[0].split('#')[0];

@@ -536,6 +536,76 @@ table th {
   text-align: right;
 }
 
+/* ---- phone cards for tables ----
+   A table with class "stack" (every cell carries data-label with its column title) turns into a
+   list of cards on a phone: one card per row, each cell on its own line with the column title in
+   front. The header row is hidden; an empty data-label (the buttons column) shows no title.
+   Screen only: a printed page never turns into cards. Tables get the class (and the labels)
+   from AutoStackService, so a new list needs nothing extra; class "no-stack" opts one out. */
+@media screen and (max-width: 768px) {
+  table.stack,
+  table.stack tbody,
+  table.stack tfoot {
+    display: block;
+    width: 100%;
+  }
+  table.stack thead {
+    display: none;
+  }
+  table.stack tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  table.stack td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    border: 0;
+    padding: 0.2rem 0;
+    text-align: right;
+    white-space: normal !important;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.stack td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    max-width: 45%;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    text-align: left;
+  }
+  table.stack td[data-label='']::before {
+    display: none;
+  }
+  table.stack td[data-label=''] {
+    justify-content: flex-end;
+  }
+  /* a cell with nothing in it (a blank amount, no buttons) takes no line on a phone */
+  table.stack td:empty {
+    display: none;
+  }
+}
+
+/* ---- list pager ---- */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+
 /* ---- alerts / badges ---- */
 .alert {
   padding: 0.6rem 0.9rem;
@@ -813,3 +883,38 @@ table th {
   background: var(--bg);
   cursor: pointer;
 }
+
+/* ---- CP-7: dashboard that acts ---- */
+.dash-section { margin-bottom: 1.5rem; }
+.dash-h { margin: 0 0 0.6rem; }
+.dash-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.25rem; }
+.attn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; }
+.attn-tile {
+  display: flex; flex-direction: column; gap: 0.15rem; text-decoration: none; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 0.9rem;
+}
+.attn-tile:hover { border-color: var(--warning-text); }
+.attn-tile .attn-count { font-size: 1.6rem; font-weight: 700; color: var(--warning-text); }
+.attn-tile.attn-hot .attn-count { color: var(--danger-text); }
+.attn-tile .attn-label { color: var(--muted); font-size: 0.82rem; }
+.attn-tile .attn-amount { font-size: 0.9rem; font-weight: 600; }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.9rem; margin-bottom: 0.9rem; }
+.cmp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.cmp-card .cmp-value { font-size: 1.6rem; font-weight: 700; }
+.cmp-card .cmp-delta { font-size: 0.85rem; font-weight: 600; }
+.delta-up { color: #3fb27f; }
+.delta-down { color: var(--danger-text); }
+.delta-flat { color: var(--muted); }
+.chart-legend { font-size: 0.8rem; margin-bottom: 0.4rem; }
+.chart-legend .lg { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; }
+.chart-legend .lg-pos { background: #4f8ef7; }
+.chart-legend .lg-inv { background: #e0a93b; }
+.bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.6rem 0.3rem; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: stretch; height: 100%; min-width: 0; }
+.bar-stack { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
+.bar-pos { background: #4f8ef7; border-radius: 2px 2px 0 0; min-height: 0; }
+.bar-inv { background: #e0a93b; border-radius: 2px 2px 0 0; min-height: 0; }
+.bar-label { text-align: center; font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+/* ---- CP-8: price lists and customer groups ---- */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0 1rem; }

@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PagerComponent } from '../shared/pager.component';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { ListState } from '../core/api/list-state';
 import { InvoiceApiService } from '../core/api/invoice-api.service';
 import { Branch, Invoice } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
@@ -23,10 +26,10 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 @Component({
   selector: 'app-invoice-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <div>
           <h3 style="margin-bottom:0;">{{ customerName ? 'Invoices for ' + customerName : 'Invoices' }}</h3>
@@ -34,12 +37,7 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
         </div>
         <a class="btn btn-primary" routerLink="/admin/invoices/new">+ New invoice</a>
       </div>
-      <div class="flex gap-2 align-center mb-3" *ngIf="branches.length > 1">
-        <select class="form-select" style="width:auto;" [(ngModel)]="branchFilter" title="Branch">
-          <option [ngValue]="null">All branches</option>
-          <option *ngFor="let br of branches" [ngValue]="br.id">{{ br.name }}</option>
-        </select>
-      </div>
+      <app-list-filter exportKind="invoices" [exportExtra]="{ customerId: customerId }" placeholder="Search invoice no., customer, sale order…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -56,7 +54,7 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let inv of shown">
+          <tr *ngFor="let inv of list.rows">
             <td>{{ inv.invoiceNumber }}</td>
             <td>{{ inv.salesOrderNumber || '—' }}</td>
             <td>{{ inv.customerName }}</td>
@@ -70,35 +68,31 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
               <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">View</a>
             </td>
           </tr>
-          <tr *ngIf="invoices.length === 0">
-            <td colspan="9" class="text-muted">
-              {{ customerName ? 'No invoices for ' + customerName + ' yet.' : 'No invoices yet — generate one from a sale order\\'s detail page once it\\'s confirmed, or create one directly with "+ New invoice".' }}
-            </td>
+          <tr *ngIf="list.loaded && list.rows.length === 0">
+            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>{{ customerName ? 'No invoices for ' + customerName + ' yet.' : 'No invoices yet — generate one from a sale order\\'s detail page once it\\'s confirmed, or create one directly with "+ New invoice".' }}</ng-template></td>
           </tr>
         </tbody>
       </table>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class InvoiceListComponent implements OnInit {
-  /** Branch filter + column — only shown with more than one active branch. */
+  /** Branch column + choice — only shown with more than one active branch. */
   branches: Branch[] = [];
-  branchFilter: number | null = null;
 
-  get shown(): Invoice[] {
-    return this.branchFilter == null ? this.invoices : this.invoices.filter((inv) => effectiveBranchId(inv.branchId, this.branches) === this.branchFilter);
-  }
 
   branchName(id: number | null | undefined): string {
     return branchNameOf(id, this.branches);
   }
 
-  invoices: Invoice[] = [];
   error: string | null = null;
   /** Fourier: "on the customer ... view button" — set from `?customerId=&customerName=`, null for the store-wide list. */
   customerId: number | null = null;
   customerName: string | null = null;
 
+  list = new ListState<Invoice>((f, p, sz) => this.invoiceApi.page(f, p, sz, { customerId: this.customerId }), 'Failed to load invoices');
+  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'ISSUED', label: 'Issued' }, { value: 'VOID', label: 'Void' }];
   constructor(private invoiceApi: InvoiceApiService, private route: ActivatedRoute, private branchApi: BranchApiService) {}
 
   ngOnInit(): void {
@@ -108,10 +102,7 @@ export class InvoiceListComponent implements OnInit {
       this.customerId = Number(customerIdParam);
       this.customerName = this.route.snapshot.queryParamMap.get('customerName') ?? `#${customerIdParam}`;
     }
-    this.invoiceApi.listAll(this.customerId).subscribe({
-      next: (i) => (this.invoices = i),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load invoices'),
-    });
+    this.list.load();
   }
 
   statusClass(status: string): string {

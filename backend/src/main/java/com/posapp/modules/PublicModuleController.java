@@ -1,5 +1,6 @@
 package com.posapp.modules;
 
+import com.posapp.realestate.RePublicService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,9 +17,11 @@ import java.util.Map;
 public class PublicModuleController {
 
     private final ModuleService service;
+    private final RePublicService realEstate;
 
-    public PublicModuleController(ModuleService service) {
+    public PublicModuleController(ModuleService service, RePublicService realEstate) {
         this.service = service;
+        this.realEstate = realEstate;
     }
 
     @GetMapping
@@ -26,6 +29,9 @@ public class PublicModuleController {
         Map<String, Boolean> result = new LinkedHashMap<>();
         result.put(ModuleKey.RESTAURANT.name(), service.isEnabled(ModuleKey.RESTAURANT));
         result.put(ModuleKey.HELPDESK.name(), service.isEnabled(ModuleKey.HELPDESK));
+        result.put(ModuleKey.BOOKING.name(), service.isEnabled(ModuleKey.BOOKING));
+        // The listings website needs the module and its own switch in the Real Estate settings.
+        result.put(ModuleKey.REAL_ESTATE.name(), realEstate.isOpen());
         return result;
     }
 }

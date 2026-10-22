@@ -35,6 +35,18 @@ public class JwtService {
                 .compact();
     }
 
+    /** A short-lived token for a client portal account. It carries typ=portal so it can never be taken for a firm user's token. */
+    public String generatePortalToken(Long accountId, long minutes) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject("portal:" + accountId)
+                .claim("typ", "portal")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(minutes * 60)))
+                .signWith(key)
+                .compact();
+    }
+
     /** Throws io.jsonwebtoken.JwtException (expired/malformed/bad signature) if the token is invalid. */
     public Claims parseClaims(String token) {
         return Jwts.parser()

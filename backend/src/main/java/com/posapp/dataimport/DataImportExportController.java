@@ -25,11 +25,17 @@ import org.springframework.web.multipart.MultipartFile;
 public class DataImportExportController {
 
     private final BulkImportService bulkImportService;
+    private final MasterImportService masterImportService;
+    private final OpeningBalanceImportService openingBalanceImportService;
+    private final LedgerBalanceImportService ledgerBalanceImportService;
     private final DataExportService dataExportService;
     private final YearEndArchiveService yearEndArchiveService;
 
-    public DataImportExportController(BulkImportService bulkImportService, DataExportService dataExportService,
-                                       YearEndArchiveService yearEndArchiveService) {
+    public DataImportExportController(BulkImportService bulkImportService, MasterImportService masterImportService, OpeningBalanceImportService openingBalanceImportService, LedgerBalanceImportService ledgerBalanceImportService,
+                                       DataExportService dataExportService, YearEndArchiveService yearEndArchiveService) {
+        this.masterImportService = masterImportService;
+        this.openingBalanceImportService = openingBalanceImportService;
+        this.ledgerBalanceImportService = ledgerBalanceImportService;
         this.bulkImportService = bulkImportService;
         this.dataExportService = dataExportService;
         this.yearEndArchiveService = yearEndArchiveService;
@@ -42,8 +48,8 @@ public class DataImportExportController {
     }
 
     @PostMapping(value = "/import/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ImportResultDto importProducts(@RequestParam("file") MultipartFile file) {
-        return bulkImportService.importProducts(file);
+    public ImportResultDto importProducts(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return bulkImportService.importProducts(file, dryRun);
     }
 
     @GetMapping("/import/customers/template")
@@ -52,8 +58,8 @@ public class DataImportExportController {
     }
 
     @PostMapping(value = "/import/customers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ImportResultDto importCustomers(@RequestParam("file") MultipartFile file) {
-        return bulkImportService.importCustomers(file);
+    public ImportResultDto importCustomers(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return bulkImportService.importCustomers(file, dryRun);
     }
 
     @GetMapping("/import/opening-stock/template")
@@ -62,8 +68,70 @@ public class DataImportExportController {
     }
 
     @PostMapping(value = "/import/opening-stock", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ImportResultDto importOpeningStock(@RequestParam("file") MultipartFile file) {
-        return bulkImportService.importOpeningStock(file);
+    public ImportResultDto importOpeningStock(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return bulkImportService.importOpeningStock(file, dryRun);
+    }
+
+    /** {@code dryRun=true}: read the file and report exactly what would happen, saving nothing. */
+    @PostMapping(value = "/import/suppliers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultDto importSuppliers(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return masterImportService.importSuppliers(file, dryRun);
+    }
+
+    @GetMapping("/import/suppliers/template")
+    public ResponseEntity<byte[]> suppliersTemplate() {
+        return csvDownload("suppliers-import-template.csv", masterImportService.suppliersTemplateCsv());
+    }
+
+    @PostMapping(value = "/import/categories", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultDto importCategories(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return masterImportService.importCategories(file, dryRun);
+    }
+
+    @GetMapping("/import/categories/template")
+    public ResponseEntity<byte[]> categoriesTemplate() {
+        return csvDownload("categories-import-template.csv", masterImportService.categoriesTemplateCsv());
+    }
+
+    @PostMapping(value = "/import/brands", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultDto importBrands(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return masterImportService.importBrands(file, dryRun);
+    }
+
+    @GetMapping("/import/brands/template")
+    public ResponseEntity<byte[]> brandsTemplate() {
+        return csvDownload("brands-import-template.csv", masterImportService.brandsTemplateCsv());
+    }
+
+    @PostMapping(value = "/import/customer-balances", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultDto importCustomerBalances(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return openingBalanceImportService.importCustomerBalances(file, dryRun);
+    }
+
+    @GetMapping("/import/customer-balances/template")
+    public ResponseEntity<byte[]> customerBalancesTemplate() {
+        return csvDownload("customer-balances-import-template.csv", openingBalanceImportService.customerBalancesTemplateCsv());
+    }
+
+    @PostMapping(value = "/import/supplier-balances", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultDto importSupplierBalances(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
+        return openingBalanceImportService.importSupplierBalances(file, dryRun);
+    }
+
+    @GetMapping("/import/supplier-balances/template")
+    public ResponseEntity<byte[]> supplierBalancesTemplate() {
+        return csvDownload("supplier-balances-import-template.csv", openingBalanceImportService.supplierBalancesTemplateCsv());
+    }
+
+    @PostMapping(value = "/import/ledger-balances", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultDto importLedgerBalances(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun,
+                                                @RequestParam(defaultValue = "false") boolean balanceToEquity) {
+        return ledgerBalanceImportService.importBalances(file, dryRun, balanceToEquity);
+    }
+
+    @GetMapping("/import/ledger-balances/template")
+    public ResponseEntity<byte[]> ledgerBalancesTemplate() {
+        return csvDownload("ledger-balances-import-template.csv", ledgerBalanceImportService.templateCsv());
     }
 
     @GetMapping("/export/products")

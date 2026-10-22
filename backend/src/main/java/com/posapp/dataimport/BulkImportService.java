@@ -81,10 +81,21 @@ public class BulkImportService {
     /** Columns (case-insensitive, any order): name, sku, barcode, code, unitPrice, costPrice, stockQuantity, trackStock, active, category, brand, taxRateCode, unspCode, service. Only name/unitPrice are required. */
     @Transactional
     public ImportResultDto importProducts(MultipartFile file) {
+        return importProducts(file, false);
+    }
+
+    /** {@code dryRun}: do everything, report what happened, then roll it all back. */
+    @Transactional
+    public ImportResultDto importProducts(MultipartFile file, boolean dryRun) {
         int imported = 0;
         List<SkippedRowDto> skippedRows = new ArrayList<>();
+        List<SkippedRowDto> accepted = new ArrayList<>();
+        java.util.Set<String> newCategories = new java.util.LinkedHashSet<>();
+        java.util.Set<String> newBrands = new java.util.LinkedHashSet<>();
         int rowNumber = 0;
-        for (Map<String, String> row : readRows(file)) {
+        List<Map<String, String>> all = readRows(file);
+        ImportSupport.requireColumns(all, "name", "unitPrice");
+        for (Map<String, String> row : all) {
             rowNumber++;
             try {
                 ProductRequest request = new ProductRequest();
@@ -99,29 +110,42 @@ public class BulkImportService {
                 request.setActive(boolOrDefault(row, "active", true));
                 request.setService(boolOrDefault(row, "service", false));
                 request.setUnspCode(text(row, "unspCode"));
-                request.setCategoryId(categoryIdOrCreate(text(row, "category")));
-                request.setBrandId(brandIdOrCreate(text(row, "brand")));
+                request.setCategoryId(categoryIdOrCreate(text(row, "category"), newCategories));
+                request.setBrandId(brandIdOrCreate(text(row, "brand"), newBrands));
                 request.setTaxRateId(taxRateIdOrNull(text(row, "taxRateCode")));
 
                 catalogService.createProduct(request);
                 imported++;
+                accepted.add(new SkippedRowDto(rowNumber, request.getName() + " at " + request.getUnitPrice().stripTrailingZeros().toPlainString()
+                        + (request.getStockQuantity() > 0 ? ", " + request.getStockQuantity() + " in stock" : "")));
             } catch (ApiException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, ex.getMessage()));
             } catch (RuntimeException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, "Unexpected error: " + ex.getMessage()));
             }
         }
-        return new ImportResultDto(imported, skippedRows.size(), skippedRows);
+        List<String> notes = new ArrayList<>();
+        if (!newCategories.isEmpty()) notes.add("New categories that will be created: " + String.join(", ", newCategories));
+        if (!newBrands.isEmpty()) notes.add("New brands that will be created: " + String.join(", ", newBrands));
+        return ImportSupport.result(dryRun, rowNumber, imported, skippedRows, accepted, notes);
     }
 
     /** Columns: name, phone, email, taxId, creditEnabled, creditLimit, defaultCreditTermDays. Only name is required. A row matching an existing (or earlier-in-this-file) customer on name+phone, case-insensitive, is skipped rather than creating a duplicate. */
     @Transactional
     public ImportResultDto importCustomers(MultipartFile file) {
+        return importCustomers(file, false);
+    }
+
+    @Transactional
+    public ImportResultDto importCustomers(MultipartFile file, boolean dryRun) {
         List<Customer> seenThisBatch = new ArrayList<>(customerRepository.findAll());
         int imported = 0;
         List<SkippedRowDto> skippedRows = new ArrayList<>();
+        List<SkippedRowDto> accepted = new ArrayList<>();
         int rowNumber = 0;
-        for (Map<String, String> row : readRows(file)) {
+        List<Map<String, String>> all = readRows(file);
+        ImportSupport.requireColumns(all, "name");
+        for (Map<String, String> row : all) {
             rowNumber++;
             try {
                 String name = requireText(row, "name");
@@ -142,22 +166,31 @@ public class BulkImportService {
                 Customer saved = customerRepository.save(customer);
                 seenThisBatch.add(saved);
                 imported++;
+                accepted.add(new SkippedRowDto(rowNumber, name + (phone == null ? "" : ", " + phone) + (customer.isCreditEnabled() ? ", credit limit " + customer.getCreditLimit().stripTrailingZeros().toPlainString() : "")));
             } catch (ApiException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, ex.getMessage()));
             } catch (RuntimeException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, "Unexpected error: " + ex.getMessage()));
             }
         }
-        return new ImportResultDto(imported, skippedRows.size(), skippedRows);
+        return ImportSupport.result(dryRun, rowNumber, imported, skippedRows, accepted, List.of());
     }
 
     /** Columns: code, sku, openingQuantity. At least one of code/sku (tried in that order) must match an existing product; openingQuantity is required. Sets stockQuantity directly — see this class's own javadoc for why it bypasses the usual adjust-stock path. */
     @Transactional
     public ImportResultDto importOpeningStock(MultipartFile file) {
+        return importOpeningStock(file, false);
+    }
+
+    @Transactional
+    public ImportResultDto importOpeningStock(MultipartFile file, boolean dryRun) {
         int imported = 0;
         List<SkippedRowDto> skippedRows = new ArrayList<>();
+        List<SkippedRowDto> accepted = new ArrayList<>();
         int rowNumber = 0;
-        for (Map<String, String> row : readRows(file)) {
+        List<Map<String, String>> all = readRows(file);
+        ImportSupport.requireColumns(all, "openingQuantity");
+        for (Map<String, String> row : all) {
             rowNumber++;
             try {
                 int quantity = requireInt(row, "openingQuantity");
@@ -166,16 +199,18 @@ public class BulkImportService {
                 Optional<Product> byCode = code != null ? productRepository.findByCodeIgnoreCase(code) : Optional.<Product>empty();
                 Optional<Product> bySku = sku != null ? productRepository.findBySkuIgnoreCase(sku) : Optional.<Product>empty();
                 Product product = byCode.or(() -> bySku).orElseThrow(() -> ApiException.notFound("No product found for code/sku on this row"));
+                int before = product.getStockQuantity();
                 product.setStockQuantity(quantity);
                 productRepository.save(product);
                 imported++;
+                accepted.add(new SkippedRowDto(rowNumber, product.getName() + ": stock " + before + " becomes " + quantity));
             } catch (ApiException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, ex.getMessage()));
             } catch (RuntimeException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, "Unexpected error: " + ex.getMessage()));
             }
         }
-        return new ImportResultDto(imported, skippedRows.size(), skippedRows);
+        return ImportSupport.result(dryRun, rowNumber, imported, skippedRows, accepted, List.of());
     }
 
     // ---- downloadable templates (Fourier: "a button to download a template to upload") ----
@@ -324,12 +359,13 @@ public class BulkImportService {
     /** Default color for a category auto-created from a CSV import — an admin can always recolor it afterward from Admin > Inventory > Categories, same as any other category. */
     private static final String DEFAULT_IMPORTED_CATEGORY_COLOR = "#6c757d";
 
-    private Long categoryIdOrCreate(String name) {
+    private Long categoryIdOrCreate(String name, java.util.Set<String> created) {
         if (name == null) {
             return null;
         }
         return categoryRepository.findByNameIgnoreCase(name)
                 .orElseGet(() -> {
+                    created.add(name);
                     Category category = new Category();
                     category.setName(name);
                     category.setColorHex(DEFAULT_IMPORTED_CATEGORY_COLOR);
@@ -338,12 +374,13 @@ public class BulkImportService {
                 .getId();
     }
 
-    private Long brandIdOrCreate(String name) {
+    private Long brandIdOrCreate(String name, java.util.Set<String> created) {
         if (name == null) {
             return null;
         }
         return brandRepository.findByNameIgnoreCase(name)
                 .orElseGet(() -> {
+                    created.add(name);
                     Brand brand = new Brand();
                     brand.setName(name);
                     return brandRepository.save(brand);

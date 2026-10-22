@@ -1,5 +1,9 @@
 package com.posapp.inventory;
 
+import org.springframework.http.ResponseEntity;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.common.ListPaging;
 import com.posapp.inventory.dto.SupplierDto;
 import com.posapp.inventory.dto.SupplierRequest;
 import jakarta.validation.Valid;
@@ -21,8 +25,14 @@ public class SupplierController {
     }
 
     @GetMapping
-    public List<SupplierDto> listAll() {
-        return supplierService.listAll();
+    public ResponseEntity<List<SupplierDto>> listAll(@RequestParam(required = false) String q,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        List<SupplierDto> rows = supplierService.listAll().stream()
+                .filter(x -> ListPaging.has(q, x.name(), x.contactName(), x.phone(), x.email(), x.taxId()))
+                .filter(x -> active == null || active == x.active())
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     /** Powers the purchase-order form's supplier picker — active suppliers only. */

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PaperButtonComponent } from '../shared/paper-button.component';
 import { StockCountApiService } from '../core/api/stock-count-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
@@ -18,7 +19,7 @@ import { Product, StockCount, StockCountLine, WarehouseLocation } from '../core/
 @Component({
   selector: 'app-stock-count-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -46,6 +47,8 @@ import { Product, StockCount, StockCountLine, WarehouseLocation } from '../core/
 
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
           <button class="btn btn-outline-primary" type="button" (click)="print()">Print sheet</button>
+          <app-paper-button *ngIf="c.status !== 'CANCELLED'" class="paper-count" [label]="c.status === 'IN_PROGRESS' ? 'Count sheet (PDF, blind)' : 'Result sheet (PDF)'" [path]="'/stock-counts/' + c.id + '/sheet'" file="stock-count.pdf"></app-paper-button>
+          <app-paper-button *ngIf="c.status === 'IN_PROGRESS'" class="paper-count-system" label="Count sheet (PDF, with expected qty)" [path]="'/stock-counts/' + c.id + '/sheet?showSystem=true'" file="stock-count.pdf"></app-paper-button>
           <ng-container *ngIf="c.status === 'IN_PROGRESS'">
             <button class="btn btn-outline-primary" type="button" [disabled]="busy" (click)="save()">Save counts</button>
             <button class="btn btn-primary" type="button" [disabled]="busy" (click)="submit()">Submit for approval</button>

@@ -73,6 +73,15 @@ public class InvoiceService {
     /** Validates the branch chosen on an invoice, applies its document prefix, and supplies the branch header for printed copies. */
     private final com.posapp.branch.BranchService branchService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.pricing.PricingService pricingService;
+
+    /** The price a customer in a price-list group pays when no price was typed; the normal price for anyone else. */
+    private BigDecimal pricedUnit(Long customerId, Product product, int quantity) {
+        Customer customer = customerId == null ? null : customerRepository.findById(customerId).orElse(null);
+        return pricingService.resolve(customer, product, Math.max(1, quantity)).unitPrice();
+    }
+
     public InvoiceService(InvoiceRepository invoiceRepository,
                            SalesOrderService salesOrderService,
                            CatalogService catalogService,
@@ -355,7 +364,7 @@ public class InvoiceService {
         if (discountType == GlobalDiscountType.FIXED_AMOUNT) {
             BigDecimal rawSubtotal = entries.stream().map(entry -> {
                 Product p = catalogService.getProductOrThrow(entry.getProductId());
-                BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : p.getUnitPrice();
+                BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : pricedUnit(invoice.getCustomerId(), p, entry.getQuantity());
                 return unitPrice.multiply(BigDecimal.valueOf(entry.getQuantity())).setScale(2, RoundingMode.HALF_UP);
             }).reduce(BigDecimal.ZERO, BigDecimal::add);
             requestedPercent = TaxMath.percentFromFixedAmount(request.getDiscountFixedAmount(), rawSubtotal);
@@ -386,7 +395,7 @@ public class InvoiceService {
                     : product.getDescription();
             line.setDescription(description);
             line.setQuantity(entry.getQuantity());
-            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : product.getUnitPrice();
+            BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : pricedUnit(invoice.getCustomerId(), product, entry.getQuantity());
             line.setUnitPrice(unitPrice);
             // Fourier: "Same for discount (but discount should be activate in the setting or
             // configuration) and it will be per line" — validated/capped (including whether the
@@ -511,6 +520,9 @@ public class InvoiceService {
     @Transactional
     public InvoiceDto cancelPaidInvoice(Long id, CancelPaidInvoiceRequest request) {
         Invoice invoice = getEntityOrThrow(id);
+        if (invoice.isOpeningBalance()) {
+            throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " is an opening balance, not a sale, so it cannot be cancelled as a paid invoice.");
+        }
         if (invoice.getStatus() != InvoiceStatus.ISSUED) {
             throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " is already " + invoice.getStatus());
         }
@@ -582,6 +594,47 @@ public class InvoiceService {
      * "create-time state machine enforces exactly-once" guarantee {@link #issue}'s own {@code
      * DRAFT}-only guard provides for a manually-issued draft.
      */
+    /**
+     * An opening balance: what this customer already owed when the business started using the system. One issued invoice with a single "Opening balance" line, no tax,
+     * dated {@code asOf}; posts Receivables against Owner's Equity (not Sales Revenue). Never e-mailed to the customer. It is collected and voided like any invoice.
+     */
+    @Transactional
+    public InvoiceDto generateOpening(Long customerId, BigDecimal amount, LocalDate asOf, LocalDate dueDate, String reference) {
+        Customer customer = getCustomerOrThrow(customerId);
+        if (amount == null || amount.signum() <= 0) throw ApiException.badRequest("The opening balance must be more than zero.");
+        if (amount.scale() > 2 && amount.stripTrailingZeros().scale() > 2) throw ApiException.badRequest("The opening balance can have at most two decimals.");
+        if (asOf == null) throw ApiException.badRequest("The date of the opening balance is required.");
+        if (asOf.isAfter(LocalDate.now())) throw ApiException.badRequest("The date of an opening balance cannot be in the future.");
+        if (invoiceRepository.existsOpeningBalance(customer.getId())) {
+            throw ApiException.badRequest(customer.getName() + " already has an opening balance. Void it first if it was wrong.");
+        }
+        BigDecimal value = amount.setScale(2, RoundingMode.HALF_UP);
+        Invoice invoice = new Invoice();
+        invoice.setInvoiceNumber("OB-" + System.nanoTime());
+        invoice.setStatus(InvoiceStatus.ISSUED);
+        invoice.setOpeningBalance(true);
+        invoice.setCustomerId(customer.getId());
+        invoice.setCustomerName(customer.getName());
+        invoice.setInvoiceDate(asOf.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+        invoice.setDueDate(dueDate);
+        invoice.setNotes(reference == null || reference.isBlank() ? "Opening balance" : "Opening balance - " + reference.trim());
+        InvoiceLine line = new InvoiceLine();
+        line.setInvoice(invoice);
+        line.setProductName("Opening balance");
+        line.setDescription(invoice.getNotes());
+        line.setQuantity(1);
+        line.setUnitPrice(value);
+        line.setDiscountPercent(BigDecimal.ZERO);
+        line.setLineTotal(value);
+        invoice.getLines().add(line);
+        invoice.setTotalAmount(value);
+        Invoice saved = invoiceRepository.save(invoice);
+        auditLogService.record("INVOICE_OPENING_BALANCE",
+                "Recorded opening balance " + saved.getInvoiceNumber() + " of " + value + " for " + customer.getName() + " as of " + asOf, "Invoice", saved.getId());
+        accountingService.postInvoiceIssued(saved);
+        return toDto(saved);
+    }
+
     @Transactional
     public InvoiceDto generateForSubscription(Long customerId, String customerName, Long subscriptionId, String planName, BigDecimal amount,
                                                String taxCode, BigDecimal taxRatePercent, Boolean taxInclusive, BigDecimal discountPercent,

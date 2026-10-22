@@ -81,6 +81,9 @@ public class SalesOrderService {
     /** Serial numbers chosen when fulfilling. */
     private final com.posapp.tracking.TrackingService trackingService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.pricing.PricingService pricingService;
+
     public SalesOrderService(SalesOrderRepository salesOrderRepository,
                               CustomerRepository customerRepository,
                               CatalogService catalogService,
@@ -526,7 +529,7 @@ public class SalesOrderService {
             line.setProduct(product);
             line.setProductName(product.getName());
             line.setQuantityOrdered(entry.getQuantityOrdered());
-            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : product.getUnitPrice());
+            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : pricingService.resolve(so.getCustomer(), product, Math.max(1, entry.getQuantityOrdered())).unitPrice());
             // Fourier: "Same for discount (but discount should be activate in the setting or
             // configuration) and it will be per line" — validated/capped (including whether the
             // feature is even turned on) before ever reaching the line.

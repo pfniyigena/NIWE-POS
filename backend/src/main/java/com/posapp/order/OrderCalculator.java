@@ -25,8 +25,8 @@ public final class OrderCalculator {
 
     public static BigDecimal lineTotal(OrderLine line) {
         BigDecimal gross = line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity()));
-        BigDecimal discount = line.getDiscountPercent() == null ? BigDecimal.ZERO : line.getDiscountPercent();
-        BigDecimal factor = BigDecimal.ONE.subtract(discount.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        BigDecimal discount = line.effectiveDiscountPercent();
+        BigDecimal factor = BigDecimal.ONE.subtract(discount.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
         return gross.multiply(factor).setScale(SCALE, RoundingMode.HALF_UP);
     }
 

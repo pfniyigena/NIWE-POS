@@ -13,7 +13,7 @@ interface PublicLink {
   route: string;
   linkLabel: string;
   /** The module that must be switched on for this tile to show (Settings > Modules). */
-  module: 'RESTAURANT' | 'HELPDESK';
+  module: 'RESTAURANT' | 'HELPDESK' | 'BOOKING' | 'REAL_ESTATE';
 }
 
 /**
@@ -104,6 +104,8 @@ export class PublicHomeComponent implements OnInit {
   private allLinks: PublicLink[] = [
     { icon: '🍽️', title: 'Reserve a table', description: 'Book a table for an upcoming visit.', route: '/reserve', linkLabel: 'Reserve now', module: 'RESTAURANT' },
     { icon: '🎫', title: 'Help Desk', description: 'Submit a support request or check an existing ticket.', route: '/helpdesk', linkLabel: 'Open Help Desk', module: 'HELPDESK' },
+    { icon: '📅', title: 'Book an appointment', description: 'Pick a service and a time that suits you.', route: '/book', linkLabel: 'Book now', module: 'BOOKING' },
+    { icon: '🏠', title: 'Find a property', description: 'Browse homes and land for sale or rent.', route: '/listings', linkLabel: 'Browse properties', module: 'REAL_ESTATE' },
   ];
 
   /** Only the services whose module is switched on (Settings > Modules); empty until that is known. */

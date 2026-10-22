@@ -1,5 +1,9 @@
 package com.posapp.invoice;
 
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.branch.BranchService;
+import com.posapp.common.ListPaging;
 import com.posapp.credit.dto.CustomerPaymentDto;
 import com.posapp.credit.dto.RecordInvoicePaymentRequest;
 import com.posapp.email.EmailDocumentRequest;
@@ -25,14 +29,24 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
-    public InvoiceController(InvoiceService invoiceService) {
+    private final BranchService branchService;
+
+    public InvoiceController(InvoiceService invoiceService, BranchService branchService) {
+        this.branchService = branchService;
         this.invoiceService = invoiceService;
     }
 
     /** Fourier: "on the customer ... view button where we can have button to view the list of invoices, payments etc" — optional {@code ?customerId=} narrows this to one customer; see InvoiceService.listAll's javadoc. */
     @GetMapping
-    public List<InvoiceDto> listAll(@RequestParam(required = false) Long customerId) {
-        return invoiceService.listAll(customerId);
+    public ResponseEntity<List<InvoiceDto>> listAll(@RequestParam(required = false) Long customerId, @RequestParam(required = false) String q, @RequestParam(required = false) String status, @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<InvoiceDto> rows = invoiceService.listAll(customerId).stream()
+                .filter(i -> ListPaging.has(q, i.invoiceNumber(), i.customerName(), i.salesOrderNumber()))
+                .filter(i -> ListPaging.is(status, i.status()))
+                .filter(i -> ListPaging.branch(i.branchId(), branchId, hq))
+                .filter(i -> ListPaging.between(i.invoiceDate(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/{id}")
@@ -42,8 +56,15 @@ public class InvoiceController {
 
     /** Fourier: "Add credit note Menu (Void) Where we can printout them" — see InvoiceService.listCreditNotes's javadoc. Declared before "/{id}" only for readability; Spring resolves this literal path ahead of the path-variable one regardless of declaration order. */
     @GetMapping("/credit-notes")
-    public List<InvoiceDto> listCreditNotes() {
-        return invoiceService.listCreditNotes();
+    public ResponseEntity<List<InvoiceDto>> listCreditNotes(@RequestParam(required = false) String q,
+            @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<InvoiceDto> rows = invoiceService.listCreditNotes().stream()
+                .filter(i -> ListPaging.has(q, i.creditNoteNumber(), i.invoiceNumber(), i.customerName()))
+                .filter(i -> ListPaging.branch(i.branchId(), branchId, hq))
+                .filter(i -> ListPaging.between(i.voidedAt(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     /** See InvoiceService.creditNotePdf's javadoc. */

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { Bill, RecordBillPaymentRequest, SupplierPayment, VoidBillRequest } from '../models';
 
 /**
@@ -70,5 +72,13 @@ export class BillApiService {
   /** This bill's own payment history. */
   paymentHistory(id: number): Observable<SupplierPayment[]> {
     return this.http.get<SupplierPayment[]>(`${API_BASE}/bills/${id}/payments`);
+  }
+
+  page(f: ListFilter, page: number, size: number): Observable<PageResult<Bill>> {
+    return pagedList<Bill>(this.http, `${API_BASE}/bills`, f, page, size);
+  }
+
+  refundPage(f: ListFilter, page: number, size: number): Observable<PageResult<Bill>> {
+    return pagedList<Bill>(this.http, `${API_BASE}/bills/refunds`, f, page, size);
   }
 }

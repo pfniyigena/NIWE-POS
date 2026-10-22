@@ -1,5 +1,9 @@
 package com.posapp.bill;
 
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.branch.BranchService;
+import com.posapp.common.ListPaging;
 import com.posapp.bill.dto.BillDto;
 import com.posapp.bill.dto.VoidBillRequest;
 import com.posapp.inventory.dto.RecordBillPaymentRequest;
@@ -22,14 +26,24 @@ public class BillController {
 
     private final BillService billService;
 
-    public BillController(BillService billService) {
+    private final BranchService branchService;
+
+    public BillController(BillService billService, BranchService branchService) {
+        this.branchService = branchService;
         this.billService = billService;
     }
 
     /** Optional {@code ?supplierId=} narrows this to one supplier; see BillService.listAll's javadoc. */
     @GetMapping
-    public List<BillDto> listAll(@RequestParam(required = false) Long supplierId) {
-        return billService.listAll(supplierId);
+    public ResponseEntity<List<BillDto>> listAll(@RequestParam(required = false) Long supplierId, @RequestParam(required = false) String q, @RequestParam(required = false) String status, @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<BillDto> rows = billService.listAll(supplierId).stream()
+                .filter(x -> ListPaging.has(q, x.billNumber(), x.supplierName(), x.purchaseOrderNumber()))
+                .filter(x -> ListPaging.is(status, x.status()))
+                .filter(x -> ListPaging.branch(x.branchId(), branchId, hq))
+                .filter(x -> ListPaging.between(x.billDate(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/{id}")
@@ -39,8 +53,15 @@ public class BillController {
 
     /** Fourier: "Refunds equivalent with Credit note" — see BillService.listRefunds's javadoc. Declared before "/{id}" only for readability; Spring resolves this literal path ahead of the path-variable one regardless of declaration order. */
     @GetMapping("/refunds")
-    public List<BillDto> listRefunds() {
-        return billService.listRefunds();
+    public ResponseEntity<List<BillDto>> listRefunds(@RequestParam(required = false) String q,
+            @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<BillDto> rows = billService.listRefunds().stream()
+                .filter(x -> ListPaging.has(q, x.refundNumber(), x.billNumber(), x.supplierName()))
+                .filter(x -> ListPaging.branch(x.branchId(), branchId, hq))
+                .filter(x -> ListPaging.between(x.voidedAt(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     /** See BillService.refundPdf's javadoc. */

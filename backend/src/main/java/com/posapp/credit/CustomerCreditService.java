@@ -492,6 +492,34 @@ public class CustomerCreditService {
      */
     @Transactional
     public CustomerPaymentDto recordInvoicePayment(Long invoiceId, RecordInvoicePaymentRequest request, AppUser caller) {
+        return recordInvoicePaymentWith(invoiceId, request.getAmount(), request.getMethod(), request.getNote(), caller, false);
+    }
+
+    /** Law firm module: the payment method code of a fee paid out of a client's trust money (not a till tender, so it is not one of the payment methods). */
+    public static final String TRUST_METHOD = "TRUST";
+
+    /**
+     * Law firm module: an invoice paid with the client's own money held in trust. Recorded exactly like any payment on the invoice
+     * (receipt, paid and outstanding figures, Dr Cash / Cr Accounts Receivable); the trust side is posted by the caller.
+     */
+    @Transactional
+    public CustomerPaymentDto recordInvoicePaymentFromTrust(Long invoiceId, java.math.BigDecimal amount, String note, AppUser caller) {
+        return recordInvoicePaymentWith(invoiceId, amount, TRUST_METHOD, note, caller, true);
+    }
+
+    /** Property Management: the method code of rent paid out of a tenant's security deposit (not a till tender, so it is not one of the payment methods). */
+    public static final String DEPOSIT_METHOD = "DEPOSIT";
+
+    /**
+     * Property Management: a rent invoice paid out of the tenant's security deposit. Recorded exactly like any payment on the invoice (receipt, paid and outstanding figures,
+     * Dr Cash / Cr Accounts Receivable); the deposit side is posted by the caller.
+     */
+    @Transactional
+    public CustomerPaymentDto recordInvoicePaymentFromDeposit(Long invoiceId, java.math.BigDecimal amount, String note, AppUser caller) {
+        return recordInvoicePaymentWith(invoiceId, amount, DEPOSIT_METHOD, note, caller, true);
+    }
+
+    private CustomerPaymentDto recordInvoicePaymentWith(Long invoiceId, java.math.BigDecimal amount, String method, String note, AppUser caller, boolean fromTrust) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> ApiException.notFound("Invoice not found: " + invoiceId));
         if (invoice.getStatus() != InvoiceStatus.ISSUED) {
@@ -503,23 +531,23 @@ public class CustomerCreditService {
         Customer customer = getCustomerOrThrow(invoice.getCustomerId());
 
         BigDecimal outstanding = outstandingForInvoice(invoice);
-        if (request.getAmount().compareTo(outstanding) > 0) {
-            throw ApiException.badRequest("Payment of " + request.getAmount() + " exceeds invoice " + invoice.getInvoiceNumber()
+        if (amount.compareTo(outstanding) > 0) {
+            throw ApiException.badRequest("Payment of " + amount + " exceeds invoice " + invoice.getInvoiceNumber()
                     + "'s outstanding amount of " + outstanding);
         }
 
         CustomerPayment payment = new CustomerPayment();
         payment.setCustomer(customer);
-        payment.setAmount(request.getAmount());
+        payment.setAmount(amount);
         payment.setPaidAt(Instant.now());
-        payment.setMethod(paymentMethodService.validateActiveCodeOrThrow(request.getMethod()));
-        payment.setNote(request.getNote());
+        payment.setMethod(fromTrust ? method : paymentMethodService.validateActiveCodeOrThrow(method));
+        payment.setNote(note);
         payment.setReceiptNumber("PMT-" + System.currentTimeMillis());
         payment.setRecordedBy(caller);
 
         CustomerPaymentAllocation allocation = new CustomerPaymentAllocation();
         allocation.setPayment(payment);
-        allocation.setAmountApplied(request.getAmount());
+        allocation.setAmountApplied(amount);
         allocation.setInvoice(invoice);
         payment.getAllocations().add(allocation);
         payment.setBranchId(invoice.getBranchId());

@@ -69,6 +69,38 @@ public class OrderLine extends BaseEntity {
     private int quantity = 1;
     private BigDecimal discountPercent = BigDecimal.ZERO;
 
+    /** The product's normal price when this line was priced, kept so a receipt can show what a price list took off. Null on older sales. */
+    @jakarta.persistence.Column(name = "list_price")
+    private BigDecimal listPrice;
+
+    /** Name of the price list this line's price came from, when it differs from the normal price. */
+    @jakarta.persistence.Column(name = "price_note")
+    private String priceNote;
+
+    /**
+     * What promotions took off this line, as a percent of the line after the cashier's own discount
+     * (see {@code com.posapp.promotions.PromotionService}). Kept apart from {@link #discountPercent}
+     * so the cashier's discount stays exactly what was typed. Always use {@link #effectiveDiscountPercent()}
+     * for money.
+     */
+    @jakarta.persistence.Column(name = "promo_percent", nullable = false)
+    private BigDecimal promoPercent = BigDecimal.ZERO;
+
+    /** Names of the promotions that touched this line, for the till and the receipt. */
+    @jakarta.persistence.Column(name = "promo_note")
+    private String promoNote;
+
+    /** The cashier's discount and the promotions' discount together, as one percent: 100 - (100-d)(100-p)/100. */
+    public BigDecimal effectiveDiscountPercent() {
+        BigDecimal d = discountPercent == null ? BigDecimal.ZERO : discountPercent;
+        BigDecimal p = promoPercent == null ? BigDecimal.ZERO : promoPercent;
+        if (p.signum() == 0) {
+            return d;
+        }
+        BigDecimal hundred = BigDecimal.valueOf(100);
+        return hundred.subtract(hundred.subtract(d).multiply(hundred.subtract(p)).divide(hundred, 10, java.math.RoundingMode.HALF_UP));
+    }
+
     /**
      * Task 6: "Any transaction affecting stock should be shown to Stock Movement History (Pos
      * sales...)" — this product's stock immediately before/after checkout applied this line's

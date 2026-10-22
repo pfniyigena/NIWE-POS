@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { Customer } from '../models';
 
 export interface CustomerPayload {
@@ -33,5 +35,10 @@ export class CustomerApiService {
 
   update(id: number, payload: CustomerPayload): Observable<Customer> {
     return this.http.put<Customer>(`${API_BASE}/customers/${id}`, payload);
+  }
+
+  /** One page of customers; `q` searches name, phone, e-mail and tax number. */
+  page(f: ListFilter, page: number, size: number): Observable<PageResult<Customer>> {
+    return pagedList<Customer>(this.http, `${API_BASE}/customers`, f, page, size);
   }
 }

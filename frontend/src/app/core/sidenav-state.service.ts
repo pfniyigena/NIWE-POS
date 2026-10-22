@@ -7,7 +7,7 @@ const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
   // 'customers' renamed to 'sales' (Task: "Then let have Sale as Menu and Move Customers into
   // Sales") — '/admin/sales' covers /admin/sales-orders and /admin/sales/reports in one prefix,
   // alongside the customer-facing screens that moved into this group.
-  { group: 'sales', prefixes: ['/admin/customers', '/admin/customer-payments', '/admin/sales'] },
+  { group: 'sales', prefixes: ['/admin/customers', '/admin/customer-payments', '/admin/collections', '/admin/sales', '/admin/pricing', '/admin/promotions', '/admin/gift-cards', '/admin/loyalty'] },
   {
     group: 'inventory',
     // '/admin/inventory' covers both /admin/inventory/reports (Task 2, this pass) and
@@ -20,6 +20,12 @@ const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
   { group: 'hotel', prefixes: ['/admin/hotel'] },
   { group: 'assets', prefixes: ['/admin/assets'] },
   { group: 'installments', prefixes: ['/admin/installments'] },
+  { group: 'time', prefixes: ['/time', '/admin/time'] },
+  { group: 'workorders', prefixes: ['/work-orders', '/admin/work-orders'] },
+  { group: 'booking', prefixes: ['/booking', '/admin/booking'] },
+  { group: 'law', prefixes: ['/law', '/admin/law'] },
+  { group: 'realestate', prefixes: ['/admin/realestate'] },
+  { group: 'propertymgmt', prefixes: ['/admin/propertymgmt'] },
   { group: 'employees', prefixes: ['/admin/hr/employees', '/admin/hr/reports'] },
   { group: 'org', prefixes: ['/admin/hr/org'] },
   { group: 'attendance', prefixes: ['/admin/hr/attendance', '/admin/hr/leave'] },

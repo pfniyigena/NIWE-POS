@@ -1,5 +1,10 @@
 package com.posapp.inventory;
 
+import org.springframework.http.ResponseEntity;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.branch.BranchService;
+import com.posapp.common.ListPaging;
 import com.posapp.bill.BillService;
 import com.posapp.inventory.dto.PurchaseOrderDto;
 import com.posapp.inventory.dto.PurchaseOrderRequest;
@@ -30,14 +35,25 @@ public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
     private final BillService billService;
 
-    public PurchaseOrderController(PurchaseOrderService purchaseOrderService, BillService billService) {
+    private final BranchService branchService;
+
+    public PurchaseOrderController(PurchaseOrderService purchaseOrderService, BillService billService, BranchService branchService) {
+        this.branchService = branchService;
         this.purchaseOrderService = purchaseOrderService;
         this.billService = billService;
     }
 
     @GetMapping
-    public List<PurchaseOrderDto> listAll() {
-        return purchaseOrderService.listAll();
+    public ResponseEntity<List<PurchaseOrderDto>> listAll(@RequestParam(required = false) Long supplierId, @RequestParam(required = false) String q, @RequestParam(required = false) String status, @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<PurchaseOrderDto> rows = purchaseOrderService.listAll().stream()
+                .filter(x -> ListPaging.has(q, x.orderNumber(), x.supplierName(), x.billNumber()))
+                .filter(x -> ListPaging.is(status, x.status()))
+                .filter(x -> ListPaging.sameId(supplierId, x.supplierId()))
+                .filter(x -> ListPaging.branch(x.branchId(), branchId, hq))
+                .filter(x -> ListPaging.between(x.orderDate(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/{id}")

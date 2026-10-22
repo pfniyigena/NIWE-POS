@@ -8,6 +8,16 @@ import { PaymentMethodApiService } from '../core/api/payment-method-api.service'
 import { CustomerCreditApiService } from '../core/api/customer-credit-api.service';
 import { CreditSummary, Order, PaymentMethod, PaymentMethodOption } from '../core/models';
 import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
+import { GiftCardRow, GiftCardsApiService } from '../core/api/giftcards-api.service';
+import { LoyaltyApiService, LoyaltyBalance } from '../core/api/loyalty-api.service';
+
+/** A gift card put on this sale: the card and how much of it is being spent. */
+interface CardPayment {
+  code: string;
+  maskedCode: string;
+  balance: number;
+  amount: number;
+}
 
 /** One row per active payment method — see the class doc comment for how `selected` drives the UI. */
 interface PaymentRow {
@@ -73,6 +83,40 @@ interface PaymentRow {
                 [hidden]="!row.selected"
               />
             </div>
+            <div class="mb-3 gc-box" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;">
+              <h6 class="mb-2">Gift card</h6>
+              <div class="flex gap-2 mb-2" style="align-items:center; flex-wrap:wrap;">
+                <input class="form-control gc-code" style="max-width:240px;" placeholder="Gift card code" name="gcCode" [(ngModel)]="gcCode" (keyup.enter)="checkCard()" />
+                <button type="button" class="btn btn-outline-secondary gc-check" (click)="checkCard()">Check balance</button>
+              </div>
+              <div class="alert alert-danger gc-error" *ngIf="gcError">{{ gcError }}</div>
+              <div class="flex gap-2 mb-2 gc-found" style="align-items:center; flex-wrap:wrap;" *ngIf="gcFound">
+                <span>Balance <strong class="gc-balance">{{ gcFound.balance | number: '1.2-2' }}</strong><span *ngIf="gcFound.expiresOn" class="text-muted"> · expires {{ gcFound.expiresOn }}</span></span>
+                <input class="form-control gc-amount" style="max-width:140px;" type="number" step="0.01" min="0" name="gcAmount" [(ngModel)]="gcAmount" />
+                <button type="button" class="btn btn-primary gc-add" (click)="addCard()">Use on this sale</button>
+              </div>
+              <div class="flex gap-2 mb-1 gc-applied" style="align-items:center;" *ngFor="let g of giftCards">
+                <span>{{ g.maskedCode }}: <strong>{{ g.amount | number: '1.2-2' }}</strong></span>
+                <button type="button" class="btn btn-sm btn-outline-danger gc-remove" (click)="removeCard(g)">Remove</button>
+              </div>
+            </div>
+            <div class="mb-3 lp-box" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;" *ngIf="loyalty && loyalty.enabled">
+              <h6 class="mb-2">Loyalty points</h6>
+              <p class="mb-2" style="font-size:0.9rem;">
+                <strong class="lp-balance">{{ loyalty.points }}</strong> points (worth {{ loyalty.value | number: '1.2-2' }}).
+                <span class="text-muted" *ngIf="maxPoints() > 0 || pointsApplied > 0">Up to <span class="lp-max">{{ maxPoints() }}</span> can be used on this sale<span *ngIf="loyalty.minRedeemPoints"> (at least {{ loyalty.minRedeemPoints }})</span>.</span>
+              </p>
+              <p class="text-muted lp-none" style="font-size:0.85rem;" *ngIf="pointsApplied === 0 && maxPoints() === 0">Points cannot pay for any of this sale (too small, or below the least that can be used).</p>
+              <div class="flex gap-2 mb-2" style="align-items:center; flex-wrap:wrap;" *ngIf="pointsApplied === 0 && maxPoints() > 0">
+                <input class="form-control lp-points" style="max-width:140px;" type="number" step="1" min="0" name="pointsToUse" placeholder="Points" [(ngModel)]="pointsToUse" />
+                <button type="button" class="btn btn-primary lp-use" (click)="usePoints()">Use points</button>
+              </div>
+              <div class="flex gap-2 mb-1 lp-applied" style="align-items:center;" *ngIf="pointsApplied > 0">
+                <span><strong>{{ pointsApplied }}</strong> points = <strong>{{ pointsValue | number: '1.2-2' }}</strong></span>
+                <button type="button" class="btn btn-sm btn-outline-danger lp-remove" (click)="removePoints()">Remove</button>
+              </div>
+              <div class="alert alert-danger lp-error" *ngIf="lpError">{{ lpError }}</div>
+            </div>
             <p class="text-muted" style="font-size:0.85rem;" *ngIf="creditRowSelected() && !order?.customerId">
               Select a customer on this sale before paying with store credit.
             </p>
@@ -106,6 +150,10 @@ interface PaymentRow {
                 <tr>
                   <td>Tax</td>
                   <td class="text-end">{{ o.taxTotal | number: '1.2-2' }}</td>
+                </tr>
+                <tr *ngIf="o.promoSavings && o.promoSavings > 0" class="checkout-promo-saved" style="color:var(--success, #1a7f37);">
+                  <td>Saved with promotions</td>
+                  <td class="text-end">{{ o.promoSavings | number: '1.2-2' }}</td>
                 </tr>
                 <tr style="font-weight:700; font-size:1.1rem;">
                   <td>Total due</td>
@@ -146,13 +194,28 @@ export class CheckoutComponent implements OnInit {
   inHouse: InHouseGuest[] = [];
   roomBookingId: number | null = null;
 
+  /** Gift cards: the code being typed, the card found, the amount to take from it, and the cards already put on this sale. */
+  gcCode = '';
+  gcFound: GiftCardRow | null = null;
+  gcAmount: number | null = null;
+  gcError: string | null = null;
+  giftCards: CardPayment[] = [];
+  /** Loyalty points: the customer's balance and rules, the points typed, and the points put on this sale. */
+  loyalty: LoyaltyBalance | null = null;
+  pointsToUse: number | null = null;
+  pointsApplied = 0;
+  pointsValue = 0;
+  lpError: string | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private orderApi: OrderApiService,
     private paymentMethodApi: PaymentMethodApiService,
     private customerCreditApi: CustomerCreditApiService,
-    private hotelApi: HotelApiService
+    private hotelApi: HotelApiService,
+    private giftCardsApi: GiftCardsApiService,
+    private loyaltyApi: LoyaltyApiService
   ) {}
 
   ngOnInit(): void {
@@ -166,6 +229,7 @@ export class CheckoutComponent implements OnInit {
       }
       if (o.customerId) {
         this.customerCreditApi.creditSummary(o.customerId).subscribe((s) => (this.creditSummary = s));
+        this.loyaltyApi.balance(o.customerId).subscribe({ next: (b) => (this.loyalty = b), error: () => (this.loyalty = null) });
       }
     });
     this.paymentMethodApi.listActive().subscribe((methods) => {
@@ -226,7 +290,7 @@ export class CheckoutComponent implements OnInit {
    * "if the total amount to pay is already input do not allow input extra amount"). */
   maxAmountFor(row: PaymentRow): number {
     const total = this.order?.total ?? 0;
-    const othersSum = this.paymentRows
+    const othersSum = this.specialSum() + this.paymentRows
       .filter((r) => r.selected && r !== row)
       .reduce((sum, r) => sum + (r.amount ?? 0), 0);
     let max = Math.max(0, Number((total - othersSum).toFixed(2)));
@@ -252,6 +316,138 @@ export class CheckoutComponent implements OnInit {
     row.amount = Math.min(value, this.maxAmountFor(row));
   }
 
+  // ---- gift cards and loyalty points: they are taken off the total first, then the other methods cover the rest ----
+
+  private round2(v: number): number {
+    return Math.round(v * 100) / 100;
+  }
+
+  giftSum(): number {
+    return this.giftCards.reduce((sum, g) => sum + g.amount, 0);
+  }
+
+  /** Everything the gift cards and points on this sale will pay. */
+  specialSum(): number {
+    return this.round2(this.giftSum() + this.pointsValue);
+  }
+
+  /** Cuts the amounts typed for the ordinary methods down so that, with the cards and points, they never pay more than the total; gives the first method the rest again when cards or points come off. */
+  private rebalance(grow: boolean): void {
+    for (const row of this.paymentRows) {
+      if (!row.selected || row.amount == null) continue;
+      const max = this.maxAmountFor(row);
+      if (row.amount > max) row.amount = max > 0 ? max : null;
+    }
+    if (grow) {
+      const first = this.paymentRows.find((r) => r.selected && !r.credit && !r.roomCharge);
+      if (first) first.amount = this.maxAmountFor(first) || null;
+    }
+  }
+
+  checkCard(): void {
+    this.gcError = null;
+    this.gcFound = null;
+    const code = this.gcCode.trim();
+    if (!code) {
+      this.gcError = "Enter the gift card's code.";
+      return;
+    }
+    this.giftCardsApi.lookup(code).subscribe({
+      next: (c) => {
+        if (c.status === 'BLOCKED') {
+          this.gcError = 'This gift card is blocked.';
+        } else if (c.expired) {
+          this.gcError = 'This gift card expired on ' + c.expiresOn + '.';
+        } else if (c.balance <= 0) {
+          this.gcError = 'This gift card has nothing left on it.';
+        } else {
+          this.gcFound = c;
+          const room = this.round2(Math.max(0, (this.order?.total ?? 0) - this.specialSum()));
+          this.gcAmount = Math.min(c.balance, room);
+        }
+      },
+      error: (err) => (this.gcError = err?.error?.message ?? 'Could not look the card up'),
+    });
+  }
+
+  addCard(): void {
+    this.gcError = null;
+    const c = this.gcFound;
+    if (!c) return;
+    if (this.giftCards.some((g) => g.code === c.code)) {
+      this.gcError = 'This card is already on the sale.';
+      return;
+    }
+    const amount = this.round2(Number(this.gcAmount) || 0);
+    const room = this.round2(Math.max(0, (this.order?.total ?? 0) - this.specialSum()));
+    if (amount <= 0) {
+      this.gcError = 'Enter the amount to take from the card.';
+      return;
+    }
+    if (amount > c.balance) {
+      this.gcError = 'The card only has ' + c.balance + ' left.';
+      return;
+    }
+    if (amount > room) {
+      this.gcError = 'Only ' + room + ' of this sale is still to be paid.';
+      return;
+    }
+    this.giftCards = [...this.giftCards, { code: c.code, maskedCode: '****' + c.code.slice(-4), balance: c.balance, amount }];
+    this.gcFound = null;
+    this.gcCode = '';
+    this.gcAmount = null;
+    this.rebalance(false);
+  }
+
+  removeCard(g: CardPayment): void {
+    this.giftCards = this.giftCards.filter((x) => x !== g);
+    this.rebalance(true);
+  }
+
+  /** The most points that can go on this sale: what the customer has, the share of a sale points may pay, and what the gift cards left unpaid. */
+  maxPoints(): number {
+    if (!this.loyalty || !this.order || this.loyalty.pointValue <= 0) return 0;
+    const cap = Math.floor((this.order.total * this.loyalty.maxRedeemPercent) / 100 * 100) / 100;
+    const room = Math.max(0, this.order.total - this.giftSum());
+    const money = Math.min(cap, room);
+    const most = Math.max(0, Math.min(this.loyalty.points, Math.floor(money / this.loyalty.pointValue + 1e-9)));
+    return most < this.loyalty.minRedeemPoints ? 0 : most;
+  }
+
+  usePoints(): void {
+    this.lpError = null;
+    const l = this.loyalty;
+    if (!l) return;
+    const points = Math.floor(Number(this.pointsToUse) || 0);
+    if (points <= 0) {
+      this.lpError = 'Enter the number of points to use.';
+      return;
+    }
+    if (points > l.points) {
+      this.lpError = 'The customer only has ' + l.points + ' points.';
+      return;
+    }
+    if (points < l.minRedeemPoints) {
+      this.lpError = 'At least ' + l.minRedeemPoints + ' points must be used at a time.';
+      return;
+    }
+    if (points > this.maxPoints()) {
+      this.lpError = 'At most ' + this.maxPoints() + ' points can be used on this sale.';
+      return;
+    }
+    this.pointsApplied = points;
+    this.pointsValue = this.round2(points * l.pointValue);
+    this.pointsToUse = null;
+    this.rebalance(false);
+  }
+
+  removePoints(): void {
+    this.pointsApplied = 0;
+    this.pointsValue = 0;
+    this.lpError = null;
+    this.rebalance(true);
+  }
+
   submit(): void {
     if (!this.order) return;
     // Fourier: "Never allow any sale transaction even into POS without Customer information" —
@@ -267,6 +463,12 @@ export class CheckoutComponent implements OnInit {
     const payments: CheckoutPaymentEntry[] = this.paymentRows
       .filter((r) => r.selected && r.amount && r.amount > 0)
       .map((r) => ({ method: r.method, amount: r.amount as number }));
+    for (const g of this.giftCards) {
+      payments.push({ method: 'GIFT_CARD', amount: g.amount, giftCardCode: g.code });
+    }
+    if (this.pointsApplied > 0) {
+      payments.push({ method: 'LOYALTY', amount: this.pointsValue, points: this.pointsApplied });
+    }
 
     if (payments.length === 0) {
       this.error = 'Select a payment method and enter an amount';

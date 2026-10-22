@@ -63,6 +63,8 @@ public class ReturnsService {
     private final WarehouseService warehouseService;
     /** Applies the original sale's branch document prefix to the return number. */
     private final BranchService branchService;
+    private final com.posapp.giftcards.GiftCardService giftCardService;
+    private final com.posapp.loyalty.LoyaltyService loyaltyService;
 
     public ReturnsService(SalesReturnRepository salesReturnRepository,
                            SalesReturnLineRepository salesReturnLineRepository,
@@ -76,7 +78,11 @@ public class ReturnsService {
                            AuditLogService auditLogService,
                            AccountingService accountingService,
                            WarehouseService warehouseService,
-                           BranchService branchService) {
+                           BranchService branchService,
+                           com.posapp.giftcards.GiftCardService giftCardService,
+                           com.posapp.loyalty.LoyaltyService loyaltyService) {
+        this.giftCardService = giftCardService;
+        this.loyaltyService = loyaltyService;
         this.salesReturnRepository = salesReturnRepository;
         this.salesReturnLineRepository = salesReturnLineRepository;
         this.orderService = orderService;
@@ -213,7 +219,7 @@ public class ReturnsService {
             }
 
             BigDecimal discountFactor = BigDecimal.ONE.subtract(
-                    line.getDiscountPercent().divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+                    line.effectiveDiscountPercent().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
             BigDecimal lineRefund = line.getUnitPrice()
                     .multiply(BigDecimal.valueOf(entry.getQuantity()))
                     .multiply(discountFactor)
@@ -268,6 +274,7 @@ public class ReturnsService {
         salesReturn.setRefundTotal(subtotalRefund.add(taxRefund));
 
         SalesReturn saved = salesReturnRepository.save(salesReturn);
+        splitRefund(saved, order);
         // Task: "Implement an audit log of who did what and when" — processing a return is a curated action, see AuditLogService's javadoc.
         String originalInvoice = order.getInvoiceNumber() != null ? order.getInvoiceNumber() : ("#" + order.getId());
         auditLogService.record("RETURN_PROCESSED",
@@ -281,6 +288,46 @@ public class ReturnsService {
         accountingService.postPosReturn(saved, refundMethod, refundMethodIsCredit, subtotalRefund, taxRefund, cogsReversal);
 
         return SalesReturnDto.from(saved);
+    }
+
+    /**
+     * A return gives back, first, to what paid for the sale: the share of the refund that equals the share of the sale a gift card paid goes back onto the card (if it can still take it),
+     * the share points paid goes back as points, and the rest is refunded the normal way. The points earned on the returned goods are taken back too. Rounding never lets the
+     * parts add up to more than the refund.
+     */
+    private void splitRefund(SalesReturn saved, SaleOrder order) {
+        BigDecimal refund = saved.getRefundTotal();
+        BigDecimal total = com.posapp.order.OrderCalculator.total(order);
+        if (refund.signum() <= 0 || total.signum() <= 0) return;
+        BigDecimal giftPaid = BigDecimal.ZERO, loyaltyPaid = BigDecimal.ZERO;
+        int pointsPaid = 0;
+        for (com.posapp.order.Payment p : order.getPayments()) {
+            if (com.posapp.order.Tenders.GIFT_CARD.equals(p.getMethod())) giftPaid = giftPaid.add(p.getAmount());
+            if (com.posapp.order.Tenders.LOYALTY.equals(p.getMethod())) {
+                loyaltyPaid = loyaltyPaid.add(p.getAmount());
+                pointsPaid += p.getPoints() == null ? 0 : p.getPoints();
+            }
+        }
+        BigDecimal giftBack = BigDecimal.ZERO;
+        if (giftPaid.signum() > 0) {
+            BigDecimal share = refund.multiply(giftPaid).divide(total, 2, RoundingMode.HALF_UP).min(refund);
+            giftBack = giftCardService.refundToCards(order, share);
+            saved.setGiftCardRefund(giftBack);
+        }
+        if (loyaltyPaid.signum() > 0 && pointsPaid > 0) {
+            BigDecimal share = refund.multiply(loyaltyPaid).divide(total, 2, RoundingMode.HALF_UP).min(refund.subtract(giftBack));
+            share = share.min(loyaltyPaid.subtract(salesReturnRepository.sumLoyaltyRefundForOrder(order.getId(), saved.getId())));
+            if (share.signum() > 0) {
+                int pts = BigDecimal.valueOf(pointsPaid).multiply(share).divide(loyaltyPaid, 0, RoundingMode.HALF_UP).intValue();
+                pts = Math.min(pts, pointsPaid - salesReturnRepository.sumPointsRefundForOrder(order.getId(), saved.getId()).intValue());
+                if (pts > 0) {
+                    loyaltyService.refundPoints(order, pts, saved.getId());
+                    saved.setLoyaltyRefund(share);
+                    saved.setPointsRefund(pts);
+                }
+            }
+        }
+        loyaltyService.reverseEarned(order, refund.divide(total, 6, RoundingMode.HALF_UP), saved.getId());
     }
 
     /**
@@ -375,7 +422,7 @@ public class ReturnsService {
                             line != null && line.getTaxCode() != null && !line.getTaxCode().isBlank()
                                     ? line.getTaxCode() : DEFAULT_EFRIS_TAX_CODE,
                             line != null ? line.getUnspCode() : null,
-                            line != null ? line.getDiscountPercent() : null
+                            line != null ? line.effectiveDiscountPercent() : null
                     );
                 })
                 .toList();

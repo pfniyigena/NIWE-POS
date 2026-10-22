@@ -26,9 +26,12 @@ public class JournalEntryService {
     private final AccountRepository accountRepository;
     private final CostCenterRepository costCenterRepository;
     private final AuditLogService auditLogService;
+    private final com.posapp.controls.AccountingLockService lockService;
 
     public JournalEntryService(JournalEntryRepository repository, AccountRepository accountRepository,
-                                CostCenterRepository costCenterRepository, AuditLogService auditLogService) {
+                                CostCenterRepository costCenterRepository, AuditLogService auditLogService,
+                                com.posapp.controls.AccountingLockService lockService) {
+        this.lockService = lockService;
         this.repository = repository;
         this.accountRepository = accountRepository;
         this.costCenterRepository = costCenterRepository;
@@ -47,6 +50,12 @@ public class JournalEntryService {
 
     @Transactional
     public JournalEntryDto createManual(CreateJournalEntryRequest request) {
+        return create(request, "MANUAL");
+    }
+
+    /** Same checks as a hand-entered entry, tagged with where it came from (for example OPENING_BALANCES or BANK_ADJUSTMENT). */
+    @Transactional
+    public JournalEntryDto create(CreateJournalEntryRequest request, String sourceType) {
         if (request.getLines().size() < 2) {
             throw ApiException.badRequest("A journal entry needs at least two lines");
         }
@@ -56,7 +65,8 @@ public class JournalEntryService {
                 ? request.getEntryDate().atStartOfDay(ZoneOffset.UTC).toInstant()
                 : java.time.Instant.now());
         entry.setMemo(request.getMemo());
-        entry.setSourceType("MANUAL");
+        entry.setSourceType(sourceType);
+        lockService.assertOpen(entry.getEntryDate());
 
         BigDecimal totalDebit = BigDecimal.ZERO;
         BigDecimal totalCredit = BigDecimal.ZERO;

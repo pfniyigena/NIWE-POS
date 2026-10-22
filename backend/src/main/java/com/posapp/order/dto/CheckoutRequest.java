@@ -41,6 +41,15 @@ public class CheckoutRequest {
         @Positive(message = "Payment amount must be greater than zero")
         private BigDecimal amount;
 
+        /** Gift card payments: the card's code. */
+        private String giftCardCode;
+        /** Loyalty payments: how many points are being spent (the amount must be exactly their value). */
+        private Integer points;
+
+        public String getGiftCardCode() { return giftCardCode; }
+        public void setGiftCardCode(String giftCardCode) { this.giftCardCode = giftCardCode; }
+        public Integer getPoints() { return points; }
+        public void setPoints(Integer points) { this.points = points; }
         public String getMethod() { return method; }
         public void setMethod(String method) { this.method = method; }
         public BigDecimal getAmount() { return amount; }

@@ -89,6 +89,11 @@ public class OrderService {
     private final com.posapp.tracking.TrackingService trackingService;
     /** Hotel module: puts a POS sale on an in-house guest's room bill. */
     private final com.posapp.hotel.HotelFolioService hotelFolioService;
+    /** The customer's price list (through their customer group) decides each line's unit price. */
+    private final com.posapp.pricing.PricingService pricingService;
+    private final com.posapp.promotions.PromotionService promotionService;
+    private final com.posapp.giftcards.GiftCardService giftCardService;
+    private final com.posapp.loyalty.LoyaltyService loyaltyService;
 
     public OrderService(OrderRepository orderRepository,
                          CashierSessionRepository cashierSessionRepository,
@@ -111,7 +116,15 @@ public class OrderService {
                          com.posapp.branch.BranchAccessService branchAccessService,
                          com.posapp.salesorder.StockReservationService stockReservationService,
                          com.posapp.tracking.TrackingService trackingService,
-                         com.posapp.hotel.HotelFolioService hotelFolioService) {
+                         com.posapp.hotel.HotelFolioService hotelFolioService,
+                         com.posapp.pricing.PricingService pricingService,
+                         com.posapp.promotions.PromotionService promotionService,
+                         com.posapp.giftcards.GiftCardService giftCardService,
+                         com.posapp.loyalty.LoyaltyService loyaltyService) {
+        this.giftCardService = giftCardService;
+        this.loyaltyService = loyaltyService;
+        this.pricingService = pricingService;
+        this.promotionService = promotionService;
         this.hotelFolioService = hotelFolioService;
         this.trackingService = trackingService;
         this.stockReservationService = stockReservationService;
@@ -344,6 +357,7 @@ public class OrderService {
         SaleOrder order = getOpenOrderOrThrow(orderId, caller);
         Product product = catalogService.getActiveProductOrThrow(request.getProductId());
         mergeOrAddLine(order, product, request.getQuantity());
+        promotionService.apply(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -352,6 +366,7 @@ public class OrderService {
         SaleOrder order = getOpenOrderOrThrow(orderId, caller);
         Product product = catalogService.getByBarcodeOrThrow(request.getBarcode());
         mergeOrAddLine(order, product, Math.max(1, request.getQuantity()));
+        promotionService.apply(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -361,7 +376,10 @@ public class OrderService {
                         && BigDecimal.ZERO.compareTo(l.getDiscountPercent()) == 0)
                 .findFirst()
                 .ifPresentOrElse(
-                        existing -> existing.setQuantity(existing.getQuantity() + quantity),
+                        existing -> {
+                            existing.setQuantity(existing.getQuantity() + quantity);
+                            applyPricing(order, existing);
+                        },
                         () -> order.getLines().add(buildLine(order, product, quantity, BigDecimal.ZERO))
                 );
     }
@@ -377,7 +395,10 @@ public class OrderService {
         line.setOrder(order);
         line.setProduct(product);
         line.setDescription(product.getName());
-        line.setUnitPrice(product.getUnitPrice());
+        com.posapp.pricing.PricingDtos.Resolved priced = pricingService.resolve(order.getCustomer(), product, quantity);
+        line.setUnitPrice(priced.unitPrice());
+        line.setListPrice(priced.listPrice());
+        line.setPriceNote(priced.note());
         line.setQuantity(quantity);
         line.setDiscountPercent(discountPercent == null ? BigDecimal.ZERO : discountPercent);
         // Snapshot the product's currently-assigned tax rate onto the line — see
@@ -409,6 +430,8 @@ public class OrderService {
                 throw ApiException.badRequest("Quantity must be at least 1");
             }
             line.setQuantity(request.getQuantity());
+            // A bigger or smaller quantity can move the line to another quantity step on the customer's price list.
+            applyPricing(order, line);
         }
         if (request.getDiscountPercent() != null) {
             validateDiscount(request.getDiscountPercent(), caller);
@@ -421,6 +444,7 @@ public class OrderService {
             List<String> serials = trackingService.cleanSerials(line.getProduct(), request.getSerialNumbers());
             line.setSerialNumbers(serials.isEmpty() ? null : String.join("\n", serials));
         }
+        promotionService.apply(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -478,6 +502,7 @@ public class OrderService {
         if (!removed) {
             throw ApiException.notFound("Line not found on this order: " + lineId);
         }
+        promotionService.apply(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
@@ -491,7 +516,37 @@ public class OrderService {
                     .orElseThrow(() -> ApiException.notFound("Customer not found: " + request.getCustomerId()));
             order.setCustomer(customer);
         }
+        // A different customer can buy at a different price list: every line is priced again for them.
+        for (OrderLine line : order.getLines()) {
+            applyPricing(order, line);
+        }
+        promotionService.apply(order);
         return OrderDto.from(orderRepository.save(order));
+    }
+
+    @Transactional
+    public OrderDto addCoupon(Long orderId, String code, AppUser caller) {
+        SaleOrder order = getOpenOrderOrThrow(orderId, caller);
+        promotionService.addCoupon(order, code);
+        return OrderDto.from(orderRepository.save(order));
+    }
+
+    @Transactional
+    public OrderDto removeCoupon(Long orderId, String code, AppUser caller) {
+        SaleOrder order = getOpenOrderOrThrow(orderId, caller);
+        promotionService.removeCoupon(order, code);
+        return OrderDto.from(orderRepository.save(order));
+    }
+
+    /** Prices the line again for the order's customer and the line's current quantity. */
+    private void applyPricing(SaleOrder order, OrderLine line) {
+        if (line.getProduct() == null) {
+            return;
+        }
+        com.posapp.pricing.PricingDtos.Resolved priced = pricingService.resolve(order.getCustomer(), line.getProduct(), line.getQuantity());
+        line.setUnitPrice(priced.unitPrice());
+        line.setListPrice(priced.listPrice());
+        line.setPriceNote(priced.note());
     }
 
     @Transactional
@@ -558,8 +613,15 @@ public class OrderService {
         }
         assertSellingWarehouseAllowed(order);
         validateStockAvailability(order);
+        // Promotions are worked out again right before the total is fixed: a promotion may have ended, or reached its limit, since the cart was built.
+        promotionService.apply(order);
         completeCheckout(order, request.getPayments(), request.getDueDate(), request.getRoomBookingId());
         SaleOrder saved = orderRepository.save(order);
+        promotionService.recordUses(saved);
+        // Gift cards and points that paid for this sale are taken now, under a lock; if a card or the customer no longer has the money the whole sale is undone.
+        giftCardService.redeemForOrder(saved);
+        loyaltyService.redeemForOrder(saved);
+        loyaltyService.earnForOrder(saved);
         // Fourier: "all POS...module will be integrated when accounting is enabled" — posts a
         // balanced journal entry for this sale (revenue/tax/COGS/inventory/cash/AR) once Accounting
         // is turned on in Settings; see AccountingService.postPosSale's own javadoc. Called with the
@@ -634,14 +696,38 @@ public class OrderService {
         BigDecimal tendered = BigDecimal.ZERO;
         BigDecimal creditPortion = BigDecimal.ZERO;
         BigDecimal roomPortion = BigDecimal.ZERO;
+        BigDecimal specialTotal = BigDecimal.ZERO;
+        int loyaltyEntries = 0;
         for (CheckoutRequest.PaymentEntry entry : payments) {
-            String method = paymentMethodService.validateActiveCodeOrThrow(entry.getMethod());
             Payment payment = new Payment();
             payment.setOrder(order);
+            BigDecimal entryAmount = entry.getAmount();
+            String method;
+            if (Tenders.GIFT_CARD.equals(entry.getMethod())) {
+                // A gift card: the card must exist, be usable and hold this much (checked again, under a lock, when the sale is saved).
+                method = Tenders.GIFT_CARD;
+                com.posapp.giftcards.GiftCard card = giftCardService.checkTender(entry.getGiftCardCode(), entryAmount);
+                payment.setGiftCardId(card.getId());
+                payment.setReference(com.posapp.giftcards.GiftCardService.mask(card.getCode()));
+                specialTotal = specialTotal.add(entryAmount);
+            } else if (Tenders.LOYALTY.equals(entry.getMethod())) {
+                // Loyalty points: the value is worked out here from the points, never trusted from the terminal.
+                method = Tenders.LOYALTY;
+                if (++loyaltyEntries > 1) {
+                    throw ApiException.badRequest("Add the loyalty points as one payment.");
+                }
+                int points = entry.getPoints() == null ? 0 : entry.getPoints();
+                entryAmount = loyaltyService.tenderValue(order.getCustomer(), points, due);
+                payment.setPoints(points);
+                payment.setReference(points + " pts");
+                specialTotal = specialTotal.add(entryAmount);
+            } else {
+                method = paymentMethodService.validateActiveCodeOrThrow(entry.getMethod());
+            }
             payment.setMethod(method);
-            payment.setAmount(entry.getAmount());
+            payment.setAmount(entryAmount);
             order.getPayments().add(payment);
-            tendered = tendered.add(entry.getAmount());
+            tendered = tendered.add(entryAmount);
             if (creditCodes.contains(method)) {
                 creditPortion = creditPortion.add(entry.getAmount());
             }
@@ -658,6 +744,9 @@ public class OrderService {
             }
             order.setRoomChargeAmount(roomPortion);
             order.setRoomBookingId(roomBookingId);
+        }
+        if (specialTotal.compareTo(due) > 0) {
+            throw ApiException.badRequest("Gift cards and points together cannot pay more than the sale total (" + due + ").");
         }
         if (tendered.compareTo(due) < 0) {
             throw ApiException.badRequest("Payments (" + tendered + ") do not cover the amount due (" + due + ")");
@@ -791,6 +880,11 @@ public class OrderService {
             throw ApiException.badRequest("Cannot sync an offline sale with no lines");
         }
 
+        for (CheckoutRequest.PaymentEntry entry : request.getPayments()) {
+            if (Tenders.isSpecial(entry.getMethod())) {
+                throw ApiException.badRequest("Gift cards and loyalty points cannot be used on a sale rung offline: their balance can only be checked online.");
+            }
+        }
         completeCheckout(order, request.getPayments(), request.getDueDate(), null);
 
         if (request.getClientEstimatedTotal() != null) {
@@ -806,6 +900,7 @@ public class OrderService {
         }
 
         SaleOrder saved = orderRepository.save(order);
+        loyaltyService.earnForOrder(saved);
         // See checkout()'s own comment on postPosSale — called here too, with the now-saved entity,
         // so an offline-synced sale posts to the ledger exactly the same as one rung online.
         accountingService.postPosSale(saved);
@@ -960,7 +1055,7 @@ public class OrderService {
                         line.getTaxRatePercent(),
                         line.getTaxCode() != null && !line.getTaxCode().isBlank() ? line.getTaxCode() : DEFAULT_EFRIS_TAX_CODE,
                         line.getUnspCode(),
-                        line.getDiscountPercent()
+                        line.effectiveDiscountPercent()
                 ))
                 .toList();
         return new EfrisInvoicePayload(
@@ -998,7 +1093,7 @@ public class OrderService {
                     line.getUnspCode(),
                     line.getTaxRatePercent(),
                     line.getTaxCode(),
-                    line.getDiscountPercent(),
+                    line.effectiveDiscountPercent(),
                     i + 1
             ));
         }
@@ -1096,7 +1191,7 @@ public class OrderService {
     /** Used by RegisterService to build the till-close / Z-report totals. */
     @Transactional(readOnly = true)
     public SessionTotals computeSessionTotals(Long sessionId) {
-        return aggregate(orderRepository.findBySessionIdAndStatusOrderByCreatedAtAsc(sessionId, OrderStatus.COMPLETED));
+        return withGiftCardSales(aggregate(orderRepository.findBySessionIdAndStatusOrderByCreatedAtAsc(sessionId, OrderStatus.COMPLETED)), giftCardService.soldInRegisterSession(sessionId));
     }
 
     /**
@@ -1107,7 +1202,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public SessionTotals computeCashierSessionTotals(Long cashierSessionId) {
-        return aggregate(orderRepository.findByCashierSessionIdAndStatusOrderByCreatedAtAsc(cashierSessionId, OrderStatus.COMPLETED));
+        return withGiftCardSales(aggregate(orderRepository.findByCashierSessionIdAndStatusOrderByCreatedAtAsc(cashierSessionId, OrderStatus.COMPLETED)), giftCardService.soldInCashierSession(cashierSessionId));
     }
 
     /**
@@ -1131,6 +1226,15 @@ public class OrderService {
                     .toList();
         }
         return aggregate(completed);
+    }
+
+    /**
+     * Money that came into this till for gift cards sold or topped up (not sales: it is owed back as goods) still sits in the drawer or the card machine, so it is added to what came in
+     * by cash and by other means. That is why cash plus other can be more than the day's gross sales by exactly the gift cards sold.
+     */
+    private SessionTotals withGiftCardSales(SessionTotals t, BigDecimal[] sold) {
+        if (sold[0].signum() == 0 && sold[1].signum() == 0) return t;
+        return new SessionTotals(t.saleCount(), t.grossSales(), t.taxCollected(), t.cashIn().add(sold[0]), t.nonCashIn().add(sold[1]));
     }
 
     private SessionTotals aggregate(List<SaleOrder> completed) {
@@ -1170,6 +1274,14 @@ public class OrderService {
         }
         requireOwnCashierSessionOrAdmin(order.getCashierSession(), caller);
         return order;
+    }
+
+    /** The open cashier session a gift card is sold or topped up on: open, and the caller's own (or a teammate's on the same shift, or a Sales manager). */
+    @Transactional(readOnly = true)
+    public CashierSession sellingSession(Long cashierSessionId, AppUser caller) {
+        CashierSession cashierSession = getOpenCashierSessionOrThrow(cashierSessionId);
+        requireOwnCashierSessionOrAdmin(cashierSession, caller);
+        return cashierSession;
     }
 
     /** Validates a cashier-session id for starting/listing tabs — checked at both levels (the cashier's own session, and the shift it belongs to). */

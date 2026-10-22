@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { SalesOrderApiService } from '../core/api/sales-order-api.service';
 import { CustomerApiService } from '../core/api/customer-api.service';
+import { PricingApiService } from '../core/api/pricing-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { BranchApiService } from '../core/api/branch-api.service';
@@ -15,6 +16,8 @@ import { Branch, Product, Customer } from '../core/models';
 const QUICK_ADD_DEFAULTS = { costPrice: 0, stockQuantity: 0, active: true, categoryId: null, taxRateId: null };
 
 interface DraftLine {
+  /** Name of the price list the unit price came from, when the customer's group changed it. */
+  priceNote?: string | null;
   productId: number;
   productName: string;
   quantityOrdered: number;
@@ -202,6 +205,7 @@ interface DraftLine {
             </td>
             <td class="text-end">
               <input type="number" class="form-control form-control-sm" style="width:100px; margin-left:auto;" min="0" step="0.01" [(ngModel)]="line.unitPrice" [name]="'price' + i" />
+                <div class="text-muted line-price-note" *ngIf="line.priceNote" style="font-size:0.72rem; text-align:right;">{{ line.priceNote }}</div>
             </td>
             <td class="text-end" *ngIf="discountMode === 'PER_LINE'">
               <input type="number" class="form-control form-control-sm" style="width:90px; margin-left:auto;" min="0" max="100" step="0.01" [(ngModel)]="line.discountPercent" [name]="'discount' + i" />
@@ -320,6 +324,7 @@ export class SalesOrderFormComponent implements OnInit {
     private catalogApi: CatalogApiService,
     private storeSettingsApi: StoreSettingsApiService,
     private branchApi: BranchApiService,
+    private pricingApi: PricingApiService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -391,8 +396,9 @@ export class SalesOrderFormComponent implements OnInit {
     const existing = this.lines.find((l) => l.productId === p.id);
     if (existing) {
       existing.quantityOrdered += 1;
+      if (existing.priceNote) this.applyListPrice(existing);
     } else {
-      this.lines.push({
+      const fresh: DraftLine = {
         productId: p.id,
         productName: p.name,
         quantityOrdered: 1,
@@ -401,10 +407,26 @@ export class SalesOrderFormComponent implements OnInit {
         taxCode: p.taxRateCode,
         taxRatePercent: p.taxRatePercent,
         taxInclusive: p.taxRateInclusive,
-      });
+      };
+      this.lines.push(fresh);
+      this.applyListPrice(fresh);
     }
     this.productSearch = '';
     this.productResults = [];
+  }
+
+  /** A customer in a price-list group pays the list's price: asks the server what this customer pays for this product at this quantity. Anything typed over it by hand is only replaced for a line that already carries a list price. */
+  private applyListPrice(line: DraftLine): void {
+    if (!this.customerId) return;
+    this.pricingApi.resolve(this.customerId, line.productId, line.quantityOrdered).subscribe({
+      next: (r) => {
+        if (r.note || line.priceNote) {
+          line.unitPrice = r.unitPrice;
+          line.priceNote = r.note;
+        }
+      },
+      error: () => undefined,
+    });
   }
 
   removeLine(index: number): void {

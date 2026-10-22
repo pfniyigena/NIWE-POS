@@ -43,6 +43,8 @@ import java.util.List;
 @Service
 public class BillService {
 
+    private final com.posapp.accounting.AccountingService accountingService;
+    private final com.posapp.inventory.SupplierRepository supplierRepository;
     private final BillRepository billRepository;
     private final PurchaseOrderService purchaseOrderService;
     private final CatalogService catalogService;
@@ -60,7 +62,11 @@ public class BillService {
                         DocumentPdfService documentPdfService,
                         StoreSettingsService storeSettingsService,
                         SupplierPaymentService supplierPaymentService,
-                        com.posapp.branch.BranchService branchService) {
+                        com.posapp.branch.BranchService branchService,
+                        com.posapp.accounting.AccountingService accountingService,
+                        com.posapp.inventory.SupplierRepository supplierRepository) {
+        this.supplierRepository = supplierRepository;
+        this.accountingService = accountingService;
         this.billRepository = billRepository;
         this.purchaseOrderService = purchaseOrderService;
         this.catalogService = catalogService;
@@ -255,6 +261,44 @@ public class BillService {
         return billRepository.save(bill);
     }
 
+    /**
+     * A supplier's opening balance: what the business already owed this supplier when it started using the system. One issued bill with a single "Opening balance" line and no
+     * purchase order behind it; posts Owner's Equity against Accounts Payable. It is paid and voided like any bill.
+     */
+    @Transactional
+    public BillDto generateOpening(Long supplierId, BigDecimal amount, java.time.LocalDate asOf, String reference) {
+        com.posapp.inventory.Supplier supplier = supplierRepository.findById(supplierId).orElseThrow(() -> ApiException.notFound("Supplier not found."));
+        if (amount == null || amount.signum() <= 0) throw ApiException.badRequest("The opening balance must be more than zero.");
+        if (amount.stripTrailingZeros().scale() > 2) throw ApiException.badRequest("The opening balance can have at most two decimals.");
+        if (asOf == null) throw ApiException.badRequest("The date of the opening balance is required.");
+        if (asOf.isAfter(java.time.LocalDate.now())) throw ApiException.badRequest("The date of an opening balance cannot be in the future.");
+        if (billRepository.existsOpeningBalance(supplier.getId())) {
+            throw ApiException.badRequest(supplier.getName() + " already has an opening balance. Void it first if it was wrong.");
+        }
+        BigDecimal value = amount.setScale(2, RoundingMode.HALF_UP);
+        Bill bill = new Bill();
+        bill.setBillNumber("OB-" + System.nanoTime());
+        bill.setStatus(BillStatus.ISSUED);
+        bill.setOpeningBalance(true);
+        bill.setSupplierId(supplier.getId());
+        bill.setSupplierName(supplier.getName());
+        bill.setBillDate(asOf.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+        bill.setNotes(reference == null || reference.isBlank() ? "Opening balance" : "Opening balance - " + reference.trim());
+        BillLine line = new BillLine();
+        line.setBill(bill);
+        line.setProductName("Opening balance");
+        line.setQuantity(1);
+        line.setUnitCost(value);
+        line.setDiscountPercent(BigDecimal.ZERO);
+        line.setLineTotal(value);
+        bill.getLines().add(line);
+        bill.setTotalAmount(value);
+        Bill saved = billRepository.save(bill);
+        auditLogService.record("BILL_OPENING_BALANCE", "Recorded opening balance " + saved.getBillNumber() + " of " + value + " owed to " + supplier.getName() + " as of " + asOf, "Bill", saved.getId());
+        accountingService.postBillOpening(saved, false);
+        return toDto(saved);
+    }
+
     /** DRAFT -&gt; ISSUED: the moment an auto-generated draft bill becomes a real, numbered, payable document. */
     @Transactional
     public BillDto issue(Long id) {
@@ -302,7 +346,7 @@ public class BillService {
         }
         if (supplierPaymentService.amountPaidForBill(bill).compareTo(BigDecimal.ZERO) > 0) {
             throw ApiException.badRequest("Cannot void bill " + bill.getBillNumber() + " — it already has a payment recorded against it. "
-                    + "Process a purchase return against " + bill.getPurchaseOrderNumber() + " instead.");
+                    + (bill.getPurchaseOrderNumber() == null ? "Record the payment as a refund instead." : "Process a purchase return against " + bill.getPurchaseOrderNumber() + " instead."));
         }
         bill.setStatus(BillStatus.VOID);
         bill.setVoidedAt(java.time.Instant.now());
@@ -310,6 +354,7 @@ public class BillService {
         // Own "REF-" prefix — see Bill.refundNumber's javadoc.
         bill.setRefundNumber(branchService.prefixedNumber(bill.getBranchId(), "REF-" + System.currentTimeMillis()));
         Bill saved = billRepository.save(bill);
+        if (saved.isOpeningBalance()) accountingService.postBillOpening(saved, true);
         auditLogService.record("BILL_VOIDED", "Voided bill " + saved.getBillNumber() + " — refund " + saved.getRefundNumber(), "Bill", saved.getId());
         return toDto(saved);
     }

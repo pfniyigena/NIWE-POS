@@ -63,6 +63,10 @@ public class Customer extends BaseEntity {
      */
     private boolean walkIn = false;
 
+    /** The customer group (see com.posapp.pricing) whose price list this customer buys at. Null = normal prices. */
+    @jakarta.persistence.Column(name = "customer_group_id")
+    private Long customerGroupId;
+
     /**
      * Fourier: "CANCEL/CREDIT PAID INVOICE → Create Credit Note → Handle the payment → Refund OR
      * → Customer Credit" — store credit the business owes this customer, built up only by {@code

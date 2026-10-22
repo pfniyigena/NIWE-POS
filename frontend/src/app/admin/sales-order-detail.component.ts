@@ -7,6 +7,7 @@ import { SalesOrderApiService } from '../core/api/sales-order-api.service';
 import { SalesOrderReturnApiService } from '../core/api/sales-order-return-api.service';
 import { InvoiceApiService } from '../core/api/invoice-api.service';
 import { openPdfForPrint } from '../core/download-file';
+import { PaperButtonComponent } from '../shared/paper-button.component';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { Invoice, SalesOrder, SalesOrderReturn, Warehouse, WarehouseLocation } from '../core/models';
@@ -60,7 +61,7 @@ interface ReturnRow {
 @Component({
   selector: 'app-sales-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -76,6 +77,7 @@ interface ReturnRow {
             <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'CONFIRMED'" (click)="cancel()">Cancel order</button>
             <!-- Fourier: "add print (PDF with A4)". -->
             <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
+            <app-paper-button *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'" class="paper-delivery" label="Delivery note" [path]="'/sales-orders/' + o.id + '/delivery-note'" file="delivery-note.pdf"></app-paper-button>
             <!-- Fourier: "Add Invoice ... without touching warehousing" — only once the order is past DRAFT (a real commitment exists to invoice); never shown for CANCELLED. -->
             <button class="btn btn-outline-primary" *ngIf="!invoice && o.status !== 'DRAFT' && o.status !== 'CANCELLED'" (click)="generateInvoice()">Generate invoice</button>
             <!-- Fourier: "Instead of Record payment on Sale Order ... create invoice related to the Sale Order and record payment on invoice" — this screen never records a payment itself anymore; "View invoice" is the way to the screen that does. -->

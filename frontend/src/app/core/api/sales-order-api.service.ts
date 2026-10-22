@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { FulfillSalesOrderRequest, SalesOrder, SalesOrderPayload } from '../models';
 
 /** Task: "Add Sale order... So that we can have POS & Sales." Admin-only, mirrors PurchaseOrderApiService's shape. */
@@ -44,5 +46,9 @@ export class SalesOrderApiService {
   /** Fourier: "add print (PDF with A4)" — an A4 PDF of this Sale Order, for opening in a new tab to print (see download-file.ts's openPdfForPrint). */
   pdf(id: number): Observable<Blob> {
     return this.http.get(`${API_BASE}/sales-orders/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  page(f: ListFilter, page: number, size: number): Observable<PageResult<SalesOrder>> {
+    return pagedList<SalesOrder>(this.http, `${API_BASE}/sales-orders`, f, page, size);
   }
 }

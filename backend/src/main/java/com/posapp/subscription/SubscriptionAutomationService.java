@@ -2,6 +2,8 @@ package com.posapp.subscription;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.email.MailService;
+import com.posapp.modules.ModuleKey;
+import com.posapp.modules.ModuleService;
 import com.posapp.settings.StoreSettings;
 import com.posapp.settings.StoreSettingsService;
 import org.slf4j.Logger;
@@ -40,15 +42,18 @@ public class SubscriptionAutomationService {
     private final SubscriptionService subscriptionService;
     private final MailService mailService;
     private final AuditLogService auditLogService;
+    private final ModuleService moduleService;
 
     public SubscriptionAutomationService(StoreSettingsService storeSettingsService,
                                          SubscriptionService subscriptionService,
                                          MailService mailService,
-                                         AuditLogService auditLogService) {
+                                         AuditLogService auditLogService,
+                                         ModuleService moduleService) {
         this.storeSettingsService = storeSettingsService;
         this.subscriptionService = subscriptionService;
         this.mailService = mailService;
         this.auditLogService = auditLogService;
+        this.moduleService = moduleService;
     }
 
     /** What one run did; also what "Run now" shows. */
@@ -58,6 +63,8 @@ public class SubscriptionAutomationService {
     @Scheduled(fixedDelay = 300_000L, initialDelay = 75_000L)
     public void tick() {
         try {
+            // The daily job only runs while the Subscriptions module is licensed and activated.
+            if (!moduleService.isEnabled(ModuleKey.SUBSCRIPTIONS)) return;
             StoreSettings settings = storeSettingsService.getSettingsEntity();
             if (!anythingEnabled(settings)) return;
             LocalDateTime now = LocalDateTime.now(zoneOf(settings));

@@ -18,6 +18,8 @@ export interface ReportFilter {
   allWarehouses?: boolean;
   /** Required by the Customer Statement report only (see customer-statement.component.ts); every other report ignores it. */
   customerId?: number | null;
+  /** Law Firm reports with ReportDef.openOnlyToggle: true lists open matters only, false includes closed ones; null leaves it to the server. */
+  openOnly?: boolean | null;
   /** Required by the Supplier Statement report only (Task 5 — see supplier-statement.component.ts); every other report ignores it. */
   supplierId?: number | null;
 }
@@ -51,6 +53,7 @@ export class ReportApiService {
     if (filter.warehouseId != null) params['warehouseId'] = String(filter.warehouseId);
     if (filter.allWarehouses) params['allWarehouses'] = 'true';
     if (filter.customerId != null) params['customerId'] = String(filter.customerId);
+    if (filter.openOnly != null) params['openOnly'] = String(filter.openOnly);
     if (filter.supplierId != null) params['supplierId'] = String(filter.supplierId);
     return params;
   }

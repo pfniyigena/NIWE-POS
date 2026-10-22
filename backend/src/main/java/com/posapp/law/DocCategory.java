@@ -1,0 +1,5 @@
+package com.posapp.law;
+
+public enum DocCategory {
+    PLEADING, CONTRACT, CORRESPONDENCE, EVIDENCE, COURT_ORDER, CLIENT_ID, RESEARCH, FINANCIAL, OTHER
+}

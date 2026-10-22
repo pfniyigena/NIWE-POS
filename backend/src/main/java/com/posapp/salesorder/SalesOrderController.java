@@ -1,5 +1,9 @@
 package com.posapp.salesorder;
 
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.posapp.branch.BranchService;
+import com.posapp.common.ListPaging;
 import com.posapp.invoice.InvoiceService;
 import com.posapp.salesorder.dto.FulfillSalesOrderRequest;
 import com.posapp.salesorder.dto.SalesOrderDto;
@@ -37,14 +41,25 @@ public class SalesOrderController {
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
 
-    public SalesOrderController(SalesOrderService salesOrderService, InvoiceService invoiceService) {
+    private final BranchService branchService;
+
+    public SalesOrderController(SalesOrderService salesOrderService, InvoiceService invoiceService, BranchService branchService) {
+        this.branchService = branchService;
         this.salesOrderService = salesOrderService;
         this.invoiceService = invoiceService;
     }
 
     @GetMapping
-    public List<SalesOrderDto> listAll() {
-        return salesOrderService.listAll();
+    public ResponseEntity<List<SalesOrderDto>> listAll(@RequestParam(required = false) Long customerId, @RequestParam(required = false) String q, @RequestParam(required = false) String status, @RequestParam(required = false) Long branchId, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Long hq = branchId == null ? null : branchService.headquartersId();
+        List<SalesOrderDto> rows = salesOrderService.listAll().stream()
+                .filter(x -> ListPaging.has(q, x.orderNumber(), x.customerName()))
+                .filter(x -> ListPaging.is(status, x.status()))
+                .filter(x -> ListPaging.sameId(customerId, x.customerId()))
+                .filter(x -> ListPaging.branch(x.branchId(), branchId, hq))
+                .filter(x -> ListPaging.between(x.orderDate(), from, to))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/{id}")

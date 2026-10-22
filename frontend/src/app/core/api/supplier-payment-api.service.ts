@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { OutstandingPurchaseOrder, RecordSupplierPaymentRequest, SupplierPayment } from '../models';
 
 /**
@@ -42,5 +44,9 @@ export class SupplierPaymentApiService {
 
   pdf(paymentId: number): Observable<Blob> {
     return this.http.get(`${API_BASE}/supplier-payments/${paymentId}/pdf`, { responseType: 'blob' });
+  }
+
+  allPaymentsPage(f: ListFilter, page: number, size: number): Observable<PageResult<SupplierPayment>> {
+    return pagedList<SupplierPayment>(this.http, `${API_BASE}/supplier-payments`, { ...f, status: '' }, page, size, { method: f.status || null });
   }
 }

@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PagerComponent } from '../shared/pager.component';
+import { ListFilterComponent } from '../shared/list-filter.component';
+import { ListState } from '../core/api/list-state';
 import { BillApiService } from '../core/api/bill-api.service';
 import { Bill } from '../core/models';
 import { openPdfForPrint } from '../core/download-file';
@@ -16,13 +19,14 @@ import { openPdfForPrint } from '../core/download-file';
 @Component({
   selector: 'app-refund-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3 style="margin-bottom:0;">Refunds</h3>
       </div>
+      <app-list-filter exportKind="refunds" placeholder="Search refund no., bill, supplier…" [statuses]="[]" statusAll="All statuses" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -36,7 +40,7 @@ import { openPdfForPrint } from '../core/download-file';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let b of refunds">
+          <tr *ngFor="let b of list.rows">
             <td>{{ b.refundNumber }}</td>
             <td>{{ b.billNumber }}</td>
             <td>{{ b.supplierName }}</td>
@@ -48,26 +52,25 @@ import { openPdfForPrint } from '../core/download-file';
               <button class="btn btn-sm btn-outline-secondary" (click)="print(b)" [disabled]="printingId === b.id">Print</button>
             </td>
           </tr>
-          <tr *ngIf="refunds.length === 0">
-            <td colspan="7" class="text-muted">No refunds yet — voiding a bill issues one automatically.</td>
+          <tr *ngIf="list.loaded && list.rows.length === 0">
+            <td colspan="7" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No refunds yet — voiding a bill issues one automatically.</ng-template></td>
           </tr>
         </tbody>
       </table>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class RefundListComponent implements OnInit {
-  refunds: Bill[] = [];
   error: string | null = null;
   printingId: number | null = null;
+
+  list = new ListState<Bill>((f, p, sz) => this.billApi.refundPage(f, p, sz), 'Failed to load refunds');
 
   constructor(private billApi: BillApiService) {}
 
   ngOnInit(): void {
-    this.billApi.listRefunds().subscribe({
-      next: (list) => (this.refunds = list),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load refunds'),
-    });
+    this.list.load();
   }
 
   print(bill: Bill): void {

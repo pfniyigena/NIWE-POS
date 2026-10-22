@@ -45,8 +45,15 @@ import { CustomerListComponent } from './admin/customer-list.component';
 import { CustomerFormComponent } from './admin/customer-form.component';
 import { CustomerDetailComponent } from './admin/customer-detail.component';
 import { CustomerStatementComponent } from './admin/customer-statement.component';
+import { PriceListsComponent } from './admin/pricing/price-lists.component';
+import { PriceListDetailComponent } from './admin/pricing/price-list-detail.component';
+import { CustomerGroupsComponent } from './admin/pricing/customer-groups.component';
+import { PromotionsComponent } from './admin/promotions/promotions.component';
+import { GiftCardsComponent } from './admin/giftcards/gift-cards.component';
+import { LoyaltyComponent } from './admin/loyalty/loyalty.component';
 import { RecordPaymentComponent } from './admin/record-payment.component';
 import { CustomerPaymentListComponent } from './admin/customer-payment-list.component';
+import { CollectionsComponent } from './admin/collections.component';
 import { CustomerPaymentDetailComponent } from './admin/customer-payment-detail.component';
 import { UserListComponent } from './admin/user-list.component';
 import { UserFormComponent } from './admin/user-form.component';
@@ -148,6 +155,100 @@ import { InstallmentPlanFormComponent } from './admin/installments/plan-form.com
 import { InstallmentPlanDetailComponent } from './admin/installments/plan-detail.component';
 import { InstallmentSettingsComponent } from './admin/installments/installment-settings.component';
 import { InstallmentReportListComponent } from './admin/installments/installment-report-list.component';
+import { MyTimesheetComponent } from './time/my-timesheet.component';
+import { TimeProjectListComponent } from './admin/time/project-list.component';
+import { TimeProjectFormComponent } from './admin/time/project-form.component';
+import { TimeApprovalsComponent } from './admin/time/approvals.component';
+import { TimeBillingComponent } from './admin/time/billing.component';
+import { TimeSettingsComponent } from './admin/time/time-settings.component';
+import { TimeReportListComponent } from './admin/time/time-report-list.component';
+import { WorkOrderListComponent } from './admin/work-orders/work-order-list.component';
+import { WorkOrderDetailComponent } from './admin/work-orders/work-order-detail.component';
+import { ServicePackageListComponent } from './admin/work-orders/package-list.component';
+import { ServicePackageFormComponent } from './admin/work-orders/package-form.component';
+import { WorkOrderReportListComponent } from './admin/work-orders/work-order-report-list.component';
+import { MyJobsComponent } from './work-orders/my-jobs.component';
+import { BookingCalendarComponent } from './admin/booking/calendar.component';
+import { AppointmentFormComponent } from './admin/booking/appointment-form.component';
+import { AppointmentDetailComponent } from './admin/booking/appointment-detail.component';
+import { AppointmentListComponent } from './admin/booking/appointment-list.component';
+import { BookingServiceListComponent } from './admin/booking/service-list.component';
+import { BookingServiceFormComponent } from './admin/booking/service-form.component';
+import { BookingResourcesComponent } from './admin/booking/resources.component';
+import { BookingSettingsComponent } from './admin/booking/booking-settings.component';
+import { BookingReportListComponent } from './admin/booking/booking-report-list.component';
+import { MyAppointmentsComponent } from './booking/my-appointments.component';
+import { PublicBookingComponent } from './booking/public-booking.component';
+import { PublicListingsComponent } from './realestate/public-listings.component';
+import { PublicListingDetailComponent } from './realestate/public-listing-detail.component';
+import { LawMyWorkComponent } from './law/my-work.component';
+import { LawContactsComponent } from './law/contacts.component';
+import { LawCalendarComponent } from './law/calendar.component';
+import { LawConflictCheckComponent } from './law/conflict-check.component';
+import { LawMatterListComponent } from './admin/law/matter-list.component';
+import { LawMatterDetailComponent } from './admin/law/matter-detail.component';
+import { LawClientsComponent } from './admin/law/clients.component';
+import { LawWorkAllComponent } from './admin/law/work-all.component';
+import { LawSettingsComponent } from './admin/law/law-settings.component';
+import { LawReportListComponent } from './admin/law/law-report-list.component';
+import { LawBillingOverviewComponent } from './admin/law/billing-overview.component';
+import { LawCollectionsComponent } from './admin/law/collections.component';
+import { LawTrustOverviewComponent } from './admin/law/trust-overview.component';
+import { LawTrustReconcileComponent } from './admin/law/trust-reconcile.component';
+import { LawTemplatesComponent } from './admin/law/templates.component';
+import { LawOverviewComponent } from './admin/law/law-overview.component';
+import { ReOverviewComponent } from './admin/realestate/re-overview.component';
+import { PropertyListComponent } from './admin/realestate/property-list.component';
+import { PropertyFormComponent } from './admin/realestate/property-form.component';
+import { PropertyDetailComponent } from './admin/realestate/property-detail.component';
+import { LeadListComponent } from './admin/realestate/lead-list.component';
+import { ReFollowUpsComponent } from './admin/realestate/re-follow-ups.component';
+import { LeadFormComponent } from './admin/realestate/lead-form.component';
+import { LeadDetailComponent } from './admin/realestate/lead-detail.component';
+import { ReViewingsComponent } from './admin/realestate/viewings.component';
+import { ReSettingsComponent } from './admin/realestate/re-settings.component';
+import { DealListComponent } from './admin/realestate/deal-list.component';
+import { DealFormComponent } from './admin/realestate/deal-form.component';
+import { DealDetailComponent } from './admin/realestate/deal-detail.component';
+import { ProjectListComponent } from './admin/realestate/project-list.component';
+import { ProjectFormComponent } from './admin/realestate/project-form.component';
+import { ProjectDetailComponent } from './admin/realestate/project-detail.component';
+import { UnitDetailComponent } from './admin/realestate/unit-detail.component';
+import { UnitSaleListComponent } from './admin/realestate/unit-sale-list.component';
+import { ReCollectionsComponent } from './admin/realestate/re-collections.component';
+import { ReCommissionsComponent } from './admin/realestate/re-commissions.component';
+import { UnitSaleDetailComponent } from './admin/realestate/unit-sale-detail.component';
+import { ReReportListComponent } from './admin/realestate/re-report-list.component';
+import { PmOverviewComponent } from './admin/propertymgmt/pm-overview.component';
+import { OwnerListComponent } from './admin/propertymgmt/owner-list.component';
+import { OwnerDetailComponent } from './admin/propertymgmt/owner-detail.component';
+import { PmPropertyListComponent } from './admin/propertymgmt/pm-property-list.component';
+import { PmPropertyFormComponent } from './admin/propertymgmt/pm-property-form.component';
+import { PmPropertyDetailComponent } from './admin/propertymgmt/pm-property-detail.component';
+import { PmUnitListComponent } from './admin/propertymgmt/pm-unit-list.component';
+import { PmUnitDetailComponent } from './admin/propertymgmt/pm-unit-detail.component';
+import { TenantListComponent } from './admin/propertymgmt/tenant-list.component';
+import { TenantDetailComponent } from './admin/propertymgmt/tenant-detail.component';
+import { LeaseListComponent } from './admin/propertymgmt/lease-list.component';
+import { LeaseFormComponent } from './admin/propertymgmt/lease-form.component';
+import { LeaseDetailComponent } from './admin/propertymgmt/lease-detail.component';
+import { PmSettingsComponent } from './admin/propertymgmt/pm-settings.component';
+import { PmReportListComponent } from './admin/propertymgmt/pm-report-list.component';
+import { MaintenanceListComponent } from './admin/propertymgmt/maintenance-list.component';
+import { MaintenanceFormComponent } from './admin/propertymgmt/maintenance-form.component';
+import { MaintenanceDetailComponent } from './admin/propertymgmt/maintenance-detail.component';
+import { StatementListComponent } from './admin/propertymgmt/statement-list.component';
+import { StatementDetailComponent } from './admin/propertymgmt/statement-detail.component';
+import { RentListComponent } from './admin/propertymgmt/rent-list.component';
+import { PmArrearsComponent } from './admin/propertymgmt/arrears.component';
+import { PmDepositListComponent } from './admin/propertymgmt/pm-deposit-list.component';
+import { PmChargeTypesComponent } from './admin/propertymgmt/pm-charge-types.component';
+import { PmFeeInvoiceListComponent } from './admin/propertymgmt/pm-fee-invoice-list.component';
+import { PmInspectionDetailComponent } from './admin/propertymgmt/pm-inspection-detail.component';
+import { PortalLoginComponent } from './portal/portal-login.component';
+import { PortalAcceptComponent } from './portal/portal-accept.component';
+import { PortalHomeComponent } from './portal/portal-home.component';
+import { PortalMatterComponent } from './portal/portal-matter.component';
 import { AssetListComponent } from './admin/assets/asset-list.component';
 import { AssetFormComponent } from './admin/assets/asset-form.component';
 import { AssetFromPurchaseComponent } from './admin/assets/asset-from-purchase.component';
@@ -173,6 +274,7 @@ import { AccountListComponent } from './admin/accounting/account-list.component'
 import { AccountFormComponent } from './admin/accounting/account-form.component';
 import { AccountLedgerComponent } from './admin/accounting/account-ledger.component';
 import { JournalEntryListComponent } from './admin/accounting/journal-entry-list.component';
+import { AccountingControlsComponent } from './admin/accounting/accounting-controls.component';
 import { JournalEntryDetailComponent } from './admin/accounting/journal-entry-detail.component';
 import { JournalEntryFormComponent } from './admin/accounting/journal-entry-form.component';
 import { GeneralLedgerComponent } from './admin/accounting/general-ledger.component';
@@ -226,6 +328,11 @@ import { RestaurantWastageFormComponent } from './restaurant/restaurant-wastage-
 
 const baseRoutes: Routes = [
   { path: 'login', component: LoginComponent },
+  // The client portal (law firm clients): its own sign-in and token, apart from the staff login above. No staff guard on purpose.
+  { path: 'portal/login', component: PortalLoginComponent },
+  { path: 'portal/accept', component: PortalAcceptComponent },
+  { path: 'portal/matters/:id', component: PortalMatterComponent },
+  { path: 'portal', component: PortalHomeComponent },
   // Fourier: "Add forget password feature where user will input the email and he/she can reset
   // the password" — both public, no auth needed (same as 'login' above); AuthController's
   // matching backend endpoints are under the already-public /api/auth/** path.
@@ -236,6 +343,10 @@ const baseRoutes: Routes = [
   // unlike 'login' it's not part of the staff auth flow — it posts to PublicReservationController
   // (/api/public/reservations) and never touches AuthService/the JWT.
   { path: 'reserve', component: PublicReservationComponent, canActivate: [publicModuleGuard('RESTAURANT')] },
+  { path: 'book', component: PublicBookingComponent, canActivate: [publicModuleGuard('BOOKING')] },
+  // The public listings website (Real Estate): open to anyone while the module is on and the website switch in Real Estate > Settings is on.
+  { path: 'listings', component: PublicListingsComponent, canActivate: [publicModuleGuard('REAL_ESTATE')] },
+  { path: 'listings/:id', component: PublicListingDetailComponent, canActivate: [publicModuleGuard('REAL_ESTATE')] },
   // Fourier: "Add Help Desk module ... supporting both authenticated and guest ticket creation" —
   // the guest half, same public/no-auth treatment as 'reserve' above; posts to
   // PublicHelpDeskController (/api/public/helpdesk/**), never touches AuthService/the JWT.
@@ -421,6 +532,13 @@ const baseRoutes: Routes = [
   { path: 'admin/customers/statement', component: CustomerStatementComponent, canActivate: [authGuard, adminGuard] },
   // Task: "Add Sale order and Customer payment... Let have Sale as Menu" — store-wide list, same "before :id" convention as statement above.
   { path: 'admin/customer-payments', component: CustomerPaymentListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/collections', component: CollectionsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/pricing/price-lists', component: PriceListsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/pricing/price-lists/:id', component: PriceListDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/pricing/groups', component: CustomerGroupsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/promotions', component: PromotionsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/gift-cards', component: GiftCardsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/loyalty', component: LoyaltyComponent, canActivate: [authGuard, adminGuard] },
   // Fourier: "Add view details on Customer payments" — placed right after the literal
   // 'customer-payments' list route above, same "literal path before :id" convention as every
   // other list/detail pair in this file.
@@ -603,6 +721,116 @@ const baseRoutes: Routes = [
   { path: 'admin/installments/settings', component: InstallmentSettingsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/installments/reports', component: InstallmentReportListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/installments/:id', component: InstallmentPlanDetailComponent, canActivate: [authGuard, adminGuard] },
+
+  // Time Tracking: "My time" is open to every signed-in user; the rest follow the Operations / Billing areas (see core/access.ts).
+  { path: 'time', component: MyTimesheetComponent, canActivate: [authGuard] },
+  { path: 'admin/time/projects', component: TimeProjectListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/time/projects/new', component: TimeProjectFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/time/projects/:id', component: TimeProjectFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/time/approvals', component: TimeApprovalsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/time/billing', component: TimeBillingComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/time/reports', component: TimeReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/time/settings', component: TimeSettingsComponent, canActivate: [authGuard, adminGuard] },
+  // Work Orders: "My jobs" and a single job are open to every signed-in user (the server only shows a person the jobs assigned to them);
+  // the list, packages and reports follow the Operations area (see core/access.ts).
+  { path: 'work-orders/mine', component: MyJobsComponent, canActivate: [authGuard] },
+  { path: 'work-orders/:id', component: WorkOrderDetailComponent, canActivate: [authGuard] },
+  { path: 'admin/work-orders', component: WorkOrderListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/new', component: WorkOrderDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/packages', component: ServicePackageListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/packages/new', component: ServicePackageFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/packages/:id', component: ServicePackageFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/reports', component: WorkOrderReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/:id', component: WorkOrderDetailComponent, canActivate: [authGuard, adminGuard] },
+  // Booking: "My appointments" and a single appointment are open to every signed-in user (the server only shows a person their own);
+  // the calendar, list, services, rooms and reports follow the Operations area; settings are admin-only (see core/access.ts).
+  { path: 'booking/mine', component: MyAppointmentsComponent, canActivate: [authGuard] },
+  { path: 'booking/appointments/:id', component: AppointmentDetailComponent, canActivate: [authGuard] },
+  { path: 'admin/booking', component: BookingCalendarComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/appointments', component: AppointmentListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/appointments/new', component: AppointmentFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/appointments/:id', component: AppointmentDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/services', component: BookingServiceListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/services/new', component: BookingServiceFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/services/:id', component: BookingServiceFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/resources', component: BookingResourcesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/reports', component: BookingReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/settings', component: BookingSettingsComponent, canActivate: [authGuard, adminGuard] },
+  // Law Firm: my work, a single matter, the conflict check and the contacts are open to every signed-in user (the server decides which matters and contacts
+  // a person may see); the matter list, clients, deadlines overview and reports follow the Operations area; settings are admin-only (see core/access.ts).
+  { path: 'law/mine', component: LawMyWorkComponent, canActivate: [authGuard] },
+  { path: 'law/matters/:id', component: LawMatterDetailComponent, canActivate: [authGuard] },
+  { path: 'law/conflicts', component: LawConflictCheckComponent, canActivate: [authGuard] },
+  { path: 'law/calendar', component: LawCalendarComponent, canActivate: [authGuard] },
+  { path: 'law/contacts', component: LawContactsComponent, canActivate: [authGuard] },
+  { path: 'admin/law/overview', component: LawOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/matters', component: LawMatterListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/matters/new', component: LawMatterDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/clients', component: LawClientsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/work', component: LawWorkAllComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/billing', component: LawBillingOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/collections', component: LawCollectionsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/trust', component: LawTrustOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/trust/reconcile', component: LawTrustReconcileComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/templates', component: LawTemplatesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/reports', component: LawReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/law/settings', component: LawSettingsComponent, canActivate: [authGuard, adminGuard] },
+  // Real Estate: properties, leads and viewings. Everything follows the Operations area; settings are admin-only (see core/access.ts).
+  { path: 'admin/realestate/overview', component: ReOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/properties', component: PropertyListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/properties/new', component: PropertyFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/properties/:id/edit', component: PropertyFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/properties/:id', component: PropertyDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/leads', component: LeadListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/follow-ups', component: ReFollowUpsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/leads/new', component: LeadFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/leads/:id/edit', component: LeadFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/leads/:id', component: LeadDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/viewings', component: ReViewingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/deals', component: DealListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/deals/new', component: DealFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/deals/:id/edit', component: DealFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/deals/:id', component: DealDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/projects', component: ProjectListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/projects/new', component: ProjectFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/projects/:id/edit', component: ProjectFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/projects/:id', component: ProjectDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/units/:id', component: UnitDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/unit-sales', component: UnitSaleListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/collections', component: ReCollectionsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/commissions', component: ReCommissionsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/unit-sales/:id', component: UnitSaleDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/reports', component: ReReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/overview', component: PmOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/owners', component: OwnerListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/owners/:id', component: OwnerDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/properties', component: PmPropertyListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/properties/new', component: PmPropertyFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/properties/:id/edit', component: PmPropertyFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/properties/:id', component: PmPropertyDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/units', component: PmUnitListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/units/:id', component: PmUnitDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/tenants', component: TenantListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/tenants/:id', component: TenantDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/leases', component: LeaseListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/leases/new', component: LeaseFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/leases/:id/edit', component: LeaseFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/leases/:id', component: LeaseDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/rent', component: RentListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/arrears', component: PmArrearsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/deposits', component: PmDepositListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/charges', component: PmChargeTypesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/fee-invoices', component: PmFeeInvoiceListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/inspections/:id', component: PmInspectionDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/maintenance', component: MaintenanceListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/maintenance/new', component: MaintenanceFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/maintenance/:id/edit', component: MaintenanceFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/maintenance/:id', component: MaintenanceDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/statements', component: StatementListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/statements/:id', component: StatementDetailComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/reports', component: PmReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/propertymgmt/settings', component: PmSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/realestate/settings', component: ReSettingsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets', component: AssetListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets/new', component: AssetFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets/from-purchase', component: AssetFromPurchaseComponent, canActivate: [authGuard, adminGuard] },
@@ -651,6 +879,7 @@ const baseRoutes: Routes = [
   { path: 'admin/accounting/incomes/new', component: IncomeFormComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'admin/accounting/journal-entries', component: JournalEntryListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/accounting/controls', component: AccountingControlsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/journal-entries/new', component: JournalEntryFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/journal-entries/:id', component: JournalEntryDetailComponent, canActivate: [authGuard, adminGuard] },
 
@@ -792,6 +1021,16 @@ const MODULE_PREFIXES: { prefix: string; key: ModuleKey; except?: string[] }[] =
   { prefix: 'admin/hotel', key: 'HOTEL', except: ['admin/hotel/settings'] },
   { prefix: 'admin/assets', key: 'ASSETS' },
   { prefix: 'admin/installments', key: 'INSTALLMENTS' },
+  { prefix: 'time', key: 'TIME_TRACKING' },
+  { prefix: 'admin/time', key: 'TIME_TRACKING' },
+  { prefix: 'work-orders', key: 'WORK_ORDERS' },
+  { prefix: 'admin/work-orders', key: 'WORK_ORDERS' },
+  { prefix: 'booking', key: 'BOOKING' },
+  { prefix: 'admin/booking', key: 'BOOKING' },
+  { prefix: 'law', key: 'LAW_FIRM' },
+  { prefix: 'admin/law', key: 'LAW_FIRM' },
+  { prefix: 'admin/realestate', key: 'REAL_ESTATE' },
+  { prefix: 'admin/propertymgmt', key: 'PROPERTY_MANAGEMENT' },
   { prefix: 'admin/hr/employees', key: 'EMPLOYEES' },
   { prefix: 'admin/hr/reports', key: 'EMPLOYEES' },
   { prefix: 'admin/hr/org', key: 'ORG_STRUCTURE' },

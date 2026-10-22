@@ -192,4 +192,11 @@ public class Invoice extends BaseEntity {
      */
     @jakarta.persistence.Column(name = "branch_id")
     private Long branchId;
+
+    /**
+     * True for the opening balance brought in when the business starts using the system (import or hand-entered): a receivable/payable that existed before, not a new sale or purchase.
+     * It posts against Owner's Equity instead of Sales Revenue / Inventory, so reports of sales are not inflated.
+     */
+    @jakarta.persistence.Column(name = "opening_balance", nullable = false)
+    private boolean openingBalance = false;
 }

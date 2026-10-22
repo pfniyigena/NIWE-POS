@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PaperButtonComponent } from '../shared/paper-button.component';
 import { PurchaseOrderApiService } from '../core/api/purchase-order-api.service';
 import { PurchaseReturnApiService } from '../core/api/purchase-return-api.service';
 import { BillApiService } from '../core/api/bill-api.service';
@@ -47,7 +48,7 @@ interface ReturnRow {
 @Component({
   selector: 'app-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -66,6 +67,7 @@ interface ReturnRow {
             <a class="btn btn-outline-primary" *ngIf="bill" [routerLink]="['/admin/bills', bill.id]">View bill</a>
             <!-- Task 3: "Print out purchase order" -->
             <a class="btn btn-outline-secondary" [routerLink]="['/admin/purchase-orders', o.id, 'print']" target="_blank">🖨 Print</a>
+            <app-paper-button *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'" class="paper-grn" label="Goods received note" cls="btn-outline-secondary" [path]="'/purchase-orders/' + o.id + '/goods-received-note'" file="goods-received-note.pdf"></app-paper-button>
           </div>
         </div>
 

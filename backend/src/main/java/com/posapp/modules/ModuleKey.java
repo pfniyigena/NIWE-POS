@@ -47,6 +47,24 @@ public enum ModuleKey {
     INSTALLMENTS("Installments", "🗓️",
             "Let customers pay an invoice in dated instalments: deposit, interest, late fees, reminders, a dashboard and reports. Payments go through the invoice, so receipts and Accounting stay the same.",
             false),
+    TIME_TRACKING("Time Tracking", "⏱️",
+            "Projects and tasks, a timer and weekly timesheets, manager approval, and billing approved time onto invoices. Work orders and law-firm matters use it for their hours.",
+            false),
+    WORK_ORDERS("Work Orders", "🛠️",
+            "Customer service jobs and internal maintenance or repair jobs: assignment, checklists, parts, hours (from Time Tracking), costs, standard service packages, a link to Manufacturing and billing onto invoices.",
+            false),
+    BOOKING("Booking", "📅",
+            "Appointments with staff, rooms and equipment that cannot be double-booked, a public booking page, and deposits or full payment matched to an invoice.",
+            false),
+    LAW_FIRM("Law Firm", "⚖️",
+            "Clients and matters, a conflict check across clients and other parties, deadlines, tasks and a case diary for each matter. Time, billing, client money, documents and the client portal follow in later steps.",
+            false),
+    REAL_ESTATE("Real Estate", "🏠",
+            "Properties for sale or rent with photos, the people who enquire, and the viewings. Sales deals, developer projects and valuations follow in later steps.",
+            false),
+    PROPERTY_MANAGEMENT("Property Management", "🏢",
+            "Landlords (owners), the properties and rentable units you manage for them, tenants and leases, with lease expiry alerts, vacancy and the rent roll. Rent invoicing, maintenance and owner statements follow in later steps.",
+            false),
     EMPLOYEES("Employees", "👥",
             "Employee records (personal, job and bank details), departments and the employee directory. The base of the other HR modules.",
             false),
@@ -104,6 +122,7 @@ public enum ModuleKey {
     public List<ModuleKey> requires() {
         return switch (this) {
             case HOTEL -> List.of(POS, RESTAURANT);
+            case WORK_ORDERS, LAW_FIRM -> List.of(TIME_TRACKING);
             case ORG_STRUCTURE, ATTENDANCE, CONTRACTS -> List.of(EMPLOYEES);
             case PAYROLL -> List.of(EMPLOYEES, CONTRACTS, ATTENDANCE);
             default -> List.of();

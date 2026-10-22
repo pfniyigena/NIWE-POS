@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { CancelPaidInvoiceRequest, CustomerPayment, Invoice, InvoicePayload, RecordInvoicePaymentRequest } from '../models';
 
 /** Fourier: "Add Invoice ... without touching warehousing"; later: "create invoice related to the Sale Order and record payment on invoice ... someone can create invoice (with invoice lines) without creating sales order." Admin-only. */
@@ -86,5 +88,15 @@ export class InvoiceApiService {
   /** This invoice's own payment history. */
   paymentHistory(id: number): Observable<CustomerPayment[]> {
     return this.http.get<CustomerPayment[]>(`${API_BASE}/invoices/${id}/payments`);
+  }
+
+  /** One page of invoices with the search bar's filters; `extra` carries customerId. */
+  page(f: ListFilter, page: number, size: number, extra: Record<string, string | number | null> = {}): Observable<PageResult<Invoice>> {
+    return pagedList<Invoice>(this.http, `${API_BASE}/invoices`, f, page, size, extra);
+  }
+
+  /** One page of credit notes (status is not used: every row is a voided invoice). */
+  creditNotePage(f: ListFilter, page: number, size: number): Observable<PageResult<Invoice>> {
+    return pagedList<Invoice>(this.http, `${API_BASE}/invoices/credit-notes`, f, page, size);
   }
 }

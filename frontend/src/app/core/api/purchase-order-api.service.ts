@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 import { PurchaseOrder, PurchaseOrderPayload } from '../models';
 
 export interface ReceivePurchaseOrderPayload {
@@ -45,5 +47,9 @@ export class PurchaseOrderApiService {
   /** Records stock actually arriving (possibly a partial delivery) — increments the matching products' live stock. */
   receive(id: number, payload: ReceivePurchaseOrderPayload): Observable<PurchaseOrder> {
     return this.http.post<PurchaseOrder>(`${API_BASE}/purchase-orders/${id}/receive`, payload);
+  }
+
+  page(f: ListFilter, page: number, size: number): Observable<PageResult<PurchaseOrder>> {
+    return pagedList<PurchaseOrder>(this.http, `${API_BASE}/purchase-orders`, f, page, size);
   }
 }
