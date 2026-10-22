@@ -45,16 +45,23 @@ import { Holiday, HrApiService, HrSettings, LeaveType, LeaveTypePayload } from '
             <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
               <div class="form-group"><label class="form-label">Name</label><input class="form-control" name="tn" [(ngModel)]="type.name" required /></div>
               <div class="form-group"><label class="form-label">Days a year (0 = no limit)</label><input class="form-control" type="number" min="0" style="width:8rem;" name="td" [(ngModel)]="type.daysPerYear" /></div>
+              <div class="form-group"><label class="form-label">Days become available</label>
+                <select class="form-select type-accrual" name="tacc" [(ngModel)]="type.accrualMode">
+                  <option value="UPFRONT">All at the start of the year</option>
+                  <option value="MONTHLY">Earned month by month</option>
+                </select></div>
+              <div class="form-group"><label class="form-label">Carry over (max days)</label><input class="form-control type-carry" type="number" min="0" max="365" style="width:8rem;" name="tcarry" [(ngModel)]="type.carryOverMaxDays" /></div>
               <div class="form-group"><label class="form-label"><input type="checkbox" name="tp" [(ngModel)]="type.paid" /> Paid</label></div>
+              <div class="form-group"><label class="form-label" title="Unused days are paid in the final pay of an employee who leaves"><input class="type-payout" type="checkbox" name="tpo" [(ngModel)]="type.payoutOnExit" /> Paid out when leaving</label></div>
               <div class="form-group" *ngIf="typeId"><label class="form-label"><input type="checkbox" name="ta" [(ngModel)]="type.active" /> Active</label></div>
               <div class="flex gap-2"><button class="btn btn-primary" type="submit">{{ typeId ? 'Save' : 'Add' }}</button><button class="btn btn-link" type="button" *ngIf="typeId" (click)="resetType()">Cancel</button></div>
             </div>
-            <div class="text-muted" style="font-size:0.8rem;">Unpaid leave is deducted from the employee's pay by payroll.</div>
+            <div class="text-muted" style="font-size:0.8rem;">Unpaid leave is deducted from the employee's pay by payroll. Carry over is how many unused days can move into the next year (0 = none). Paid out when leaving: unused days of this type are paid in the final pay of an employee who leaves. Monthly earning gives one twelfth of the yearly days for each month worked; it also applies to people hired during the year.</div>
           </form>
           <table class="table-sm">
-            <thead><tr><th>Name</th><th>Days a year</th><th>Paid</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Days a year</th><th>Earned</th><th>Carry over</th><th>Paid</th><th>Paid out on leaving</th><th>Status</th><th></th></tr></thead>
             <tbody><tr *ngFor="let t of types">
-              <td>{{ t.name }}</td><td>{{ t.daysPerYear || 'No limit' }}</td><td>{{ t.paid ? 'Yes' : 'No' }}</td>
+              <td>{{ t.name }}</td><td>{{ t.daysPerYear || 'No limit' }}</td><td>{{ t.accrualMode === 'MONTHLY' ? 'Monthly' : 'At start of year' }}</td><td>{{ t.carryOverMaxDays || 'None' }}</td><td>{{ t.paid ? 'Yes' : 'No' }}</td><td>{{ t.payoutOnExit ? 'Yes' : 'No' }}</td>
               <td><span class="badge" [class.badge-success]="t.active" [class.badge-secondary]="!t.active">{{ t.active ? 'Active' : 'Inactive' }}</span></td>
               <td class="flex gap-1">
                 <button class="btn btn-sm btn-outline-primary" type="button" (click)="editType(t)">Edit</button>
@@ -92,7 +99,7 @@ export class LeaveSettingsComponent implements OnInit {
   error: string | null = null;
   saved: string | null = null;
   typeId: number | null = null;
-  type: LeaveTypePayload = { name: '', daysPerYear: 0, paid: true, active: true };
+  type: LeaveTypePayload = { name: '', daysPerYear: 0, paid: true, active: true, accrualMode: 'UPFRONT', carryOverMaxDays: 0, payoutOnExit: false };
   holiday = { date: new Date().toISOString().slice(0, 10), name: '' };
   days = [
     { code: 'MON', label: 'Mon' }, { code: 'TUE', label: 'Tue' }, { code: 'WED', label: 'Wed' }, { code: 'THU', label: 'Thu' },
@@ -138,12 +145,12 @@ export class LeaveSettingsComponent implements OnInit {
 
   editType(t: LeaveType): void {
     this.typeId = t.id;
-    this.type = { name: t.name, daysPerYear: t.daysPerYear, paid: t.paid, active: t.active };
+    this.type = { name: t.name, daysPerYear: t.daysPerYear, paid: t.paid, active: t.active, accrualMode: t.accrualMode ?? 'UPFRONT', carryOverMaxDays: t.carryOverMaxDays ?? 0, payoutOnExit: !!t.payoutOnExit };
   }
 
   resetType(): void {
     this.typeId = null;
-    this.type = { name: '', daysPerYear: 0, paid: true, active: true };
+    this.type = { name: '', daysPerYear: 0, paid: true, active: true, accrualMode: 'UPFRONT', carryOverMaxDays: 0, payoutOnExit: false };
   }
 
   saveType(): void {

@@ -718,14 +718,76 @@ public class AccountingService {
     @Transactional
     public void postPayrollApproval(Long runId, String memo, BigDecimal gross, BigDecimal employerContributions, BigDecimal paye,
                                     BigDecimal socialSecurity, BigDecimal healthOther, BigDecimal netPay, Long branchId) {
+        postPayrollApproval(runId, memo, gross, employerContributions, paye, socialSecurity, healthOther, BigDecimal.ZERO, netPay, branchId);
+    }
+
+    /** As above, and {@code staffAdvances} is what the payroll takes back from employees on loans and advances (it reduces what they owe the company). */
+    @Transactional
+    public void postPayrollApproval(Long runId, String memo, BigDecimal gross, BigDecimal employerContributions, BigDecimal paye,
+                                    BigDecimal socialSecurity, BigDecimal healthOther, BigDecimal staffAdvances, BigDecimal netPay, Long branchId) {
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.SALARIES_EXPENSE, gross, null, true);
         addIfPositive(lines, AccountService.EMPLOYER_CONTRIBUTIONS_EXPENSE, employerContributions, null, true);
         addIfPositive(lines, AccountService.PAYE_PAYABLE, paye, null, false);
         addIfPositive(lines, AccountService.SOCIAL_SECURITY_PAYABLE, socialSecurity, null, false);
         addIfPositive(lines, AccountService.HEALTH_OTHER_PAYROLL_PAYABLE, healthOther, null, false);
+        addIfPositive(lines, AccountService.STAFF_ADVANCES, staffAdvances, "Loan and advance repayments", false);
         addIfPositive(lines, AccountService.SALARIES_PAYABLE, netPay, null, false);
         post("PAYROLL", runId, memo, null, lines, branchId);
+    }
+
+    /** Taking an approved payroll back: the same amounts as {@link #postPayrollApproval} with every debit and credit swapped. */
+    @Transactional
+    public void postPayrollApprovalReversal(Long runId, String memo, BigDecimal gross, BigDecimal employerContributions, BigDecimal paye,
+                                            BigDecimal socialSecurity, BigDecimal healthOther, BigDecimal staffAdvances, BigDecimal netPay, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.SALARIES_EXPENSE, gross, null, false);
+        addIfPositive(lines, AccountService.EMPLOYER_CONTRIBUTIONS_EXPENSE, employerContributions, null, false);
+        addIfPositive(lines, AccountService.PAYE_PAYABLE, paye, null, true);
+        addIfPositive(lines, AccountService.SOCIAL_SECURITY_PAYABLE, socialSecurity, null, true);
+        addIfPositive(lines, AccountService.HEALTH_OTHER_PAYROLL_PAYABLE, healthOther, null, true);
+        addIfPositive(lines, AccountService.STAFF_ADVANCES, staffAdvances, "Loan and advance repayments taken back", true);
+        addIfPositive(lines, AccountService.SALARIES_PAYABLE, netPay, null, true);
+        post("PAYROLL_REVERSAL", runId, memo, null, lines, branchId);
+    }
+
+    /** Cancelling the payment of the net salaries: the salaries are owed again and the cash is back. */
+    @Transactional
+    public void postPayrollPaymentReversal(Long runId, String memo, BigDecimal netPay, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.SALARIES_PAYABLE, netPay, null, false);
+        addIfPositive(lines, AccountService.CASH, netPay, null, true);
+        post("PAYROLL_PAYMENT_REVERSAL", runId, memo, null, lines, branchId);
+    }
+
+    /** Paying the tax authority or social-security fund what payroll withheld (or reversing such a payment): the liability is settled from cash. */
+    @Transactional
+    public void postPayrollRemittance(String sourceType, Long remittanceId, String memo, String liabilityKey, BigDecimal amount, java.time.LocalDate date, boolean reverse) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, liabilityKey, amount, null, !reverse);
+        addIfPositive(lines, AccountService.CASH, amount, null, reverse);
+        post(sourceType, remittanceId, memo, toInstant(date), lines);
+    }
+
+    /** Giving an employee a salary advance or loan: cash goes out and the employee owes it back. */
+    @Transactional
+    public void postStaffAdvance(Long loanId, String memo, BigDecimal amount, java.time.LocalDate date, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.STAFF_ADVANCES, amount, null, true);
+        addIfPositive(lines, AccountService.CASH, amount, null, false);
+        post("STAFF_ADVANCE", loanId, memo, toInstant(date), lines, branchId);
+    }
+
+    /**
+     * Reducing what an employee owes outside payroll: the employee pays it back in cash, the loan is cancelled (cash back in), or what is left
+     * is written off as a salary cost.
+     */
+    @Transactional
+    public void postStaffAdvanceBack(String sourceType, Long loanId, String memo, BigDecimal amount, java.time.LocalDate date, Long branchId, boolean writeOff) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, writeOff ? AccountService.SALARIES_EXPENSE : AccountService.CASH, amount, null, true);
+        addIfPositive(lines, AccountService.STAFF_ADVANCES, amount, null, false);
+        post(sourceType, loanId, memo, toInstant(date), lines, branchId);
     }
 
     /** Paying out the net salaries of a payroll run (one entry per branch): the salaries owed are settled from cash. */

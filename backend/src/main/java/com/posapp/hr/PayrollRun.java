@@ -57,6 +57,10 @@ public class PayrollRun extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    /** How many times an approved payroll was taken back to draft. */
+    @Column(nullable = false)
+    private int reopenedCount = 0;
+
     @OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PayrollLine> lines = new ArrayList<>();
 }

@@ -49,6 +49,7 @@ public class LicenseGateFilter extends OncePerRequestFilter {
             new Rule("/api/realestate", ModuleKey.REAL_ESTATE),
             new Rule("/api/propertymgmt", ModuleKey.PROPERTY_MANAGEMENT),
             new Rule("/api/hr/employees", ModuleKey.EMPLOYEES),
+            new Rule("/api/hr/me", ModuleKey.EMPLOYEES),
             new Rule("/api/hr/staff-logins", ModuleKey.EMPLOYEES),
             new Rule("/api/hr/departments", ModuleKey.ORG_STRUCTURE),
             new Rule("/api/hr/positions", ModuleKey.ORG_STRUCTURE),

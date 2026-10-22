@@ -3,21 +3,29 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { PagerComponent } from '../../shared/pager.component';
+import { ListFilterComponent } from '../../shared/list-filter.component';
+import { ListState } from '../../core/api/list-state';
+import { BranchApiService } from '../../core/api/branch-api.service';
+import { Branch } from '../../core/models';
 import { DatePickerComponent } from '../../shared/date-picker.component';
-import { Employee, HrApiService, LeaveBalance, LeaveRequest, LeaveStatus, LeaveType } from '../../core/api/hr-api.service';
+import { Employee, HrApiService, LeaveBalance, LeaveRequest, LeaveType } from '../../core/api/hr-api.service';
 
 /** Attendance & Leaves > Leave: requests (with approve / reject), and the balance of each employee. */
 @Component({
   selector: 'app-leaves',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
         <h3>Leave</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/hr/leave-settings">Leave settings</a>
+        <div class="flex gap-2">
+          <a class="btn btn-outline-primary" routerLink="/admin/hr/leave-calendar">Team calendar</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/hr/leave-settings">Leave settings</a>
+        </div>
       </div>
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex gap-1 mb-3">
         <button class="btn btn-sm" [class.btn-primary]="tab === 'requests'" [class.btn-outline-primary]="tab !== 'requests'" type="button" (click)="tab = 'requests'">Requests</button>
         <button class="btn btn-sm" [class.btn-primary]="tab === 'balances'" [class.btn-outline-primary]="tab !== 'balances'" type="button" (click)="tab = 'balances'; loadBalances()">Balances</button>
@@ -42,23 +50,25 @@ import { Employee, HrApiService, LeaveBalance, LeaveRequest, LeaveStatus, LeaveT
             <div class="form-group"><label class="form-label">Reason</label><input class="form-control" name="rr" [(ngModel)]="form.reason" /></div>
             <button class="btn btn-primary" type="submit">Submit</button>
           </div>
-          <div class="text-muted" *ngIf="workingDays !== null">{{ workingDays }} working day(s) (weekends and public holidays are not counted).</div>
+          <div class="flex gap-3 mt-2" style="flex-wrap:wrap;">
+            <label><input type="checkbox" class="half-start" name="hs" [(ngModel)]="form.startHalfDay" (ngModelChange)="countDays()" /> First day is a half day (afternoon only)</label>
+            <label><input type="checkbox" class="half-end" name="he" [(ngModel)]="form.endHalfDay" (ngModelChange)="countDays()" /> Last day is a half day (morning only)</label>
+          </div>
+          <div class="text-muted day-count" *ngIf="workingDays !== null">{{ workingDays }} working day(s) (weekends and public holidays are not counted).</div>
         </form>
 
+        <app-list-filter exportKind="leave-requests" exportPath="/hr/leaves/export" placeholder="Search employee, leave type, reason…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" [exportExtra]="extra" (cleared)="filterEmployeeId = null; extra = {}" (filterChange)="list.apply($event)"></app-list-filter>
         <div class="flex gap-2 mb-2 align-center">
-          <select class="form-select" style="width:auto;" name="fs" [(ngModel)]="status" (ngModelChange)="load()">
-            <option value="">All statuses</option>
-            <option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="CANCELLED">Cancelled</option>
-          </select>
-          <select class="form-select" style="width:auto;" name="fe" [(ngModel)]="filterEmployeeId" (ngModelChange)="load()">
+          <select class="form-select emp-filter" style="width:auto;" name="fe" [(ngModel)]="filterEmployeeId" (ngModelChange)="employeeChanged()">
             <option [ngValue]="null">All employees</option>
             <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.fullName }}</option>
           </select>
+          <span class="text-muted" style="font-size:0.8rem;">The dates narrow the list only when both are set (requests overlapping that period).</span>
         </div>
         <table class="table-sm">
           <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Decision</th><th></th></tr></thead>
-          <tbody><tr *ngFor="let l of leaves">
-            <td>{{ l.employeeName }}</td><td>{{ l.leaveTypeName }}</td><td>{{ l.startDate }}</td><td>{{ l.endDate }}</td><td>{{ l.days }}</td><td>{{ l.reason || '' }}</td>
+          <tbody><tr *ngFor="let l of list.rows">
+            <td>{{ l.employeeName }}</td><td>{{ l.leaveTypeName }}</td><td>{{ l.startDate }}</td><td>{{ l.endDate }}</td><td>{{ l.days }}<span class="text-muted" *ngIf="l.startHalf || l.endHalf" title="Includes a half day"> ½</span></td><td>{{ l.reason || '' }}</td>
             <td><span class="badge" [class.badge-warning]="l.status === 'PENDING'" [class.badge-success]="l.status === 'APPROVED'" [class.badge-danger]="l.status === 'REJECTED'" [class.badge-secondary]="l.status === 'CANCELLED'">{{ l.status }}</span></td>
             <td>{{ l.decidedBy ? l.decidedBy : '' }}{{ l.decisionNote ? ' — ' + l.decisionNote : '' }}</td>
             <td class="flex gap-1">
@@ -68,7 +78,8 @@ import { Employee, HrApiService, LeaveBalance, LeaveRequest, LeaveStatus, LeaveT
             </td>
           </tr></tbody>
         </table>
-        <p class="text-muted" *ngIf="!leaves.length">No leave requests.</p>
+        <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || filterEmployeeId ? 'Nothing matches these filters.' : 'No leave requests.' }}</p>
+        <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
       </ng-container>
 
       <ng-container *ngIf="tab === 'balances'">
@@ -77,34 +88,39 @@ import { Employee, HrApiService, LeaveBalance, LeaveRequest, LeaveStatus, LeaveT
           <input class="form-control" type="number" style="width:6rem;" name="by" [(ngModel)]="year" (ngModelChange)="loadBalances()" />
         </div>
         <table class="table-sm">
-          <thead><tr><th>Employee</th><th>Leave type</th><th>Entitled</th><th>Used</th><th>Pending</th><th>Remaining</th></tr></thead>
+          <thead><tr><th>Employee</th><th>Leave type</th><th>Entitled</th><th>Earned so far</th><th>Carried over</th><th>Used</th><th>Pending</th><th>Remaining</th></tr></thead>
           <tbody><tr *ngFor="let b of balances">
-            <td>{{ b.employeeName }}</td><td>{{ b.leaveTypeName }}</td><td>{{ b.unlimited ? 'No limit' : b.entitled }}</td><td>{{ b.used }}</td><td>{{ b.pending }}</td><td>{{ b.unlimited ? '—' : b.remaining }}</td>
+            <td>{{ b.employeeName }}</td><td>{{ b.leaveTypeName }}<span class="text-muted" *ngIf="b.accrualMode === 'MONTHLY'"> (monthly)</span></td><td>{{ b.unlimited ? 'No limit' : b.entitled }}</td>
+            <td>{{ b.unlimited ? '—' : b.accrued }}</td><td>{{ b.unlimited ? '—' : b.carriedOver }}</td><td>{{ b.used }}</td><td>{{ b.pending }}</td><td>{{ b.unlimited ? '—' : b.remaining }}</td>
           </tr></tbody>
         </table>
-        <p class="text-muted">Entitlements are the full yearly days of each leave type (not prorated for people hired during the year).</p>
+        <p class="text-muted">Entitled is the yearly days of the leave type. Types that are earned monthly add one twelfth of the days for each month worked, so "Earned so far" is what can be taken up to now. Carried over days come from unused days of earlier years, up to the limit set on the leave type. Remaining counts earned plus carried over days, less used and pending.</p>
       </ng-container>
     </app-shell>
   `,
 })
 export class LeavesComponent implements OnInit {
   tab: 'requests' | 'balances' = 'requests';
-  leaves: LeaveRequest[] = [];
+  branches: Branch[] = [];
+  extra: Record<string, string | number | null | undefined> = {};
+  statuses = [{ value: 'PENDING', label: 'Pending' }, { value: 'APPROVED', label: 'Approved' }, { value: 'REJECTED', label: 'Rejected' }, { value: 'CANCELLED', label: 'Cancelled' }];
+  list = new ListState<LeaveRequest>((f, p, sz) => this.api.page<LeaveRequest>('leaves', f, p, sz, { employeeId: this.filterEmployeeId }), 'Failed to load leave requests');
   balances: LeaveBalance[] = [];
   employees: Employee[] = [];
   types: LeaveType[] = [];
-  status: LeaveStatus | '' = '';
   filterEmployeeId: number | null = null;
   year = new Date().getFullYear();
   workingDays: number | null = null;
   error: string | null = null;
-  form: { employeeId: number | null; leaveTypeId: number; startDate: string; endDate: string; reason: string | null } = {
+  form: { employeeId: number | null; leaveTypeId: number; startDate: string; endDate: string; reason: string | null; startHalfDay: boolean; endHalfDay: boolean } = {
     employeeId: null, leaveTypeId: 0, startDate: new Date().toISOString().slice(0, 10), endDate: new Date().toISOString().slice(0, 10), reason: null,
+    startHalfDay: false, endHalfDay: false,
   };
 
-  constructor(private api: HrApiService) {}
+  constructor(private api: HrApiService, private branchApi: BranchApiService) {}
 
   ngOnInit(): void {
+    this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
     this.api.employees({ status: 'ACTIVE' }).subscribe({ next: (e) => (this.employees = e), error: () => {} });
     this.api.leaveTypes().subscribe({ next: (t) => (this.types = t.filter((x) => x.active)), error: () => {} });
     this.load();
@@ -112,13 +128,13 @@ export class LeavesComponent implements OnInit {
   }
 
   load(): void {
-    this.api.leaves({ status: this.status, employeeId: this.filterEmployeeId }).subscribe({
-      next: (l) => {
-        this.leaves = l;
-        this.error = null;
-      },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load leave requests'),
-    });
+    this.list.load();
+  }
+
+  employeeChanged(): void {
+    this.extra = { employeeId: this.filterEmployeeId };
+    this.list.page = 0;
+    this.list.load();
   }
 
   loadBalances(): void {
@@ -130,7 +146,7 @@ export class LeavesComponent implements OnInit {
       this.workingDays = null;
       return;
     }
-    this.api.leaveWorkingDays(this.form.startDate, this.form.endDate).subscribe({ next: (n) => (this.workingDays = n), error: () => (this.workingDays = null) });
+    this.api.leaveWorkingDays(this.form.startDate, this.form.endDate, this.form.startHalfDay, this.form.endHalfDay).subscribe({ next: (n) => (this.workingDays = n), error: () => (this.workingDays = null) });
   }
 
   request(): void {

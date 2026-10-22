@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { PaperButtonComponent } from '../../shared/paper-button.component';
 import { StoreSettingsApiService } from '../../core/api/store-settings-api.service';
 import { StoreSettings } from '../../core/models';
 import { HrApiService, Payslip } from '../../core/api/hr-api.service';
@@ -10,13 +11,14 @@ import { HrApiService, Payslip } from '../../core/api/hr-api.service';
 @Component({
   selector: 'app-payslip',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="no-print flex justify-between align-center mb-3">
         <a class="btn btn-outline-secondary" [routerLink]="['/admin/hr/payroll/runs', runId]">Back to payroll</a>
         <div class="flex gap-2">
           <button class="btn btn-outline-primary" type="button" *ngIf="p && p.run.status !== 'DRAFT'" (click)="email()" [disabled]="emailing">{{ emailing ? 'Sending…' : 'Email to employee' }}</button>
+          <app-paper-button class="slip-pdf" label="Download PDF" [path]="'/hr/payroll/runs/' + runId + '/lines/' + lineId + '/payslip/pdf'" file="payslip.pdf"></app-paper-button>
           <button class="btn btn-primary" type="button" (click)="print()">Print</button>
         </div>
       </div>

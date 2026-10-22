@@ -62,9 +62,9 @@ public final class HrDtos {
     public record OrgChartDto(List<DeptNode> departments, List<PersonNode> people) {
     }
 
-    public record LeaveTypeDto(Long id, String name, int daysPerYear, boolean paid, boolean active) {
+    public record LeaveTypeDto(Long id, String name, int daysPerYear, boolean paid, boolean active, LeaveAccrual accrualMode, int carryOverMaxDays, boolean payoutOnExit) {
         public static LeaveTypeDto from(LeaveType t) {
-            return new LeaveTypeDto(t.getId(), t.getName(), t.getDaysPerYear(), t.isPaid(), t.isActive());
+            return new LeaveTypeDto(t.getId(), t.getName(), t.getDaysPerYear(), t.isPaid(), t.isActive(), t.getAccrualMode(), t.getCarryOverMaxDays(), t.isPayoutOnExit());
         }
     }
 
@@ -77,17 +77,32 @@ public final class HrDtos {
     public record LeaveRequestDto(Long id, Long employeeId, String employeeNumber, String employeeName, Long leaveTypeId,
                                   String leaveTypeName, boolean paid, LocalDate startDate, LocalDate endDate, BigDecimal days,
                                   String reason, LeaveStatus status, String decidedBy, Instant decidedAt, String decisionNote,
-                                  Instant createdAt) {
+                                  Instant createdAt, boolean startHalf, boolean endHalf) {
         public static LeaveRequestDto from(LeaveRequest r) {
             return new LeaveRequestDto(r.getId(), r.getEmployee().getId(), r.getEmployee().getEmployeeNumber(), r.getEmployee().fullName(),
                     r.getLeaveType().getId(), r.getLeaveType().getName(), r.getLeaveType().isPaid(), r.getStartDate(), r.getEndDate(),
-                    r.getDays(), r.getReason(), r.getStatus(), r.getDecidedBy(), r.getDecidedAt(), r.getDecisionNote(), r.getCreatedAt());
+                    r.getDays(), r.getReason(), r.getStatus(), r.getDecidedBy(), r.getDecidedAt(), r.getDecisionNote(), r.getCreatedAt(), r.isStartHalf(), r.isEndHalf());
         }
     }
 
     /** {@code entitled} 0 with {@code unlimited} true means the leave type has no yearly limit. */
     public record LeaveBalanceDto(Long employeeId, String employeeNumber, String employeeName, Long leaveTypeId, String leaveTypeName,
-                                  boolean unlimited, BigDecimal entitled, BigDecimal used, BigDecimal pending, BigDecimal remaining) {
+                                  boolean unlimited, BigDecimal entitled, BigDecimal used, BigDecimal pending, BigDecimal remaining,
+                                  BigDecimal accrued, BigDecimal carriedOver, LeaveAccrual accrualMode) {
+    }
+
+    /** One day of the team calendar: weekends and public holidays are marked so the screen can shade them. */
+    public record CalendarDayDto(LocalDate date, boolean weekend, String holiday) {
+    }
+
+    /** One working day of leave of one employee; {@code half} when only half of that day is leave. */
+    public record CalendarEntryDto(LocalDate date, Long requestId, String leaveTypeName, LeaveStatus status, boolean half) {
+    }
+
+    public record CalendarRowDto(Long employeeId, String employeeNumber, String employeeName, String departmentName, List<CalendarEntryDto> entries) {
+    }
+
+    public record LeaveCalendarDto(int year, int month, List<CalendarDayDto> days, List<CalendarRowDto> rows) {
     }
 
     public record AttendanceDto(Long id, Long employeeId, String employeeNumber, String employeeName, LocalDate workDate, LocalTime clockIn,

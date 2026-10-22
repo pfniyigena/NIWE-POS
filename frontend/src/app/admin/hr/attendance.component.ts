@@ -2,6 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
+import { PagerComponent } from '../../shared/pager.component';
+import { ListFilterComponent } from '../../shared/list-filter.component';
+import { ListState } from '../../core/api/list-state';
+import { BranchApiService } from '../../core/api/branch-api.service';
+import { Branch } from '../../core/models';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee, HrApiService, TodayStatus } from '../../core/api/hr-api.service';
 
@@ -9,11 +14,11 @@ import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee,
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <h3 class="mb-3">Attendance</h3>
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
 
       <div class="card mb-3" style="padding:0.75rem 1rem;" *ngIf="today">
         <div class="flex align-center gap-3" style="flex-wrap:wrap;">
@@ -31,13 +36,13 @@ import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee,
       </div>
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
-        <label>From</label><app-date-picker name="from" [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
-        <label>To</label><app-date-picker name="to" [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
-        <select class="form-select" style="width:auto;" name="emp" [(ngModel)]="employeeId" (ngModelChange)="load()">
+        <label>From</label><app-date-picker name="from" [(ngModel)]="from" (ngModelChange)="rangeChanged()"></app-date-picker>
+        <label>To</label><app-date-picker name="to" [(ngModel)]="to" (ngModelChange)="rangeChanged()"></app-date-picker>
+        <select class="form-select" style="width:auto;" name="emp" [(ngModel)]="employeeId" (ngModelChange)="rangeChanged()">
           <option [ngValue]="null">All employees</option>
           <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.fullName }}</option>
         </select>
-        <select class="form-select" style="width:auto;" name="dept" [(ngModel)]="departmentId" (ngModelChange)="load()">
+        <select class="form-select" style="width:auto;" name="dept" [(ngModel)]="departmentId" (ngModelChange)="rangeChanged()">
           <option [ngValue]="null">All departments</option>
           <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
         </select>
@@ -48,6 +53,7 @@ import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee,
       </div>
 
       <ng-container *ngIf="view === 'records'">
+        <app-list-filter exportKind="attendance" exportPath="/hr/attendance/export" placeholder="Search employee, note…" [statuses]="statuses" statusAll="All statuses" [dates]="false" [branches]="branches" [exportExtra]="extra" (filterChange)="list.apply($event)"></app-list-filter>
         <form class="card mb-3" style="padding:1rem;" (ngSubmit)="saveEntry()">
           <strong class="mb-2">Add or correct a day</strong>
           <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
@@ -71,7 +77,7 @@ import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee,
         </form>
         <table class="table-sm">
           <thead><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th><th>Overtime</th><th>Status</th><th>Note</th><th></th></tr></thead>
-          <tbody><tr *ngFor="let a of records">
+          <tbody><tr *ngFor="let a of list.rows">
             <td>{{ a.workDate }}</td><td>{{ a.employeeName }}</td><td>{{ a.clockIn || '—' }}</td><td>{{ a.clockOut || '—' }}</td>
             <td>{{ a.hoursWorked }}</td><td>{{ a.overtimeHours }}</td>
             <td><span class="badge" [class.badge-success]="a.status === 'PRESENT'" [class.badge-warning]="a.status === 'LATE'" [class.badge-danger]="a.status === 'ABSENT'">{{ a.status }}</span></td>
@@ -79,7 +85,8 @@ import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee,
             <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(a)">Delete</button></td>
           </tr></tbody>
         </table>
-        <p class="text-muted" *ngIf="!records.length">No attendance records in this period.</p>
+        <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'Nothing matches these filters.' : 'No attendance records in this period.' }}</p>
+        <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
       </ng-container>
 
       <ng-container *ngIf="view === 'summary'">
@@ -97,7 +104,10 @@ import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee,
 })
 export class AttendanceComponent implements OnInit {
   today: TodayStatus | null = null;
-  records: Attendance[] = [];
+  branches: Branch[] = [];
+  extra: Record<string, string | number | null | undefined> = {};
+  statuses = [{ value: 'PRESENT', label: 'Present' }, { value: 'LATE', label: 'Late' }, { value: 'ABSENT', label: 'Absent' }];
+  list = new ListState<Attendance>((f, p, sz) => this.api.page<Attendance>('attendance', f, p, sz, this.rangeParams()), 'Failed to load attendance');
   summary: AttendanceSummary[] = [];
   employees: Employee[] = [];
   departments: Department[] = [];
@@ -109,7 +119,7 @@ export class AttendanceComponent implements OnInit {
   error: string | null = null;
   entry: { employeeId: number; workDate: string; clockIn: string | null; clockOut: string | null; status: 'PRESENT' | 'LATE' | 'ABSENT' | null; note: string | null } = AttendanceComponent.blank();
 
-  constructor(private api: HrApiService) {}
+  constructor(private api: HrApiService, private branchApi: BranchApiService) {}
 
   private static monthStart(): string {
     const d = new Date();
@@ -121,21 +131,28 @@ export class AttendanceComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
+    this.extra = this.rangeParams();
     this.api.employees({ status: 'ACTIVE' }).subscribe({ next: (e) => (this.employees = e), error: () => {} });
     this.api.departments().subscribe({ next: (d) => (this.departments = d), error: () => {} });
     this.api.today().subscribe({ next: (t) => (this.today = t), error: () => {} });
     this.load();
   }
 
+  private rangeParams(): Record<string, string | number | null> {
+    return { from: this.from, to: this.to, employeeId: this.employeeId, departmentId: this.departmentId };
+  }
+
+  /** The dates, the employee or the department changed: the export follows, and both the records and the summary are asked again. */
+  rangeChanged(): void {
+    this.extra = this.rangeParams();
+    this.list.page = 0;
+    this.load();
+  }
+
   load(): void {
     if (!this.from || !this.to) return;
-    this.api.attendance(this.from, this.to, this.employeeId, this.departmentId).subscribe({
-      next: (r) => {
-        this.records = r;
-        this.error = null;
-      },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load attendance'),
-    });
+    this.list.load();
     this.api.attendanceSummary(this.from, this.to, this.employeeId, this.departmentId).subscribe({ next: (s) => (this.summary = s), error: () => {} });
   }
 

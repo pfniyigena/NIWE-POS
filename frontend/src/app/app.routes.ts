@@ -262,11 +262,20 @@ import { OrgChartComponent } from './admin/hr/org-chart.component';
 import { AttendanceComponent } from './admin/hr/attendance.component';
 import { LeavesComponent } from './admin/hr/leaves.component';
 import { LeaveSettingsComponent } from './admin/hr/leave-settings.component';
+import { HrDocumentsComponent } from './admin/hr/hr-documents.component';
+import { HrChecklistsComponent } from './admin/hr/hr-checklists.component';
+import { EmployeeImportComponent } from './admin/hr/employee-import.component';
+import { MyHrComponent } from './my/my-hr.component';
+import { LeaveCalendarComponent } from './admin/hr/leave-calendar.component';
 import { ContractListComponent } from './admin/hr/contract-list.component';
 import { ContractFormComponent } from './admin/hr/contract-form.component';
 import { PayrollRulesComponent } from './admin/hr/payroll-rules.component';
 import { PayrollRunsComponent } from './admin/hr/payroll-runs.component';
 import { PayrollRunComponent } from './admin/hr/payroll-run.component';
+import { PayrollAdjustmentsComponent } from './admin/hr/payroll-adjustments.component';
+import { PayrollLoansComponent } from './admin/hr/payroll-loans.component';
+import { PayrollRemittancesComponent } from './admin/hr/payroll-remittances.component';
+import { StaffLoanComponent } from './admin/hr/staff-loan.component';
 import { PayslipComponent } from './admin/hr/payslip.component';
 import { HrReportListComponent } from './admin/hr/hr-report-list.component';
 import { AssetReportListComponent } from './admin/reports/asset-report-list.component';
@@ -360,6 +369,7 @@ const baseRoutes: Routes = [
   // Self-service "My Profile" (Task: "Add my profile, change my password") — any logged-in user,
   // not admin-only; there's no id in the path, the backend always resolves "you" from the JWT.
   { path: 'profile', component: MyProfileComponent, canActivate: [authGuard] },
+  { path: 'my/hr', component: MyHrComponent, canActivate: [authGuard] },
   // Settings > Appearance: every logged-in user picks their own colour theme.
   { path: 'settings/appearance', component: AppearanceComponent, canActivate: [authGuard] },
 
@@ -841,6 +851,9 @@ const baseRoutes: Routes = [
   // HR modules (optional; activated in Settings > Modules): Employees, Organizational Structure, Attendance & Leaves, Contracts, Payroll
   { path: 'admin/hr/employees', component: EmployeeListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/employees/new', component: EmployeeFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/employees/import', component: EmployeeImportComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/documents', component: HrDocumentsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/checklists', component: HrChecklistsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/employees/:id', component: EmployeeDetailComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/employees/:id/edit', component: EmployeeFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/org/setup', component: OrgSetupComponent, canActivate: [authGuard, adminGuard] },
@@ -848,11 +861,16 @@ const baseRoutes: Routes = [
   { path: 'admin/hr/attendance', component: AttendanceComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/leaves', component: LeavesComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/leave-settings', component: LeaveSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/leave-calendar', component: LeaveCalendarComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/contracts', component: ContractListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/contracts/new', component: ContractFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/contracts/:id/edit', component: ContractFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/payroll/rules', component: PayrollRulesComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/payroll/runs', component: PayrollRunsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/adjustments', component: PayrollAdjustmentsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/loans', component: PayrollLoansComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/remittances', component: PayrollRemittancesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/hr/payroll/loans/:id', component: StaffLoanComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/payroll/runs/:id', component: PayrollRunComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/payroll/runs/:id/payslip/:lineId', component: PayslipComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hr/reports', component: HrReportListComponent, canActivate: [authGuard, adminGuard] },

@@ -35,6 +35,14 @@ public class LeaveRequest extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal days;
 
+    /** The first day is a half day (the employee is away from midday). */
+    @Column(nullable = false)
+    private boolean startHalf = false;
+
+    /** The last day is a half day (the employee is away until midday). With a single-day request either flag means half a day. */
+    @Column(nullable = false)
+    private boolean endHalf = false;
+
     @Column(columnDefinition = "TEXT")
     private String reason;
 

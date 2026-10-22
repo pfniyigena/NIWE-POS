@@ -40,4 +40,7 @@ public class PayrollItem extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "integer default 0 not null")
     private int sortOrder = 0;
+
+    /** Set on a loan repayment: which loan it reduces. */
+    private Long loanId;
 }

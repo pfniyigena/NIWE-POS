@@ -1,12 +1,16 @@
 package com.posapp.hr;
 
+import com.posapp.common.ListPaging;
 import com.posapp.hr.dto.HrDtos.ContractDto;
 import com.posapp.hr.dto.HrRequests.*;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Employment contracts. Salary data, so it needs the Payroll area (not just HR). */
 @RestController
@@ -17,14 +21,28 @@ public class ContractController {
     private static final String MANAGE = "hasRole('ADMIN') or hasAuthority('AREA_PAYROLL_MANAGE')";
 
     private final ContractService service;
+    private final EmployeeRepository employeeRepository;
 
-    public ContractController(ContractService service) {
+    public ContractController(ContractService service, EmployeeRepository employeeRepository) {
         this.service = service;
+        this.employeeRepository = employeeRepository;
     }
 
     @GetMapping
-    public List<ContractDto> list(@RequestParam(required = false) ContractStatus status, @RequestParam(required = false) Long employeeId) {
-        return service.list(status, employeeId);
+    public ResponseEntity<List<ContractDto>> list(@RequestParam(required = false) ContractStatus status, @RequestParam(required = false) Long employeeId,
+                                                  @RequestParam(required = false) ContractType type, @RequestParam(required = false) String q,
+                                                  @RequestParam(required = false) Long branchId,
+                                                  @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Map<Long, Long> branches = new HashMap<>();
+        if (branchId != null) {
+            employeeRepository.findAll().forEach(e -> branches.put(e.getId(), e.getBranchId()));
+        }
+        List<ContractDto> rows = service.list(status, employeeId).stream()
+                .filter(c -> type == null || c.type() == type)
+                .filter(c -> ListPaging.has(q, c.contractNumber(), c.employeeName(), c.employeeNumber(), c.jobTitle()))
+                .filter(c -> branchId == null || branchId.equals(branches.get(c.employeeId())))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/expiring")

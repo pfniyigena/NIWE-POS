@@ -26,7 +26,7 @@ const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
   { group: 'law', prefixes: ['/law', '/admin/law'] },
   { group: 'realestate', prefixes: ['/admin/realestate'] },
   { group: 'propertymgmt', prefixes: ['/admin/propertymgmt'] },
-  { group: 'employees', prefixes: ['/admin/hr/employees', '/admin/hr/reports'] },
+  { group: 'employees', prefixes: ['/admin/hr/employees', '/admin/hr/reports', '/admin/hr/documents', '/admin/hr/checklists'] },
   { group: 'org', prefixes: ['/admin/hr/org'] },
   { group: 'attendance', prefixes: ['/admin/hr/attendance', '/admin/hr/leave'] },
   { group: 'contracts', prefixes: ['/admin/hr/contracts'] },

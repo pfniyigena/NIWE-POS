@@ -49,10 +49,12 @@ public class PayrollDeliveryService {
     private final StoreSettingsRepository storeSettingsRepository;
     private final BranchAccessService branchAccessService;
     private final AuditLogService auditLogService;
+    private final PayrollPaperService paperService;
 
     public PayrollDeliveryService(PayrollRunRepository runRepository, EmployeeRepository employeeRepository, MailService mailService,
                                   ReportExportService exportService, StoreSettingsRepository storeSettingsRepository,
-                                  BranchAccessService branchAccessService, AuditLogService auditLogService) {
+                                  BranchAccessService branchAccessService, AuditLogService auditLogService, PayrollPaperService paperService) {
+        this.paperService = paperService;
         this.runRepository = runRepository;
         this.employeeRepository = employeeRepository;
         this.mailService = mailService;
@@ -65,7 +67,7 @@ public class PayrollDeliveryService {
     // ---- payslips by email ----
 
     /** Emails the payslip (HTML body plus a PDF) of one line, or of every line when {@code lineId} is null. */
-    @Transactional(readOnly = true)
+    @Transactional
     public PayslipEmailResultDto emailPayslips(Long runId, Long lineId) {
         PayrollRun run = approvedRun(runId);
         if (!mailService.isConfigured()) {
@@ -91,8 +93,9 @@ public class PayrollDeliveryService {
                 continue;
             }
             try {
-                String filename = "payslip-" + l.getEmployeeNumber() + "-" + YearMonth.of(run.getPeriodYear(), run.getPeriodMonth()) + ".pdf";
-                byte[] pdf = exportService.toPdf("Payslip " + period + " — " + l.getEmployeeName(), List.of("Item", "Amount"), pdfRows(l));
+                PayrollPaperService.Pdf file = paperService.payslipFile(run, l, e);
+                String filename = file.filename();
+                byte[] pdf = file.bytes();
                 mailService.send(e.getEmail(), "Your payslip for " + period + " — " + business, html(business, period, currency, l),
                         List.of(new EmailAttachment(filename, "application/pdf", pdf)));
                 sent++;

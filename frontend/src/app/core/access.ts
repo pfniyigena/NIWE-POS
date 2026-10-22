@@ -128,7 +128,7 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/propertymgmt', areas: ['OPERATIONS'] },
 ];
 
-const WRITE_SEGMENTS = new Set(['new', 'edit', 'record-payment', 'open-session', 'chart-country', 'walk-in', 'from-purchase', 'approvals', 'billing', 'reconcile']);
+const WRITE_SEGMENTS = new Set(['new', 'edit', 'record-payment', 'open-session', 'chart-country', 'walk-in', 'from-purchase', 'import', 'approvals', 'billing', 'reconcile']);
 
 function normalise(path: string): string {
   const noQuery = path.split('?')[0].split('#')[0];

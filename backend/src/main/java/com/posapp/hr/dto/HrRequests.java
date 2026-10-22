@@ -4,6 +4,7 @@ import com.posapp.hr.AttendanceStatus;
 import com.posapp.hr.ComponentKind;
 import com.posapp.hr.ContractType;
 import com.posapp.hr.EmploymentType;
+import com.posapp.hr.LeaveAccrual;
 import com.posapp.hr.PayableTarget;
 import com.posapp.hr.RuleBase;
 import com.posapp.hr.RuleKind;
@@ -37,7 +38,7 @@ public final class HrRequests {
     public record TerminateRequest(@NotNull LocalDate date, String reason) {
     }
 
-    public record LeaveTypeRequest(@NotBlank String name, Integer daysPerYear, Boolean paid, Boolean active) {
+    public record LeaveTypeRequest(@NotBlank String name, Integer daysPerYear, Boolean paid, Boolean active, LeaveAccrual accrualMode, Integer carryOverMaxDays, Boolean payoutOnExit) {
     }
 
     public record HolidayRequest(@NotNull LocalDate date, @NotBlank String name) {
@@ -45,7 +46,7 @@ public final class HrRequests {
 
     /** {@code employeeId} empty = the signed-in user's own employee record. */
     public record LeaveRequestRequest(Long employeeId, @NotNull Long leaveTypeId, @NotNull LocalDate startDate, @NotNull LocalDate endDate,
-                                      String reason) {
+                                      String reason, Boolean startHalfDay, Boolean endHalfDay) {
     }
 
     public record DecisionRequest(String note) {

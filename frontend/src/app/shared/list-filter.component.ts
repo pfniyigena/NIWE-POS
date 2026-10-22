@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +20,7 @@ export interface FilterOption { value: string; label: string; }
   imports: [CommonModule, FormsModule],
   template: `
     <div class="list-filter flex gap-2 align-center mb-3" style="flex-wrap:wrap;">
-      <input class="form-control lf-q" type="search" style="max-width:260px;" [placeholder]="placeholder" [(ngModel)]="f.q" (ngModelChange)="typed()" aria-label="Search" />
+      <input class="form-control lf-q" type="search" *ngIf="showSearch" style="max-width:260px;" [placeholder]="placeholder" [(ngModel)]="f.q" (ngModelChange)="typed()" aria-label="Search" />
       <select class="form-select lf-status" style="width:auto;" *ngIf="statuses.length" [(ngModel)]="f.status" (ngModelChange)="now()" title="Status">
         <option value="">{{ statusAll }}</option>
         <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
@@ -34,7 +34,7 @@ export interface FilterOption { value: string; label: string; }
         <option *ngFor="let br of branches" [ngValue]="br.id">{{ br.name }}</option>
       </select>
       <button class="btn btn-sm btn-outline-secondary lf-clear" type="button" *ngIf="active" (click)="clear()">Clear filters</button>
-      <span class="lf-export flex gap-2 align-center" *ngIf="exportKind" style="margin-left:auto;">
+      <span class="lf-export flex gap-2 align-center" *ngIf="exportKind || exportPath" style="margin-left:auto;">
         <span class="text-muted" style="font-size:0.85rem;">Export{{ active ? ' (filtered)' : '' }}</span>
         <button class="btn btn-sm btn-outline-secondary lf-x-xlsx" type="button" [disabled]="exporting" (click)="download('xlsx')">Excel</button>
         <button class="btn btn-sm btn-outline-secondary lf-x-pdf" type="button" [disabled]="exporting" (click)="download('pdf')">PDF</button>
@@ -44,15 +44,23 @@ export interface FilterOption { value: string; label: string; }
     </div>
   `,
 })
-export class ListFilterComponent implements OnDestroy {
+export class ListFilterComponent implements OnInit, OnDestroy {
   @Input() placeholder = 'Search…';
   @Input() statuses: FilterOption[] = [];
   @Input() statusAll = 'All statuses';
+  /** False for a list with nothing to search by text (payroll runs). */
+  @Input() showSearch = true;
   @Input() dates = true;
   @Input() branches: Branch[] = [];
   @Output() filterChange = new EventEmitter<ListFilter>();
+  /** Fires when "Clear filters" is pressed, so a screen can also reset the choices it keeps beside the bar. */
+  @Output() cleared = new EventEmitter<void>();
   /** The list to export (the part after /api/export/), or empty for no Export buttons. */
   @Input() exportKind = '';
+  /** A module's own export path under /api (for example /hr/employees/export), used instead of exportKind when the list belongs to a licensed module. */
+  @Input() exportPath = '';
+  /** Values the filter starts with (a screen that opens on Active employees); the screen's own list state must start with the same values. */
+  @Input() initial: Partial<ListFilter> | null = null;
   /** Which query parameter the "status" choice travels in (payments send it as `method`, suppliers as `active`). */
   @Input() statusParam = 'status';
   /** Fixed extra parameters of the screen (a customer id when the list is one customer's). */
@@ -61,6 +69,13 @@ export class ListFilterComponent implements OnDestroy {
   exportError: string | null = null;
 
   constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    if (this.initial) {
+      this.f = { ...emptyFilter(), ...this.initial };
+      this.applied = { ...this.f };
+    }
+  }
 
   f: ListFilter = emptyFilter();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -97,10 +112,10 @@ export class ListFilterComponent implements OnDestroy {
     for (const [k, v] of Object.entries(this.exportExtra)) if (v !== null && v !== undefined && v !== '') p = p.set(k, String(v));
     this.exporting = true;
     this.exportError = null;
-    this.http.get(`${API_BASE}/export/${this.exportKind}`, { params: p, responseType: 'blob' }).subscribe({
+    this.http.get(this.exportPath ? `${API_BASE}${this.exportPath}` : `${API_BASE}/export/${this.exportKind}`, { params: p, responseType: 'blob' }).subscribe({
       next: (blob) => {
         this.exporting = false;
-        downloadBlob(blob, `${this.exportKind}.${format}`);
+        downloadBlob(blob, `${this.exportKind || this.exportPath.split('/').slice(-2, -1)[0]}.${format}`);
       },
       error: () => {
         this.exporting = false;
@@ -110,6 +125,7 @@ export class ListFilterComponent implements OnDestroy {
   }
 
   clear(): void {
+    this.cleared.emit();
     this.f = emptyFilter();
     this.now();
   }

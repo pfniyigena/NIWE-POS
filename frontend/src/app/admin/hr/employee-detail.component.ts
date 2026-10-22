@@ -4,14 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
+import { PaperButtonComponent } from '../../shared/paper-button.component';
 import { AuthService } from '../../core/auth.service';
+import { EmployeeDocumentsComponent } from './employee-documents.component';
+import { EmployeeFinalPayComponent } from './employee-final-pay.component';
+import { EmployeeChecklistsComponent } from './employee-checklists.component';
 import { Contract, Employee, HrApiService, LeaveBalance, LeaveRequest } from '../../core/api/hr-api.service';
 
 /** Employees > one employee: details, leave balances and requests, contracts and the actions (edit, leave of absence, left the company). */
 @Component({
   selector: 'app-employee-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PaperButtonComponent, EmployeeDocumentsComponent, EmployeeChecklistsComponent, EmployeeFinalPayComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -84,7 +88,7 @@ import { Contract, Employee, HrApiService, LeaveBalance, LeaveRequest } from '..
                 </tr></tbody>
               </table>
             </div>
-            <div class="card" style="padding:1rem;" *ngIf="canContracts">
+            <div class="card mb-3" style="padding:1rem;" *ngIf="canContracts">
               <div class="flex justify-between align-center mb-2">
                 <strong>Contracts</strong>
                 <a class="btn btn-sm btn-outline-primary" routerLink="/admin/hr/contracts/new" [queryParams]="{ employeeId: e.id }">+ New contract</a>
@@ -98,6 +102,17 @@ import { Contract, Employee, HrApiService, LeaveBalance, LeaveRequest } from '..
               </table>
               <p class="text-muted" *ngIf="!contracts.length">No contracts yet.</p>
             </div>
+            <app-employee-final-pay *ngIf="canContracts && e.status === 'TERMINATED'" [employeeId]="e.id" [canManage]="canPayrollManage"></app-employee-final-pay>
+            <app-employee-documents [employeeId]="e.id" [canManage]="canManage"></app-employee-documents>
+            <app-employee-checklists [employeeId]="e.id" [canManage]="canManage"></app-employee-checklists>
+            <div class="card cert-card" style="padding:1rem;" *ngIf="canContracts">
+              <strong class="mb-2">Annual earnings and tax certificate</strong>
+              <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
+                <input class="form-control cert-year" type="number" style="width:6rem;" name="cy" [(ngModel)]="certYear" />
+                <app-paper-button class="cert-pdf" label="Certificate (PDF)" [path]="'/hr/payroll/certificate?employeeId=' + e.id + '&year=' + certYear" [file]="'certificate-' + certYear + '.pdf'"></app-paper-button>
+              </div>
+              <div class="text-muted" style="font-size:0.8rem;">Month by month gross pay, income tax and contributions of the approved and paid payrolls of that year.</div>
+            </div>
           </div>
         </div>
       </ng-container>
@@ -110,16 +125,21 @@ export class EmployeeDetailComponent implements OnInit {
   leaves: LeaveRequest[] = [];
   contracts: Contract[] = [];
   canContracts = false;
+  canManage = false;
+  canPayrollManage = false;
   error: string | null = null;
   showLeft = false;
   leftDate = new Date().toISOString().slice(0, 10);
   leftReason = '';
   year = new Date().getFullYear();
+  certYear = new Date().getFullYear();
 
   constructor(private api: HrApiService, private route: ActivatedRoute, private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.canContracts = this.auth.canAccessPath('/admin/hr/contracts');
+    this.canManage = this.auth.canAccessPath('/admin/hr/employees/new');
+    this.canPayrollManage = this.auth.canAccessPath('/admin/hr/payroll/new');
     this.load();
   }
 

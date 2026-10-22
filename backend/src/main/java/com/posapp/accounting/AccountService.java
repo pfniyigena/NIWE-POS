@@ -134,6 +134,8 @@ public class AccountService {
     public static final String HEALTH_OTHER_PAYROLL_PAYABLE = "HEALTH_OTHER_PAYROLL_PAYABLE";
     /** Payroll: net salaries approved but not yet paid to employees. */
     public static final String SALARIES_PAYABLE = "SALARIES_PAYABLE";
+    /** Payroll: salary advances and staff loans given and not yet taken back (money the employees owe the company). */
+    public static final String STAFF_ADVANCES = "STAFF_ADVANCES";
     /** Installments: interest and late fees collected from customers paying an invoice in instalments. */
     public static final String INSTALLMENT_INCOME = "INSTALLMENT_INCOME";
     /** Work Orders: parts used on internal maintenance and repair jobs. */
@@ -166,6 +168,8 @@ public class AccountService {
             new ChartRow(INPUT_VAT_RECOVERABLE, "1150", "Input VAT Recoverable (RRA)", AccountType.ASSET, true,
                     "VAT paid on purchases, reclaimable against VAT collected on sales (see VAT Payable) — not netted automatically, reconcile the two when filing with RRA."),
             new ChartRow(INVENTORY, "1200", "Inventory", AccountType.ASSET, true, null),
+            new ChartRow(STAFF_ADVANCES, "1250", "Staff Advances and Loans", AccountType.ASSET, true,
+                    "Payroll: salary advances and loans given to employees and not yet taken back through payroll. A debit balance is money the employees owe the company."),
             new ChartRow(FIXED_ASSETS, "1500", "Fixed Assets (Property, Plant and Equipment)", AccountType.ASSET, true,
                     "Assets Management: cost of equipment, vehicles, furniture and other long-lived assets, before depreciation."),
             new ChartRow(ACCUMULATED_DEPRECIATION, "1590", "Accumulated Depreciation", AccountType.ASSET, true,
@@ -242,6 +246,8 @@ public class AccountService {
             new ChartRow(CASH, "521", "Banques et Caisse (Cash & Bank)", AccountType.ASSET, true,
                     "Pooled cash, bank and mobile-money tender for GL purposes — this app doesn't split by payment method, or by SYSCOHADA's own Banques (521) / Caisse (571) distinction."),
             new ChartRow(ACCOUNTS_RECEIVABLE, "411", "Clients (Accounts Receivable)", AccountType.ASSET, true, null),
+            new ChartRow(STAFF_ADVANCES, "421", "Personnel, avances et acomptes (Staff Advances and Loans)", AccountType.ASSET, true,
+                    "Payroll: salary advances and loans given to employees and not yet taken back through payroll. A debit balance is money the employees owe the company."),
             new ChartRow(TRUST_BANK, "5211", "Banque, compte des fonds clients (Client Trust Bank Account)", AccountType.ASSET, true,
                     "Law firm: the bank account that holds clients' money. It is not the firm's money; it always matches Client Money Held."),
             new ChartRow(INPUT_VAT_RECOVERABLE, "4452", "État, TVA récupérable (Input VAT Recoverable)", AccountType.ASSET, true,

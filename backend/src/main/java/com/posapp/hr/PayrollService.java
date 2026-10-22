@@ -4,6 +4,8 @@ import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
 import com.posapp.branch.BranchAccessService;
 import com.posapp.common.ApiException;
+import com.posapp.hr.PayrollExtrasDtos.Due;
+import com.posapp.hr.PayrollExtrasDtos.PayrollEventDto;
 import com.posapp.hr.dto.HrDtos.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,11 +41,21 @@ public class PayrollService {
     private final AccountingService accountingService;
     private final BranchAccessService branchAccessService;
     private final AuditLogService auditLogService;
+    private final PayrollAdjustmentService adjustmentService;
+    private final StaffLoanService loanService;
+    private final PayrollRunEventRepository eventRepository;
+    private final PayrollRemittanceRepository remittanceRepository;
 
     public PayrollService(PayrollRunRepository runRepository, EmployeeRepository employeeRepository, ContractRepository contractRepository,
                           AttendanceRecordRepository attendanceRepository, PayrollRuleRepository ruleRepository, TaxBandRepository bandRepository,
                           PayrollRuleService ruleService, HrSettingsService settingsService, LeaveService leaveService,
-                          AccountingService accountingService, BranchAccessService branchAccessService, AuditLogService auditLogService) {
+                          AccountingService accountingService, BranchAccessService branchAccessService, AuditLogService auditLogService,
+                          PayrollAdjustmentService adjustmentService, StaffLoanService loanService,
+                          PayrollRunEventRepository eventRepository, PayrollRemittanceRepository remittanceRepository) {
+        this.eventRepository = eventRepository;
+        this.remittanceRepository = remittanceRepository;
+        this.adjustmentService = adjustmentService;
+        this.loanService = loanService;
         this.runRepository = runRepository;
         this.employeeRepository = employeeRepository;
         this.contractRepository = contractRepository;
@@ -132,6 +144,10 @@ public class PayrollService {
             warnings.add("No income-tax bands are set — income tax (PAYE) is 0 for everyone. Enter the bands under Payroll > Rules.");
         }
 
+        Map<Long, List<PayrollAdjustment>> adjustments = adjustmentService.forMonth(year, month);
+        Map<Long, List<Due>> loansDue = loanService.dueMap(year, month);
+        Set<Long> paid = new HashSet<>();
+
         List<Contract> allContracts = contractRepository.findAllByOrderByStartDateDescIdDesc();
         Map<Long, List<Contract>> contractsByEmployee = new HashMap<>();
         for (Contract c : allContracts) {
@@ -150,9 +166,17 @@ public class PayrollService {
                 continue;
             }
             PayrollLine line = buildLine(run, e, contractsByEmployee.getOrDefault(e.getId(), List.of()), monthStart, monthEnd, daysInMonth,
-                    workingDaysInMonth, settings, rules, bands, warnings);
+                    workingDaysInMonth, settings, rules, bands, adjustments.getOrDefault(e.getId(), List.of()), loansDue.getOrDefault(e.getId(), List.of()), warnings);
             if (line != null) {
                 run.getLines().add(line);
+                paid.add(e.getId());
+            }
+        }
+        for (Map.Entry<Long, List<PayrollAdjustment>> en : adjustments.entrySet()) {
+            if (!paid.contains(en.getKey())) {
+                for (PayrollAdjustment a : en.getValue()) {
+                    warnings.add("The adjustment '" + a.getName() + "' for " + a.getEmployee().fullName() + " was not included because they are not on this payroll.");
+                }
             }
         }
         if (run.getLines().isEmpty()) {
@@ -166,7 +190,7 @@ public class PayrollService {
 
     private PayrollLine buildLine(PayrollRun run, Employee e, List<Contract> contracts, LocalDate monthStart, LocalDate monthEnd,
                                   int daysInMonth, int workingDaysInMonth, HrSettings settings, List<PayrollRule> rules,
-                                  List<TaxBand> bands, List<String> warnings) {
+                                  List<TaxBand> bands, List<PayrollAdjustment> adjustments, List<Due> loans, List<String> warnings) {
         LocalDate empStart = e.getHireDate().isAfter(monthStart) ? e.getHireDate() : monthStart;
         LocalDate empEnd = e.getTerminationDate() != null && e.getTerminationDate().isBefore(monthEnd) ? e.getTerminationDate() : monthEnd;
 
@@ -281,6 +305,15 @@ public class PayrollService {
             gross = gross.add(pay);
             taxable = taxable.add(pay);
         }
+        for (PayrollAdjustment a : adjustments) {
+            if (a.getKind() == AdjustmentKind.EARNING) {
+                items.add(item(line, ItemKind.EARNING, a.getName(), a.getAmount(), a.isTaxable(), null, ++order));
+                gross = gross.add(a.getAmount());
+                if (a.isTaxable()) {
+                    taxable = taxable.add(a.getAmount());
+                }
+            }
+        }
         line.setUnpaidLeaveDays(unpaidDays);
         line.setAbsentDays(absentDays);
         line.setOvertimeHours(overtimeHours);
@@ -329,6 +362,14 @@ public class PayrollService {
             }
         }
 
+        // One-off deductions for this month (a fine, a uniform...), also after tax.
+        for (PayrollAdjustment a : adjustments) {
+            if (a.getKind() == AdjustmentKind.DEDUCTION) {
+                items.add(item(line, ItemKind.DEDUCTION, a.getName(), a.getAmount(), false, PayableTarget.OTHER, ++order));
+                otherDeductions = otherDeductions.add(a.getAmount());
+            }
+        }
+
         // Rules on the net pay (e.g. CBHI) come last.
         BigDecimal netBefore = gross.subtract(paye).subtract(employeeContrib).subtract(otherDeductions);
         for (PayrollRule rule : netRules) {
@@ -342,6 +383,22 @@ public class PayrollService {
             } else {
                 items.add(item(line, ItemKind.EMPLOYER, rule.getName(), amount, false, rule.getTarget(), ++order));
                 employerContrib = employerContrib.add(amount);
+            }
+        }
+
+        // Loan and advance installments come last and never take more than what is left of the pay.
+        BigDecimal room = gross.subtract(paye).subtract(employeeContrib).subtract(otherDeductions).max(BigDecimal.ZERO);
+        for (Due d : loans) {
+            BigDecimal amount = d.amount().min(room);
+            if (amount.compareTo(d.amount()) < 0) {
+                warnings.add(e.fullName() + "'s repayment of " + d.loan().getLoanNumber() + " was cut from " + d.amount() + " to " + amount + " because their pay is not enough.");
+            }
+            if (amount.signum() > 0) {
+                PayrollItem it = item(line, ItemKind.DEDUCTION, (d.loan().getLoanType() == LoanType.ADVANCE ? "Advance repayment (" : "Loan repayment (") + d.loan().getLoanNumber() + ")", amount, false, PayableTarget.STAFF_ADVANCE, ++order);
+                it.setLoanId(d.loan().getId());
+                items.add(it);
+                otherDeductions = otherDeductions.add(amount);
+                room = room.subtract(amount);
             }
         }
 
@@ -436,24 +493,10 @@ public class PayrollService {
             throw ApiException.badRequest("This payroll has nobody in it.");
         }
         String memo = "Payroll " + YearMonth.of(run.getPeriodYear(), run.getPeriodMonth());
+        loanService.recordPayroll(run);
         for (Map.Entry<Long, List<PayrollLine>> g : byBranch(run).entrySet()) {
-            BigDecimal gross = BigDecimal.ZERO, paye = BigDecimal.ZERO, ss = BigDecimal.ZERO, other = BigDecimal.ZERO, net = BigDecimal.ZERO, er = BigDecimal.ZERO;
-            for (PayrollLine l : g.getValue()) {
-                gross = gross.add(l.getGrossPay());
-                paye = paye.add(l.getPayeTax());
-                net = net.add(l.getNetPay());
-                er = er.add(l.getEmployerContributions());
-                for (PayrollItem i : l.getItems()) {
-                    if (i.getKind() == ItemKind.DEDUCTION || i.getKind() == ItemKind.EMPLOYER) {
-                        if (i.getTarget() == PayableTarget.SOCIAL_SECURITY) {
-                            ss = ss.add(i.getAmount());
-                        } else {
-                            other = other.add(i.getAmount());
-                        }
-                    }
-                }
-            }
-            accountingService.postPayrollApproval(run.getId(), memo, gross, er, paye, ss, other, net, g.getKey());
+            BigDecimal[] a = branchAmounts(g.getValue());
+            accountingService.postPayrollApproval(run.getId(), memo, a[0], a[5], a[1], a[2], a[3], a[6], a[4], g.getKey());
         }
         run.setStatus(PayrollStatus.APPROVED);
         run.setApprovedByName(HrSupport.currentUserName());
@@ -491,6 +534,116 @@ public class PayrollService {
         }
         runRepository.delete(run);
         auditLogService.record("PAYROLL_DELETED", "Deleted draft payroll " + YearMonth.of(run.getPeriodYear(), run.getPeriodMonth()), "PayrollRun", id);
+    }
+
+    /** {gross, paye, social security, other, net, employer contributions, staff advances} of the lines of one branch, as the books record them. */
+    private BigDecimal[] branchAmounts(List<PayrollLine> lines) {
+        BigDecimal gross = BigDecimal.ZERO, paye = BigDecimal.ZERO, ss = BigDecimal.ZERO, other = BigDecimal.ZERO, net = BigDecimal.ZERO, er = BigDecimal.ZERO, adv = BigDecimal.ZERO;
+        for (PayrollLine l : lines) {
+            gross = gross.add(l.getGrossPay());
+            paye = paye.add(l.getPayeTax());
+            net = net.add(l.getNetPay());
+            er = er.add(l.getEmployerContributions());
+            for (PayrollItem i : l.getItems()) {
+                if (i.getKind() == ItemKind.DEDUCTION || i.getKind() == ItemKind.EMPLOYER) {
+                    if (i.getTarget() == PayableTarget.SOCIAL_SECURITY) {
+                        ss = ss.add(i.getAmount());
+                    } else if (i.getTarget() == PayableTarget.STAFF_ADVANCE) {
+                        adv = adv.add(i.getAmount());
+                    } else {
+                        other = other.add(i.getAmount());
+                    }
+                }
+            }
+        }
+        return new BigDecimal[]{gross, paye, ss, other, net, er, adv};
+    }
+
+    // ---- corrections: cancel the payment, take an approved payroll back to draft ----
+
+    /** A paid payroll goes back to "approved" (the payment did not happen, or went wrong): the cash entry is reversed. */
+    @Transactional
+    public PayrollRunDto cancelPayment(Long id, String note) {
+        assertCompanyWide();
+        PayrollRun run = run(id);
+        if (run.getStatus() != PayrollStatus.PAID) {
+            throw ApiException.conflict("Only a paid payroll can have its payment cancelled.");
+        }
+        String reason = requireReason(note);
+        YearMonth ym = YearMonth.of(run.getPeriodYear(), run.getPeriodMonth());
+        String memo = "Salary payment cancelled " + ym;
+        for (Map.Entry<Long, List<PayrollLine>> g : byBranch(run).entrySet()) {
+            accountingService.postPayrollPaymentReversal(run.getId(), memo, branchAmounts(g.getValue())[4], g.getKey());
+        }
+        run.setStatus(PayrollStatus.APPROVED);
+        run.setPaidDate(null);
+        runRepository.save(run);
+        event(run, "PAYMENT_CANCELLED", reason);
+        auditLogService.record("PAYROLL_PAYMENT_CANCELLED", "Cancelled the payment of payroll " + ym + ": " + reason, "PayrollRun", id);
+        return PayrollRunDto.from(run);
+    }
+
+    /**
+     * An approved payroll goes back to draft so it can be worked out again: the accounting entries are reversed and the loan repayments
+     * it recorded are taken back. Not possible while the payroll is paid (cancel the payment first) or while payments to the tax and
+     * social-security authorities are recorded for the month.
+     */
+    @Transactional
+    public PayrollRunDto reopen(Long id, String note) {
+        assertCompanyWide();
+        PayrollRun run = run(id);
+        if (run.getStatus() == PayrollStatus.PAID) {
+            throw ApiException.conflict("This payroll is paid. Cancel the payment first, then reopen it.");
+        }
+        if (run.getStatus() != PayrollStatus.APPROVED) {
+            throw ApiException.conflict("Only an approved payroll can be reopened. A draft can be worked out again.");
+        }
+        String reason = requireReason(note);
+        YearMonth ym = YearMonth.of(run.getPeriodYear(), run.getPeriodMonth());
+        long remitted = remittanceRepository.findByStatus("ACTIVE").stream().filter(r -> r.getPeriodYear() == run.getPeriodYear() && r.getPeriodMonth() == run.getPeriodMonth()).count();
+        if (remitted > 0) {
+            throw ApiException.conflict(remitted + " payment(s) to the tax or social-security authorities are recorded for " + ym
+                    + ". Cancel them under Payroll > Tax & social security first.");
+        }
+        String memo = "Payroll " + ym + " reopened";
+        for (Map.Entry<Long, List<PayrollLine>> g : byBranch(run).entrySet()) {
+            BigDecimal[] a = branchAmounts(g.getValue());
+            accountingService.postPayrollApprovalReversal(run.getId(), memo, a[0], a[5], a[1], a[2], a[3], a[6], a[4], g.getKey());
+        }
+        loanService.undoPayroll(run);
+        run.setStatus(PayrollStatus.DRAFT);
+        run.setApprovedByName(null);
+        run.setApprovedAt(null);
+        run.setReopenedCount(run.getReopenedCount() + 1);
+        runRepository.save(run);
+        event(run, "REOPENED", reason);
+        auditLogService.record("PAYROLL_REOPENED", "Reopened payroll " + ym + " (back to draft): " + reason, "PayrollRun", id);
+        return PayrollRunDto.from(run);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PayrollEventDto> history(Long id) {
+        run(id);
+        return eventRepository.findByRunIdOrderByIdDesc(id).stream().map(e -> new PayrollEventDto(e.getKind(), e.getNote(), e.getByName(), e.getCreatedAt())).toList();
+    }
+
+    private void event(PayrollRun run, String kind, String note) {
+        PayrollRunEvent e = new PayrollRunEvent();
+        e.setRunId(run.getId());
+        e.setKind(kind);
+        e.setNote(note);
+        e.setByName(HrSupport.currentUserName());
+        eventRepository.save(e);
+    }
+
+    private static String requireReason(String note) {
+        if (note == null || note.isBlank()) {
+            throw ApiException.badRequest("Say why (the reason is kept with the payroll).");
+        }
+        if (note.trim().length() > 300) {
+            throw ApiException.badRequest("Keep the reason under 300 characters.");
+        }
+        return note.trim();
     }
 
     private Map<Long, List<PayrollLine>> byBranch(PayrollRun run) {

@@ -1,5 +1,6 @@
 package com.posapp.hr;
 
+import com.posapp.common.ListPaging;
 import com.posapp.hr.dto.HrDtos.*;
 import com.posapp.hr.dto.HrRequests.*;
 import jakarta.validation.Valid;
@@ -23,10 +24,12 @@ public class PayrollController {
     private final PayrollRuleService ruleService;
     private final HrSettingsService settingsService;
     private final PayrollDeliveryService deliveryService;
+    private final PayrollPaperService paperService;
 
     public PayrollController(PayrollService payrollService, PayrollRuleService ruleService, HrSettingsService settingsService,
-                             PayrollDeliveryService deliveryService) {
+                             PayrollDeliveryService deliveryService, PayrollPaperService paperService) {
         this.deliveryService = deliveryService;
+        this.paperService = paperService;
         this.payrollService = payrollService;
         this.ruleService = ruleService;
         this.settingsService = settingsService;
@@ -91,8 +94,13 @@ public class PayrollController {
     // ---- runs ----
 
     @GetMapping("/runs")
-    public List<PayrollRunDto> runs() {
-        return payrollService.list();
+    public ResponseEntity<List<PayrollRunDto>> runs(@RequestParam(required = false) PayrollStatus status, @RequestParam(required = false) Integer year,
+                                                    @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        List<PayrollRunDto> rows = payrollService.list().stream()
+                .filter(r -> status == null || r.status() == status)
+                .filter(r -> year == null || r.periodYear() == year)
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/runs/{id}")
@@ -124,6 +132,25 @@ public class PayrollController {
         return payrollService.pay(id, request != null ? request.paidDate() : null);
     }
 
+    /** A paid payroll goes back to approved (reverses the cash entry). A reason is required. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/runs/{id}/cancel-payment")
+    public PayrollRunDto cancelPayment(@PathVariable Long id, @RequestBody(required = false) PayrollExtrasDtos.NoteRequest request) {
+        return payrollService.cancelPayment(id, request != null ? request.note() : null);
+    }
+
+    /** An approved payroll goes back to draft (reverses the accounting and the loan repayments). A reason is required. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/runs/{id}/reopen")
+    public PayrollRunDto reopen(@PathVariable Long id, @RequestBody(required = false) PayrollExtrasDtos.NoteRequest request) {
+        return payrollService.reopen(id, request != null ? request.note() : null);
+    }
+
+    @GetMapping("/runs/{id}/history")
+    public List<PayrollExtrasDtos.PayrollEventDto> history(@PathVariable Long id) {
+        return payrollService.history(id);
+    }
+
     @PreAuthorize(MANAGE)
     @DeleteMapping("/runs/{id}")
     public void delete(@PathVariable Long id) {
@@ -146,5 +173,42 @@ public class PayrollController {
     @PostMapping("/runs/{id}/email-payslips")
     public PayslipEmailResultDto emailPayslips(@PathVariable Long id, @RequestParam(required = false) Long lineId) {
         return deliveryService.emailPayslips(id, lineId);
+    }
+
+    // ---- papers ----
+
+    private static ResponseEntity<byte[]> pdf(PayrollPaperService.Pdf f) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + f.filename() + "\"").body(f.bytes());
+    }
+
+    /** One payslip as a PDF (a draft payroll's payslips are marked DRAFT). */
+    @GetMapping("/runs/{id}/lines/{lineId}/payslip/pdf")
+    public ResponseEntity<byte[]> payslipPdf(@PathVariable Long id, @PathVariable Long lineId) {
+        return pdf(paperService.payslip(id, lineId));
+    }
+
+    /** Every payslip of the month in one PDF, one per page. */
+    @GetMapping("/runs/{id}/payslips/pdf")
+    public ResponseEntity<byte[]> allPayslipsPdf(@PathVariable Long id) {
+        return pdf(paperService.allPayslips(id));
+    }
+
+    /** The payroll register of the month: one row per employee with totals. */
+    @GetMapping("/runs/{id}/register")
+    public ResponseEntity<byte[]> register(@PathVariable Long id, @RequestParam(defaultValue = "xlsx") String format) {
+        return paperService.register(id, format);
+    }
+
+    /** The earnings and tax certificate of one employee for a year. */
+    @GetMapping("/certificate")
+    public ResponseEntity<byte[]> certificate(@RequestParam Long employeeId, @RequestParam int year) {
+        return pdf(paperService.certificate(employeeId, year));
+    }
+
+    /** One row per employee for a year (approved and paid payrolls). */
+    @GetMapping("/annual-summary")
+    public ResponseEntity<byte[]> annualSummary(@RequestParam int year, @RequestParam(defaultValue = "xlsx") String format) {
+        return paperService.annualSummary(year, format);
     }
 }

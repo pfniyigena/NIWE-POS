@@ -61,6 +61,10 @@ import { HotelApiService } from '../core/api/hotel-api.service';
           routerLinkActive="active"
           ><span class="sidenav-icon">📊</span><span>Dashboard</span></a
         >
+        <!-- My HR (employee self-service): every signed-in user, shown when the Employees module is on. -->
+        <a *ngIf="modules.on('EMPLOYEES')" class="sidenav-link sidenav-link-row" routerLink="/my/hr" routerLinkActive="active"
+          ><span class="sidenav-icon">🧑‍💼</span><span>My HR</span></a
+        >
         <!-- Sidebar groups are now an accordion (Task: "Once one menu is open other should be
              closed") — openGroup holds at most one group name, and toggleGroup() both opens a
              group and closes whichever other one was open, instead of each group keeping its
@@ -485,6 +489,12 @@ import { HotelApiService } from '../core/api/hotel-api.service';
             <a *ngIf="canSee('/admin/hr/employees/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/employees/new" routerLinkActive="active"
               ><span class="sidenav-icon">➕</span> New employee</a
             >
+            <a *ngIf="canSee('/admin/hr/documents')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/documents" routerLinkActive="active"
+              ><span class="sidenav-icon">🗂️</span> Documents</a
+            >
+            <a *ngIf="canSee('/admin/hr/checklists')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/checklists" routerLinkActive="active"
+              ><span class="sidenav-icon">✅</span> Onboarding</a
+            >
             <a *ngIf="canSee('/admin/hr/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/reports" routerLinkActive="active"
               ><span class="sidenav-icon">📊</span> HR reports</a
             >
@@ -514,6 +524,9 @@ import { HotelApiService } from '../core/api/hotel-api.service';
             <a *ngIf="canSee('/admin/hr/leaves')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/leaves" routerLinkActive="active"
               ><span class="sidenav-icon">🏖️</span> Leave</a
             >
+            <a *ngIf="canSee('/admin/hr/leave-calendar')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/leave-calendar" routerLinkActive="active"
+              ><span class="sidenav-icon">🗓️</span> Team calendar</a
+            >
             <a *ngIf="canSee('/admin/hr/leave-settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/leave-settings" routerLinkActive="active"
               ><span class="sidenav-icon">⚙️</span> Settings</a
             >
@@ -539,6 +552,15 @@ import { HotelApiService } from '../core/api/hotel-api.service';
           <ng-container *ngIf="isOpen('payroll') && showGroup('payroll')">
             <a *ngIf="canSee('/admin/hr/payroll/runs')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/runs" routerLinkActive="active"
               ><span class="sidenav-icon">🧾</span> Payroll runs</a
+            >
+            <a *ngIf="canSee('/admin/hr/payroll/adjustments')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/adjustments" routerLinkActive="active"
+              ><span class="sidenav-icon">✏️</span> Adjustments</a
+            >
+            <a *ngIf="canSee('/admin/hr/payroll/loans')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/loans" routerLinkActive="active"
+              ><span class="sidenav-icon">💳</span> Advances & loans</a
+            >
+            <a *ngIf="canSee('/admin/hr/payroll/remittances')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/remittances" routerLinkActive="active"
+              ><span class="sidenav-icon">🏛️</span> Tax & social security</a
             >
             <a *ngIf="canSee('/admin/hr/payroll/rules')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/rules" routerLinkActive="active"
               ><span class="sidenav-icon">📐</span> Rules & tax bands</a

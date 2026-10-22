@@ -1,14 +1,19 @@
 package com.posapp.hr;
 
+import com.posapp.common.ListPaging;
 import com.posapp.hr.dto.HrDtos.*;
 import com.posapp.hr.dto.HrRequests.*;
 import com.posapp.user.UserRepository;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Employees, organisation, leave, attendance and the HR settings (everything under /api/hr except contracts and payroll). */
 @RestController
@@ -24,23 +29,35 @@ public class HrController {
     private final AttendanceService attendanceService;
     private final HrSettingsService settingsService;
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
 
     public HrController(EmployeeService employeeService, OrgService orgService, LeaveService leaveService, AttendanceService attendanceService,
-                        HrSettingsService settingsService, UserRepository userRepository) {
+                        HrSettingsService settingsService, UserRepository userRepository, EmployeeRepository employeeRepository) {
         this.employeeService = employeeService;
         this.orgService = orgService;
         this.leaveService = leaveService;
         this.attendanceService = attendanceService;
         this.settingsService = settingsService;
         this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
+    }
+
+    /** Branch of each employee, for the lists whose rows don't carry it. */
+    Map<Long, Long> employeeBranches() {
+        Map<Long, Long> m = new HashMap<>();
+        for (Employee e : employeeRepository.findAll()) {
+            m.put(e.getId(), e.getBranchId());
+        }
+        return m;
     }
 
     // ---- employees ----
 
     @GetMapping("/employees")
-    public List<EmployeeDto> employees(@RequestParam(required = false) EmployeeStatus status, @RequestParam(required = false) Long departmentId,
-                                       @RequestParam(required = false) Long branchId, @RequestParam(required = false) String q) {
-        return employeeService.list(status, departmentId, branchId, q);
+    public ResponseEntity<List<EmployeeDto>> employees(@RequestParam(required = false) EmployeeStatus status, @RequestParam(required = false) Long departmentId,
+                                                       @RequestParam(required = false) Long branchId, @RequestParam(required = false) String q,
+                                                       @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return ListPaging.of(employeeService.list(status, departmentId, branchId, q), page, size);
     }
 
     @GetMapping("/employees/{id}")
@@ -185,15 +202,28 @@ public class HrController {
     }
 
     @GetMapping("/leaves")
-    public List<LeaveRequestDto> leaves(@RequestParam(required = false) LeaveStatus status, @RequestParam(required = false) Long employeeId,
-                                        @RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to) {
-        return leaveService.listRequests(status, employeeId, from, to);
+    public ResponseEntity<List<LeaveRequestDto>> leaves(@RequestParam(required = false) LeaveStatus status, @RequestParam(required = false) Long employeeId,
+                                                        @RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                                        @RequestParam(required = false) String q, @RequestParam(required = false) Long branchId,
+                                                        @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Map<Long, Long> branches = branchId == null ? Map.of() : employeeBranches();
+        List<LeaveRequestDto> rows = leaveService.listRequests(status, employeeId, from, to).stream()
+                .filter(r -> ListPaging.has(q, r.employeeName(), r.employeeNumber(), r.leaveTypeName(), r.reason()))
+                .filter(r -> branchId == null || branchId.equals(branches.get(r.employeeId())))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     /** How many working days a period would use (weekends and public holidays excluded) — for the request form. */
     @GetMapping("/leaves/working-days")
-    public int workingDays(@RequestParam LocalDate from, @RequestParam LocalDate to) {
-        return leaveService.workingDays(from, to);
+    public BigDecimal workingDays(@RequestParam LocalDate from, @RequestParam LocalDate to, @RequestParam(defaultValue = "false") boolean startHalf, @RequestParam(defaultValue = "false") boolean endHalf) {
+        return leaveService.leaveDays(from, to, startHalf, endHalf);
+    }
+
+    /** Who is away on which days of a month, for the team leave calendar. */
+    @GetMapping("/leaves/calendar")
+    public LeaveCalendarDto leaveCalendar(@RequestParam int year, @RequestParam int month, @RequestParam(required = false) Long departmentId, @RequestParam(required = false) Long branchId) {
+        return leaveService.calendar(year, month, departmentId, branchId);
     }
 
     @PreAuthorize(MANAGE)
@@ -228,9 +258,17 @@ public class HrController {
     // ---- attendance ----
 
     @GetMapping("/attendance")
-    public List<AttendanceDto> attendance(@RequestParam LocalDate from, @RequestParam LocalDate to, @RequestParam(required = false) Long employeeId,
-                                          @RequestParam(required = false) Long departmentId) {
-        return attendanceService.list(from, to, employeeId, departmentId);
+    public ResponseEntity<List<AttendanceDto>> attendance(@RequestParam LocalDate from, @RequestParam LocalDate to, @RequestParam(required = false) Long employeeId,
+                                                          @RequestParam(required = false) Long departmentId, @RequestParam(required = false) AttendanceStatus status,
+                                                          @RequestParam(required = false) String q, @RequestParam(required = false) Long branchId,
+                                                          @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        Map<Long, Long> branches = branchId == null ? Map.of() : employeeBranches();
+        List<AttendanceDto> rows = attendanceService.list(from, to, employeeId, departmentId).stream()
+                .filter(a -> status == null || a.status() == status)
+                .filter(a -> ListPaging.has(q, a.employeeName(), a.employeeNumber(), a.note()))
+                .filter(a -> branchId == null || branchId.equals(branches.get(a.employeeId())))
+                .toList();
+        return ListPaging.of(rows, page, size);
     }
 
     @GetMapping("/attendance/summary")

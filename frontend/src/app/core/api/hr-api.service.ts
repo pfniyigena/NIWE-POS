@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
+import { ListFilter, pagedList } from './list-state';
+import { PageResult } from './paged';
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
 export type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'INTERN';
@@ -146,12 +148,17 @@ export interface OrgChart {
   people: PersonNode[];
 }
 
+export type LeaveAccrual = 'UPFRONT' | 'MONTHLY';
+
 export interface LeaveType {
   id: number;
   name: string;
   daysPerYear: number;
   paid: boolean;
   active: boolean;
+  accrualMode: LeaveAccrual;
+  carryOverMaxDays: number;
+  payoutOnExit: boolean;
 }
 
 export interface LeaveTypePayload {
@@ -159,6 +166,9 @@ export interface LeaveTypePayload {
   daysPerYear: number;
   paid: boolean;
   active: boolean;
+  accrualMode: LeaveAccrual;
+  carryOverMaxDays: number;
+  payoutOnExit: boolean;
 }
 
 export interface Holiday {
@@ -178,6 +188,8 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   days: number;
+  startHalf: boolean;
+  endHalf: boolean;
   reason: string | null;
   status: LeaveStatus;
   decidedBy: string | null;
@@ -192,6 +204,37 @@ export interface LeaveRequestPayload {
   startDate: string;
   endDate: string;
   reason: string | null;
+  startHalfDay?: boolean;
+  endHalfDay?: boolean;
+}
+
+export interface LeaveCalendarDay {
+  date: string;
+  weekend: boolean;
+  holiday: string | null;
+}
+
+export interface LeaveCalendarEntry {
+  date: string;
+  requestId: number;
+  leaveTypeName: string;
+  status: LeaveStatus;
+  half: boolean;
+}
+
+export interface LeaveCalendarRow {
+  employeeId: number;
+  employeeNumber: string;
+  employeeName: string;
+  departmentName: string | null;
+  entries: LeaveCalendarEntry[];
+}
+
+export interface LeaveCalendar {
+  year: number;
+  month: number;
+  days: LeaveCalendarDay[];
+  rows: LeaveCalendarRow[];
 }
 
 export interface LeaveBalance {
@@ -205,6 +248,9 @@ export interface LeaveBalance {
   used: number;
   pending: number;
   remaining: number;
+  accrued: number;
+  carriedOver: number;
+  accrualMode: LeaveAccrual;
 }
 
 export interface Attendance {
@@ -249,6 +295,63 @@ export interface TodayStatus {
   employeeId: number | null;
   employeeName: string | null;
   record: Attendance | null;
+}
+
+export interface MyProfile {
+  id: number;
+  employeeNumber: string;
+  fullName: string;
+  jobTitle: string | null;
+  departmentName: string | null;
+  managerName: string | null;
+  hireDate: string;
+  status: EmployeeStatus;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+}
+
+export interface MyOverview {
+  linked: boolean;
+  profile: MyProfile | null;
+  year: number;
+  balances: LeaveBalance[];
+  pendingRequests: number;
+  payslipCount: number;
+  today: TodayStatus;
+}
+
+export interface MyPayslipRow {
+  runId: number;
+  year: number;
+  month: number;
+  status: PayrollStatus;
+  paidDate: string | null;
+  grossPay: number;
+  payeTax: number;
+  employeeContributions: number;
+  otherDeductions: number;
+  netPay: number;
+}
+
+export interface MyPayslip {
+  runId: number;
+  year: number;
+  month: number;
+  status: PayrollStatus;
+  paidDate: string | null;
+  line: PayrollLine;
+  items: PayrollItem[];
+}
+
+export interface MyContactPayload {
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
 }
 
 export interface HrSettings {
@@ -413,12 +516,210 @@ export interface PayslipEmailResult {
   failed: string[];
 }
 
+
+export type AdjustmentKind = 'EARNING' | 'DEDUCTION';
+export interface PayrollAdjustment {
+  id: number;
+  employeeId: number;
+  employeeNumber: string | null;
+  employeeName: string;
+  kind: AdjustmentKind;
+  name: string;
+  amount: number;
+  taxable: boolean;
+  year: number;
+  month: number;
+  note: string | null;
+  createdByName: string | null;
+  status: 'PENDING' | 'APPLIED';
+  draftRunId: number | null;
+}
+export interface AdjustmentPayload {
+  employeeId: number | null;
+  kind: AdjustmentKind;
+  name: string;
+  amount: number | null;
+  taxable: boolean;
+  year: number;
+  month: number;
+  note: string | null;
+}
+
+export type LoanType = 'ADVANCE' | 'LOAN';
+export type LoanStatus = 'ACTIVE' | 'PAID_OFF' | 'CANCELLED';
+export interface StaffLoan {
+  id: number;
+  loanNumber: string;
+  employeeId: number;
+  employeeNumber: string | null;
+  employeeName: string;
+  loanType: LoanType;
+  principal: number;
+  installment: number;
+  issueDate: string;
+  firstYear: number;
+  firstMonth: number;
+  status: LoanStatus;
+  repaid: number;
+  balance: number;
+  installmentsLeft: number | null;
+  note: string | null;
+  createdByName: string | null;
+}
+export interface LoanRepayment {
+  id: number;
+  amount: number;
+  repaidOn: string;
+  source: 'PAYROLL' | 'CASH' | 'WRITE_OFF';
+  runId: number | null;
+  note: string | null;
+  createdByName: string | null;
+}
+export interface StaffLoanDetail {
+  loan: StaffLoan;
+  repayments: LoanRepayment[];
+}
+export interface LoanPayload {
+  employeeId: number | null;
+  loanType: LoanType;
+  principal: number | null;
+  installment: number | null;
+  issueDate: string | null;
+  firstYear: number | null;
+  firstMonth: number | null;
+  note: string | null;
+}
+
+
+export type RemittanceKind = 'PAYE' | 'SOCIAL_SECURITY' | 'OTHER';
+export interface RemittanceRow {
+  year: number;
+  month: number;
+  runId: number;
+  runStatus: PayrollStatus;
+  kind: RemittanceKind;
+  kindLabel: string;
+  owed: number;
+  paid: number;
+  outstanding: number;
+  dueDate: string;
+  overdue: boolean;
+}
+export interface RemittanceKindTotal {
+  kind: RemittanceKind;
+  kindLabel: string;
+  owed: number;
+  paid: number;
+  outstanding: number;
+  overdue: number;
+}
+export interface RemittanceSummary {
+  totals: RemittanceKindTotal[];
+  rows: RemittanceRow[];
+}
+export interface Remittance {
+  id: number;
+  kind: RemittanceKind;
+  kindLabel: string;
+  year: number;
+  month: number;
+  amount: number;
+  paidOn: string;
+  reference: string | null;
+  paidTo: string | null;
+  note: string | null;
+  status: 'ACTIVE' | 'VOIDED';
+  voidNote: string | null;
+}
+export interface RemittancePayload {
+  kind: RemittanceKind;
+  year: number;
+  month: number;
+  amount: number | null;
+  paidOn: string | null;
+  reference: string | null;
+  paidTo: string | null;
+  note: string | null;
+}
+
+
+// ---- payroll corrections and final pay (HR-8) ----
+export interface PayrollEvent { kind: 'PAYMENT_CANCELLED' | 'REOPENED'; note: string | null; byName: string | null; at: string; }
+export interface FinalPayLine { name: string; kind: 'EARNING' | 'DEDUCTION'; days: number | null; amount: number; note: string | null; }
+export interface FinalPay {
+  employeeId: number; employeeNumber: string; employeeName: string; lastDay: string | null; year: number; month: number; dailyRate: number; baseSalary: number;
+  workingDays: number; leaveDays: number; suggestedLeaveDays: number; leave: { leaveTypeName: string; remaining: number }[];
+  noticePayDays: number; noticeRecoverDays: number; settleLoans: boolean; loans: { loanId: number; loanNumber: string; balance: number }[]; loansBalance: number;
+  lines: FinalPayLine[]; earnings: number; deductions: number; applied: boolean; runStatus: 'DRAFT' | 'APPROVED' | 'PAID' | null; blocked: string | null; note: string | null;
+}
+export interface FinalPayPayload { leaveDays: number | null; noticePayDays: number | null; noticeRecoverDays: number | null; settleLoans: boolean; note: string | null; }
+
+// ---- documents, checklists, import (HR-7) ----
+export type DocCategory = 'CONTRACT' | 'ID_DOCUMENT' | 'QUALIFICATION' | 'PERMIT' | 'PAYROLL' | 'DISCIPLINARY' | 'OTHER';
+export const DOC_CATEGORIES: { value: DocCategory; label: string }[] = [
+  { value: 'CONTRACT', label: 'Contract' },
+  { value: 'ID_DOCUMENT', label: 'ID document' },
+  { value: 'QUALIFICATION', label: 'Qualification' },
+  { value: 'PERMIT', label: 'Permit' },
+  { value: 'PAYROLL', label: 'Payroll' },
+  { value: 'DISCIPLINARY', label: 'Disciplinary' },
+  { value: 'OTHER', label: 'Other' },
+];
+export function docCategoryLabel(c: string): string {
+  return DOC_CATEGORIES.find((x) => x.value === c)?.label ?? c;
+}
+export interface EmployeeDocument {
+  id: number;
+  employeeId: number;
+  employeeNumber: string;
+  employeeName: string;
+  name: string;
+  category: DocCategory;
+  description: string | null;
+  expiryDate: string | null;
+  expiryState: 'NONE' | 'OK' | 'SOON' | 'EXPIRED';
+  daysToExpiry: number | null;
+  sharedWithEmployee: boolean;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedByName: string | null;
+  createdAt: string;
+}
+export interface DocumentSummary { total: number; expired: number; expiringSoon: number; }
+export interface DocumentUploadPayload { name: string; category: DocCategory; description: string; expiryDate: string; shared: boolean; }
+export interface DocumentUpdatePayload { name: string; category: DocCategory; description: string | null; expiryDate: string | null; clearExpiry: boolean; sharedWithEmployee: boolean; }
+
+export type ChecklistKind = 'ONBOARDING' | 'OFFBOARDING';
+export interface ChecklistTemplateItem { id?: number; sortOrder?: number; title: string; responsible: string; dueOffsetDays: number; }
+export interface ChecklistTemplate { id: number; name: string; kind: ChecklistKind; description: string | null; active: boolean; items: ChecklistTemplateItem[]; }
+export interface ChecklistTemplatePayload { name: string; kind: ChecklistKind; description: string | null; active: boolean; items: { title: string; responsible: string; dueOffsetDays: number }[]; }
+export interface ChecklistItem { id: number; sortOrder: number; title: string; responsible: string | null; dueDate: string | null; done: boolean; doneAt: string | null; doneByName: string | null; note: string | null; overdue: boolean; }
+export interface EmployeeChecklist {
+  id: number; employeeId: number; employeeNumber: string; employeeName: string; name: string; kind: ChecklistKind; startDate: string;
+  total: number; done: number; complete: boolean; createdByName: string | null; items: ChecklistItem[];
+}
+export interface OpenTask {
+  itemId: number; checklistId: number; employeeId: number; employeeNumber: string; employeeName: string; checklistName: string; kind: ChecklistKind;
+  title: string; responsible: string | null; dueDate: string | null; overdue: boolean; note: string | null;
+}
+export interface EmployeeImportRow { row: number; label: string; message: string; }
+export interface EmployeeImportResult {
+  dryRun: boolean; fileName: string; rows: number; ok: number; skipped: number; problems: EmployeeImportRow[]; notes: EmployeeImportRow[];
+  sample: string[]; columns: string[]; ignoredColumns: string[]; message: string;
+}
+
 /** Employees, organisation, attendance & leaves, contracts and payroll (/api/hr). */
 @Injectable({ providedIn: 'root' })
 export class HrApiService {
   private base = `${API_BASE}/hr`;
 
   constructor(private http: HttpClient) {}
+
+  /** One page of an HR list (employees, leaves, attendance, contracts, payroll/runs) with the screen's search, status, dates and branch. */
+  page<T>(path: string, f: ListFilter, page: number, size: number, extra: Record<string, string | number | boolean | null | undefined> = {}): Observable<PageResult<T>> {
+    return pagedList<T>(this.http, `${this.base}/${path}`, f, page, size, extra);
+  }
 
   // employees
   employees(filter: { status?: string; departmentId?: number | null; branchId?: number | null; q?: string } = {}): Observable<Employee[]> {
@@ -510,8 +811,14 @@ export class HrApiService {
     if (filter.to) params = params.set('to', filter.to);
     return this.http.get<LeaveRequest[]>(`${this.base}/leaves`, { params });
   }
-  leaveWorkingDays(from: string, to: string): Observable<number> {
-    return this.http.get<number>(`${this.base}/leaves/working-days`, { params: { from, to } });
+  leaveWorkingDays(from: string, to: string, startHalf = false, endHalf = false): Observable<number> {
+    return this.http.get<number>(`${this.base}/leaves/working-days`, { params: { from, to, startHalf, endHalf } });
+  }
+  leaveCalendar(year: number, month: number, departmentId?: number | null, branchId?: number | null): Observable<LeaveCalendar> {
+    let params = new HttpParams().set('year', year).set('month', month);
+    if (departmentId) params = params.set('departmentId', departmentId);
+    if (branchId) params = params.set('branchId', branchId);
+    return this.http.get<LeaveCalendar>(`${this.base}/leaves/calendar`, { params });
   }
   requestLeave(p: LeaveRequestPayload): Observable<LeaveRequest> {
     return this.http.post<LeaveRequest>(`${this.base}/leaves`, p);
@@ -540,6 +847,48 @@ export class HrApiService {
   }
   today(): Observable<TodayStatus> {
     return this.http.get<TodayStatus>(`${this.base}/attendance/today`);
+  }
+  // employee self-service ("My HR"): always the signed-in user's own record
+  myOverview(): Observable<MyOverview> {
+    return this.http.get<MyOverview>(`${this.base}/me`);
+  }
+  myUpdateContact(p: MyContactPayload): Observable<MyProfile> {
+    return this.http.put<MyProfile>(`${this.base}/me/contact`, p);
+  }
+  myPayslips(year?: number | null): Observable<MyPayslipRow[]> {
+    let params = new HttpParams();
+    if (year) params = params.set('year', year);
+    return this.http.get<MyPayslipRow[]>(`${this.base}/me/payslips`, { params });
+  }
+  myPayslip(runId: number): Observable<MyPayslip> {
+    return this.http.get<MyPayslip>(`${this.base}/me/payslips/${runId}`);
+  }
+  myLeaveTypes(): Observable<LeaveType[]> {
+    return this.http.get<LeaveType[]>(`${this.base}/me/leave-types`);
+  }
+  myLeaveBalances(year: number): Observable<LeaveBalance[]> {
+    return this.http.get<LeaveBalance[]>(`${this.base}/me/leave-balances`, { params: { year } });
+  }
+  myLeaves(): Observable<LeaveRequest[]> {
+    return this.http.get<LeaveRequest[]>(`${this.base}/me/leaves`);
+  }
+  myWorkingDays(from: string, to: string, startHalf = false, endHalf = false): Observable<number> {
+    return this.http.get<number>(`${this.base}/me/working-days`, { params: { from, to, startHalf, endHalf } });
+  }
+  myRequestLeave(p: LeaveRequestPayload): Observable<LeaveRequest> {
+    return this.http.post<LeaveRequest>(`${this.base}/me/leaves`, p);
+  }
+  myCancelLeave(id: number, note: string | null): Observable<LeaveRequest> {
+    return this.http.post<LeaveRequest>(`${this.base}/me/leaves/${id}/cancel`, { note });
+  }
+  myAttendance(from: string, to: string): Observable<Attendance[]> {
+    return this.http.get<Attendance[]>(`${this.base}/me/attendance`, { params: { from, to } });
+  }
+  myClockIn(): Observable<Attendance> {
+    return this.http.post<Attendance>(`${this.base}/me/attendance/clock-in`, {});
+  }
+  myClockOut(): Observable<Attendance> {
+    return this.http.post<Attendance>(`${this.base}/me/attendance/clock-out`, {});
   }
   clockIn(): Observable<Attendance> {
     return this.http.post<Attendance>(`${this.base}/attendance/clock-in`, null);
@@ -648,7 +997,170 @@ export class HrApiService {
     if (lineId) params = params.set('lineId', lineId);
     return this.http.post<PayslipEmailResult>(`${this.base}/payroll/runs/${id}/email-payslips`, null, { params });
   }
+  /** The payroll register of a month (Excel, PDF or CSV). */
+  payrollRegister(id: number, format: 'xlsx' | 'pdf' | 'csv'): Observable<Blob> {
+    return this.http.get(`${this.base}/payroll/runs/${id}/register`, { params: { format }, responseType: 'blob' });
+  }
+  /** One row per employee for a year (approved and paid payrolls). */
+  payrollAnnualSummary(year: number, format: 'xlsx' | 'pdf' | 'csv'): Observable<Blob> {
+    return this.http.get(`${this.base}/payroll/annual-summary`, { params: { year, format }, responseType: 'blob' });
+  }
   deletePayroll(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/payroll/runs/${id}`);
+  }
+
+  // one-off adjustments
+  createAdjustment(p: AdjustmentPayload): Observable<PayrollAdjustment> {
+    return this.http.post<PayrollAdjustment>(`${this.base}/payroll/adjustments`, p);
+  }
+  updateAdjustment(id: number, p: AdjustmentPayload): Observable<PayrollAdjustment> {
+    return this.http.put<PayrollAdjustment>(`${this.base}/payroll/adjustments/${id}`, p);
+  }
+  deleteAdjustment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/payroll/adjustments/${id}`);
+  }
+
+  // advances and loans
+  createLoan(p: LoanPayload): Observable<StaffLoan> {
+    return this.http.post<StaffLoan>(`${this.base}/payroll/loans`, p);
+  }
+  loan(id: number): Observable<StaffLoanDetail> {
+    return this.http.get<StaffLoanDetail>(`${this.base}/payroll/loans/${id}`);
+  }
+  repayLoan(id: number, amount: number, date: string | null, note: string | null): Observable<StaffLoanDetail> {
+    return this.http.post<StaffLoanDetail>(`${this.base}/payroll/loans/${id}/repay`, { amount, date, note });
+  }
+  writeOffLoan(id: number, note: string): Observable<StaffLoanDetail> {
+    return this.http.post<StaffLoanDetail>(`${this.base}/payroll/loans/${id}/write-off`, { note });
+  }
+  cancelLoan(id: number): Observable<StaffLoan> {
+    return this.http.post<StaffLoan>(`${this.base}/payroll/loans/${id}/cancel`, {});
+  }
+
+  // tax and social-security payments, monthly returns
+  remittanceSummary(year: number | null): Observable<RemittanceSummary> {
+    return this.http.get<RemittanceSummary>(`${this.base}/payroll/remittances/summary`, { params: year ? { year } : {} });
+  }
+  payRemittance(p: RemittancePayload): Observable<Remittance> {
+    return this.http.post<Remittance>(`${this.base}/payroll/remittances`, p);
+  }
+  voidRemittance(id: number, note: string): Observable<Remittance> {
+    return this.http.post<Remittance>(`${this.base}/payroll/remittances/${id}/void`, { note });
+  }
+  /** The income-tax or social-security return of an approved payroll month. */
+  payrollReturn(runId: number, kind: 'paye' | 'social-security', format: 'xlsx' | 'pdf' | 'csv'): Observable<Blob> {
+    return this.http.get(`${this.base}/payroll/runs/${runId}/returns/${kind}`, { params: { format }, responseType: 'blob' });
+  }
+  // employee documents
+  allDocuments(f: { q?: string; category?: string; state?: string; employeeId?: number | null } = {}): Observable<EmployeeDocument[]> {
+    let params = new HttpParams();
+    if (f.q) params = params.set('q', f.q);
+    if (f.category) params = params.set('category', f.category);
+    if (f.state) params = params.set('state', f.state);
+    if (f.employeeId) params = params.set('employeeId', f.employeeId);
+    return this.http.get<EmployeeDocument[]>(`${this.base}/employees/documents`, { params });
+  }
+  documentSummary(): Observable<DocumentSummary> {
+    return this.http.get<DocumentSummary>(`${this.base}/employees/documents/summary`);
+  }
+  employeeDocuments(employeeId: number): Observable<EmployeeDocument[]> {
+    return this.http.get<EmployeeDocument[]>(`${this.base}/employees/${employeeId}/documents`);
+  }
+  uploadDocument(employeeId: number, file: File, p: DocumentUploadPayload): Observable<EmployeeDocument> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    body.append('name', p.name);
+    body.append('category', p.category);
+    if (p.description) body.append('description', p.description);
+    if (p.expiryDate) body.append('expiryDate', p.expiryDate);
+    body.append('shared', p.shared ? 'true' : 'false');
+    return this.http.post<EmployeeDocument>(`${this.base}/employees/${employeeId}/documents`, body);
+  }
+  updateDocument(docId: number, p: DocumentUpdatePayload): Observable<EmployeeDocument> {
+    return this.http.put<EmployeeDocument>(`${this.base}/employees/documents/${docId}`, p);
+  }
+  deleteDocument(docId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/employees/documents/${docId}`);
+  }
+  documentFile(docId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/employees/documents/${docId}/file`, { responseType: 'blob' });
+  }
+  myDocuments(): Observable<EmployeeDocument[]> {
+    return this.http.get<EmployeeDocument[]>(`${this.base}/me/documents`);
+  }
+  myDocumentFile(docId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/me/documents/${docId}/file`, { responseType: 'blob' });
+  }
+
+  // onboarding / offboarding checklists
+  checklistTemplates(): Observable<ChecklistTemplate[]> {
+    return this.http.get<ChecklistTemplate[]>(`${this.base}/employees/checklist-templates`);
+  }
+  createChecklistTemplate(p: ChecklistTemplatePayload): Observable<ChecklistTemplate> {
+    return this.http.post<ChecklistTemplate>(`${this.base}/employees/checklist-templates`, p);
+  }
+  updateChecklistTemplate(id: number, p: ChecklistTemplatePayload): Observable<ChecklistTemplate> {
+    return this.http.put<ChecklistTemplate>(`${this.base}/employees/checklist-templates/${id}`, p);
+  }
+  deleteChecklistTemplate(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/employees/checklist-templates/${id}`);
+  }
+  openTasks(f: { responsible?: string; overdueOnly?: boolean; kind?: string; employeeId?: number | null } = {}): Observable<OpenTask[]> {
+    let params = new HttpParams();
+    if (f.responsible) params = params.set('responsible', f.responsible);
+    if (f.overdueOnly) params = params.set('overdueOnly', true);
+    if (f.kind) params = params.set('kind', f.kind);
+    if (f.employeeId) params = params.set('employeeId', f.employeeId);
+    return this.http.get<OpenTask[]>(`${this.base}/employees/checklists/open`, { params });
+  }
+  employeeChecklists(employeeId: number): Observable<EmployeeChecklist[]> {
+    return this.http.get<EmployeeChecklist[]>(`${this.base}/employees/${employeeId}/checklists`);
+  }
+  startChecklist(employeeId: number, templateId: number, startDate: string | null): Observable<EmployeeChecklist> {
+    return this.http.post<EmployeeChecklist>(`${this.base}/employees/${employeeId}/checklists`, { templateId, startDate });
+  }
+  deleteChecklist(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/employees/checklists/${id}`);
+  }
+  addChecklistTask(checklistId: number, title: string, responsible: string | null, dueDate: string | null): Observable<EmployeeChecklist> {
+    return this.http.post<EmployeeChecklist>(`${this.base}/employees/checklists/${checklistId}/tasks`, { title, responsible, dueDate });
+  }
+  setTaskDone(taskId: number, done: boolean, note: string | null): Observable<EmployeeChecklist> {
+    return this.http.post<EmployeeChecklist>(`${this.base}/employees/checklist-tasks/${taskId}/done`, { done, note });
+  }
+  deleteChecklistTask(taskId: number): Observable<EmployeeChecklist> {
+    return this.http.delete<EmployeeChecklist>(`${this.base}/employees/checklist-tasks/${taskId}`);
+  }
+
+  // importing employees from Excel or CSV
+  importEmployeesTemplate(format: 'xlsx' | 'csv'): Observable<Blob> {
+    return this.http.get(`${this.base}/employees/import/template`, { params: { format }, responseType: 'blob' });
+  }
+  importEmployees(file: File, dryRun: boolean, createDepartments: boolean): Observable<EmployeeImportResult> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    return this.http.post<EmployeeImportResult>(`${this.base}/employees/import`, body, { params: { dryRun, createDepartments } });
+  }
+
+  // corrections: cancel the payment, take an approved payroll back to draft
+  cancelPayrollPayment(id: number, note: string): Observable<PayrollRun> {
+    return this.http.post<PayrollRun>(`${this.base}/payroll/runs/${id}/cancel-payment`, { note });
+  }
+  reopenPayroll(id: number, note: string): Observable<PayrollRun> {
+    return this.http.post<PayrollRun>(`${this.base}/payroll/runs/${id}/reopen`, { note });
+  }
+  payrollHistory(id: number): Observable<PayrollEvent[]> {
+    return this.http.get<PayrollEvent[]>(`${this.base}/payroll/runs/${id}/history`);
+  }
+
+  // final pay of an employee who left
+  finalPay(employeeId: number): Observable<FinalPay> {
+    return this.http.get<FinalPay>(`${this.base}/payroll/final-pay/${employeeId}`);
+  }
+  saveFinalPay(employeeId: number, p: FinalPayPayload): Observable<FinalPay> {
+    return this.http.post<FinalPay>(`${this.base}/payroll/final-pay/${employeeId}`, p);
+  }
+  removeFinalPay(employeeId: number): Observable<FinalPay> {
+    return this.http.delete<FinalPay>(`${this.base}/payroll/final-pay/${employeeId}`);
   }
 }

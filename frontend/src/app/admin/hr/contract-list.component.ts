@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { PagerComponent } from '../../shared/pager.component';
+import { ListFilterComponent } from '../../shared/list-filter.component';
+import { ListState } from '../../core/api/list-state';
+import { BranchApiService } from '../../core/api/branch-api.service';
+import { Branch } from '../../core/models';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Contract, HrApiService } from '../../core/api/hr-api.service';
 
@@ -10,24 +15,25 @@ import { Contract, HrApiService } from '../../core/api/hr-api.service';
 @Component({
   selector: 'app-contract-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
         <h3>Contracts</h3>
         <a class="btn btn-primary" routerLink="/admin/hr/contracts/new">+ New contract</a>
       </div>
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
 
       <div class="alert alert-warning" *ngIf="expiring.length">
         <strong>{{ expiring.length }} contract(s) end within 60 days:</strong>
         <span *ngFor="let c of expiring; let last = last"> {{ c.employeeName }} ({{ c.endDate }}){{ last ? '' : ',' }}</span>
       </div>
 
+      <app-list-filter exportKind="contracts" exportPath="/hr/contracts/export" placeholder="Search contract no., employee, job title…" [statuses]="statuses" statusAll="All contracts" [dates]="false" [branches]="branches" [exportExtra]="extra" (cleared)="type = ''; extra = {}" (filterChange)="list.apply($event)"></app-list-filter>
       <div class="flex gap-2 mb-3 align-center">
-        <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
-          <option value="">All contracts</option>
-          <option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="EXPIRED">Expired</option><option value="TERMINATED">Terminated</option>
+        <select class="form-select type-filter" style="width:auto;" name="ty" [(ngModel)]="type" (ngModelChange)="typeChanged()">
+          <option value="">All types</option>
+          <option *ngFor="let t of types" [value]="t.value">{{ t.label }}</option>
         </select>
       </div>
 
@@ -51,7 +57,7 @@ import { Contract, HrApiService } from '../../core/api/hr-api.service';
 
       <table class="table-sm">
         <thead><tr><th>No.</th><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Salary</th><th>Status</th><th></th></tr></thead>
-        <tbody><tr *ngFor="let c of contracts">
+        <tbody><tr *ngFor="let c of list.rows">
           <td>{{ c.contractNumber }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="c.renewsContractNumber">renews {{ c.renewsContractNumber }}</div></td>
           <td><a [routerLink]="['/admin/hr/employees', c.employeeId]">{{ c.employeeName }}</a></td>
           <td>{{ typeLabel(c.type) }}</td><td>{{ c.startDate }}</td>
@@ -67,32 +73,38 @@ import { Contract, HrApiService } from '../../core/api/hr-api.service';
           </td>
         </tr></tbody>
       </table>
-      <p class="text-muted" *ngIf="!contracts.length">No contracts found.</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || type ? 'Nothing matches these filters.' : 'No contracts found.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class ContractListComponent implements OnInit {
-  contracts: Contract[] = [];
   expiring: Contract[] = [];
-  status = '';
+  branches: Branch[] = [];
+  type = '';
+  extra: Record<string, string | number | null | undefined> = {};
+  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'ACTIVE', label: 'Active' }, { value: 'EXPIRED', label: 'Expired' }, { value: 'TERMINATED', label: 'Terminated' }];
+  types = [{ value: 'PERMANENT', label: 'Permanent' }, { value: 'FIXED_TERM', label: 'Fixed term' }, { value: 'PROBATION', label: 'Probation' }, { value: 'CASUAL', label: 'Casual' }, { value: 'INTERNSHIP', label: 'Internship' }];
   error: string | null = null;
+  list = new ListState<Contract>((f, p, sz) => this.api.page<Contract>('contracts', f, p, sz, { type: this.type }), 'Failed to load contracts');
   action: { kind: 'terminate' | 'renew'; contract: Contract; date: string; endDate: string | null; salary: number | null; reason: string } | null = null;
 
-  constructor(private api: HrApiService) {}
+  constructor(private api: HrApiService, private branchApi: BranchApiService) {}
 
   ngOnInit(): void {
+    this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
     this.load();
   }
 
   load(): void {
-    this.api.contracts({ status: this.status }).subscribe({
-      next: (c) => {
-        this.contracts = c;
-        this.error = null;
-      },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load contracts'),
-    });
+    this.list.load();
     this.api.expiringContracts(60).subscribe({ next: (c) => (this.expiring = c), error: () => {} });
+  }
+
+  typeChanged(): void {
+    this.extra = { type: this.type };
+    this.list.page = 0;
+    this.list.load();
   }
 
   typeLabel(t: string): string {

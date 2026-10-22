@@ -9,10 +9,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -69,6 +74,7 @@ public class LeaveService {
         t.setName(name);
         t.setDaysPerYear(days);
         t.setPaid(paid);
+        t.setPayoutOnExit(name.equals("Annual leave"));
         typeRepository.save(t);
     }
 
@@ -128,6 +134,29 @@ public class LeaveService {
         if (r.active() != null) {
             t.setActive(r.active());
         }
+        if (r.accrualMode() != null) {
+            t.setAccrualMode(r.accrualMode());
+        }
+        if (r.carryOverMaxDays() != null) {
+            if (r.carryOverMaxDays() < 0 || r.carryOverMaxDays() > 365) {
+                throw ApiException.badRequest("Days that carry over must be between 0 and 365.");
+            }
+            t.setCarryOverMaxDays(r.carryOverMaxDays());
+        }
+        if (r.payoutOnExit() != null) {
+            t.setPayoutOnExit(r.payoutOnExit());
+        }
+    }
+
+    /** Ids of the active leave types whose unused days are paid out when an employee leaves. */
+    @Transactional(readOnly = true)
+    public Set<Long> payoutTypeIds() {
+        ensureDefaults();
+        Set<Long> ids = new HashSet<>();
+        for (LeaveType t : typeRepository.findAllByOrderByNameAsc()) {
+            if (t.isActive() && t.isPayoutOnExit()) ids.add(t.getId());
+        }
+        return ids;
     }
 
     private LeaveType type(Long id) {
@@ -192,18 +221,53 @@ public class LeaveService {
     public BigDecimal approvedLeaveDays(Long employeeId, LocalDate from, LocalDate to, Boolean paid) {
         Set<DayOfWeek> weekdays = settingsService.workingDays();
         Set<LocalDate> holidays = holidaySet(from, to);
-        int total = 0;
+        BigDecimal total = BigDecimal.ZERO;
         for (LeaveRequest r : requestRepository.findByEmployeeIdOrderByStartDateDesc(employeeId)) {
             if (r.getStatus() != LeaveStatus.APPROVED || (paid != null && r.getLeaveType().isPaid() != paid)) {
                 continue;
             }
-            LocalDate s = r.getStartDate().isBefore(from) ? from : r.getStartDate();
-            LocalDate e = r.getEndDate().isAfter(to) ? to : r.getEndDate();
-            if (!e.isBefore(s)) {
-                total += countWorkingDays(s, e, weekdays, holidays);
+            total = total.add(daysOf(r.getStartDate(), r.getEndDate(), from, to, r.isStartHalf(), r.isEndHalf(), weekdays, holidays));
+        }
+        return total;
+    }
+
+    private static final BigDecimal HALF = new BigDecimal("0.5");
+
+    private static boolean isWorking(LocalDate d, Set<DayOfWeek> weekdays, Set<LocalDate> holidays) {
+        return weekdays.contains(d.getDayOfWeek()) && !holidays.contains(d);
+    }
+
+    /** Working days of a leave (reqStart..reqEnd) that fall inside from..to; a half day at the start or end counts 0.5, and a single half day is 0.5. */
+    static BigDecimal daysOf(LocalDate reqStart, LocalDate reqEnd, LocalDate from, LocalDate to, boolean startHalf, boolean endHalf, Set<DayOfWeek> weekdays, Set<LocalDate> holidays) {
+        LocalDate s = reqStart.isBefore(from) ? from : reqStart;
+        LocalDate e = reqEnd.isAfter(to) ? to : reqEnd;
+        if (e.isBefore(s)) {
+            return BigDecimal.ZERO;
+        }
+        int n = countWorkingDays(s, e, weekdays, holidays);
+        BigDecimal days = BigDecimal.valueOf(n);
+        if (reqStart.equals(reqEnd)) {
+            if ((startHalf || endHalf) && n > 0) {
+                days = HALF;
+            }
+        } else {
+            if (startHalf && s.equals(reqStart) && isWorking(s, weekdays, holidays)) {
+                days = days.subtract(HALF);
+            }
+            if (endHalf && e.equals(reqEnd) && isWorking(e, weekdays, holidays)) {
+                days = days.subtract(HALF);
             }
         }
-        return BigDecimal.valueOf(total);
+        return days;
+    }
+
+    /** What a leave from..to would use, counting a half day at the start and/or end as 0.5. */
+    @Transactional
+    public BigDecimal leaveDays(LocalDate from, LocalDate to, boolean startHalf, boolean endHalf) {
+        if (to.isBefore(from)) {
+            return BigDecimal.ZERO;
+        }
+        return daysOf(from, to, from, to, startHalf, endHalf, settingsService.workingDays(), holidaySet(from, to));
     }
 
     /** The employee's approved leave requests (used by payroll to avoid counting an absence on a day of approved leave). */
@@ -238,6 +302,16 @@ public class LeaveService {
             throw ApiException.badRequest("Choose the employee.");
         }
         branchAccessService.assertCanAccess(employee.getBranchId());
+        return createFor(employee, r);
+    }
+
+    /** The signed-in employee asks for their own leave (no branch rule: it is their own record). */
+    @Transactional
+    public LeaveRequestDto createOwn(Employee me, LeaveRequestRequest r) {
+        return createFor(me, r);
+    }
+
+    private LeaveRequestDto createFor(Employee employee, LeaveRequestRequest r) {
         if (employee.getStatus() == EmployeeStatus.TERMINATED) {
             throw ApiException.badRequest(employee.fullName() + " has left the company.");
         }
@@ -251,22 +325,26 @@ public class LeaveService {
         if (r.startDate().getYear() != r.endDate().getYear()) {
             throw ApiException.badRequest("A leave request can't span two years — please split it into two requests.");
         }
-        int days = workingDays(r.startDate(), r.endDate());
-        if (days <= 0) {
+        if (workingDays(r.startDate(), r.endDate()) <= 0) {
             throw ApiException.badRequest("That period has no working days (only weekends or public holidays).");
         }
+        boolean startHalf = Boolean.TRUE.equals(r.startHalfDay());
+        boolean endHalf = Boolean.TRUE.equals(r.endHalfDay());
+        BigDecimal days = leaveDays(r.startDate(), r.endDate(), startHalf, endHalf);
         checkOverlap(employee.getId(), r.startDate(), r.endDate(), null);
-        checkBalance(employee, type, r.startDate().getYear(), BigDecimal.valueOf(days), null);
+        checkBalance(employee, type, r.startDate().getYear(), days, null, r.startDate().getMonthValue());
 
         LeaveRequest lr = new LeaveRequest();
         lr.setEmployee(employee);
         lr.setLeaveType(type);
         lr.setStartDate(r.startDate());
         lr.setEndDate(r.endDate());
-        lr.setDays(BigDecimal.valueOf(days));
+        lr.setDays(days);
+        lr.setStartHalf(startHalf);
+        lr.setEndHalf(endHalf);
         lr.setReason(HrSupport.blankToNull(r.reason()));
         LeaveRequest saved = requestRepository.save(lr);
-        auditLogService.record("LEAVE_REQUESTED", "Leave request for " + employee.fullName() + ": " + type.getName() + " " + r.startDate() + " to " + r.endDate() + " (" + days + " days)", "LeaveRequest", saved.getId());
+        auditLogService.record("LEAVE_REQUESTED", "Leave request for " + employee.fullName() + ": " + type.getName() + " " + r.startDate() + " to " + r.endDate() + " (" + days.stripTrailingZeros().toPlainString() + " days)", "LeaveRequest", saved.getId());
         return LeaveRequestDto.from(saved);
     }
 
@@ -278,7 +356,7 @@ public class LeaveService {
             throw ApiException.conflict("Only a pending request can be approved.");
         }
         checkOverlap(lr.getEmployee().getId(), lr.getStartDate(), lr.getEndDate(), lr.getId());
-        checkBalance(lr.getEmployee(), lr.getLeaveType(), lr.getStartDate().getYear(), lr.getDays(), lr.getId());
+        checkBalance(lr.getEmployee(), lr.getLeaveType(), lr.getStartDate().getYear(), lr.getDays(), lr.getId(), lr.getStartDate().getMonthValue());
         decide(lr, LeaveStatus.APPROVED, d);
         auditLogService.record("LEAVE_APPROVED", "Approved " + lr.getLeaveType().getName() + " for " + lr.getEmployee().fullName() + " (" + lr.getStartDate() + " to " + lr.getEndDate() + ")", "LeaveRequest", id);
         return LeaveRequestDto.from(lr);
@@ -308,6 +386,29 @@ public class LeaveService {
         return LeaveRequestDto.from(lr);
     }
 
+    /** An employee withdraws their own request while it is still waiting for a decision. */
+    @Transactional
+    public LeaveRequestDto cancelOwn(Employee me, Long id, DecisionRequest d) {
+        LeaveRequest lr = request(id);
+        if (!lr.getEmployee().getId().equals(me.getId())) {
+            throw ApiException.notFound("Leave request not found");
+        }
+        if (lr.getStatus() != LeaveStatus.PENDING) {
+            throw ApiException.conflict(lr.getStatus() == LeaveStatus.APPROVED
+                    ? "This leave is already approved. Ask HR to cancel it."
+                    : "This request is already " + lr.getStatus().name().toLowerCase() + ".");
+        }
+        decide(lr, LeaveStatus.CANCELLED, d);
+        auditLogService.record("LEAVE_CANCELLED", "Withdrew " + lr.getLeaveType().getName() + " (" + lr.getStartDate() + " to " + lr.getEndDate() + ")", "LeaveRequest", id);
+        return LeaveRequestDto.from(lr);
+    }
+
+    /** One employee's own requests, newest first (no branch rule). */
+    @Transactional(readOnly = true)
+    public List<LeaveRequestDto> requestsOfEmployee(Long employeeId) {
+        return requestRepository.findByEmployeeIdOrderByStartDateDesc(employeeId).stream().map(LeaveRequestDto::from).toList();
+    }
+
     private void decide(LeaveRequest lr, LeaveStatus status, DecisionRequest d) {
         lr.setStatus(status);
         lr.setDecidedBy(HrSupport.currentUserName());
@@ -326,22 +427,60 @@ public class LeaveService {
         }
     }
 
-    private void checkBalance(Employee employee, LeaveType type, int year, BigDecimal days, Long ignoreId) {
+    /** What an employee may take of a leave type in a year, counting days earned so far (monthly accrual) up to {@code uptoMonth}. */
+    BigDecimal entitlement(LeaveType t, Employee e, int year, int uptoMonth) {
+        BigDecimal full = BigDecimal.valueOf(t.getDaysPerYear());
+        if (t.getAccrualMode() != LeaveAccrual.MONTHLY) {
+            return full;
+        }
+        int hireYear = e.getHireDate().getYear();
+        if (hireYear > year) {
+            return BigDecimal.ZERO;
+        }
+        int first = hireYear == year ? e.getHireDate().getMonthValue() : 1;
+        int months = Math.max(0, Math.min(12, uptoMonth) - first + 1);
+        return full.multiply(BigDecimal.valueOf(months)).divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+    }
+
+    /** Unused days of earlier years that carry into {@code year} (at most the type's carry-over limit; only approved leave counts as used). */
+    BigDecimal carriedOver(LeaveType t, Employee e, int year, List<LeaveRequest> requests) {
+        int max = t.getCarryOverMaxDays();
+        if (max <= 0 || t.getDaysPerYear() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal carry = BigDecimal.ZERO;
+        for (int y = Math.max(e.getHireDate().getYear(), year - 30); y < year; y++) {
+            BigDecimal used = BigDecimal.ZERO;
+            for (LeaveRequest r : requests) {
+                if (r.getLeaveType().getId().equals(t.getId()) && r.getStartDate().getYear() == y && r.getStatus() == LeaveStatus.APPROVED) {
+                    used = used.add(r.getDays());
+                }
+            }
+            BigDecimal unused = entitlement(t, e, y, 12).add(carry).subtract(used).max(BigDecimal.ZERO);
+            carry = unused.min(BigDecimal.valueOf(max));
+        }
+        return carry;
+    }
+
+    private void checkBalance(Employee employee, LeaveType type, int year, BigDecimal days, Long ignoreId, int startMonth) {
         if (type.getDaysPerYear() <= 0) {
             return;
         }
+        List<LeaveRequest> requests = requestRepository.findByEmployeeIdOrderByStartDateDesc(employee.getId());
         BigDecimal used = BigDecimal.ZERO;
-        for (LeaveRequest o : requestRepository.findByEmployeeIdOrderByStartDateDesc(employee.getId())) {
+        for (LeaveRequest o : requests) {
             if (o.getLeaveType().getId().equals(type.getId()) && o.getStartDate().getYear() == year
                     && (o.getStatus() == LeaveStatus.APPROVED || o.getStatus() == LeaveStatus.PENDING)
                     && (ignoreId == null || !o.getId().equals(ignoreId))) {
                 used = used.add(o.getDays());
             }
         }
-        BigDecimal remaining = BigDecimal.valueOf(type.getDaysPerYear()).subtract(used);
+        BigDecimal available = entitlement(type, employee, year, startMonth).add(carriedOver(type, employee, year, requests));
+        BigDecimal remaining = available.subtract(used);
         if (days.compareTo(remaining) > 0) {
             throw ApiException.conflict(employee.fullName() + " has only " + remaining.max(BigDecimal.ZERO).stripTrailingZeros().toPlainString()
-                    + " day(s) of " + type.getName() + " left in " + year + " (needs " + days.stripTrailingZeros().toPlainString() + ").");
+                    + " day(s) of " + type.getName() + " left in " + year + (type.getAccrualMode() == LeaveAccrual.MONTHLY ? " by then (earned monthly)" : "")
+                    + " (needs " + days.stripTrailingZeros().toPlainString() + ").");
         }
     }
 
@@ -355,6 +494,8 @@ public class LeaveService {
     public List<LeaveBalanceDto> balances(int year, Long employeeId) {
         ensureDefaults();
         List<LeaveType> types = typeRepository.findAllByOrderByNameAsc().stream().filter(LeaveType::isActive).toList();
+        LocalDate today = LocalDate.now();
+        int accrualMonth = year < today.getYear() ? 12 : year == today.getYear() ? today.getMonthValue() : 0;
         List<LeaveBalanceDto> out = new ArrayList<>();
         for (Employee e : employeeRepository.findAllByOrderByFirstNameAscLastNameAsc()) {
             if (e.getStatus() == EmployeeStatus.TERMINATED && e.getTerminationDate() != null && e.getTerminationDate().getYear() < year) {
@@ -363,25 +504,95 @@ public class LeaveService {
             if ((employeeId != null && !e.getId().equals(employeeId)) || !branchAccessService.canAccess(e.getBranchId())) {
                 continue;
             }
-            List<LeaveRequest> requests = requestRepository.findByEmployeeIdOrderByStartDateDesc(e.getId());
-            for (LeaveType t : types) {
-                BigDecimal used = BigDecimal.ZERO;
-                BigDecimal pending = BigDecimal.ZERO;
-                for (LeaveRequest r : requests) {
-                    if (r.getLeaveType().getId().equals(t.getId()) && r.getStartDate().getYear() == year) {
-                        if (r.getStatus() == LeaveStatus.APPROVED) {
-                            used = used.add(r.getDays());
-                        } else if (r.getStatus() == LeaveStatus.PENDING) {
-                            pending = pending.add(r.getDays());
-                        }
-                    }
-                }
-                boolean unlimited = t.getDaysPerYear() <= 0;
-                BigDecimal entitled = BigDecimal.valueOf(t.getDaysPerYear());
-                BigDecimal remaining = unlimited ? BigDecimal.ZERO : entitled.subtract(used).subtract(pending);
-                out.add(new LeaveBalanceDto(e.getId(), e.getEmployeeNumber(), e.fullName(), t.getId(), t.getName(), unlimited, entitled, used, pending, remaining));
-            }
+            out.addAll(balancesOf(e, types, year, accrualMonth));
         }
         return out;
+    }
+
+    private List<LeaveBalanceDto> balancesOf(Employee e, List<LeaveType> types, int year, int accrualMonth) {
+        List<LeaveBalanceDto> out = new ArrayList<>();
+        List<LeaveRequest> requests = requestRepository.findByEmployeeIdOrderByStartDateDesc(e.getId());
+        for (LeaveType t : types) {
+            BigDecimal used = BigDecimal.ZERO;
+            BigDecimal pending = BigDecimal.ZERO;
+            for (LeaveRequest r : requests) {
+                if (r.getLeaveType().getId().equals(t.getId()) && r.getStartDate().getYear() == year) {
+                    if (r.getStatus() == LeaveStatus.APPROVED) {
+                        used = used.add(r.getDays());
+                    } else if (r.getStatus() == LeaveStatus.PENDING) {
+                        pending = pending.add(r.getDays());
+                    }
+                }
+            }
+            boolean unlimited = t.getDaysPerYear() <= 0;
+            BigDecimal entitled = BigDecimal.valueOf(t.getDaysPerYear());
+            BigDecimal accrued = unlimited ? BigDecimal.ZERO : entitlement(t, e, year, accrualMonth);
+            BigDecimal carried = unlimited ? BigDecimal.ZERO : carriedOver(t, e, year, requests);
+            BigDecimal remaining = unlimited ? BigDecimal.ZERO : accrued.add(carried).subtract(used).subtract(pending);
+            out.add(new LeaveBalanceDto(e.getId(), e.getEmployeeNumber(), e.fullName(), t.getId(), t.getName(), unlimited, entitled, used, pending, remaining, accrued, carried, t.getAccrualMode()));
+        }
+        return out;
+    }
+
+    /** The signed-in employee's own balances: no branch filter, since it is their own record. */
+    @Transactional
+    public List<LeaveBalanceDto> balancesOfEmployee(Employee e, int year) {
+        ensureDefaults();
+        List<LeaveType> types = typeRepository.findAllByOrderByNameAsc().stream().filter(LeaveType::isActive).toList();
+        LocalDate today = LocalDate.now();
+        int accrualMonth = year < today.getYear() ? 12 : year == today.getYear() ? today.getMonthValue() : 0;
+        return balancesOf(e, types, year, accrualMonth);
+    }
+
+
+    // ---- team calendar ----
+
+    /** Who is away on which days of a month (approved and pending leave), for the team calendar. Employees with no leave in the month are left out. */
+    @Transactional(readOnly = true)
+    public LeaveCalendarDto calendar(int year, int month, Long departmentId, Long branchId) {
+        if (month < 1 || month > 12 || year < 2000 || year > 2200) {
+            throw ApiException.badRequest("Choose a valid month.");
+        }
+        YearMonth ym = YearMonth.of(year, month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to = ym.atEndOfMonth();
+        Set<DayOfWeek> weekdays = settingsService.workingDays();
+        Map<LocalDate, String> holidayNames = new LinkedHashMap<>();
+        for (PublicHoliday h : holidayRepository.findByHolidayDateBetween(from, to)) {
+            holidayNames.put(h.getHolidayDate(), h.getName());
+        }
+        List<CalendarDayDto> days = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            days.add(new CalendarDayDto(d, !weekdays.contains(d.getDayOfWeek()), holidayNames.get(d)));
+        }
+        Map<Long, List<CalendarEntryDto>> entries = new LinkedHashMap<>();
+        Map<Long, Employee> people = new LinkedHashMap<>();
+        for (LeaveRequest r : requestRepository.findByStartDateLessThanEqualAndEndDateGreaterThanEqual(to, from)) {
+            if (r.getStatus() != LeaveStatus.APPROVED && r.getStatus() != LeaveStatus.PENDING) {
+                continue;
+            }
+            Employee e = r.getEmployee();
+            if (!branchAccessService.canAccess(e.getBranchId()) || (branchId != null && !branchId.equals(e.getBranchId()))
+                    || (departmentId != null && (e.getDepartment() == null || !departmentId.equals(e.getDepartment().getId())))) {
+                continue;
+            }
+            boolean single = r.getStartDate().equals(r.getEndDate());
+            for (LocalDate d = r.getStartDate().isBefore(from) ? from : r.getStartDate(); !d.isAfter(r.getEndDate()) && !d.isAfter(to); d = d.plusDays(1)) {
+                if (!isWorking(d, weekdays, holidayNames.keySet())) {
+                    continue;
+                }
+                boolean half = single ? (r.isStartHalf() || r.isEndHalf()) : (d.equals(r.getStartDate()) && r.isStartHalf()) || (d.equals(r.getEndDate()) && r.isEndHalf());
+                entries.computeIfAbsent(e.getId(), k -> new ArrayList<>()).add(new CalendarEntryDto(d, r.getId(), r.getLeaveType().getName(), r.getStatus(), half));
+                people.put(e.getId(), e);
+            }
+        }
+        List<CalendarRowDto> rows = new ArrayList<>();
+        for (Map.Entry<Long, List<CalendarEntryDto>> en : entries.entrySet()) {
+            Employee e = people.get(en.getKey());
+            en.getValue().sort(Comparator.comparing(CalendarEntryDto::date));
+            rows.add(new CalendarRowDto(e.getId(), e.getEmployeeNumber(), e.fullName(), e.getDepartment() != null ? e.getDepartment().getName() : null, en.getValue()));
+        }
+        rows.sort(Comparator.comparing(CalendarRowDto::employeeName, String.CASE_INSENSITIVE_ORDER));
+        return new LeaveCalendarDto(year, month, days, rows);
     }
 }
