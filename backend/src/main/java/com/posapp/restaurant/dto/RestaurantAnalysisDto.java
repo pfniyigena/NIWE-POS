@@ -20,7 +20,7 @@ public record RestaurantAnalysisDto(
         List<TableRow> tables,
         List<Control> controls
 ) {
-    public record Totals(int checks, int parties, int covers, int itemsSold, BigDecimal gross, BigDecimal discounts, BigDecimal netSales,
+    public record Totals(int checks, int parties, int covers, BigDecimal itemsSold, BigDecimal gross, BigDecimal discounts, BigDecimal netSales,
                          BigDecimal serviceCharge, BigDecimal tax, BigDecimal rounding, BigDecimal billed, BigDecimal tips,
                          BigDecimal averageCheck, BigDecimal averagePerCover, BigDecimal cost, BigDecimal profit, BigDecimal marginPercent,
                          int averageMinutesAtTable) {
@@ -42,11 +42,11 @@ public record RestaurantAnalysisDto(
     }
 
     /** One dish. {@code popularity} is its share of all dishes sold; {@code classification} is STAR, PLOWHORSE, PUZZLE or DOG. */
-    public record Item(Long productId, String name, String category, int quantity, BigDecimal netSales, BigDecimal salesPercent, BigDecimal cost,
+    public record Item(Long productId, String name, String category, BigDecimal quantity, BigDecimal netSales, BigDecimal salesPercent, BigDecimal cost,
                        BigDecimal profit, BigDecimal marginPercent, BigDecimal unitProfit, BigDecimal popularity, String classification) {
     }
 
-    public record Category(Long categoryId, String name, int quantity, BigDecimal netSales, BigDecimal salesPercent, BigDecimal cost,
+    public record Category(Long categoryId, String name, BigDecimal quantity, BigDecimal netSales, BigDecimal salesPercent, BigDecimal cost,
                            BigDecimal profit, BigDecimal marginPercent) {
     }
 

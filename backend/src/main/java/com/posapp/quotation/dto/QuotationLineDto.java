@@ -10,7 +10,7 @@ public record QuotationLineDto(
         Long id,
         Long productId,
         String productName,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitPrice,
         /**
          * Fourier: "Except POS other module can have global discount ... Either on line or
@@ -31,7 +31,7 @@ public record QuotationLineDto(
         boolean taxInclusive
 ) {
     public static QuotationLineDto from(BigDecimal headerDiscountPercent, QuotationLine l) {
-        BigDecimal grossBeforeDiscount = l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal grossBeforeDiscount = l.getUnitPrice().multiply(l.getQuantity()).setScale(2, RoundingMode.HALF_UP);
         BigDecimal discountPercent = TaxMath.effectiveDiscountPercent(headerDiscountPercent, l.getDiscountPercent());
         BigDecimal gross = TaxMath.applyDiscount(grossBeforeDiscount, discountPercent);
         BigDecimal discountAmount = grossBeforeDiscount.subtract(gross).setScale(2, RoundingMode.HALF_UP);

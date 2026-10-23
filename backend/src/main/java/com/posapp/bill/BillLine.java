@@ -32,7 +32,7 @@ public class BillLine extends BaseEntity {
     /** Snapshot of the product's name at generation time, same "survives a later rename" reasoning as every other line's productName field. */
     private String productName;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     private BigDecimal unitCost = BigDecimal.ZERO;
 

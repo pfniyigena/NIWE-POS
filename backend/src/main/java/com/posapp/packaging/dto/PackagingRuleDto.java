@@ -1,6 +1,7 @@
 package com.posapp.packaging.dto;
 
-import com.posapp.packaging.PackagingRule;
+
+import java.math.BigDecimal;import com.posapp.packaging.PackagingRule;
 
 public record PackagingRuleDto(
         Long id,
@@ -10,7 +11,7 @@ public record PackagingRuleDto(
         Long childProductId,
         String childProductName,
         String childProductSku,
-        int unitsPerParent,
+        BigDecimal unitsPerParent,
         String notes,
         boolean active
 ) {

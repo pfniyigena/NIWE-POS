@@ -1,4 +1,5 @@
 package com.posapp.catalog;
+import com.posapp.common.Qty;
 
 import com.posapp.alerts.AlertMailService;
 import com.posapp.audit.AuditLogService;
@@ -45,7 +46,7 @@ public class CatalogService {
     /** Batch/expiry/serial bookkeeping that follows stock leaving a location. */
     private final com.posapp.tracking.TrackingService trackingService;
     /** Same property CatalogController/DashboardService each take as a one-off {@code @Value} parameter — see {@link #adjustStock}. */
-    private final int lowStockThreshold;
+    private final BigDecimal lowStockThreshold;
 
     public CatalogService(ProductRepository productRepository, CategoryRepository categoryRepository,
                            BrandRepository brandRepository, TaxRateService taxRateService,
@@ -61,7 +62,7 @@ public class CatalogService {
         this.alertMailService = alertMailService;
         this.warehouseService = warehouseService;
         this.trackingService = trackingService;
-        this.lowStockThreshold = lowStockThreshold;
+        this.lowStockThreshold = BigDecimal.valueOf(lowStockThreshold);
     }
 
     @Transactional(readOnly = true)
@@ -295,7 +296,7 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductDto> listLowStock(int threshold) {
+    public List<ProductDto> listLowStock(BigDecimal threshold) {
         return productRepository.findByActiveTrueAndTrackStockTrueAndStockQuantityLessThanOrderByStockQuantityAsc(threshold)
                 .stream().map(ProductDto::from).toList();
     }
@@ -311,7 +312,7 @@ public class CatalogService {
         // The warehouse's own threshold, or the store-wide default when it has none.
         return productRepository.findLowStockInWarehouse(warehouse, warehouseService.effectiveLowStockThreshold(warehouse)).stream()
                 .map(p -> new WarehouseLowStockRow(p.getId(), p.getSku(), p.getName(), warehouseService.getStockQuantity(p, warehouse)))
-                .sorted(java.util.Comparator.comparingInt(WarehouseLowStockRow::quantity))
+                .sorted(java.util.Comparator.comparing(WarehouseLowStockRow::quantity))
                 .toList();
     }
 
@@ -420,7 +421,7 @@ public class CatalogService {
             throw ApiException.badRequest("That would create " + combinations + " variants — generate at most 200 at a time");
         }
         boolean firstRun = template.getVariantAttributes() == null;
-        if (firstRun && (template.getStockQuantity() != 0 || warehouseService.totalOnHand(template) != 0)) {
+        if (firstRun && (template.getStockQuantity().signum() != 0 || warehouseService.totalOnHand(template).signum() != 0)) {
             throw ApiException.badRequest("'" + template.getName() + "' holds stock. Move that stock to its variants (adjust it to zero here, then add stock to each variant) before generating variants.");
         }
 
@@ -463,7 +464,7 @@ public class CatalogService {
             v.setIconDataUrl(template.getIconDataUrl());
             v.setUnitPrice(template.getUnitPrice());
             v.setCostPrice(template.getCostPrice() != null ? template.getCostPrice() : BigDecimal.ZERO);
-            v.setStockQuantity(0);
+            v.setStockQuantity(BigDecimal.ZERO);
             v.setTrackStock(template.isTrackStock());
             v.setActive(true);
             v.setCategory(template.getCategory());
@@ -477,7 +478,7 @@ public class CatalogService {
             v.setVariantParentId(template.getId());
             v.setVariantLabel(label);
             Product saved = productRepository.save(v);
-            warehouseService.syncDefaultWarehouseStock(saved, 0);
+            warehouseService.syncDefaultWarehouseStock(saved, BigDecimal.ZERO);
             created++;
         }
 
@@ -557,7 +558,7 @@ public class CatalogService {
      * unit sold once it's already below the line.
      */
     @Transactional
-    public void adjustStock(Product product, int delta) {
+    public void adjustStock(Product product, BigDecimal delta) {
         trackOutgoing(product, delta, null);
         applyPlainStock(product, delta);
     }
@@ -567,8 +568,8 @@ public class CatalogService {
      * first) or serial numbers leave with it. A null location means the primary warehouse's sales location,
      * which is what the plain overload mutates.
      */
-    private void trackOutgoing(Product product, int delta, WarehouseLocation location) {
-        if (delta >= 0 || com.posapp.tracking.TrackingService.modeOf(product) == com.posapp.tracking.TrackingMode.NONE) {
+    private void trackOutgoing(Product product, BigDecimal delta, WarehouseLocation location) {
+        if (delta.signum() >= 0 || com.posapp.tracking.TrackingService.modeOf(product) == com.posapp.tracking.TrackingMode.NONE) {
             return;
         }
         WarehouseLocation where = location;
@@ -576,19 +577,19 @@ public class CatalogService {
             Warehouse primary = warehouseService.getDefaultWarehouseOrThrow();
             where = warehouseService.resolveCanonicalSalesLocation(primary);
         }
-        trackingService.consume(product, where, -delta);
+        trackingService.consume(product, where, delta.negate());
     }
 
-    private void applyPlainStock(Product product, int delta) {
-        int before = product.getStockQuantity();
-        int after = before + delta;
+    private void applyPlainStock(Product product, BigDecimal delta) {
+        BigDecimal before = product.getStockQuantity();
+        BigDecimal after = before.add(delta);
         product.setStockQuantity(after);
         productRepository.save(product);
         warehouseService.syncDefaultWarehouseStock(product, after);
-        if (product.isTrackStock() && after < before) {
+        if (product.isTrackStock() && after.compareTo(before) < 0) {
             // The primary warehouse may carry its own threshold; falls back to the store-wide one.
-            int threshold = warehouseService.primaryLowStockThreshold();
-            if (before >= threshold && after < threshold) {
+            BigDecimal threshold = warehouseService.primaryLowStockThreshold();
+            if (before.compareTo(threshold) >= 0 && after.compareTo(threshold) < 0) {
                 alertMailService.alertLowStock(product);
             }
         }
@@ -616,7 +617,7 @@ public class CatalogService {
      * "Purchase routing" decision scoped the RECEIVING/SALES split to Purchase Order/Return only.
      */
     @Transactional
-    public void adjustStock(Product product, int delta, WarehouseLocation location) {
+    public void adjustStock(Product product, BigDecimal delta, WarehouseLocation location) {
         trackOutgoing(product, delta, location);
         applyLocationStock(product, delta, location);
     }
@@ -626,11 +627,11 @@ public class CatalogService {
      * for callers that move them on their own (stock transfers).
      */
     @Transactional
-    public void adjustStockUntracked(Product product, int delta, WarehouseLocation location) {
+    public void adjustStockUntracked(Product product, BigDecimal delta, WarehouseLocation location) {
         applyLocationStock(product, delta, location);
     }
 
-    private void applyLocationStock(Product product, int delta, WarehouseLocation location) {
+    private void applyLocationStock(Product product, BigDecimal delta, WarehouseLocation location) {
         if (location == null) {
             applyPlainStock(product, delta);
             return;
@@ -646,12 +647,12 @@ public class CatalogService {
         // sellable total (same definition the dashboard's "Low stock by warehouse" uses) before and
         // after, and alert only on the actual crossing below the threshold.
         boolean watchWarehouse = product.isTrackStock() && warehouse != null && !warehouse.isPrimary();
-        int warehouseBefore = watchWarehouse ? warehouseService.getStockQuantity(product, warehouse) : 0;
+        BigDecimal warehouseBefore = watchWarehouse ? warehouseService.getStockQuantity(product, warehouse) : BigDecimal.ZERO;
         warehouseService.adjustLocationStock(product, location, delta);
         if (watchWarehouse) {
-            int warehouseAfter = warehouseService.getStockQuantity(product, warehouse);
-            int warehouseThreshold = warehouseService.effectiveLowStockThreshold(warehouse);
-            if (warehouseBefore >= warehouseThreshold && warehouseAfter < warehouseThreshold) {
+            BigDecimal warehouseAfter = warehouseService.getStockQuantity(product, warehouse);
+            BigDecimal warehouseThreshold = warehouseService.effectiveLowStockThreshold(warehouse);
+            if (warehouseBefore.compareTo(warehouseThreshold) >= 0 && warehouseAfter.compareTo(warehouseThreshold) < 0) {
                 alertMailService.alertLowStock(product, warehouse.getName(), warehouseAfter);
             }
         }
@@ -673,16 +674,16 @@ public class CatalogService {
      * null when nothing changed.
      */
     @Transactional
-    public BigDecimal applyWeightedAverageCost(Product product, int quantityOnHandBefore, int quantityReceived, BigDecimal receivedNetValue) {
-        if (quantityReceived <= 0 || receivedNetValue == null) return null;
+    public BigDecimal applyWeightedAverageCost(Product product, BigDecimal quantityOnHandBefore, BigDecimal quantityReceived, BigDecimal receivedNetValue) {
+        if (quantityReceived.signum() <= 0 || receivedNetValue == null) return null;
         BigDecimal oldCost = product.getCostPrice() != null ? product.getCostPrice() : BigDecimal.ZERO;
-        int onHand = Math.max(0, quantityOnHandBefore);
+        BigDecimal onHand = Qty.max(BigDecimal.ZERO, quantityOnHandBefore);
         BigDecimal newCost;
-        if (onHand == 0 || oldCost.signum() <= 0) {
-            newCost = receivedNetValue.divide(BigDecimal.valueOf(quantityReceived), 2, java.math.RoundingMode.HALF_UP);
+        if (onHand.signum() == 0 || oldCost.signum() <= 0) {
+            newCost = receivedNetValue.divide(quantityReceived, 2, java.math.RoundingMode.HALF_UP);
         } else {
-            newCost = oldCost.multiply(BigDecimal.valueOf(onHand)).add(receivedNetValue)
-                    .divide(BigDecimal.valueOf((long) onHand + quantityReceived), 2, java.math.RoundingMode.HALF_UP);
+            newCost = oldCost.multiply(onHand).add(receivedNetValue)
+                    .divide(onHand.add(quantityReceived), 2, java.math.RoundingMode.HALF_UP);
         }
         if (newCost.compareTo(oldCost) == 0) return null;
         product.setCostPrice(newCost);
@@ -692,10 +693,10 @@ public class CatalogService {
 
     /** Last-purchase costing: the delivery's own unit cost (including any landed cost share) replaces the product cost. Returns the new cost, or null when unchanged. */
     @Transactional
-    public BigDecimal applyLastPurchaseCost(Product product, int quantityReceived, BigDecimal receivedNetValue) {
-        if (quantityReceived <= 0 || receivedNetValue == null) return null;
+    public BigDecimal applyLastPurchaseCost(Product product, BigDecimal quantityReceived, BigDecimal receivedNetValue) {
+        if (quantityReceived.signum() <= 0 || receivedNetValue == null) return null;
         BigDecimal oldCost = product.getCostPrice() != null ? product.getCostPrice() : BigDecimal.ZERO;
-        BigDecimal newCost = receivedNetValue.divide(BigDecimal.valueOf(quantityReceived), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal newCost = receivedNetValue.divide(quantityReceived, 2, java.math.RoundingMode.HALF_UP);
         if (newCost.compareTo(oldCost) == 0) return null;
         product.setCostPrice(newCost);
         productRepository.save(product);

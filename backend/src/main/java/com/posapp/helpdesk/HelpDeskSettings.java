@@ -33,4 +33,8 @@ public class HelpDeskSettings extends BaseEntity {
      */
     @Column(columnDefinition = "TEXT")
     private String notificationEmails;
+
+    /** "Allow public website": when off, the public Help Desk page (submit a ticket, check a ticket) is closed. */
+    @Column(nullable = false, columnDefinition = "boolean default true not null")
+    private boolean publicEnabled = true;
 }

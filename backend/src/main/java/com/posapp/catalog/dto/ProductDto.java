@@ -15,7 +15,7 @@ public record ProductDto(
         String description,
         BigDecimal unitPrice,
         BigDecimal costPrice,
-        int stockQuantity,
+        BigDecimal stockQuantity,
         /** See Product.trackStock's javadoc. */
         boolean trackStock,
         Long categoryId,
@@ -31,8 +31,8 @@ public record ProductDto(
         boolean active,
         String unspCode,
         boolean service,
-        Integer reorderLevel,
-        Integer maxStockLevel,
+        BigDecimal reorderLevel,
+        BigDecimal maxStockLevel,
         /** Variants: the template this product was generated from, its option values, or (on a template) the option summary. */
         Long variantParentId,
         String variantLabel,

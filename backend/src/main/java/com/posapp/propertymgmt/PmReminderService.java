@@ -377,7 +377,7 @@ public class PmReminderService {
         req.setDescription("Fee for rent paid late");
         req.setUnitPrice(ZERO);
         req.setCostPrice(ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);
@@ -407,7 +407,7 @@ public class PmReminderService {
         req.setNotes("Late fee for rent invoice " + r.invoiceNumber() + " (due " + r.dueDate() + ", lease " + r.leaseCode() + ")");
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(lateFeeProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(amount);
         line.setDescription("Late fee: rent " + r.invoiceNumber() + " due " + r.dueDate() + ", " + r.daysOverdue() + " days late (" + (r.propertyName() == null ? "" : r.propertyName() + ", ") + "unit " + r.unitNo() + ")");
         req.setLines(List.of(line));

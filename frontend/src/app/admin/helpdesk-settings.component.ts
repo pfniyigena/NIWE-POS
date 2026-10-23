@@ -25,6 +25,9 @@ import { HelpDeskSettingsApiService } from '../core/api/helpdesk-api.service';
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="saved">Saved.</div>
       <form (ngSubmit)="submit()">
+        <h4 class="mb-1">Public website</h4>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" class="hd-public" name="publicEnabled" [(ngModel)]="publicEnabled" /> Allow public website</label>
+        <div class="text-muted mb-3" style="font-size:0.85rem;">Anyone can then send a support request and check the progress of a ticket at <strong>/helpdesk</strong> on this site, without signing in. Switch it off to close the page and take its tile off the home page; staff keep working in the Help Desk as usual.</div>
         <div class="form-group">
           <label class="form-label">Notification emails</label>
           <textarea class="form-control" name="emailsText" [(ngModel)]="emailsText" rows="5" placeholder="one address per line"></textarea>
@@ -43,6 +46,7 @@ import { HelpDeskSettingsApiService } from '../core/api/helpdesk-api.service';
 })
 export class HelpDeskSettingsComponent implements OnInit {
   emailsText = '';
+  publicEnabled = true;
   error: string | null = null;
   saved = false;
   saving = false;
@@ -51,7 +55,10 @@ export class HelpDeskSettingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.settingsApi.get().subscribe({
-      next: (s) => (this.emailsText = (s.notificationEmails || []).join('\n')),
+      next: (s) => {
+        this.emailsText = (s.notificationEmails || []).join('\n');
+        this.publicEnabled = s.publicEnabled !== false;
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load settings'),
     });
   }
@@ -64,7 +71,7 @@ export class HelpDeskSettingsComponent implements OnInit {
       .split('\n')
       .map((e) => e.trim())
       .filter((e) => e.length > 0);
-    this.settingsApi.update({ notificationEmails }).subscribe({
+    this.settingsApi.update({ notificationEmails, publicEnabled: this.publicEnabled }).subscribe({
       next: (s) => {
         this.saving = false;
         this.saved = true;

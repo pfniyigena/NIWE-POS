@@ -113,7 +113,7 @@ public class PosExceptionService {
         for (var l : o.getLines()) {
             BigDecimal d = l.getDiscountPercent() == null ? BigDecimal.ZERO : l.getDiscountPercent();
             if (d.signum() > 0) {
-                BigDecimal gross = l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity()));
+                BigDecimal gross = l.getUnitPrice().multiply(l.getQuantity());
                 value = value.add(gross.multiply(d).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
                 reasons.add(l.getDiscountReason());
                 approvers.add(l.getDiscountApprovedBy());
@@ -138,7 +138,7 @@ public class PosExceptionService {
         for (var l : o.getLines()) {
             if (!l.isPriceOverridden() || l.getOriginalUnitPrice() == null) continue;
             any = true;
-            value = value.add(l.getOriginalUnitPrice().subtract(l.getUnitPrice()).multiply(BigDecimal.valueOf(l.getQuantity())));
+            value = value.add(l.getOriginalUnitPrice().subtract(l.getUnitPrice()).multiply(l.getQuantity()));
             reasons.add(l.getPriceOverrideReason());
             approvers.add(l.getPriceOverrideApprovedBy());
         }

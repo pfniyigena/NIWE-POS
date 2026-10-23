@@ -1,6 +1,7 @@
 package com.posapp.inventory.dto;
 
-import jakarta.validation.Valid;
+
+import java.math.BigDecimal;import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -38,7 +39,7 @@ public class ReceivePurchaseOrderRequest {
         private Long lineId;
 
         @Positive(message = "Quantity received must be greater than zero")
-        private int quantityReceived;
+        private BigDecimal quantityReceived = BigDecimal.ZERO;
 
         /** BATCH products: the supplier's lot number (defaults to the order number). */
         private String batchNumber;
@@ -58,7 +59,7 @@ public class ReceivePurchaseOrderRequest {
 
         public Long getLineId() { return lineId; }
         public void setLineId(Long lineId) { this.lineId = lineId; }
-        public int getQuantityReceived() { return quantityReceived; }
-        public void setQuantityReceived(int quantityReceived) { this.quantityReceived = quantityReceived; }
+        public BigDecimal getQuantityReceived() { return quantityReceived; }
+        public void setQuantityReceived(BigDecimal quantityReceived) { this.quantityReceived = quantityReceived; }
     }
 }

@@ -1,4 +1,5 @@
 package com.posapp.salesorder;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -82,9 +83,9 @@ public class SalesOrderReturnService {
      * "process a return" panel, same shape as {@code ReturnsService.returnedQuantitiesForOrder}.
      */
     @Transactional(readOnly = true)
-    public Map<Long, Integer> returnedQuantitiesForOrder(Long salesOrderId) {
+    public Map<Long, BigDecimal> returnedQuantitiesForOrder(Long salesOrderId) {
         return salesOrderReturnLineRepository.findBySalesOrderId(salesOrderId).stream()
-                .collect(Collectors.groupingBy(l -> l.getOrderLine().getId(), Collectors.summingInt(SalesOrderReturnLine::getQuantity)));
+                .collect(Collectors.groupingBy(l -> l.getOrderLine().getId(), Collectors.reducing(BigDecimal.ZERO, SalesOrderReturnLine::getQuantity, BigDecimal::add)));
     }
 
     /**
@@ -147,15 +148,15 @@ public class SalesOrderReturnService {
                     .findFirst()
                     .orElseThrow(() -> ApiException.badRequest("Line " + entry.getLineId() + " does not belong to sales order " + so.getOrderNumber()));
 
-            int alreadyReturned = salesOrderReturnLineRepository.sumReturnedQuantityForLine(line.getId());
-            int remaining = line.getQuantityFulfilled() - alreadyReturned;
-            if (entry.getQuantity() > remaining) {
-                throw ApiException.badRequest("Cannot return " + entry.getQuantity() + " of '" + line.getProductName()
-                        + "' — only " + remaining + " remaining (of " + line.getQuantityFulfilled() + " fulfilled, " + alreadyReturned + " already returned)");
+            BigDecimal alreadyReturned = salesOrderReturnLineRepository.sumReturnedQuantityForLine(line.getId());
+            BigDecimal remaining = line.getQuantityFulfilled().subtract(alreadyReturned);
+            if (entry.getQuantity().compareTo(remaining) > 0) {
+                throw ApiException.badRequest("Cannot return " + Qty.str(entry.getQuantity()) + " of '" + line.getProductName()
+                        + "' — only " + Qty.str(remaining) + " remaining (of " + Qty.str(line.getQuantityFulfilled()) + " fulfilled, " + Qty.str(alreadyReturned) + " already returned)");
             }
 
             BigDecimal lineRefund = line.getUnitPrice()
-                    .multiply(BigDecimal.valueOf(entry.getQuantity()))
+                    .multiply(entry.getQuantity())
                     .setScale(2, RoundingMode.HALF_UP);
             refundTotal = refundTotal.add(lineRefund);
 
@@ -171,7 +172,7 @@ public class SalesOrderReturnService {
             // Product.trackStock's javadoc.
             if (line.getProduct() != null && line.getProduct().isTrackStock()) {
                 // Task 6: "Stock Movement History" — snapshot before/after, see SalesOrderReturnLine's javadoc.
-                int stockBefore = returnLocation != null
+                BigDecimal stockBefore = returnLocation != null
                         ? warehouseService.getStockQuantity(line.getProduct(), returnLocation)
                         : line.getProduct().getStockQuantity();
                 catalogService.adjustStock(line.getProduct(), entry.getQuantity(), returnLocation);
@@ -181,7 +182,7 @@ public class SalesOrderReturnService {
                         : line.getProduct().getStockQuantity());
                 if (line.getProduct().getCostPrice() != null) {
                     cogsReversal = cogsReversal.add(
-                            line.getProduct().getCostPrice().multiply(BigDecimal.valueOf(entry.getQuantity())));
+                            line.getProduct().getCostPrice().multiply(entry.getQuantity()));
                 }
             }
             if (returnedDescription.length() > 0) returnedDescription.append(", ");

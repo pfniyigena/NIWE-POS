@@ -32,7 +32,7 @@ public class ProductRequest {
     private BigDecimal costPrice;
 
     @PositiveOrZero(message = "Stock quantity cannot be negative")
-    private int stockQuantity;
+    private BigDecimal stockQuantity = BigDecimal.ZERO;
 
     /** Defaults to true (every existing product keeps tracking stock) — see Product.trackStock's javadoc. */
     private boolean trackStock = true;
@@ -55,10 +55,10 @@ public class ProductRequest {
 
     /** Optional reorder point / order-up-to level — see Product.reorderLevel. */
     @PositiveOrZero(message = "Reorder level cannot be negative")
-    private Integer reorderLevel;
+    private BigDecimal reorderLevel;
 
     @PositiveOrZero(message = "Maximum stock level cannot be negative")
-    private Integer maxStockLevel;
+    private BigDecimal maxStockLevel;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -76,8 +76,8 @@ public class ProductRequest {
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
     public BigDecimal getCostPrice() { return costPrice; }
     public void setCostPrice(BigDecimal costPrice) { this.costPrice = costPrice; }
-    public int getStockQuantity() { return stockQuantity; }
-    public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
+    public BigDecimal getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(BigDecimal stockQuantity) { this.stockQuantity = stockQuantity; }
     public boolean isTrackStock() { return trackStock; }
     public void setTrackStock(boolean trackStock) { this.trackStock = trackStock; }
     public Long getCategoryId() { return categoryId; }
@@ -97,8 +97,8 @@ public class ProductRequest {
     public String getTrackingMode() { return trackingMode; }
     public void setTrackingMode(String trackingMode) { this.trackingMode = trackingMode; }
 
-    public Integer getReorderLevel() { return reorderLevel; }
-    public void setReorderLevel(Integer reorderLevel) { this.reorderLevel = reorderLevel; }
-    public Integer getMaxStockLevel() { return maxStockLevel; }
-    public void setMaxStockLevel(Integer maxStockLevel) { this.maxStockLevel = maxStockLevel; }
+    public BigDecimal getReorderLevel() { return reorderLevel; }
+    public void setReorderLevel(BigDecimal reorderLevel) { this.reorderLevel = reorderLevel; }
+    public BigDecimal getMaxStockLevel() { return maxStockLevel; }
+    public void setMaxStockLevel(BigDecimal maxStockLevel) { this.maxStockLevel = maxStockLevel; }
 }

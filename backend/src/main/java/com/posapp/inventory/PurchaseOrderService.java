@@ -1,4 +1,5 @@
 package com.posapp.inventory;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -210,9 +211,9 @@ public class PurchaseOrderService {
                     entry.getQuantityReceived(), line.getUnitCost(), po.getOrderNumber());
             case SERIAL -> {
                 List<String> serials = entry.getSerialNumbers() != null ? trackingService.cleanSerials(product, entry.getSerialNumbers()) : List.of();
-                if (serials.size() != entry.getQuantityReceived()) {
+                if (BigDecimal.valueOf(serials.size()).compareTo(entry.getQuantityReceived()) != 0) {
                     throw ApiException.badRequest("'" + line.getProductName() + "' is serial-numbered: enter exactly " + entry.getQuantityReceived()
-                            + " serial number" + (entry.getQuantityReceived() == 1 ? "" : "s") + " (" + serials.size() + " given)");
+                            + " serial number" + (entry.getQuantityReceived().compareTo(BigDecimal.ONE) == 0 ? "" : "s") + " (" + serials.size() + " given)");
                 }
                 trackingService.receiveSerials(product, location, serials, line.getUnitCost(), po.getOrderNumber());
             }
@@ -257,24 +258,24 @@ public class PurchaseOrderService {
                     .filter(l -> l.getId().equals(entry.getLineId()))
                     .findFirst()
                     .orElseThrow(() -> ApiException.badRequest("Line " + entry.getLineId() + " does not belong to purchase order " + po.getOrderNumber()));
-            int remaining = line.getQuantityOrdered() - line.getQuantityReceived();
-            if (entry.getQuantityReceived() > remaining) {
-                throw ApiException.badRequest("Cannot receive " + entry.getQuantityReceived() + " of '" + line.getProductName()
-                        + "' — only " + remaining + " remaining (of " + line.getQuantityOrdered() + " ordered, " + line.getQuantityReceived() + " already received)");
+            BigDecimal remaining = line.getQuantityOrdered().subtract(line.getQuantityReceived());
+            if (entry.getQuantityReceived().compareTo(remaining) > 0) {
+                throw ApiException.badRequest("Cannot receive " + Qty.str(entry.getQuantityReceived()) + " of '" + line.getProductName()
+                        + "' — only " + Qty.str(remaining) + " remaining (of " + Qty.str(line.getQuantityOrdered()) + " ordered, " + Qty.str(line.getQuantityReceived()) + " already received)");
             }
-            line.setQuantityReceived(line.getQuantityReceived() + entry.getQuantityReceived());
-            int stockBefore = line.getProduct() != null ? warehouseService.getStockQuantity(line.getProduct(), receivingLocation) : 0;
+            line.setQuantityReceived(line.getQuantityReceived().add(entry.getQuantityReceived()));
+            BigDecimal stockBefore = line.getProduct() != null ? warehouseService.getStockQuantity(line.getProduct(), receivingLocation) : BigDecimal.ZERO;
             // Everything held across all warehouses before this delivery lands — the base for the weighted-average cost below.
-            int totalOnHandBefore = line.getProduct() != null ? warehouseService.totalOnHand(line.getProduct()) : 0;
+            BigDecimal totalOnHandBefore = line.getProduct() != null ? warehouseService.totalOnHand(line.getProduct()) : BigDecimal.ZERO;
             if (line.getProduct() != null) {
                 catalogService.adjustStock(line.getProduct(), entry.getQuantityReceived(), receivingLocation);
                 recordTracking(po, line, entry, receivingLocation);
             }
-            int stockAfter = line.getProduct() != null ? warehouseService.getStockQuantity(line.getProduct(), receivingLocation) : stockBefore;
+            BigDecimal stockAfter = line.getProduct() != null ? warehouseService.getStockQuantity(line.getProduct(), receivingLocation) : stockBefore;
             // Task 1: "Inventory Report" (Stock movement history) — one structured, dated row per
             // product actually received, see StockReceipt's own javadoc for why this exists
             // alongside the line's own cumulative quantityReceived and the AuditLog entry below.
-            if (entry.getQuantityReceived() != 0) {
+            if (entry.getQuantityReceived().signum() != 0) {
                 StockReceipt receipt = new StockReceipt();
                 receipt.setPurchaseOrder(po);
                 receipt.setOrderNumber(po.getOrderNumber());
@@ -287,7 +288,7 @@ public class PurchaseOrderService {
                 stockReceiptRepository.save(receipt);
                 if (line.getUnitCost() != null) {
                     boolean inclusive = Boolean.TRUE.equals(line.getTaxInclusive());
-                    BigDecimal grossReceivedBeforeDiscount = line.getUnitCost().multiply(BigDecimal.valueOf(entry.getQuantityReceived()));
+                    BigDecimal grossReceivedBeforeDiscount = line.getUnitCost().multiply(entry.getQuantityReceived());
                     // Fourier: "Except POS other module can have global discount ... Either on
                     // line or global" — the effective discountPercent (PER_LINE or GLOBAL,
                     // whichever applies) knocked off this received slice too, before tax is
@@ -300,7 +301,7 @@ public class PurchaseOrderService {
                     taxValue = taxValue.add(taxReceived);
                     // The product's cost follows what it actually cost to buy (per the costing method);
                     // applied after the loop, once the landed cost can be spread over the whole delivery.
-                    if (entry.getQuantityReceived() > 0) {
+                    if (entry.getQuantityReceived().signum() > 0) {
                         costSlices.add(new CostSlice(line.getProduct(), totalOnHandBefore, entry.getQuantityReceived(), netThisLine));
                     }
                 }
@@ -314,8 +315,8 @@ public class PurchaseOrderService {
             po.setLandedCostTotal((po.getLandedCostTotal() != null ? po.getLandedCostTotal() : BigDecimal.ZERO).add(landedCost));
         }
 
-        boolean allReceived = po.getLines().stream().allMatch(l -> l.getQuantityReceived() >= l.getQuantityOrdered());
-        boolean anyReceived = po.getLines().stream().anyMatch(l -> l.getQuantityReceived() > 0);
+        boolean allReceived = po.getLines().stream().allMatch(l -> l.getQuantityReceived().compareTo(l.getQuantityOrdered()) >= 0);
+        boolean anyReceived = po.getLines().stream().anyMatch(l -> l.getQuantityReceived().signum() > 0);
         po.setStatus(allReceived ? PurchaseOrderStatus.RECEIVED : anyReceived ? PurchaseOrderStatus.PARTIALLY_RECEIVED : po.getStatus());
 
         PurchaseOrder saved = purchaseOrderRepository.save(po);
@@ -338,7 +339,7 @@ public class PurchaseOrderService {
     }
 
     /** One delivered line, kept until the whole delivery is known so landed cost can be spread over it. */
-    private record CostSlice(Product product, int onHandBefore, int quantity, BigDecimal netValue) {
+    private record CostSlice(Product product, BigDecimal onHandBefore, BigDecimal quantity, BigDecimal netValue) {
     }
 
     private String costingMethod() {
@@ -355,10 +356,10 @@ public class PurchaseOrderService {
         String method = costingMethod();
         if ("MANUAL".equals(method) || slices.isEmpty()) return;
         BigDecimal totalNet = BigDecimal.ZERO;
-        long totalQty = 0;
+        BigDecimal totalQty = BigDecimal.ZERO;
         for (CostSlice s : slices) {
             totalNet = totalNet.add(s.netValue());
-            totalQty += s.quantity();
+            totalQty = totalQty.add(s.quantity());
         }
         for (CostSlice s : slices) {
             Product product = s.product();
@@ -367,7 +368,7 @@ public class PurchaseOrderService {
             if (landedCost.signum() > 0) {
                 share = totalNet.signum() > 0
                         ? landedCost.multiply(s.netValue()).divide(totalNet, 4, RoundingMode.HALF_UP)
-                        : landedCost.multiply(BigDecimal.valueOf(s.quantity())).divide(BigDecimal.valueOf(totalQty), 4, RoundingMode.HALF_UP);
+                        : landedCost.multiply(s.quantity()).divide(totalQty, 4, RoundingMode.HALF_UP);
             }
             BigDecimal value = s.netValue().add(share);
             BigDecimal previousCost = product.getCostPrice();
@@ -437,7 +438,7 @@ public class PurchaseOrderService {
         BigDecimal requestedPercent;
         if (discountType == GlobalDiscountType.FIXED_AMOUNT) {
             BigDecimal rawSubtotal = lines.stream()
-                    .map(l -> l.getUnitCost().multiply(BigDecimal.valueOf(l.getQuantityOrdered())).setScale(2, RoundingMode.HALF_UP))
+                    .map(l -> l.getUnitCost().multiply(l.getQuantityOrdered()).setScale(2, RoundingMode.HALF_UP))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             requestedPercent = TaxMath.percentFromFixedAmount(request.getDiscountFixedAmount(), rawSubtotal);
         } else {

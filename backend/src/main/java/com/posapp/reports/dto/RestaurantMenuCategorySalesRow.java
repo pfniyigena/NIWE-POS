@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 public record RestaurantMenuCategorySalesRow(
         Long categoryId,
         String categoryName,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal salesTotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal

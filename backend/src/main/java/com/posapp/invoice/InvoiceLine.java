@@ -45,7 +45,7 @@ public class InvoiceLine extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     private BigDecimal unitPrice = BigDecimal.ZERO;
 

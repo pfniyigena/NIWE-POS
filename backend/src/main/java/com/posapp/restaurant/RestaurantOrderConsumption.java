@@ -41,12 +41,12 @@ public class RestaurantOrderConsumption extends BaseEntity {
 
     private String componentName;
 
-    private int quantityConsumed;
+    private BigDecimal quantityConsumed = BigDecimal.ZERO;
 
     /** Snapshot of component.costPrice at the moment of this checkout — see class javadoc. */
     private BigDecimal unitCost = BigDecimal.ZERO;
 
-    private Integer stockBefore;
+    private BigDecimal stockBefore;
 
-    private Integer stockAfter;
+    private BigDecimal stockAfter;
 }

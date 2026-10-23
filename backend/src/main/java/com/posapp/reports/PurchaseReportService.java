@@ -75,18 +75,18 @@ public class PurchaseReportService {
 
     @Transactional(readOnly = true)
     public List<SupplierPurchaseRow> purchasesBySupplier(Instant from, Instant to, Long branchId) {
-        record Acc(String name, int[] counts, BigDecimal[] money) {
+        record Acc(String name, BigDecimal[] counts, BigDecimal[] money) {
         }
         Map<Long, Acc> bySupplier = new LinkedHashMap<>();
         for (PurchaseOrder po : confirmedOrders(from, to, branchId)) {
             Supplier supplier = po.getSupplier();
             Long key = supplier != null ? supplier.getId() : -1L;
             Acc acc = bySupplier.computeIfAbsent(key, k -> new Acc(supplier != null ? supplier.getName() : "(no supplier)",
-                    new int[3], new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}));
-            acc.counts[0]++;
+                    new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}));
+            acc.counts[0] = acc.counts[0].add(BigDecimal.ONE);
             for (PurchaseOrderLine line : po.getLines()) {
-                acc.counts[1] += line.getQuantityOrdered();
-                acc.counts[2] += line.getQuantityReceived();
+                acc.counts[1] = acc.counts[1].add(line.getQuantityOrdered());
+                acc.counts[2] = acc.counts[2].add(line.getQuantityReceived());
             }
             acc.money[0] = acc.money[0].add(SupplierPaymentService.netCost(po));
             acc.money[1] = acc.money[1].add(SupplierPaymentService.taxCost(po));
@@ -95,7 +95,7 @@ public class PurchaseReportService {
             acc.money[4] = acc.money[4].add(supplierPaymentService.amountOwedForOrder(po));
         }
         List<SupplierPurchaseRow> rows = new ArrayList<>();
-        bySupplier.forEach((id, a) -> rows.add(new SupplierPurchaseRow(id < 0 ? null : id, a.name, a.counts[0], a.counts[1], a.counts[2],
+        bySupplier.forEach((id, a) -> rows.add(new SupplierPurchaseRow(id < 0 ? null : id, a.name, a.counts[0].intValue(), a.counts[1], a.counts[2],
                 a.money[0], a.money[1], a.money[2], a.money[3], a.money[4])));
         rows.sort(Comparator.comparing(SupplierPurchaseRow::totalCost).reversed());
         return rows;
@@ -103,7 +103,7 @@ public class PurchaseReportService {
 
     @Transactional(readOnly = true)
     public List<ProductPurchaseRow> purchasesByProduct(Instant from, Instant to, Long branchId) {
-        record Acc(Long productId, String sku, String name, String category, int[] qty, BigDecimal[] money) {
+        record Acc(Long productId, String sku, String name, String category, BigDecimal[] qty, BigDecimal[] money) {
         }
         Map<String, Acc> byProduct = new LinkedHashMap<>();
         for (PurchaseOrder po : confirmedOrders(from, to, branchId)) {
@@ -113,9 +113,9 @@ public class PurchaseReportService {
                 Acc acc = byProduct.computeIfAbsent(key, k -> new Acc(product != null ? product.getId() : null,
                         product != null ? product.getSku() : null,
                         product != null ? product.getName() : line.getProductName(),
-                        categoryName(product), new int[2], new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
-                acc.qty[0] += line.getQuantityOrdered();
-                acc.qty[1] += line.getQuantityReceived();
+                        categoryName(product), new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
+                acc.qty[0] = acc.qty[0].add(line.getQuantityOrdered());
+                acc.qty[1] = acc.qty[1].add(line.getQuantityReceived());
                 acc.money[0] = acc.money[0].add(SupplierPaymentService.lineNet(po.getDiscountPercent(), line));
                 acc.money[1] = acc.money[1].add(SupplierPaymentService.lineTax(po.getDiscountPercent(), line));
             }
@@ -124,7 +124,7 @@ public class PurchaseReportService {
         for (Acc a : byProduct.values()) {
             BigDecimal net = a.money[0].setScale(2, RoundingMode.HALF_UP);
             BigDecimal tax = a.money[1].setScale(2, RoundingMode.HALF_UP);
-            BigDecimal average = a.qty[0] == 0 ? BigDecimal.ZERO : net.divide(BigDecimal.valueOf(a.qty[0]), 2, RoundingMode.HALF_UP);
+            BigDecimal average = a.qty[0].signum() == 0 ? BigDecimal.ZERO : net.divide(a.qty[0], 2, RoundingMode.HALF_UP);
             rows.add(new ProductPurchaseRow(a.productId, a.sku, a.name, a.category, a.qty[0], a.qty[1], net, tax, net.add(tax), average));
         }
         rows.sort(Comparator.comparing(ProductPurchaseRow::totalCost).reversed());
@@ -133,15 +133,15 @@ public class PurchaseReportService {
 
     @Transactional(readOnly = true)
     public List<CategoryPurchaseRow> purchasesByCategory(Instant from, Instant to, Long branchId) {
-        record Acc(int[] qty, BigDecimal[] money) {
+        record Acc(BigDecimal[] qty, BigDecimal[] money) {
         }
         Map<String, Acc> byCategory = new LinkedHashMap<>();
         for (PurchaseOrder po : confirmedOrders(from, to, branchId)) {
             for (PurchaseOrderLine line : po.getLines()) {
                 Acc acc = byCategory.computeIfAbsent(categoryName(line.getProduct()),
-                        k -> new Acc(new int[2], new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
-                acc.qty[0] += line.getQuantityOrdered();
-                acc.qty[1] += line.getQuantityReceived();
+                        k -> new Acc(new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
+                acc.qty[0] = acc.qty[0].add(line.getQuantityOrdered());
+                acc.qty[1] = acc.qty[1].add(line.getQuantityReceived());
                 acc.money[0] = acc.money[0].add(SupplierPaymentService.lineNet(po.getDiscountPercent(), line));
                 acc.money[1] = acc.money[1].add(SupplierPaymentService.lineTax(po.getDiscountPercent(), line));
             }
@@ -177,9 +177,9 @@ public class PurchaseReportService {
         for (PurchaseReturn ret : purchaseReturnRepository.findByReturnDateBetweenOrderByReturnDateDesc(from, to)) {
             PurchaseOrder po = ret.getPurchaseOrder();
             if (branchId != null && !ReportService.branchMatches(po.getBranchId(), branchId, headquartersId)) continue;
-            int quantity = 0;
+            BigDecimal quantity = BigDecimal.ZERO;
             for (PurchaseReturnLine line : ret.getLines()) {
-                quantity += line.getQuantity();
+                quantity = quantity.add(line.getQuantity());
             }
             Supplier supplier = po.getSupplier();
             rows.add(new PurchaseReturnReportRow(ret.getId(), ret.getReturnNumber(), po.getOrderNumber(),

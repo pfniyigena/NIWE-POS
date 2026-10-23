@@ -12,7 +12,7 @@ public record ShiftTransactionRow(
         String customerName,
         String invoiceNumber,
         Instant completedAt,
-        int itemCount,
+        BigDecimal itemCount,
         BigDecimal subtotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal,

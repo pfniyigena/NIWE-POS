@@ -1,6 +1,7 @@
 package com.posapp.salesorder.dto;
 
-import jakarta.validation.Valid;
+
+import java.math.BigDecimal;import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -77,7 +78,7 @@ public class SalesOrderRequest {
         private Long productId;
 
         @Positive(message = "Quantity ordered must be greater than zero")
-        private int quantityOrdered;
+        private BigDecimal quantityOrdered = BigDecimal.ZERO;
 
         @PositiveOrZero(message = "Unit price cannot be negative")
         private java.math.BigDecimal unitPrice;
@@ -94,8 +95,8 @@ public class SalesOrderRequest {
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-        public int getQuantityOrdered() { return quantityOrdered; }
-        public void setQuantityOrdered(int quantityOrdered) { this.quantityOrdered = quantityOrdered; }
+        public BigDecimal getQuantityOrdered() { return quantityOrdered; }
+        public void setQuantityOrdered(BigDecimal quantityOrdered) { this.quantityOrdered = quantityOrdered; }
         public java.math.BigDecimal getUnitPrice() { return unitPrice; }
         public void setUnitPrice(java.math.BigDecimal unitPrice) { this.unitPrice = unitPrice; }
         public java.math.BigDecimal getDiscountPercent() { return discountPercent; }

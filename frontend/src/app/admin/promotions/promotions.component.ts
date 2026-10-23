@@ -57,13 +57,13 @@ import { Category, Product } from '../../core/models';
             <label class="form-label">{{ f.type === 'PERCENT_OFF' ? 'Percent off' : (f.scope === 'CART' ? 'Amount off the cart' : 'Amount off each item') }}</label>
             <input class="form-control promo-value" type="number" min="0" step="0.01" name="value" [(ngModel)]="f.value" /></div>
           <div class="form-group" *ngIf="f.type === 'BUY_X_GET_Y'">
-            <label class="form-label">Buy this many</label><input class="form-control promo-buy" type="number" min="1" step="1" name="buy" [(ngModel)]="f.buyQuantity" /></div>
+            <label class="form-label">Buy this many</label><input class="form-control promo-buy" type="number" min="0.0001" step="any" name="buy" [(ngModel)]="f.buyQuantity" /></div>
           <div class="form-group" *ngIf="f.type === 'BUY_X_GET_Y'">
-            <label class="form-label">and get this many free</label><input class="form-control promo-free" type="number" min="1" step="1" name="free" [(ngModel)]="f.freeQuantity" />
+            <label class="form-label">and get this many free</label><input class="form-control promo-free" type="number" min="0.0001" step="any" name="free" [(ngModel)]="f.freeQuantity" />
             <div class="text-muted" style="font-size:0.8rem;">Repeats: buy 2 get 1 free gives 2 free on 6.</div></div>
           <div class="form-group" *ngIf="f.type !== 'BUY_X_GET_Y'">
             <label class="form-label">{{ f.scope === 'CART' ? 'Needs at least this many items' : 'Needs at least this quantity' }}</label>
-            <input class="form-control promo-minqty" type="number" min="1" step="1" name="minq" [(ngModel)]="f.minQuantity" /></div>
+            <input class="form-control promo-minqty" type="number" min="0.0001" step="any" name="minq" [(ngModel)]="f.minQuantity" /></div>
           <div class="form-group" *ngIf="f.scope === 'CART'">
             <label class="form-label">Needs at least this spend (optional)</label>
             <input class="form-control promo-minspend" type="number" min="0" step="0.01" name="minspend" [(ngModel)]="f.minSpend" />

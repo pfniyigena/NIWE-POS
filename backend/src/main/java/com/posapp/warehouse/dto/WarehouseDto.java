@@ -1,10 +1,11 @@
 package com.posapp.warehouse.dto;
 
-import com.posapp.warehouse.Warehouse;
+
+import java.math.BigDecimal;import com.posapp.warehouse.Warehouse;
 
 public record WarehouseDto(Long id, String name, String address, boolean active, boolean primary,
                            /** Null = uses the store-wide default threshold. */
-                           Integer lowStockThreshold,
+                           BigDecimal lowStockThreshold,
                            /** Owning branch (null only transiently, before the startup backfill). */
                            Long branchId, String branchName) {
 

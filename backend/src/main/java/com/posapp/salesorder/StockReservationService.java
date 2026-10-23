@@ -1,4 +1,6 @@
 package com.posapp.salesorder;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.catalog.Product;
 import com.posapp.warehouse.WarehouseService;
@@ -30,23 +32,23 @@ public class StockReservationService {
 
     /** Quantity of this product promised on confirmed / part-delivered sales orders. */
     @Transactional(readOnly = true)
-    public int reserved(Product product) {
-        return product == null ? 0 : (int) lineRepository.outstandingQuantity(product.getId(), RESERVING);
+    public BigDecimal reserved(Product product) {
+        return product == null ? BigDecimal.ZERO : Qty.nz(lineRepository.outstandingQuantity(product.getId(), RESERVING));
     }
 
     /** Reserved quantity per product id, for reports and the reorder list. */
     @Transactional(readOnly = true)
-    public Map<Long, Integer> reservedByProduct() {
-        Map<Long, Integer> result = new HashMap<>();
+    public Map<Long, BigDecimal> reservedByProduct() {
+        Map<Long, BigDecimal> result = new HashMap<>();
         for (Object[] row : lineRepository.outstandingByProduct(RESERVING)) {
-            result.put(((Number) row[0]).longValue(), ((Number) row[1]).intValue());
+            result.put(((Number) row[0]).longValue(), Qty.dec(row[1]));
         }
         return result;
     }
 
     /** Sellable stock across all warehouses minus what is reserved (never below zero is not enforced — a negative figure means over-promised). */
     @Transactional(readOnly = true)
-    public int available(Product product) {
-        return warehouseService.totalSellable(product) - reserved(product);
+    public BigDecimal available(Product product) {
+        return warehouseService.totalSellable(product).subtract(reserved(product));
     }
 }

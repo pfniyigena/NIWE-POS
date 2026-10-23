@@ -14,7 +14,7 @@ public interface SalesOrderReturnLineRepository extends JpaRepository<SalesOrder
      * shape as {@code com.posapp.returns.SalesReturnLineRepository.sumReturnedQuantityForLine}).
      */
     @Query("select coalesce(sum(l.quantity), 0) from SalesOrderReturnLine l where l.orderLine.id = :lineId")
-    int sumReturnedQuantityForLine(@Param("lineId") Long lineId);
+    java.math.BigDecimal sumReturnedQuantityForLine(@Param("lineId") Long lineId);
 
     /**
      * Every return line against any line on this Sales Order, across every separate return visit —

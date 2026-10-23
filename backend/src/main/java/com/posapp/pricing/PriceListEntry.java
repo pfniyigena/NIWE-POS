@@ -17,7 +17,7 @@ public class PriceListEntry extends BaseEntity {
     @Column(name = "product_id", nullable = false)
     private Long productId;
     @Column(name = "min_quantity", nullable = false)
-    private int minQuantity = 1;
+    private BigDecimal minQuantity = BigDecimal.ONE;
     @Column(nullable = false)
     private BigDecimal price;
 
@@ -25,8 +25,8 @@ public class PriceListEntry extends BaseEntity {
     public void setPriceListId(Long priceListId) { this.priceListId = priceListId; }
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
-    public int getMinQuantity() { return minQuantity; }
-    public void setMinQuantity(int minQuantity) { this.minQuantity = minQuantity; }
+    public BigDecimal getMinQuantity() { return minQuantity; }
+    public void setMinQuantity(BigDecimal minQuantity) { this.minQuantity = minQuantity; }
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 }

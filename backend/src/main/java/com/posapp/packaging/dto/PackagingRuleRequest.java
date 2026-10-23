@@ -1,6 +1,7 @@
 package com.posapp.packaging.dto;
 
-import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public class PackagingRuleRequest {
@@ -13,7 +14,7 @@ public class PackagingRuleRequest {
 
     @NotNull(message = "Units per parent is required")
     @Positive(message = "Units per parent must be positive")
-    private Integer unitsPerParent;
+    private BigDecimal unitsPerParent;
 
     private String notes;
 
@@ -23,8 +24,8 @@ public class PackagingRuleRequest {
     public void setParentProductId(Long parentProductId) { this.parentProductId = parentProductId; }
     public Long getChildProductId() { return childProductId; }
     public void setChildProductId(Long childProductId) { this.childProductId = childProductId; }
-    public Integer getUnitsPerParent() { return unitsPerParent; }
-    public void setUnitsPerParent(Integer unitsPerParent) { this.unitsPerParent = unitsPerParent; }
+    public BigDecimal getUnitsPerParent() { return unitsPerParent; }
+    public void setUnitsPerParent(BigDecimal unitsPerParent) { this.unitsPerParent = unitsPerParent; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
     public boolean isActive() { return active; }

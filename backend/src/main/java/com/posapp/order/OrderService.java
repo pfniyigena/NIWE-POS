@@ -1,4 +1,5 @@
 package com.posapp.order;
+import com.posapp.common.Qty;
 
 import com.posapp.apps.AppKey;
 import com.posapp.apps.AppsService;
@@ -213,7 +214,7 @@ public class OrderService {
      * stockBefore/stockAfter snapshot for Stock Movement History) so both agree on what "available"
      * means for whichever location this sale is actually against.
      */
-    private int stockQuantityFor(Product product, WarehouseLocation location) {
+    private BigDecimal stockQuantityFor(Product product, WarehouseLocation location) {
         if (location == null) {
             return product.getStockQuantity();
         }
@@ -406,19 +407,19 @@ public class OrderService {
     public OrderDto addLineByBarcode(Long orderId, AddByBarcodeRequest request, AppUser caller) {
         SaleOrder order = getOpenOrderOrThrow(orderId, caller);
         Product product = catalogService.getByBarcodeOrThrow(request.getBarcode());
-        mergeOrAddLine(order, product, Math.max(1, request.getQuantity()));
+        mergeOrAddLine(order, product, Qty.max(BigDecimal.ONE, request.getQuantity()));
         applyPromotionsAndDiscount(order);
         return OrderDto.from(orderRepository.save(order));
     }
 
-    private void mergeOrAddLine(SaleOrder order, Product product, int quantity) {
+    private void mergeOrAddLine(SaleOrder order, Product product, BigDecimal quantity) {
         order.getLines().stream()
                 .filter(l -> l.getProduct() != null && l.getProduct().getId().equals(product.getId())
                         && BigDecimal.ZERO.compareTo(l.getDiscountPercent()) == 0 && !l.isPriceOverridden())
                 .findFirst()
                 .ifPresentOrElse(
                         existing -> {
-                            existing.setQuantity(existing.getQuantity() + quantity);
+                            existing.setQuantity(existing.getQuantity().add(quantity));
                             applyPricing(order, existing);
                         },
                         () -> order.getLines().add(buildLine(order, product, quantity, BigDecimal.ZERO))
@@ -431,7 +432,7 @@ public class OrderService {
      * front (an offline sale is replayed whole, all at once, rather than added-then-discounted
      * across two separate calls like the normal add-line/update-line flow).
      */
-    private OrderLine buildLine(SaleOrder order, Product product, int quantity, BigDecimal discountPercent) {
+    private OrderLine buildLine(SaleOrder order, Product product, BigDecimal quantity, BigDecimal discountPercent) {
         OrderLine line = new OrderLine();
         line.setOrder(order);
         line.setProduct(product);
@@ -467,7 +468,7 @@ public class OrderService {
                 .findFirst()
                 .orElseThrow(() -> ApiException.notFound("Line not found on this order: " + lineId));
         if (request.getQuantity() != null) {
-            if (request.getQuantity() < 1) {
+            if (request.getQuantity().compareTo(BigDecimal.ONE) < 0) {
                 throw ApiException.badRequest("Quantity must be at least 1");
             }
             line.setQuantity(request.getQuantity());
@@ -853,7 +854,7 @@ public class OrderService {
         // against whichever location this sale will actually deduct from (see
         // resolveSellingLocation's own javadoc), not always the primary warehouse's figure.
         WarehouseLocation location = resolveSellingLocation(order);
-        Map<Long, Integer> requestedByProductId = new LinkedHashMap<>();
+        Map<Long, BigDecimal> requestedByProductId = new LinkedHashMap<>();
         Map<Long, Product> productsById = new LinkedHashMap<>();
         for (OrderLine line : order.getLines()) {
             Product product = line.getProduct();
@@ -862,17 +863,17 @@ public class OrderService {
             if (product == null || !product.isTrackStock()) {
                 continue;
             }
-            requestedByProductId.merge(product.getId(), line.getQuantity(), Integer::sum);
+            requestedByProductId.merge(product.getId(), line.getQuantity(), BigDecimal::add);
             productsById.putIfAbsent(product.getId(), product);
         }
-        for (Map.Entry<Long, Integer> entry : requestedByProductId.entrySet()) {
+        for (Map.Entry<Long, BigDecimal> entry : requestedByProductId.entrySet()) {
             Product product = productsById.get(entry.getKey());
-            int requested = entry.getValue();
-            int reserved = stockReservationService.reserved(product);
-            int available = stockQuantityFor(product, location) - reserved;
-            if (requested > available) {
-                throw ApiException.badRequest("Not enough stock for '" + product.getName() + "' — " + Math.max(available, 0)
-                        + " available" + (reserved > 0 ? " (" + reserved + " reserved for sales orders)" : "") + ", " + requested + " requested. Enable \"Allow negative stock\" in Inventory settings to sell anyway.");
+            BigDecimal requested = entry.getValue();
+            BigDecimal reserved = stockReservationService.reserved(product);
+            BigDecimal available = stockQuantityFor(product, location).subtract(reserved);
+            if (requested.compareTo(available) > 0) {
+                throw ApiException.badRequest("Not enough stock for '" + product.getName() + "' — " + Qty.str(Qty.atLeastZero(available))
+                        + " available" + (reserved.signum() > 0 ? " (" + reserved + " reserved for sales orders)" : "") + ", " + Qty.str(requested) + " requested. Enable \"Allow negative stock\" in Inventory settings to sell anyway.");
             }
         }
     }
@@ -986,7 +987,7 @@ public class OrderService {
                 // Task 6: "Any transaction affecting stock should be shown to Stock Movement
                 // History (Pos sales...)" — snapshot before/after the same way StockReceipt does,
                 // so ReportService.stockMovementHistory has a structured POS-sale row to show.
-                int stockBefore = stockQuantityFor(line.getProduct(), sellingLocation);
+                BigDecimal stockBefore = stockQuantityFor(line.getProduct(), sellingLocation);
                 adjustForSale(line, sellingLocation, invoiceNumber);
                 line.setStockBefore(stockBefore);
                 line.setStockAfter(stockQuantityFor(line.getProduct(), sellingLocation));
@@ -1016,7 +1017,7 @@ public class OrderService {
         }
         com.posapp.tracking.TrackingContext.begin(invoiceNumber, chosen);
         try {
-            catalogService.adjustStock(product, -line.getQuantity(), sellingLocation);
+            catalogService.adjustStock(product, line.getQuantity().negate(), sellingLocation);
         } finally {
             com.posapp.tracking.TrackingContext.clear();
         }

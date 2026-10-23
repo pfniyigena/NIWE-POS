@@ -78,7 +78,7 @@ public class QuotationRequest {
         private Long productId;
 
         @Positive(message = "Quantity must be greater than zero")
-        private int quantity;
+        private BigDecimal quantity = BigDecimal.ZERO;
 
         @PositiveOrZero(message = "Unit price cannot be negative")
         private BigDecimal unitPrice;
@@ -95,8 +95,8 @@ public class QuotationRequest {
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
+        public BigDecimal getQuantity() { return quantity; }
+        public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
         public BigDecimal getUnitPrice() { return unitPrice; }
         public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
         public BigDecimal getDiscountPercent() { return discountPercent; }

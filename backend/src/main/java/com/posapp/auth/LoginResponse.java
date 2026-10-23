@@ -14,9 +14,12 @@ public class LoginResponse {
     /** Effective access-area grants from the user's custom role (e.g. INVENTORY_MANAGE, INVENTORY_VIEW); empty for none. */
     private final Set<String> areas;
     private final String customRoleName;
+    /** The employee record linked to this login, when there is one (it unlocks "My HR"). */
+    private final Long employeeId;
 
     public LoginResponse(String token, Long userId, String username, String fullName, String role, Set<String> permissions,
-                         Set<String> areas, String customRoleName) {
+                         Set<String> areas, String customRoleName, Long employeeId) {
+        this.employeeId = employeeId;
         this.areas = areas;
         this.customRoleName = customRoleName;
         this.token = token;
@@ -35,4 +38,5 @@ public class LoginResponse {
     public Set<String> getPermissions() { return permissions; }
     public Set<String> getAreas() { return areas; }
     public String getCustomRoleName() { return customRoleName; }
+    public Long getEmployeeId() { return employeeId; }
 }

@@ -24,7 +24,7 @@ public class WorkOrderLine extends BaseEntity {
     private String productName;
 
     @Column(nullable = false)
-    private int quantity = 1;
+    private BigDecimal quantity = BigDecimal.ONE;
 
     /** Price charged to the customer per unit. */
     @Column(nullable = false, precision = 18, scale = 2)

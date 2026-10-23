@@ -55,21 +55,21 @@ public class PackagingBreakdown extends BaseEntity {
     private String childProductName;
 
     /** Snapshot of rule.unitsPerParent at breakdown time — see class javadoc. */
-    private int unitsPerParent;
+    private BigDecimal unitsPerParent = BigDecimal.ZERO;
 
     /** How many whole units of parentProduct were broken down in this run. */
-    private int parentQuantity;
+    private BigDecimal parentQuantity = BigDecimal.ZERO;
 
     /** parentQuantity * unitsPerParent, computed once at breakdown time. */
-    private int childQuantityProduced;
+    private BigDecimal childQuantityProduced = BigDecimal.ZERO;
 
-    private Integer parentStockBefore;
+    private BigDecimal parentStockBefore;
 
-    private Integer parentStockAfter;
+    private BigDecimal parentStockAfter;
 
-    private Integer childStockBefore;
+    private BigDecimal childStockBefore;
 
-    private Integer childStockAfter;
+    private BigDecimal childStockAfter;
 
     /**
      * Fourier: "When Breakdown product the cost of the child should be equal to the cost of the

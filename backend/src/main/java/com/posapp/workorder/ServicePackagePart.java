@@ -1,6 +1,7 @@
 package com.posapp.workorder;
 
-import com.posapp.common.BaseEntity;
+
+import java.math.BigDecimal;import com.posapp.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Getter;
@@ -22,7 +23,7 @@ public class ServicePackagePart extends BaseEntity {
     private String productName;
 
     @Column(nullable = false)
-    private int quantity = 1;
+    private BigDecimal quantity = BigDecimal.ONE;
 
     /** True = covered by the package's fixed price; false = charged on top at the product's price. */
     @Column(nullable = false, columnDefinition = "boolean default true not null")

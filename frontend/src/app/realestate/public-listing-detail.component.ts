@@ -5,12 +5,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicRealEstateApiService, PublicDetail, PublicInfo } from '../core/api/public-realestate-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { PURPOSE_LABEL, typeLabel } from '../core/api/realestate-api.service';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
 /** One property on the public website (/listings/:id): photos, details and an enquiry form that becomes a lead for the agent. Needs no login. */
 @Component({
   selector: 'app-public-listing-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="pd-page">
       <header class="pd-bar">
@@ -88,6 +89,7 @@ import { PURPOSE_LABEL, typeLabel } from '../core/api/realestate-api.service';
         </ng-container>
       </main>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
   styles: [`
     .pd-page { min-height: 100vh; display: flex; flex-direction: column; }

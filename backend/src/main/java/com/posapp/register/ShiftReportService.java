@@ -121,7 +121,8 @@ public class ShiftReportService {
         names.put("LOYALTY", "Loyalty points");
 
         List<SaleOrder> sold = orderRepository.findBySessionIdAndStatusOrderByCreatedAtAsc(id, OrderStatus.COMPLETED);
-        int items = 0, offline = 0, discounted = 0;
+        BigDecimal items = BigDecimal.ZERO;
+        int offline = 0, discounted = 0;
         BigDecimal shelf = BigDecimal.ZERO, afterDiscount = BigDecimal.ZERO, net = BigDecimal.ZERO, tax = BigDecimal.ZERO, total = BigDecimal.ZERO;
         BigDecimal credit = BigDecimal.ZERO, room = BigDecimal.ZERO;
         Map<String, BigDecimal[]> byTax = new TreeMap<>();   // key code|rate -> {net, tax}
@@ -129,8 +130,8 @@ public class ShiftReportService {
         for (SaleOrder o : sold) {
             boolean anyDiscount = false;
             for (OrderLine l : o.getLines()) {
-                items += l.getQuantity();
-                BigDecimal gross = l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity()));
+                items = items.add(l.getQuantity());
+                BigDecimal gross = l.getUnitPrice().multiply(l.getQuantity());
                 BigDecimal lineTotal = OrderCalculator.lineTotal(l);
                 shelf = shelf.add(gross);
                 afterDiscount = afterDiscount.add(lineTotal);

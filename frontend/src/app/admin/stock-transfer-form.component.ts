@@ -77,7 +77,7 @@ interface LocationOption {
 
       <div class="form-group mb-3">
         <label class="form-label">Quantity</label>
-        <input class="form-control" type="number" min="1" [(ngModel)]="quantity" name="quantity" />
+        <input class="form-control" type="number" step="any" min="0.0001" [(ngModel)]="quantity" name="quantity" />
       </div>
 
       <div class="form-group mb-3">

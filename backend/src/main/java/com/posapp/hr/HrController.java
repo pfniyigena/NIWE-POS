@@ -30,9 +30,14 @@ public class HrController {
     private final HrSettingsService settingsService;
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
+    private final HrPrintService printService;
+    private final EmployeeLoginService loginService;
 
     public HrController(EmployeeService employeeService, OrgService orgService, LeaveService leaveService, AttendanceService attendanceService,
-                        HrSettingsService settingsService, UserRepository userRepository, EmployeeRepository employeeRepository) {
+                        HrSettingsService settingsService, UserRepository userRepository, EmployeeRepository employeeRepository,
+                        HrPrintService printService, EmployeeLoginService loginService) {
+        this.printService = printService;
+        this.loginService = loginService;
         this.employeeService = employeeService;
         this.orgService = orgService;
         this.leaveService = leaveService;
@@ -93,6 +98,40 @@ public class HrController {
     @DeleteMapping("/employees/{id}")
     public void deleteEmployee(@PathVariable Long id) {
         employeeService.delete(id);
+    }
+
+    /** The employee's Service Card (staff card) as a PDF to print. */
+    @GetMapping("/employees/{id}/service-card")
+    public org.springframework.http.ResponseEntity<byte[]> serviceCard(@PathVariable Long id) {
+        HrPrintService.Printed p = printService.serviceCard(id);
+        return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.attachment().filename(p.fileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
+                .body(p.content());
+    }
+
+    public record LoginRequest(String username, String password) {
+    }
+
+    /** Gives one employee a login (the first password is returned once). */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/employees/{id}/login")
+    public EmployeeLoginService.Created createLogin(@PathVariable Long id, @RequestBody(required = false) LoginRequest request) {
+        return loginService.create(id, request == null ? null : request.username(), request == null ? null : request.password());
+    }
+
+    /** Gives every employee who has no login one. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/employees/logins")
+    public EmployeeLoginService.BulkResult createLogins() {
+        return loginService.createForAll();
+    }
+
+    /** A new password for an employee's login (returned once). */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/employees/{id}/login/reset-password")
+    public EmployeeLoginService.Created resetLoginPassword(@PathVariable Long id) {
+        return loginService.resetPassword(id);
     }
 
     /** Staff logins that can be linked to an employee. */

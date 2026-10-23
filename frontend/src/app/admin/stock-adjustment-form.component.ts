@@ -69,7 +69,7 @@ interface LocationOption {
 
       <div class="form-group mb-3">
         <label class="form-label">Quantity change</label>
-        <input class="form-control" type="number" [(ngModel)]="quantityDelta" name="quantityDelta" />
+        <input class="form-control" type="number" step="any" [(ngModel)]="quantityDelta" name="quantityDelta" />
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
           Positive to add stock (e.g. a recount found more than recorded), negative to remove it (e.g. breakage, theft, expiry).
           <span *ngIf="selectedProduct && quantityDelta">

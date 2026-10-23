@@ -1,4 +1,6 @@
 package com.posapp.inventory;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.catalog.Product;
 import com.posapp.catalog.ProductRepository;
@@ -50,28 +52,28 @@ public class ReorderService {
 
     @Transactional(readOnly = true)
     public List<ReorderSuggestionDto> suggestions() {
-        Map<Long, Integer> onHand = warehouseService.sellableQuantitiesByProduct(null);
-        Map<Long, Integer> onOrder = outstandingOnOrder();
-        Map<Long, Integer> reserved = stockReservationService.reservedByProduct();
+        Map<Long, BigDecimal> onHand = warehouseService.sellableQuantitiesByProduct(null);
+        Map<Long, BigDecimal> onOrder = outstandingOnOrder();
+        Map<Long, BigDecimal> reserved = stockReservationService.reservedByProduct();
         // Stock on the road between branches will arrive, so it counts like stock on order.
         for (Object[] row : stockTransferRepository.inTransitByProduct()) {
-            onOrder.merge(((Number) row[0]).longValue(), ((Number) row[1]).intValue(), Integer::sum);
+            onOrder.merge(((Number) row[0]).longValue(), Qty.dec(row[1]), BigDecimal::add);
         }
         List<ReorderSuggestionDto> result = new ArrayList<>();
         for (Product p : productRepository.findByActiveTrueAndTrackStockTrueAndReorderLevelNotNullOrderByNameAsc()) {
             if (p.isService()) continue;
-            int level = p.getReorderLevel();
-            int max = p.getMaxStockLevel() != null ? Math.max(p.getMaxStockLevel(), level) : level * 2;
+            BigDecimal level = p.getReorderLevel();
+            BigDecimal max = p.getMaxStockLevel() != null ? Qty.max(p.getMaxStockLevel(), level) : level.multiply(BigDecimal.valueOf(2));
             // Stock promised to customers on confirmed sales orders is not really ours to count.
-            int have = onHand.getOrDefault(p.getId(), 0) - reserved.getOrDefault(p.getId(), 0);
-            int due = onOrder.getOrDefault(p.getId(), 0);
-            int position = have + due;
-            if (position > level) continue;
-            int suggested = Math.max(max - position, 1);
+            BigDecimal have = onHand.getOrDefault(p.getId(), BigDecimal.ZERO).subtract(reserved.getOrDefault(p.getId(), BigDecimal.ZERO));
+            BigDecimal due = onOrder.getOrDefault(p.getId(), BigDecimal.ZERO);
+            BigDecimal position = have.add(due);
+            if (position.compareTo(level) > 0) continue;
+            BigDecimal suggested = Qty.max(max.subtract(position), BigDecimal.ONE);
             result.add(new ReorderSuggestionDto(p.getId(), p.getSku(), p.getName(),
                     p.getCategory() != null ? p.getCategory().getName() : null, have, due, level, max, suggested));
         }
-        result.sort(Comparator.comparingInt((ReorderSuggestionDto r) -> r.onHand() + r.onOrder() - r.reorderLevel()));
+        result.sort(Comparator.comparing((ReorderSuggestionDto r) -> r.onHand().add(r.onOrder()).subtract(r.reorderLevel())));
         return result;
     }
 
@@ -92,13 +94,13 @@ public class ReorderService {
         return purchaseRequisitionService.createDraft(pr);
     }
 
-    private Map<Long, Integer> outstandingOnOrder() {
-        Map<Long, Integer> result = new HashMap<>();
+    private Map<Long, BigDecimal> outstandingOnOrder() {
+        Map<Long, BigDecimal> result = new HashMap<>();
         for (PurchaseOrder po : purchaseOrderRepository.findByStatusIn(List.of(PurchaseOrderStatus.SENT, PurchaseOrderStatus.PARTIALLY_RECEIVED))) {
             for (PurchaseOrderLine line : po.getLines()) {
                 if (line.getProduct() == null) continue;
-                int outstanding = line.getQuantityOrdered() - line.getQuantityReceived();
-                if (outstanding > 0) result.merge(line.getProduct().getId(), outstanding, Integer::sum);
+                BigDecimal outstanding = line.getQuantityOrdered().subtract(line.getQuantityReceived());
+                if (outstanding.signum() > 0) result.merge(line.getProduct().getId(), outstanding, BigDecimal::add);
             }
         }
         return result;

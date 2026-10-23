@@ -15,14 +15,14 @@ public record StockValuationRow(
         String sku,
         String productName,
         String categoryName,
-        int stockQuantity,
+        BigDecimal stockQuantity,
         BigDecimal unitCost,
         BigDecimal stockValue,
         /** "Low stock" (below {@code app.pos.low-stock-threshold}, the same config CatalogService.listLowStock/the dashboard use) or "OK". */
         String status,
         /** Quantity promised on confirmed / part-delivered sales orders (not subtracted from {@code stockQuantity}). */
-        int reserved,
+        BigDecimal reserved,
         /** Units on the road between branches (dispatched, not yet received) — not part of {@code stockQuantity}. */
-        int inTransit
+        BigDecimal inTransit
 ) {
 }

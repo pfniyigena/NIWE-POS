@@ -171,7 +171,7 @@ public class PmRentService {
         req.setDescription("Property rent");
         req.setUnitPrice(ZERO);
         req.setCostPrice(ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);
@@ -217,7 +217,7 @@ public class PmRentService {
         req.setNotes("Lease " + l.getCode() + ": rent for " + c.getPeriodStart() + " to " + c.getPeriodEnd());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(rentProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(c.getAmount());
         line.setDescription("Rent" + (u == null ? "" : " for " + (p == null ? "" : p.getName() + ", ") + "unit " + u.getUnitNo()) + ", " + c.getPeriodStart() + " to " + c.getPeriodEnd()
                 + (c.isProrated() ? " (part period)" : ""));
@@ -229,7 +229,7 @@ public class PmRentService {
             if (x.amount().signum() <= 0) continue;
             InvoiceRequest.LineEntry e = new InvoiceRequest.LineEntry();
             e.setProductId(chargeService.productIdFor(x));
-            e.setQuantity(1);
+            e.setQuantity(BigDecimal.ONE);
             e.setUnitPrice(x.amount());
             e.setDescription(x.description());
             lines.add(e);

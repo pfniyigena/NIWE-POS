@@ -132,7 +132,7 @@ public class DashboardOverviewService {
 
         // ---- top sellers over the last week ----
         Instant weekFrom = today.minusDays(TOP_SELLER_DAYS - 1).atStartOfDay(ZoneOffset.UTC).toInstant();
-        Map<Long, long[]> qty = new LinkedHashMap<>();
+        Map<Long, BigDecimal[]> qty = new LinkedHashMap<>();
         Map<Long, BigDecimal> revenue = new HashMap<>();
         Map<Long, String[]> names = new HashMap<>();
         for (SaleOrder o : orders) {
@@ -140,19 +140,19 @@ public class DashboardOverviewService {
             for (OrderLine l : o.getLines()) {
                 if (l.getProduct() == null) continue;
                 Long pid = l.getProduct().getId();
-                qty.computeIfAbsent(pid, k -> new long[1])[0] += l.getQuantity();
+                qty.computeIfAbsent(pid, k -> new BigDecimal[]{BigDecimal.ZERO})[0] = qty.get(pid)[0].add(l.getQuantity());
                 revenue.merge(pid, OrderCalculator.lineTotal(l), BigDecimal::add);
                 names.putIfAbsent(pid, new String[]{l.getProduct().getName(), l.getProduct().getSku()});
             }
         }
         List<TopSeller> sellers = qty.entrySet().stream()
-                .sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
+                .sorted((a, b) -> b.getValue()[0].compareTo(a.getValue()[0]))
                 .limit(TOP)
                 .map(e -> new TopSeller(e.getKey(), names.get(e.getKey())[0], names.get(e.getKey())[1], e.getValue()[0], money(revenue.get(e.getKey())))).toList();
 
         // ---- things that need attention ----
         var lowStock = catalogService.listLowStockPrimary();
-        long outOfStock = lowStock.stream().filter(p -> p.stockQuantity() <= 0).count();
+        long outOfStock = lowStock.stream().filter(p -> p.stockQuantity().signum() <= 0).count();
         List<AttentionItem> attention = new ArrayList<>();
         attention.add(new AttentionItem("OVERDUE_INVOICES", "Overdue invoices", s.overdueItems(), money(s.totalOverdue())));
         attention.add(new AttentionItem("UNPAID_BILLS", "Bills to pay", unpaid.size(), money(unpaidTotal)));

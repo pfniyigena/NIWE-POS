@@ -1,4 +1,6 @@
 package com.posapp.inventory;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.branch.BranchAccessService;
@@ -105,7 +107,7 @@ public class StockCountService {
         for (WarehouseLocation location : warehouseService.activeLocations(warehouse)) {
             for (ProductStock row : warehouseService.stockRowsAt(location)) {
                 Product product = row.getProduct();
-                if (row.getQuantity() == 0 || product == null || !product.isActive() || product.isService() || !product.isTrackStock()) continue;
+                if (row.getQuantity().signum() == 0 || product == null || !product.isActive() || product.isService() || !product.isTrackStock()) continue;
                 if (category != null && (product.getCategory() == null || !category.getId().equals(product.getCategory().getId()))) continue;
                 count.getLines().add(newLine(count, product, location, row.getQuantity()));
             }
@@ -130,7 +132,7 @@ public class StockCountService {
         if (request.getLines() != null) {
             for (StockCountSaveRequest.Entry entry : request.getLines()) {
                 StockCountLine line = lineOrThrow(count, entry.getLineId());
-                if (entry.getCountedQuantity() != null && entry.getCountedQuantity() < 0) {
+                if (entry.getCountedQuantity() != null && entry.getCountedQuantity().signum() < 0) {
                     throw ApiException.badRequest("Counted quantity for '" + line.getProductName() + "' cannot be negative");
                 }
                 line.setCountedQuantity(entry.getCountedQuantity());
@@ -215,14 +217,14 @@ public class StockCountService {
         int posted = 0;
         for (StockCountLine line : count.getLines()) {
             if (line.getCountedQuantity() == null) continue;
-            int variance = line.getCountedQuantity() - line.getSystemQuantity();
-            if (variance == 0) continue;
+            BigDecimal variance = line.getCountedQuantity().subtract(line.getSystemQuantity());
+            if (variance.signum() == 0) continue;
             StockAdjustmentRequest adjustment = new StockAdjustmentRequest();
             adjustment.setProductId(line.getProduct().getId());
             adjustment.setLocationId(line.getLocation().getId());
             adjustment.setQuantityDelta(variance);
             adjustment.setReason(StockAdjustmentReason.RECOUNT.name());
-            adjustment.setNote("Stock count " + count.getCountNumber() + ": counted " + line.getCountedQuantity() + ", system had " + line.getSystemQuantity());
+            adjustment.setNote("Stock count " + count.getCountNumber() + ": counted " + Qty.str(line.getCountedQuantity()) + ", system had " + Qty.str(line.getSystemQuantity()));
             StockAdjustmentDto created = stockAdjustmentService.create(adjustment);
             stockAdjustmentService.confirm(created.id());
             line.setAdjustmentId(created.id());
@@ -251,7 +253,7 @@ public class StockCountService {
         return StockCountDto.from(saved, true);
     }
 
-    private StockCountLine newLine(StockCount count, Product product, WarehouseLocation location, int systemQuantity) {
+    private StockCountLine newLine(StockCount count, Product product, WarehouseLocation location, BigDecimal systemQuantity) {
         StockCountLine line = new StockCountLine();
         line.setStockCount(count);
         line.setProduct(product);

@@ -22,7 +22,7 @@ public final class WorkOrderDtos {
                                    Instant createdAt) {
     }
 
-    public record LineDto(Long id, Long productId, String productName, int quantity, BigDecimal unitPrice, BigDecimal unitCost, boolean included,
+    public record LineDto(Long id, Long productId, String productName, BigDecimal quantity, BigDecimal unitPrice, BigDecimal unitCost, boolean included,
                           BigDecimal lineTotal) {
     }
 
@@ -56,7 +56,7 @@ public final class WorkOrderDtos {
     public record PackageItemDto(Long id, String text) {
     }
 
-    public record PackagePartDto(Long id, Long productId, String productName, int quantity, boolean included) {
+    public record PackagePartDto(Long id, Long productId, String productName, BigDecimal quantity, boolean included) {
     }
 
     public record PackageSummary(Long id, String code, String name, BigDecimal fixedPrice, BigDecimal estimatedHours, boolean active, int steps, int parts,
@@ -69,7 +69,7 @@ public final class WorkOrderDtos {
 
     // ---- billing
 
-    public record InvoiceLinePreview(String kind, String description, int quantity, BigDecimal unitPrice, BigDecimal amount) {
+    public record InvoiceLinePreview(String kind, String description, BigDecimal quantity, BigDecimal unitPrice, BigDecimal amount) {
     }
 
     public record InvoicePreview(Long workOrderId, String number, Long customerId, String customerName, List<InvoiceLinePreview> lines, BigDecimal total,

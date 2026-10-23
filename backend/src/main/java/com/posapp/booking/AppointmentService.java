@@ -342,7 +342,7 @@ public class AppointmentService {
         if (a.getBranchId() != null) req.setBranchId(a.getBranchId());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(setup.billingProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(a.getPrice());
         line.setDescription(a.getServiceName() + " — " + a.getStartAt().format(WHEN) + (a.getStaffName() != null ? " (" + a.getStaffName() + ")" : ""));
         req.setLines(List.of(line));

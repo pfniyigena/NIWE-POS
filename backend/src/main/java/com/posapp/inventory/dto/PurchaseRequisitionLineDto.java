@@ -1,12 +1,13 @@
 package com.posapp.inventory.dto;
 
-import com.posapp.inventory.PurchaseRequisitionLine;
+
+import java.math.BigDecimal;import com.posapp.inventory.PurchaseRequisitionLine;
 
 public record PurchaseRequisitionLineDto(
         Long id,
         Long productId,
         String productName,
-        int quantityRequested,
+        BigDecimal quantityRequested,
         String note
 ) {
     public static PurchaseRequisitionLineDto from(PurchaseRequisitionLine l) {

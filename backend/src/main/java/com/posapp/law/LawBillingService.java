@@ -462,7 +462,7 @@ public class LawBillingService {
     private InvoiceRequest.LineEntry line(Product p, String description, BigDecimal amount) {
         InvoiceRequest.LineEntry e = new InvoiceRequest.LineEntry();
         e.setProductId(p.getId());
-        e.setQuantity(1);
+        e.setQuantity(BigDecimal.ONE);
         e.setUnitPrice(amount);
         e.setDescription(description);
         return e;

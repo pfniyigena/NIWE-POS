@@ -35,6 +35,12 @@ public class RoutingRequest {
         @PositiveOrZero(message = "Estimated minutes cannot be negative")
         private BigDecimal estimatedMinutesPerUnit;
 
+        /** MF-2: optional hourly labour rate for this step (charged in addition to the workstation's hourly rate). */
+        @PositiveOrZero(message = "Labour rate cannot be negative")
+        private BigDecimal labourHourlyRate;
+
+        public BigDecimal getLabourHourlyRate() { return labourHourlyRate; }
+        public void setLabourHourlyRate(BigDecimal labourHourlyRate) { this.labourHourlyRate = labourHourlyRate; }
         public Integer getSequence() { return sequence; }
         public void setSequence(Integer sequence) { this.sequence = sequence; }
         public String getName() { return name; }

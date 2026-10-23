@@ -363,7 +363,7 @@ public class ReUnitSaleService {
         req.setNotes("Sale " + s.getCode() + ": unit " + u.getUnitNo() + ", " + p.getName());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(dealService.saleProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(s.getAgreedPrice());
         line.setDescription("Unit " + u.getUnitNo() + (u.getBlock() == null ? "" : " (" + u.getBlock() + ")") + ", " + p.getName());
         req.setLines(List.of(line));

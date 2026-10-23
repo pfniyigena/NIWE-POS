@@ -1,4 +1,5 @@
 package com.posapp.inventory;
+import java.math.BigDecimal;
 
 import com.posapp.inventory.dto.ProcessPurchaseReturnRequest;
 import com.posapp.inventory.dto.PurchaseReturnDto;
@@ -40,7 +41,7 @@ public class PurchaseReturnController {
 
     /** Keyed by PurchaseOrderLine id; a line with nothing returned against it is absent, not present with a zero. */
     @GetMapping("/order/{purchaseOrderId}/quantities")
-    public Map<Long, Integer> returnedQuantitiesForOrder(@PathVariable Long purchaseOrderId) {
+    public Map<Long, java.math.BigDecimal> returnedQuantitiesForOrder(@PathVariable Long purchaseOrderId) {
         return purchaseReturnService.returnedQuantitiesForOrder(purchaseOrderId);
     }
 

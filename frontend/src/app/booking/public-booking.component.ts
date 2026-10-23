@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PublicBookingApiService, PublicConfirmation, PublicInfo, PublicService } from '../core/api/public-booking-api.service';
 import { addDays, today } from '../core/time-util';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
 /**
  * The public booking page (/book): no login. Pick a service, optionally a person, a day, then one of the times that
@@ -13,7 +14,7 @@ import { addDays, today } from '../core/time-util';
 @Component({
   selector: 'app-public-booking',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem 0;">
       <div class="card" style="width:480px; max-width:96vw; padding:2rem;">
@@ -113,6 +114,7 @@ import { addDays, today } from '../core/time-util';
         <p class="text-muted mt-3" style="text-align:center; font-size:0.8rem;"><a routerLink="/">Back to the home page</a></p>
       </div>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class PublicBookingComponent implements OnInit {

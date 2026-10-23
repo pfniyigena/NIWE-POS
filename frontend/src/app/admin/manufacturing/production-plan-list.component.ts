@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { ListState } from '../../core/api/list-state';
+import { ListFilterComponent } from '../../shared/list-filter.component';
+import { PagerComponent } from '../../shared/pager.component';
 import { ProductionPlanApiService } from '../../core/api/production-plan-api.service';
 import { ProductionPlan } from '../../core/models';
 
@@ -14,10 +17,10 @@ import { ProductionPlan } from '../../core/models';
 @Component({
   selector: 'app-production-plan-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Production plans</h3>
       </div>
@@ -27,7 +30,7 @@ import { ProductionPlan } from '../../core/models';
         <div class="flex gap-2 align-center mb-2">
           <div>
             <label class="form-label">Low-stock threshold</label>
-            <input class="form-control" type="number" style="width:140px;" min="0" step="1" [(ngModel)]="lowStockThreshold" name="lowStockThreshold" />
+            <input class="form-control" type="number" style="width:140px;" min="0" step="any" [(ngModel)]="lowStockThreshold" name="lowStockThreshold" />
           </div>
           <div class="grow">
             <label class="form-label">Note (optional)</label>
@@ -42,6 +45,7 @@ import { ProductionPlan } from '../../core/models';
         <button class="btn btn-primary" (click)="generate()">Generate plan</button>
       </div>
 
+      <app-list-filter exportPath="/manufacturing/production-plans/export" placeholder="Search plan no., note, product" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -53,23 +57,22 @@ import { ProductionPlan } from '../../core/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of plans">
+          <tr *ngFor="let p of list.rows" class="pp-row">
             <td>{{ p.planNumber }}</td>
             <td>{{ p.generatedAt | date: 'medium' }}</td>
             <td class="text-end">{{ p.lines.length }}</td>
             <td>{{ p.note || '—' }}</td>
             <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/production-plans', p.id]">View</a></td>
           </tr>
-          <tr *ngIf="plans.length === 0">
-            <td colspan="5" class="text-muted">No production plans yet.</td>
-          </tr>
         </tbody>
       </table>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No production plans match these filters.' : 'No production plans yet.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class ProductionPlanListComponent implements OnInit {
-  plans: ProductionPlan[] = [];
+  list = new ListState<ProductionPlan>((f, p, sz) => this.productionPlanApi.page(f, p, sz), 'Failed to load production plans');
   lowStockThreshold = 10;
   note = '';
   error: string | null = null;
@@ -84,10 +87,7 @@ export class ProductionPlanListComponent implements OnInit {
   }
 
   load(): void {
-    this.productionPlanApi.listAll().subscribe({
-      next: (p) => (this.plans = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load production plans'),
-    });
+    this.list.load();
   }
 
   generate(): void {

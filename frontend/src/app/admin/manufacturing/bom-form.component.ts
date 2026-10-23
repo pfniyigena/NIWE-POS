@@ -6,7 +6,14 @@ import { ShellComponent } from '../../shared/shell.component';
 import { BomApiService } from '../../core/api/bom-api.service';
 import { RoutingApiService } from '../../core/api/routing-api.service';
 import { CatalogApiService } from '../../core/api/catalog-api.service';
-import { Product, Routing } from '../../core/models';
+import { Bom, Product, Routing } from '../../core/models';
+
+interface DraftByProduct {
+  productId: number;
+  productName: string;
+  quantityPerUnit: number;
+  costSharePercent: number;
+}
 
 interface DraftLine {
   componentId: number;
@@ -25,7 +32,7 @@ interface DraftLine {
   imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">{{ id ? 'Edit bill of materials' : 'New bill of materials' }}</h3>
+      <h3 class="mb-3">{{ id ? 'Edit bill of materials' : 'New bill of materials' }}<span class="text-muted" *ngIf="costing?.version" style="font-size:1rem;"> — version {{ costing?.version }}</span></h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3" style="position:relative; max-width:480px;">
@@ -96,10 +103,10 @@ interface DraftLine {
             <td>{{ line.componentName }}</td>
             <td class="text-end">
               <input
-                type="number"
+                type="number" step="any"
                 class="form-control form-control-sm"
                 style="width:100px; margin-left:auto;"
-                min="1"
+                min="0.0001"
                 [(ngModel)]="line.quantityPerUnit"
                 [name]="'qty' + i"
               />
@@ -113,6 +120,57 @@ interface DraftLine {
       </table>
       <p class="text-muted" style="font-size:0.85rem;">
         "Quantity per unit" is how many of this component it takes to make exactly ONE unit of the finished good.
+      </p>
+
+      <div class="card mb-3 cost-card" style="padding:1rem;" *ngIf="costing">
+        <h4 class="mb-2">Cost of one unit (today's prices)</h4>
+        <table class="table-sm" style="max-width:420px;">
+          <tbody>
+            <tr><td>Components</td><td class="text-end cc-material">{{ costing.estimatedUnitMaterialCost | number: '1.2-2' }}</td></tr>
+            <tr><td>Labour</td><td class="text-end cc-labour">{{ costing.estimatedUnitLabourCost | number: '1.2-2' }}</td></tr>
+            <tr><td>Machines</td><td class="text-end cc-machine">{{ costing.estimatedUnitMachineCost | number: '1.2-2' }}</td></tr>
+            <tr><td><strong>Cost per unit</strong></td><td class="text-end cc-total"><strong>{{ costing.estimatedUnitCost | number: '1.2-2' }}</strong></td></tr>
+            <tr *ngIf="costing.estimatedNetUnitCost !== costing.estimatedUnitCost"><td>After by-products</td><td class="text-end cc-net">{{ costing.estimatedNetUnitCost | number: '1.2-2' }}</td></tr>
+            <tr><td>Selling price</td><td class="text-end cc-price">{{ costing.productPrice | number: '1.2-2' }}</td></tr>
+            <tr><td>Margin</td><td class="text-end cc-margin">{{ costing.estimatedMarginPercent != null ? (costing.estimatedMarginPercent | number: '1.0-1') + '%' : '—' }}</td></tr>
+          </tbody>
+        </table>
+        <div class="text-muted" style="font-size:0.8rem;">Indirect costs (rent, power…) are added per order and are not included here. Save to refresh after editing.</div>
+      </div>
+
+      <h4 class="mb-2">By-products (optional)</h4>
+      <div class="flex gap-2 mb-2" style="position:relative;">
+        <input
+          class="form-control bp-search"
+          placeholder="Search products to add a by-product (bran, offcuts, whey…)"
+          [(ngModel)]="byProductSearch"
+          name="byProductSearch"
+          (input)="onByProductSearch()"
+        />
+        <div class="dropdown-panel" *ngIf="byProductResults.length > 0">
+          <div class="dropdown-item bp-option" *ngFor="let p of byProductResults" (click)="addByProduct(p)">{{ p.name }}</div>
+        </div>
+      </div>
+      <table class="table-sm mb-2" *ngIf="byProducts.length > 0">
+        <thead>
+          <tr>
+            <th>By-product</th>
+            <th class="text-end">Quantity per good unit</th>
+            <th class="text-end">Share of the cost (%)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let bp of byProducts; let i = index" class="bp-row">
+            <td>{{ bp.productName }}</td>
+            <td class="text-end"><input type="number" step="any" class="form-control form-control-sm bp-qty" style="width:100px; margin-left:auto;" min="0.0001" [(ngModel)]="bp.quantityPerUnit" [name]="'bpq' + i" /></td>
+            <td class="text-end"><input type="number" class="form-control form-control-sm bp-share" style="width:100px; margin-left:auto;" min="0" max="100" step="0.01" [(ngModel)]="bp.costSharePercent" [name]="'bps' + i" /></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeByProduct(i)">Remove</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="text-muted" style="font-size:0.85rem;">
+        Each good unit made also puts this many of the by-product into stock. The cost share is the part of the run's cost that belongs to it; it is taken off the finished good's unit cost.
       </p>
 
       <div class="flex gap-2">
@@ -153,6 +211,11 @@ export class BomFormComponent implements OnInit {
   routingId: number | null = null;
   active = true;
   lines: DraftLine[] = [];
+  byProducts: DraftByProduct[] = [];
+  costing: Bom | null = null;
+  byProductSearch = '';
+  byProductResults: Product[] = [];
+  private byProductDebounce: ReturnType<typeof setTimeout> | null = null;
   routings: Routing[] = [];
   error: string | null = null;
 
@@ -183,10 +246,12 @@ export class BomFormComponent implements OnInit {
     this.id = Number(idParam);
     this.bomApi.getById(this.id).subscribe({
       next: (b) => {
+        this.costing = b;
         this.selectedProduct = { id: b.productId, name: b.productName } as Product;
         this.name = b.name ?? '';
         this.routingId = b.routingId;
         this.active = b.active;
+        this.byProducts = (b.byProducts ?? []).map((x) => ({ productId: x.productId, productName: x.productName, quantityPerUnit: x.quantityPerUnit, costSharePercent: x.costSharePercent }));
         this.lines = b.lines.map((l) => ({ componentId: l.componentId, componentName: l.componentName, quantityPerUnit: l.quantityPerUnit }));
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load bill of materials'),
@@ -246,6 +311,41 @@ export class BomFormComponent implements OnInit {
     this.componentResults = [];
   }
 
+  onByProductSearch(): void {
+    if (this.byProductDebounce) clearTimeout(this.byProductDebounce);
+    const term = this.byProductSearch.trim();
+    if (!term) {
+      this.byProductResults = [];
+      return;
+    }
+    this.byProductDebounce = setTimeout(() => {
+      this.catalogApi.searchProducts(null, term).subscribe({
+        next: (results) => (this.byProductResults = results.slice(0, 20)),
+        error: () => (this.byProductResults = []),
+      });
+    }, 250);
+  }
+
+  addByProduct(p: Product): void {
+    this.byProductSearch = '';
+    this.byProductResults = [];
+    if (this.selectedProduct && p.id === this.selectedProduct.id) {
+      this.error = 'A product cannot be its own by-product';
+      return;
+    }
+    if (this.lines.some((l) => l.componentId === p.id)) {
+      this.error = 'A product cannot be both a component and a by-product of the same recipe';
+      return;
+    }
+    if (!this.byProducts.some((b) => b.productId === p.id)) {
+      this.byProducts.push({ productId: p.id, productName: p.name, quantityPerUnit: 1, costSharePercent: 0 });
+    }
+  }
+
+  removeByProduct(index: number): void {
+    this.byProducts.splice(index, 1);
+  }
+
   removeLine(index: number): void {
     this.lines.splice(index, 1);
   }
@@ -266,6 +366,7 @@ export class BomFormComponent implements OnInit {
       routingId: this.routingId,
       active: this.active,
       lines: this.lines.map((l) => ({ componentId: l.componentId, quantityPerUnit: l.quantityPerUnit })),
+      byProducts: this.byProducts.map((b) => ({ productId: b.productId, quantityPerUnit: b.quantityPerUnit, costSharePercent: b.costSharePercent || 0 })),
     };
     const call = this.id ? this.bomApi.update(this.id, payload) : this.bomApi.create(payload);
     call.subscribe({

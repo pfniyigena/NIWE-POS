@@ -89,16 +89,16 @@ public class OfflineSaleRequest {
         private Long productId;
 
         @NotNull(message = "quantity is required")
-        @Positive(message = "quantity must be at least 1")
-        private Integer quantity;
+        @Positive(message = "quantity must be more than zero")
+        private BigDecimal quantity;
 
         /** Same 0-100 validation as UpdateLineRequest.discountPercent — null/omitted means no discount. */
         private BigDecimal discountPercent;
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-        public Integer getQuantity() { return quantity; }
-        public void setQuantity(Integer quantity) { this.quantity = quantity; }
+        public BigDecimal getQuantity() { return quantity; }
+        public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
         public BigDecimal getDiscountPercent() { return discountPercent; }
         public void setDiscountPercent(BigDecimal discountPercent) { this.discountPercent = discountPercent; }
     }

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HotelPublicApiService, HotelPublicAvailability, HotelPublicBooking, HotelPublicInfo, HotelPublicOffer } from '../core/api/hotel-public-api.service';
@@ -13,7 +14,7 @@ import { addDays, today } from '../core/time-util';
 @Component({
   selector: 'app-public-hotel',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; padding:1rem 0;">
       <div class="card" style="width:640px; max-width:96vw; padding:2rem;">
@@ -121,6 +122,7 @@ import { addDays, today } from '../core/time-util';
         <p class="text-muted mt-3" style="text-align:center; font-size:0.8rem;"><a routerLink="/">Back to the home page</a></p>
       </div>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class PublicHotelComponent implements OnInit {

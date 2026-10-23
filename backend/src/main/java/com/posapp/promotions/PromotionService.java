@@ -1,4 +1,5 @@
 package com.posapp.promotions;
+import com.posapp.common.Qty;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.Category;
@@ -144,7 +145,7 @@ public class PromotionService {
         }
 
         BigDecimal value = null;
-        Integer buy = null, get = null;
+        BigDecimal buy = null, get = null;
         if (type == PromotionType.PERCENT_OFF) {
             if (r.value() == null || r.value().signum() <= 0 || r.value().compareTo(HUNDRED) > 0) throw ApiException.badRequest("The percent must be above 0 and at most 100.");
             value = r.value().setScale(2, RoundingMode.HALF_UP);
@@ -152,14 +153,14 @@ public class PromotionService {
             if (r.value() == null || r.value().signum() <= 0) throw ApiException.badRequest("The amount off must be above 0.");
             value = r.value().setScale(2, RoundingMode.HALF_UP);
         } else {
-            if (r.buyQuantity() == null || r.buyQuantity() < 1) throw ApiException.badRequest("Say how many must be bought (at least 1).");
-            if (r.freeQuantity() == null || r.freeQuantity() < 1) throw ApiException.badRequest("Say how many come free (at least 1).");
+            if (r.buyQuantity() == null || r.buyQuantity().compareTo(BigDecimal.ONE) < 0) throw ApiException.badRequest("Say how many must be bought (at least 1).");
+            if (r.freeQuantity() == null || r.freeQuantity().compareTo(BigDecimal.ONE) < 0) throw ApiException.badRequest("Say how many come free (at least 1).");
             buy = r.buyQuantity();
             get = r.freeQuantity();
         }
 
-        int minQty = r.minQuantity() == null ? 1 : r.minQuantity();
-        if (minQty < 1) throw ApiException.badRequest("The minimum quantity must be at least 1.");
+        BigDecimal minQty = r.minQuantity() == null ? BigDecimal.ONE : r.minQuantity();
+        if (minQty.compareTo(BigDecimal.ONE) < 0) throw ApiException.badRequest("The minimum quantity must be at least 1.");
         BigDecimal minSpend = r.minSpend();
         if (minSpend != null && minSpend.signum() == 0) minSpend = null;
         if (minSpend != null) {
@@ -217,7 +218,7 @@ public class PromotionService {
         return switch (p.getType()) {
             case PERCENT_OFF -> p.getValue().stripTrailingZeros().toPlainString() + "% off " + what;
             case AMOUNT_OFF -> p.getValue().stripTrailingZeros().toPlainString() + " off " + (p.getScope() == PromotionScope.CART ? what : "each " + what);
-            case BUY_X_GET_Y -> "Buy " + p.getBuyQuantity() + " get " + p.getFreeQuantity() + " free: " + what;
+            case BUY_X_GET_Y -> "Buy " + Qty.str(p.getBuyQuantity()) + " get " + Qty.str(p.getFreeQuantity()) + " free: " + what;
         };
     }
 
@@ -307,17 +308,17 @@ public class PromotionService {
 
     /** What the promotion takes off this line, in money, given the line's amount after the cashier's own discount. */
     private static BigDecimal lineSaving(Promotion p, OrderLine line, BigDecimal base) {
-        int qty = line.getQuantity();
-        if (qty < p.getMinQuantity()) return BigDecimal.ZERO;
+        BigDecimal qty = line.getQuantity();
+        if (qty.compareTo(p.getMinQuantity()) < 0) return BigDecimal.ZERO;
         BigDecimal saving;
         switch (p.getType()) {
             case PERCENT_OFF -> saving = base.multiply(p.getValue()).divide(HUNDRED, 8, RoundingMode.HALF_UP);
-            case AMOUNT_OFF -> saving = p.getValue().multiply(BigDecimal.valueOf(qty));
+            case AMOUNT_OFF -> saving = p.getValue().multiply(qty);
             default -> {
-                int group = p.getBuyQuantity() + p.getFreeQuantity();
-                int free = (qty / group) * p.getFreeQuantity();
-                BigDecimal perUnit = base.divide(BigDecimal.valueOf(qty), 8, RoundingMode.HALF_UP);
-                saving = perUnit.multiply(BigDecimal.valueOf(free));
+                BigDecimal group = p.getBuyQuantity().add(p.getFreeQuantity());
+                BigDecimal free = (qty.divide(group, 0, java.math.RoundingMode.DOWN)).multiply(p.getFreeQuantity()); // whole groups only (buy 2 get 1: 2.5 kg earns no free unit, 4 earns one)
+                BigDecimal perUnit = base.divide(qty, 8, RoundingMode.HALF_UP);
+                saving = perUnit.multiply(free);
             }
         }
         return saving.min(base).max(BigDecimal.ZERO);
@@ -353,16 +354,16 @@ public class PromotionService {
         BigDecimal[] p1 = new BigDecimal[n];          // stage 1 as a fraction 0..1
         String[] note = new String[n];
         BigDecimal preSpend = BigDecimal.ZERO;
-        int totalQty = 0;
+        BigDecimal totalQty = BigDecimal.ZERO;
 
         for (int i = 0; i < n; i++) {
             OrderLine l = lines.get(i);
             BigDecimal d = l.getDiscountPercent() == null ? BigDecimal.ZERO : l.getDiscountPercent();
-            base[i] = l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())).multiply(HUNDRED.subtract(d)).divide(HUNDRED, 8, RoundingMode.HALF_UP);
+            base[i] = l.getUnitPrice().multiply(l.getQuantity()).multiply(HUNDRED.subtract(d)).divide(HUNDRED, 8, RoundingMode.HALF_UP);
             after1[i] = base[i];
             p1[i] = BigDecimal.ZERO;
             preSpend = preSpend.add(base[i]);
-            totalQty += l.getQuantity();
+            totalQty = totalQty.add(l.getQuantity());
             if (base[i].signum() <= 0) continue;
             Promotion best = null;
             BigDecimal bestSaving = BigDecimal.ZERO;
@@ -389,7 +390,7 @@ public class PromotionService {
         if (stage1.signum() > 0) {
             for (Promotion p : usable) {
                 if (p.getScope() != PromotionScope.CART) continue;
-                if (totalQty < p.getMinQuantity()) continue;
+                if (totalQty.compareTo(p.getMinQuantity()) < 0) continue;
                 if (p.getMinSpend() != null && preSpend.compareTo(p.getMinSpend()) < 0) continue;
                 BigDecimal s = p.getType() == PromotionType.PERCENT_OFF ? stage1.multiply(p.getValue()).divide(HUNDRED, 8, RoundingMode.HALF_UP) : p.getValue();
                 s = s.min(stage1);

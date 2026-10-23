@@ -7,6 +7,7 @@ import { RestaurantWastageApiService } from '../core/api/restaurant-wastage-api.
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product, RestaurantWastageReason } from '../core/models';
 
+import { q4 } from '../core/qty';
 /**
  * Admin > Restaurant > Wastage > New — Fourier: "Restaurants need a dedicated wastage module."
  * Mirrors StockAdjustmentFormComponent's own product-search-to-select pattern, but quantity here
@@ -44,11 +45,11 @@ import { Product, RestaurantWastageReason } from '../core/models';
 
       <div class="form-group mb-3">
         <label class="form-label">Quantity wasted</label>
-        <input class="form-control" type="number" min="1" [(ngModel)]="quantity" name="quantity" />
+        <input class="form-control" type="number" step="any" min="0.0001" [(ngModel)]="quantity" name="quantity" />
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
           The amount lost — always a positive number.
           <span *ngIf="selectedProduct && quantity">
-            New stock will be {{ selectedProduct.stockQuantity - quantity }}.
+            New stock will be {{ stockAfter() }}.
           </span>
         </div>
       </div>
@@ -106,6 +107,10 @@ export class RestaurantWastageFormComponent {
   productSearch = '';
   productResults: Product[] = [];
   selectedProduct: Product | null = null;
+
+  stockAfter(): number {
+    return q4((this.selectedProduct?.stockQuantity ?? 0) - Number(this.quantity || 0));
+  }
   quantity = 1;
   reason: RestaurantWastageReason = 'SPOILAGE';
   note = '';

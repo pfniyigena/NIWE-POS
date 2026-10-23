@@ -11,18 +11,18 @@ public record StockCountLineDto(
         String productName,
         Long locationId,
         String locationName,
-        int systemQuantity,
-        Integer countedQuantity,
+        BigDecimal systemQuantity,
+        BigDecimal countedQuantity,
         /** counted - system; null while uncounted. */
-        Integer variance,
+        BigDecimal variance,
         BigDecimal unitCost,
         /** variance x unitCost; null while uncounted. */
         BigDecimal varianceValue,
         Long adjustmentId
 ) {
     public static StockCountLineDto from(StockCountLine l) {
-        Integer variance = l.getCountedQuantity() != null ? l.getCountedQuantity() - l.getSystemQuantity() : null;
-        BigDecimal value = variance != null && l.getUnitCost() != null ? l.getUnitCost().multiply(BigDecimal.valueOf(variance)) : null;
+        BigDecimal variance = l.getCountedQuantity() != null ? l.getCountedQuantity().subtract(l.getSystemQuantity()) : null;
+        BigDecimal value = variance != null && l.getUnitCost() != null ? l.getUnitCost().multiply(variance) : null;
         return new StockCountLineDto(
                 l.getId(),
                 l.getProduct() != null ? l.getProduct().getId() : null,

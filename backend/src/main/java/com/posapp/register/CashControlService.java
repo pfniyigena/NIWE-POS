@@ -32,10 +32,17 @@ import java.util.Map;
 public class CashControlService {
 
     /** Reasons for money paid in: the label, and the account on the other side (null = just a transfer from the safe or bank, nothing to post). */
-    static final Map<String, String> IN_REASONS = Map.of("FLOAT", "Change / float from the safe", "OWNER", "Owner's money put in");
-    static final Map<String, String> OUT_REASONS = Map.of("EXPENSE", "Small expense", "SUPPLIER", "Supplier paid from the till", "STAFF_ADVANCE", "Staff advance",
+    /** Keeps the order given, so the reason lists on screen always start with the same, most usual choice. */
+    private static Map<String, String> ordered(String... keyAndLabel) {
+        Map<String, String> m = new java.util.LinkedHashMap<>();
+        for (int i = 0; i + 1 < keyAndLabel.length; i += 2) m.put(keyAndLabel[i], keyAndLabel[i + 1]);
+        return java.util.Collections.unmodifiableMap(m);
+    }
+
+    static final Map<String, String> IN_REASONS = ordered("FLOAT", "Change / float from the safe", "OWNER", "Owner's money put in");
+    static final Map<String, String> OUT_REASONS = ordered("EXPENSE", "Small expense", "SUPPLIER", "Supplier paid from the till", "STAFF_ADVANCE", "Staff advance",
             "OWNER", "Owner's withdrawal", "OTHER", "Other");
-    static final Map<String, String> DROP_REASONS = Map.of("SAFE", "Dropped into the safe", "BANK", "Taken to the bank");
+    static final Map<String, String> DROP_REASONS = ordered("SAFE", "Dropped into the safe", "BANK", "Taken to the bank");
 
     private final CashMovementRepository repository;
     private final RegisterSessionRepository sessionRepository;

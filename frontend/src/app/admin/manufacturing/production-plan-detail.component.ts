@@ -81,7 +81,7 @@ import { OverheadCost, ProductionPlan, ProductionPlanLine } from '../../core/mod
           <div class="flex gap-2 mb-2">
             <div>
               <label class="form-label">Quantity</label>
-              <input class="form-control" type="number" style="width:140px;" min="1" [(ngModel)]="generateQuantity" name="generateQuantity" />
+              <input class="form-control" type="number" step="any" style="width:140px;" min="0.0001" [(ngModel)]="generateQuantity" name="generateQuantity" />
             </div>
             <div>
               <label class="form-label">Scheduled date (optional)</label>

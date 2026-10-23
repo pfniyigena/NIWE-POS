@@ -13,18 +13,18 @@ public final class PurchaseReportRows {
     }
 
     /** One supplier's confirmed purchase orders (sent / partly or fully received) in the period. */
-    public record SupplierPurchaseRow(Long supplierId, String supplierName, int orderCount, int quantityOrdered,
-                                      int quantityReceived, BigDecimal netCost, BigDecimal taxCost, BigDecimal totalCost,
+    public record SupplierPurchaseRow(Long supplierId, String supplierName, int orderCount, BigDecimal quantityOrdered,
+                                      BigDecimal quantityReceived, BigDecimal netCost, BigDecimal taxCost, BigDecimal totalCost,
                                       BigDecimal amountPaid, BigDecimal amountOutstanding) {
     }
 
     /** One product bought in the period. {@code averageUnitCost} is the net cost per unit ordered. */
-    public record ProductPurchaseRow(Long productId, String sku, String productName, String categoryName, int quantityOrdered,
-                                     int quantityReceived, BigDecimal netCost, BigDecimal taxCost, BigDecimal totalCost,
+    public record ProductPurchaseRow(Long productId, String sku, String productName, String categoryName, BigDecimal quantityOrdered,
+                                     BigDecimal quantityReceived, BigDecimal netCost, BigDecimal taxCost, BigDecimal totalCost,
                                      BigDecimal averageUnitCost) {
     }
 
-    public record CategoryPurchaseRow(String categoryName, int quantityOrdered, int quantityReceived, BigDecimal netCost,
+    public record CategoryPurchaseRow(String categoryName, BigDecimal quantityOrdered, BigDecimal quantityReceived, BigDecimal netCost,
                                       BigDecimal taxCost, BigDecimal totalCost) {
     }
 
@@ -33,7 +33,7 @@ public final class PurchaseReportRows {
     }
 
     public record PurchaseReturnReportRow(Long returnId, String returnNumber, String purchaseOrderNumber, String supplierName,
-                                          Instant returnDate, String reason, int quantity, BigDecimal refundTotal) {
+                                          Instant returnDate, String reason, BigDecimal quantity, BigDecimal refundTotal) {
     }
 
     public record SupplierPaymentReportRow(Long paymentId, String receiptNumber, String supplierName, Instant paidAt,

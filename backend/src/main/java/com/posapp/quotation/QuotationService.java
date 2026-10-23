@@ -1,4 +1,5 @@
 package com.posapp.quotation;
+import com.posapp.common.Qty;
 
 import com.posapp.alerts.AlertMailService;
 import com.posapp.audit.AuditLogService;
@@ -122,7 +123,7 @@ public class QuotationService {
     }
 
     private static BigDecimal lineGrossBeforeDiscount(QuotationLine line) {
-        return line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        return line.getUnitPrice().multiply(line.getQuantity()).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -412,7 +413,7 @@ public class QuotationService {
             line.setProduct(product);
             line.setProductName(product.getName());
             line.setQuantity(entry.getQuantity());
-            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : pricingService.resolve(q.getCustomer(), product, Math.max(1, entry.getQuantity())).unitPrice());
+            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : pricingService.resolve(q.getCustomer(), product, Qty.max(BigDecimal.ONE, entry.getQuantity())).unitPrice());
             // Fourier: "Same for discount (but discount should be activate in the setting or
             // configuration) and it will be per line" — validated/capped (including whether the
             // feature is even turned on) before ever reaching the line.

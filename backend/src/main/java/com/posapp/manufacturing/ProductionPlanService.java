@@ -1,4 +1,6 @@
 package com.posapp.manufacturing;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.Product;
@@ -55,6 +57,16 @@ public class ProductionPlanService {
         return repository.findAllByOrderByCreatedAtDesc().stream().map(this::toDto).toList();
     }
 
+    /** Plans with search (number, note, a product on a line) and the day they were made. */
+    @Transactional(readOnly = true)
+    public List<ProductionPlanDto> filtered(String q, java.time.LocalDate from, java.time.LocalDate to) {
+        return repository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(p -> com.posapp.common.ListPaging.between(p.getCreatedAt(), from, to))
+                .filter(p -> com.posapp.common.ListPaging.has(q, p.getPlanNumber(), p.getNote())
+                        || (q != null && !q.isBlank() && p.getLines().stream().anyMatch(l -> com.posapp.common.ListPaging.has(q, l.getProductName()))))
+                .map(this::toDto).toList();
+    }
+
     @Transactional(readOnly = true)
     public ProductionPlanDto getById(Long id) {
         return toDto(getEntityOrThrow(id));
@@ -71,20 +83,20 @@ public class ProductionPlanService {
      */
     @Transactional
     public ProductionPlanDto generate(GenerateProductionPlanRequest request) {
-        int threshold = request.getLowStockThreshold();
+        BigDecimal threshold = request.getLowStockThreshold();
 
-        Map<Long, Integer> salesDemandByProductId = new LinkedHashMap<>();
+        Map<Long, BigDecimal> salesDemandByProductId = new LinkedHashMap<>();
         for (SalesOrder so : salesOrderRepository.findByStatusIn(OPEN_DEMAND_STATUSES)) {
             for (SalesOrderLine line : so.getLines()) {
-                int outstanding = line.getQuantityOrdered() - line.getQuantityFulfilled();
-                if (outstanding > 0 && line.getProduct() != null) {
-                    salesDemandByProductId.merge(line.getProduct().getId(), outstanding, Integer::sum);
+                BigDecimal outstanding = line.getQuantityOrdered().subtract(line.getQuantityFulfilled());
+                if (outstanding.signum() > 0 && line.getProduct() != null) {
+                    salesDemandByProductId.merge(line.getProduct().getId(), outstanding, BigDecimal::add);
                 }
             }
         }
 
         ProductionPlan plan = new ProductionPlan();
-        plan.setPlanNumber("PLAN-" + System.currentTimeMillis());
+        plan.setPlanNumber(String.format("PLAN-%04d", repository.nextNumber()));
         plan.setLowStockThreshold(threshold);
         plan.setNote(request.getNote());
 
@@ -93,13 +105,13 @@ public class ProductionPlanService {
             if (!product.isTrackStock()) {
                 continue;
             }
-            int demandFromSales = salesDemandByProductId.getOrDefault(product.getId(), 0);
-            int availableStock = product.getStockQuantity();
-            int salesShortfall = Math.max(0, demandFromSales - availableStock);
-            int remainingAfterSales = Math.max(0, availableStock - demandFromSales);
-            int lowStockShortfall = Math.max(0, threshold - remainingAfterSales);
-            int suggested = salesShortfall + lowStockShortfall;
-            if (suggested <= 0) {
+            BigDecimal demandFromSales = salesDemandByProductId.getOrDefault(product.getId(), BigDecimal.ZERO);
+            BigDecimal availableStock = product.getStockQuantity();
+            BigDecimal salesShortfall = Qty.max(BigDecimal.ZERO, demandFromSales.subtract(availableStock));
+            BigDecimal remainingAfterSales = Qty.max(BigDecimal.ZERO, availableStock.subtract(demandFromSales));
+            BigDecimal lowStockShortfall = Qty.max(BigDecimal.ZERO, threshold.subtract(remainingAfterSales));
+            BigDecimal suggested = salesShortfall.add(lowStockShortfall);
+            if (suggested.signum() <= 0) {
                 continue;
             }
             ProductionPlanLine line = new ProductionPlanLine();
@@ -160,12 +172,12 @@ public class ProductionPlanService {
         List<ProductionPlanDto.LineDto> lines = plan.getLines().stream().map(line -> {
             List<ComponentShortfallDto> shortfalls = List.of();
             if (line.getBom() != null) {
-                Map<Product, Integer> required = bomService.requiredComponentQuantities(line.getBom(), line.getSuggestedQuantity());
+                Map<Product, BigDecimal> required = bomService.requiredComponentQuantities(line.getBom(), line.getSuggestedQuantity());
                 shortfalls = required.entrySet().stream().map(entry -> {
                     Product component = entry.getKey();
-                    int requiredQty = entry.getValue();
-                    int available = component.getStockQuantity();
-                    int shortfall = component.isTrackStock() ? Math.max(0, requiredQty - available) : 0;
+                    BigDecimal requiredQty = entry.getValue();
+                    BigDecimal available = component.getStockQuantity();
+                    BigDecimal shortfall = component.isTrackStock() ? Qty.max(BigDecimal.ZERO, requiredQty.subtract(available)) : BigDecimal.ZERO;
                     return new ComponentShortfallDto(component.getId(), component.getName(), component.isTrackStock(), requiredQty, available, shortfall);
                 }).toList();
             }

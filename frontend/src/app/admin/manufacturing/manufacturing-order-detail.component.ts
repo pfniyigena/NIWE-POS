@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { ManufacturingOrderApiService } from '../../core/api/manufacturing-order-api.service';
-import { ManufacturingOrder } from '../../core/models';
+import { downloadBlob } from '../../core/download-file';
+import { ComponentAvailability, ManufacturingOrder } from '../../core/models';
 
+import { q4 } from '../../core/qty';
 /**
  * Manufacturing > Manufacturing orders > detail — where a DRAFT is confirmed or cancelled, and
  * where a CONFIRMED/PARTIALLY_PRODUCED order is actually produced against. Mirrors
@@ -28,6 +30,9 @@ import { ManufacturingOrder } from '../../core/models';
             <span class="badge" [ngClass]="statusClass(o.status)">{{ o.status.replace('_', ' ') }}</span>
           </div>
           <div class="flex gap-2">
+            <a class="btn btn-outline-secondary btn-edit" *ngIf="o.status !== 'PRODUCED' && o.status !== 'CANCELLED'" [routerLink]="['/admin/manufacturing/orders', o.id, 'edit']">Edit</a>
+            <button class="btn btn-outline-secondary btn-jobcard" (click)="printJobCard()">Print job card</button>
+            <button class="btn btn-outline-secondary btn-copy" (click)="copy()">Copy as new draft</button>
             <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="confirm()">Confirm</button>
             <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'CONFIRMED'" (click)="cancel()">Cancel order</button>
           </div>
@@ -74,8 +79,28 @@ import { ManufacturingOrder } from '../../core/models';
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalOverheadCost | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
+            <div class="stat-label">Total labour cost</div>
+            <div class="stat-value tl-labour" style="font-size:1.1rem;">{{ o.totalLabourCost | number: '1.2-2' }}</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-label">Total machine cost</div>
+            <div class="stat-value tl-machine" style="font-size:1.1rem;">{{ o.totalMachineCost | number: '1.2-2' }}</div>
+          </div>
+          <div class="stat-tile">
             <div class="stat-label">Total cost</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalCost | number: '1.2-2' }}</div>
+          </div>
+          <div class="stat-tile" *ngIf="o.totalScrapped > 0">
+            <div class="stat-label">Scrapped</div>
+            <div class="stat-value tl-scrap" style="font-size:1.1rem;">{{ o.totalScrapped }} ({{ o.totalScrapCost | number: '1.2-2' }})</div>
+          </div>
+          <div class="stat-tile" *ngIf="o.yieldPercent != null">
+            <div class="stat-label">Yield</div>
+            <div class="stat-value tl-yield" style="font-size:1.1rem;">{{ o.yieldPercent | number: '1.0-1' }}%</div>
+          </div>
+          <div class="stat-tile" *ngIf="o.totalByProductCredit > 0">
+            <div class="stat-label">By-product credit</div>
+            <div class="stat-value tl-credit" style="font-size:1.1rem;">{{ o.totalByProductCredit | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
             <div class="stat-label">Unit cost</div>
@@ -83,7 +108,62 @@ import { ManufacturingOrder } from '../../core/models';
           </div>
         </div>
 
+        <ng-container *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'">
+          <h4 class="mb-2">Planned cost</h4>
+          <table class="table-sm mb-3 planned-cost">
+            <thead><tr><th></th><th class="text-end">Material</th><th class="text-end">Labour</th><th class="text-end">Machine</th><th class="text-end">Overhead</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Planned for {{ o.quantityPlanned }}</td>
+                <td class="text-end">{{ o.plannedMaterialCost | number: '1.2-2' }}</td>
+                <td class="text-end">{{ o.plannedLabourCost | number: '1.2-2' }}</td>
+                <td class="text-end">{{ o.plannedMachineCost | number: '1.2-2' }}</td>
+                <td class="text-end">{{ o.plannedOverheadCost | number: '1.2-2' }}</td>
+                <td class="text-end">{{ o.plannedTotalCost | number: '1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+
+        <ng-container *ngIf="o.operations.length > 0">
+          <h4 class="mb-2">Operations</h4>
+          <table class="table-sm mb-3 op-table">
+            <thead><tr><th>Step</th><th>Operation</th><th>Workstation</th><th class="text-end">Min / unit</th><th class="text-end">Machine rate / h</th><th class="text-end">Labour rate / h</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let op of o.operations" class="op-row">
+                <td>{{ op.sequence }}</td>
+                <td>{{ op.name }}</td>
+                <td>{{ op.workstationName || '—' }}</td>
+                <td class="text-end">{{ op.minutesPerUnit | number: '1.0-2' }}</td>
+                <td class="text-end">{{ op.machineRate | number: '1.2-2' }}</td>
+                <td class="text-end">{{ op.labourRate | number: '1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+
         <p class="text-muted mb-3" *ngIf="o.note">{{ o.note }}</p>
+
+        <ng-container *ngIf="avail && avail.quantityRemaining > 0">
+          <h4 class="mb-2">Components for the {{ avail.quantityRemaining }} still to make</h4>
+          <div class="alert alert-warning avail-warning" *ngIf="!avail.canProduceAll">
+            Stock is short for this order. {{ avail.maxProducible > 0 ? 'You can make ' + avail.maxProducible + ' of the ' + avail.quantityRemaining + ' with what is on hand.' : 'Nothing can be made until the missing components arrive.' }}
+            <span *ngIf="avail.allowNegativeStock"> (Negative stock is allowed, so production will still go through.)</span>
+          </div>
+          <div class="alert alert-success avail-ok" *ngIf="avail.canProduceAll">All components are in stock for the rest of this order.</div>
+          <table class="table-sm mb-3 avail-table">
+            <thead><tr><th>Component</th><th class="text-end">Per unit</th><th class="text-end">Needed</th><th class="text-end">On hand</th><th class="text-end">Short by</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let l of avail.lines" class="avail-row" [class.avail-short]="l.shortBy > 0">
+                <td>{{ l.componentName }}</td>
+                <td class="text-end">{{ l.perUnit }}</td>
+                <td class="text-end">{{ l.required }}</td>
+                <td class="text-end">{{ l.available != null ? l.available : 'not tracked' }}</td>
+                <td class="text-end"><span *ngIf="l.shortBy > 0" class="text-danger">{{ l.shortBy }}</span><span *ngIf="l.shortBy === 0">—</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
 
         <ng-container *ngIf="o.overheads.length > 0">
           <h4 class="mb-2">Indirect costs applied</h4>
@@ -111,9 +191,38 @@ import { ManufacturingOrder } from '../../core/models';
           <div class="flex gap-2 align-center mb-3">
             <div>
               <label class="form-label">Quantity to produce now (remaining: {{ remaining() }})</label>
-              <input type="number" class="form-control" style="width:140px;" min="1" [max]="remaining()" [(ngModel)]="produceQuantity" name="produceQuantity" />
+              <input type="number" step="any" class="form-control" style="width:140px;" min="0.0001" [max]="remaining()" [(ngModel)]="produceQuantity" name="produceQuantity" />
             </div>
             <button class="btn btn-primary" style="margin-top:1.5rem;" (click)="recordProduction()">Record production</button>
+            <button class="btn btn-outline-secondary btn-max" style="margin-top:1.5rem;" *ngIf="avail && !avail.canProduceAll && avail.maxProducible > 0" (click)="produceQuantity = avail.maxProducible">Use what stock allows ({{ avail.maxProducible }})</button>
+          </div>
+          <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
+            <div>
+              <label class="form-label">Scrapped / rejected units (optional)</label>
+              <input type="number" step="any" class="form-control scrap-qty" style="width:140px;" min="0" [(ngModel)]="scrapQuantity" name="scrapQuantity" />
+            </div>
+            <div class="grow" style="min-width:220px;">
+              <label class="form-label">Reason</label>
+              <input class="form-control scrap-reason" [(ngModel)]="scrapReason" name="scrapReason" maxlength="255" placeholder="e.g. burnt, wrong size, failed check" />
+            </div>
+          </div>
+          <div class="mb-3" *ngIf="avail && avail.lines.length > 0">
+            <label class="form-label">Actual quantity used (optional — leave blank for the recipe's quantity for the units started)</label>
+            <div class="flex gap-2" style="flex-wrap:wrap;">
+              <div *ngFor="let l of avail.lines" style="min-width:150px;">
+                <small class="text-muted">{{ l.componentName }}</small>
+                <input type="number" step="any" class="form-control form-control-sm actual-use" min="0" [(ngModel)]="actualUse[l.componentId]" [name]="'au' + l.componentId" [placeholder]="'' + (l.perUnit * ((produceQuantity || 0) + (scrapQuantity || 0)))" />
+              </div>
+            </div>
+          </div>
+          <div class="mb-3" *ngIf="o.operations.length > 0">
+            <label class="form-label">Actual minutes taken (optional — leave blank to use the planned minutes)</label>
+            <div class="flex gap-2" style="flex-wrap:wrap;">
+              <div *ngFor="let op of o.operations" style="min-width:150px;">
+                <small class="text-muted">{{ op.sequence }}. {{ op.name }}</small>
+                <input type="number" class="form-control form-control-sm actual-min" min="0" step="0.01" [(ngModel)]="actualMinutes[op.sequence]" [name]="'am' + op.sequence" [placeholder]="(op.minutesPerUnit * (produceQuantity || 0)) | number: '1.0-2'" />
+              </div>
+            </div>
           </div>
         </ng-container>
 
@@ -126,6 +235,8 @@ import { ManufacturingOrder } from '../../core/models';
                 <th class="text-end">Quantity produced</th>
                 <th class="text-end">Material cost</th>
                 <th class="text-end">Overhead cost</th>
+                <th class="text-end">Labour cost</th>
+                <th class="text-end">Machine cost</th>
                 <th class="text-end">Total cost</th>
               </tr>
             </thead>
@@ -136,14 +247,27 @@ import { ManufacturingOrder } from '../../core/models';
                   <td class="text-end">{{ run.quantityProduced }}</td>
                   <td class="text-end">{{ run.materialCost | number: '1.2-2' }}</td>
                   <td class="text-end">{{ run.overheadCost | number: '1.2-2' }}</td>
+                  <td class="text-end">{{ run.labourCost | number: '1.2-2' }}</td>
+                  <td class="text-end">{{ run.machineCost | number: '1.2-2' }}</td>
                   <td class="text-end">{{ run.totalCost | number: '1.2-2' }}</td>
                 </tr>
                 <tr>
-                  <td colspan="5" style="padding-left:2rem;">
+                  <td colspan="7" style="padding-left:2rem;">
                     <span class="text-muted" style="font-size:0.85rem;">Consumed: </span>
-                    <span *ngFor="let c of run.consumptions; let last = last" style="font-size:0.85rem;">
-                      {{ c.componentName }} × {{ c.quantityConsumed }}{{ !last ? ', ' : '' }}
+                    <span *ngFor="let c of run.consumptions; let last = last" class="run-use" style="font-size:0.85rem;">
+                      {{ c.componentName }} × {{ c.quantityConsumed }}<span *ngIf="c.varianceQuantity !== 0" class="run-variance" [class.text-danger]="c.varianceQuantity > 0"> (recipe {{ c.plannedQuantity }}, {{ c.varianceQuantity > 0 ? '+' : '' }}{{ c.varianceQuantity }} = {{ c.varianceCost | number: '1.2-2' }})</span>{{ !last ? ', ' : '' }}
                     </span>
+                    <div *ngIf="run.quantityScrapped > 0" class="run-scrap" style="font-size:0.85rem;">
+                      Scrapped {{ run.quantityScrapped }}{{ run.scrapReason ? ' — ' + run.scrapReason : '' }} · cost {{ run.scrapCost | number: '1.2-2' }} · yield {{ run.yieldPercent | number: '1.0-1' }}%
+                    </div>
+                    <div *ngFor="let bp of run.byProducts" class="run-byproduct" style="font-size:0.85rem;">
+                      By-product: {{ bp.productName }} × {{ bp.quantity }}{{ bp.costValue > 0 ? ' (takes ' + (bp.costValue | number: '1.2-2') + ' of the cost)' : '' }}
+                    </div>
+                    <div *ngFor="let ro of run.operations" class="run-op" style="font-size:0.85rem;">
+                      {{ ro.sequence }}. {{ ro.name }}{{ ro.workstationName ? ' @ ' + ro.workstationName : '' }}:
+                      {{ ro.actualMinutes | number: '1.0-2' }} min (planned {{ ro.plannedMinutes | number: '1.0-2' }}) —
+                      labour {{ ro.labourCost | number: '1.2-2' }}, machine {{ ro.machineCost | number: '1.2-2' }}
+                    </div>
                   </td>
                 </tr>
               </ng-container>
@@ -159,10 +283,16 @@ export class ManufacturingOrderDetailComponent implements OnInit {
   error: string | null = null;
   produceError: string | null = null;
   produceQuantity = 1;
+  avail: ComponentAvailability | null = null;
+  actualMinutes: Record<number, number | null> = {};
+  scrapQuantity: number | null = null;
+  scrapReason = '';
+  actualUse: Record<number, number | null> = {};
 
   constructor(
     private manufacturingOrderApi: ManufacturingOrderApiService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -174,14 +304,15 @@ export class ManufacturingOrderDetailComponent implements OnInit {
     this.manufacturingOrderApi.getById(id).subscribe({
       next: (mo) => {
         this.mo = mo;
-        this.produceQuantity = Math.max(1, this.remaining());
+        this.produceQuantity = this.remaining();
+        this.manufacturingOrderApi.availability(id).subscribe({ next: (a) => (this.avail = a), error: () => (this.avail = null) });
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load manufacturing order'),
     });
   }
 
   remaining(): number {
-    return this.mo ? this.mo.quantityPlanned - this.mo.quantityProduced : 0;
+    return this.mo ? q4(this.mo.quantityPlanned - this.mo.quantityProduced) : 0;
   }
 
   confirm(): void {
@@ -190,6 +321,25 @@ export class ManufacturingOrderDetailComponent implements OnInit {
     this.manufacturingOrderApi.confirm(this.mo.id).subscribe({
       next: () => this.load(),
       error: (err) => (this.error = err?.error?.message ?? 'Failed to confirm manufacturing order'),
+    });
+  }
+
+  printJobCard(): void {
+    if (!this.mo) return;
+    this.manufacturingOrderApi.jobCard(this.mo.id).subscribe({
+      next: (blob) => {
+        const w = window.open(URL.createObjectURL(blob), '_blank');
+        if (!w) downloadBlob(blob, `job-card-${this.mo?.orderNumber}.pdf`);
+      },
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to build the job card'),
+    });
+  }
+
+  copy(): void {
+    if (!this.mo) return;
+    this.manufacturingOrderApi.copy(this.mo.id).subscribe({
+      next: (n) => this.router.navigate(['/admin/manufacturing/orders', n.id]),
+      error: (err) => (this.error = err?.error?.message ?? 'Failed to copy the manufacturing order'),
     });
   }
 
@@ -210,8 +360,26 @@ export class ManufacturingOrderDetailComponent implements OnInit {
       return;
     }
     this.produceError = null;
-    this.manufacturingOrderApi.produce(this.mo.id, { quantity: this.produceQuantity }).subscribe({
-      next: () => this.load(),
+    const operationMinutes = Object.entries(this.actualMinutes)
+      .filter(([, v]) => v !== null && v !== undefined && (v as unknown) !== '')
+      .map(([seq, v]) => ({ sequence: Number(seq), minutes: Number(v) }));
+    const componentQuantities = Object.entries(this.actualUse)
+      .filter(([, v]) => v !== null && v !== undefined && (v as unknown) !== '')
+      .map(([id, v]) => ({ componentId: Number(id), quantity: Number(v) }));
+    this.manufacturingOrderApi.produce(this.mo.id, {
+      quantity: this.produceQuantity,
+      operationMinutes,
+      quantityScrapped: this.scrapQuantity || 0,
+      scrapReason: this.scrapReason.trim() || null,
+      componentQuantities,
+    }).subscribe({
+      next: () => {
+        this.actualMinutes = {};
+        this.actualUse = {};
+        this.scrapQuantity = null;
+        this.scrapReason = '';
+        this.load();
+      },
       error: (err) => (this.produceError = err?.error?.message ?? 'Failed to record production'),
     });
   }

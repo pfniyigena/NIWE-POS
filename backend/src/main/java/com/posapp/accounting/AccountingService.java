@@ -1,5 +1,6 @@
 package com.posapp.accounting;
 
+import com.posapp.common.Qty;
 import com.posapp.audit.AuditLogService;
 import com.posapp.manufacturing.ManufacturingOrder;
 import com.posapp.manufacturing.ManufacturingOrderRun;
@@ -403,16 +404,16 @@ public class AccountingService {
 
     /** An inter-branch delivery that arrived short: the missing units are a stock loss at cost, booked to the sending branch. */
     @Transactional
-    public void postTransferShortage(com.posapp.warehouse.StockTransfer transfer, int shortageQuantity) {
+    public void postTransferShortage(com.posapp.warehouse.StockTransfer transfer, BigDecimal shortageQuantity) {
         com.posapp.catalog.Product product = transfer.getProduct();
-        if (product == null || product.getCostPrice() == null || shortageQuantity <= 0) return;
-        BigDecimal amount = product.getCostPrice().multiply(BigDecimal.valueOf(shortageQuantity)).setScale(2, RoundingMode.HALF_UP);
+        if (product == null || product.getCostPrice() == null || shortageQuantity.signum() <= 0) return;
+        BigDecimal amount = product.getCostPrice().multiply(shortageQuantity).setScale(2, RoundingMode.HALF_UP);
         if (amount.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.INVENTORY_SHRINKAGE_EXPENSE, amount, null, true);
         addIfPositive(lines, AccountService.INVENTORY, amount, null, false);
         post("STOCK_TRANSFER_SHORTAGE", transfer.getId(),
-                "Short delivery — " + shortageQuantity + " x " + product.getName() + " lost in transit to " + transfer.getToBranchName(),
+                "Short delivery — " + Qty.str(shortageQuantity) + " x " + product.getName() + " lost in transit to " + transfer.getToBranchName(),
                 null, lines, transfer.getFromBranchId());
     }
 
@@ -443,12 +444,12 @@ public class AccountingService {
     public void postStockAdjustment(com.posapp.inventory.StockAdjustment adjustment) {
         com.posapp.catalog.Product product = adjustment.getProduct();
         if (product == null || product.getCostPrice() == null) return;
-        BigDecimal amount = product.getCostPrice().multiply(BigDecimal.valueOf(Math.abs(adjustment.getQuantityDelta())))
+        BigDecimal amount = product.getCostPrice().multiply(adjustment.getQuantityDelta().abs())
                 .setScale(2, RoundingMode.HALF_UP);
         if (amount.compareTo(BigDecimal.ZERO) <= 0) return;
 
         List<LineSpec> lines = new ArrayList<>();
-        if (adjustment.getQuantityDelta() < 0) {
+        if (adjustment.getQuantityDelta().signum() < 0) {
             addIfPositive(lines, AccountService.INVENTORY_SHRINKAGE_EXPENSE, amount, null, true);
             addIfPositive(lines, AccountService.INVENTORY, amount, null, false);
         } else {
@@ -489,11 +490,15 @@ public class AccountingService {
     @Transactional
     public void postManufacturingRun(ManufacturingOrder manufacturingOrder, ManufacturingOrderRun run) {
         BigDecimal overheadCost = run.getOverheadCost() != null ? run.getOverheadCost() : BigDecimal.ZERO;
-        if (overheadCost.compareTo(BigDecimal.ZERO) <= 0) return;
+        // MF-2: people's and machines' time on the routing is absorbed the same way as the indirect costs.
+        BigDecimal labourCost = run.getLabourCost() != null ? run.getLabourCost() : BigDecimal.ZERO;
+        BigDecimal machineCost = run.getMachineCost() != null ? run.getMachineCost() : BigDecimal.ZERO;
+        BigDecimal absorbed = overheadCost.add(labourCost).add(machineCost);
+        if (absorbed.compareTo(BigDecimal.ZERO) <= 0) return;
 
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.INVENTORY, overheadCost, "Overhead absorbed into finished goods", true);
-        addIfPositive(lines, AccountService.ACCRUED_MANUFACTURING_OVERHEAD, overheadCost, null, false);
+        addIfPositive(lines, AccountService.INVENTORY, absorbed, "Overhead, labour and machine time absorbed into finished goods", true);
+        addIfPositive(lines, AccountService.ACCRUED_MANUFACTURING_OVERHEAD, absorbed, null, false);
 
         post("MANUFACTURING_RUN", run.getId(), "Production run against " + manufacturingOrder.getOrderNumber(), null, lines);
     }

@@ -6,7 +6,11 @@ import java.util.List;
 public class HelpDeskSettingsRequest {
 
     private List<String> notificationEmails;
+    /** Null keeps what is stored, so an older screen never switches the public page off by accident. */
+    private Boolean publicEnabled;
 
+    public Boolean getPublicEnabled() { return publicEnabled; }
+    public void setPublicEnabled(Boolean publicEnabled) { this.publicEnabled = publicEnabled; }
     public List<String> getNotificationEmails() { return notificationEmails; }
     public void setNotificationEmails(List<String> notificationEmails) { this.notificationEmails = notificationEmails; }
 }

@@ -14,7 +14,7 @@ public record RestaurantServerSalesRow(
         Long serverId,
         String serverName,
         int orderCount,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal subtotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal

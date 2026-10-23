@@ -21,7 +21,7 @@ public class SalesReturnLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private OrderLine orderLine;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     /**
      * Snapshot of what this one line was refunded (post-discount, pre-tax-extraction — the same
@@ -40,6 +40,6 @@ public class SalesReturnLine extends BaseEntity {
      * snapshotted the same way {@code OrderLine.stockBefore}/{@code stockAfter} are. Both null for
      * a line with no product, or one processed before this field existed.
      */
-    private Integer stockBefore;
-    private Integer stockAfter;
+    private BigDecimal stockBefore;
+    private BigDecimal stockAfter;
 }

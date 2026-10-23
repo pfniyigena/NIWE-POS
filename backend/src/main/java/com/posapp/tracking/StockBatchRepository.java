@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface StockBatchRepository extends JpaRepository<StockBatch, Long> {
 
-    List<StockBatch> findByProductAndLocationAndQuantityGreaterThan(Product product, WarehouseLocation location, int quantity);
+    List<StockBatch> findByProductAndLocationAndQuantityGreaterThan(Product product, WarehouseLocation location, java.math.BigDecimal quantity);
 
     List<StockBatch> findByTransferIdAndProduct(Long transferId, Product product);
 

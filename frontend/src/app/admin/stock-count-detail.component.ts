@@ -10,6 +10,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { AuthService } from '../core/auth.service';
 import { Product, StockCount, StockCountLine, WarehouseLocation } from '../core/models';
 
+import { q4 } from '../core/qty';
 /**
  * Admin > Inventory > Stock counts > one count. While IN_PROGRESS the counted column is editable
  * (saved in bulk), products can be added to the sheet (e.g. items the system shows at zero) and
@@ -95,7 +96,7 @@ import { Product, StockCount, StockCountLine, WarehouseLocation } from '../core/
               <td>{{ l.locationName }}</td>
               <td class="text-end">{{ l.systemQuantity }}</td>
               <td class="text-end">
-                <input *ngIf="c.status === 'IN_PROGRESS'; else fixed" class="form-control text-end" type="number" min="0"
+                <input *ngIf="c.status === 'IN_PROGRESS'; else fixed" class="form-control text-end" type="number" min="0" step="any"
                   [ngModel]="edits[l.id]" (ngModelChange)="edits[l.id] = $event" [name]="'q' + l.id" />
                 <ng-template #fixed>{{ l.countedQuantity ?? '—' }}</ng-template>
               </td>
@@ -171,7 +172,7 @@ export class StockCountDetailComponent implements OnInit {
   variance(l: StockCountLine): number | null {
     const counted = this.count?.status === 'IN_PROGRESS' ? this.edits[l.id] : l.countedQuantity;
     if (counted === null || counted === undefined || (counted as unknown) === '') return null;
-    return Number(counted) - l.systemQuantity;
+    return q4(Number(counted) - l.systemQuantity);
   }
 
   private entries(): { lineId: number; countedQuantity: number | null }[] {

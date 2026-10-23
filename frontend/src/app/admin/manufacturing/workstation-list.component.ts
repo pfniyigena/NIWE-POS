@@ -1,22 +1,27 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { ListState } from '../../core/api/list-state';
+import { ListFilterComponent } from '../../shared/list-filter.component';
+import { PagerComponent } from '../../shared/pager.component';
 import { WorkstationApiService } from '../../core/api/workstation-api.service';
 import { Workstation } from '../../core/models';
 
-/** Manufacturing > Workstations (Fourier's own list, item 5). Mirrors PaymentMethodListComponent's simple CRUD list pattern. */
+/** Manufacturing > Workstations: search (code, name, description), active/inactive, pages and exports. */
 @Component({
   selector: 'app-workstation-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
-      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Workstations</h3>
         <a class="btn btn-primary" routerLink="/admin/manufacturing/workstations/new">+ New workstation</a>
       </div>
+      <app-list-filter exportPath="/manufacturing/workstations/export" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" placeholder="Search code, name, description" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
@@ -29,7 +34,7 @@ import { Workstation } from '../../core/models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let w of workstations">
+          <tr *ngFor="let w of list.rows" class="ws-row">
             <td>{{ w.code }}</td>
             <td>{{ w.name }}</td>
             <td>{{ w.description || '—' }}</td>
@@ -40,24 +45,20 @@ import { Workstation } from '../../core/models';
             </td>
             <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/workstations', w.id, 'edit']">Edit</a></td>
           </tr>
-          <tr *ngIf="workstations.length === 0">
-            <td colspan="6" class="text-muted">No workstations yet.</td>
-          </tr>
         </tbody>
       </table>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No workstations match these filters.' : 'No workstations yet.' }}</p>
+      <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,
 })
 export class WorkstationListComponent implements OnInit {
-  workstations: Workstation[] = [];
-  error: string | null = null;
+  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }];
+  list = new ListState<Workstation>((f, p, sz) => this.workstationApi.page(f, p, sz), 'Failed to load workstations');
 
   constructor(private workstationApi: WorkstationApiService) {}
 
   ngOnInit(): void {
-    this.workstationApi.listAll().subscribe({
-      next: (w) => (this.workstations = w),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load workstations'),
-    });
+    this.list.load();
   }
 }

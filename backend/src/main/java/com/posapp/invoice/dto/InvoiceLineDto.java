@@ -12,7 +12,7 @@ public record InvoiceLineDto(
         String productName,
         /** See InvoiceLine.description's javadoc. */
         String description,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitPrice,
         /** Fourier: "Same for discount ... it will be per line" — see InvoiceLine.discountPercent's javadoc. Zero for a line with no discount. */
         BigDecimal discountPercent,
@@ -29,7 +29,7 @@ public record InvoiceLineDto(
         boolean inclusive = Boolean.TRUE.equals(l.getTaxInclusive());
         BigDecimal tax = TaxMath.taxOnAmount(l.getLineTotal(), l.getTaxRatePercent(), inclusive);
         BigDecimal discountPercent = l.getDiscountPercent() == null ? BigDecimal.ZERO : l.getDiscountPercent();
-        BigDecimal grossBeforeDiscount = l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal grossBeforeDiscount = l.getUnitPrice().multiply(l.getQuantity()).setScale(2, RoundingMode.HALF_UP);
         BigDecimal discountAmount = grossBeforeDiscount.subtract(l.getLineTotal()).setScale(2, RoundingMode.HALF_UP);
         return new InvoiceLineDto(
                 l.getId(),

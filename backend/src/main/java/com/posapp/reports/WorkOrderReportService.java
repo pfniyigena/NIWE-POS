@@ -54,7 +54,7 @@ public class WorkOrderReportService {
         if (list.isEmpty()) return Map.of();
         List<Long> ids = list.stream().map(WorkOrder::getId).toList();
         Map<Long, BigDecimal> parts = lineRepository.findByWorkOrderIdIn(ids).stream().collect(Collectors.groupingBy(WorkOrderLine::getWorkOrderId,
-                Collectors.reducing(ZERO, l -> l.getUnitCost().multiply(BigDecimal.valueOf(l.getQuantity())), BigDecimal::add)));
+                Collectors.reducing(ZERO, l -> l.getUnitCost().multiply(l.getQuantity()), BigDecimal::add)));
         Map<Long, BigDecimal> external = costRepository.findByWorkOrderIdIn(ids).stream().collect(Collectors.groupingBy(WorkOrderCost::getWorkOrderId,
                 Collectors.reducing(ZERO, WorkOrderCost::getAmount, BigDecimal::add)));
         return list.stream().collect(Collectors.toMap(WorkOrder::getId, w -> new Costs(parts.getOrDefault(w.getId(), ZERO), external.getOrDefault(w.getId(), ZERO))));

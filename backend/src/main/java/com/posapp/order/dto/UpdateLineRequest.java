@@ -4,11 +4,11 @@ import java.math.BigDecimal;
 
 /** Every field optional — send only what you are changing (quantity, discount, serials, or the price). */
 public class UpdateLineRequest {
-    private Integer quantity;
+    private BigDecimal quantity;
     private BigDecimal discountPercent;
 
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public BigDecimal getDiscountPercent() { return discountPercent; }
     public void setDiscountPercent(BigDecimal discountPercent) { this.discountPercent = discountPercent; }
 

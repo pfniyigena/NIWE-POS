@@ -14,7 +14,7 @@ public interface PurchaseReturnLineRepository extends JpaRepository<PurchaseRetu
      * as {@code com.posapp.salesorder.SalesOrderReturnLineRepository.sumReturnedQuantityForLine}).
      */
     @Query("select coalesce(sum(l.quantity), 0) from PurchaseReturnLine l where l.orderLine.id = :lineId")
-    int sumReturnedQuantityForLine(@Param("lineId") Long lineId);
+    java.math.BigDecimal sumReturnedQuantityForLine(@Param("lineId") Long lineId);
 
     /**
      * Every return line against any line on this Purchase Order, across every separate return

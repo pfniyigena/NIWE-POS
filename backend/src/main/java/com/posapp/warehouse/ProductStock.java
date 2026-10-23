@@ -1,6 +1,7 @@
 package com.posapp.warehouse;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -35,5 +36,5 @@ public class ProductStock extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private WarehouseLocation location;
 
-    private int quantity = 0;
+    private BigDecimal quantity = BigDecimal.ZERO;
 }

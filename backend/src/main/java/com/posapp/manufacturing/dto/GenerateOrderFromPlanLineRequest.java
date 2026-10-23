@@ -1,6 +1,7 @@
 package com.posapp.manufacturing.dto;
 
-import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
@@ -11,14 +12,14 @@ public class GenerateOrderFromPlanLineRequest {
 
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
-    private Integer quantity;
+    private BigDecimal quantity;
 
     private LocalDate scheduledDate;
 
     private List<Long> overheadCostIds;
 
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public LocalDate getScheduledDate() { return scheduledDate; }
     public void setScheduledDate(LocalDate scheduledDate) { this.scheduledDate = scheduledDate; }
     public List<Long> getOverheadCostIds() { return overheadCostIds; }

@@ -10,7 +10,7 @@ public record BillLineDto(
         Long id,
         Long productId,
         String productName,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitCost,
         /** Fourier: "Same for discount ... it will be per line" — see BillLine.discountPercent's javadoc. Zero for a line with no discount. */
         BigDecimal discountPercent,
@@ -27,7 +27,7 @@ public record BillLineDto(
         boolean inclusive = Boolean.TRUE.equals(l.getTaxInclusive());
         BigDecimal tax = TaxMath.taxOnAmount(l.getLineTotal(), l.getTaxRatePercent(), inclusive);
         BigDecimal discountPercent = l.getDiscountPercent() == null ? BigDecimal.ZERO : l.getDiscountPercent();
-        BigDecimal grossBeforeDiscount = l.getUnitCost().multiply(BigDecimal.valueOf(l.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal grossBeforeDiscount = l.getUnitCost().multiply(l.getQuantity()).setScale(2, RoundingMode.HALF_UP);
         BigDecimal discountAmount = grossBeforeDiscount.subtract(l.getLineTotal()).setScale(2, RoundingMode.HALF_UP);
         return new BillLineDto(
                 l.getId(),

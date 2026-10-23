@@ -18,13 +18,13 @@ public record RestaurantWastageReportRow(
         Instant recordedAt,
         String sku,
         String productName,
-        int quantity,
+        BigDecimal quantity,
         String reason,
         String note,
         /** "PENDING" | "CONFIRMED" | "REJECTED". */
         String status,
-        Integer stockBefore,
-        Integer stockAfter,
+        BigDecimal stockBefore,
+        BigDecimal stockAfter,
         BigDecimal costImpact
 ) {
 }

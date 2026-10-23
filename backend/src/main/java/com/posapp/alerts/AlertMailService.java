@@ -1,5 +1,6 @@
 package com.posapp.alerts;
 
+import com.posapp.common.Qty;
 import com.posapp.accounting.Expense;
 import com.posapp.catalog.Product;
 import com.posapp.customer.Customer;
@@ -52,16 +53,16 @@ public class AlertMailService {
     public void alertLowStock(Product product) {
         send("Low stock: " + product.getName(),
                 "<p>" + escapeHtml(product.getName()) + " has crossed below its low-stock threshold.</p>"
-                        + "<p>Current stock on hand: " + product.getStockQuantity() + "</p>");
+                        + "<p>Current stock on hand: " + Qty.str(product.getStockQuantity()) + "</p>");
     }
 
     /** Per-warehouse variant, fired from {@code CatalogService.adjustStock(Product, int, WarehouseLocation)} when a non-primary warehouse's total for a tracked product crosses below the same threshold. */
     @Async
-    public void alertLowStock(Product product, String warehouseName, int warehouseQuantity) {
+    public void alertLowStock(Product product, String warehouseName, java.math.BigDecimal warehouseQuantity) {
         send("Low stock at " + warehouseName + ": " + product.getName(),
                 "<p>" + escapeHtml(product.getName()) + " has crossed below its low-stock threshold at warehouse "
                         + escapeHtml(warehouseName) + ".</p>"
-                        + "<p>Current stock at " + escapeHtml(warehouseName) + ": " + warehouseQuantity + "</p>");
+                        + "<p>Current stock at " + escapeHtml(warehouseName) + ": " + Qty.str(warehouseQuantity) + "</p>");
     }
 
     /** Fired from {@code PurchaseRequisitionService.submit} on the DRAFT -&gt; PENDING_APPROVAL transition. */

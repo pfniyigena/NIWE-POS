@@ -1,6 +1,7 @@
 package com.posapp.dashboard;
 
-import com.posapp.catalog.CatalogService;
+
+import java.math.BigDecimal;import com.posapp.catalog.CatalogService;
 import com.posapp.customer.CustomerRepository;
 import com.posapp.dashboard.dto.DashboardSummaryDto;
 import com.posapp.order.OrderService;
@@ -18,7 +19,7 @@ public class DashboardService {
     private final RegisterSessionRepository sessionRepository;
     private final CatalogService catalogService;
     private final CustomerRepository customerRepository;
-    private final int lowStockThreshold;
+    private final BigDecimal lowStockThreshold;
 
     public DashboardService(OrderService orderService,
                              RegisterSessionRepository sessionRepository,
@@ -29,7 +30,7 @@ public class DashboardService {
         this.sessionRepository = sessionRepository;
         this.catalogService = catalogService;
         this.customerRepository = customerRepository;
-        this.lowStockThreshold = lowStockThreshold;
+        this.lowStockThreshold = BigDecimal.valueOf(lowStockThreshold);
     }
 
     @Transactional(readOnly = true)

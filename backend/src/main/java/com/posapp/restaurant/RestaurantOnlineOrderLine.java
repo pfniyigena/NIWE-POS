@@ -20,7 +20,7 @@ public class RestaurantOnlineOrderLine extends BaseEntity {
     private RestaurantOnlineOrder onlineOrder;
     private Long menuItemId;
     private String name;
-    private int quantity = 1;
+    private BigDecimal quantity = BigDecimal.ONE;
     private String notes;
     /** Option ids the guest picked, comma separated. */
     private String optionIds;

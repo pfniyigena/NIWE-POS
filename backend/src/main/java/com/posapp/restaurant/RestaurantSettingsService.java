@@ -27,6 +27,12 @@ public class RestaurantSettingsService {
         return all.isEmpty() ? repository.save(new RestaurantSettings()) : all.get(0);
     }
 
+    /** True when visitors may use the public Reserve a Table page ("Allow public website"). */
+    @Transactional
+    public boolean isPublicOpen() {
+        return entity().isPublicEnabled();
+    }
+
     @Transactional
     public RestaurantSettingsDto get() {
         return RestaurantSettingsDto.from(entity());
@@ -70,6 +76,7 @@ public class RestaurantSettingsService {
         if (in.noShowBlockCount() != null) s.setNoShowBlockCount(range("No-show limit", in.noShowBlockCount(), 0, 20));
         if (in.defaultPrepMinutes() != null) s.setDefaultPrepMinutes(range("Usual preparation time", in.defaultPrepMinutes(), 1, 240));
         if (in.kitchenWarnPercent() != null) s.setKitchenWarnPercent(range("Warning level", in.kitchenWarnPercent(), 10, 100));
+        if (in.publicEnabled() != null) s.setPublicEnabled(in.publicEnabled());
         if (in.onlineEnabled() != null) s.setOnlineEnabled(in.onlineEnabled());
         if (in.qrEnabled() != null) s.setQrEnabled(in.qrEnabled());
         if (in.onlineTakeaway() != null) s.setOnlineTakeaway(in.onlineTakeaway());

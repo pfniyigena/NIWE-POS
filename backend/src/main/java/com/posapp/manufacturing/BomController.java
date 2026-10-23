@@ -20,8 +20,9 @@ public class BomController {
     }
 
     @GetMapping
-    public List<BomDto> listAll() {
-        return bomService.listAll();
+    public org.springframework.http.ResponseEntity<List<BomDto>> listAll(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long productId, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(bomService.filtered(q, status, productId), page, size);
     }
 
     @GetMapping("/product/{productId}")
@@ -38,6 +39,18 @@ public class BomController {
     @PostMapping
     public BomDto create(@Valid @RequestBody BomRequest request) {
         return bomService.create(request);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
+    @PostMapping("/{id}/copy")
+    public BomDto copy(@PathVariable Long id) {
+        return bomService.copy(id);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")
+    @PostMapping("/{id}/activate")
+    public BomDto activate(@PathVariable Long id) {
+        return bomService.activate(id);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_OPERATIONS_MANAGE')")

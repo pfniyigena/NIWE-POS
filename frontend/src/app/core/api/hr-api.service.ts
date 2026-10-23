@@ -710,6 +710,20 @@ export interface EmployeeImportResult {
 }
 
 /** Employees, organisation, attendance & leaves, contracts and payroll (/api/hr). */
+/** A login just given to an employee; the password is shown only this once. */
+export interface EmployeeLoginCreated {
+  employeeId: number;
+  employeeNumber: string;
+  employeeName: string;
+  username: string;
+  password: string;
+}
+
+export interface EmployeeLoginBulk {
+  created: EmployeeLoginCreated[];
+  skipped: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class HrApiService {
   private base = `${API_BASE}/hr`;
@@ -1130,6 +1144,17 @@ export class HrApiService {
   }
   deleteChecklistTask(taskId: number): Observable<EmployeeChecklist> {
     return this.http.delete<EmployeeChecklist>(`${this.base}/employees/checklist-tasks/${taskId}`);
+  }
+
+  // logins for employees (so each can open My HR)
+  createEmployeeLogin(id: number, body: { username?: string; password?: string } = {}): Observable<EmployeeLoginCreated> {
+    return this.http.post<EmployeeLoginCreated>(`${this.base}/employees/${id}/login`, body);
+  }
+  createEmployeeLogins(): Observable<EmployeeLoginBulk> {
+    return this.http.post<EmployeeLoginBulk>(`${this.base}/employees/logins`, {});
+  }
+  resetEmployeeLoginPassword(id: number): Observable<EmployeeLoginCreated> {
+    return this.http.post<EmployeeLoginCreated>(`${this.base}/employees/${id}/login/reset-password`, {});
   }
 
   // importing employees from Excel or CSV

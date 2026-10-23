@@ -37,8 +37,11 @@ public class PublicHelpDeskController {
     private final HelpDeskCategoryService categoryService;
 
     private final ModuleService moduleService;
+    private final HelpDeskSettingsService settingsService;
 
-    public PublicHelpDeskController(HelpDeskTicketService ticketService, HelpDeskCategoryService categoryService, ModuleService moduleService) {
+    public PublicHelpDeskController(HelpDeskTicketService ticketService, HelpDeskCategoryService categoryService, ModuleService moduleService,
+                                    HelpDeskSettingsService settingsService) {
+        this.settingsService = settingsService;
         this.moduleService = moduleService;
         this.ticketService = ticketService;
         this.categoryService = categoryService;
@@ -46,7 +49,7 @@ public class PublicHelpDeskController {
 
     @GetMapping("/categories")
     public List<PublicHelpDeskCategoryDto> categories() {
-        moduleService.requireEnabled(ModuleKey.HELPDESK);
+        open();
         return categoryService.listActive().stream()
                 .map(c -> new PublicHelpDeskCategoryDto(c.id(), c.name()))
                 .toList();
@@ -54,13 +57,21 @@ public class PublicHelpDeskController {
 
     @PostMapping("/tickets")
     public PublicHelpDeskTicketDto create(@Valid @RequestBody PublicHelpDeskTicketRequest request) {
-        moduleService.requireEnabled(ModuleKey.HELPDESK);
+        open();
         return ticketService.createByGuest(request);
     }
 
     @GetMapping("/tickets/lookup")
     public PublicHelpDeskTicketStatusDto lookup(@RequestParam String ticketNumber, @RequestParam String email) {
-        moduleService.requireEnabled(ModuleKey.HELPDESK);
+        open();
         return ticketService.publicLookup(ticketNumber, email);
+    }
+
+    /** The module must be on and "Allow public website" switched on in the Help Desk settings; otherwise the page answers "not found". */
+    private void open() {
+        moduleService.requireEnabled(ModuleKey.HELPDESK);
+        if (!settingsService.isPublicOpen()) {
+            throw com.posapp.common.ApiException.notFound("The Help Desk website is not available.");
+        }
     }
 }

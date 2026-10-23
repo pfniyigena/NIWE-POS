@@ -80,7 +80,7 @@ public class RecurringInvoiceTemplateRequest {
         private Long productId;
 
         @Positive(message = "Quantity must be greater than zero")
-        private int quantity;
+        private BigDecimal quantity = BigDecimal.ZERO;
 
         /** Unlike a standalone invoice line, this is required — the agreed recurring price, never re-derived from the live product. See RecurringInvoiceTemplateLine.unitPrice's own javadoc. */
         @NotNull(message = "Unit price is required")
@@ -95,8 +95,8 @@ public class RecurringInvoiceTemplateRequest {
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
+        public BigDecimal getQuantity() { return quantity; }
+        public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
         public BigDecimal getUnitPrice() { return unitPrice; }
         public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
         public String getDescription() { return description; }

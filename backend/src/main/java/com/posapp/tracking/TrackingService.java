@@ -1,4 +1,5 @@
 package com.posapp.tracking;
+import com.posapp.common.Qty;
 
 import com.posapp.catalog.Product;
 import com.posapp.common.ApiException;
@@ -47,15 +48,15 @@ public class TrackingService {
     /** Adds units to a batch (creating it, or topping up the same batch number + expiry at that location). */
     @Transactional
     public void receiveBatch(Product product, WarehouseLocation location, String batchNumber, LocalDate expiryDate,
-                             int quantity, BigDecimal unitCost, String source) {
-        if (quantity <= 0 || location == null) return;
+                             BigDecimal quantity, BigDecimal unitCost, String source) {
+        if (quantity.signum() <= 0 || location == null) return;
         String number = batchNumber != null && !batchNumber.isBlank() ? batchNumber.trim() : null;
         if (number == null) {
             number = source != null && !source.isBlank() ? source : "LOT-" + LocalDate.now();
         }
         StockBatch existing = findSame(product, location, number, expiryDate, null);
         if (existing != null) {
-            existing.setQuantity(existing.getQuantity() + quantity);
+            existing.setQuantity(existing.getQuantity().add(quantity));
             batchRepository.save(existing);
             return;
         }
@@ -123,17 +124,17 @@ public class TrackingService {
      * oldest in stock. If fewer are tracked than requested the rest is untracked stock and is left alone.
      */
     @Transactional
-    public void consume(Product product, WarehouseLocation location, int quantity) {
-        if (quantity <= 0 || location == null) return;
+    public void consume(Product product, WarehouseLocation location, BigDecimal quantity) {
+        if (quantity.signum() <= 0 || location == null) return;
         switch (modeOf(product)) {
             case BATCH -> {
-                int left = quantity;
+                BigDecimal left = quantity;
                 for (StockBatch batch : orderedBatches(product, location)) {
-                    if (left <= 0) break;
-                    int take = Math.min(left, batch.getQuantity());
-                    batch.setQuantity(batch.getQuantity() - take);
-                    left -= take;
-                    if (batch.getQuantity() <= 0) batchRepository.delete(batch); else batchRepository.save(batch);
+                    if (left.signum() <= 0) break;
+                    BigDecimal take = Qty.min(left, batch.getQuantity());
+                    batch.setQuantity(batch.getQuantity().subtract(take));
+                    left = left.subtract(take);
+                    if (batch.getQuantity().signum() <= 0) batchRepository.delete(batch); else batchRepository.save(batch);
                 }
             }
             case SERIAL -> {
@@ -152,12 +153,12 @@ public class TrackingService {
     }
 
     /** Serials chosen explicitly for this product (validated), otherwise the oldest in stock at the location. */
-    private List<StockSerial> pickSerials(Product product, WarehouseLocation location, int quantity) {
+    private List<StockSerial> pickSerials(Product product, WarehouseLocation location, BigDecimal quantity) {
         List<String> chosen = TrackingContext.takeSerials(product.getId());
         if (chosen != null && !chosen.isEmpty()) {
             List<String> clean = cleanSerials(product, chosen);
-            if (clean.size() != quantity) {
-                throw ApiException.badRequest("'" + product.getName() + "' needs " + quantity + " serial number" + (quantity == 1 ? "" : "s")
+            if (BigDecimal.valueOf(clean.size()).compareTo(quantity) != 0) {
+                throw ApiException.badRequest("'" + product.getName() + "' needs " + Qty.str(quantity) + " serial number" + (quantity.compareTo(BigDecimal.ONE) == 0 ? "" : "s")
                         + " but " + clean.size() + " " + (clean.size() == 1 ? "was" : "were") + " given");
             }
             List<StockSerial> units = new ArrayList<>();
@@ -176,15 +177,16 @@ public class TrackingService {
             return units;
         }
         List<StockSerial> available = serialRepository.findByProductAndLocationAndStatusOrderByIdAsc(product, location, SerialStatus.IN_STOCK);
-        return new ArrayList<>(available.subList(0, Math.min(quantity, available.size())));
+        requireWhole(product, quantity);
+        return new ArrayList<>(available.subList(0, Math.min(quantity.intValue(), available.size())));
     }
 
     // ------------------------------------------------------------------ moving between locations
 
     /** Same-branch transfer: the batches/serials travel with the stock. */
     @Transactional
-    public void moveNow(Product product, WarehouseLocation from, WarehouseLocation to, int quantity) {
-        if (quantity <= 0 || from == null || to == null) return;
+    public void moveNow(Product product, WarehouseLocation from, WarehouseLocation to, BigDecimal quantity) {
+        if (quantity.signum() <= 0 || from == null || to == null) return;
         switch (modeOf(product)) {
             case BATCH -> {
                 for (StockBatch part : detachBatches(product, from, quantity)) {
@@ -203,8 +205,8 @@ public class TrackingService {
 
     /** Inter-branch dispatch: the tracked units leave the source and ride with the transfer until it is received or returned. */
     @Transactional
-    public void dispatch(Product product, WarehouseLocation from, int quantity, Long transferId) {
-        if (quantity <= 0 || from == null || transferId == null) return;
+    public void dispatch(Product product, WarehouseLocation from, BigDecimal quantity, Long transferId) {
+        if (quantity.signum() <= 0 || from == null || transferId == null) return;
         switch (modeOf(product)) {
             case BATCH -> {
                 for (StockBatch part : detachBatches(product, from, quantity)) {
@@ -227,27 +229,27 @@ public class TrackingService {
 
     /** The receiving end: up to {@code received} of the carried units land at the destination; the rest are written off. */
     @Transactional
-    public void arrive(Product product, Long transferId, WarehouseLocation to, int received) {
+    public void arrive(Product product, Long transferId, WarehouseLocation to, BigDecimal received) {
         if (transferId == null || to == null) return;
         switch (modeOf(product)) {
             case BATCH -> {
                 List<StockBatch> carried = new ArrayList<>(batchRepository.findByTransferIdAndProduct(transferId, product));
                 carried.sort(BATCH_ORDER);
-                int left = Math.max(0, received);
+                BigDecimal left = Qty.atLeastZero(received);
                 for (StockBatch batch : carried) {
-                    if (left <= 0) {
+                    if (left.signum() <= 0) {
                         batchRepository.delete(batch);
                         continue;
                     }
-                    if (batch.getQuantity() > left) {
+                    if (batch.getQuantity().compareTo(left) > 0) {
                         batch.setQuantity(left);
                     }
-                    left -= batch.getQuantity();
+                    left = left.subtract(batch.getQuantity());
                     placeBatch(batch, to);
                 }
             }
             case SERIAL -> {
-                int left = Math.max(0, received);
+                int left = Math.max(0, received.intValue());
                 for (StockSerial serial : serialRepository.findByTransferIdAndProductOrderByIdAsc(transferId, product)) {
                     serial.setTransferId(null);
                     if (left > 0) {
@@ -340,7 +342,7 @@ public class TrackingService {
                     b.getBatchNumber(),
                     b.getExpiryDate() != null ? b.getExpiryDate().toString() : "—",
                     days != null ? String.valueOf(days) : "—",
-                    b.getQuantity(), cost, cost.multiply(BigDecimal.valueOf(b.getQuantity())), status));
+                    b.getQuantity(), cost, cost.multiply(b.getQuantity()), status));
         }
         rows.sort(Comparator.comparing((BatchReportRow r) -> "—".equals(r.expiryDate()))
                 .thenComparing(BatchReportRow::expiryDate)
@@ -379,28 +381,36 @@ public class TrackingService {
             .thenComparing(StockBatch::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
     private List<StockBatch> orderedBatches(Product product, WarehouseLocation location) {
-        List<StockBatch> batches = new ArrayList<>(batchRepository.findByProductAndLocationAndQuantityGreaterThan(product, location, 0));
+        List<StockBatch> batches = new ArrayList<>(batchRepository.findByProductAndLocationAndQuantityGreaterThan(product, location, BigDecimal.ZERO));
         batches.sort(BATCH_ORDER);
         return batches;
     }
 
-    private List<StockSerial> pickAuto(Product product, WarehouseLocation location, int quantity) {
+    /** Serial-numbered goods are single units: a quantity such as 2.5 makes no sense for them. */
+    static void requireWhole(Product product, BigDecimal quantity) {
+        if (quantity != null && quantity.stripTrailingZeros().scale() > 0) {
+            throw ApiException.badRequest("'" + product.getName() + "' is serial-numbered, so it can only be moved in whole units.");
+        }
+    }
+
+    private List<StockSerial> pickAuto(Product product, WarehouseLocation location, BigDecimal quantity) {
         List<StockSerial> available = serialRepository.findByProductAndLocationAndStatusOrderByIdAsc(product, location, SerialStatus.IN_STOCK);
-        return new ArrayList<>(available.subList(0, Math.min(quantity, available.size())));
+        requireWhole(product, quantity);
+        return new ArrayList<>(available.subList(0, Math.min(quantity.intValue(), available.size())));
     }
 
     /** Splits off up to {@code quantity} units, earliest-expiry-first, as rows that can be re-homed. */
-    private List<StockBatch> detachBatches(Product product, WarehouseLocation from, int quantity) {
+    private List<StockBatch> detachBatches(Product product, WarehouseLocation from, BigDecimal quantity) {
         List<StockBatch> parts = new ArrayList<>();
-        int left = quantity;
+        BigDecimal left = quantity;
         for (StockBatch batch : orderedBatches(product, from)) {
-            if (left <= 0) break;
-            int take = Math.min(left, batch.getQuantity());
-            left -= take;
-            if (take == batch.getQuantity()) {
+            if (left.signum() <= 0) break;
+            BigDecimal take = Qty.min(left, batch.getQuantity());
+            left = left.subtract(take);
+            if (take.compareTo(batch.getQuantity()) == 0) {
                 parts.add(batch);
             } else {
-                batch.setQuantity(batch.getQuantity() - take);
+                batch.setQuantity(batch.getQuantity().subtract(take));
                 batchRepository.save(batch);
                 StockBatch piece = new StockBatch();
                 piece.setProduct(batch.getProduct());
@@ -421,7 +431,7 @@ public class TrackingService {
         moving.setTransferId(null);
         StockBatch same = findSame(moving.getProduct(), to, moving.getBatchNumber(), moving.getExpiryDate(), moving.getId());
         if (same != null) {
-            same.setQuantity(same.getQuantity() + moving.getQuantity());
+            same.setQuantity(same.getQuantity().add(moving.getQuantity()));
             batchRepository.save(same);
             if (moving.getId() != null) batchRepository.delete(moving);
             return;
@@ -431,7 +441,7 @@ public class TrackingService {
     }
 
     private StockBatch findSame(Product product, WarehouseLocation location, String batchNumber, LocalDate expiry, Long exceptId) {
-        for (StockBatch b : batchRepository.findByProductAndLocationAndQuantityGreaterThan(product, location, 0)) {
+        for (StockBatch b : batchRepository.findByProductAndLocationAndQuantityGreaterThan(product, location, BigDecimal.ZERO)) {
             if (exceptId != null && exceptId.equals(b.getId())) continue;
             boolean sameNumber = b.getBatchNumber() == null ? batchNumber == null : b.getBatchNumber().equalsIgnoreCase(batchNumber);
             boolean sameExpiry = b.getExpiryDate() == null ? expiry == null : b.getExpiryDate().equals(expiry);

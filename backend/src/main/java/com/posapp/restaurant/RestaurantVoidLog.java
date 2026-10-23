@@ -18,7 +18,7 @@ public class RestaurantVoidLog extends BaseEntity {
     private Long orderId;
     private String orderLabel;
     private String description;
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
     private BigDecimal amount = BigDecimal.ZERO;
     private String reason;
     private String byUser;

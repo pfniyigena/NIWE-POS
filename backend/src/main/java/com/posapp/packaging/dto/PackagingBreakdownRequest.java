@@ -1,6 +1,7 @@
 package com.posapp.packaging.dto;
 
-import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public class PackagingBreakdownRequest {
@@ -10,7 +11,7 @@ public class PackagingBreakdownRequest {
 
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
-    private Integer parentQuantity;
+    private BigDecimal parentQuantity;
 
     private String note;
 
@@ -19,8 +20,8 @@ public class PackagingBreakdownRequest {
 
     public Long getRuleId() { return ruleId; }
     public void setRuleId(Long ruleId) { this.ruleId = ruleId; }
-    public Integer getParentQuantity() { return parentQuantity; }
-    public void setParentQuantity(Integer parentQuantity) { this.parentQuantity = parentQuantity; }
+    public BigDecimal getParentQuantity() { return parentQuantity; }
+    public void setParentQuantity(BigDecimal parentQuantity) { this.parentQuantity = parentQuantity; }
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
     public Long getLocationId() { return locationId; }

@@ -155,7 +155,7 @@ public class TimeTrackingService {
         req.setDescription("Billed time");
         req.setUnitPrice(ZERO);
         req.setCostPrice(ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);
@@ -901,7 +901,7 @@ public class TimeTrackingService {
         for (InvoiceLinePreview l : preview.lines()) {
             InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
             line.setProductId(product.getId());
-            line.setQuantity(1);
+            line.setQuantity(BigDecimal.ONE);
             line.setUnitPrice(l.amount());
             line.setDescription(l.description());
             lines.add(line);

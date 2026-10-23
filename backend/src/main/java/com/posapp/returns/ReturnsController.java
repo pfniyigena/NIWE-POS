@@ -1,4 +1,5 @@
 package com.posapp.returns;
+import java.math.BigDecimal;
 
 import com.posapp.returns.dto.ProcessReturnRequest;
 import com.posapp.returns.dto.SalesReturnDto;
@@ -40,7 +41,7 @@ public class ReturnsController {
      * absent from the map, not present with a zero.
      */
     @GetMapping("/order/{orderId}")
-    public Map<Long, Integer> returnedQuantitiesForOrder(@PathVariable Long orderId) {
+    public Map<Long, BigDecimal> returnedQuantitiesForOrder(@PathVariable Long orderId) {
         return returnsService.returnedQuantitiesForOrder(orderId);
     }
 

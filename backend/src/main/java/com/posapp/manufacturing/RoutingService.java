@@ -35,6 +35,15 @@ public class RoutingService {
     }
 
     @Transactional(readOnly = true)
+    public List<RoutingDto> filtered(String q, String status) {
+        return repository.findAllByOrderByNameAsc().stream()
+                .filter(r -> status == null || status.isBlank() || (status.equalsIgnoreCase("ACTIVE") == r.isActive()))
+                .filter(r -> com.posapp.common.ListPaging.has(q, r.getName(), r.getDescription())
+                        || (q != null && !q.isBlank() && r.getOperations().stream().anyMatch(o -> com.posapp.common.ListPaging.has(q, o.getName(), o.getWorkstation() == null ? null : o.getWorkstation().getName()))))
+                .map(RoutingDto::from).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<RoutingDto> listAll() {
         return repository.findAllByOrderByNameAsc().stream().map(RoutingDto::from).toList();
     }
@@ -83,6 +92,7 @@ public class RoutingService {
             op.setName(entry.getName());
             op.setWorkstation(entry.getWorkstationId() != null ? workstationService.getEntityOrThrow(entry.getWorkstationId()) : null);
             op.setEstimatedMinutesPerUnit(entry.getEstimatedMinutesPerUnit() != null ? entry.getEstimatedMinutesPerUnit() : java.math.BigDecimal.ZERO);
+            op.setLabourHourlyRate(entry.getLabourHourlyRate() != null ? entry.getLabourHourlyRate() : java.math.BigDecimal.ZERO);
             return op;
         }).collect(Collectors.toList());
         r.getOperations().addAll(operations);

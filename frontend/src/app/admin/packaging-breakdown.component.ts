@@ -55,7 +55,7 @@ import { PackagingBreakdown, PackagingRule } from '../core/models';
         </div>
         <div class="form-group mb-3" *ngIf="selectedRule">
           <label class="form-label">Quantity of {{ selectedRule.parentProductName }} to break down</label>
-          <input type="number" class="form-control" style="max-width:160px;" min="1" name="parentQuantity" [(ngModel)]="parentQuantity" />
+          <input type="number" step="any" class="form-control" style="max-width:160px;" min="0.0001" name="parentQuantity" [(ngModel)]="parentQuantity" />
           <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;" *ngIf="parentQuantity > 0">
             Produces <strong>{{ parentQuantity * selectedRule.unitsPerParent }}</strong> x {{ selectedRule.childProductName }}.
           </div>

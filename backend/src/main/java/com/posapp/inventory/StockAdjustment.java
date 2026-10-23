@@ -1,6 +1,7 @@
 package com.posapp.inventory;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -39,7 +40,7 @@ public class StockAdjustment extends BaseEntity {
     /** Snapshot of the product's name at adjustment time, so a later product rename doesn't rewrite this trail entry. */
     private String productName;
 
-    private int quantityDelta;
+    private BigDecimal quantityDelta = BigDecimal.ZERO;
 
     /**
      * Fourier: multi-warehouse phase 2 — the specific location this adjustment applies to.
@@ -58,10 +59,10 @@ public class StockAdjustment extends BaseEntity {
     private String warehouseName;
 
     /** A preview at PENDING time, the real pre-adjustment stock once CONFIRMED — see this class's own javadoc. */
-    private int stockBefore;
+    private BigDecimal stockBefore = BigDecimal.ZERO;
 
     /** A preview at PENDING time, the real post-adjustment stock once CONFIRMED — see this class's own javadoc. */
-    private int stockAfter;
+    private BigDecimal stockAfter = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private StockAdjustmentReason reason;

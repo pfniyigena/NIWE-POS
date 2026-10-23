@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public record BrandSalesRow(
         Long brandId,
         String brandName,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal salesTotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal

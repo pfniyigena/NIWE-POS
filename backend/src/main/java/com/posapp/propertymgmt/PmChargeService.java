@@ -195,7 +195,7 @@ public class PmChargeService {
         req.setDescription(description);
         req.setUnitPrice(ZERO);
         req.setCostPrice(ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);

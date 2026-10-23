@@ -1,4 +1,5 @@
 package com.posapp.restaurant;
+import com.posapp.common.Qty;
 
 import com.posapp.common.ExportFiles;
 import com.posapp.reports.ReportExportService;
@@ -51,7 +52,7 @@ public class RestaurantExportController {
     }
 
     static String s(Object o) {
-        return o == null ? "" : String.valueOf(o);
+        return o == null ? "" : o instanceof BigDecimal b ? Qty.str(b) : String.valueOf(o);
     }
 
     static String num(BigDecimal v) {
@@ -98,7 +99,7 @@ public class RestaurantExportController {
         List<List<String>> body = new ArrayList<>();
         for (RestaurantOrderDto o : orderService.closedFiltered(q, status, type, method, serverId, from, to, false)) {
             body.add(List.of(when(o.closedAt()), s(o.ticketNumber()), pretty(o.orderType()), s(o.displayLabel()), s(o.serverName()), s(o.guestCount()),
-                    s(o.lines().stream().mapToInt(l -> l.quantity()).sum()), num(o.subtotal()), num(o.taxTotal()), num(o.total()), num(o.paidTotal()),
+                    s(o.lines().stream().map(l -> l.quantity()).reduce(BigDecimal.ZERO, BigDecimal::add)), num(o.subtotal()), num(o.taxTotal()), num(o.total()), num(o.paidTotal()),
                     o.payments().stream().map(p -> p.method()).distinct().collect(Collectors.joining(" + ")), pretty(o.status())));
         }
         return ExportFiles.file(exportService, title("Restaurant receipts", pick("status", status), pick("type", type), method == null || method.isBlank() ? null : "paid by " + method,

@@ -1,5 +1,6 @@
 package com.posapp.assets;
 
+import com.posapp.common.Qty;
 import com.posapp.accounting.AccountingService;
 import com.posapp.assets.FixedAssetService.PurchaseLink;
 import com.posapp.assets.dto.AssetDtos.AssetDto;
@@ -57,10 +58,10 @@ public class AssetPurchaseService {
         orders.sort((a, b) -> b.getOrderDate().compareTo(a.getOrderDate()));
         for (PurchaseOrder po : orders) {
             for (PurchaseOrderLine line : po.getLines()) {
-                if (line.getQuantityReceived() <= 0) continue;
+                if (line.getQuantityReceived().signum() <= 0) continue;
                 rows.add(new PurchaseLineDto(line.getId(), po.getId(), po.getOrderNumber(),
                         po.getSupplier() != null ? po.getSupplier().getName() : null,
-                        po.getOrderDate().atZone(ZoneOffset.UTC).toLocalDate(), line.getProductName(), line.getQuantityReceived(),
+                        po.getOrderDate().atZone(ZoneOffset.UTC).toLocalDate(), line.getProductName(), line.getQuantityReceived().intValue(),
                         (int) assetRepository.countByPurchaseOrderLineId(line.getId()), unitNetCost(po, line), isStockTracked(line)));
             }
         }
@@ -72,7 +73,7 @@ public class AssetPurchaseService {
         PurchaseOrder po = purchaseOrderRepository.findFirstByLinesId(request.purchaseOrderLineId())
                 .orElseThrow(() -> ApiException.notFound("Purchase order line not found: " + request.purchaseOrderLineId()));
         PurchaseOrderLine line = po.getLines().stream().filter(l -> l.getId().equals(request.purchaseOrderLineId())).findFirst().orElseThrow();
-        if (line.getQuantityReceived() <= 0) {
+        if (line.getQuantityReceived().signum() <= 0) {
             throw ApiException.badRequest("Nothing has been received on this line yet.");
         }
         if (isStockTracked(line)) {
@@ -81,9 +82,9 @@ public class AssetPurchaseService {
         }
         int already = (int) assetRepository.countByPurchaseOrderLineId(line.getId());
         int quantity = request.quantity();
-        if (quantity < 1 || already + quantity > line.getQuantityReceived()) {
-            throw ApiException.badRequest("You can register " + (line.getQuantityReceived() - already) + " more unit(s) from this line ("
-                    + line.getQuantityReceived() + " received, " + already + " already registered).");
+        if (quantity < 1 || BigDecimal.valueOf(already + quantity).compareTo(line.getQuantityReceived()) > 0) {
+            throw ApiException.badRequest("You can register " + (line.getQuantityReceived().subtract(BigDecimal.valueOf(already))) + " more unit(s) from this line ("
+                    + Qty.str(line.getQuantityReceived()) + " received, " + already + " already registered).");
         }
         BigDecimal unitCost = unitNetCost(po, line);
         if (unitCost.signum() <= 0) {
@@ -109,9 +110,9 @@ public class AssetPurchaseService {
 
     /** Net (no tax) cost of one unit: the line's net cost after discount, divided by the quantity ordered. */
     private static BigDecimal unitNetCost(PurchaseOrder po, PurchaseOrderLine line) {
-        if (line.getQuantityOrdered() <= 0) return BigDecimal.ZERO;
+        if (line.getQuantityOrdered().signum() <= 0) return BigDecimal.ZERO;
         return SupplierPaymentService.lineNet(po.getDiscountPercent(), line)
-                .divide(BigDecimal.valueOf(line.getQuantityOrdered()), 2, RoundingMode.HALF_UP);
+                .divide(line.getQuantityOrdered(), 2, RoundingMode.HALF_UP);
     }
 
     private static boolean isStockTracked(PurchaseOrderLine line) {

@@ -52,6 +52,13 @@ public class Bom extends BaseEntity {
 
     private boolean active = true;
 
+    /** MF-6: 1, 2, 3... per product, in the order the recipes were made. A copy gets the next number. */
+    private int version = 1;
+
     @OneToMany(mappedBy = "bom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BomLine> lines = new ArrayList<>();
+
+    /** MF-4: other products this recipe yields besides {@code product}. */
+    @OneToMany(mappedBy = "bom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BomByProduct> byProducts = new ArrayList<>();
 }

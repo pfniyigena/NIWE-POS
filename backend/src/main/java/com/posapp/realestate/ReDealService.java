@@ -184,7 +184,7 @@ public class ReDealService {
         req.setDescription("Property sales: payments and commission");
         req.setUnitPrice(ZERO);
         req.setCostPrice(ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);
@@ -780,7 +780,7 @@ public class ReDealService {
         req.setNotes("Deal " + d.getCode() + ": " + p.getCode() + " " + p.getTitle());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(saleProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(m.getAmount());
         line.setDescription(m.getLabel() + ": " + p.getCode() + " " + p.getTitle());
         req.setLines(List.of(line));
@@ -983,7 +983,7 @@ public class ReDealService {
         req.setNotes("Deal " + d.getCode() + ": " + p.getCode() + " " + p.getTitle());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(saleProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(total);
         boolean pct = d.getCommissionFixed() == null || d.getCommissionFixed().signum() <= 0;
         line.setDescription("Sales commission on " + p.getCode() + " " + p.getTitle() + " (sold for " + plain(price(d)) + (pct ? ", " + plain(d.getCommissionPercent()) + "%" : "") + ")");

@@ -17,7 +17,7 @@ public record BatchDto(
         String batchNumber,
         LocalDate expiryDate,
         Long daysToExpiry,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitCost,
         String source
 ) {

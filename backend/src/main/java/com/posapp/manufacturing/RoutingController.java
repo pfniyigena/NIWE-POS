@@ -20,8 +20,9 @@ public class RoutingController {
     }
 
     @GetMapping
-    public List<RoutingDto> listAll() {
-        return routingService.listAll();
+    public org.springframework.http.ResponseEntity<List<RoutingDto>> listAll(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(routingService.filtered(q, status), page, size);
     }
 
     @GetMapping("/active")

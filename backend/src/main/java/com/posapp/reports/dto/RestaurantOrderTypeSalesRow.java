@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public record RestaurantOrderTypeSalesRow(
         String orderType,
         int orderCount,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal salesTotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal

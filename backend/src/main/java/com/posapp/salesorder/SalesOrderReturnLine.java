@@ -26,7 +26,7 @@ public class SalesOrderReturnLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private SalesOrderLine orderLine;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     /** {@code quantity * orderLine.unitPrice} at the moment of return — snapshotted, see class javadoc. */
     private BigDecimal refundAmount;
@@ -37,6 +37,6 @@ public class SalesOrderReturnLine extends BaseEntity {
      * +quantity} to it (see {@code SalesOrderReturnService#processReturn}), same snapshot
      * reasoning as {@code com.posapp.order.OrderLine.stockBefore}/{@code stockAfter}.
      */
-    private Integer stockBefore;
-    private Integer stockAfter;
+    private BigDecimal stockBefore;
+    private BigDecimal stockAfter;
 }

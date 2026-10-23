@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 public record EfrisInvoiceLine(
         String productName,
         String productCode,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitPrice,
         BigDecimal taxRatePercent,
         String taxLabel,

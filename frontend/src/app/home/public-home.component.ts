@@ -60,7 +60,8 @@ interface PublicLink {
       </main>
 
       <footer class="public-home-footer">
-        <span class="text-muted">&copy; {{ year }} {{ businessName || 'This business' }}</span>
+        <div class="text-muted">&copy; {{ year }} {{ businessName || 'This business' }}</div>
+        <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">&copy; 2026 NIWE GROUP</div>
       </footer>
     </div>
   `,

@@ -171,18 +171,18 @@ import { Brand, Category, TaxRateOption } from '../core/models';
         </div>
         <div class="form-group" *ngIf="trackStock">
           <label class="form-label">Stock quantity</label>
-          <input class="form-control" type="number" min="0" name="stockQuantity" [(ngModel)]="stockQuantity" required />
+          <input class="form-control" type="number" step="any" min="0" name="stockQuantity" [(ngModel)]="stockQuantity" required />
         </div>
         <div class="form-group" *ngIf="trackStock">
           <label class="form-label">Reorder level (optional)</label>
-          <input class="form-control" type="number" min="0" name="reorderLevel" [(ngModel)]="reorderLevel" />
+          <input class="form-control" type="number" step="any" min="0" name="reorderLevel" [(ngModel)]="reorderLevel" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             When sellable stock plus open purchase orders falls to this level, the product appears on Inventory &gt; Reorder.
           </div>
         </div>
         <div class="form-group" *ngIf="trackStock && reorderLevel !== null && reorderLevel !== undefined">
           <label class="form-label">Maximum stock level (optional)</label>
-          <input class="form-control" type="number" min="0" name="maxStockLevel" [(ngModel)]="maxStockLevel" />
+          <input class="form-control" type="number" step="any" min="0" name="maxStockLevel" [(ngModel)]="maxStockLevel" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Suggested order quantity brings stock back up to this level (defaults to twice the reorder level).</div>
         </div>
         <div class="form-group" *ngIf="trackStock">

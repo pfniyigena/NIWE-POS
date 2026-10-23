@@ -27,6 +27,14 @@ public class WorkstationService {
     }
 
     @Transactional(readOnly = true)
+    public List<WorkstationDto> filtered(String q, String status) {
+        return repository.findAllByOrderByNameAsc().stream()
+                .filter(w -> status == null || status.isBlank() || (status.equalsIgnoreCase("ACTIVE") == w.isActive()))
+                .filter(w -> com.posapp.common.ListPaging.has(q, w.getCode(), w.getName(), w.getDescription()))
+                .map(WorkstationDto::from).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<WorkstationDto> listAll() {
         return repository.findAllByOrderByNameAsc().stream().map(WorkstationDto::from).toList();
     }

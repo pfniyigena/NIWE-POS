@@ -117,6 +117,7 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/hr', areas: ['HR'] },
 
   // Operations modules.
+  { prefix: 'admin/manufacturing/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/manufacturing', areas: ['OPERATIONS'] },
   { prefix: 'admin/restaurant', areas: ['OPERATIONS'] },
   { prefix: 'admin/hotel', areas: ['HOTEL'] },

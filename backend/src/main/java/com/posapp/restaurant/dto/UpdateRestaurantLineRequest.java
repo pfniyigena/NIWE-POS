@@ -1,7 +1,8 @@
 package com.posapp.restaurant.dto;
 
-public class UpdateRestaurantLineRequest {
-    private Integer quantity;
+
+import java.math.BigDecimal;public class UpdateRestaurantLineRequest {
+    private BigDecimal quantity;
     private String notes;
     /** A discount on this line, in percent (0 removes it). Anything above the restaurant's limit needs a manager. */
     private java.math.BigDecimal discountPercent;
@@ -26,8 +27,8 @@ public class UpdateRestaurantLineRequest {
     public String getDiscountReason() { return discountReason; }
     public void setDiscountReason(String discountReason) { this.discountReason = discountReason; }
 
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 }

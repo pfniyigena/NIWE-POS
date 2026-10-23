@@ -58,7 +58,7 @@ interface ReturnRow {
               <td>{{ row.soldQty }}</td>
               <td>
                 <input
-                  type="number"
+                  type="number" step="any"
                   class="form-control form-control-sm"
                   style="width:90px;"
                   min="0"

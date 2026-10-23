@@ -1,4 +1,5 @@
 package com.posapp.salesorder;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -173,7 +174,7 @@ public class SalesOrderService {
     }
 
     private static BigDecimal lineGrossBeforeDiscount(SalesOrderLine line) {
-        return line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantityOrdered())).setScale(2, RoundingMode.HALF_UP);
+        return line.getUnitPrice().multiply(line.getQuantityOrdered()).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -310,21 +311,21 @@ public class SalesOrderService {
         }
         // Confirming reserves the ordered quantities. Warn (409) when what is available — sellable stock minus
         // what other confirmed orders already hold — doesn't cover this order; an admin can confirm anyway.
-        java.util.Map<Long, Integer> needed = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, BigDecimal> needed = new java.util.LinkedHashMap<>();
         java.util.Map<Long, Product> neededProducts = new java.util.LinkedHashMap<>();
         for (SalesOrderLine line : so.getLines()) {
             Product p = line.getProduct();
             if (p == null || !p.isTrackStock() || p.isService()) continue;
-            needed.merge(p.getId(), line.getQuantityOrdered() - line.getQuantityFulfilled(), Integer::sum);
+            needed.merge(p.getId(), line.getQuantityOrdered().subtract(line.getQuantityFulfilled()), BigDecimal::add);
             neededProducts.putIfAbsent(p.getId(), p);
         }
         StringBuilder shortages = new StringBuilder();
-        for (java.util.Map.Entry<Long, Integer> e : needed.entrySet()) {
+        for (java.util.Map.Entry<Long, BigDecimal> e : needed.entrySet()) {
             Product p = neededProducts.get(e.getKey());
-            int available = stockReservationService.available(p);
-            if (e.getValue() > available) {
+            BigDecimal available = stockReservationService.available(p);
+            if (e.getValue().compareTo(available) > 0) {
                 if (shortages.length() > 0) shortages.append("; ");
-                shortages.append(p.getName()).append(": ").append(Math.max(available, 0)).append(" available, ").append(e.getValue()).append(" ordered");
+                shortages.append(p.getName()).append(": ").append(Qty.max(available, BigDecimal.ZERO)).append(" available, ").append(e.getValue()).append(" ordered");
             }
         }
         if (shortages.length() > 0 && !overrideShortage) {
@@ -389,19 +390,19 @@ public class SalesOrderService {
                 // Fourier: "Add track stock attribute on Product" — a non-tracked product can
                 // always be fulfilled regardless of stockQuantity; see Product.trackStock's javadoc.
                 if (line.getProduct() != null && line.getProduct().isTrackStock()) {
-                    int onHand = fulfilLocation != null
+                    BigDecimal onHand = fulfilLocation != null
                             ? warehouseService.getStockQuantity(line.getProduct(), fulfilLocation)
                             : line.getProduct().getStockQuantity();
                     // Stock promised to OTHER confirmed orders isn't free to take (this order's own outstanding is excluded).
-                    int ownOutstanding = so.getLines().stream()
+                    BigDecimal ownOutstanding = so.getLines().stream()
                             .filter(l -> l.getProduct() != null && l.getProduct().getId().equals(line.getProduct().getId()))
-                            .mapToInt(l -> l.getQuantityOrdered() - l.getQuantityFulfilled()).sum();
-                    int reservedByOthers = Math.max(0, stockReservationService.reserved(line.getProduct()) - ownOutstanding);
-                    int available = onHand - reservedByOthers;
-                    if (entry.getQuantityFulfilled() > available) {
+                            .map(l -> l.getQuantityOrdered().subtract(l.getQuantityFulfilled())).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal reservedByOthers = Qty.max(BigDecimal.ZERO, stockReservationService.reserved(line.getProduct()).subtract(ownOutstanding));
+                    BigDecimal available = onHand.subtract(reservedByOthers);
+                    if (entry.getQuantityFulfilled().compareTo(available) > 0) {
                         throw ApiException.badRequest("Not enough stock for '" + line.getProductName() + "' — " + available
-                                + " available" + (reservedByOthers > 0 ? " (" + reservedByOthers + " reserved for other sales orders)" : "")
-                                + ", " + entry.getQuantityFulfilled() + " requested. Enable \"Allow negative stock\" in Inventory settings to fulfill anyway.");
+                                + " available" + (reservedByOthers.signum() > 0 ? " (" + reservedByOthers + " reserved for other sales orders)" : "")
+                                + ", " + Qty.str(entry.getQuantityFulfilled()) + " requested. Enable \"Allow negative stock\" in Inventory settings to fulfill anyway.");
                     }
                 }
             }
@@ -423,14 +424,14 @@ public class SalesOrderService {
                     .filter(l -> l.getId().equals(entry.getLineId()))
                     .findFirst()
                     .orElseThrow(() -> ApiException.badRequest("Line " + entry.getLineId() + " does not belong to sales order " + so.getOrderNumber()));
-            int remaining = line.getQuantityOrdered() - line.getQuantityFulfilled();
-            if (entry.getQuantityFulfilled() > remaining) {
-                throw ApiException.badRequest("Cannot fulfill " + entry.getQuantityFulfilled() + " of '" + line.getProductName()
-                        + "' — only " + remaining + " remaining (of " + line.getQuantityOrdered() + " ordered, " + line.getQuantityFulfilled() + " already fulfilled)");
+            BigDecimal remaining = line.getQuantityOrdered().subtract(line.getQuantityFulfilled());
+            if (entry.getQuantityFulfilled().compareTo(remaining) > 0) {
+                throw ApiException.badRequest("Cannot fulfill " + Qty.str(entry.getQuantityFulfilled()) + " of '" + line.getProductName()
+                        + "' — only " + Qty.str(remaining) + " remaining (of " + Qty.str(line.getQuantityOrdered()) + " ordered, " + Qty.str(line.getQuantityFulfilled()) + " already fulfilled)");
             }
-            line.setQuantityFulfilled(line.getQuantityFulfilled() + entry.getQuantityFulfilled());
+            line.setQuantityFulfilled(line.getQuantityFulfilled().add(entry.getQuantityFulfilled()));
             boolean inclusive = Boolean.TRUE.equals(line.getTaxInclusive());
-            BigDecimal grossFulfilledBeforeDiscount = line.getUnitPrice().multiply(BigDecimal.valueOf(entry.getQuantityFulfilled()));
+            BigDecimal grossFulfilledBeforeDiscount = line.getUnitPrice().multiply(entry.getQuantityFulfilled());
             // Fourier: "Same for discount ... it will be per line", then "Except POS other
             // module can have global discount ... Either on line or global" — the same
             // effective discountPercent (PER_LINE or GLOBAL, whichever applies) knocked off this
@@ -444,14 +445,14 @@ public class SalesOrderService {
             // Fourier: "Add track stock attribute on Product" — a non-tracked product's stock is
             // never deducted at all, so quantityFulfilled still advances above but no stock move
             // (and no SalesOrderFulfillment row) is recorded for it; see Product.trackStock's javadoc.
-            if (line.getProduct() != null && line.getProduct().isTrackStock() && entry.getQuantityFulfilled() != 0) {
+            if (line.getProduct() != null && line.getProduct().isTrackStock() && entry.getQuantityFulfilled().signum() != 0) {
                 if (line.getProduct().getCostPrice() != null) {
                     cogsAmount = cogsAmount.add(
-                            line.getProduct().getCostPrice().multiply(BigDecimal.valueOf(entry.getQuantityFulfilled())));
+                            line.getProduct().getCostPrice().multiply(entry.getQuantityFulfilled()));
                 }
                 // Task 6: "Stock Movement History" — one structured, dated row per product
                 // actually fulfilled, see SalesOrderFulfillment's own javadoc.
-                int stockBefore = fulfilLocation != null
+                BigDecimal stockBefore = fulfilLocation != null
                         ? warehouseService.getStockQuantity(line.getProduct(), fulfilLocation)
                         : line.getProduct().getStockQuantity();
                 java.util.Map<Long, List<String>> chosenSerials = null;
@@ -461,11 +462,11 @@ public class SalesOrderService {
                 }
                 com.posapp.tracking.TrackingContext.begin(so.getOrderNumber(), chosenSerials);
                 try {
-                    catalogService.adjustStock(line.getProduct(), -entry.getQuantityFulfilled(), fulfilLocation);
+                    catalogService.adjustStock(line.getProduct(), entry.getQuantityFulfilled().negate(), fulfilLocation);
                 } finally {
                     com.posapp.tracking.TrackingContext.clear();
                 }
-                int stockAfter = fulfilLocation != null
+                BigDecimal stockAfter = fulfilLocation != null
                         ? warehouseService.getStockQuantity(line.getProduct(), fulfilLocation)
                         : line.getProduct().getStockQuantity();
                 SalesOrderFulfillment fulfillment = new SalesOrderFulfillment();
@@ -487,8 +488,8 @@ public class SalesOrderService {
             fulfilledDescription.append(entry.getQuantityFulfilled()).append(" x ").append(line.getProductName());
         }
 
-        boolean allFulfilled = so.getLines().stream().allMatch(l -> l.getQuantityFulfilled() >= l.getQuantityOrdered());
-        boolean anyFulfilled = so.getLines().stream().anyMatch(l -> l.getQuantityFulfilled() > 0);
+        boolean allFulfilled = so.getLines().stream().allMatch(l -> l.getQuantityFulfilled().compareTo(l.getQuantityOrdered()) >= 0);
+        boolean anyFulfilled = so.getLines().stream().anyMatch(l -> l.getQuantityFulfilled().signum() > 0);
         so.setStatus(allFulfilled ? SalesOrderStatus.FULFILLED : anyFulfilled ? SalesOrderStatus.PARTIALLY_FULFILLED : so.getStatus());
 
         SalesOrder saved = salesOrderRepository.save(so);
@@ -529,7 +530,7 @@ public class SalesOrderService {
             line.setProduct(product);
             line.setProductName(product.getName());
             line.setQuantityOrdered(entry.getQuantityOrdered());
-            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : pricingService.resolve(so.getCustomer(), product, Math.max(1, entry.getQuantityOrdered())).unitPrice());
+            line.setUnitPrice(entry.getUnitPrice() != null ? entry.getUnitPrice() : pricingService.resolve(so.getCustomer(), product, Qty.max(BigDecimal.ONE, entry.getQuantityOrdered())).unitPrice());
             // Fourier: "Same for discount (but discount should be activate in the setting or
             // configuration) and it will be per line" — validated/capped (including whether the
             // feature is even turned on) before ever reaching the line.

@@ -27,11 +27,11 @@ public class Promotion extends BaseEntity {
     private Long targetId;
     private BigDecimal value;
     @Column(name = "buy_quantity")
-    private Integer buyQuantity;
+    private BigDecimal buyQuantity;
     @Column(name = "free_quantity")
-    private Integer freeQuantity;
+    private BigDecimal freeQuantity;
     @Column(name = "min_quantity", nullable = false)
-    private int minQuantity = 1;
+    private BigDecimal minQuantity = BigDecimal.ONE;
     @Column(name = "min_spend")
     private BigDecimal minSpend;
     @Column(name = "valid_from")
@@ -60,12 +60,12 @@ public class Promotion extends BaseEntity {
     public void setTargetId(Long targetId) { this.targetId = targetId; }
     public BigDecimal getValue() { return value; }
     public void setValue(BigDecimal value) { this.value = value; }
-    public Integer getBuyQuantity() { return buyQuantity; }
-    public void setBuyQuantity(Integer buyQuantity) { this.buyQuantity = buyQuantity; }
-    public Integer getFreeQuantity() { return freeQuantity; }
-    public void setFreeQuantity(Integer freeQuantity) { this.freeQuantity = freeQuantity; }
-    public int getMinQuantity() { return minQuantity; }
-    public void setMinQuantity(int minQuantity) { this.minQuantity = minQuantity; }
+    public BigDecimal getBuyQuantity() { return buyQuantity; }
+    public void setBuyQuantity(BigDecimal buyQuantity) { this.buyQuantity = buyQuantity; }
+    public BigDecimal getFreeQuantity() { return freeQuantity; }
+    public void setFreeQuantity(BigDecimal freeQuantity) { this.freeQuantity = freeQuantity; }
+    public BigDecimal getMinQuantity() { return minQuantity; }
+    public void setMinQuantity(BigDecimal minQuantity) { this.minQuantity = minQuantity; }
     public BigDecimal getMinSpend() { return minSpend; }
     public void setMinSpend(BigDecimal minSpend) { this.minSpend = minSpend; }
     public LocalDate getValidFrom() { return validFrom; }

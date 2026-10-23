@@ -38,7 +38,21 @@ public class ManufacturingOrderRun extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private ManufacturingOrder manufacturingOrder;
 
-    private int quantityProduced;
+    private BigDecimal quantityProduced = BigDecimal.ZERO;
+
+    /** MF-4: units started that did not come out as good product (rejects, spoilage). Not added to stock, not counted against the order. */
+    private BigDecimal quantityScrapped = BigDecimal.ZERO;
+
+    private String scrapReason;
+
+    /** MF-4: the part of this run's cost that went into the scrapped units (already inside totalCost, so it raises the good units' cost). */
+    private BigDecimal scrapCost = BigDecimal.ZERO;
+
+    /** MF-4: the part of this run's cost taken by by-products — subtracted before working out the main product's unit cost. */
+    private BigDecimal byProductCredit = BigDecimal.ZERO;
+
+    @OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ManufacturingOrderRunByProduct> byProducts = new ArrayList<>();
 
     private BigDecimal materialCost = BigDecimal.ZERO;
 
@@ -46,9 +60,17 @@ public class ManufacturingOrderRun extends BaseEntity {
 
     private BigDecimal totalCost = BigDecimal.ZERO;
 
-    private Integer stockBefore;
+    /** MF-2: the people's time and the machines' time on this run, from the order's operations. Zero for an order without a routing. */
+    private BigDecimal labourCost = BigDecimal.ZERO;
 
-    private Integer stockAfter;
+    private BigDecimal machineCost = BigDecimal.ZERO;
+
+    @OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ManufacturingOrderRunOperation> operations = new ArrayList<>();
+
+    private BigDecimal stockBefore;
+
+    private BigDecimal stockAfter;
 
     @OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ManufacturingOrderConsumption> consumptions = new ArrayList<>();

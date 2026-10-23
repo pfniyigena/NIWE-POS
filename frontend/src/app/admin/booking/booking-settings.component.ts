@@ -38,8 +38,9 @@ const DAYS = [
           <div class="form-group mb-2"><label class="form-label">Online cancel until (hours before)</label><input class="form-control" type="number" min="0" name="cn" [(ngModel)]="s.cancelNoticeHours" /></div>
         </div>
 
-        <strong class="mt-2">Public booking page</strong>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" name="pe" [(ngModel)]="s.publicEnabled" /> Let guests book online (the /book page)</label>
+        <strong class="mt-2">Public website</strong>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" class="bk-public" name="pe" [(ngModel)]="s.publicEnabled" /> Allow public website</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">Guests can then pick a service and a time themselves at <strong>/book</strong> on this site, without signing in. Switch it off to close the page and take its tile off the home page; staff still book appointments as usual.</div>
         <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ec" [(ngModel)]="s.emailConfirmations" /> Email a confirmation when the guest gives an email address</label>
         <div class="form-group mb-2"><label class="form-label">Bookings per phone number per day</label><input class="form-control" style="width:8rem;" type="number" min="1" max="50" name="pp" [(ngModel)]="s.maxPublicPerPhonePerDay" /></div>
         <div class="form-group mb-2"><label class="form-label">Page title</label><input class="form-control" name="pt" [(ngModel)]="title" /></div>

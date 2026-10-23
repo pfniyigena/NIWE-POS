@@ -76,18 +76,18 @@ public class SalesReportService {
 
     @Transactional(readOnly = true)
     public List<CustomerSalesRow> salesByCustomer(Instant from, Instant to, Long branchId) {
-        record Acc(String name, int[] counts, BigDecimal[] money) {
+        record Acc(String name, BigDecimal[] counts, BigDecimal[] money) {
         }
         Map<Long, Acc> byCustomer = new LinkedHashMap<>();
         for (SalesOrder so : confirmedOrders(from, to, branchId)) {
             Customer customer = so.getCustomer();
             Long key = customer != null ? customer.getId() : -1L;
             Acc acc = byCustomer.computeIfAbsent(key, k -> new Acc(customer != null ? customer.getName() : "(no customer)",
-                    new int[3], new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}));
-            acc.counts[0]++;
+                    new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO}));
+            acc.counts[0] = acc.counts[0].add(BigDecimal.ONE);
             for (SalesOrderLine line : so.getLines()) {
-                acc.counts[1] += line.getQuantityOrdered();
-                acc.counts[2] += line.getQuantityFulfilled();
+                acc.counts[1] = acc.counts[1].add(line.getQuantityOrdered());
+                acc.counts[2] = acc.counts[2].add(line.getQuantityFulfilled());
             }
             acc.money[0] = acc.money[0].add(SalesOrderService.subtotalAmount(so));
             acc.money[1] = acc.money[1].add(SalesOrderService.taxAmount(so));
@@ -96,7 +96,7 @@ public class SalesReportService {
             acc.money[4] = acc.money[4].add(customerCreditService.outstandingForSalesOrder(so));
         }
         List<CustomerSalesRow> rows = new ArrayList<>();
-        byCustomer.forEach((id, a) -> rows.add(new CustomerSalesRow(id < 0 ? null : id, a.name, a.counts[0], a.counts[1], a.counts[2],
+        byCustomer.forEach((id, a) -> rows.add(new CustomerSalesRow(id < 0 ? null : id, a.name, a.counts[0].intValue(), a.counts[1], a.counts[2],
                 a.money[0], a.money[1], a.money[2], a.money[3], a.money[4])));
         rows.sort(Comparator.comparing(CustomerSalesRow::totalAmount).reversed());
         return rows;
@@ -104,7 +104,7 @@ public class SalesReportService {
 
     @Transactional(readOnly = true)
     public List<ProductSalesOrderRow> salesByProduct(Instant from, Instant to, Long branchId) {
-        record Acc(Long productId, String sku, String name, String category, int[] qty, BigDecimal[] money) {
+        record Acc(Long productId, String sku, String name, String category, BigDecimal[] qty, BigDecimal[] money) {
         }
         Map<String, Acc> byProduct = new LinkedHashMap<>();
         for (SalesOrder so : confirmedOrders(from, to, branchId)) {
@@ -114,9 +114,9 @@ public class SalesReportService {
                 Acc acc = byProduct.computeIfAbsent(key, k -> new Acc(product != null ? product.getId() : null,
                         product != null ? product.getSku() : null,
                         product != null ? product.getName() : line.getProductName(),
-                        categoryName(product), new int[2], new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
-                acc.qty[0] += line.getQuantityOrdered();
-                acc.qty[1] += line.getQuantityFulfilled();
+                        categoryName(product), new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
+                acc.qty[0] = acc.qty[0].add(line.getQuantityOrdered());
+                acc.qty[1] = acc.qty[1].add(line.getQuantityFulfilled());
                 acc.money[0] = acc.money[0].add(SalesOrderService.lineNet(so.getDiscountPercent(), line));
                 acc.money[1] = acc.money[1].add(SalesOrderService.lineTax(so.getDiscountPercent(), line));
             }
@@ -125,7 +125,7 @@ public class SalesReportService {
         for (Acc a : byProduct.values()) {
             BigDecimal net = a.money[0].setScale(2, RoundingMode.HALF_UP);
             BigDecimal tax = a.money[1].setScale(2, RoundingMode.HALF_UP);
-            BigDecimal average = a.qty[0] == 0 ? BigDecimal.ZERO : net.divide(BigDecimal.valueOf(a.qty[0]), 2, RoundingMode.HALF_UP);
+            BigDecimal average = a.qty[0].signum() == 0 ? BigDecimal.ZERO : net.divide(a.qty[0], 2, RoundingMode.HALF_UP);
             rows.add(new ProductSalesOrderRow(a.productId, a.sku, a.name, a.category, a.qty[0], a.qty[1], net, tax, net.add(tax), average));
         }
         rows.sort(Comparator.comparing(ProductSalesOrderRow::totalAmount).reversed());
@@ -134,15 +134,15 @@ public class SalesReportService {
 
     @Transactional(readOnly = true)
     public List<CategorySalesOrderRow> salesByCategory(Instant from, Instant to, Long branchId) {
-        record Acc(int[] qty, BigDecimal[] money) {
+        record Acc(BigDecimal[] qty, BigDecimal[] money) {
         }
         Map<String, Acc> byCategory = new LinkedHashMap<>();
         for (SalesOrder so : confirmedOrders(from, to, branchId)) {
             for (SalesOrderLine line : so.getLines()) {
                 Acc acc = byCategory.computeIfAbsent(categoryName(line.getProduct()),
-                        k -> new Acc(new int[2], new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
-                acc.qty[0] += line.getQuantityOrdered();
-                acc.qty[1] += line.getQuantityFulfilled();
+                        k -> new Acc(new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO}));
+                acc.qty[0] = acc.qty[0].add(line.getQuantityOrdered());
+                acc.qty[1] = acc.qty[1].add(line.getQuantityFulfilled());
                 acc.money[0] = acc.money[0].add(SalesOrderService.lineNet(so.getDiscountPercent(), line));
                 acc.money[1] = acc.money[1].add(SalesOrderService.lineTax(so.getDiscountPercent(), line));
             }
@@ -195,9 +195,9 @@ public class SalesReportService {
         for (SalesOrderReturn ret : salesOrderReturnRepository.findByReturnDateBetweenOrderByReturnDateDesc(from, to)) {
             SalesOrder so = ret.getSalesOrder();
             if (branchId != null && !ReportService.branchMatches(so.getBranchId(), branchId, headquartersId)) continue;
-            int quantity = 0;
+            BigDecimal quantity = BigDecimal.ZERO;
             for (SalesOrderReturnLine line : ret.getLines()) {
-                quantity += line.getQuantity();
+                quantity = quantity.add(line.getQuantity());
             }
             Customer customer = so.getCustomer();
             rows.add(new SalesReturnReportRow(ret.getId(), ret.getReturnNumber(), so.getOrderNumber(),

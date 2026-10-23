@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { AuthService } from '../core/auth.service';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center;">
       <div class="card" style="width:340px; padding:2rem;">
@@ -42,6 +43,7 @@ import { AuthService } from '../core/auth.service';
         </p>
       </div>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class LoginComponent {

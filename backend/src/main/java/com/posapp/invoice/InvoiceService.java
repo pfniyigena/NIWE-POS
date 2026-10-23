@@ -1,4 +1,5 @@
 package com.posapp.invoice;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -77,9 +78,9 @@ public class InvoiceService {
     private com.posapp.pricing.PricingService pricingService;
 
     /** The price a customer in a price-list group pays when no price was typed; the normal price for anyone else. */
-    private BigDecimal pricedUnit(Long customerId, Product product, int quantity) {
+    private BigDecimal pricedUnit(Long customerId, Product product, BigDecimal quantity) {
         Customer customer = customerId == null ? null : customerRepository.findById(customerId).orElse(null);
-        return pricingService.resolve(customer, product, Math.max(1, quantity)).unitPrice();
+        return pricingService.resolve(customer, product, Qty.max(BigDecimal.ONE, quantity)).unitPrice();
     }
 
     public InvoiceService(InvoiceRepository invoiceRepository,
@@ -131,7 +132,7 @@ public class InvoiceService {
 
     /** Fourier: "Same for discount ... it will be per line" — derived from (unitPrice * quantity - lineTotal), since the pre-discount gross is never itself persisted. */
     private static BigDecimal lineDiscountAmount(InvoiceLine line) {
-        BigDecimal grossBeforeDiscount = line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal grossBeforeDiscount = line.getUnitPrice().multiply(line.getQuantity()).setScale(2, RoundingMode.HALF_UP);
         return grossBeforeDiscount.subtract(line.getLineTotal()).setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -284,7 +285,7 @@ public class InvoiceService {
             // ordered" reasoning as taxCode/taxRatePercent just below; already validated once
             // when that line was created/edited.
             line.setDiscountPercent(lineDto.discountPercent());
-            BigDecimal grossBeforeDiscount = lineDto.unitPrice().multiply(BigDecimal.valueOf(lineDto.quantityOrdered())).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal grossBeforeDiscount = lineDto.unitPrice().multiply(lineDto.quantityOrdered()).setScale(2, RoundingMode.HALF_UP);
             BigDecimal lineTotal = TaxMath.applyDiscount(grossBeforeDiscount, lineDto.discountPercent());
             line.setLineTotal(lineTotal);
             // Fourier: "for purchases, sales, invoices, bills the tax are not being captured" —
@@ -365,7 +366,7 @@ public class InvoiceService {
             BigDecimal rawSubtotal = entries.stream().map(entry -> {
                 Product p = catalogService.getProductOrThrow(entry.getProductId());
                 BigDecimal unitPrice = entry.getUnitPrice() != null ? entry.getUnitPrice() : pricedUnit(invoice.getCustomerId(), p, entry.getQuantity());
-                return unitPrice.multiply(BigDecimal.valueOf(entry.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+                return unitPrice.multiply(entry.getQuantity()).setScale(2, RoundingMode.HALF_UP);
             }).reduce(BigDecimal.ZERO, BigDecimal::add);
             requestedPercent = TaxMath.percentFromFixedAmount(request.getDiscountFixedAmount(), rawSubtotal);
         } else {
@@ -405,7 +406,7 @@ public class InvoiceService {
             BigDecimal ownDiscountPercent = storeSettingsService.validateLineDiscount(entry.getDiscountPercent());
             BigDecimal discountPercent = TaxMath.effectiveDiscountPercent(headerDiscountPercent, ownDiscountPercent);
             line.setDiscountPercent(discountPercent);
-            BigDecimal grossBeforeDiscount = unitPrice.multiply(BigDecimal.valueOf(entry.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal grossBeforeDiscount = unitPrice.multiply(entry.getQuantity()).setScale(2, RoundingMode.HALF_UP);
             BigDecimal lineTotal = TaxMath.applyDiscount(grossBeforeDiscount, discountPercent);
             line.setLineTotal(lineTotal);
             // Fourier: "for purchases, sales, invoices, bills the tax are not being captured" —
@@ -622,7 +623,7 @@ public class InvoiceService {
         line.setInvoice(invoice);
         line.setProductName("Opening balance");
         line.setDescription(invoice.getNotes());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(value);
         line.setDiscountPercent(BigDecimal.ZERO);
         line.setLineTotal(value);
@@ -661,7 +662,7 @@ public class InvoiceService {
         line.setDescription(periodStart != null && periodEnd != null
                 ? "Subscription billing — " + planName + " (" + PERIOD_DATE_FMT.format(periodStart) + " to " + PERIOD_DATE_FMT.format(periodEnd) + ")"
                 : "Subscription billing — " + planName);
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(amount);
         // Fourier: "subscription plan should also have tax and discount on it" — discount knocked
         // off this line's gross before tax is even considered, same ordering TaxMath.applyDiscount

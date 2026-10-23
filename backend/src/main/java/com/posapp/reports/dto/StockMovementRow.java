@@ -1,6 +1,7 @@
 package com.posapp.reports.dto;
 
-import java.time.Instant;
+
+import java.math.BigDecimal;import java.time.Instant;
 
 /**
  * Task 1: "Inventory Report" — "Stock movement history" half of the user's "Both" answer. One row
@@ -46,9 +47,9 @@ public record StockMovementRow(
         String sku,
         String productName,
         String categoryName,
-        int quantityDelta,
-        int stockBefore,
-        int stockAfter,
+        BigDecimal quantityDelta,
+        BigDecimal stockBefore,
+        BigDecimal stockAfter,
         /** The adjustment's reason code, the purchase order's order number, the sale's invoice number, or the relevant return/order number — whichever this row's {@code type} is. */
         String reference,
         /** Free-text note — an adjustment's own note, or a return's reason; null for a receipt/sale/fulfillment row. */

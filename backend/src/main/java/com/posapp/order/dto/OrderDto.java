@@ -25,7 +25,7 @@ public record OrderDto(
         Instant completedAt,
         List<OrderLineDto> lines,
         List<PaymentDto> payments,
-        int totalQuantity,
+        BigDecimal totalQuantity,
         BigDecimal subtotal,
         BigDecimal taxTotal,
         BigDecimal total,

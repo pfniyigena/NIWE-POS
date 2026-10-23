@@ -18,7 +18,7 @@ public record RestaurantOrderTransactionRow(
         String serverName,
         Instant openedAt,
         Instant closedAt,
-        int itemCount,
+        BigDecimal itemCount,
         BigDecimal subtotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal,

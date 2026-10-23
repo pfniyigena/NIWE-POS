@@ -12,10 +12,12 @@ import { HotelApiService } from '../core/api/hotel-api.service';
  * and — for admins — dashboard/catalog/customers/staff management).
  * The terminal has its own full-screen layout (order tabs replace the topbar), so it doesn't use this.
  */
+import { NiweFooterComponent } from './niwe-footer.component';
+
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [NiweFooterComponent, CommonModule, RouterLink, RouterLinkActive],
   template: `
     <div class="topbar">
       <!-- Fourier: "Make Mobile responsive" (admin/back-office shell scope) — hamburger is hidden
@@ -418,6 +420,9 @@ import { HotelApiService } from '../core/api/hotel-api.service';
             <a *ngIf="canSee('/admin/manufacturing/overhead-costs')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/overhead-costs" routerLinkActive="active"
               ><span class="sidenav-icon">💰</span> Indirect costs</a
             >
+            <a *ngIf="canSee('/admin/manufacturing/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/reports" routerLinkActive="active"
+              ><span class="sidenav-icon">📊</span> Reports</a
+            >
           </ng-container>
           <!-- Subscriptions group (Fourier: "Make subscriptions module as new Menu", then "Let
                subscriptions comes after Manufacturing") — split out of the Sales group into its
@@ -733,6 +738,7 @@ import { HotelApiService } from '../core/api/hotel-api.service';
       </nav>
       <main class="app-main" [class.narrow]="narrow" [class.wide]="wide">
         <ng-content></ng-content>
+        <app-niwe-footer></app-niwe-footer>
       </main>
     </div>
   `,

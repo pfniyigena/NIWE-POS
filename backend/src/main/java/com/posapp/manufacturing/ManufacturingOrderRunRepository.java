@@ -7,6 +7,9 @@ import java.util.List;
 
 public interface ManufacturingOrderRunRepository extends JpaRepository<ManufacturingOrderRun, Long> {
 
-    /** Task: "Any transaction affecting stock should be shown to Stock Movement History" — powers ReportService.stockMovementHistory's two Manufacturing sources (output + consumption, the latter via each run's own consumptions). */
+    /** Used by the production lines of the general reports (ReportService). */
     List<ManufacturingOrderRun> findByCreatedAtBetweenOrderByCreatedAtDesc(Instant from, Instant to);
+
+    /** MF-5: the production runs recorded in a period, oldest first. */
+    List<ManufacturingOrderRun> findByCreatedAtBetweenOrderByCreatedAtAscIdAsc(Instant from, Instant to);
 }

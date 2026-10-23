@@ -9,6 +9,7 @@ import { PurchaseReturnApiService } from '../core/api/purchase-return-api.servic
 import { BillApiService } from '../core/api/bill-api.service';
 import { Bill, PurchaseOrder, PurchaseReturn } from '../core/models';
 
+import { q4 } from '../core/qty';
 interface ReceiveRow {
   lineId: number;
   productName: string;
@@ -181,7 +182,7 @@ interface ReturnRow {
                 <td class="text-end">{{ row.remaining }}</td>
                 <td class="text-end">
                   <input
-                    type="number"
+                    type="number" step="any"
                     class="form-control form-control-sm"
                     style="width:100px; margin-left:auto;"
                     min="0"
@@ -231,7 +232,7 @@ interface ReturnRow {
                 <td class="text-end">{{ row.remaining }}</td>
                 <td class="text-end">
                   <input
-                    type="number"
+                    type="number" step="any"
                     class="form-control form-control-sm"
                     style="width:100px; margin-left:auto;"
                     min="0"
@@ -313,8 +314,8 @@ export class PurchaseOrderDetailComponent implements OnInit {
           .map((l) => ({
             lineId: l.id,
             productName: l.productName,
-            remaining: l.quantityOrdered - l.quantityReceived,
-            quantityReceived: l.quantityOrdered - l.quantityReceived,
+            remaining: q4(l.quantityOrdered - l.quantityReceived),
+            quantityReceived: q4(l.quantityOrdered - l.quantityReceived),
             trackingMode: l.trackingMode ?? 'NONE',
             batchNumber: '',
             expiryDate: '',
@@ -325,7 +326,7 @@ export class PurchaseOrderDetailComponent implements OnInit {
         this.purchaseReturnApi.returnedQuantitiesForOrder(id).subscribe((returnedQty) => {
           this.returnRows = po.lines
             .map((l) => {
-              const remaining = l.quantityReceived - (returnedQty[l.id] ?? 0);
+              const remaining = q4(l.quantityReceived - (returnedQty[l.id] ?? 0));
               return { lineId: l.id, productName: l.productName, remaining, quantity: 0 };
             })
             .filter((row) => row.remaining > 0);

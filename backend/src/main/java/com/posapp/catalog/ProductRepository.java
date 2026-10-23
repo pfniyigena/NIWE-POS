@@ -29,7 +29,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySkuIgnoreCase(String sku);
 
     /** Excludes non-tracked products — see Product.trackStock's javadoc and CatalogService.listLowStock. */
-    List<Product> findByActiveTrueAndTrackStockTrueAndStockQuantityLessThanOrderByStockQuantityAsc(int threshold);
+    List<Product> findByActiveTrueAndTrackStockTrueAndStockQuantityLessThanOrderByStockQuantityAsc(java.math.BigDecimal threshold);
 
     /**
      * Multi-warehouse phase 1 — tracked active products whose SELLABLE stock inside one warehouse
@@ -42,7 +42,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "and ps.location.warehouse = :warehouse and ps.location.active = true " +
            "and (ps.location.type is null or ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)), 0) < :threshold " +
            "order by p.name asc")
-    List<Product> findLowStockInWarehouse(@Param("warehouse") Warehouse warehouse, @Param("threshold") int threshold);
+    List<Product> findLowStockInWarehouse(@Param("warehouse") Warehouse warehouse, @Param("threshold") java.math.BigDecimal threshold);
 
     /** Products with a reorder rule set — the Reorder report's candidates. */
     List<Product> findByActiveTrueAndTrackStockTrueAndReorderLevelNotNullOrderByNameAsc();

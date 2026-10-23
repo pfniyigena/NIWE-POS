@@ -45,11 +45,11 @@ public class StockReceipt extends BaseEntity {
     /** Snapshot of the product's name at receiving time, so a later rename doesn't rewrite this trail entry. */
     private String productName;
 
-    private int quantityReceived;
+    private BigDecimal quantityReceived = BigDecimal.ZERO;
 
-    private int stockBefore;
+    private BigDecimal stockBefore = BigDecimal.ZERO;
 
-    private int stockAfter;
+    private BigDecimal stockAfter = BigDecimal.ZERO;
 
     /** Snapshot of the PurchaseOrderLine's own unitCost for this delivery — see that field's javadoc for why it can differ from Product.costPrice. */
     private BigDecimal unitCost = BigDecimal.ZERO;

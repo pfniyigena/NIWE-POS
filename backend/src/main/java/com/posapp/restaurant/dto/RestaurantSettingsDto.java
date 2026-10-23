@@ -38,7 +38,8 @@ public record RestaurantSettingsDto(
         BigDecimal onlineMinOrder,
         Integer onlineMaxPending,
         Integer onlineExpireMinutes,
-        String onlineMessage
+        String onlineMessage,
+        Boolean publicEnabled
 ) {
     public static RestaurantSettingsDto from(RestaurantSettings s) {
         return new RestaurantSettingsDto(s.getServiceChargePercent(), s.isServiceChargeDineIn(), s.isServiceChargeTakeaway(), s.isServiceChargeDelivery(),
@@ -46,6 +47,6 @@ public record RestaurantSettingsDto(
                 s.getOpenTime(), s.getCloseTime(), s.getSlotMinutes(), s.getTurnMinutes(), s.getBookingDaysAhead(), s.getDepositPerGuest(),
                 s.getDepositRefundHours(), s.getReminderHours(), s.getGraceMinutes(), s.getNoShowBlockCount(), s.getReminderTemplate(),
                 s.getDefaultPrepMinutes(), s.getKitchenWarnPercent(), s.isOnlineEnabled(), s.isQrEnabled(), s.isOnlineTakeaway(), s.isOnlineDelivery(), s.isOnlinePaused(),
-                s.isOnlineAutoAcceptTables(), s.getOnlinePrepMinutes(), s.getOnlineMinOrder(), s.getOnlineMaxPending(), s.getOnlineExpireMinutes(), s.getOnlineMessage());
+                s.isOnlineAutoAcceptTables(), s.getOnlinePrepMinutes(), s.getOnlineMinOrder(), s.getOnlineMaxPending(), s.getOnlineExpireMinutes(), s.getOnlineMessage(), s.isPublicEnabled());
     }
 }

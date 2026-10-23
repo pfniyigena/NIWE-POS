@@ -9,13 +9,13 @@ public record RestaurantWastageDto(
         Long id,
         Long productId,
         String productName,
-        int quantity,
+        BigDecimal quantity,
         String reason,
         String note,
         /** "PENDING" | "CONFIRMED" | "REJECTED" — see RestaurantWastageStatus's own javadoc. */
         String status,
-        Integer stockBefore,
-        Integer stockAfter,
+        BigDecimal stockBefore,
+        BigDecimal stockAfter,
         BigDecimal costImpact,
         Instant createdAt,
         /** Null until an admin confirms/rejects it. */

@@ -72,7 +72,7 @@ import { PROPERTY_TYPES, typeLabel } from '../core/api/realestate-api.service';
           <button class="btn btn-outline-secondary" type="button" [disabled]="page.page + 1 >= pages()" (click)="go(page.page + 1)">Next →</button>
         </div>
       </main>
-      <footer class="pl-foot text-muted">&copy; {{ year }} {{ businessName }}</footer>
+      <footer class="pl-foot text-muted">&copy; {{ year }} {{ businessName }} · &copy; 2026 NIWE GROUP</footer>
     </div>
   `,
   styles: [`

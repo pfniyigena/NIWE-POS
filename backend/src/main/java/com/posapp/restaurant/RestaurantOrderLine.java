@@ -39,7 +39,7 @@ public class RestaurantOrderLine extends BaseEntity {
     private BigDecimal taxRatePercent;
     private Boolean taxInclusive;
 
-    private int quantity = 1;
+    private BigDecimal quantity = BigDecimal.ONE;
 
     /** Special instructions for the kitchen ("no onions", "extra spicy"...) — free text, never validated. */
     private String notes;
@@ -90,8 +90,8 @@ public class RestaurantOrderLine extends BaseEntity {
      * ingredients are what gets a snapshot then, not this line's own product), when the product
      * isn't stock-tracked, had no product at all, or was rung before this feature existed.
      */
-    private Integer stockBefore;
-    private Integer stockAfter;
+    private BigDecimal stockBefore;
+    private BigDecimal stockAfter;
 
     /** Snapshot of MenuItem.prepMinutes (null = the restaurant default at the time it is read). */
     private Integer prepMinutes;

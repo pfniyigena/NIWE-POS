@@ -1,4 +1,5 @@
 package com.posapp.restaurant;
+import com.posapp.common.Qty;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
@@ -166,7 +167,7 @@ public class RestaurantOnlineOrderService {
 
     // ------------------------------------------------------------------ placing an order
 
-    private record Prepared(MenuItem item, int quantity, String notes, List<RestaurantOption> options, BigDecimal unit) {
+    private record Prepared(MenuItem item, BigDecimal quantity, String notes, List<RestaurantOption> options, BigDecimal unit) {
     }
 
     @Transactional
@@ -219,23 +220,23 @@ public class RestaurantOnlineOrderService {
         List<PublicLine> lines = in.getLines() == null ? List.of() : in.getLines();
         if (lines.isEmpty()) throw ApiException.badRequest("Add something to your order first");
         if (lines.size() > MAX_LINES) throw ApiException.badRequest("That is too many different dishes for one order");
-        int totalQty = 0;
+        BigDecimal totalQty = BigDecimal.ZERO;
         List<Prepared> prepared = new ArrayList<>();
         BigDecimal itemsGross = BigDecimal.ZERO;
         for (PublicLine l : lines) {
             if (l.getMenuItemId() == null) throw ApiException.badRequest("A dish in your order is missing");
-            if (l.getQuantity() < 1 || l.getQuantity() > MAX_QUANTITY) throw ApiException.badRequest("Quantities must be between 1 and " + MAX_QUANTITY);
-            totalQty += l.getQuantity();
+            if (l.getQuantity().compareTo(BigDecimal.ONE) < 0 || l.getQuantity().compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) throw ApiException.badRequest("Quantities must be between 1 and " + MAX_QUANTITY);
+            totalQty = totalQty.add(l.getQuantity());
             MenuItem item = menuItemRepository.findById(l.getMenuItemId()).orElseThrow(() -> ApiException.badRequest("A dish in your order is no longer on the menu"));
             String why = unavailableReason(item);
             if (why != null) throw ApiException.badRequest(item.getProduct() != null ? item.getProduct().getName() + ": " + why.toLowerCase() : "A dish in your order is no longer on the menu");
             List<RestaurantOption> picked = orderService.pickOptions(item.getId(), l.getOptionIds());
             BigDecimal opt = picked.stream().map(RestaurantOption::getPriceDelta).reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal unit = priceOf(item).add(opt);
-            itemsGross = itemsGross.add(unit.multiply(BigDecimal.valueOf(l.getQuantity())));
+            itemsGross = itemsGross.add(unit.multiply(l.getQuantity()));
             prepared.add(new Prepared(item, l.getQuantity(), clean(l.getNotes(), 200, "A note", false), picked, unit));
         }
-        if (totalQty > MAX_TOTAL_QUANTITY) throw ApiException.badRequest("That is too many items for one order. Please call us for a large order.");
+        if (totalQty.compareTo(BigDecimal.valueOf(MAX_TOTAL_QUANTITY)) > 0) throw ApiException.badRequest("That is too many items for one order. Please call us for a large order.");
 
         BigDecimal fee = BigDecimal.ZERO;
         if (!mode.equals("TABLE")) {
@@ -272,7 +273,7 @@ public class RestaurantOnlineOrderService {
             line.setOptionIds(p.options().stream().map(x -> String.valueOf(x.getId())).collect(Collectors.joining(",")));
             line.setOptionNames(p.options().stream().map(RestaurantOption::getName).collect(Collectors.joining(", ")));
             line.setUnitPrice(p.unit().setScale(2, RoundingMode.HALF_UP));
-            line.setLineTotal(p.unit().multiply(BigDecimal.valueOf(p.quantity())).setScale(2, RoundingMode.HALF_UP));
+            line.setLineTotal(p.unit().multiply(p.quantity()).setScale(2, RoundingMode.HALF_UP));
             o.getLines().add(line);
         }
         BigDecimal[] est = estimate(mode, prepared, fee);
@@ -324,7 +325,7 @@ public class RestaurantOnlineOrderService {
         if (fee.signum() > 0) {
             RestaurantOrderLine f = new RestaurantOrderLine();
             f.setUnitPrice(fee);
-            f.setQuantity(1);
+            f.setQuantity(BigDecimal.ONE);
             tmp.getLines().add(f);
         }
         return new BigDecimal[]{RestaurantOrderCalculator.subtotal(tmp), RestaurantOrderCalculator.total(tmp)};
@@ -558,7 +559,7 @@ public class RestaurantOnlineOrderService {
             fee.setOrder(real);
             fee.setDescription("Delivery fee" + (o.getZoneName() == null ? "" : " — " + o.getZoneName()));
             fee.setUnitPrice(o.getDeliveryFee());
-            fee.setQuantity(1);
+            fee.setQuantity(BigDecimal.ONE);
             fee.setCourse(1);
             fee.setUnitCost(BigDecimal.ZERO);
             fee.moveTo(KitchenStatus.SERVED);

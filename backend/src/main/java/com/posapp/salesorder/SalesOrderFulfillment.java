@@ -1,6 +1,7 @@
 package com.posapp.salesorder;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -40,11 +41,11 @@ public class SalesOrderFulfillment extends BaseEntity {
     /** Snapshot of the product's name at fulfillment time, so a later rename doesn't rewrite this trail entry. */
     private String productName;
 
-    private int quantityFulfilled;
+    private BigDecimal quantityFulfilled = BigDecimal.ZERO;
 
-    private int stockBefore;
+    private BigDecimal stockBefore = BigDecimal.ZERO;
 
-    private int stockAfter;
+    private BigDecimal stockAfter = BigDecimal.ZERO;
 
     /**
      * Fourier: multi-warehouse phase 3 — the location this fulfilment moved stock at. Nullable: null

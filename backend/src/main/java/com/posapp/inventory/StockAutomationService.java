@@ -1,4 +1,6 @@
 package com.posapp.inventory;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.catalog.CatalogService;
 import com.posapp.catalog.dto.ProductDto;
@@ -107,7 +109,7 @@ public class StockAutomationService {
                 if (alreadyOpen.contains(s.productId())) continue;
                 ReorderRequisitionRequest.Entry e = new ReorderRequisitionRequest.Entry();
                 e.setProductId(s.productId());
-                e.setQuantity(Math.max(s.suggestedQuantity(), 1));
+                e.setQuantity(Qty.max(s.suggestedQuantity(), BigDecimal.ONE));
                 entries.add(e);
             }
             if (entries.isEmpty()) {

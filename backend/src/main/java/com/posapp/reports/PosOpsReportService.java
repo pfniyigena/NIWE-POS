@@ -90,7 +90,7 @@ public class PosOpsReportService {
         BigDecimal shelf = BigDecimal.ZERO;
         BigDecimal after = BigDecimal.ZERO;
         for (OrderLine l : o.getLines()) {
-            shelf = shelf.add(l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())));
+            shelf = shelf.add(l.getUnitPrice().multiply(l.getQuantity()));
             after = after.add(OrderCalculator.lineTotal(l));
         }
         return shelf.subtract(after).max(BigDecimal.ZERO);
@@ -100,7 +100,8 @@ public class PosOpsReportService {
     public List<CashierRow> byCashier(Instant from, Instant to, Long registerId, Long branchId) {
         class Acc {
             Set<Long> shifts = new HashSet<>();
-            int sales, items, refunds, voids;
+            int sales, refunds, voids;
+            BigDecimal items = BigDecimal.ZERO;
             BigDecimal total = BigDecimal.ZERO, discounts = BigDecimal.ZERO, refundTotal = BigDecimal.ZERO;
         }
         Map<String, Acc> by = new LinkedHashMap<>();
@@ -108,7 +109,7 @@ public class PosOpsReportService {
             Acc a = by.computeIfAbsent(cashierOf(o), k -> new Acc());
             if (o.getSession() != null) a.shifts.add(o.getSession().getId());
             a.sales++;
-            a.items += OrderCalculator.totalQuantity(o);
+            a.items = a.items.add(OrderCalculator.totalQuantity(o));
             a.total = a.total.add(OrderCalculator.total(o));
             a.discounts = a.discounts.add(discountOf(o));
             if (o.getVoidedAt() != null) a.voids++;
@@ -131,15 +132,15 @@ public class PosOpsReportService {
     @Transactional(readOnly = true)
     public List<HourRow> byHour(Instant from, Instant to, Long registerId, Long branchId) {
         ZoneId zone = ZoneId.systemDefault();
-        Map<Integer, int[]> counts = new TreeMap<>();
+        Map<Integer, BigDecimal[]> counts = new TreeMap<>();
         Map<Integer, BigDecimal> totals = new TreeMap<>();
         BigDecimal all = BigDecimal.ZERO;
         for (SaleOrder o : orders(from, to, registerId, branchId)) {
             if (o.getCompletedAt() == null) continue;
             int h = o.getCompletedAt().atZone(zone).getHour();
-            int[] c = counts.computeIfAbsent(h, k -> new int[2]);
-            c[0]++;
-            c[1] += OrderCalculator.totalQuantity(o);
+            BigDecimal[] c = counts.computeIfAbsent(h, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+            c[0] = c[0].add(BigDecimal.ONE);
+            c[1] = c[1].add(OrderCalculator.totalQuantity(o));
             BigDecimal t = OrderCalculator.total(o);
             totals.merge(h, t, BigDecimal::add);
             all = all.add(t);
@@ -147,8 +148,8 @@ public class PosOpsReportService {
         List<HourRow> rows = new ArrayList<>();
         for (var e : counts.entrySet()) {
             BigDecimal t = totals.get(e.getKey());
-            rows.add(new HourRow(String.format("%02d:00–%02d:59", e.getKey(), e.getKey()), e.getValue()[0], e.getValue()[1], scale(t),
-                    scale(t.divide(BigDecimal.valueOf(e.getValue()[0]), 2, RoundingMode.HALF_UP)), pct(t, all)));
+            rows.add(new HourRow(String.format("%02d:00–%02d:59", e.getKey(), e.getKey()), e.getValue()[0].intValue(), e.getValue()[1], scale(t),
+                    scale(t.divide(e.getValue()[0], 2, RoundingMode.HALF_UP)), pct(t, all)));
         }
         return rows;
     }
@@ -212,17 +213,18 @@ public class PosOpsReportService {
                 .filter(s -> s.getOpenedAt() != null && !s.getOpenedAt().isBefore(from) && !s.getOpenedAt().isAfter(to))
                 .filter(s -> registerId == null || (s.getRegister() != null && registerId.equals(s.getRegister().getId())))
                 .toList();
-        record Calc(RegisterSession s, int sales, int items, BigDecimal total, BigDecimal discounts, BigDecimal refunds, int voids) {}
+        record Calc(RegisterSession s, int sales, BigDecimal items, BigDecimal total, BigDecimal discounts, BigDecimal refunds, int voids) {}
         List<Calc> calcs = new ArrayList<>();
         BigDecimal sum = BigDecimal.ZERO;
         int counted = 0;
         for (RegisterSession s : sessions) {
-            int n = 0, items = 0, voids = 0;
+            int n = 0, voids = 0;
+            BigDecimal items = BigDecimal.ZERO;
             BigDecimal total = BigDecimal.ZERO, disc = BigDecimal.ZERO;
             for (SaleOrder o : orderRepository.findBySessionIdAndStatusOrderByCreatedAtAsc(s.getId(), OrderStatus.COMPLETED)) {
                 if (branchId != null && !(o.getBranchId() != null ? o.getBranchId() : hq).equals(branchId)) continue;
                 n++;
-                items += OrderCalculator.totalQuantity(o);
+                items = items.add(OrderCalculator.totalQuantity(o));
                 total = total.add(OrderCalculator.total(o));
                 disc = disc.add(discountOf(o));
                 if (o.getVoidedAt() != null) voids++;
@@ -242,7 +244,7 @@ public class PosOpsReportService {
         for (Calc c : calcs) {
             RegisterSession s = c.s();
             BigDecimal avgSale = c.sales() == 0 ? BigDecimal.ZERO : c.total().divide(BigDecimal.valueOf(c.sales()), 2, RoundingMode.HALF_UP);
-            BigDecimal perSale = c.sales() == 0 ? BigDecimal.ZERO : BigDecimal.valueOf(c.items()).divide(BigDecimal.valueOf(c.sales()), 2, RoundingMode.HALF_UP);
+            BigDecimal perSale = c.sales() == 0 ? BigDecimal.ZERO : c.items().divide(BigDecimal.valueOf(c.sales()), 2, RoundingMode.HALF_UP);
             BigDecimal vs = c.sales() == 0 || avgShift.signum() == 0 ? null : c.total().subtract(avgShift).multiply(HUNDRED).divide(avgShift, 2, RoundingMode.HALF_UP);
             rows.add(new ShiftCompareRow(s.getId(), s.getZNumber(), s.getRegister() == null ? "—" : s.getRegister().getName(), s.getCashier() == null ? "—" : s.getCashier().getFullName(),
                     s.getOpenedAt(), s.getClosedAt(), c.sales(), scale(c.total()), scale(avgSale), perSale, scale(c.discounts()), scale(c.refunds()), c.voids(),

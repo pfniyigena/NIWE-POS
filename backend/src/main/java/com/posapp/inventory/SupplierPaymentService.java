@@ -114,7 +114,7 @@ public class SupplierPaymentService {
     }
 
     private static BigDecimal lineGrossBeforeDiscount(PurchaseOrderLine line) {
-        return line.getUnitCost().multiply(BigDecimal.valueOf(line.getQuantityOrdered())).setScale(2, RoundingMode.HALF_UP);
+        return line.getUnitCost().multiply(line.getQuantityOrdered()).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.posapp.manufacturing;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -30,5 +31,5 @@ public class BomLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Product component;
 
-    private int quantityPerUnit;
+    private BigDecimal quantityPerUnit = BigDecimal.ZERO;
 }

@@ -22,8 +22,9 @@ public class ProductionPlanController {
     }
 
     @GetMapping
-    public List<ProductionPlanDto> listAll() {
-        return productionPlanService.listAll();
+    public org.springframework.http.ResponseEntity<List<ProductionPlanDto>> listAll(@RequestParam(required = false) String q, @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from, @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(productionPlanService.filtered(q, from, to), page, size);
     }
 
     @GetMapping("/{id}")

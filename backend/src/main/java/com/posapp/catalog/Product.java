@@ -70,7 +70,7 @@ public class Product extends BaseEntity {
      */
     private BigDecimal costPrice = BigDecimal.ZERO;
 
-    private int stockQuantity = 0;
+    private BigDecimal stockQuantity = BigDecimal.ZERO;
 
     /**
      * Whether stock quantity actually gates or is moved by selling this product (Fourier: "Add
@@ -135,11 +135,11 @@ public class Product extends BaseEntity {
      * rule for this product.
      */
     @Column(name = "reorder_level")
-    private Integer reorderLevel;
+    private BigDecimal reorderLevel;
 
     /** Order-up-to level; the suggested order quantity is this minus current stock and open orders. Null = twice the reorder level. */
     @Column(name = "max_stock_level")
-    private Integer maxStockLevel;
+    private BigDecimal maxStockLevel;
 
     /**
      * Set on a variant (e.g. "T-Shirt - Red / L"): the id of the template product it was generated from. A

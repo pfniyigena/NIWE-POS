@@ -2,6 +2,8 @@ package com.posapp.auth;
 
 import com.posapp.auth.dto.ForgotPasswordRequest;
 import com.posapp.auth.dto.ResetPasswordRequest;
+import com.posapp.hr.Employee;
+import com.posapp.hr.EmployeeRepository;
 import com.posapp.security.AppUserPrincipal;
 import com.posapp.security.JwtService;
 import jakarta.validation.Valid;
@@ -24,8 +26,11 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final PasswordResetService passwordResetService;
+    private final EmployeeRepository employeeRepository;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService, PasswordResetService passwordResetService) {
+    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService, PasswordResetService passwordResetService,
+                          EmployeeRepository employeeRepository) {
+        this.employeeRepository = employeeRepository;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.passwordResetService = passwordResetService;
@@ -42,7 +47,8 @@ public class AuthController {
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name(), user.getId());
         var permissionNames = user.getPermissions().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
         return new LoginResponse(token, user.getId(), user.getUsername(), user.getFullName(), user.getRole().name(), permissionNames,
-                user.effectiveGrants(), user.getCustomRole() != null ? user.getCustomRole().getName() : null);
+                user.effectiveGrants(), user.getCustomRole() != null ? user.getCustomRole().getName() : null,
+                employeeRepository.findFirstByUserId(user.getId()).map(Employee::getId).orElse(null));
     }
 
     /** Fourier: "user will input the email and he/she can reset the password" — always returns 200 with no body, whether or not that email is actually registered (see PasswordResetService.requestReset's javadoc). */

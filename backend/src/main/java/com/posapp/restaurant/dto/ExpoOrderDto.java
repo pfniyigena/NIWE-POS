@@ -1,6 +1,7 @@
 package com.posapp.restaurant.dto;
 
-import java.time.Instant;
+
+import java.math.BigDecimal;import java.time.Instant;
 import java.util.List;
 
 /** One order on the expo screen: everything the kitchen is making for it, so the pass can see when it is complete. */
@@ -25,7 +26,7 @@ public record ExpoOrderDto(
         String guestAllergens,
         List<Line> lines
 ) {
-    public record Line(Long lineId, String description, int quantity, String station, String status, int course, Integer seat,
+    public record Line(Long lineId, String description, BigDecimal quantity, String station, String status, int course, Integer seat,
                        List<String> options, String notes, String urgency, int elapsedMinutes, int targetMinutes, String allergyConflict) {
     }
 }

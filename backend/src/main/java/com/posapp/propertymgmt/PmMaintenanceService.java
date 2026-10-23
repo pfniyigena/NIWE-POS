@@ -407,7 +407,7 @@ public class PmMaintenanceService {
         req.setDescription("Repairs charged to a tenant");
         req.setUnitPrice(ZERO);
         req.setCostPrice(ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);
@@ -438,7 +438,7 @@ public class PmMaintenanceService {
         req.setNotes("Maintenance request " + m.getCode() + ": " + m.getTitle());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(maintenanceProduct().getId());
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(m.getActualCost());
         line.setDescription("Repair: " + m.getTitle() + " (" + row.propertyName() + ", unit " + row.unitNo() + ")");
         req.setLines(List.of(line));

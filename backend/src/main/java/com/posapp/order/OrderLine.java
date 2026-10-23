@@ -66,7 +66,7 @@ public class OrderLine extends BaseEntity {
      */
     private boolean service = false;
 
-    private int quantity = 1;
+    private BigDecimal quantity = BigDecimal.ONE;
     private BigDecimal discountPercent = BigDecimal.ZERO;
 
     /** The product's normal price when this line was priced, kept so a receipt can show what a price list took off. Null on older sales. */
@@ -135,8 +135,8 @@ public class OrderLine extends BaseEntity {
      * later events move the product's stock again. Both null for a line with no product, or one
      * added/checked out before this feature existed.
      */
-    private Integer stockBefore;
-    private Integer stockAfter;
+    private BigDecimal stockBefore;
+    private BigDecimal stockAfter;
 
     /** Serial numbers chosen at the till for a serial-numbered product, one per line of text. Empty = the oldest in stock are used. */
     @jakarta.persistence.Column(name = "serial_numbers", columnDefinition = "TEXT")

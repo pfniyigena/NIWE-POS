@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ShellComponent } from '../shared/shell.component';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../core/auth.service';
 import { CUSTOM_ID, THEMES, ThemeService, contrastRatio, customVariables, isHex } from '../core/theme.service';
 
 /** Settings > Appearance: every signed-in user picks their own colour theme. */
@@ -13,7 +14,7 @@ import { CUSTOM_ID, THEMES, ThemeService, contrastRatio, customVariables, isHex 
     <app-shell>
       <h3 class="mb-2">Appearance</h3>
       <p class="text-muted" style="font-size:0.85rem; margin-bottom:1rem;">
-        Choose the colours you work with. It applies only to your account on this device — other staff keep their own.
+        Choose the colours you work with. It is saved on the server for your account, so it follows you to any device — other staff keep their own.
       </p>
       <div class="theme-section-title">Dark</div>
       <div class="theme-grid">
@@ -72,6 +73,10 @@ import { CUSTOM_ID, THEMES, ThemeService, contrastRatio, customVariables, isHex 
         <div class="alert alert-danger" *ngIf="invalid">Use a 6-digit hex colour such as #2563eb.</div>
         <button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetCustom()">Reset to sky blue</button>
       </div>
+      <div class="card" style="padding:1rem; margin-top:1rem; max-width:34rem;" *ngIf="isAdmin">
+        <label class="flex gap-2 align-center"><input type="checkbox" class="ap-website" name="applyToWebsite" [ngModel]="theme.applyToWebsite()" (ngModelChange)="theme.applyToWebsite.set($event)" /> Also use my choice for the public website and sign-in page</label>
+        <div class="text-muted" style="font-size:0.82rem; margin-top:0.35rem;">Visitors who are not signed in see the theme you pick here. Untick it to change only your own look.</div>
+      </div>
       <p class="text-muted" style="font-size:0.78rem; margin-top:1rem;">
         Printed receipts, purchase orders and reports always stay white so they print cleanly.
       </p>
@@ -101,7 +106,11 @@ export class AppearanceComponent {
   accentText = '';
   invalid = false;
 
-  constructor(public theme: ThemeService) {
+  get isAdmin(): boolean {
+    return this.auth.currentUser()?.role === 'ADMIN';
+  }
+
+  constructor(public theme: ThemeService, private auth: AuthService) {
     this.bgText = theme.custom().bg;
     this.accentText = theme.custom().accent;
   }

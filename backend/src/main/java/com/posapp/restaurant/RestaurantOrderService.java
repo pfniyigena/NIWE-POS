@@ -1,4 +1,5 @@
 package com.posapp.restaurant;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -427,7 +428,7 @@ public class RestaurantOrderService {
         line.setUnitCost(product.getCostPrice());
         line.setStation(menuItem.getStation());
         line.setPrepMinutes(menuItem.getPrepMinutes());
-        line.setQuantity(request.getQuantity() > 0 ? request.getQuantity() : 1);
+        line.setQuantity(request.getQuantity().signum() > 0 ? request.getQuantity() : BigDecimal.ONE);
         line.setNotes(request.getNotes());
         line.setMenuItemId(menuItem.getId());
         line.setSeat(checkSeat(request.getSeat()));
@@ -449,7 +450,7 @@ public class RestaurantOrderService {
         RestaurantOrder order = getOpenOrThrow(orderId);
         RestaurantOrderLine line = findLineOrThrow(order, lineId);
         if (request.getQuantity() != null) {
-            if (request.getQuantity() <= 0) {
+            if (request.getQuantity().signum() <= 0) {
                 throw ApiException.badRequest("Quantity must be at least 1 — remove the line instead to take it off the bill");
             }
             line.setQuantity(request.getQuantity());
@@ -513,7 +514,7 @@ public class RestaurantOrderService {
             if (!RestaurantAccess.isApprover()) throw ApiException.forbidden("Voiding an item that has gone to the kitchen needs a manager's approval");
             BigDecimal value = RestaurantOrderCalculator.lineNetTotal(line).add(RestaurantOrderCalculator.lineTax(line));
             logVoid("VOID", order, line.getDescription(), line.getQuantity(), value, why, true);
-            auditLogService.record("RESTAURANT_LINE_VOIDED", "Voided " + line.getQuantity() + " × " + line.getDescription() + " at " + safeTableName(order) + " (" + why + ")", "RestaurantOrder", order.getId());
+            auditLogService.record("RESTAURANT_LINE_VOIDED", "Voided " + Qty.str(line.getQuantity()) + " × " + line.getDescription() + " at " + safeTableName(order) + " (" + why + ")", "RestaurantOrder", order.getId());
         }
         order.getLines().remove(line);
         RestaurantOrder saved = orderRepository.save(order);
@@ -555,7 +556,7 @@ public class RestaurantOrderService {
         line.setComped(true);
         RestaurantOrder saved = orderRepository.save(order);
         logVoid("COMP", saved, line.getDescription(), line.getQuantity(), value, why, true);
-        auditLogService.record("RESTAURANT_LINE_COMPED", "Comped " + line.getQuantity() + " × " + line.getDescription() + " at " + safeTableName(saved) + " (" + why + ")", "RestaurantOrder", saved.getId());
+        auditLogService.record("RESTAURANT_LINE_COMPED", "Comped " + Qty.str(line.getQuantity()) + " × " + line.getDescription() + " at " + safeTableName(saved) + " (" + why + ")", "RestaurantOrder", saved.getId());
         return RestaurantOrderDto.from(saved);
     }
 
@@ -787,9 +788,9 @@ public class RestaurantOrderService {
                 // snapshots each component it consumes, so this shows up as a dated "Restaurant
                 // ingredient consumption" row in ReportService.stockMovementHistory instead of the
                 // ingredient's stock just silently changing.
-                for (Map.Entry<Product, Integer> required : bomService.requiredComponentQuantities(recipe, line.getQuantity()).entrySet()) {
+                for (Map.Entry<Product, BigDecimal> required : bomService.requiredComponentQuantities(recipe, line.getQuantity()).entrySet()) {
                     Product ingredient = required.getKey();
-                    int quantityConsumed = required.getValue();
+                    BigDecimal quantityConsumed = required.getValue();
                     BigDecimal unitCost = ingredient.getCostPrice() != null ? ingredient.getCostPrice() : BigDecimal.ZERO;
 
                     RestaurantOrderConsumption consumption = new RestaurantOrderConsumption();
@@ -800,21 +801,21 @@ public class RestaurantOrderService {
                     consumption.setQuantityConsumed(quantityConsumed);
                     consumption.setUnitCost(unitCost);
                     if (ingredient.isTrackStock()) {
-                        int stockBefore = warehouseService.stockAt(ingredient, kitchenLocation);
-                        catalogService.adjustStock(ingredient, -quantityConsumed, kitchenLocation);
+                        BigDecimal stockBefore = warehouseService.stockAt(ingredient, kitchenLocation);
+                        catalogService.adjustStock(ingredient, quantityConsumed.negate(), kitchenLocation);
                         consumption.setStockBefore(stockBefore);
                         consumption.setStockAfter(warehouseService.stockAt(ingredient, kitchenLocation));
                     }
                     order.getIngredientConsumptions().add(consumption);
 
-                    cogs = cogs.add(unitCost.multiply(BigDecimal.valueOf(quantityConsumed)));
+                    cogs = cogs.add(unitCost.multiply(quantityConsumed));
                 }
             } else if (product.isTrackStock()) {
                 // Fourier: "Restaurant should impact Inventory Module" — snapshot before/after the
                 // same way OrderLine.stockBefore/stockAfter does for a POS sale, so this shows up
                 // as a "Restaurant sale" row in ReportService.stockMovementHistory.
-                int stockBefore = warehouseService.stockAt(product, kitchenLocation);
-                catalogService.adjustStock(product, -line.getQuantity(), kitchenLocation);
+                BigDecimal stockBefore = warehouseService.stockAt(product, kitchenLocation);
+                catalogService.adjustStock(product, line.getQuantity().negate(), kitchenLocation);
                 line.setStockBefore(stockBefore);
                 line.setStockAfter(warehouseService.stockAt(product, kitchenLocation));
                 cogs = cogs.add(RestaurantOrderCalculator.lineCost(line));
@@ -857,31 +858,31 @@ public class RestaurantOrderService {
      */
     private void validateStockAvailability(RestaurantOrder order) {
         WarehouseLocation kitchenLocation = warehouseService.getRestaurantLocationOrNull();
-        Map<Long, Integer> requestedByProductId = new LinkedHashMap<>();
+        Map<Long, BigDecimal> requestedByProductId = new LinkedHashMap<>();
         Map<Long, Product> productsById = new LinkedHashMap<>();
         for (RestaurantOrderLine line : order.getLines()) {
             Product product = line.getProduct();
             if (product == null) continue;
             Bom recipe = bomService.findActiveForProduct(product.getId());
             if (recipe != null) {
-                for (Map.Entry<Product, Integer> required : bomService.requiredComponentQuantities(recipe, line.getQuantity()).entrySet()) {
+                for (Map.Entry<Product, BigDecimal> required : bomService.requiredComponentQuantities(recipe, line.getQuantity()).entrySet()) {
                     Product ingredient = required.getKey();
                     if (!ingredient.isTrackStock()) continue;
-                    requestedByProductId.merge(ingredient.getId(), required.getValue(), Integer::sum);
+                    requestedByProductId.merge(ingredient.getId(), required.getValue(), BigDecimal::add);
                     productsById.putIfAbsent(ingredient.getId(), ingredient);
                 }
             } else if (product.isTrackStock()) {
-                requestedByProductId.merge(product.getId(), line.getQuantity(), Integer::sum);
+                requestedByProductId.merge(product.getId(), line.getQuantity(), BigDecimal::add);
                 productsById.putIfAbsent(product.getId(), product);
             }
         }
         for (var entry : requestedByProductId.entrySet()) {
             Product product = productsById.get(entry.getKey());
-            int requested = entry.getValue();
-            int available = warehouseService.stockAt(product, kitchenLocation);
-            if (requested > available) {
+            BigDecimal requested = entry.getValue();
+            BigDecimal available = warehouseService.stockAt(product, kitchenLocation);
+            if (requested.compareTo(available) > 0) {
                 throw ApiException.badRequest("Not enough stock for '" + product.getName() + "' — " + available
-                        + " available, " + requested + " requested. Enable \"Allow negative stock\" in Inventory settings to sell anyway.");
+                        + " available, " + Qty.str(requested) + " requested. Enable \"Allow negative stock\" in Inventory settings to sell anyway.");
             }
         }
     }
@@ -916,7 +917,7 @@ public class RestaurantOrderService {
         }
         if (!saved.getLines().isEmpty()) {
             logVoid("CANCEL", saved, saved.getLines().size() + " item" + (saved.getLines().size() == 1 ? "" : "s"),
-                    saved.getLines().stream().mapToInt(RestaurantOrderLine::getQuantity).sum(), RestaurantOrderCalculator.total(saved),
+                    saved.getLines().stream().map(RestaurantOrderLine::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add), RestaurantOrderCalculator.total(saved),
                     why.isEmpty() ? "No reason given" : why, sent);
         }
         auditLogService.record("RESTAURANT_ORDER_CANCELLED", "Cancelled order at table " + safeTableName(saved) + (why.isEmpty() ? "" : " (" + why + ")"), "RestaurantOrder", saved.getId());
@@ -934,7 +935,7 @@ public class RestaurantOrderService {
         }
     }
 
-    void logVoid(String type, RestaurantOrder order, String description, int quantity, BigDecimal amount, String reason, boolean approvalNeeded) {
+    void logVoid(String type, RestaurantOrder order, String description, BigDecimal quantity, BigDecimal amount, String reason, boolean approvalNeeded) {
         RestaurantVoidLog log = new RestaurantVoidLog();
         log.setEntryType(type);
         log.setOrderId(order.getId());

@@ -1,6 +1,7 @@
 package com.posapp.warehouse.dto;
 
-import com.posapp.warehouse.StockTransfer;
+
+import java.math.BigDecimal;import com.posapp.warehouse.StockTransfer;
 
 import java.time.Instant;
 
@@ -14,7 +15,7 @@ public record StockTransferDto(
         Long toLocationId,
         String toLocationName,
         String toWarehouseName,
-        int quantity,
+        BigDecimal quantity,
         String note,
         /** "PENDING" | "CONFIRMED" | "REJECTED" — see StockTransferStatus's own javadoc. */
         String status,
@@ -31,7 +32,7 @@ public record StockTransferDto(
         /** Inter-branch only: when it was dispatched / received and how many units arrived. */
         Instant dispatchedAt,
         Instant receivedAt,
-        Integer receivedQuantity,
+        BigDecimal receivedQuantity,
         String receiveNote
 ) {
     public static StockTransferDto from(StockTransfer t) {

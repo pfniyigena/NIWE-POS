@@ -14,10 +14,10 @@ public final class PricingDtos {
     public record ListRequest(String name, String description, BigDecimal adjustPercent, LocalDate validFrom, LocalDate validTo, Boolean active) {
     }
 
-    public record EntryDto(Long id, Long productId, String productName, String sku, BigDecimal basePrice, int minQuantity, BigDecimal price) {
+    public record EntryDto(Long id, Long productId, String productName, String sku, BigDecimal basePrice, BigDecimal minQuantity, BigDecimal price) {
     }
 
-    public record EntryRequest(Long productId, Integer minQuantity, BigDecimal price) {
+    public record EntryRequest(Long productId, BigDecimal minQuantity, BigDecimal price) {
     }
 
     public record GroupDto(Long id, String name, String description, Long priceListId, String priceListName, boolean active, long customers) {

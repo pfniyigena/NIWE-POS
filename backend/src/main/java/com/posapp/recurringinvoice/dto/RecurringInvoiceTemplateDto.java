@@ -31,7 +31,7 @@ public record RecurringInvoiceTemplateDto(
 ) {
     public static RecurringInvoiceTemplateDto from(RecurringInvoiceTemplate t) {
         BigDecimal estimated = t.getLines().stream()
-                .map(line -> line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity())))
+                .map(line -> line.getUnitPrice().multiply(line.getQuantity()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
         return new RecurringInvoiceTemplateDto(

@@ -1,4 +1,5 @@
 package com.posapp.restaurant;
+import com.posapp.common.Qty;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
@@ -178,7 +179,7 @@ public class RestaurantKitchenService {
         l.setSentAt(null);
         l.moveTo(KitchenStatus.SENT);
         l.setRemakeCount(l.getRemakeCount() + 1);
-        auditLogService.record("RESTAURANT_ITEM_REFIRED", "Sent back to the kitchen: " + l.getQuantity() + "× " + l.getDescription() + " at " + o.displayLabel() + (why.isEmpty() ? "" : " (" + why + ")"), "RestaurantOrder", o.getId());
+        auditLogService.record("RESTAURANT_ITEM_REFIRED", "Sent back to the kitchen: " + Qty.str(l.getQuantity()) + "× " + l.getDescription() + " at " + o.displayLabel() + (why.isEmpty() ? "" : " (" + why + ")"), "RestaurantOrder", o.getId());
         return RestaurantOrderDto.from(orderRepository.save(o));
     }
 

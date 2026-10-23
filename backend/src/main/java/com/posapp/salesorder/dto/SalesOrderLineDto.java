@@ -10,8 +10,8 @@ public record SalesOrderLineDto(
         Long id,
         Long productId,
         String productName,
-        int quantityOrdered,
-        int quantityFulfilled,
+        BigDecimal quantityOrdered,
+        BigDecimal quantityFulfilled,
         BigDecimal unitPrice,
         /**
          * Fourier: "Except POS other module can have global discount ... Either on line or
@@ -33,7 +33,7 @@ public record SalesOrderLineDto(
         String trackingMode
 ) {
     public static SalesOrderLineDto from(BigDecimal headerDiscountPercent, SalesOrderLine l) {
-        BigDecimal grossBeforeDiscount = l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantityOrdered())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal grossBeforeDiscount = l.getUnitPrice().multiply(l.getQuantityOrdered()).setScale(2, RoundingMode.HALF_UP);
         BigDecimal discountPercent = TaxMath.effectiveDiscountPercent(headerDiscountPercent, l.getDiscountPercent());
         BigDecimal gross = TaxMath.applyDiscount(grossBeforeDiscount, discountPercent);
         BigDecimal discountAmount = grossBeforeDiscount.subtract(gross).setScale(2, RoundingMode.HALF_UP);

@@ -78,7 +78,7 @@ public class PurchaseOrderRequest {
         private Long productId;
 
         @Positive(message = "Quantity ordered must be greater than zero")
-        private int quantityOrdered;
+        private BigDecimal quantityOrdered = BigDecimal.ZERO;
 
         @PositiveOrZero(message = "Unit cost cannot be negative")
         private BigDecimal unitCost;
@@ -95,8 +95,8 @@ public class PurchaseOrderRequest {
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
-        public int getQuantityOrdered() { return quantityOrdered; }
-        public void setQuantityOrdered(int quantityOrdered) { this.quantityOrdered = quantityOrdered; }
+        public BigDecimal getQuantityOrdered() { return quantityOrdered; }
+        public void setQuantityOrdered(BigDecimal quantityOrdered) { this.quantityOrdered = quantityOrdered; }
         public BigDecimal getUnitCost() { return unitCost; }
         public void setUnitCost(BigDecimal unitCost) { this.unitCost = unitCost; }
         public BigDecimal getDiscountPercent() { return discountPercent; }

@@ -45,7 +45,7 @@ public class StockBatch extends BaseEntity {
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     @Column(name = "unit_cost", precision = 19, scale = 4)
     private BigDecimal unitCost;

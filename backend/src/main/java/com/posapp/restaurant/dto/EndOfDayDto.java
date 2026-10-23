@@ -26,7 +26,7 @@ public record EndOfDayDto(
         List<CashEventDto> cashEvents,
         String notes
 ) {
-    public record Sales(int checks, int parties, int covers, int itemsSold, BigDecimal gross, BigDecimal discounts, BigDecimal netSales,
+    public record Sales(int checks, int parties, int covers, BigDecimal itemsSold, BigDecimal gross, BigDecimal discounts, BigDecimal netSales,
                         BigDecimal serviceCharge, BigDecimal tax, BigDecimal rounding, BigDecimal billed, BigDecimal tips,
                         BigDecimal depositApplied, BigDecimal collected) {
     }

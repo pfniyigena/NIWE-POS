@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PublicReservationApiService, PublicReservationConfirmation, PublicReservationInfo, PublicSlot, PublicTable } from '../core/api/public-reservation-api.service';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
 /**
  * Fourier: "Public be able to make reservation", then "Public reservations should show available
@@ -17,7 +18,7 @@ import { PublicReservationApiService, PublicReservationConfirmation, PublicReser
 @Component({
   selector: 'app-public-reservation',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem 0;">
       <div class="card" style="width:480px; max-width:96vw; padding:2rem;">
@@ -110,6 +111,7 @@ import { PublicReservationApiService, PublicReservationConfirmation, PublicReser
         </p>
       </div>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class PublicReservationComponent implements OnInit {

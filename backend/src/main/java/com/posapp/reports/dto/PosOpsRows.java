@@ -9,11 +9,11 @@ public final class PosOpsRows {
     private PosOpsRows() {
     }
 
-    public record CashierRow(String cashierName, int shifts, int saleCount, int itemCount, BigDecimal grandTotal, BigDecimal discounts, int refundCount, BigDecimal refundTotal,
+    public record CashierRow(String cashierName, int shifts, int saleCount, BigDecimal itemCount, BigDecimal grandTotal, BigDecimal discounts, int refundCount, BigDecimal refundTotal,
                              int voidCount, BigDecimal netSales, BigDecimal averageSale) {
     }
 
-    public record HourRow(String hour, int saleCount, int itemCount, BigDecimal grandTotal, BigDecimal averageSale, BigDecimal sharePercent) {
+    public record HourRow(String hour, int saleCount, BigDecimal itemCount, BigDecimal grandTotal, BigDecimal averageSale, BigDecimal sharePercent) {
     }
 
     public record PaymentRow(String method, int paymentCount, BigDecimal amount, int refundCount, BigDecimal refundAmount, BigDecimal netAmount, BigDecimal sharePercent) {

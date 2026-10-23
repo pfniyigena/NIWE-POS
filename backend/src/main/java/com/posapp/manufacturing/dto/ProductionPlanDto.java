@@ -1,6 +1,7 @@
 package com.posapp.manufacturing.dto;
 
-import java.time.Instant;
+
+import java.math.BigDecimal;import java.time.Instant;
 import java.util.List;
 
 /**
@@ -14,7 +15,7 @@ public record ProductionPlanDto(
         Long id,
         String planNumber,
         Instant generatedAt,
-        int lowStockThreshold,
+        BigDecimal lowStockThreshold,
         String note,
         List<LineDto> lines
 ) {
@@ -24,9 +25,9 @@ public record ProductionPlanDto(
             String productName,
             Long bomId,
             String bomCode,
-            int demandFromSales,
-            int demandFromLowStock,
-            int suggestedQuantity,
+            BigDecimal demandFromSales,
+            BigDecimal demandFromLowStock,
+            BigDecimal suggestedQuantity,
             Long generatedManufacturingOrderId,
             String generatedManufacturingOrderNumber,
             /** Live, as of when this plan was read — see class javadoc. Empty if this line has no Bom. */

@@ -20,8 +20,9 @@ public class OverheadCostController {
     }
 
     @GetMapping
-    public List<OverheadCostDto> listAll() {
-        return overheadCostService.listAll();
+    public org.springframework.http.ResponseEntity<List<OverheadCostDto>> listAll(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+            @RequestParam(required = false) String method, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(overheadCostService.filtered(q, status, method), page, size);
     }
 
     @GetMapping("/active")

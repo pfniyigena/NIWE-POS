@@ -27,7 +27,7 @@ public final class RestaurantOrderCalculator {
 
     /** Price x quantity, before any discount. */
     public static BigDecimal lineGross(RestaurantOrderLine line) {
-        return line.getUnitPrice().add(nz(line.getOptionsPrice())).multiply(BigDecimal.valueOf(line.getQuantity())).setScale(SCALE, RoundingMode.HALF_UP);
+        return line.getUnitPrice().add(nz(line.getOptionsPrice())).multiply(line.getQuantity()).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     /** The line's own discount (a percentage of its gross). */
@@ -88,7 +88,7 @@ public final class RestaurantOrderCalculator {
 
     public static BigDecimal lineCost(RestaurantOrderLine line) {
         BigDecimal cost = line.getUnitCost() != null ? line.getUnitCost() : BigDecimal.ZERO;
-        return cost.multiply(BigDecimal.valueOf(line.getQuantity())).setScale(SCALE, RoundingMode.HALF_UP);
+        return cost.multiply(line.getQuantity()).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     /** The items' price before tax, after discounts. */

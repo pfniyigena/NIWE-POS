@@ -525,8 +525,10 @@ interface OfflinePaymentRow {
                       <div class="flex gap-1 mt-1">
                         <input
                           type="number"
-                          class="form-control form-control-sm"
-                          style="width:55px; padding:0.2rem 0.4rem;"
+                          step="any"
+                          min="0.0001"
+                          class="form-control form-control-sm pos-line-qty"
+                          style="width:68px; padding:0.2rem 0.4rem;"
                           [ngModel]="l.quantity"
                           (change)="updateQty(l, $event)"
                         />
@@ -684,8 +686,10 @@ interface OfflinePaymentRow {
                       <div class="flex gap-1 mt-1">
                         <input
                           type="number"
-                          class="form-control form-control-sm"
-                          style="width:55px; padding:0.2rem 0.4rem;"
+                          step="any"
+                          min="0.0001"
+                          class="form-control form-control-sm pos-line-qty"
+                          style="width:68px; padding:0.2rem 0.4rem;"
                           [ngModel]="l.quantity"
                           (change)="updateOfflineQty(l, $event)"
                         />
@@ -1376,7 +1380,7 @@ export class TerminalComponent implements OnInit {
   updateQty(line: OrderLine, event: Event): void {
     if (!this.currentOrder) return;
     const value = Number((event.target as HTMLInputElement).value);
-    if (!value || value < 1) return;
+    if (!value || value <= 0) return;
     this.orderApi.updateLine(this.currentOrder.id, line.id, { quantity: value }).subscribe({
       next: (updated) => this.applyUpdatedOrder(updated),
       error: (err) => this.handleError(err),
@@ -1662,7 +1666,7 @@ export class TerminalComponent implements OnInit {
 
   updateOfflineQty(line: QueuedOfflineLine, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
-    if (!value || value < 1) return;
+    if (!value || value <= 0) return;
     line.quantity = value;
   }
 

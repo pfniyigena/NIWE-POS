@@ -14,6 +14,7 @@ import { Invoice, SalesOrder, SalesOrderReturn, Warehouse, WarehouseLocation } f
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { q4 } from '../core/qty';
 interface LocationOption {
   id: number;
   label: string;
@@ -205,7 +206,7 @@ interface ReturnRow {
                 <td class="text-end">{{ row.remaining }}</td>
                 <td class="text-end">
                   <input
-                    type="number"
+                    type="number" step="any"
                     class="form-control form-control-sm"
                     style="width:100px; margin-left:auto;"
                     min="0"
@@ -241,7 +242,7 @@ interface ReturnRow {
                 <td class="text-end">{{ row.remaining }}</td>
                 <td class="text-end">
                   <input
-                    type="number"
+                    type="number" step="any"
                     class="form-control form-control-sm"
                     style="width:100px; margin-left:auto;"
                     min="0"
@@ -374,8 +375,8 @@ export class SalesOrderDetailComponent implements OnInit {
           .map((l) => ({
             lineId: l.id,
             productName: l.productName,
-            remaining: l.quantityOrdered - l.quantityFulfilled,
-            quantityFulfilled: l.quantityOrdered - l.quantityFulfilled,
+            remaining: q4(l.quantityOrdered - l.quantityFulfilled),
+            quantityFulfilled: q4(l.quantityOrdered - l.quantityFulfilled),
             trackingMode: l.trackingMode ?? 'NONE',
             serialText: '',
           }));
@@ -384,7 +385,7 @@ export class SalesOrderDetailComponent implements OnInit {
         this.salesOrderReturnApi.returnedQuantitiesForOrder(id).subscribe((returnedQty) => {
           this.returnRows = so.lines
             .map((l) => {
-              const remaining = l.quantityFulfilled - (returnedQty[l.id] ?? 0);
+              const remaining = q4(l.quantityFulfilled - (returnedQty[l.id] ?? 0));
               return { lineId: l.id, productName: l.productName, remaining, quantity: 0 };
             })
             .filter((row) => row.remaining > 0);

@@ -20,7 +20,7 @@ export interface ReportColumn {
 export interface ReportDef {
   key: string;
   title: string;
-  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management';
+  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing';
   /** Path segment under /api/reports/ — see ReportController. */
   endpoint: string;
   columns: ReportColumn[];
@@ -70,6 +70,8 @@ export function reportListRouteForSection(section: ReportDef['section']): string
       return '/admin/time/reports';
     case 'Work Orders':
       return '/admin/work-orders/reports';
+    case 'Manufacturing':
+      return '/admin/manufacturing/reports';
     case 'Booking':
       return '/admin/booking/reports';
     case 'Law Firm':
@@ -2514,6 +2516,130 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'expiryState', label: 'State', format: 'text' },
       { key: 'daysToExpiry', label: 'Days left', format: 'text' },
       { key: 'uploadedByName', label: 'Added by', format: 'text' },
+    ],
+  },
+  // MF-5: Manufacturing reports.
+  {
+    key: 'manufacturing-runs',
+    title: 'Production runs',
+    section: 'Manufacturing',
+    endpoint: 'manufacturing-runs',
+    categoryFilter: false,
+    productFilter: true,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'date', label: 'Date', format: 'text' },
+      { key: 'orderNumber', label: 'Order', format: 'text' },
+      { key: 'productName', label: 'Product', format: 'text' },
+      { key: 'quantityProduced', label: 'Good units', format: 'int' },
+      { key: 'quantityScrapped', label: 'Scrapped', format: 'int' },
+      { key: 'yieldPercent', label: 'Yield', format: 'percentN' },
+      { key: 'materialCost', label: 'Material', format: 'money' },
+      { key: 'labourCost', label: 'Labour', format: 'money' },
+      { key: 'machineCost', label: 'Machine', format: 'money' },
+      { key: 'overheadCost', label: 'Overhead', format: 'money' },
+      { key: 'byProductCredit', label: 'By-product credit', format: 'money' },
+      { key: 'totalCost', label: 'Total cost', format: 'money' },
+      { key: 'unitCost', label: 'Unit cost', format: 'moneyN' },
+    ],
+  },
+  {
+    key: 'manufacturing-cost-per-product',
+    title: 'Cost per product',
+    section: 'Manufacturing',
+    endpoint: 'manufacturing-cost-per-product',
+    categoryFilter: false,
+    productFilter: true,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'productName', label: 'Product', format: 'text' },
+      { key: 'runs', label: 'Runs', format: 'int' },
+      { key: 'quantityProduced', label: 'Good units', format: 'int' },
+      { key: 'quantityScrapped', label: 'Scrapped', format: 'int' },
+      { key: 'yieldPercent', label: 'Yield', format: 'percentN' },
+      { key: 'materialCost', label: 'Material', format: 'money' },
+      { key: 'labourCost', label: 'Labour', format: 'money' },
+      { key: 'machineCost', label: 'Machine', format: 'money' },
+      { key: 'overheadCost', label: 'Overhead', format: 'money' },
+      { key: 'byProductCredit', label: 'By-product credit', format: 'money' },
+      { key: 'totalCost', label: 'Total cost', format: 'money' },
+      { key: 'unitCost', label: 'Unit cost', format: 'moneyN' },
+    ],
+  },
+  {
+    key: 'manufacturing-component-use',
+    title: 'Component use against recipe',
+    section: 'Manufacturing',
+    endpoint: 'manufacturing-component-use',
+    categoryFilter: false,
+    productFilter: true,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'componentName', label: 'Component', format: 'text' },
+      { key: 'runs', label: 'Runs', format: 'int' },
+      { key: 'plannedQuantity', label: 'Recipe quantity', format: 'int' },
+      { key: 'usedQuantity', label: 'Used', format: 'int' },
+      { key: 'varianceQuantity', label: 'Difference', format: 'int' },
+      { key: 'variancePercent', label: 'Difference %', format: 'percentN' },
+      { key: 'totalCost', label: 'Cost of use', format: 'money' },
+      { key: 'varianceCost', label: 'Cost of difference', format: 'money' },
+    ],
+  },
+  {
+    key: 'manufacturing-workstations',
+    title: 'Workstation time and cost',
+    section: 'Manufacturing',
+    endpoint: 'manufacturing-workstations',
+    categoryFilter: false,
+    productFilter: true,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'workstation', label: 'Workstation', format: 'text' },
+      { key: 'runs', label: 'Steps run', format: 'int' },
+      { key: 'plannedMinutes', label: 'Planned minutes', format: 'money' },
+      { key: 'actualMinutes', label: 'Actual minutes', format: 'money' },
+      { key: 'varianceMinutes', label: 'Difference', format: 'money' },
+      { key: 'machineCost', label: 'Machine cost', format: 'money' },
+      { key: 'labourCost', label: 'Labour cost', format: 'money' },
+      { key: 'totalCost', label: 'Total', format: 'money' },
+    ],
+  },
+  {
+    key: 'manufacturing-scrap',
+    title: 'Scrap and rejects',
+    section: 'Manufacturing',
+    endpoint: 'manufacturing-scrap',
+    categoryFilter: false,
+    productFilter: true,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'productName', label: 'Product', format: 'text' },
+      { key: 'reason', label: 'Reason', format: 'text' },
+      { key: 'runs', label: 'Runs', format: 'int' },
+      { key: 'scrappedUnits', label: 'Units scrapped', format: 'int' },
+      { key: 'scrapCost', label: 'Cost of scrap', format: 'money' },
+    ],
+  },
+  {
+    key: 'manufacturing-order-plan',
+    title: 'Orders: plan against actual',
+    section: 'Manufacturing',
+    endpoint: 'manufacturing-order-plan',
+    categoryFilter: false,
+    productFilter: true,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'orderNumber', label: 'Order', format: 'text' },
+      { key: 'productName', label: 'Product', format: 'text' },
+      { key: 'status', label: 'Status', format: 'text' },
+      { key: 'scheduledDate', label: 'Scheduled', format: 'text' },
+      { key: 'quantityPlanned', label: 'Planned qty', format: 'int' },
+      { key: 'quantityProduced', label: 'Made', format: 'int' },
+      { key: 'quantityRemaining', label: 'Remaining', format: 'int' },
+      { key: 'plannedCost', label: 'Planned cost', format: 'money' },
+      { key: 'plannedCostOfUnitsMade', label: 'Planned cost of units made', format: 'money' },
+      { key: 'actualCost', label: 'Actual cost', format: 'money' },
+      { key: 'costVariance', label: 'Difference', format: 'money' },
     ],
   },
 ];

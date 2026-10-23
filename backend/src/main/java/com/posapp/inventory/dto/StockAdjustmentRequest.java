@@ -1,6 +1,7 @@
 package com.posapp.inventory.dto;
 
-import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;import jakarta.validation.constraints.NotNull;
 
 public class StockAdjustmentRequest {
 
@@ -8,7 +9,7 @@ public class StockAdjustmentRequest {
     private Long productId;
 
     /** Positive (found more than recorded) or negative (loss/write-off) — never validated as nonzero here, since 0 is simply rejected by StockAdjustmentService with a clearer message than a bare constraint violation would give. */
-    private int quantityDelta;
+    private BigDecimal quantityDelta = BigDecimal.ZERO;
 
     @NotNull(message = "Reason is required")
     private String reason;
@@ -20,8 +21,8 @@ public class StockAdjustmentRequest {
 
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
-    public int getQuantityDelta() { return quantityDelta; }
-    public void setQuantityDelta(int quantityDelta) { this.quantityDelta = quantityDelta; }
+    public BigDecimal getQuantityDelta() { return quantityDelta; }
+    public void setQuantityDelta(BigDecimal quantityDelta) { this.quantityDelta = quantityDelta; }
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
     public String getNote() { return note; }

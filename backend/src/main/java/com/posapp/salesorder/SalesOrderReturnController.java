@@ -1,4 +1,5 @@
 package com.posapp.salesorder;
+import java.math.BigDecimal;
 
 import com.posapp.salesorder.dto.ProcessSalesOrderReturnRequest;
 import com.posapp.salesorder.dto.SalesOrderReturnDto;
@@ -40,7 +41,7 @@ public class SalesOrderReturnController {
 
     /** Keyed by SalesOrderLine id; a line with nothing returned against it is absent, not present with a zero — backs the "process a return" panel's remaining-quantity column. */
     @GetMapping("/order/{salesOrderId}/quantities")
-    public Map<Long, Integer> returnedQuantitiesForOrder(@PathVariable Long salesOrderId) {
+    public Map<Long, java.math.BigDecimal> returnedQuantitiesForOrder(@PathVariable Long salesOrderId) {
         return salesOrderReturnService.returnedQuantitiesForOrder(salesOrderId);
     }
 

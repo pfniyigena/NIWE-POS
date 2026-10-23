@@ -1,6 +1,7 @@
 package com.posapp.inventory;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -28,7 +29,7 @@ public class PurchaseRequisitionLine extends BaseEntity {
     /** Snapshot of the product's name at the time this line was added, same "survives a later rename" reasoning as every other line's productName field. */
     private String productName;
 
-    private int quantityRequested;
+    private BigDecimal quantityRequested = BigDecimal.ZERO;
 
     /** Optional — e.g. "running low", "for the new display" — purely informational context for whoever approves this. */
     private String note;

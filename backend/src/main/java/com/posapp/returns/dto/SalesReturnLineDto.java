@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 public record SalesReturnLineDto(
         Long orderLineId,
         String description,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal refundAmount
 ) {
     public static SalesReturnLineDto from(SalesReturnLine l) {

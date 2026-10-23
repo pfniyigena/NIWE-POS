@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 public record BrandProfitRow(
         Long brandId,
         String brandName,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal revenue,
         BigDecimal cost,
         BigDecimal profit,

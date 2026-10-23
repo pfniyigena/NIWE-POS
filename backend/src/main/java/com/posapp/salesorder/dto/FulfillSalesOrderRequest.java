@@ -1,6 +1,7 @@
 package com.posapp.salesorder.dto;
 
-import jakarta.validation.Valid;
+
+import java.math.BigDecimal;import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -31,7 +32,7 @@ public class FulfillSalesOrderRequest {
         private Long lineId;
 
         @Positive(message = "Quantity fulfilled must be greater than zero")
-        private int quantityFulfilled;
+        private BigDecimal quantityFulfilled = BigDecimal.ZERO;
 
         /** Serial-numbered products: the units being delivered (one per unit). Empty = oldest in stock. */
         private List<String> serialNumbers;
@@ -41,7 +42,7 @@ public class FulfillSalesOrderRequest {
 
         public Long getLineId() { return lineId; }
         public void setLineId(Long lineId) { this.lineId = lineId; }
-        public int getQuantityFulfilled() { return quantityFulfilled; }
-        public void setQuantityFulfilled(int quantityFulfilled) { this.quantityFulfilled = quantityFulfilled; }
+        public BigDecimal getQuantityFulfilled() { return quantityFulfilled; }
+        public void setQuantityFulfilled(BigDecimal quantityFulfilled) { this.quantityFulfilled = quantityFulfilled; }
     }
 }

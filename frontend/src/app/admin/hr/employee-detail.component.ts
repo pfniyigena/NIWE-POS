@@ -9,7 +9,7 @@ import { AuthService } from '../../core/auth.service';
 import { EmployeeDocumentsComponent } from './employee-documents.component';
 import { EmployeeFinalPayComponent } from './employee-final-pay.component';
 import { EmployeeChecklistsComponent } from './employee-checklists.component';
-import { Contract, Employee, HrApiService, LeaveBalance, LeaveRequest } from '../../core/api/hr-api.service';
+import { Contract, Employee, EmployeeLoginCreated, HrApiService, LeaveBalance, LeaveRequest } from '../../core/api/hr-api.service';
 
 /** Employees > one employee: details, leave balances and requests, contracts and the actions (edit, leave of absence, left the company). */
 @Component({
@@ -26,12 +26,20 @@ import { Contract, Employee, HrApiService, LeaveBalance, LeaveRequest } from '..
             <div class="text-muted">{{ e.employeeNumber }} · {{ e.jobTitle || 'No job title' }}{{ e.departmentName ? ' · ' + e.departmentName : '' }}</div>
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
+            <app-paper-button class="service-card" *ngIf="e.status !== 'TERMINATED'" label="Print Service Card" [path]="'/hr/employees/' + e.id + '/service-card'" [file]="'service-card-' + e.employeeNumber + '.pdf'"></app-paper-button>
             <a class="btn btn-outline-primary" [routerLink]="['/admin/hr/employees', e.id, 'edit']">Edit</a>
             <button class="btn btn-outline-secondary" type="button" *ngIf="e.status === 'ACTIVE'" (click)="setStatus('INACTIVE')">Mark inactive</button>
             <button class="btn btn-outline-secondary" type="button" *ngIf="e.status !== 'ACTIVE'" (click)="setStatus('ACTIVE')">{{ e.status === 'TERMINATED' ? 'Re-hire' : 'Mark active' }}</button>
             <button class="btn btn-outline-danger" type="button" *ngIf="e.status !== 'TERMINATED'" (click)="showLeft = !showLeft">Employee left</button>
             <button class="btn btn-outline-danger" type="button" (click)="remove()">Delete</button>
           </div>
+        </div>
+
+        <div class="card mb-3 login-result" style="padding:1rem;" *ngIf="login">
+          <strong>Login for {{ login.employeeName }}</strong>
+          <div>Username <code>{{ login.username }}</code> · password <code>{{ login.password }}</code></div>
+          <div class="text-muted" style="font-size:0.85rem;">Give these to the employee now; the password is not shown again. After signing in they open <strong>My HR</strong> to see their own record, leave, attendance and payslips.</div>
+          <div><button class="btn btn-sm btn-outline-secondary mt-2" type="button" (click)="login = null">Close</button></div>
         </div>
 
         <form class="card mb-3" style="padding:1rem;" *ngIf="showLeft" (ngSubmit)="left()">
@@ -60,7 +68,10 @@ import { Contract, Employee, HrApiService, LeaveBalance, LeaveRequest } from '..
               <tr><td class="text-muted">Email</td><td>{{ e.email || '—' }}</td></tr>
               <tr><td class="text-muted">Address</td><td>{{ e.address || '—' }}</td></tr>
               <tr><td class="text-muted">Emergency contact</td><td>{{ e.emergencyContactName || '—' }}{{ e.emergencyContactPhone ? ' · ' + e.emergencyContactPhone : '' }}</td></tr>
-              <tr><td class="text-muted">Staff login</td><td>{{ e.userLabel || '—' }}</td></tr>
+              <tr><td class="text-muted">Staff login</td><td>{{ e.userLabel || '—' }}
+                <button class="btn btn-sm btn-outline-primary give-login" type="button" *ngIf="canManage && !e.userId && e.status !== 'TERMINATED'" (click)="giveLogin()">Give login</button>
+                <button class="btn btn-sm btn-outline-secondary reset-login" type="button" *ngIf="canManage && e.userId" (click)="resetLogin()">New password</button>
+              </td></tr>
               <tr><td class="text-muted">Bank</td><td>{{ e.bankName || '—' }}{{ e.bankAccount ? ' · ' + e.bankAccount : '' }}</td></tr>
               <tr><td class="text-muted">Tax number</td><td>{{ e.taxNumber || '—' }}</td></tr>
               <tr><td class="text-muted">Social security no.</td><td>{{ e.socialSecurityNumber || '—' }}</td></tr>
@@ -126,6 +137,7 @@ export class EmployeeDetailComponent implements OnInit {
   contracts: Contract[] = [];
   canContracts = false;
   canManage = false;
+  login: EmployeeLoginCreated | null = null;
   canPayrollManage = false;
   error: string | null = null;
   showLeft = false;
@@ -186,6 +198,29 @@ export class EmployeeDetailComponent implements OnInit {
         this.load();
       },
       error: (e) => (this.error = e?.error?.message ?? 'Could not record that the employee left'),
+    });
+  }
+
+  giveLogin(): void {
+    if (!this.e || !confirm('Give ' + this.e.fullName + ' a login? A username and a first password are made for them.')) return;
+    this.api.createEmployeeLogin(this.e.id).subscribe({
+      next: (r) => {
+        this.login = r;
+        this.error = null;
+        this.load();
+      },
+      error: (x) => (this.error = x?.error?.message ?? 'Could not create the login'),
+    });
+  }
+
+  resetLogin(): void {
+    if (!this.e || !confirm('Make a new password for ' + this.e.fullName + '? The old one stops working.')) return;
+    this.api.resetEmployeeLoginPassword(this.e.id).subscribe({
+      next: (r) => {
+        this.login = r;
+        this.error = null;
+      },
+      error: (x) => (this.error = x?.error?.message ?? 'Could not reset the password'),
     });
   }
 

@@ -18,4 +18,7 @@ public interface BomRepository extends JpaRepository<Bom, Long> {
 
     /** Whether a product is manufactured at all (has any Bom, active or not) — CatalogService/frontend use this to badge a product as a finished good rather than adding a redundant flag on Product itself. */
     boolean existsByProductId(Long productId);
+
+    /** MF-6: every recipe of one product (for the next version number and for switching the active one). */
+    List<Bom> findByProductId(Long productId);
 }

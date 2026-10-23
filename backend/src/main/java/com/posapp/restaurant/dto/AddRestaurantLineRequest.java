@@ -1,11 +1,12 @@
 package com.posapp.restaurant.dto;
 
-import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;import jakarta.validation.constraints.NotNull;
 
 public class AddRestaurantLineRequest {
     @NotNull(message = "Menu item is required")
     private Long menuItemId;
-    private int quantity = 1;
+    private BigDecimal quantity = BigDecimal.ONE;
     private String notes;
     /** Options picked (ids from the item's option groups). */
     private java.util.List<Long> optionIds;
@@ -24,8 +25,8 @@ public class AddRestaurantLineRequest {
 
     public Long getMenuItemId() { return menuItemId; }
     public void setMenuItemId(Long menuItemId) { this.menuItemId = menuItemId; }
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 }

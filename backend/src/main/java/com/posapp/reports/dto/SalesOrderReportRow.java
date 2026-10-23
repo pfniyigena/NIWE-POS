@@ -21,8 +21,8 @@ public record SalesOrderReportRow(
         Instant expectedDate,
         LocalDate dueDate,
         int lineCount,
-        int quantityOrdered,
-        int quantityFulfilled,
+        BigDecimal quantityOrdered,
+        BigDecimal quantityFulfilled,
         BigDecimal totalAmount,
         BigDecimal amountOutstanding
 ) {

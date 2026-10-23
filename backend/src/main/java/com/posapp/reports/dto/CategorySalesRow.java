@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 public record CategorySalesRow(
         Long categoryId,
         String categoryName,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal salesTotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal

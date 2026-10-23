@@ -35,4 +35,7 @@ public class RoutingOperation extends BaseEntity {
     private Workstation workstation;
 
     private BigDecimal estimatedMinutesPerUnit = BigDecimal.ZERO;
+
+    /** MF-2: the hourly pay of the people working this step, charged on top of the workstation's own (machine) rate. Null counts as zero. */
+    private BigDecimal labourHourlyRate;
 }

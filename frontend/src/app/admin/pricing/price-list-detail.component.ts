@@ -42,7 +42,7 @@ import { Product } from '../../core/models';
               </button>
             </div>
           </div>
-          <div class="form-group" style="margin:0;"><label class="form-label">From quantity</label><input class="form-control pl-min" type="number" min="1" step="1" style="width:6rem;" [(ngModel)]="minQuantity" name="minQuantity" /></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">From quantity</label><input class="form-control pl-min" type="number" min="0.0001" step="any" style="width:6rem;" [(ngModel)]="minQuantity" name="minQuantity" /></div>
           <div class="form-group" style="margin:0;"><label class="form-label">Price</label><input class="form-control pl-price" type="number" min="0" step="0.01" style="width:8rem;" [(ngModel)]="price" name="price" /></div>
           <button class="btn btn-primary pl-add" [disabled]="!chosen || price === null" (click)="add()">Save price</button>
         </div>

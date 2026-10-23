@@ -12,6 +12,7 @@ interface DraftOperation {
   name: string;
   workstationId: number | null;
   estimatedMinutesPerUnit: number;
+  labourHourlyRate: number;
 }
 
 /**
@@ -50,6 +51,7 @@ interface DraftOperation {
             <th>Operation name</th>
             <th>Workstation</th>
             <th class="text-end">Est. minutes/unit</th>
+            <th class="text-end">Labour rate / hour</th>
             <th></th>
           </tr>
         </thead>
@@ -78,10 +80,13 @@ interface DraftOperation {
                 [name]="'mins' + i"
               />
             </td>
+            <td class="text-end">
+              <input type="number" class="form-control form-control-sm lab-rate" style="width:110px; margin-left:auto;" min="0" step="0.01" [(ngModel)]="op.labourHourlyRate" [name]="'lab' + i" />
+            </td>
             <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeOperation(i)">Remove</button></td>
           </tr>
           <tr *ngIf="operations.length === 0">
-            <td colspan="5" class="text-muted">No operations yet — add at least one below.</td>
+            <td colspan="6" class="text-muted">No operations yet — add at least one below.</td>
           </tr>
         </tbody>
       </table>
@@ -132,6 +137,7 @@ export class RoutingFormComponent implements OnInit {
           name: op.name,
           workstationId: op.workstationId,
           estimatedMinutesPerUnit: op.estimatedMinutesPerUnit,
+          labourHourlyRate: op.labourHourlyRate ?? 0,
         }));
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load routing'),
@@ -140,7 +146,7 @@ export class RoutingFormComponent implements OnInit {
 
   addOperation(): void {
     const nextSeq = this.operations.length > 0 ? Math.max(...this.operations.map((o) => o.sequence)) + 1 : 1;
-    this.operations.push({ sequence: nextSeq, name: '', workstationId: null, estimatedMinutesPerUnit: 0 });
+    this.operations.push({ sequence: nextSeq, name: '', workstationId: null, estimatedMinutesPerUnit: 0, labourHourlyRate: 0 });
   }
 
   removeOperation(index: number): void {
@@ -166,6 +172,7 @@ export class RoutingFormComponent implements OnInit {
         name: o.name,
         workstationId: o.workstationId,
         estimatedMinutesPerUnit: o.estimatedMinutesPerUnit,
+        labourHourlyRate: o.labourHourlyRate || 0,
       })),
     };
     const call = this.id ? this.routingApi.update(this.id, payload) : this.routingApi.create(payload);

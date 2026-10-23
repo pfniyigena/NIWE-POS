@@ -55,7 +55,7 @@ interface Row extends ReorderSuggestion {
             <td class="text-end">{{ r.onOrder }}</td>
             <td class="text-end">{{ r.reorderLevel }}</td>
             <td class="text-end">{{ r.maxStockLevel }}</td>
-            <td class="text-end"><input class="form-control text-end" type="number" min="1" [(ngModel)]="r.quantity" [name]="'q' + r.productId" /></td>
+            <td class="text-end"><input class="form-control text-end" type="number" step="any" min="0.0001" [(ngModel)]="r.quantity" [name]="'q' + r.productId" /></td>
           </tr>
           <tr *ngIf="rows.length === 0 && loaded">
             <td colspan="9" class="text-muted">Nothing needs reordering.</td>

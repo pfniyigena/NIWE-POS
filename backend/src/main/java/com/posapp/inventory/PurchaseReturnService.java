@@ -1,4 +1,5 @@
 package com.posapp.inventory;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -83,9 +84,9 @@ public class PurchaseReturnService {
      * screen's "process a return" panel.
      */
     @Transactional(readOnly = true)
-    public Map<Long, Integer> returnedQuantitiesForOrder(Long purchaseOrderId) {
+    public Map<Long, BigDecimal> returnedQuantitiesForOrder(Long purchaseOrderId) {
         return purchaseReturnLineRepository.findByPurchaseOrderId(purchaseOrderId).stream()
-                .collect(Collectors.groupingBy(l -> l.getOrderLine().getId(), Collectors.summingInt(PurchaseReturnLine::getQuantity)));
+                .collect(Collectors.groupingBy(l -> l.getOrderLine().getId(), Collectors.reducing(BigDecimal.ZERO, PurchaseReturnLine::getQuantity, BigDecimal::add)));
     }
 
     /**
@@ -128,15 +129,15 @@ public class PurchaseReturnService {
                     .findFirst()
                     .orElseThrow(() -> ApiException.badRequest("Line " + entry.getLineId() + " does not belong to purchase order " + po.getOrderNumber()));
 
-            int alreadyReturned = purchaseReturnLineRepository.sumReturnedQuantityForLine(line.getId());
-            int remaining = line.getQuantityReceived() - alreadyReturned;
-            if (entry.getQuantity() > remaining) {
-                throw ApiException.badRequest("Cannot return " + entry.getQuantity() + " of '" + line.getProductName()
-                        + "' — only " + remaining + " remaining (of " + line.getQuantityReceived() + " received, " + alreadyReturned + " already returned)");
+            BigDecimal alreadyReturned = purchaseReturnLineRepository.sumReturnedQuantityForLine(line.getId());
+            BigDecimal remaining = line.getQuantityReceived().subtract(alreadyReturned);
+            if (entry.getQuantity().compareTo(remaining) > 0) {
+                throw ApiException.badRequest("Cannot return " + Qty.str(entry.getQuantity()) + " of '" + line.getProductName()
+                        + "' — only " + Qty.str(remaining) + " remaining (of " + Qty.str(line.getQuantityReceived()) + " received, " + Qty.str(alreadyReturned) + " already returned)");
             }
 
             BigDecimal lineRefund = line.getUnitCost()
-                    .multiply(BigDecimal.valueOf(entry.getQuantity()))
+                    .multiply(entry.getQuantity())
                     .setScale(2, RoundingMode.HALF_UP);
             refundTotal = refundTotal.add(lineRefund);
 
@@ -151,8 +152,8 @@ public class PurchaseReturnService {
                 // Task 6: "Stock Movement History" — snapshot before/after, see PurchaseReturnLine's
                 // javadoc. Reads/writes the RECEIVING location's own quantity, not
                 // Product.stockQuantity directly — see this class's own javadoc.
-                int stockBefore = warehouseService.getStockQuantity(line.getProduct(), receivingLocation);
-                catalogService.adjustStock(line.getProduct(), -entry.getQuantity(), receivingLocation);
+                BigDecimal stockBefore = warehouseService.getStockQuantity(line.getProduct(), receivingLocation);
+                catalogService.adjustStock(line.getProduct(), entry.getQuantity().negate(), receivingLocation);
                 returnLine.setStockBefore(stockBefore);
                 returnLine.setStockAfter(warehouseService.getStockQuantity(line.getProduct(), receivingLocation));
             }

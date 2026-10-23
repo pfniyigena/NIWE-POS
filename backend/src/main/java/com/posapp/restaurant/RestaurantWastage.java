@@ -52,7 +52,7 @@ public class RestaurantWastage extends BaseEntity {
     /** Snapshot of the product's name at the moment this was recorded, so a later rename doesn't rewrite this trail entry. */
     private String productName;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private RestaurantWastageReason reason;
@@ -67,9 +67,9 @@ public class RestaurantWastage extends BaseEntity {
     private java.time.Instant confirmedAt;
 
     /** Null until {@link RestaurantWastageStatus#CONFIRMED} (and stays null even then if the product isn't stock-tracked) — see this class's own javadoc. */
-    private Integer stockBefore;
+    private BigDecimal stockBefore;
 
-    private Integer stockAfter;
+    private BigDecimal stockAfter;
 
     /** Null until {@link RestaurantWastageStatus#CONFIRMED} — see this class's own javadoc. */
     private BigDecimal costImpact;

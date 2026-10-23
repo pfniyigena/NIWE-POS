@@ -39,7 +39,7 @@ public record EfrisChadInvoiceLine(
         String itemName,
         boolean service,
         BigDecimal unitPrice,
-        int quantity,
+        BigDecimal quantity,
         String classificationCode,
         BigDecimal taxRatePercent,
         String taxCode,

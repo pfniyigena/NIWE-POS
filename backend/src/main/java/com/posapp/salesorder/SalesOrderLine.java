@@ -32,9 +32,9 @@ public class SalesOrderLine extends BaseEntity {
     /** Snapshot of the product's name at the time this line was added, same "survives a later rename" reasoning as PurchaseOrderLine.productName. */
     private String productName;
 
-    private int quantityOrdered;
+    private BigDecimal quantityOrdered = BigDecimal.ZERO;
 
-    private int quantityFulfilled = 0;
+    private BigDecimal quantityFulfilled = BigDecimal.ZERO;
 
     /** What this customer is being charged per unit for this order — independent of Product.price, since a specific order can be priced differently (same reasoning as PurchaseOrderLine.unitCost vs. Product.costPrice). */
     private BigDecimal unitPrice = BigDecimal.ZERO;

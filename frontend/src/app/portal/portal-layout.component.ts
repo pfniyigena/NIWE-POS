@@ -2,12 +2,13 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { PortalApiService } from '../core/api/portal-api.service';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
 /** The frame around every client-portal page: the firm's name on top, the client's name and a Sign out button. It has nothing of the staff menu. */
 @Component({
   selector: 'app-portal-layout',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, RouterLink],
   template: `
     <div style="min-height:100vh;">
       <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; padding:0.75rem 1.25rem; border-bottom:1px solid var(--border, #ddd);">
@@ -21,6 +22,7 @@ import { PortalApiService } from '../core/api/portal-api.service';
         <ng-content></ng-content>
       </main>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class PortalLayoutComponent {

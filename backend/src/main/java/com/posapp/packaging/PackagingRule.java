@@ -1,6 +1,7 @@
 package com.posapp.packaging;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -42,7 +43,7 @@ public class PackagingRule extends BaseEntity {
     private Product childProduct;
 
     /** How many whole units of childProduct one unit of parentProduct breaks down into — see class javadoc. */
-    private int unitsPerParent;
+    private BigDecimal unitsPerParent = BigDecimal.ZERO;
 
     /** Purely informational, e.g. "Count shots carefully — spillage is normal" — same role as Bom having no equivalent free-text field but PackagingRule needing one since there's no routing/BOM-line structure to carry notes instead. */
     private String notes;

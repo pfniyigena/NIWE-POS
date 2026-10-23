@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RestaurantOnlineApiService } from '../core/api/restaurant-online-api.service';
@@ -21,7 +22,7 @@ interface CartLine {
 @Component({
   selector: 'app-public-order',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [NiweFooterComponent, CommonModule, FormsModule],
   template: `
     <div class="po-page" style="max-width:640px; margin:0 auto; padding:0.75rem 0.75rem 6rem;">
       <div class="alert alert-danger po-error" *ngIf="error">{{ error }}</div>
@@ -146,6 +147,7 @@ interface CartLine {
         </div>
       </div>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class PublicOrderComponent implements OnInit {

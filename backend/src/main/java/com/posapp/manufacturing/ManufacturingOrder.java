@@ -1,6 +1,7 @@
 package com.posapp.manufacturing;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -59,10 +60,10 @@ public class ManufacturingOrder extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Routing routing;
 
-    private int quantityPlanned;
+    private BigDecimal quantityPlanned = BigDecimal.ZERO;
 
     /** Cumulative across every run — see ManufacturingOrderRun. */
-    private int quantityProduced = 0;
+    private BigDecimal quantityProduced = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private ManufacturingOrderStatus status = ManufacturingOrderStatus.DRAFT;
@@ -78,6 +79,17 @@ public class ManufacturingOrder extends BaseEntity {
 
     /** See class javadoc — informational link back to the ProductionPlanLine this order was generated from, if any. */
     private Long sourcePlanLineId;
+
+    /** MF-2: what the order was expected to cost when it was made / confirmed (material at the cost prices of that moment). */
+    private java.math.BigDecimal plannedMaterialCost = java.math.BigDecimal.ZERO;
+    private java.math.BigDecimal plannedLabourCost = java.math.BigDecimal.ZERO;
+    private java.math.BigDecimal plannedMachineCost = java.math.BigDecimal.ZERO;
+    private java.math.BigDecimal plannedOverheadCost = java.math.BigDecimal.ZERO;
+
+    /** MF-2: the routing's steps as they were when the order was confirmed, so a later routing edit never changes an order in progress. */
+    @OneToMany(mappedBy = "manufacturingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @jakarta.persistence.OrderBy("sequence ASC")
+    private List<ManufacturingOrderOperation> operations = new ArrayList<>();
 
 
     /**

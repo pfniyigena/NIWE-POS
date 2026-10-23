@@ -35,7 +35,7 @@ public class RecurringInvoiceTemplateLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Product product;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private BigDecimal unitPrice;

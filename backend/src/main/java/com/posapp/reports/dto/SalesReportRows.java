@@ -13,17 +13,17 @@ public final class SalesReportRows {
     private SalesReportRows() {
     }
 
-    public record CustomerSalesRow(Long customerId, String customerName, int orderCount, int quantityOrdered, int quantityFulfilled,
+    public record CustomerSalesRow(Long customerId, String customerName, int orderCount, BigDecimal quantityOrdered, BigDecimal quantityFulfilled,
                                    BigDecimal netAmount, BigDecimal taxAmount, BigDecimal totalAmount, BigDecimal amountPaid,
                                    BigDecimal amountOutstanding) {
     }
 
-    public record ProductSalesOrderRow(Long productId, String sku, String productName, String categoryName, int quantityOrdered,
-                                       int quantityFulfilled, BigDecimal netAmount, BigDecimal taxAmount, BigDecimal totalAmount,
+    public record ProductSalesOrderRow(Long productId, String sku, String productName, String categoryName, BigDecimal quantityOrdered,
+                                       BigDecimal quantityFulfilled, BigDecimal netAmount, BigDecimal taxAmount, BigDecimal totalAmount,
                                        BigDecimal averageUnitPrice) {
     }
 
-    public record CategorySalesOrderRow(String categoryName, int quantityOrdered, int quantityFulfilled, BigDecimal netAmount,
+    public record CategorySalesOrderRow(String categoryName, BigDecimal quantityOrdered, BigDecimal quantityFulfilled, BigDecimal netAmount,
                                         BigDecimal taxAmount, BigDecimal totalAmount) {
     }
 
@@ -38,7 +38,7 @@ public final class SalesReportRows {
     }
 
     public record SalesReturnReportRow(Long returnId, String returnNumber, String salesOrderNumber, String customerName,
-                                       Instant returnDate, String reason, int quantity, BigDecimal refundTotal) {
+                                       Instant returnDate, String reason, BigDecimal quantity, BigDecimal refundTotal) {
     }
 
     public record CustomerPaymentReportRow(Long paymentId, String receiptNumber, String customerName, Instant paidAt, String method,

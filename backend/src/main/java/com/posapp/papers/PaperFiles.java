@@ -1,6 +1,8 @@
 package com.posapp.papers;
+import com.posapp.common.Qty;
 
-import com.lowagie.text.Document;
+
+import java.math.BigDecimal;import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfPTable;
@@ -37,11 +39,11 @@ import static com.posapp.common.PdfKit.shortDay;
 public class PaperFiles {
 
     /** One delivery that was booked against a sales order. */
-    public record Delivery(Instant when, String product, int quantity, String from) {
+    public record Delivery(Instant when, String product, BigDecimal quantity, String from) {
     }
 
     /** One receipt that was booked against a purchase order. */
-    public record Receipt(Instant when, String product, int quantity) {
+    public record Receipt(Instant when, String product, BigDecimal quantity) {
     }
 
     private final PdfKit kit;
@@ -60,6 +62,10 @@ public class PaperFiles {
 
     private static String num(int n) {
         return String.valueOf(n);
+    }
+
+    private static String num(BigDecimal n) {
+        return Qty.str(n);
     }
 
     /** An empty box to write in. */
@@ -87,22 +93,23 @@ public class PaperFiles {
             t.setWidthPercentage(100);
             headerCells(t, new String[]{"#", "Item", "Ordered", "Delivered to date", "Still to deliver"},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT});
-            int i = 1, ordered = 0, done = 0;
+            int i = 1;
+            BigDecimal ordered = BigDecimal.ZERO, done = BigDecimal.ZERO;
             for (SalesOrderLineDto l : so.lines()) {
-                int left = Math.max(0, l.quantityOrdered() - l.quantityFulfilled());
+                BigDecimal left = Qty.max(BigDecimal.ZERO, l.quantityOrdered().subtract(l.quantityFulfilled()));
                 t.addCell(cell(String.valueOf(i++), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(l.productName(), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(num(l.quantityOrdered()), plain(9), Element.ALIGN_RIGHT, null));
                 t.addCell(cell(num(l.quantityFulfilled()), plain(9), Element.ALIGN_RIGHT, null));
                 t.addCell(cell(num(left), bold(9), Element.ALIGN_RIGHT, null));
-                ordered += l.quantityOrdered();
-                done += l.quantityFulfilled();
+                ordered = ordered.add(l.quantityOrdered());
+                done = done.add(l.quantityFulfilled());
             }
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell("Total units", bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell(num(ordered), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(num(done), bold(9), Element.ALIGN_RIGHT, SOFT));
-            t.addCell(cell(num(Math.max(0, ordered - done)), bold(9), Element.ALIGN_RIGHT, SOFT));
+            t.addCell(cell(num(Qty.max(BigDecimal.ZERO, ordered.subtract(done))), bold(9), Element.ALIGN_RIGHT, SOFT));
             doc.add(t);
             if (!deliveries.isEmpty()) {
                 section(doc, "Deliveries so far");
@@ -137,9 +144,10 @@ public class PaperFiles {
             t.setWidthPercentage(100);
             headerCells(t, new String[]{"#", "Item", "Ordered", "Received to date", "Still expected", "Received now", "Remarks"},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT, Element.ALIGN_LEFT});
-            int i = 1, ordered = 0, got = 0;
+            int i = 1;
+            BigDecimal ordered = BigDecimal.ZERO, got = BigDecimal.ZERO;
             for (PurchaseOrderLineDto l : po.lines()) {
-                int left = Math.max(0, l.quantityOrdered() - l.quantityReceived());
+                BigDecimal left = Qty.max(BigDecimal.ZERO, l.quantityOrdered().subtract(l.quantityReceived()));
                 t.addCell(cell(String.valueOf(i++), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(l.productName(), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(num(l.quantityOrdered()), plain(9), Element.ALIGN_RIGHT, null));
@@ -147,14 +155,14 @@ public class PaperFiles {
                 t.addCell(cell(num(left), bold(9), Element.ALIGN_RIGHT, null));
                 t.addCell(blank());
                 t.addCell(blank());
-                ordered += l.quantityOrdered();
-                got += l.quantityReceived();
+                ordered = ordered.add(l.quantityOrdered());
+                got = got.add(l.quantityReceived());
             }
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell("Total units", bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell(num(ordered), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(num(got), bold(9), Element.ALIGN_RIGHT, SOFT));
-            t.addCell(cell(num(Math.max(0, ordered - got)), bold(9), Element.ALIGN_RIGHT, SOFT));
+            t.addCell(cell(num(Qty.max(BigDecimal.ZERO, ordered.subtract(got))), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
             doc.add(t);
@@ -216,8 +224,8 @@ public class PaperFiles {
                 if (result) {
                     t.addCell(cell(num(l.systemQuantity()), plain(8.5f), Element.ALIGN_RIGHT, null));
                     t.addCell(cell(l.countedQuantity() == null ? "-" : num(l.countedQuantity()), plain(8.5f), Element.ALIGN_RIGHT, null));
-                    int v = l.variance() == null ? 0 : l.variance();
-                    t.addCell(cell(l.variance() == null ? "" : (v > 0 ? "+" + v : String.valueOf(v)), v == 0 ? plain(8.5f) : bold(8.5f), Element.ALIGN_RIGHT, null));
+                    BigDecimal v = l.variance() == null ? BigDecimal.ZERO : l.variance();
+                    t.addCell(cell(l.variance() == null ? "" : (v.signum() > 0 ? "+" + Qty.str(v) : Qty.str(v)), v.signum() == 0 ? plain(8.5f) : bold(8.5f), Element.ALIGN_RIGHT, null));
                 } else if (system) {
                     t.addCell(cell(num(l.systemQuantity()), plain(8.5f), Element.ALIGN_RIGHT, null));
                     t.addCell(blank());

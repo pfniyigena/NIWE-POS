@@ -1,5 +1,7 @@
 package com.posapp.inventory;
 
+import com.posapp.common.Qty;import java.math.BigDecimal;
+
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.CatalogService;
@@ -77,7 +79,7 @@ public class StockAdjustmentService {
      */
     @Transactional
     public StockAdjustmentDto create(StockAdjustmentRequest request) {
-        if (request.getQuantityDelta() == 0) {
+        if (request.getQuantityDelta().signum() == 0) {
             throw ApiException.badRequest("Adjustment quantity cannot be zero");
         }
         StockAdjustmentReason reason = parseReason(request.getReason());
@@ -90,12 +92,12 @@ public class StockAdjustmentService {
             requireUsable(location);
         }
 
-        int previewBefore = location != null ? warehouseService.getStockQuantity(product, location) : product.getStockQuantity();
-        int previewAfter = previewBefore + request.getQuantityDelta();
+        BigDecimal previewBefore = location != null ? warehouseService.getStockQuantity(product, location) : product.getStockQuantity();
+        BigDecimal previewAfter = previewBefore.add(request.getQuantityDelta());
         // Task: "Inventory Setting (Example: allow negative stock)" — same preview-time check
         // confirm() repeats for real; this is just early feedback so a doomed request isn't even
         // logged as PENDING.
-        if (previewAfter < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
+        if (previewAfter.signum() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
             throw ApiException.badRequest("Cannot adjust '" + product.getName() + "'" + (location != null ? " at " + describe(location) : "")
                     + " by " + request.getQuantityDelta()
                     + " — current stock is " + previewBefore + ", which would go negative."
@@ -121,7 +123,7 @@ public class StockAdjustmentService {
         StockAdjustment saved = stockAdjustmentRepository.save(adjustment);
 
         auditLogService.record("STOCK_ADJUSTMENT_LOGGED",
-                "Logged a " + (request.getQuantityDelta() > 0 ? "+" : "") + request.getQuantityDelta() + " adjustment to "
+                "Logged a " + (request.getQuantityDelta().signum() > 0 ? "+" : "") + Qty.str(request.getQuantityDelta()) + " adjustment to "
                         + product.getName() + (location != null ? " at " + describe(location) : "") + " (" + reason + ") — awaiting approval"
                         + (request.getNote() != null && !request.getNote().isBlank() ? ": " + request.getNote() : ""),
                 "Product", product.getId());
@@ -152,8 +154,8 @@ public class StockAdjustmentService {
      * normally the moment any of this stock is actually sold.
      */
     @Transactional
-    public void recordInitialStock(Long productId, int quantity) {
-        if (quantity == 0) {
+    public void recordInitialStock(Long productId, BigDecimal quantity) {
+        if (quantity.signum() == 0) {
             return;
         }
         Product product = catalogService.getProductOrThrow(productId);
@@ -165,7 +167,7 @@ public class StockAdjustmentService {
         adjustment.setProduct(product);
         adjustment.setProductName(product.getName());
         adjustment.setQuantityDelta(quantity);
-        adjustment.setStockBefore(0);
+        adjustment.setStockBefore(BigDecimal.ZERO);
         adjustment.setStockAfter(quantity);
         adjustment.setReason(StockAdjustmentReason.INITIAL_STOCK);
         adjustment.setNote("Initial stock recorded at product creation");
@@ -175,7 +177,7 @@ public class StockAdjustmentService {
         stockAdjustmentRepository.save(adjustment);
 
         auditLogService.record("STOCK_ADJUSTMENT_INITIAL_STOCK",
-                "Recorded initial stock of " + quantity + " for " + product.getName() + " at creation",
+                "Recorded initial stock of " + Qty.str(quantity) + " for " + product.getName() + " at creation",
                 "Product", product.getId());
     }
 
@@ -205,12 +207,12 @@ public class StockAdjustmentService {
         if (location != null) {
             requireUsable(location);
         }
-        int stockBefore = location != null ? warehouseService.getStockQuantity(product, location) : product.getStockQuantity();
-        int stockAfter = stockBefore + adjustment.getQuantityDelta();
-        if (stockAfter < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
+        BigDecimal stockBefore = location != null ? warehouseService.getStockQuantity(product, location) : product.getStockQuantity();
+        BigDecimal stockAfter = stockBefore.add(adjustment.getQuantityDelta());
+        if (stockAfter.signum() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
             throw ApiException.badRequest("Cannot confirm this adjustment — current stock of '" + product.getName() + "'"
                     + (location != null ? " at " + describe(location) : "") + " is "
-                    + stockBefore + ", and applying " + (adjustment.getQuantityDelta() > 0 ? "+" : "") + adjustment.getQuantityDelta()
+                    + stockBefore + ", and applying " + (adjustment.getQuantityDelta().signum() > 0 ? "+" : "") + adjustment.getQuantityDelta()
                     + " would go negative. Enable \"Allow negative stock\" in Inventory settings to allow this.");
         }
 
@@ -223,7 +225,7 @@ public class StockAdjustmentService {
         StockAdjustment saved = stockAdjustmentRepository.save(adjustment);
 
         auditLogService.record("STOCK_ADJUSTMENT_CONFIRMED",
-                "Confirmed adjustment of " + saved.getProductName() + " by " + (saved.getQuantityDelta() > 0 ? "+" : "") + saved.getQuantityDelta()
+                "Confirmed adjustment of " + saved.getProductName() + " by " + (saved.getQuantityDelta().signum() > 0 ? "+" : "") + saved.getQuantityDelta()
                         + " (" + saved.getReason() + ", now " + stockAfter + ") — inventory and accounting updated",
                 "Product", product.getId());
 
@@ -245,7 +247,7 @@ public class StockAdjustmentService {
         adjustment.setStatus(StockAdjustmentStatus.REJECTED);
         StockAdjustment saved = stockAdjustmentRepository.save(adjustment);
         auditLogService.record("STOCK_ADJUSTMENT_REJECTED",
-                "Rejected the logged adjustment of " + saved.getProductName() + " by " + (saved.getQuantityDelta() > 0 ? "+" : "") + saved.getQuantityDelta(),
+                "Rejected the logged adjustment of " + saved.getProductName() + " by " + (saved.getQuantityDelta().signum() > 0 ? "+" : "") + Qty.str(saved.getQuantityDelta()),
                 "Product", saved.getProduct() != null ? saved.getProduct().getId() : null);
         return StockAdjustmentDto.from(saved);
     }
@@ -253,15 +255,20 @@ public class StockAdjustmentService {
     /** Keeps the batch/serial details typed on a tracked product's adjustment, after checking they fit the quantity. */
     private void captureTracking(StockAdjustment adjustment, Product product, StockAdjustmentRequest request) {
         com.posapp.tracking.TrackingMode mode = com.posapp.tracking.TrackingService.modeOf(product);
-        int delta = request.getQuantityDelta();
-        if (mode == com.posapp.tracking.TrackingMode.BATCH && delta > 0) {
+        BigDecimal delta = request.getQuantityDelta();
+        if (mode == com.posapp.tracking.TrackingMode.BATCH && delta.signum() > 0) {
             adjustment.setTrackingBatch(request.getBatchNumber() != null && !request.getBatchNumber().isBlank() ? request.getBatchNumber().trim() : null);
             adjustment.setTrackingExpiry(request.getExpiryDate());
         } else if (mode == com.posapp.tracking.TrackingMode.SERIAL && request.getSerialNumbers() != null && !request.getSerialNumbers().isEmpty()) {
             List<String> serials = trackingService.cleanSerials(product, request.getSerialNumbers());
-            if (serials.size() != Math.abs(delta)) {
-                throw ApiException.badRequest("'" + product.getName() + "' is serial-numbered: " + Math.abs(delta) + " unit"
-                        + (Math.abs(delta) == 1 ? "" : "s") + " need " + Math.abs(delta) + " serial number" + (Math.abs(delta) == 1 ? "" : "s")
+            BigDecimal abs = delta.abs();
+            if (abs.stripTrailingZeros().scale() > 0) {
+                throw ApiException.badRequest("'" + product.getName() + "' is serial-numbered, so it can only move in whole units.");
+            }
+            int units = abs.intValue();
+            if (serials.size() != units) {
+                throw ApiException.badRequest("'" + product.getName() + "' is serial-numbered: " + units + " unit"
+                        + (units == 1 ? "" : "s") + " need " + units + " serial number" + (units == 1 ? "" : "s")
                         + " (" + serials.size() + " given)");
             }
             adjustment.setTrackingSerials(String.join("\n", serials));
@@ -270,11 +277,11 @@ public class StockAdjustmentService {
 
     /** Applies the stock change, adding the new batch/serials on an increase, or removing the chosen serials on a decrease. */
     private void applyWithTracking(StockAdjustment adjustment, Product product, WarehouseLocation location) {
-        int delta = adjustment.getQuantityDelta();
+        BigDecimal delta = adjustment.getQuantityDelta();
         com.posapp.tracking.TrackingMode mode = com.posapp.tracking.TrackingService.modeOf(product);
         List<String> serials = adjustment.getTrackingSerials() != null && !adjustment.getTrackingSerials().isBlank()
                 ? List.of(adjustment.getTrackingSerials().split("\\R")) : List.of();
-        if (delta < 0 && mode == com.posapp.tracking.TrackingMode.SERIAL && !serials.isEmpty()) {
+        if (delta.signum() < 0 && mode == com.posapp.tracking.TrackingMode.SERIAL && !serials.isEmpty()) {
             com.posapp.tracking.TrackingContext.begin(null, java.util.Map.of(product.getId(), serials));
             try {
                 catalogService.adjustStock(product, delta, location);
@@ -284,7 +291,7 @@ public class StockAdjustmentService {
             return;
         }
         catalogService.adjustStock(product, delta, location);
-        if (delta > 0 && mode != com.posapp.tracking.TrackingMode.NONE) {
+        if (delta.signum() > 0 && mode != com.posapp.tracking.TrackingMode.NONE) {
             WarehouseLocation where = location != null ? location
                     : warehouseService.resolveCanonicalSalesLocation(warehouseService.getDefaultWarehouseOrThrow());
             String source = "Stock adjustment #" + adjustment.getId();

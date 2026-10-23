@@ -1,5 +1,6 @@
 package com.posapp.restaurant;
 
+import com.posapp.common.Qty;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.restaurant.dto.CheckLineSelection;
@@ -42,8 +43,8 @@ public class RestaurantCheckService {
     }
 
     /** Resolves the request into line -> quantity to move, checking every line belongs to the order. */
-    private Map<RestaurantOrderLine, Integer> resolve(RestaurantOrder order, CheckLineSelection sel) {
-        Map<RestaurantOrderLine, Integer> out = new LinkedHashMap<>();
+    private Map<RestaurantOrderLine, BigDecimal> resolve(RestaurantOrder order, CheckLineSelection sel) {
+        Map<RestaurantOrderLine, BigDecimal> out = new LinkedHashMap<>();
         if (sel != null && sel.getSeats() != null) {
             for (RestaurantOrderLine l : order.getLines()) {
                 if (l.getSeat() != null && sel.getSeats().contains(l.getSeat())) out.put(l, l.getQuantity());
@@ -54,21 +55,21 @@ public class RestaurantCheckService {
                 if (it.getLineId() == null) throw ApiException.badRequest("Every selected item needs its line id");
                 RestaurantOrderLine l = order.getLines().stream().filter(x -> x.getId().equals(it.getLineId())).findFirst()
                         .orElseThrow(() -> ApiException.badRequest("Line " + it.getLineId() + " is not on this order"));
-                int q = it.getQuantity() == null ? l.getQuantity() : it.getQuantity();
-                if (q < 1 || q > l.getQuantity()) {
-                    throw ApiException.badRequest("You can move 1 to " + l.getQuantity() + " of " + l.getDescription());
+                BigDecimal q = it.getQuantity() == null ? l.getQuantity() : it.getQuantity();
+                if (q.signum() <= 0 || q.compareTo(l.getQuantity()) > 0) {
+                    throw ApiException.badRequest("You can move more than 0 up to " + Qty.str(l.getQuantity()) + " of " + l.getDescription());
                 }
                 out.put(l, q);
             }
         }
         if (out.isEmpty()) throw ApiException.badRequest("Choose the items to move");
-        int remaining = 0;
-        for (RestaurantOrderLine l : order.getLines()) remaining += l.getQuantity() - out.getOrDefault(l, 0);
-        if (remaining < 0) throw ApiException.badRequest("Invalid selection");
+        BigDecimal remaining = BigDecimal.ZERO;
+        for (RestaurantOrderLine l : order.getLines()) remaining = remaining.add(l.getQuantity().subtract(out.getOrDefault(l, BigDecimal.ZERO)));
+        if (remaining.signum() < 0) throw ApiException.badRequest("Invalid selection");
         return out;
     }
 
-    private static RestaurantOrderLine copyOf(RestaurantOrderLine l, int qty) {
+    private static RestaurantOrderLine copyOf(RestaurantOrderLine l, BigDecimal qty) {
         RestaurantOrderLine c = new RestaurantOrderLine();
         c.setProduct(l.getProduct());
         c.setDescription(l.getDescription());
@@ -109,11 +110,11 @@ public class RestaurantCheckService {
     }
 
     /** Moves the selected quantities from one order to another (whole lines move, part lines are copied and reduced). */
-    private void move(RestaurantOrder from, RestaurantOrder to, Map<RestaurantOrderLine, Integer> picks) {
-        for (Map.Entry<RestaurantOrderLine, Integer> e : picks.entrySet()) {
+    private void move(RestaurantOrder from, RestaurantOrder to, Map<RestaurantOrderLine, BigDecimal> picks) {
+        for (Map.Entry<RestaurantOrderLine, BigDecimal> e : picks.entrySet()) {
             RestaurantOrderLine l = e.getKey();
-            int q = e.getValue();
-            if (q == l.getQuantity()) {
+            BigDecimal q = e.getValue();
+            if (q.compareTo(l.getQuantity()) == 0) {
                 from.getLines().remove(l);
                 l.setOrder(to);
                 to.getLines().add(l);
@@ -121,7 +122,7 @@ public class RestaurantCheckService {
                 RestaurantOrderLine c = copyOf(l, q);
                 c.setOrder(to);
                 to.getLines().add(c);
-                l.setQuantity(l.getQuantity() - q);
+                l.setQuantity(l.getQuantity().subtract(q));
             }
         }
     }
@@ -144,17 +145,17 @@ public class RestaurantCheckService {
             throw ApiException.badRequest("Only a table's bill can be split into separate checks");
         }
         if (!source.getPayments().isEmpty()) throw ApiException.badRequest("This bill already has payments — settle it instead of splitting it");
-        Map<RestaurantOrderLine, Integer> picks = resolve(source, sel);
-        int left = 0;
-        for (RestaurantOrderLine l : source.getLines()) left += l.getQuantity() - picks.getOrDefault(l, 0);
-        if (left == 0) throw ApiException.badRequest("Leave at least one item on the original check");
+        Map<RestaurantOrderLine, BigDecimal> picks = resolve(source, sel);
+        BigDecimal left = BigDecimal.ZERO;
+        for (RestaurantOrderLine l : source.getLines()) left = left.add(l.getQuantity().subtract(picks.getOrDefault(l, BigDecimal.ZERO)));
+        if (left.signum() == 0) throw ApiException.badRequest("Leave at least one item on the original check");
 
         BigDecimal totalAfterOwn = BigDecimal.ZERO, movedAfterOwn = BigDecimal.ZERO;
         for (RestaurantOrderLine l : source.getLines()) {
             BigDecimal a = RestaurantOrderCalculator.lineGross(l).subtract(RestaurantOrderCalculator.lineOwnDiscount(l));
             totalAfterOwn = totalAfterOwn.add(a);
-            Integer q = picks.get(l);
-            if (q != null) movedAfterOwn = movedAfterOwn.add(a.multiply(BigDecimal.valueOf(q)).divide(BigDecimal.valueOf(l.getQuantity()), 6, RoundingMode.HALF_UP));
+            BigDecimal q = picks.get(l);
+            if (q != null) movedAfterOwn = movedAfterOwn.add(a.multiply(q).divide(l.getQuantity(), 6, RoundingMode.HALF_UP));
         }
 
         RestaurantOrder t = new RestaurantOrder();
@@ -201,7 +202,7 @@ public class RestaurantCheckService {
         RestaurantOrder target = open(sel.getTargetOrderId());
         if (source.getOrderType() != target.getOrderType()) throw ApiException.badRequest("Items can only move between bills of the same kind");
         if (!source.getPayments().isEmpty() || !target.getPayments().isEmpty()) throw ApiException.badRequest("A bill with payments cannot take part in a move");
-        Map<RestaurantOrderLine, Integer> picks = resolve(source, sel);
+        Map<RestaurantOrderLine, BigDecimal> picks = resolve(source, sel);
         move(source, target, picks);
         if (source.getLines().isEmpty()) {
             source.setStatus(RestaurantOrderStatus.CANCELLED);
@@ -253,7 +254,7 @@ public class RestaurantCheckService {
             log.setOrderId(saved.getId());
             log.setOrderLabel(saved.displayLabel());
             log.setDescription("Receipt " + saved.getTicketNumber());
-            log.setQuantity(saved.getPrintCount());
+            log.setQuantity(BigDecimal.valueOf(saved.getPrintCount()));
             log.setAmount(RestaurantOrderCalculator.total(saved));
             log.setReason("Receipt copy " + (saved.getPrintCount() - 1));
             log.setByUser(RestaurantAccess.username());

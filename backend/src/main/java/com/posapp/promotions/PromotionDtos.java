@@ -9,12 +9,12 @@ public final class PromotionDtos {
     private PromotionDtos() {
     }
 
-    public record Row(Long id, String name, String description, String type, String scope, Long targetId, String targetName, BigDecimal value, Integer buyQuantity, Integer freeQuantity,
-                      int minQuantity, BigDecimal minSpend, LocalDate validFrom, LocalDate validTo, String couponCode, Integer maxUses, Integer maxUsesPerCustomer,
+    public record Row(Long id, String name, String description, String type, String scope, Long targetId, String targetName, BigDecimal value, BigDecimal buyQuantity, BigDecimal freeQuantity,
+                      BigDecimal minQuantity, BigDecimal minSpend, LocalDate validFrom, LocalDate validTo, String couponCode, Integer maxUses, Integer maxUsesPerCustomer,
                       Long customerGroupId, String customerGroupName, boolean active, boolean current, long uses, BigDecimal given, String summary) {
     }
 
-    public record Request(String name, String description, String type, String scope, Long targetId, BigDecimal value, Integer buyQuantity, Integer freeQuantity, Integer minQuantity,
+    public record Request(String name, String description, String type, String scope, Long targetId, BigDecimal value, BigDecimal buyQuantity, BigDecimal freeQuantity, BigDecimal minQuantity,
                           BigDecimal minSpend, LocalDate validFrom, LocalDate validTo, String couponCode, Integer maxUses, Integer maxUsesPerCustomer, Long customerGroupId, Boolean active) {
     }
 

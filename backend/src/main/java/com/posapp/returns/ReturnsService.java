@@ -1,4 +1,5 @@
 package com.posapp.returns;
+import com.posapp.common.Qty;
 
 import com.posapp.apps.AppKey;
 import com.posapp.apps.AppsService;
@@ -142,7 +143,7 @@ public class ReturnsService {
     }
 
     /** Same shape as {@code OrderService#stockQuantityFor} — duplicated rather than shared across packages, same convention as this file's own DEFAULT_EFRIS_TAX_CODE. */
-    private int stockQuantityFor(com.posapp.catalog.Product product, WarehouseLocation location) {
+    private BigDecimal stockQuantityFor(com.posapp.catalog.Product product, WarehouseLocation location) {
         if (location == null) {
             return product.getStockQuantity();
         }
@@ -186,9 +187,9 @@ public class ReturnsService {
      * to a different pair of packages).
      */
     @Transactional(readOnly = true)
-    public Map<Long, Integer> returnedQuantitiesForOrder(Long orderId) {
+    public Map<Long, BigDecimal> returnedQuantitiesForOrder(Long orderId) {
         return salesReturnLineRepository.findByOrderId(orderId).stream()
-                .collect(Collectors.groupingBy(l -> l.getOrderLine().getId(), Collectors.summingInt(SalesReturnLine::getQuantity)));
+                .collect(Collectors.groupingBy(l -> l.getOrderLine().getId(), Collectors.reducing(BigDecimal.ZERO, SalesReturnLine::getQuantity, BigDecimal::add)));
     }
 
     @Transactional(readOnly = true)
@@ -272,17 +273,17 @@ public class ReturnsService {
                     .findFirst()
                     .orElseThrow(() -> ApiException.badRequest("Line " + entry.getOrderLineId() + " does not belong to this order"));
 
-            int alreadyReturned = salesReturnLineRepository.sumReturnedQuantityForLine(line.getId());
-            int remaining = line.getQuantity() - alreadyReturned;
-            if (entry.getQuantity() > remaining) {
-                throw ApiException.badRequest("Cannot return " + entry.getQuantity() + " of '" + line.getDescription()
-                        + "' — only " + remaining + " remaining (of " + line.getQuantity() + " sold, " + alreadyReturned + " already returned)");
+            BigDecimal alreadyReturned = salesReturnLineRepository.sumReturnedQuantityForLine(line.getId());
+            BigDecimal remaining = line.getQuantity().subtract(alreadyReturned);
+            if (entry.getQuantity().compareTo(remaining) > 0) {
+                throw ApiException.badRequest("Cannot return " + Qty.str(entry.getQuantity()) + " of '" + line.getDescription()
+                        + "' — only " + Qty.str(remaining) + " remaining (of " + Qty.str(line.getQuantity()) + " sold, " + Qty.str(alreadyReturned) + " already returned)");
             }
 
             BigDecimal discountFactor = BigDecimal.ONE.subtract(
                     line.effectiveDiscountPercent().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
             BigDecimal lineRefund = line.getUnitPrice()
-                    .multiply(BigDecimal.valueOf(entry.getQuantity()))
+                    .multiply(entry.getQuantity())
                     .multiply(discountFactor)
                     .setScale(2, RoundingMode.HALF_UP);
 
@@ -320,13 +321,13 @@ public class ReturnsService {
             // Product.trackStock's javadoc.
             if (line.getProduct() != null && line.getProduct().isTrackStock()) {
                 // Task 6: "Stock Movement History" — snapshot before/after, see SalesReturnLine's javadoc.
-                int stockBefore = stockQuantityFor(line.getProduct(), sellingLocation);
+                BigDecimal stockBefore = stockQuantityFor(line.getProduct(), sellingLocation);
                 catalogService.adjustStock(line.getProduct(), entry.getQuantity(), sellingLocation);
                 returnLine.setStockBefore(stockBefore);
                 returnLine.setStockAfter(stockQuantityFor(line.getProduct(), sellingLocation));
                 if (line.getUnitCost() != null) {
                     cogsReversal = cogsReversal.add(
-                            line.getUnitCost().multiply(BigDecimal.valueOf(entry.getQuantity())));
+                            line.getUnitCost().multiply(entry.getQuantity()));
                 }
             }
         }

@@ -18,7 +18,7 @@ public final class WorkOrderRequests {
                                    LocalDate scheduledDate, LocalDate dueDate, Long branchId) {
     }
 
-    public record LineRequest(Long productId, Integer quantity, BigDecimal unitPrice, Boolean included) {
+    public record LineRequest(Long productId, BigDecimal quantity, BigDecimal unitPrice, Boolean included) {
     }
 
     public record LinesRequest(List<LineRequest> lines) {
@@ -33,14 +33,14 @@ public final class WorkOrderRequests {
     public record CompleteRequest(String note, Boolean force) {
     }
 
-    public record ManufacturingRequest(Long bomId, Integer quantity, LocalDate scheduledDate) {
+    public record ManufacturingRequest(Long bomId, BigDecimal quantity, LocalDate scheduledDate) {
     }
 
     public record PackageRequest(String code, String name, String description, BigDecimal fixedPrice, BigDecimal estimatedHours, Boolean active,
                                  List<String> items, List<PackagePartRequest> parts) {
     }
 
-    public record PackagePartRequest(Long productId, Integer quantity, Boolean included) {
+    public record PackagePartRequest(Long productId, BigDecimal quantity, Boolean included) {
     }
 
     public record InvoiceRequestBody(LocalDate dueDate, String notes) {

@@ -32,9 +32,9 @@ public class PurchaseOrderLine extends BaseEntity {
     /** Snapshot of the product's name at the time this line was added, so a later product rename doesn't rewrite an already-placed order. */
     private String productName;
 
-    private int quantityOrdered;
+    private BigDecimal quantityOrdered = BigDecimal.ZERO;
 
-    private int quantityReceived = 0;
+    private BigDecimal quantityReceived = BigDecimal.ZERO;
 
     /** What this supplier charges per unit for this order — independent of Product.costPrice (which is this store's own current/typical cost), since a specific order can be priced differently. */
     private BigDecimal unitCost = BigDecimal.ZERO;

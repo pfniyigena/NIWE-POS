@@ -28,6 +28,15 @@ public class OverheadCostService {
     }
 
     @Transactional(readOnly = true)
+    public List<OverheadCostDto> filtered(String q, String status, String method) {
+        return repository.findAllByOrderByNameAsc().stream()
+                .filter(o -> status == null || status.isBlank() || (status.equalsIgnoreCase("ACTIVE") == o.isActive()))
+                .filter(o -> com.posapp.common.ListPaging.is(method, o.getAllocationMethod().name()))
+                .filter(o -> com.posapp.common.ListPaging.has(q, o.getCode(), o.getName()))
+                .map(OverheadCostDto::from).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<OverheadCostDto> listAll() {
         return repository.findAllByOrderByNameAsc().stream().map(OverheadCostDto::from).toList();
     }

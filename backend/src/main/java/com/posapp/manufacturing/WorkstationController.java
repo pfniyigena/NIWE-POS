@@ -20,8 +20,9 @@ public class WorkstationController {
     }
 
     @GetMapping
-    public List<WorkstationDto> listAll() {
-        return workstationService.listAll();
+    public org.springframework.http.ResponseEntity<List<WorkstationDto>> listAll(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return com.posapp.common.ListPaging.of(workstationService.filtered(q, status), page, size);
     }
 
     @GetMapping("/active")

@@ -1,6 +1,7 @@
 package com.posapp.returns.dto;
 
-import jakarta.validation.Valid;
+
+import java.math.BigDecimal;import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -40,11 +41,11 @@ public class ProcessReturnRequest {
         private Long orderLineId;
 
         @Positive(message = "Return quantity must be greater than zero")
-        private int quantity;
+        private BigDecimal quantity = BigDecimal.ZERO;
 
         public Long getOrderLineId() { return orderLineId; }
         public void setOrderLineId(Long orderLineId) { this.orderLineId = orderLineId; }
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
+        public BigDecimal getQuantity() { return quantity; }
+        public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     }
 }

@@ -1,4 +1,5 @@
 package com.posapp.reports;
+import com.posapp.common.Qty;
 
 import com.posapp.branch.BranchService;
 import com.posapp.catalog.Brand;
@@ -180,7 +181,7 @@ public class ReportService {
     /** In-transit quantities for the Stock On Hand report. */
     private final com.posapp.warehouse.StockTransferRepository stockTransferRepository;
     /** Same config property (and default) DashboardService/CatalogController already use for "what counts as low stock" — see StockValuationRow.status. */
-    private final int lowStockThreshold;
+    private final BigDecimal lowStockThreshold;
 
     public ReportService(OrderRepository orderRepository,
                           CustomerRepository customerRepository,
@@ -231,20 +232,20 @@ public class ReportService {
         this.branchService = branchService;
         this.stockReservationService = stockReservationService;
         this.stockTransferRepository = stockTransferRepository;
-        this.lowStockThreshold = lowStockThreshold;
+        this.lowStockThreshold = BigDecimal.valueOf(lowStockThreshold);
     }
 
     @Transactional(readOnly = true)
     public List<CategorySalesRow> categorySales(Instant from, Instant to, Long registerId, Long branchId) {
-        record Acc(String name, int[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
+        record Acc(String name, BigDecimal[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
         Map<Long, Acc> byCategory = new LinkedHashMap<>();
         for (SaleOrder order : completedOrders(from, to, registerId, branchId)) {
             for (OrderLine line : order.getLines()) {
                 Category category = line.getProduct() != null ? line.getProduct().getCategory() : null;
                 Long key = category != null ? category.getId() : -1L;
                 String name = category != null ? category.getName() : "Uncategorized";
-                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sales()[0] = acc.sales()[0].add(OrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(OrderCalculator.lineTax(line));
             }
@@ -266,15 +267,15 @@ public class ReportService {
      */
     @Transactional(readOnly = true)
     public List<BrandSalesRow> brandSales(Instant from, Instant to, Long registerId, Long branchId) {
-        record Acc(String name, int[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
+        record Acc(String name, BigDecimal[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
         Map<Long, Acc> byBrand = new LinkedHashMap<>();
         for (SaleOrder order : completedOrders(from, to, registerId, branchId)) {
             for (OrderLine line : order.getLines()) {
                 Brand brand = line.getProduct() != null ? line.getProduct().getBrand() : null;
                 Long key = brand != null ? brand.getId() : -1L;
                 String name = brand != null ? brand.getName() : "No Brand";
-                Acc acc = byBrand.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                Acc acc = byBrand.computeIfAbsent(key, k -> new Acc(name, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sales()[0] = acc.sales()[0].add(OrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(OrderCalculator.lineTax(line));
             }
@@ -291,7 +292,7 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public List<ProductSalesRow> productSales(Instant from, Instant to, Long registerId, Long branchId, Long categoryId) {
-        record Acc(String sku, String name, String categoryName, int[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
+        record Acc(String sku, String name, String categoryName, BigDecimal[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
         Map<Long, Acc> byProduct = new LinkedHashMap<>();
         for (SaleOrder order : completedOrders(from, to, registerId, branchId)) {
             for (OrderLine line : order.getLines()) {
@@ -303,8 +304,8 @@ public class ReportService {
                 Acc acc = byProduct.computeIfAbsent(product.getId(), k -> new Acc(
                         product.getSku(), product.getName(),
                         product.getCategory() != null ? product.getCategory().getName() : "Uncategorized",
-                        new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                        new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sales()[0] = acc.sales()[0].add(OrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(OrderCalculator.lineTax(line));
             }
@@ -406,15 +407,15 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public List<CategoryProfitRow> categoryProfit(Instant from, Instant to, Long registerId, Long branchId) {
-        record Acc(String name, int[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
+        record Acc(String name, BigDecimal[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
         Map<Long, Acc> byCategory = new LinkedHashMap<>();
         for (SaleOrder order : completedOrders(from, to, registerId, branchId)) {
             for (OrderLine line : order.getLines()) {
                 Category category = line.getProduct() != null ? line.getProduct().getCategory() : null;
                 Long key = category != null ? category.getId() : -1L;
                 String name = category != null ? category.getName() : "Uncategorized";
-                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.revenue()[0] = acc.revenue()[0].add(OrderCalculator.lineNetTotal(line));
                 acc.cost()[0] = acc.cost()[0].add(OrderCalculator.lineCost(line));
             }
@@ -435,15 +436,15 @@ public class ReportService {
      */
     @Transactional(readOnly = true)
     public List<BrandProfitRow> brandProfit(Instant from, Instant to, Long registerId, Long branchId) {
-        record Acc(String name, int[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
+        record Acc(String name, BigDecimal[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
         Map<Long, Acc> byBrand = new LinkedHashMap<>();
         for (SaleOrder order : completedOrders(from, to, registerId, branchId)) {
             for (OrderLine line : order.getLines()) {
                 Brand brand = line.getProduct() != null ? line.getProduct().getBrand() : null;
                 Long key = brand != null ? brand.getId() : -1L;
                 String name = brand != null ? brand.getName() : "No Brand";
-                Acc acc = byBrand.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                Acc acc = byBrand.computeIfAbsent(key, k -> new Acc(name, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.revenue()[0] = acc.revenue()[0].add(OrderCalculator.lineNetTotal(line));
                 acc.cost()[0] = acc.cost()[0].add(OrderCalculator.lineCost(line));
             }
@@ -460,7 +461,7 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public List<ProductProfitRow> productProfit(Instant from, Instant to, Long registerId, Long branchId, Long categoryId) {
-        record Acc(String sku, String name, String categoryName, int[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
+        record Acc(String sku, String name, String categoryName, BigDecimal[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
         Map<Long, Acc> byProduct = new LinkedHashMap<>();
         for (SaleOrder order : completedOrders(from, to, registerId, branchId)) {
             for (OrderLine line : order.getLines()) {
@@ -472,8 +473,8 @@ public class ReportService {
                 Acc acc = byProduct.computeIfAbsent(product.getId(), k -> new Acc(
                         product.getSku(), product.getName(),
                         product.getCategory() != null ? product.getCategory().getName() : "Uncategorized",
-                        new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                        new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.revenue()[0] = acc.revenue()[0].add(OrderCalculator.lineNetTotal(line));
                 acc.cost()[0] = acc.cost()[0].add(OrderCalculator.lineCost(line));
             }
@@ -532,7 +533,7 @@ public class ReportService {
         for (SalesOrder so : salesOrderRepository.findAllByOrderByOrderDateDesc()) {
             if (so.getCustomer() == null || !so.getCustomer().getId().equals(customerId)) continue;
             if (so.getOrderDate().isBefore(from) || so.getOrderDate().isAfter(to)) continue;
-            int qty = so.getLines().stream().mapToInt(l -> l.getQuantityOrdered()).sum();
+            BigDecimal qty = so.getLines().stream().map(l -> l.getQuantityOrdered()).reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal total = SalesOrderService.totalAmount(so);
             rows.add(new CustomerStatementRow(
                     so.getId(),
@@ -710,20 +711,20 @@ public class ReportService {
     public List<StockValuationRow> stockValuation(Long categoryId, Long warehouseId, boolean allWarehouses, Long branchId) {
         // A chosen warehouse wins over a branch; otherwise a branch sums its warehouses' sellable stock.
         boolean branchMode = branchId != null && warehouseId == null;
-        java.util.Map<Long, Integer> scopedQuantities = branchMode
+        java.util.Map<Long, BigDecimal> scopedQuantities = branchMode
                 ? warehouseService.sellableQuantitiesByProductForBranch(branchId)
                 : (warehouseId != null || allWarehouses)
                 ? warehouseService.sellableQuantitiesByProduct(warehouseId)
                 : null;
         // "Low stock" uses the threshold of whichever warehouse the quantity column describes: a
         // chosen warehouse's own, the primary's in the default view, the store-wide default across all.
-        int threshold = (allWarehouses || branchMode) ? lowStockThreshold
+        BigDecimal threshold = (allWarehouses || branchMode) ? lowStockThreshold
                 : warehouseId != null ? warehouseService.effectiveLowStockThreshold(warehouseService.getEntityOrThrow(warehouseId))
                 : warehouseService.primaryLowStockThreshold();
-        java.util.Map<Long, Integer> reservedByProduct = stockReservationService.reservedByProduct();
-        java.util.Map<Long, Integer> inTransitByProduct = new java.util.HashMap<>();
+        java.util.Map<Long, BigDecimal> reservedByProduct = stockReservationService.reservedByProduct();
+        java.util.Map<Long, BigDecimal> inTransitByProduct = new java.util.HashMap<>();
         for (Object[] row : stockTransferRepository.inTransitByProduct()) {
-            inTransitByProduct.put(((Number) row[0]).longValue(), ((Number) row[1]).intValue());
+            inTransitByProduct.put(((Number) row[0]).longValue(), Qty.dec(row[1]));
         }
         List<StockValuationRow> rows = new ArrayList<>();
         for (Product product : productRepository.findAll()) {
@@ -732,15 +733,15 @@ public class ReportService {
             if (categoryId != null && (category == null || !categoryId.equals(category.getId()))) {
                 continue;
             }
-            int quantity = scopedQuantities != null ? scopedQuantities.getOrDefault(product.getId(), 0) : product.getStockQuantity();
-            BigDecimal value = product.getCostPrice().multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal quantity = scopedQuantities != null ? scopedQuantities.getOrDefault(product.getId(), BigDecimal.ZERO) : product.getStockQuantity();
+            BigDecimal value = product.getCostPrice().multiply(quantity).setScale(2, RoundingMode.HALF_UP);
             rows.add(new StockValuationRow(
                     product.getId(), product.getSku(), product.getName(),
                     category != null ? category.getName() : "Uncategorized",
                     quantity, product.getCostPrice(), value,
-                    quantity < threshold ? "Low stock" : "OK",
-                    reservedByProduct.getOrDefault(product.getId(), 0),
-                    inTransitByProduct.getOrDefault(product.getId(), 0)));
+                    quantity.compareTo(threshold) < 0 ? "Low stock" : "OK",
+                    reservedByProduct.getOrDefault(product.getId(), BigDecimal.ZERO),
+                    inTransitByProduct.getOrDefault(product.getId(), BigDecimal.ZERO)));
         }
         rows.sort(Comparator.comparing(StockValuationRow::stockValue).reversed());
         return rows;
@@ -757,7 +758,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<StockAgingRow> stockAging(Long categoryId, Long warehouseId, Long branchId, Integer deadStockDays) {
         boolean branchMode = branchId != null && warehouseId == null;
-        java.util.Map<Long, Integer> quantities = branchMode
+        java.util.Map<Long, BigDecimal> quantities = branchMode
                 ? warehouseService.sellableQuantitiesByProductForBranch(branchId)
                 : warehouseService.sellableQuantitiesByProduct(warehouseId);
         java.util.Map<Long, Instant> lastReceived = new java.util.HashMap<>();
@@ -779,8 +780,8 @@ public class ReportService {
             if (!product.isActive() || !product.isTrackStock() || product.isService()) continue;
             Category category = product.getCategory();
             if (categoryId != null && (category == null || !categoryId.equals(category.getId()))) continue;
-            int quantity = quantities.getOrDefault(product.getId(), 0);
-            if (quantity <= 0) continue;
+            BigDecimal quantity = quantities.getOrDefault(product.getId(), BigDecimal.ZERO);
+            if (quantity.signum() <= 0) continue;
             Instant received = lastReceived.get(product.getId());
             Instant sold = lastSold.get(product.getId());
             LocalDate receivedDate = received != null ? received.atZone(zone).toLocalDate() : null;
@@ -798,7 +799,7 @@ public class ReportService {
             BigDecimal cost = product.getCostPrice() != null ? product.getCostPrice() : BigDecimal.ZERO;
             rows.add(new StockAgingRow(product.getId(), product.getSku(), product.getName(),
                     category != null ? category.getName() : "Uncategorized",
-                    quantity, cost, cost.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP),
+                    quantity, cost, cost.multiply(quantity).setScale(2, RoundingMode.HALF_UP),
                     receivedDate != null ? receivedDate.toString() : null,
                     soldDate != null ? soldDate.toString() : null,
                     daysSinceSale != null ? String.valueOf(daysSinceSale) : "Never",
@@ -871,7 +872,7 @@ public class ReportService {
             for (OrderLine line : order.getLines()) {
                 if (line.getStockBefore() == null || line.getStockAfter() == null) continue;
                 addMovementRow(filter, order.getStockWarehouseId(), rows, order.getCompletedAt(), "POS sale", line.getProduct(), line.getDescription(), categoryId, productId,
-                        -line.getQuantity(), line.getStockBefore(), line.getStockAfter(),
+                        line.getQuantity().negate(), line.getStockBefore(), line.getStockAfter(),
                         order.getInvoiceNumber(), null);
             }
         }
@@ -889,7 +890,7 @@ public class ReportService {
         // Sale order fulfillment — SalesOrderService.fulfillLines decrements stock; own structured event, same shape as StockReceipt.
         for (SalesOrderFulfillment fulfillment : salesOrderFulfillmentRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(from, to)) {
             addMovementRow(filter, warehouseIdOf(fulfillment.getLocation()), rows, fulfillment.getCreatedAt(), "Sale order fulfillment", fulfillment.getProduct(), fulfillment.getProductName(), categoryId, productId,
-                    -fulfillment.getQuantityFulfilled(), fulfillment.getStockBefore(), fulfillment.getStockAfter(),
+                    fulfillment.getQuantityFulfilled().negate(), fulfillment.getStockBefore(), fulfillment.getStockAfter(),
                     fulfillment.getOrderNumber(),
                     fulfillment.getLocationName() == null ? null
                             : "[" + (fulfillment.getWarehouseName() != null ? fulfillment.getWarehouseName() + " / " : "") + fulfillment.getLocationName() + "]");
@@ -915,7 +916,7 @@ public class ReportService {
                 Product product = line.getOrderLine() != null ? line.getOrderLine().getProduct() : null;
                 String productName = line.getOrderLine() != null ? line.getOrderLine().getProductName() : null;
                 addMovementRow(filter, receivingWarehouseIdOf(purchaseReturn.getPurchaseOrder()), rows, purchaseReturn.getReturnDate(), "Purchase return", product, productName, categoryId, productId,
-                        -line.getQuantity(), line.getStockBefore(), line.getStockAfter(),
+                        line.getQuantity().negate(), line.getStockBefore(), line.getStockAfter(),
                         purchaseReturn.getReturnNumber(), purchaseReturn.getReason());
             }
         }
@@ -935,7 +936,7 @@ public class ReportService {
             for (com.posapp.manufacturing.ManufacturingOrderConsumption consumption : run.getConsumptions()) {
                 if (consumption.getStockBefore() == null || consumption.getStockAfter() == null) continue;
                 addMovementRow(filter, warehouseIdOf(run.getManufacturingOrder().getLocation()), rows, run.getCreatedAt(), "Manufacturing consumption", consumption.getComponent(), consumption.getComponentName(), categoryId, productId,
-                        -consumption.getQuantityConsumed(), consumption.getStockBefore(), consumption.getStockAfter(),
+                        consumption.getQuantityConsumed().negate(), consumption.getStockBefore(), consumption.getStockAfter(),
                         orderNumber, locationTag);
             }
         }
@@ -950,13 +951,13 @@ public class ReportService {
             for (RestaurantOrderLine line : order.getLines()) {
                 if (line.getStockBefore() == null || line.getStockAfter() == null) continue;
                 addMovementRow(filter, order.getStockWarehouseId(), rows, order.getClosedAt(), "Restaurant sale", line.getProduct(), line.getDescription(), categoryId, productId,
-                        -line.getQuantity(), line.getStockBefore(), line.getStockAfter(),
+                        line.getQuantity().negate(), line.getStockBefore(), line.getStockAfter(),
                         ticketNumber, null);
             }
             for (RestaurantOrderConsumption consumption : order.getIngredientConsumptions()) {
                 if (consumption.getStockBefore() == null || consumption.getStockAfter() == null) continue;
                 addMovementRow(filter, order.getStockWarehouseId(), rows, order.getClosedAt(), "Restaurant ingredient consumption", consumption.getComponent(), consumption.getComponentName(), categoryId, productId,
-                        -consumption.getQuantityConsumed(), consumption.getStockBefore(), consumption.getStockAfter(),
+                        consumption.getQuantityConsumed().negate(), consumption.getStockBefore(), consumption.getStockAfter(),
                         ticketNumber, null);
             }
         }
@@ -971,7 +972,7 @@ public class ReportService {
                 RestaurantWastageStatus.CONFIRMED, from, to)) {
             if (wastage.getStockBefore() == null || wastage.getStockAfter() == null) continue;
             addMovementRow(filter, wastage.getStockWarehouseId(), rows, wastage.getConfirmedAt(), "Restaurant wastage", wastage.getProduct(), wastage.getProductName(), categoryId, productId,
-                    -wastage.getQuantity(), wastage.getStockBefore(), wastage.getStockAfter(),
+                    wastage.getQuantity().negate(), wastage.getStockBefore(), wastage.getStockAfter(),
                     wastage.getReason() != null ? wastage.getReason().name() : null, wastage.getNote());
         }
         // Packaging Module (Fourier: "Breakdown should visible into Stock movement"): one executed
@@ -983,7 +984,7 @@ public class ReportService {
         for (PackagingBreakdown breakdown : packagingBreakdownRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(from, to)) {
             if (breakdown.getParentStockBefore() != null && breakdown.getParentStockAfter() != null) {
                 addMovementRow(filter, warehouseIdOf(breakdown.getLocation()), rows, breakdown.getCreatedAt(), "Packaging breakdown (parent)", breakdown.getParentProduct(), breakdown.getParentProductName(), categoryId, productId,
-                        -breakdown.getParentQuantity(), breakdown.getParentStockBefore(), breakdown.getParentStockAfter(),
+                        breakdown.getParentQuantity().negate(), breakdown.getParentStockBefore(), breakdown.getParentStockAfter(),
                         breakdown.getChildProductName(), locationTag(breakdown.getWarehouseName(), breakdown.getLocationName(), breakdown.getNote()));
             }
             if (breakdown.getChildStockBefore() != null && breakdown.getChildStockAfter() != null) {
@@ -1007,27 +1008,27 @@ public class ReportService {
             boolean left = t.getStatus() != com.posapp.warehouse.StockTransferStatus.REJECTED || interBranch;
             if (left && leftAt != null && !leftAt.isBefore(from) && !leftAt.isAfter(to)) {
                 addMovementRow(filter, warehouseIdOf(t.getFromLocation()), rows, leftAt, interBranch ? "Stock transfer out (dispatched)" : "Stock transfer out",
-                        product, t.getProductName(), categoryId, productId, -t.getQuantity(),
-                        t.getFromStockBefore() != null ? t.getFromStockBefore() : 0, t.getFromStockAfter() != null ? t.getFromStockAfter() : 0, reference, route);
+                        product, t.getProductName(), categoryId, productId, t.getQuantity().negate(),
+                        t.getFromStockBefore() != null ? t.getFromStockBefore() : BigDecimal.ZERO, t.getFromStockAfter() != null ? t.getFromStockAfter() : BigDecimal.ZERO, reference, route);
             }
             if (t.getStatus() == com.posapp.warehouse.StockTransferStatus.CONFIRMED && t.getConfirmedAt() != null
                     && !t.getConfirmedAt().isBefore(from) && !t.getConfirmedAt().isAfter(to)) {
                 addMovementRow(filter, warehouseIdOf(t.getToLocation()), rows, t.getConfirmedAt(), "Stock transfer in",
                         product, t.getProductName(), categoryId, productId, t.getQuantity(),
-                        t.getToStockBefore() != null ? t.getToStockBefore() : 0, t.getToStockAfter() != null ? t.getToStockAfter() : 0, reference, route);
+                        t.getToStockBefore() != null ? t.getToStockBefore() : BigDecimal.ZERO, t.getToStockAfter() != null ? t.getToStockAfter() : BigDecimal.ZERO, reference, route);
             }
             if (t.getStatus() == com.posapp.warehouse.StockTransferStatus.RECEIVED && t.getReceivedAt() != null
-                    && t.getReceivedQuantity() != null && t.getReceivedQuantity() > 0
+                    && t.getReceivedQuantity() != null && t.getReceivedQuantity().signum() > 0
                     && !t.getReceivedAt().isBefore(from) && !t.getReceivedAt().isAfter(to)) {
                 addMovementRow(filter, warehouseIdOf(t.getToLocation()), rows, t.getReceivedAt(), "Stock transfer in (received)",
                         product, t.getProductName(), categoryId, productId, t.getReceivedQuantity(),
-                        t.getToStockBefore() != null ? t.getToStockBefore() : 0, t.getToStockAfter() != null ? t.getToStockAfter() : 0, reference, route);
+                        t.getToStockBefore() != null ? t.getToStockBefore() : BigDecimal.ZERO, t.getToStockAfter() != null ? t.getToStockAfter() : BigDecimal.ZERO, reference, route);
             }
             if (t.getStatus() == com.posapp.warehouse.StockTransferStatus.REJECTED && interBranch && t.getUpdatedAt() != null
                     && !t.getUpdatedAt().isBefore(from) && !t.getUpdatedAt().isAfter(to)) {
                 addMovementRow(filter, warehouseIdOf(t.getFromLocation()), rows, t.getUpdatedAt(), "Stock transfer returned to sender",
                         product, t.getProductName(), categoryId, productId, t.getQuantity(),
-                        t.getReturnStockBefore() != null ? t.getReturnStockBefore() : 0, t.getReturnStockAfter() != null ? t.getReturnStockAfter() : 0, reference, route);
+                        t.getReturnStockBefore() != null ? t.getReturnStockBefore() : BigDecimal.ZERO, t.getReturnStockAfter() != null ? t.getReturnStockAfter() : BigDecimal.ZERO, reference, route);
             }
         }
         rows.sort(Comparator.comparing(StockMovementRow::occurredAt).reversed());
@@ -1070,7 +1071,7 @@ public class ReportService {
 
     /** Shared row-builder for {@link #stockMovementHistory}'s twelve sources — applies the category and product filters once instead of twelve times each. */
     private void addMovementRow(MovementFilter filter, Long rowWarehouseId, List<StockMovementRow> rows, Instant occurredAt, String type, Product product, String productName,
-                                 Long categoryId, Long productId, int quantityDelta, int stockBefore, int stockAfter, String reference, String note) {
+                                 Long categoryId, Long productId, BigDecimal quantityDelta, BigDecimal stockBefore, BigDecimal stockAfter, String reference, String note) {
         if (productId != null && (product == null || !productId.equals(product.getId()))) {
             return;
         }
@@ -1169,11 +1170,11 @@ public class ReportService {
         for (SalesOrder so : salesOrderRepository.findByOrderDateBetweenOrderByOrderDateDesc(from, to)) {
             if (branchId != null && !branchMatches(so.getBranchId(), branchId, headquartersId)) continue;
             Customer customer = so.getCustomer();
-            int quantityOrdered = 0;
-            int quantityFulfilled = 0;
+            BigDecimal quantityOrdered = BigDecimal.ZERO;
+            BigDecimal quantityFulfilled = BigDecimal.ZERO;
             for (var line : so.getLines()) {
-                quantityOrdered += line.getQuantityOrdered();
-                quantityFulfilled += line.getQuantityFulfilled();
+                quantityOrdered = quantityOrdered.add(line.getQuantityOrdered());
+                quantityFulfilled = quantityFulfilled.add(line.getQuantityFulfilled());
             }
             rows.add(new SalesOrderReportRow(
                     so.getId(), so.getOrderNumber(),
@@ -1196,14 +1197,14 @@ public class ReportService {
     /** "Restaurant Sales by Order Type" — every checked-out order, grouped by DINE_IN/TAKEAWAY/DELIVERY. */
     @Transactional(readOnly = true)
     public List<RestaurantOrderTypeSalesRow> restaurantOrderTypeSales(Instant from, Instant to, Long branchId) {
-        record Acc(int[] orderCount, int[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
+        record Acc(int[] orderCount, BigDecimal[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
         Map<String, Acc> byType = new LinkedHashMap<>();
         for (RestaurantOrder order : restaurantClosedOrders(from, to, branchId)) {
             String type = order.getOrderType().name();
-            Acc acc = byType.computeIfAbsent(type, k -> new Acc(new int[]{0}, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+            Acc acc = byType.computeIfAbsent(type, k -> new Acc(new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
             acc.orderCount()[0]++;
             for (RestaurantOrderLine line : order.getLines()) {
-                acc.qty()[0] += line.getQuantity();
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sales()[0] = acc.sales()[0].add(RestaurantOrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(RestaurantOrderCalculator.lineTax(line));
             }
@@ -1222,7 +1223,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<RestaurantMenuItemSalesRow> restaurantMenuItemSales(Instant from, Instant to, Long branchId) {
         Map<Long, MenuItem> menuByProductId = menuItemsByProductId();
-        record Acc(String sku, String name, String categoryName, int[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
+        record Acc(String sku, String name, String categoryName, BigDecimal[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
         Map<Long, Acc> byProduct = new LinkedHashMap<>();
         for (RestaurantOrder order : restaurantClosedOrders(from, to, branchId)) {
             for (RestaurantOrderLine line : order.getLines()) {
@@ -1232,8 +1233,8 @@ public class ReportService {
                 String categoryName = menuItem != null && menuItem.getCategory() != null ? menuItem.getCategory().getName() : "Uncategorized";
                 Acc acc = byProduct.computeIfAbsent(product.getId(), k -> new Acc(
                         product.getSku(), product.getName(), categoryName,
-                        new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                        new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sales()[0] = acc.sales()[0].add(RestaurantOrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(RestaurantOrderCalculator.lineTax(line));
             }
@@ -1252,7 +1253,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<RestaurantMenuCategorySalesRow> restaurantMenuCategorySales(Instant from, Instant to, Long branchId) {
         Map<Long, MenuItem> menuByProductId = menuItemsByProductId();
-        record Acc(String name, int[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
+        record Acc(String name, BigDecimal[] qty, BigDecimal[] sales, BigDecimal[] tax) {}
         Map<Long, Acc> byCategory = new LinkedHashMap<>();
         for (RestaurantOrder order : restaurantClosedOrders(from, to, branchId)) {
             for (RestaurantOrderLine line : order.getLines()) {
@@ -1262,8 +1263,8 @@ public class ReportService {
                 MenuCategory category = menuItem != null ? menuItem.getCategory() : null;
                 Long key = category != null ? category.getId() : -1L;
                 String name = category != null ? category.getName() : "Uncategorized";
-                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sales()[0] = acc.sales()[0].add(RestaurantOrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(RestaurantOrderCalculator.lineTax(line));
             }
@@ -1282,7 +1283,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<RestaurantMenuItemProfitRow> restaurantMenuItemProfit(Instant from, Instant to, Long branchId) {
         Map<Long, MenuItem> menuByProductId = menuItemsByProductId();
-        record Acc(String sku, String name, String categoryName, int[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
+        record Acc(String sku, String name, String categoryName, BigDecimal[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
         Map<Long, Acc> byProduct = new LinkedHashMap<>();
         for (RestaurantOrder order : restaurantClosedOrders(from, to, branchId)) {
             Map<Long, BigDecimal> ingredientCostByLineId = ingredientCostByLineId(order);
@@ -1293,8 +1294,8 @@ public class ReportService {
                 String categoryName = menuItem != null && menuItem.getCategory() != null ? menuItem.getCategory().getName() : "Uncategorized";
                 Acc acc = byProduct.computeIfAbsent(product.getId(), k -> new Acc(
                         product.getSku(), product.getName(), categoryName,
-                        new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                        new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.revenue()[0] = acc.revenue()[0].add(RestaurantOrderCalculator.lineNetTotal(line));
                 acc.cost()[0] = acc.cost()[0].add(lineTrueCost(line, ingredientCostByLineId));
             }
@@ -1313,7 +1314,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public List<RestaurantMenuCategoryProfitRow> restaurantMenuCategoryProfit(Instant from, Instant to, Long branchId) {
         Map<Long, MenuItem> menuByProductId = menuItemsByProductId();
-        record Acc(String name, int[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
+        record Acc(String name, BigDecimal[] qty, BigDecimal[] revenue, BigDecimal[] cost) {}
         Map<Long, Acc> byCategory = new LinkedHashMap<>();
         for (RestaurantOrder order : restaurantClosedOrders(from, to, branchId)) {
             Map<Long, BigDecimal> ingredientCostByLineId = ingredientCostByLineId(order);
@@ -1324,8 +1325,8 @@ public class ReportService {
                 MenuCategory category = menuItem != null ? menuItem.getCategory() : null;
                 Long key = category != null ? category.getId() : -1L;
                 String name = category != null ? category.getName() : "Uncategorized";
-                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                acc.qty()[0] += line.getQuantity();
+                Acc acc = byCategory.computeIfAbsent(key, k -> new Acc(name, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.revenue()[0] = acc.revenue()[0].add(RestaurantOrderCalculator.lineNetTotal(line));
                 acc.cost()[0] = acc.cost()[0].add(lineTrueCost(line, ingredientCostByLineId));
             }
@@ -1348,7 +1349,7 @@ public class ReportService {
             AppUser server = order.getServer();
             String methods = order.getPayments().stream().map(RestaurantPayment::getMethod)
                     .reduce((a, b) -> a + " + " + b).orElse("—");
-            int itemCount = order.getLines().stream().mapToInt(RestaurantOrderLine::getQuantity).sum();
+            BigDecimal itemCount = order.getLines().stream().map(RestaurantOrderLine::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
             rows.add(new RestaurantOrderTransactionRow(
                     order.getId(), order.getTicketNumber(), order.getOrderType().name(), order.displayLabel(),
                     server != null ? server.getFullName() : "—",
@@ -1362,16 +1363,16 @@ public class ReportService {
     /** "Restaurant Sales by Server" — every checked-out order, grouped by who was serving it. "Unassigned" for an order with no server ever set. */
     @Transactional(readOnly = true)
     public List<RestaurantServerSalesRow> restaurantServerSales(Instant from, Instant to, Long branchId) {
-        record Acc(String name, int[] orderCount, int[] qty, BigDecimal[] sub, BigDecimal[] tax) {}
+        record Acc(String name, int[] orderCount, BigDecimal[] qty, BigDecimal[] sub, BigDecimal[] tax) {}
         Map<Long, Acc> byServer = new LinkedHashMap<>();
         for (RestaurantOrder order : restaurantClosedOrders(from, to, branchId)) {
             AppUser server = order.getServer();
             Long key = server != null ? server.getId() : -1L;
             String name = server != null ? server.getFullName() : "Unassigned";
-            Acc acc = byServer.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+            Acc acc = byServer.computeIfAbsent(key, k -> new Acc(name, new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
             acc.orderCount()[0]++;
             for (RestaurantOrderLine line : order.getLines()) {
-                acc.qty()[0] += line.getQuantity();
+                acc.qty()[0] = acc.qty()[0].add(line.getQuantity());
                 acc.sub()[0] = acc.sub()[0].add(RestaurantOrderCalculator.lineNetTotal(line));
                 acc.tax()[0] = acc.tax()[0].add(RestaurantOrderCalculator.lineTax(line));
             }
@@ -1393,7 +1394,7 @@ public class ReportService {
         for (RestaurantOrder order : restaurantOrderRepository.findByStatusAndClosedAtBetweenOrderByClosedAtDesc(RestaurantOrderStatus.CANCELLED, from, to)) {
             if (branchId != null && !branchMatches(order.getBranchId(), branchId, headquartersIdOrNull(branchId))) continue;
             AppUser server = order.getServer();
-            int itemCount = order.getLines().stream().mapToInt(RestaurantOrderLine::getQuantity).sum();
+            BigDecimal itemCount = order.getLines().stream().map(RestaurantOrderLine::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
             rows.add(new RestaurantCancelledOrderRow(
                     order.getId(), order.getOrderType().name(), order.displayLabel(),
                     server != null ? server.getFullName() : "—",
@@ -1432,7 +1433,7 @@ public class ReportService {
         for (RestaurantOrderConsumption consumption : order.getIngredientConsumptions()) {
             if (consumption.getLine() == null) continue;
             Long lineId = consumption.getLine().getId();
-            BigDecimal add = consumption.getUnitCost().multiply(BigDecimal.valueOf(consumption.getQuantityConsumed()));
+            BigDecimal add = consumption.getUnitCost().multiply(consumption.getQuantityConsumed());
             map.merge(lineId, add, BigDecimal::add);
         }
         return map;
@@ -1453,11 +1454,11 @@ public class ReportService {
     /** Shared by {@link #purchaseOrders} and {@link #supplierStatement} — {@code includeSupplier} just controls whether resolving the (LAZY) supplier name is worth doing (Supplier Statement already knows which supplier it is, from its own page header). */
     private PurchaseOrderReportRow purchaseOrderRow(PurchaseOrder po, boolean includeSupplier) {
         Supplier supplier = includeSupplier ? po.getSupplier() : null;
-        int quantityOrdered = 0;
-        int quantityReceived = 0;
+        BigDecimal quantityOrdered = BigDecimal.ZERO;
+        BigDecimal quantityReceived = BigDecimal.ZERO;
         for (PurchaseOrderLine line : po.getLines()) {
-            quantityOrdered += line.getQuantityOrdered();
-            quantityReceived += line.getQuantityReceived();
+            quantityOrdered = quantityOrdered.add(line.getQuantityOrdered());
+            quantityReceived = quantityReceived.add(line.getQuantityReceived());
         }
         // Fourier: "for purchases, sales, invoices, bills the tax are not being captured" —
         // delegates to SupplierPaymentService.totalCost (now tax-inclusive) instead of

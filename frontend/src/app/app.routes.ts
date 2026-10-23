@@ -151,6 +151,7 @@ import { RoutingFormComponent } from './admin/manufacturing/routing-form.compone
 import { BomListComponent } from './admin/manufacturing/bom-list.component';
 import { BomFormComponent } from './admin/manufacturing/bom-form.component';
 import { ManufacturingOrderListComponent } from './admin/manufacturing/manufacturing-order-list.component';
+import { ManufacturingReportListComponent } from './admin/manufacturing/manufacturing-report-list.component';
 import { ManufacturingOrderFormComponent } from './admin/manufacturing/manufacturing-order-form.component';
 import { ManufacturingOrderDetailComponent } from './admin/manufacturing/manufacturing-order-detail.component';
 import { ProductionPlanListComponent } from './admin/manufacturing/production-plan-list.component';
@@ -739,6 +740,8 @@ const baseRoutes: Routes = [
 
   { path: 'admin/manufacturing/orders', component: ManufacturingOrderListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/manufacturing/orders/new', component: ManufacturingOrderFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/manufacturing/reports', component: ManufacturingReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/manufacturing/orders/:id/edit', component: ManufacturingOrderFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/manufacturing/orders/:id', component: ManufacturingOrderDetailComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'admin/manufacturing/workstations', component: WorkstationListComponent, canActivate: [authGuard, adminGuard] },

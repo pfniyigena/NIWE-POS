@@ -10,7 +10,7 @@ public record OrderLineDto(
         Long productId,
         String description,
         BigDecimal unitPrice,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal discountPercent,
         BigDecimal lineTotal,
         String taxCode,

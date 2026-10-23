@@ -152,7 +152,7 @@ public class BookingSetupService {
         req.setDescription("Booked services");
         req.setUnitPrice(BigDecimal.ZERO);
         req.setCostPrice(BigDecimal.ZERO);
-        req.setStockQuantity(0);
+        req.setStockQuantity(BigDecimal.ZERO);
         req.setTrackStock(false);
         req.setService(true);
         req.setActive(true);

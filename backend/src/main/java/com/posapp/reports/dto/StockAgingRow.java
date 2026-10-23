@@ -12,7 +12,7 @@ public record StockAgingRow(
         String sku,
         String productName,
         String categoryName,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitCost,
         BigDecimal stockValue,
         String lastReceived,

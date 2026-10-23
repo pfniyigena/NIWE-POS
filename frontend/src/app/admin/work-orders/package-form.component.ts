@@ -39,7 +39,7 @@ import { PackagePayload, WorkOrderApiService } from '../../core/api/work-order-a
           <tbody>
             <tr *ngFor="let p of f.parts; let i = index">
               <td>{{ names[p.productId] }}</td>
-              <td><input class="form-control" type="number" min="1" [name]="'q' + i" [(ngModel)]="p.quantity" /></td>
+              <td><input class="form-control" type="number" step="any" min="0.0001" [name]="'q' + i" [(ngModel)]="p.quantity" /></td>
               <td><input type="checkbox" [name]="'i' + i" [(ngModel)]="p.included" /></td>
               <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="f.parts.splice(i, 1)">Remove</button></td>
             </tr>

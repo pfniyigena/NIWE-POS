@@ -41,7 +41,7 @@ public final class OnlineOrderingDtos {
 
     public static class PublicLine {
         private Long menuItemId;
-        private int quantity = 1;
+        private BigDecimal quantity = BigDecimal.ONE;
         @Size(max = 200, message = "A note can be at most 200 characters")
         private String notes;
         private List<Long> optionIds;
@@ -54,11 +54,11 @@ public final class OnlineOrderingDtos {
             this.menuItemId = menuItemId;
         }
 
-        public int getQuantity() {
+        public BigDecimal getQuantity() {
             return quantity;
         }
 
-        public void setQuantity(int quantity) {
+        public void setQuantity(BigDecimal quantity) {
             this.quantity = quantity;
         }
 
@@ -180,7 +180,7 @@ public final class OnlineOrderingDtos {
         }
     }
 
-    public record TrackLine(String name, int quantity, String options, String notes, BigDecimal lineTotal) {
+    public record TrackLine(String name, BigDecimal quantity, String options, String notes, BigDecimal lineTotal) {
     }
 
     /**

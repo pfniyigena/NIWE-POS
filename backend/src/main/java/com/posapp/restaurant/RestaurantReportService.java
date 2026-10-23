@@ -1,4 +1,5 @@
 package com.posapp.restaurant;
+import com.posapp.common.Qty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posapp.audit.AuditLogService;
@@ -149,7 +150,7 @@ public class RestaurantReportService {
         Map<Long, BigDecimal> map = new LinkedHashMap<>();
         for (RestaurantOrderConsumption c : o.getIngredientConsumptions()) {
             if (c.getLine() == null) continue;
-            map.merge(c.getLine().getId(), c.getUnitCost().multiply(BigDecimal.valueOf(c.getQuantityConsumed())), BigDecimal::add);
+            map.merge(c.getLine().getId(), c.getUnitCost().multiply(c.getQuantityConsumed()), BigDecimal::add);
         }
         return map;
     }
@@ -161,8 +162,8 @@ public class RestaurantReportService {
         return t;
     }
 
-    private static int items(RestaurantOrder o) {
-        return o.getLines().stream().mapToInt(RestaurantOrderLine::getQuantity).sum();
+    private static BigDecimal items(RestaurantOrder o) {
+        return o.getLines().stream().map(RestaurantOrderLine::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private static String serverName(RestaurantOrder o) {
@@ -196,13 +197,14 @@ public class RestaurantReportService {
         ZoneId zone = zone();
 
         // headline numbers
-        int checks = orders.size(), parties = 0, covers = 0, itemsSold = 0;
+        int checks = orders.size(), parties = 0, covers = 0;
+        BigDecimal itemsSold = BigDecimal.ZERO;
         BigDecimal gross = BigDecimal.ZERO, discounts = BigDecimal.ZERO, net = BigDecimal.ZERO, service = BigDecimal.ZERO, tax = BigDecimal.ZERO,
                 rounding = BigDecimal.ZERO, billed = BigDecimal.ZERO, tips = BigDecimal.ZERO, cost = BigDecimal.ZERO, dineInNet = BigDecimal.ZERO;
         for (RestaurantOrder o : orders) {
             if (o.getParentOrderId() == null) parties++;
             covers += covers(o);
-            itemsSold += items(o);
+            itemsSold = itemsSold.add(items(o));
             gross = gross.add(gross(o));
             discounts = discounts.add(RestaurantOrderCalculator.discountTotal(o));
             net = net.add(net(o));
@@ -315,10 +317,10 @@ public class RestaurantReportService {
         for (MenuItem mi : menuItemRepository.findAllByOrderBySortOrderAsc()) {
             if (mi.getProduct() != null) menuByProduct.putIfAbsent(mi.getProduct().getId(), mi);
         }
-        record ItemAcc(Long productId, String name, String category, int[] qty, BigDecimal[] net, BigDecimal[] cost) {
+        record ItemAcc(Long productId, String name, String category, BigDecimal[] qty, BigDecimal[] net, BigDecimal[] cost) {
         }
         Map<Long, ItemAcc> itemAcc = new LinkedHashMap<>();
-        record CatAcc(Long id, String name, int[] qty, BigDecimal[] net, BigDecimal[] cost) {
+        record CatAcc(Long id, String name, BigDecimal[] qty, BigDecimal[] net, BigDecimal[] cost) {
         }
         Map<Long, CatAcc> catAcc = new LinkedHashMap<>();
         for (RestaurantOrder o : orders) {
@@ -329,29 +331,29 @@ public class RestaurantReportService {
                 MenuCategory cat = mi == null ? null : mi.getCategory();
                 String catName = cat == null ? "Uncategorized" : cat.getName();
                 ItemAcc a = itemAcc.computeIfAbsent(l.getProduct().getId(), k -> new ItemAcc(l.getProduct().getId(), l.getProduct().getName(), catName,
-                        new int[1], new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
+                        new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
                 BigDecimal ln = RestaurantOrderCalculator.lineNetTotal(l), lc = lineCost(l, ing);
-                a.qty()[0] += l.getQuantity();
+                a.qty()[0] = a.qty()[0].add(l.getQuantity());
                 a.net()[0] = a.net()[0].add(ln);
                 a.cost()[0] = a.cost()[0].add(lc);
-                CatAcc c = catAcc.computeIfAbsent(cat == null ? -1L : cat.getId(), k -> new CatAcc(cat == null ? null : cat.getId(), catName, new int[1],
+                CatAcc c = catAcc.computeIfAbsent(cat == null ? -1L : cat.getId(), k -> new CatAcc(cat == null ? null : cat.getId(), catName, new BigDecimal[]{BigDecimal.ZERO},
                         new BigDecimal[]{BigDecimal.ZERO}, new BigDecimal[]{BigDecimal.ZERO}));
-                c.qty()[0] += l.getQuantity();
+                c.qty()[0] = c.qty()[0].add(l.getQuantity());
                 c.net()[0] = c.net()[0].add(ln);
                 c.cost()[0] = c.cost()[0].add(lc);
             }
         }
-        int totalQty = itemAcc.values().stream().mapToInt(a -> a.qty()[0]).sum();
+        BigDecimal totalQty = itemAcc.values().stream().map(a -> a.qty()[0]).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal itemNet = itemAcc.values().stream().map(a -> a.net()[0]).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal itemCost = itemAcc.values().stream().map(a -> a.cost()[0]).reduce(BigDecimal.ZERO, BigDecimal::add);
         // menu engineering: popular = at least 70% of an even share of the dishes sold; profitable = unit profit at or above the menu's average
-        BigDecimal avgUnitProfit = totalQty == 0 ? BigDecimal.ZERO : itemNet.subtract(itemCost).divide(BigDecimal.valueOf(totalQty), 6, RoundingMode.HALF_UP);
+        BigDecimal avgUnitProfit = totalQty.signum() == 0 ? BigDecimal.ZERO : itemNet.subtract(itemCost).divide(totalQty, 6, RoundingMode.HALF_UP);
         BigDecimal popularLine = itemAcc.isEmpty() ? BigDecimal.ZERO : BigDecimal.valueOf(70).divide(BigDecimal.valueOf(itemAcc.size()), 6, RoundingMode.HALF_UP);
         List<RestaurantAnalysisDto.Item> itemRows = new ArrayList<>();
         for (ItemAcc a : itemAcc.values()) {
             BigDecimal profitI = a.net()[0].subtract(a.cost()[0]);
-            BigDecimal unit = a.qty()[0] == 0 ? BigDecimal.ZERO : profitI.divide(BigDecimal.valueOf(a.qty()[0]), 4, RoundingMode.HALF_UP);
-            BigDecimal pop = totalQty == 0 ? BigDecimal.ZERO : BigDecimal.valueOf(a.qty()[0]).multiply(HUNDRED).divide(BigDecimal.valueOf(totalQty), 1, RoundingMode.HALF_UP);
+            BigDecimal unit = a.qty()[0].signum() == 0 ? BigDecimal.ZERO : profitI.divide(a.qty()[0], 4, RoundingMode.HALF_UP);
+            BigDecimal pop = totalQty.signum() == 0 ? BigDecimal.ZERO : a.qty()[0].multiply(HUNDRED).divide(totalQty, 1, RoundingMode.HALF_UP);
             String cls = null;
             if (itemAcc.size() >= 2) {
                 boolean popular = pop.compareTo(popularLine) >= 0, profitable = unit.compareTo(avgUnitProfit) >= 0;
@@ -476,7 +478,8 @@ public class RestaurantReportService {
         Set<String> cashCodes = paymentMethodService.listCashCodes();
         Set<String> roomCodes = paymentMethodService.listRoomChargeCodes();
 
-        int parties = 0, covers = 0, itemsSold = 0;
+        int parties = 0, covers = 0;
+        BigDecimal itemsSold = BigDecimal.ZERO;
         BigDecimal gross = BigDecimal.ZERO, discounts = BigDecimal.ZERO, net = BigDecimal.ZERO, service = BigDecimal.ZERO, tax = BigDecimal.ZERO,
                 rounding = BigDecimal.ZERO, billed = BigDecimal.ZERO, tips = BigDecimal.ZERO, depositApplied = BigDecimal.ZERO;
         Map<String, Object[]> typeAcc = new LinkedHashMap<>();
@@ -487,7 +490,7 @@ public class RestaurantReportService {
         for (RestaurantOrder o : orders) {
             if (o.getParentOrderId() == null) parties++;
             covers += covers(o);
-            itemsSold += items(o);
+            itemsSold = itemsSold.add(items(o));
             gross = gross.add(gross(o));
             discounts = discounts.add(RestaurantOrderCalculator.discountTotal(o));
             net = net.add(net(o));

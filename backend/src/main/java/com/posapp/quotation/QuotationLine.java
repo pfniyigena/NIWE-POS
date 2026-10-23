@@ -30,7 +30,7 @@ public class QuotationLine extends BaseEntity {
     /** Snapshot of the product's name at the time this line was added, same "survives a later rename" reasoning as SalesOrderLine.productName/PurchaseOrderLine.productName. */
     private String productName;
 
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     /** The price being offered per unit — independent of Product.unitPrice, since a quote can offer a different price (same reasoning as SalesOrderLine.unitPrice vs. Product.unitPrice). */
     private BigDecimal unitPrice = BigDecimal.ZERO;

@@ -39,8 +39,10 @@ public class PublicReservationController {
     private final ReservationService reservationService;
 
     private final ModuleService moduleService;
+    private final RestaurantSettingsService settingsService;
 
-    public PublicReservationController(ReservationService reservationService, ModuleService moduleService) {
+    public PublicReservationController(ReservationService reservationService, ModuleService moduleService, RestaurantSettingsService settingsService) {
+        this.settingsService = settingsService;
         this.moduleService = moduleService;
         this.reservationService = reservationService;
     }
@@ -48,27 +50,35 @@ public class PublicReservationController {
     /** Opening hours, how far ahead guests can book, and the deposit — what the page needs before asking anything. */
     @GetMapping("/info")
     public ReservationInfoDto info() {
-        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        open();
         return reservationService.info();
     }
 
     /** The times still open on a date for this party size. */
     @GetMapping("/slots")
     public List<ReservationSlotDto> slots(@RequestParam LocalDate date, @RequestParam(required = false) Integer partySize) {
-        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        open();
         return reservationService.slots(date, partySize);
     }
 
     @GetMapping("/available-tables")
     public List<PublicTableDto> availableTables(@RequestParam(required = false) LocalDate date, @RequestParam(required = false) java.time.Instant at,
                                                 @RequestParam(required = false) Integer partySize) {
-        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        open();
         return reservationService.availableTables(date, at, partySize).stream().map(PublicTableDto::from).toList();
     }
 
     @PostMapping
     public PublicReservationDto create(@Valid @RequestBody PublicReservationRequest request) {
-        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        open();
         return PublicReservationDto.from(reservationService.createOnline(request.toReservationRequest()));
+    }
+
+    /** The module must be on and "Allow public website" switched on in the restaurant settings; otherwise the page answers "not found". */
+    private void open() {
+        moduleService.requireEnabled(ModuleKey.RESTAURANT);
+        if (!settingsService.isPublicOpen()) {
+            throw com.posapp.common.ApiException.notFound("Online reservations are not available.");
+        }
     }
 }

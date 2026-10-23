@@ -1,5 +1,7 @@
 import { Injectable, effect, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
+import { API_BASE } from './constants';
 
 export interface ThemeOption {
   id: string;
@@ -34,6 +36,13 @@ export interface CustomColours {
 export const DEFAULT_CUSTOM: CustomColours = { bg: '#dbeafe', accent: '#2563eb' };
 
 export const CUSTOM_ID = 'custom';
+
+/** A theme as kept in the database. */
+interface SavedTheme {
+  theme: string;
+  customBg: string | null;
+  customAccent: string | null;
+}
 const DEFAULT_THEME = 'navy';
 /** Last theme used in this browser — shown on the login screen and before anyone has signed in. */
 const LAST_KEY = 'pos.theme.last';
@@ -153,16 +162,79 @@ export function customVariables(colours: CustomColours): { light: boolean; vars:
 export class ThemeService {
   readonly current = signal<string>(DEFAULT_THEME);
   readonly custom = signal<CustomColours>({ ...DEFAULT_CUSTOM });
+  /** Administrators: also make the chosen theme the one the public website and sign-in page use. */
+  readonly applyToWebsite = signal<boolean>(true);
 
-  constructor(private auth: AuthService) {
+  constructor(private auth: AuthService, private http: HttpClient) {
     this.load(null);
     effect(
       () => {
         const user = this.auth.currentUser();
         this.load(user ? user.userId : null);
+        if (user) this.loadMine(user.userId);
+        else this.loadWebsite();
       },
       { allowSignalWrites: true }
     );
+  }
+
+  /** The signed-in user's theme is kept in the database so it follows them to any device. */
+  private loadMine(userId: number): void {
+    this.http.get<SavedTheme | null>(`${API_BASE}/me/theme`).subscribe({
+      next: (saved) => {
+        if (this.auth.currentUser()?.userId !== userId) return;
+        if (saved && this.isKnown(saved.theme)) {
+          this.takeSaved(saved, userKey(userId), userCustomKey(userId));
+        } else {
+          // Nothing saved yet: keep the choice already made on this device and store it.
+          const local = this.current();
+          if (local !== DEFAULT_THEME) this.persist(local);
+        }
+      },
+      error: () => {
+        // Offline or not allowed: the choice kept in this browser still applies.
+      },
+    });
+  }
+
+  /** Visitors who are not signed in see the theme chosen for the public website. */
+  private loadWebsite(): void {
+    this.http.get<SavedTheme | null>(`${API_BASE}/public/settings/theme`).subscribe({
+      next: (saved) => {
+        if (this.auth.currentUser() || !saved || !this.isKnown(saved.theme)) return;
+        this.takeSaved(saved, LAST_KEY, LAST_CUSTOM_KEY);
+      },
+      error: () => {
+        // Keep whatever is already applied.
+      },
+    });
+  }
+
+  private isKnown(id: string): boolean {
+    return id === CUSTOM_ID || THEMES.some((t) => t.id === id);
+  }
+
+  private takeSaved(saved: SavedTheme, themeKey: string, customKey: string): void {
+    write(themeKey, saved.theme);
+    if (saved.theme === CUSTOM_ID && saved.customBg && saved.customAccent && isHex(saved.customBg) && isHex(saved.customAccent)) {
+      const colours = { bg: saved.customBg, accent: saved.customAccent };
+      write(customKey, JSON.stringify(colours));
+      this.custom.set(colours);
+    }
+    this.current.set(saved.theme);
+    this.apply();
+  }
+
+  private persist(theme: string): void {
+    const custom = this.custom();
+    const admin = this.auth.currentUser()?.role === 'ADMIN';
+    const body = {
+      theme,
+      customBg: theme === CUSTOM_ID ? custom.bg : null,
+      customAccent: theme === CUSTOM_ID ? custom.accent : null,
+      applyToWebsite: admin && this.applyToWebsite(),
+    };
+    this.http.put(`${API_BASE}/me/theme`, body).subscribe({ error: () => { /* the choice still applies on this device */ } });
   }
 
   /** Switch theme for the signed-in user (and remember it as this browser's last theme). */
@@ -173,6 +245,7 @@ export class ThemeService {
     write(LAST_KEY, theme);
     this.current.set(theme);
     this.apply();
+    if (user) this.persist(theme);
   }
 
   /** Save and apply the user's own colours (also switches to the Custom theme). Ignores invalid hex codes. */

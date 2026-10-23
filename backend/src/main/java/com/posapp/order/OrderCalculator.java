@@ -28,7 +28,7 @@ public final class OrderCalculator {
     }
 
     private static BigDecimal lineTotalAt(OrderLine line, BigDecimal discount) {
-        BigDecimal gross = line.getUnitPrice().multiply(BigDecimal.valueOf(line.getQuantity()));
+        BigDecimal gross = line.getUnitPrice().multiply(line.getQuantity());
         BigDecimal factor = BigDecimal.ONE.subtract(discount.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
         return gross.multiply(factor).setScale(SCALE, RoundingMode.HALF_UP);
     }
@@ -76,7 +76,7 @@ public final class OrderCalculator {
         if (unitCost == null) {
             return BigDecimal.ZERO;
         }
-        return unitCost.multiply(BigDecimal.valueOf(line.getQuantity())).setScale(SCALE, RoundingMode.HALF_UP);
+        return unitCost.multiply(line.getQuantity()).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     /**
@@ -123,7 +123,7 @@ public final class OrderCalculator {
         return totalWithOrderDiscount(order, BigDecimal.ZERO).subtract(total(order)).max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
-    public static int totalQuantity(SaleOrder order) {
-        return order.getLines().stream().mapToInt(OrderLine::getQuantity).sum();
+    public static BigDecimal totalQuantity(SaleOrder order) {
+        return order.getLines().stream().map(OrderLine::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

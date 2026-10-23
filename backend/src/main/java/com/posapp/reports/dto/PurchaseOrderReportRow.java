@@ -21,8 +21,8 @@ public record PurchaseOrderReportRow(
         Instant orderDate,
         Instant expectedDate,
         int lineCount,
-        int quantityOrdered,
-        int quantityReceived,
+        BigDecimal quantityOrdered,
+        BigDecimal quantityReceived,
         BigDecimal totalCost,
         /** Task: "Add Supplier payment" — how much of {@code totalCost} has been paid off so far ({@code SupplierPaymentService.amountPaidForOrder}) and what's still owed ({@code amountOwedForOrder}, zero for a DRAFT/CANCELLED PO). */
         BigDecimal amountPaid,

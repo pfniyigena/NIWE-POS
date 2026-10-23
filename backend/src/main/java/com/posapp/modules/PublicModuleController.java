@@ -1,7 +1,10 @@
 package com.posapp.modules;
 
+import com.posapp.booking.BookingSetupService;
+import com.posapp.helpdesk.HelpDeskSettingsService;
 import com.posapp.hotel.HotelOnlineService;
 import com.posapp.realestate.RePublicService;
+import com.posapp.restaurant.RestaurantSettingsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,8 +23,15 @@ public class PublicModuleController {
     private final ModuleService service;
     private final RePublicService realEstate;
     private final HotelOnlineService hotel;
+    private final HelpDeskSettingsService helpDesk;
+    private final RestaurantSettingsService restaurant;
+    private final BookingSetupService booking;
 
-    public PublicModuleController(ModuleService service, RePublicService realEstate, HotelOnlineService hotel) {
+    public PublicModuleController(ModuleService service, RePublicService realEstate, HotelOnlineService hotel,
+                                  HelpDeskSettingsService helpDesk, RestaurantSettingsService restaurant, BookingSetupService booking) {
+        this.helpDesk = helpDesk;
+        this.restaurant = restaurant;
+        this.booking = booking;
         this.hotel = hotel;
         this.service = service;
         this.realEstate = realEstate;
@@ -30,9 +40,10 @@ public class PublicModuleController {
     @GetMapping
     public Map<String, Boolean> publicModules() {
         Map<String, Boolean> result = new LinkedHashMap<>();
-        result.put(ModuleKey.RESTAURANT.name(), service.isEnabled(ModuleKey.RESTAURANT));
-        result.put(ModuleKey.HELPDESK.name(), service.isEnabled(ModuleKey.HELPDESK));
-        result.put(ModuleKey.BOOKING.name(), service.isEnabled(ModuleKey.BOOKING));
+        // Each public page needs its module on and its own "Allow public website" switch in that module's settings.
+        result.put(ModuleKey.RESTAURANT.name(), service.isEnabled(ModuleKey.RESTAURANT) && restaurant.isPublicOpen());
+        result.put(ModuleKey.HELPDESK.name(), service.isEnabled(ModuleKey.HELPDESK) && helpDesk.isPublicOpen());
+        result.put(ModuleKey.BOOKING.name(), service.isEnabled(ModuleKey.BOOKING) && booking.settingsEntity().isPublicEnabled());
         // The listings website needs the module and its own switch in the Real Estate settings.
         result.put(ModuleKey.REAL_ESTATE.name(), realEstate.isOpen());
         // The hotel's booking page needs the module and its own switch in Hotel > Online booking.

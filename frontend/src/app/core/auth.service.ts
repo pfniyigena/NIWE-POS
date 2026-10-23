@@ -127,6 +127,9 @@ export class AuthService {
   /** Where to send the user right after login. */
   homePath(posOn = true): string {
     if (this.isAdmin()) return posOn ? '/registers' : '/admin/dashboard';
-    return landingFor(this.currentUser()?.areas ?? [], posOn);
+    const me = this.currentUser();
+    // Employees given a login only for My HR (the "Employee" role grants no screens) land on My HR.
+    if (me && me.employeeId && me.customRoleName === 'Employee' && (me.areas ?? []).length === 0) return '/my/hr';
+    return landingFor(me?.areas ?? [], posOn);
   }
 }

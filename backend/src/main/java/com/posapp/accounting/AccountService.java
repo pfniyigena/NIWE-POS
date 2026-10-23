@@ -6,6 +6,8 @@ import com.posapp.accounting.dto.AccountDto;
 import com.posapp.accounting.dto.AccountRequest;
 import com.posapp.settings.StoreSettings;
 import com.posapp.settings.StoreSettingsRepository;
+import com.posapp.tax.TaxRate;
+import com.posapp.tax.TaxRateRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -372,6 +374,7 @@ public class AccountService {
     private final AccountRepository repository;
     private final AuditLogService auditLogService;
     private final StoreSettingsRepository storeSettingsRepository;
+    private final TaxRateRepository taxRateRepository;
     /**
      * Fourier: "The Config app.accounting.chart-country can be forgotten easily, what if we add
      * this on the screen then at first time a user select the country?" — this property is no
@@ -386,8 +389,9 @@ public class AccountService {
     private final ChartCountry configuredDefaultCountry;
 
     public AccountService(AccountRepository repository, AuditLogService auditLogService,
-                           StoreSettingsRepository storeSettingsRepository,
+                           StoreSettingsRepository storeSettingsRepository, TaxRateRepository taxRateRepository,
                            @Value("${app.accounting.chart-country:RWANDA}") String chartCountryRaw) {
+        this.taxRateRepository = taxRateRepository;
         this.repository = repository;
         this.auditLogService = auditLogService;
         this.storeSettingsRepository = storeSettingsRepository;
@@ -453,6 +457,29 @@ public class AccountService {
         return resolveChartCountry();
     }
 
+    /**
+     * Fourier: "For Rwanda Chart add VAT code B with 18% and Exempted Tax 0% code A" — RRA's EBM tax codes. Added to the
+     * tax list (Settings > Taxes) when a Rwanda chart is set up, and topped up on a store already running as Rwanda.
+     * Only creates a code that is missing; a code the admin already has (renamed or changed) is never touched.
+     */
+    private void ensureRwandaTaxCodes() {
+        addTaxCodeIfMissing("A", "Exempted (0%)", java.math.BigDecimal.ZERO);
+        addTaxCodeIfMissing("B", "VAT (18%)", new java.math.BigDecimal("18.00"));
+    }
+
+    private void addTaxCodeIfMissing(String code, String name, java.math.BigDecimal percent) {
+        if (taxRateRepository.existsByCodeIgnoreCase(code)) {
+            return;
+        }
+        TaxRate rate = new TaxRate();
+        rate.setCode(code);
+        rate.setName(name);
+        rate.setRatePercent(percent);
+        rate.setActive(true);
+        taxRateRepository.save(rate);
+        auditLogService.record("TAX_RATE_CREATED", "Created tax rate " + code + " (" + name + ", " + percent + "%) with the Rwanda chart", "TaxRate", rate.getId());
+    }
+
     private void seedChart(ChartCountry country) {
         List<ChartRow> chart = chart(country);
         for (ChartRow row : chart) {
@@ -461,6 +488,9 @@ public class AccountService {
         StoreSettings settings = getOrCreateStoreSettings();
         settings.setChartCountry(country);
         storeSettingsRepository.save(settings);
+        if (country == ChartCountry.RWANDA) {
+            ensureRwandaTaxCodes();
+        }
         auditLogService.record("CHART_OF_ACCOUNTS_SEEDED",
                 "Seeded the default " + country + " chart of accounts (" + chart.size() + " accounts)", "Account", null);
     }
@@ -488,6 +518,9 @@ public class AccountService {
             return;
         }
         ChartCountry country = resolveChartCountry();
+        if (country == ChartCountry.RWANDA) {
+            ensureRwandaTaxCodes();
+        }
         int added = 0;
         int keysBackfilled = 0;
         for (ChartRow row : chart(country)) {

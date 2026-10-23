@@ -1,6 +1,7 @@
 package com.posapp.restaurant.dto;
 
-import com.posapp.restaurant.RestaurantOrder;
+
+import java.math.BigDecimal;import com.posapp.restaurant.RestaurantOrder;
 import com.posapp.restaurant.RestaurantOrderLine;
 
 import java.time.Instant;
@@ -18,7 +19,7 @@ public record KitchenTicketDto(
         Long lineId,
         String tableName,
         String description,
-        int quantity,
+        BigDecimal quantity,
         String notes,
         String kitchenStatus,
         Instant orderOpenedAt,

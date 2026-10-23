@@ -8,7 +8,7 @@ public record ProductProfitRow(
         String sku,
         String productName,
         String categoryName,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal revenue,
         BigDecimal cost,
         BigDecimal profit,

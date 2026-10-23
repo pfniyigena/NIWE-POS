@@ -11,6 +11,7 @@ import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
 import { DiningTable, MenuCategory, MenuItem, OptionGroup, PaymentMethodOption, RestaurantOrder, RestaurantSettings } from '../core/models';
 import { DiningTableApiService } from '../core/api/dining-table-api.service';
 
+import { q4 } from '../core/qty';
 interface PaymentRow {
   method: string;
   amount: number;
@@ -174,7 +175,7 @@ interface PaymentRow {
               <div class="alert alert-danger" *ngIf="panelError">{{ panelError }}</div>
               <div class="flex gap-2 mb-2 align-center" *ngIf="panel.mode === 'add'">
                 <label class="form-label" style="margin:0;">Quantity</label>
-                <input class="form-control ip-qty" type="number" min="1" style="width:80px;" [(ngModel)]="pQty" name="pQty" />
+                <input class="form-control ip-qty" type="number" step="any" min="0.0001" style="width:80px;" [(ngModel)]="pQty" name="pQty" />
               </div>
               <div class="mb-2" *ngIf="panel.mode === 'edit' && !panelEditable()" style="font-size:0.85rem; color:#b45309;">
                 This line has already gone to the kitchen — only its note can change now.
@@ -778,7 +779,7 @@ export class TableOrderComponent implements OnInit {
   }
 
   changeQty(line: RestaurantOrder['lines'][number], delta: number): void {
-    const newQty = line.quantity + delta;
+    const newQty = q4(line.quantity + delta);
     this.error = null;
     if (newQty <= 0) {
       this.removeLine(line);

@@ -1,5 +1,6 @@
 package com.posapp.packaging;
 
+import com.posapp.common.Qty;
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.CatalogService;
 import com.posapp.catalog.Product;
@@ -145,7 +146,7 @@ public class PackagingService {
         if (!rule.isActive()) {
             throw ApiException.badRequest("Packaging rule '" + rule.getParentProduct().getName() + " -> " + rule.getChildProduct().getName() + "' is paused — resume it first.");
         }
-        int parentQuantity = request.getParentQuantity();
+        BigDecimal parentQuantity = request.getParentQuantity();
         Product parent = rule.getParentProduct();
         Product child = rule.getChildProduct();
 
@@ -156,10 +157,10 @@ public class PackagingService {
 
         boolean allowNegativeStock = storeSettingsService.getSettings().allowNegativeStock();
         if (!allowNegativeStock && parent.isTrackStock()) {
-            int available = warehouseService.stockAt(parent, location);
-            if (parentQuantity > available) {
+            BigDecimal available = warehouseService.stockAt(parent, location);
+            if (parentQuantity.compareTo(available) > 0) {
                 throw ApiException.badRequest("Not enough stock of '" + parent.getName() + "' to break down — " + available
-                        + " available, " + parentQuantity + " requested. Enable \"Allow negative stock\" in Inventory settings to break down anyway.");
+                        + " available, " + Qty.str(parentQuantity) + " requested. Enable \"Allow negative stock\" in Inventory settings to break down anyway.");
             }
         }
 
@@ -171,7 +172,7 @@ public class PackagingService {
         breakdown.setChildProductName(child.getName());
         breakdown.setUnitsPerParent(rule.getUnitsPerParent());
         breakdown.setParentQuantity(parentQuantity);
-        int childQuantityProduced = parentQuantity * rule.getUnitsPerParent();
+        BigDecimal childQuantityProduced = parentQuantity.multiply(rule.getUnitsPerParent());
         breakdown.setChildQuantityProduced(childQuantityProduced);
         breakdown.setNote(request.getNote());
         if (location != null) {
@@ -184,13 +185,13 @@ public class PackagingService {
         // is never checked or adjusted, same treatment ManufacturingOrderService.produce already
         // gives trackStock on both its component and finished-good sides.
         if (parent.isTrackStock()) {
-            int stockBefore = warehouseService.stockAt(parent, location);
-            catalogService.adjustStock(parent, -parentQuantity, location);
+            BigDecimal stockBefore = warehouseService.stockAt(parent, location);
+            catalogService.adjustStock(parent, parentQuantity.negate(), location);
             breakdown.setParentStockBefore(stockBefore);
             breakdown.setParentStockAfter(warehouseService.stockAt(parent, location));
         }
         if (child.isTrackStock()) {
-            int stockBefore = warehouseService.stockAt(child, location);
+            BigDecimal stockBefore = warehouseService.stockAt(child, location);
             catalogService.adjustStock(child, childQuantityProduced, location);
             breakdown.setChildStockBefore(stockBefore);
             breakdown.setChildStockAfter(warehouseService.stockAt(child, location));
@@ -200,13 +201,13 @@ public class PackagingService {
         // unit" — see class javadoc. Independent of trackStock above: cost matters for margin
         // reporting regardless of whether stock is actually counted for this product.
         BigDecimal parentCost = parent.getCostPrice() != null ? parent.getCostPrice() : BigDecimal.ZERO;
-        BigDecimal childUnitCost = parentCost.divide(BigDecimal.valueOf(rule.getUnitsPerParent()), 2, RoundingMode.HALF_UP);
+        BigDecimal childUnitCost = parentCost.divide(rule.getUnitsPerParent(), 2, RoundingMode.HALF_UP);
         catalogService.updateCostPrice(child, childUnitCost);
         breakdown.setChildUnitCost(childUnitCost);
 
         PackagingBreakdown saved = breakdownRepository.save(breakdown);
         auditLogService.record("PACKAGING_BROKEN_DOWN",
-                "Broke down " + parentQuantity + " x " + parent.getName() + " into " + childQuantityProduced + " x " + child.getName()
+                "Broke down " + Qty.str(parentQuantity) + " x " + parent.getName() + " into " + Qty.str(childQuantityProduced) + " x " + child.getName()
                         + " (child cost set to " + childUnitCost + " per unit)",
                 "PackagingBreakdown", saved.getId());
         return PackagingBreakdownDto.from(saved);

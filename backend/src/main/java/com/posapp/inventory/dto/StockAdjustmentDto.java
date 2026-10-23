@@ -1,6 +1,7 @@
 package com.posapp.inventory.dto;
 
-import com.posapp.inventory.StockAdjustment;
+
+import java.math.BigDecimal;import com.posapp.inventory.StockAdjustment;
 
 import java.time.Instant;
 
@@ -8,10 +9,10 @@ public record StockAdjustmentDto(
         Long id,
         Long productId,
         String productName,
-        int quantityDelta,
+        BigDecimal quantityDelta,
         /** A preview until CONFIRMED, the real value once CONFIRMED — see StockAdjustment's own javadoc. */
-        int stockBefore,
-        int stockAfter,
+        BigDecimal stockBefore,
+        BigDecimal stockAfter,
         String reason,
         String note,
         /** "PENDING" | "CONFIRMED" | "REJECTED" — see StockAdjustmentStatus's own javadoc. */

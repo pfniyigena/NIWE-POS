@@ -1,6 +1,7 @@
 package com.posapp.warehouse;
 
-import com.posapp.audit.AuditLogService;
+
+import java.math.BigDecimal;import com.posapp.audit.AuditLogService;
 import com.posapp.branch.Branch;
 import com.posapp.branch.BranchService;
 import com.posapp.catalog.Product;
@@ -57,7 +58,7 @@ public class WarehouseService {
     /** Branches sit above warehouses; BranchService depends on neither this class nor StoreSettingsService, so no cycle. */
     private final BranchService branchService;
     /** The store-wide default low-stock threshold ({@code app.pos.low-stock-threshold}) — what a warehouse with no threshold of its own uses. */
-    private final int defaultLowStockThreshold;
+    private final BigDecimal defaultLowStockThreshold;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -75,17 +76,17 @@ public class WarehouseService {
         this.auditLogService = auditLogService;
         this.storeSettingsService = storeSettingsService;
         this.branchService = branchService;
-        this.defaultLowStockThreshold = defaultLowStockThreshold;
+        this.defaultLowStockThreshold = BigDecimal.valueOf(defaultLowStockThreshold);
     }
 
     /** A warehouse's own low-stock threshold, or the store-wide default when it has none (or no warehouse is given). */
-    public int effectiveLowStockThreshold(Warehouse warehouse) {
+    public BigDecimal effectiveLowStockThreshold(Warehouse warehouse) {
         return warehouse != null && warehouse.getLowStockThreshold() != null ? warehouse.getLowStockThreshold() : defaultLowStockThreshold;
     }
 
     /** The primary warehouse's effective threshold — what the classic Product.stockQuantity-based low-stock checks use. */
     @Transactional(readOnly = true)
-    public int primaryLowStockThreshold() {
+    public BigDecimal primaryLowStockThreshold() {
         return effectiveLowStockThreshold(getDefaultWarehouseOrThrow());
     }
 
@@ -200,6 +201,10 @@ public class WarehouseService {
                 .orElseThrow(() -> ApiException.notFound("No primary warehouse is configured"));
     }
 
+    private static BigDecimal toDec(Object o) {
+        return o instanceof BigDecimal b ? b : o == null ? BigDecimal.ZERO : new BigDecimal(o.toString());
+    }
+
     /** Plain lookup by id, same shape as HelpDeskCategoryService.getEntityOrThrow — used by StockTransferService to resolve the two ends of a transfer. */
     @Transactional(readOnly = true)
     public Warehouse getEntityOrThrow(Long id) {
@@ -271,22 +276,22 @@ public class WarehouseService {
      * preview/validate a transfer's source side before moving anything.
      */
     @Transactional(readOnly = true)
-    public int getStockQuantity(Product product, Warehouse warehouse) {
+    public BigDecimal getStockQuantity(Product product, Warehouse warehouse) {
         return productStockRepository.sumSellableQuantityByProductAndWarehouse(product, warehouse);
     }
 
     /** Sellable stock of a product across every warehouse (active, non-damaged locations). */
     @Transactional(readOnly = true)
-    public int totalSellable(Product product) {
+    public BigDecimal totalSellable(Product product) {
         return productStockRepository.sumSellableQuantityByProduct(product);
     }
 
     /** Everything on hand for a product across every location of every warehouse, DAMAGED and receiving stock included — the base for a weighted-average cost. */
     @Transactional(readOnly = true)
-    public int totalOnHand(Product product) {
-        int total = 0;
+    public BigDecimal totalOnHand(Product product) {
+        BigDecimal total = BigDecimal.ZERO;
         for (ProductStock row : productStockRepository.findByProduct(product)) {
-            total += row.getQuantity();
+            total = total.add(row.getQuantity());
         }
         return total;
     }
@@ -305,15 +310,15 @@ public class WarehouseService {
 
     /** Location-level equivalent of {@link #getStockQuantity(Product, Warehouse)} — 0 if this specific location has never held the product. Deliberately not DAMAGED-filtered: a specific location's own row always reads its real quantity regardless of type, including a DAMAGED one — only the warehouse-wide sellable sum excludes it. */
     @Transactional(readOnly = true)
-    public int getStockQuantity(Product product, WarehouseLocation location) {
+    public BigDecimal getStockQuantity(Product product, WarehouseLocation location) {
         return productStockRepository.findByProductAndLocation(product, location)
                 .map(ProductStock::getQuantity)
-                .orElse(0);
+                .orElse(BigDecimal.ZERO);
     }
 
     /** Location-level stock delta — creates the row (starting from 0) if this location has never held the product before. Callers are responsible for validating the result won't go negative (the store's "allow negative stock" setting) before calling this — it applies the delta unconditionally. */
     @Transactional
-    public void adjustLocationStock(Product product, WarehouseLocation location, int delta) {
+    public void adjustLocationStock(Product product, WarehouseLocation location, BigDecimal delta) {
         ProductStock stock = productStockRepository.findByProductAndLocation(product, location)
                 .orElseGet(() -> {
                     ProductStock created = new ProductStock();
@@ -321,7 +326,7 @@ public class WarehouseService {
                     created.setLocation(location);
                     return created;
                 });
-        stock.setQuantity(stock.getQuantity() + delta);
+        stock.setQuantity(stock.getQuantity().add(delta));
         productStockRepository.save(stock);
     }
 
@@ -522,12 +527,12 @@ public class WarehouseService {
      * STORAGE, or DAMAGED stock, which only ever move through {@link #adjustLocationStock} directly.
      */
     @Transactional
-    public void syncDefaultWarehouseStock(Product product, int quantity) {
+    public void syncDefaultWarehouseStock(Product product, BigDecimal quantity) {
         Warehouse defaultWarehouse = getDefaultWarehouseOrThrow();
         syncDefaultWarehouseStock(product, resolveCanonicalSalesLocation(defaultWarehouse), quantity);
     }
 
-    private void syncDefaultWarehouseStock(Product product, WarehouseLocation defaultLocation, int quantity) {
+    private void syncDefaultWarehouseStock(Product product, WarehouseLocation defaultLocation, BigDecimal quantity) {
         ProductStock stock = productStockRepository.findByProductAndLocation(product, defaultLocation)
                 .orElseGet(() -> {
                     ProductStock created = new ProductStock();
@@ -535,7 +540,7 @@ public class WarehouseService {
                     created.setLocation(defaultLocation);
                     return created;
                 });
-        if (stock.getId() != null && stock.getQuantity() == quantity) {
+        if (stock.getId() != null && stock.getQuantity().compareTo(quantity) == 0) {
             return;
         }
         stock.setQuantity(quantity);
@@ -553,24 +558,24 @@ public class WarehouseService {
      */
     @Transactional(readOnly = true)
     public ProductStockByLocationDto stockByLocation(Long productId) {
-        Map<Long, Integer> quantities = new HashMap<>();
+        Map<Long, BigDecimal> quantities = new HashMap<>();
         for (ProductStock row : productStockRepository.findByProductId(productId)) {
             quantities.put(row.getLocation().getId(), row.getQuantity());
         }
         List<ProductStockByLocationDto.Row> rows = new ArrayList<>();
-        int sellableTotal = 0;
-        int onHandTotal = 0;
+        BigDecimal sellableTotal = BigDecimal.ZERO;
+        BigDecimal onHandTotal = BigDecimal.ZERO;
         for (Warehouse warehouse : warehouseRepository.findAllByOrderByNameAsc()) {
             for (WarehouseLocation location : warehouseLocationRepository.findAllByWarehouseOrderByNameAsc(warehouse)) {
-                int quantity = quantities.getOrDefault(location.getId(), 0);
-                if (!location.isActive() && quantity == 0) {
+                BigDecimal quantity = quantities.getOrDefault(location.getId(), BigDecimal.ZERO);
+                if (!location.isActive() && quantity.signum() == 0) {
                     continue;
                 }
                 boolean sellable = location.isActive() && location.getType() != LocationType.DAMAGED;
                 if (sellable) {
-                    sellableTotal += quantity;
+                    sellableTotal = sellableTotal.add(quantity);
                 }
-                onHandTotal += quantity;
+                onHandTotal = onHandTotal.add(quantity);
                 rows.add(new ProductStockByLocationDto.Row(
                         warehouse.getId(), warehouse.getName(), warehouse.isPrimary(),
                         location.getId(), location.getName(),
@@ -587,13 +592,13 @@ public class WarehouseService {
      * Hand report. A product with no entry has never held sellable stock there (treat as 0).
      */
     @Transactional(readOnly = true)
-    public Map<Long, Integer> sellableQuantitiesByProduct(Long warehouseId) {
+    public Map<Long, BigDecimal> sellableQuantitiesByProduct(Long warehouseId) {
         List<Object[]> rows = warehouseId != null
                 ? productStockRepository.sumSellableQuantityByProductInWarehouse(getEntityOrThrow(warehouseId))
                 : productStockRepository.sumSellableQuantityByProductAllWarehouses();
-        Map<Long, Integer> result = new HashMap<>();
+        Map<Long, BigDecimal> result = new HashMap<>();
         for (Object[] row : rows) {
-            result.put(((Number) row[0]).longValue(), ((Number) row[1]).intValue());
+            result.put(((Number) row[0]).longValue(), toDec(row[1]));
         }
         return result;
     }
@@ -603,16 +608,16 @@ public class WarehouseService {
      * branch counts as head office's). Backs the branch mode of the Stock On Hand report.
      */
     @Transactional(readOnly = true)
-    public Map<Long, Integer> sellableQuantitiesByProductForBranch(Long branchId) {
+    public Map<Long, BigDecimal> sellableQuantitiesByProductForBranch(Long branchId) {
         Long headquartersId = branchService.headquartersId();
-        Map<Long, Integer> result = new HashMap<>();
+        Map<Long, BigDecimal> result = new HashMap<>();
         for (Warehouse warehouse : warehouseRepository.findAll()) {
             Long warehouseBranchId = warehouse.getBranch() != null ? warehouse.getBranch().getId() : headquartersId;
             if (!warehouseBranchId.equals(branchId)) {
                 continue;
             }
             for (Object[] row : productStockRepository.sumSellableQuantityByProductInWarehouse(warehouse)) {
-                result.merge(((Number) row[0]).longValue(), ((Number) row[1]).intValue(), Integer::sum);
+                result.merge(((Number) row[0]).longValue(), toDec(row[1]), BigDecimal::add);
             }
         }
         return result;
@@ -764,7 +769,7 @@ public class WarehouseService {
 
     /** Stock of a product at a location; a null location means the legacy figure, {@code Product.stockQuantity} (the primary warehouse's normal stock). */
     @Transactional(readOnly = true)
-    public int stockAt(Product product, WarehouseLocation location) {
+    public BigDecimal stockAt(Product product, WarehouseLocation location) {
         return location == null ? product.getStockQuantity() : getStockQuantity(product, location);
     }
 

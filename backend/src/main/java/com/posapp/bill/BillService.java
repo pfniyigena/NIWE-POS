@@ -96,7 +96,7 @@ public class BillService {
 
     /** Fourier: "Same for discount ... it will be per line" — derived from (unitCost * quantity - lineTotal), since the pre-discount gross is never itself persisted. */
     private static BigDecimal lineDiscountAmount(BillLine line) {
-        BigDecimal grossBeforeDiscount = line.getUnitCost().multiply(BigDecimal.valueOf(line.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal grossBeforeDiscount = line.getUnitCost().multiply(line.getQuantity()).setScale(2, RoundingMode.HALF_UP);
         return grossBeforeDiscount.subtract(line.getLineTotal()).setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -242,7 +242,7 @@ public class BillService {
             // actually ordered" reasoning as taxCode/taxRatePercent just below; already
             // validated once when that line was created/edited.
             line.setDiscountPercent(lineDto.discountPercent());
-            BigDecimal grossBeforeDiscount = lineDto.unitCost().multiply(BigDecimal.valueOf(lineDto.quantityOrdered())).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal grossBeforeDiscount = lineDto.unitCost().multiply(lineDto.quantityOrdered()).setScale(2, RoundingMode.HALF_UP);
             BigDecimal lineTotal = TaxMath.applyDiscount(grossBeforeDiscount, lineDto.discountPercent());
             line.setLineTotal(lineTotal);
             // Fourier: "for purchases, sales, invoices, bills the tax are not being captured" —
@@ -287,7 +287,7 @@ public class BillService {
         BillLine line = new BillLine();
         line.setBill(bill);
         line.setProductName("Opening balance");
-        line.setQuantity(1);
+        line.setQuantity(BigDecimal.ONE);
         line.setUnitCost(value);
         line.setDiscountPercent(BigDecimal.ZERO);
         line.setLineTotal(value);

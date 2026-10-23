@@ -8,7 +8,7 @@ public record PurchaseReturnLineDto(
         Long id,
         Long orderLineId,
         String productName,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal refundAmount
 ) {
     public static PurchaseReturnLineDto from(PurchaseReturnLine l) {

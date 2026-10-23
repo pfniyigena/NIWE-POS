@@ -17,7 +17,7 @@ public record RestaurantMenuItemSalesRow(
         String sku,
         String itemName,
         String categoryName,
-        int quantitySold,
+        BigDecimal quantitySold,
         BigDecimal salesTotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal

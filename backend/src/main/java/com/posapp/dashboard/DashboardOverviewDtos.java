@@ -34,7 +34,7 @@ public final class DashboardOverviewDtos {
     public record BillsBlock(BigDecimal totalUnpaid, int unpaidBills, List<UnpaidBill> oldest) {
     }
 
-    public record TopSeller(Long productId, String name, String sku, long quantity, BigDecimal revenue) {
+    public record TopSeller(Long productId, String name, String sku, BigDecimal quantity, BigDecimal revenue) {
     }
 
     public record Overview(LocalDate today, List<AttentionItem> attention, List<DayPoint> days, Comparison comparison, OwingBlock owing, BillsBlock bills, List<TopSeller> topSellers,

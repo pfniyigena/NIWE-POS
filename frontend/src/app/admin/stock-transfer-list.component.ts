@@ -8,6 +8,7 @@ import { StockTransferApiService } from '../core/api/stock-transfer-api.service'
 import { StockTransfer } from '../core/models';
 import { AuthService } from '../core/auth.service';
 
+import { q4 } from '../core/qty';
 /**
  * Admin > Inventory > Stock Transfers — Fourier: "multi-location/multi-warehouse tracking ...
  * Stock Transfers", then later: "User can make stock transfer to any location." Same
@@ -74,7 +75,7 @@ import { AuthService } from '../core/auth.service';
                   <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === t.id" (click)="reject(t)">Return to sender</button>
                 </ng-container>
                 <ng-template #receiveForm>
-                  <input class="form-control form-control-sm" style="width:80px;" type="number" min="0" [max]="t.quantity" [(ngModel)]="receivedQty" name="rq{{ t.id }}" title="Quantity that arrived" />
+                  <input class="form-control form-control-sm" style="width:80px;" type="number" step="any" min="0" [max]="t.quantity" [(ngModel)]="receivedQty" name="rq{{ t.id }}" title="Quantity that arrived" />
                   <input class="form-control form-control-sm" style="width:140px;" placeholder="Note (e.g. damaged)" [(ngModel)]="receiveNote" name="rn{{ t.id }}" />
                   <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="receive(t)">Save</button>
                   <button class="btn btn-sm btn-link" (click)="receivingId = null">Cancel</button>
@@ -145,7 +146,7 @@ export class StockTransferListComponent implements OnInit {
       this.error = `Enter how many arrived (0 to ${t.quantity})`;
       return;
     }
-    if (qty < t.quantity && !confirm(`${t.quantity - qty} unit(s) will be written off as lost in transit. Continue?`)) return;
+    if (qty < t.quantity && !confirm(`${q4(t.quantity - qty)} unit(s) will be written off as lost in transit. Continue?`)) return;
     this.error = null;
     this.busyId = t.id;
     this.stockTransferApi.receive(t.id, qty, this.receiveNote.trim() || null).subscribe({

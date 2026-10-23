@@ -29,7 +29,7 @@ public record ShiftReportDto(
         List<CashierLine> cashiers,
         List<CashMovementDto> cashMovements
 ) {
-    public record Sales(int count, int items, BigDecimal shelfValue, BigDecimal discounts, BigDecimal netSales, BigDecimal tax, BigDecimal totalSales, BigDecimal averageSale) {
+    public record Sales(int count, BigDecimal items, BigDecimal shelfValue, BigDecimal discounts, BigDecimal netSales, BigDecimal tax, BigDecimal totalSales, BigDecimal averageSale) {
     }
 
     public record PaymentLine(String method, String name, boolean cash, int count, BigDecimal amount) {

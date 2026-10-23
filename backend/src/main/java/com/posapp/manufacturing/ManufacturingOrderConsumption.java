@@ -36,12 +36,15 @@ public class ManufacturingOrderConsumption extends BaseEntity {
 
     private String componentName;
 
-    private int quantityConsumed;
+    private BigDecimal quantityConsumed = BigDecimal.ZERO;
+
+    /** MF-4: what the recipe called for (per unit x units started). Null on runs recorded before this existed — then it is the consumed quantity. */
+    private BigDecimal plannedQuantity;
 
     /** Snapshot of component.costPrice at the moment of this run — see class javadoc. */
     private BigDecimal unitCost = BigDecimal.ZERO;
 
-    private Integer stockBefore;
+    private BigDecimal stockBefore;
 
-    private Integer stockAfter;
+    private BigDecimal stockAfter;
 }

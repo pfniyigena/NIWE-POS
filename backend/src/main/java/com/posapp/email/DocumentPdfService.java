@@ -1,4 +1,5 @@
 package com.posapp.email;
+import com.posapp.common.Qty;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
@@ -92,8 +93,8 @@ public class DocumentPdfService {
             boolean discountsOn = settings != null && settings.getDiscountMode() != DiscountMode.NONE;
             List<String[]> rows = q.lines().stream()
                     .map((QuotationLineDto l) -> discountsOn
-                            ? new String[]{l.productName(), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
-                            : new String[]{l.productName(), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.taxTotal()), money(l.lineTotal())}
+                            ? new String[]{l.productName(), Qty.str(l.quantity()), money(l.unitPrice()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
+                            : new String[]{l.productName(), Qty.str(l.quantity()), money(l.unitPrice()), money(l.taxTotal()), money(l.lineTotal())}
                     ).toList();
             if (discountsOn) {
                 addLinesTableWithTaxAndDiscount(doc, rows);
@@ -137,8 +138,8 @@ public class DocumentPdfService {
             boolean discountsOn = settings != null && settings.getDiscountMode() != DiscountMode.NONE;
             List<String[]> rows = inv.lines().stream()
                     .map((InvoiceLineDto l) -> discountsOn
-                            ? new String[]{itemLabel(l.productName(), l.description()), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
-                            : new String[]{itemLabel(l.productName(), l.description()), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.taxTotal()), money(l.lineTotal())}
+                            ? new String[]{itemLabel(l.productName(), l.description()), Qty.str(l.quantity()), money(l.unitPrice()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
+                            : new String[]{itemLabel(l.productName(), l.description()), Qty.str(l.quantity()), money(l.unitPrice()), money(l.taxTotal()), money(l.lineTotal())}
                     ).toList();
             if (discountsOn) {
                 addLinesTableWithTaxAndDiscount(doc, rows);
@@ -187,7 +188,7 @@ public class DocumentPdfService {
                     .map((SalesOrderLineDto l) -> discountsOn
                             ? new String[]{
                                     l.productName(),
-                                    String.valueOf(l.quantityOrdered()),
+                                    Qty.str(l.quantityOrdered()),
                                     money(l.unitPrice()),
                                     money(l.discountAmount()),
                                     money(l.taxTotal()),
@@ -195,7 +196,7 @@ public class DocumentPdfService {
                             }
                             : new String[]{
                                     l.productName(),
-                                    String.valueOf(l.quantityOrdered()),
+                                    Qty.str(l.quantityOrdered()),
                                     money(l.unitPrice()),
                                     money(l.taxTotal()),
                                     money(l.lineTotal())
@@ -247,8 +248,8 @@ public class DocumentPdfService {
             boolean discountsOn = settings != null && settings.getDiscountMode() != DiscountMode.NONE;
             List<String[]> rows = inv.lines().stream()
                     .map((InvoiceLineDto l) -> discountsOn
-                            ? new String[]{itemLabel(l.productName(), l.description()), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
-                            : new String[]{itemLabel(l.productName(), l.description()), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.taxTotal()), money(l.lineTotal())}
+                            ? new String[]{itemLabel(l.productName(), l.description()), Qty.str(l.quantity()), money(l.unitPrice()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
+                            : new String[]{itemLabel(l.productName(), l.description()), Qty.str(l.quantity()), money(l.unitPrice()), money(l.taxTotal()), money(l.lineTotal())}
                     ).toList();
             if (discountsOn) {
                 addLinesTableWithTaxAndDiscount(doc, rows);
@@ -297,8 +298,8 @@ public class DocumentPdfService {
             boolean discountsOn = settings != null && settings.getDiscountMode() != DiscountMode.NONE;
             List<String[]> rows = bill.lines().stream()
                     .map((BillLineDto l) -> discountsOn
-                            ? new String[]{l.productName(), String.valueOf(l.quantity()), money(l.unitCost()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
-                            : new String[]{l.productName(), String.valueOf(l.quantity()), money(l.unitCost()), money(l.taxTotal()), money(l.lineTotal())}
+                            ? new String[]{l.productName(), Qty.str(l.quantity()), money(l.unitCost()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
+                            : new String[]{l.productName(), Qty.str(l.quantity()), money(l.unitCost()), money(l.taxTotal()), money(l.lineTotal())}
                     ).toList();
             if (discountsOn) {
                 addLinesTableWithTaxAndDiscount(doc, rows);
@@ -368,8 +369,8 @@ public class DocumentPdfService {
             boolean discountsOn = settings != null && settings.getDiscountMode() != DiscountMode.NONE;
             List<String[]> rows = bill.lines().stream()
                     .map((BillLineDto l) -> discountsOn
-                            ? new String[]{l.productName(), String.valueOf(l.quantity()), money(l.unitCost()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
-                            : new String[]{l.productName(), String.valueOf(l.quantity()), money(l.unitCost()), money(l.taxTotal()), money(l.lineTotal())}
+                            ? new String[]{l.productName(), Qty.str(l.quantity()), money(l.unitCost()), money(l.discountAmount()), money(l.taxTotal()), money(l.lineTotal())}
+                            : new String[]{l.productName(), Qty.str(l.quantity()), money(l.unitCost()), money(l.taxTotal()), money(l.lineTotal())}
                     ).toList();
             if (discountsOn) {
                 addLinesTableWithTaxAndDiscount(doc, rows);
@@ -399,7 +400,7 @@ public class DocumentPdfService {
                     new String[]{"Served by", o.cashierName() != null ? o.cashierName() : "—"}
             ));
             List<String[]> rows = o.lines().stream()
-                    .map((OrderLineDto l) -> new String[]{l.description(), String.valueOf(l.quantity()), money(l.unitPrice()), money(l.lineTotal())})
+                    .map((OrderLineDto l) -> new String[]{l.description(), Qty.str(l.quantity()), money(l.unitPrice()), money(l.lineTotal())})
                     .toList();
             addLinesTable(doc, rows);
             // Fourier: "Add sub total amount, tax amount if exist, discount amount if exists,
@@ -412,7 +413,7 @@ public class DocumentPdfService {
             // own figure — it's purely informational (how much was knocked off), not a further
             // deduction from o.total(), which already has it baked in.
             BigDecimal discountTotal = o.lines().stream()
-                    .map(l -> l.unitPrice().multiply(BigDecimal.valueOf(l.quantity())).subtract(l.lineTotal()))
+                    .map(l -> l.unitPrice().multiply(l.quantity()).subtract(l.lineTotal()))
                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                     .setScale(2, RoundingMode.HALF_UP);
             addSubtotalBreakdown(doc, o.subtotal(), o.taxTotal(), discountTotal, o.total());

@@ -238,19 +238,19 @@ public class DataSeeder implements CommandLineRunner {
         if (productRepository.count() > 0) {
             return;
         }
-        record Seed(String sku, String barcode, String name, String category, String price, String cost, int stock) {}
+        record Seed(String sku, String barcode, String name, String category, String price, String cost, BigDecimal stock) {}
         // Cost is a rough demo figure (~65-70% of price) purely so the Profit reports have
         // something non-zero to show out of the box — admins should fill in real costs from
         // Admin > Products.
         List<Seed> seeds = List.of(
-                new Seed("SEED-50KG", "1000000000011", "50kg Maize Seed Bag", "Seed & Feed", "120.00", "80.00", 40),
-                new Seed("FEED-25KG", "1000000000028", "25kg Poultry Feed", "Seed & Feed", "45.00", "30.00", 60),
-                new Seed("IRR-DRIPKIT", "1000000000035", "Drip Irrigation Kit", "Irrigation", "340.00", "230.00", 15),
-                new Seed("IRR-HOSE20M", "1000000000042", "20m Garden Hose", "Irrigation", "58.00", "38.00", 25),
-                new Seed("BEV-WATER1L", "1000000000059", "1L Bottled Water", "Beverages", "1.50", "0.90", 200),
-                new Seed("BEV-SODA330", "1000000000066", "330ml Soda Can", "Beverages", "0.90", "0.55", 150),
-                new Seed("HW-SPADE", "1000000000073", "Garden Spade", "Hardware", "22.00", "14.00", 30),
-                new Seed("HW-WHEELBAR", "1000000000080", "Wheelbarrow", "Hardware", "95.00", "65.00", 8)
+                new Seed("SEED-50KG", "1000000000011", "50kg Maize Seed Bag", "Seed & Feed", "120.00", "80.00", BigDecimal.valueOf(40)),
+                new Seed("FEED-25KG", "1000000000028", "25kg Poultry Feed", "Seed & Feed", "45.00", "30.00", BigDecimal.valueOf(60)),
+                new Seed("IRR-DRIPKIT", "1000000000035", "Drip Irrigation Kit", "Irrigation", "340.00", "230.00", BigDecimal.valueOf(15)),
+                new Seed("IRR-HOSE20M", "1000000000042", "20m Garden Hose", "Irrigation", "58.00", "38.00", BigDecimal.valueOf(25)),
+                new Seed("BEV-WATER1L", "1000000000059", "1L Bottled Water", "Beverages", "1.50", "0.90", BigDecimal.valueOf(200)),
+                new Seed("BEV-SODA330", "1000000000066", "330ml Soda Can", "Beverages", "0.90", "0.55", BigDecimal.valueOf(150)),
+                new Seed("HW-SPADE", "1000000000073", "Garden Spade", "Hardware", "22.00", "14.00", BigDecimal.valueOf(30)),
+                new Seed("HW-WHEELBAR", "1000000000080", "Wheelbarrow", "Hardware", "95.00", "65.00", BigDecimal.valueOf(8))
         );
         for (Seed seed : seeds) {
             Product product = new Product();

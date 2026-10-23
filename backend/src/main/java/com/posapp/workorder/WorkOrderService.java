@@ -1,4 +1,5 @@
 package com.posapp.workorder;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.accounting.ExpenseService;
@@ -250,9 +251,9 @@ public class WorkOrderService {
             labourBillable = p.totalAmount();
         }
         boolean fixed = w.getFixedPrice().signum() > 0;
-        BigDecimal partsCost = lines.stream().map(l -> l.getUnitCost().multiply(BigDecimal.valueOf(l.getQuantity()))).reduce(ZERO, BigDecimal::add);
+        BigDecimal partsCost = lines.stream().map(l -> l.getUnitCost().multiply(l.getQuantity())).reduce(ZERO, BigDecimal::add);
         BigDecimal externalCost = costs.stream().map(WorkOrderCost::getAmount).reduce(ZERO, BigDecimal::add);
-        BigDecimal partsCharged = lines.stream().filter(l -> !(l.isIncluded() && fixed)).map(l -> l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())))
+        BigDecimal partsCharged = lines.stream().filter(l -> !(l.isIncluded() && fixed)).map(l -> l.getUnitPrice().multiply(l.getQuantity()))
                 .reduce(ZERO, BigDecimal::add);
         BigDecimal costsCharged = costs.stream().map(WorkOrderCost::getChargeAmount).reduce(ZERO, BigDecimal::add);
         BigDecimal expected = w.getType() == WorkOrderType.INTERNAL ? ZERO
@@ -272,7 +273,7 @@ public class WorkOrderService {
                 w.getManufacturingOrderId(), w.getManufacturingOrderNumber(), moStatus, w.getBranchId(), w.isPartsPosted(), w.getCompletionNote(),
                 w.getCreatedByName(), w.getCreatedAt(), isOverdue(w), canWork(actor, w), actor.manager(), readyToInvoice(w),
                 lines.stream().map(l -> new LineDto(l.getId(), l.getProductId(), l.getProductName(), l.getQuantity(), l.getUnitPrice(), l.getUnitCost(),
-                        l.isIncluded(), l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity())))).toList(),
+                        l.isIncluded(), l.getUnitPrice().multiply(l.getQuantity()))).toList(),
                 checklist.stream().map(c -> new ChecklistDto(c.getId(), c.getSeq(), c.getText(), c.isDone(), c.getDoneAt(), c.getDoneByName())).toList(),
                 costs.stream().map(c -> new CostDto(c.getId(), c.getCostDate(), c.getDescription(), c.getSupplierName(), c.getAmount(), c.getChargeAmount(),
                         c.getExpenseId())).toList(),
@@ -433,8 +434,8 @@ public class WorkOrderService {
         List<WorkOrderLine> keep = new ArrayList<>();
         for (LineRequest lr : req.lines() == null ? List.<LineRequest>of() : req.lines()) {
             if (lr.productId() == null) throw ApiException.badRequest("Choose a product for every part.");
-            int qty = lr.quantity() == null ? 1 : lr.quantity();
-            if (qty <= 0) throw ApiException.badRequest("The quantity of a part must be at least 1.");
+            BigDecimal qty = lr.quantity() == null ? BigDecimal.ONE : lr.quantity();
+            if (qty.signum() <= 0) throw ApiException.badRequest("The quantity of a part must be at least 1.");
             Product p = catalogService.getProductOrThrow(lr.productId());
             WorkOrderLine l = byProduct.remove(p.getId());
             if (l == null) {
@@ -610,17 +611,17 @@ public class WorkOrderService {
         List<WorkOrderLine> lines = lineRepository.findByWorkOrderIdOrderByIdAsc(w.getId());
         boolean allowNegative = storeSettingsService.getSettings().allowNegativeStock();
         Map<Long, Product> products = new LinkedHashMap<>();
-        Map<Long, Integer> needed = new LinkedHashMap<>();
+        Map<Long, BigDecimal> needed = new LinkedHashMap<>();
         for (WorkOrderLine l : lines) {
             Product p = catalogService.getProductOrThrow(l.getProductId());
             products.put(p.getId(), p);
-            if (p.isTrackStock()) needed.merge(p.getId(), l.getQuantity(), Integer::sum);
+            if (p.isTrackStock()) needed.merge(p.getId(), l.getQuantity(), BigDecimal::add);
         }
         if (!allowNegative) {
-            for (Map.Entry<Long, Integer> e : needed.entrySet()) {
+            for (Map.Entry<Long, BigDecimal> e : needed.entrySet()) {
                 Product p = products.get(e.getKey());
-                if (p.getStockQuantity() < e.getValue()) {
-                    throw ApiException.badRequest("Not enough stock of " + p.getName() + ": " + e.getValue() + " needed, " + p.getStockQuantity() + " in stock.");
+                if (p.getStockQuantity().compareTo(e.getValue()) < 0) {
+                    throw ApiException.badRequest("Not enough stock of " + p.getName() + ": " + e.getValue() + " needed, " + Qty.str(p.getStockQuantity()) + " in stock.");
                 }
             }
         }
@@ -631,8 +632,8 @@ public class WorkOrderService {
                 l.setUnitCost(ZERO);
             } else {
                 l.setUnitCost(p.getCostPrice() == null ? ZERO : p.getCostPrice());
-                catalogService.adjustStock(p, -l.getQuantity(), null);
-                cost = cost.add(l.getUnitCost().multiply(BigDecimal.valueOf(l.getQuantity())));
+                catalogService.adjustStock(p, l.getQuantity().negate(), null);
+                cost = cost.add(l.getUnitCost().multiply(l.getQuantity()));
             }
             lineRepository.save(l);
         }
@@ -700,7 +701,7 @@ public class WorkOrderService {
         if (r.bomId() == null) throw ApiException.badRequest("Choose the bill of materials to make.");
         CreateManufacturingOrderRequest req = new CreateManufacturingOrderRequest();
         req.setBomId(r.bomId());
-        req.setQuantityPlanned(r.quantity() == null ? 1 : r.quantity());
+        req.setQuantityPlanned(r.quantity() == null ? BigDecimal.ONE : r.quantity());
         req.setScheduledDate(r.scheduledDate() != null ? r.scheduledDate() : w.getScheduledDate());
         req.setNote("For work order " + w.getNumber() + " — " + w.getTitle());
         ManufacturingOrderDto mo = manufacturingOrderService.create(req);
@@ -734,18 +735,18 @@ public class WorkOrderService {
         boolean fixed = w.getFixedPrice().signum() > 0;
         if (fixed) {
             String d = w.getTitle() + (w.getPackageName() != null ? " (" + w.getPackageName() + ")" : "") + " — fixed price";
-            out.add(new InvoiceLinePreview("FIXED", d, 1, w.getFixedPrice(), w.getFixedPrice()));
+            out.add(new InvoiceLinePreview("FIXED", d, BigDecimal.ONE, w.getFixedPrice(), w.getFixedPrice()));
             pids.add(null);
         }
         for (WorkOrderLine l : lineRepository.findByWorkOrderIdOrderByIdAsc(w.getId())) {
             if (fixed && l.isIncluded()) continue;
             out.add(new InvoiceLinePreview("PART", l.getProductName(), l.getQuantity(), l.getUnitPrice(),
-                    l.getUnitPrice().multiply(BigDecimal.valueOf(l.getQuantity()))));
+                    l.getUnitPrice().multiply(l.getQuantity())));
             pids.add(l.getProductId());
         }
         for (WorkOrderCost c : costRepository.findByWorkOrderIdOrderByCostDateAscIdAsc(w.getId())) {
             if (c.getChargeAmount().signum() > 0) {
-                out.add(new InvoiceLinePreview("COST", c.getDescription() + (c.getSupplierName() != null ? " (" + c.getSupplierName() + ")" : ""), 1,
+                out.add(new InvoiceLinePreview("COST", c.getDescription() + (c.getSupplierName() != null ? " (" + c.getSupplierName() + ")" : ""), BigDecimal.ONE,
                         c.getChargeAmount(), c.getChargeAmount()));
                 pids.add(null);
             }
@@ -758,7 +759,7 @@ public class WorkOrderService {
                 warning = "Some hours have no hourly rate. Set a labour rate on the work order (or a default in the Time Tracking settings) and have the person resubmit the time.";
             }
             time.lines().forEach(l -> {
-                out.add(new InvoiceLinePreview("LABOUR", l.description(), 1, l.amount(), l.amount()));
+                out.add(new InvoiceLinePreview("LABOUR", l.description(), BigDecimal.ONE, l.amount(), l.amount()));
                 pids.add(null);
             });
             entryIds.addAll(time.entryIds());
@@ -802,7 +803,7 @@ public class WorkOrderService {
                 e.setUnitPrice(l.unitPrice());
             } else {
                 e.setProductId(service.getId());
-                e.setQuantity(1);
+                e.setQuantity(BigDecimal.ONE);
                 e.setUnitPrice(l.amount());
             }
             e.setDescription(l.description());
@@ -893,7 +894,7 @@ public class WorkOrderService {
             part.setPackageId(saved.getId());
             part.setProductId(product.getId());
             part.setProductName(product.getName());
-            part.setQuantity(pr.quantity() == null || pr.quantity() < 1 ? 1 : pr.quantity());
+            part.setQuantity(pr.quantity() == null || pr.quantity().signum() <= 0 ? BigDecimal.ONE : pr.quantity());
             part.setIncluded(pr.included() == null || pr.included());
             packagePartRepository.save(part);
         }

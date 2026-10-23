@@ -1,4 +1,5 @@
 package com.posapp.pricing;
+import com.posapp.common.Qty;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.Product;
@@ -54,7 +55,7 @@ public class PricingService {
     // ---- the price rule ----
 
     @Transactional(readOnly = true)
-    public Resolved resolve(Customer customer, Product product, int quantity) {
+    public Resolved resolve(Customer customer, Product product, BigDecimal quantity) {
         BigDecimal base = money(product.getUnitPrice());
         Resolved normal = new Resolved(base, base, null);
         if (customer == null || customer.getCustomerGroupId() == null) return normal;
@@ -64,7 +65,7 @@ public class PricingService {
         if (list == null || !list.isCurrent(LocalDate.now())) return normal;
         PriceListEntry best = null;
         for (PriceListEntry e : entries.findByPriceListIdAndProductId(list.getId(), product.getId())) {
-            if (e.getMinQuantity() <= quantity && (best == null || e.getMinQuantity() > best.getMinQuantity())) best = e;
+            if (e.getMinQuantity().compareTo(quantity) <= 0 && (best == null || e.getMinQuantity().compareTo(best.getMinQuantity()) > 0)) best = e;
         }
         BigDecimal price;
         if (best != null) {
@@ -79,10 +80,10 @@ public class PricingService {
     }
 
     @Transactional(readOnly = true)
-    public Resolved resolve(Long customerId, Long productId, int quantity) {
+    public Resolved resolve(Long customerId, Long productId, BigDecimal quantity) {
         Product product = products.findById(productId).orElseThrow(() -> ApiException.notFound("Product not found: " + productId));
         Customer customer = customerId == null ? null : customers.findById(customerId).orElseThrow(() -> ApiException.notFound("Customer not found: " + customerId));
-        return resolve(customer, product, Math.max(1, quantity));
+        return resolve(customer, product, Qty.max(BigDecimal.ONE, quantity));
     }
 
     // ---- price lists ----
@@ -169,7 +170,7 @@ public class PricingService {
                     return needle.isEmpty() || (p != null && ((p.getName() != null && p.getName().toLowerCase().contains(needle)) || (p.getSku() != null && p.getSku().toLowerCase().contains(needle))));
                 })
                 .map(e -> entryDto(e, byId.get(e.getProductId())))
-                .sorted(Comparator.comparing((EntryDto d) -> d.productName() == null ? "" : d.productName().toLowerCase()).thenComparingInt(EntryDto::minQuantity))
+                .sorted(Comparator.comparing((EntryDto d) -> d.productName() == null ? "" : d.productName().toLowerCase()).thenComparing(EntryDto::minQuantity))
                 .toList();
     }
 
@@ -183,8 +184,8 @@ public class PricingService {
         PriceList l = listOrThrow(listId);
         if (r.productId() == null) throw ApiException.badRequest("Choose a product.");
         Product p = products.findById(r.productId()).orElseThrow(() -> ApiException.notFound("Product not found: " + r.productId()));
-        int min = r.minQuantity() == null ? 1 : r.minQuantity();
-        if (min < 1) throw ApiException.badRequest("The quantity step must be at least 1.");
+        BigDecimal min = r.minQuantity() == null ? BigDecimal.ONE : r.minQuantity();
+        if (min.compareTo(BigDecimal.ONE) < 0) throw ApiException.badRequest("The quantity step must be at least 1.");
         checkPrice(r.price());
         PriceListEntry e = entries.findByPriceListIdAndProductIdAndMinQuantity(listId, p.getId(), min).orElseGet(PriceListEntry::new);
         e.setPriceListId(listId);
@@ -192,7 +193,7 @@ public class PricingService {
         e.setMinQuantity(min);
         e.setPrice(money(r.price()));
         e = entries.save(e);
-        audit.record("PRICE_LIST_ENTRY_SAVED", "Price list " + l.getName() + ": " + p.getName() + " from " + min + " at " + e.getPrice(), "PriceList", listId);
+        audit.record("PRICE_LIST_ENTRY_SAVED", "Price list " + l.getName() + ": " + p.getName() + " from " + Qty.str(min) + " at " + e.getPrice(), "PriceList", listId);
         return entryDto(e, p);
     }
 

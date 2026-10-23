@@ -36,7 +36,7 @@ import { Branch, LocationType, WarehouseLocation } from '../core/models';
         </div>
         <div class="form-group">
           <label class="form-label">Low-stock threshold (optional)</label>
-          <input class="form-control" style="max-width:160px;" type="number" min="0" step="1" name="lowStockThreshold" [(ngModel)]="lowStockThreshold" placeholder="Store default" />
+          <input class="form-control" style="max-width:160px;" type="number" min="0" step="any" name="lowStockThreshold" [(ngModel)]="lowStockThreshold" placeholder="Store default" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             A product is flagged low (dashboard, Stock On Hand report) and an alert email is sent when this
             warehouse's stock of it drops below this number. Leave blank to use the store-wide default.

@@ -17,8 +17,8 @@ public record SupplierStatementRow(
         Instant orderDate,
         Instant expectedDate,
         int lineCount,
-        int quantityOrdered,
-        int quantityReceived,
+        BigDecimal quantityOrdered,
+        BigDecimal quantityReceived,
         BigDecimal totalCost,
         /** Task: "Add Supplier payment" — same paid/outstanding columns as PurchaseOrderReportRow. */
         BigDecimal amountPaid,

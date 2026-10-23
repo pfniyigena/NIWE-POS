@@ -73,8 +73,17 @@ public class HelpDeskSettingsService {
 
         HelpDeskSettings settings = getOrCreate();
         settings.setNotificationEmails(cleaned.isEmpty() ? null : String.join(",", cleaned));
+        if (request.getPublicEnabled() != null) {
+            settings.setPublicEnabled(request.getPublicEnabled());
+        }
         HelpDeskSettings saved = repository.save(settings);
         return HelpDeskSettingsDto.from(saved, cleaned);
+    }
+
+    /** True when visitors may use the public Help Desk page ("Allow public website"). */
+    @Transactional
+    public boolean isPublicOpen() {
+        return getOrCreate().isPublicEnabled();
     }
 
     private List<String> parse(String csv) {

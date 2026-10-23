@@ -64,7 +64,7 @@ interface DraftLine {
           <tr *ngFor="let line of lines; let i = index">
             <td>{{ line.productName }}</td>
             <td class="text-end">
-              <input type="number" class="form-control form-control-sm" style="width:90px; margin-left:auto;" min="1" [(ngModel)]="line.quantityRequested" [name]="'qty' + i" />
+              <input type="number" step="any" class="form-control form-control-sm" style="width:90px; margin-left:auto;" min="0.0001" [(ngModel)]="line.quantityRequested" [name]="'qty' + i" />
             </td>
             <td>
               <input type="text" class="form-control form-control-sm" placeholder="Optional" [(ngModel)]="line.note" [name]="'note' + i" />

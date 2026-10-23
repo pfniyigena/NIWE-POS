@@ -1,4 +1,5 @@
 package com.posapp.reports.dto;
+import java.math.BigDecimal;
 
 import java.time.Instant;
 
@@ -18,7 +19,7 @@ public record RestaurantCancelledOrderRow(
         String serverName,
         Instant openedAt,
         Instant cancelledAt,
-        int itemCount,
+        BigDecimal itemCount,
         java.math.BigDecimal wouldBeTotal
 ) {
 }

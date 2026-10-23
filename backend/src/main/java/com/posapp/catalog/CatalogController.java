@@ -1,6 +1,7 @@
 package com.posapp.catalog;
 
-import com.posapp.catalog.dto.BrandDto;
+
+import java.math.BigDecimal;import com.posapp.catalog.dto.BrandDto;
 import com.posapp.catalog.dto.BrandRequest;
 import com.posapp.catalog.dto.CategoryDto;
 import com.posapp.catalog.dto.CategoryRequest;
@@ -30,14 +31,14 @@ public class CatalogController {
      * two services in sequence has no such restriction.
      */
     private final StockAdjustmentService stockAdjustmentService;
-    private final int lowStockThreshold;
+    private final BigDecimal lowStockThreshold;
 
     public CatalogController(CatalogService catalogService,
                               StockAdjustmentService stockAdjustmentService,
                               @Value("${app.pos.low-stock-threshold:10}") int lowStockThreshold) {
         this.catalogService = catalogService;
         this.stockAdjustmentService = stockAdjustmentService;
-        this.lowStockThreshold = lowStockThreshold;
+        this.lowStockThreshold = BigDecimal.valueOf(lowStockThreshold);
     }
 
     // ---- categories: reads open to any logged-in user (the terminal needs them), writes admin-only ----

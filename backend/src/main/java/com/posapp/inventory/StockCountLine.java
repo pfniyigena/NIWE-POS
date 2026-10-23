@@ -35,10 +35,10 @@ public class StockCountLine extends BaseEntity {
 
     /** What the system held at this location when the sheet was started. */
     @Column(nullable = false)
-    private int systemQuantity;
+    private BigDecimal systemQuantity = BigDecimal.ZERO;
 
     /** Null until someone has counted it; an uncounted line is ignored on approval (it is not treated as zero). */
-    private Integer countedQuantity;
+    private BigDecimal countedQuantity;
 
     /** The product's cost when the sheet was started — values the difference. */
     private BigDecimal unitCost;

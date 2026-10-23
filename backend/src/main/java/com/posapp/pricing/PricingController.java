@@ -1,4 +1,6 @@
 package com.posapp.pricing;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.dataimport.PriceListImportService;
 import com.posapp.dataimport.dto.ImportResultDto;
@@ -100,7 +102,7 @@ public class PricingController {
     public ResponseEntity<byte[]> export(@PathVariable Long id) {
         StringBuilder sb = new StringBuilder("sku,name,minQuantity,price\n");
         for (EntryDto e : service.entries(id, null)) {
-            sb.append(cell(e.sku())).append(',').append(cell(e.productName())).append(',').append(e.minQuantity()).append(',').append(e.price().toPlainString()).append('\n');
+            sb.append(cell(e.sku())).append(',').append(cell(e.productName())).append(',').append(Qty.str(e.minQuantity())).append(',').append(e.price().toPlainString()).append('\n');
         }
         return csv("price-list-" + id + ".csv", sb.toString().getBytes(StandardCharsets.UTF_8));
     }
@@ -152,7 +154,7 @@ public class PricingController {
 
     @PreAuthorize(VIEW)
     @GetMapping("/resolve")
-    public Resolved resolve(@RequestParam(required = false) Long customerId, @RequestParam Long productId, @RequestParam(defaultValue = "1") int quantity) {
+    public Resolved resolve(@RequestParam(required = false) Long customerId, @RequestParam Long productId, @RequestParam(defaultValue = "1") BigDecimal quantity) {
         return service.resolve(customerId, productId, quantity);
     }
 }

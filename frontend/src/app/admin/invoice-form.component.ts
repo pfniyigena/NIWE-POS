@@ -197,7 +197,7 @@ interface DraftLine {
             <tr>
               <td>{{ line.productName }}</td>
               <td class="text-end">
-                <input type="number" class="form-control form-control-sm" style="width:90px; margin-left:auto;" min="1" [(ngModel)]="line.quantity" [name]="'qty' + i" />
+                <input type="number" step="any" class="form-control form-control-sm" style="width:90px; margin-left:auto;" min="0.0001" [(ngModel)]="line.quantity" [name]="'qty' + i" />
               </td>
               <td class="text-end">
                 <input type="number" class="form-control form-control-sm" style="width:100px; margin-left:auto;" min="0" step="0.01" [(ngModel)]="line.unitPrice" [name]="'price' + i" />

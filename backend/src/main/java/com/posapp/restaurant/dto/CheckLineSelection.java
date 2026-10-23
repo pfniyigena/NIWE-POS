@@ -1,6 +1,7 @@
 package com.posapp.restaurant.dto;
 
-import java.util.List;
+
+import java.math.BigDecimal;import java.util.List;
 
 /** Which items to take from an order: some lines (optionally only part of the quantity) and/or everything ordered for certain seats. */
 public class CheckLineSelection {
@@ -11,12 +12,12 @@ public class CheckLineSelection {
 
     public static class Item {
         private Long lineId;
-        private Integer quantity;
+        private BigDecimal quantity;
 
         public Long getLineId() { return lineId; }
         public void setLineId(Long lineId) { this.lineId = lineId; }
-        public Integer getQuantity() { return quantity; }
-        public void setQuantity(Integer quantity) { this.quantity = quantity; }
+        public BigDecimal getQuantity() { return quantity; }
+        public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     }
 
     public List<Item> getLines() { return lines; }

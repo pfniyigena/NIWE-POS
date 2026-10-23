@@ -10,7 +10,7 @@ public record RestaurantOrderLineDto(
         Long productId,
         String description,
         BigDecimal unitPrice,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal lineTotal,
         BigDecimal taxRatePercent,
         BigDecimal lineTax,

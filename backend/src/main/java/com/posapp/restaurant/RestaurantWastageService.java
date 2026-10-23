@@ -1,4 +1,5 @@
 package com.posapp.restaurant;
+import com.posapp.common.Qty;
 
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
@@ -79,7 +80,7 @@ public class RestaurantWastageService {
     /** Just logs the claim — {@link RestaurantWastageStatus#PENDING}, no stock/Accounting impact yet. See this class's own javadoc. */
     @Transactional
     public RestaurantWastageDto create(RestaurantWastageRequest request) {
-        if (request.getQuantity() <= 0) {
+        if (request.getQuantity().signum() <= 0) {
             throw ApiException.badRequest("Quantity wasted must be greater than zero");
         }
         RestaurantWastageReason reason = parseReason(request.getReason());
@@ -99,7 +100,7 @@ public class RestaurantWastageService {
         RestaurantWastage saved = wastageRepository.save(wastage);
 
         auditLogService.record("RESTAURANT_WASTAGE_RECORDED",
-                "Logged " + request.getQuantity() + " " + product.getName() + " wasted (" + reason + ") — awaiting admin confirmation"
+                "Logged " + Qty.str(request.getQuantity()) + " " + product.getName() + " wasted (" + reason + ") — awaiting admin confirmation"
                         + (request.getNote() != null && !request.getNote().isBlank() ? ": " + request.getNote() : ""),
                 "Product", product.getId());
 
@@ -131,23 +132,23 @@ public class RestaurantWastageService {
         // to move.
         if (product != null && product.isTrackStock()) {
             WarehouseLocation kitchenLocation = warehouseService.getRestaurantLocationOrNull();
-            int stockBefore = warehouseService.stockAt(product, kitchenLocation);
-            int stockAfter = stockBefore - wastage.getQuantity();
+            BigDecimal stockBefore = warehouseService.stockAt(product, kitchenLocation);
+            BigDecimal stockAfter = stockBefore.subtract(wastage.getQuantity());
             // Task: "Inventory Setting (Example: allow negative stock)" — same guard StockAdjustmentService
             // and RestaurantOrderService.validateStockAvailability already apply.
-            if (stockAfter < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
-                throw ApiException.badRequest("Cannot confirm " + wastage.getQuantity() + " wasted for '" + wastage.getProductName()
+            if (stockAfter.signum() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
+                throw ApiException.badRequest("Cannot confirm " + Qty.str(wastage.getQuantity()) + " wasted for '" + wastage.getProductName()
                         + "' — current stock is " + stockBefore + ", which would go negative."
                         + " Enable \"Allow negative stock\" in Inventory settings to allow this.");
             }
-            catalogService.adjustStock(product, -wastage.getQuantity(), kitchenLocation);
+            catalogService.adjustStock(product, wastage.getQuantity().negate(), kitchenLocation);
             wastage.setStockWarehouseId(kitchenLocation != null ? kitchenLocation.getWarehouse().getId() : null);
             wastage.setStockBefore(stockBefore);
             wastage.setStockAfter(stockAfter);
         }
 
         BigDecimal costImpact = product != null && product.getCostPrice() != null
-                ? product.getCostPrice().multiply(BigDecimal.valueOf(wastage.getQuantity())).setScale(2, RoundingMode.HALF_UP)
+                ? product.getCostPrice().multiply(wastage.getQuantity()).setScale(2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
         wastage.setCostImpact(costImpact);
         wastage.setStatus(RestaurantWastageStatus.CONFIRMED);
@@ -156,7 +157,7 @@ public class RestaurantWastageService {
         RestaurantWastage saved = wastageRepository.save(wastage);
 
         auditLogService.record("RESTAURANT_WASTAGE_CONFIRMED",
-                "Confirmed " + saved.getQuantity() + " " + saved.getProductName() + " wasted (" + saved.getReason()
+                "Confirmed " + Qty.str(saved.getQuantity()) + " " + saved.getProductName() + " wasted (" + saved.getReason()
                         + ") — inventory and accounting updated",
                 "Product", product != null ? product.getId() : null);
 
@@ -179,7 +180,7 @@ public class RestaurantWastageService {
         wastage.setStatus(RestaurantWastageStatus.REJECTED);
         RestaurantWastage saved = wastageRepository.save(wastage);
         auditLogService.record("RESTAURANT_WASTAGE_REJECTED",
-                "Rejected the logged wastage of " + saved.getQuantity() + " " + saved.getProductName(),
+                "Rejected the logged wastage of " + Qty.str(saved.getQuantity()) + " " + saved.getProductName(),
                 "Product", saved.getProduct() != null ? saved.getProduct().getId() : null);
         return RestaurantWastageDto.from(saved);
     }

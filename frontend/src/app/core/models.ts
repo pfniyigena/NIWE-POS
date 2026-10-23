@@ -13,6 +13,8 @@ export interface LoginResponse {
   areas?: string[];
   /** Name of the custom role, when one is assigned. */
   customRoleName?: string | null;
+  /** The employee record linked to this login, when there is one (unlocks My HR). */
+  employeeId?: number | null;
 }
 
 export interface Category {
@@ -1758,6 +1760,9 @@ export interface RoutingOperation {
   workstationId: number | null;
   workstationName: string | null;
   estimatedMinutesPerUnit: number;
+  /** MF-2: the workstation's hourly rate and the step's labour rate per hour (people). */
+  machineHourlyRate?: number;
+  labourHourlyRate?: number;
 }
 
 /** "Settings (Production routings etc)" (Fourier's own naming). Mirrors the backend's RoutingDto. */
@@ -1774,7 +1779,7 @@ export interface RoutingPayload {
   name: string;
   description?: string | null;
   active: boolean;
-  operations: { sequence: number; name: string; workstationId: number | null; estimatedMinutesPerUnit: number }[];
+  operations: { sequence: number; name: string; workstationId: number | null; estimatedMinutesPerUnit: number; labourHourlyRate?: number }[];
 }
 
 /** One component line of a Bom — mirrors the backend's BomDto.LineDto. */
@@ -1803,6 +1808,26 @@ export interface Bom {
   active: boolean;
   estimatedUnitMaterialCost: number;
   lines: BomLine[];
+  /** MF-4 */
+  byProducts?: BomByProduct[];
+  /** MF-6 */
+  version?: number;
+  estimatedUnitLabourCost?: number;
+  estimatedUnitMachineCost?: number;
+  estimatedUnitCost?: number;
+  estimatedNetUnitCost?: number;
+  productPrice?: number;
+  estimatedMarginPercent?: number | null;
+}
+
+/** MF-4: something else a recipe produces besides the finished good. */
+export interface BomByProduct {
+  id: number;
+  productId: number;
+  productName: string;
+  productSku: string | null;
+  quantityPerUnit: number;
+  costSharePercent: number;
 }
 
 /** Body for POST/PUT /api/manufacturing/boms — see the backend's BomRequest. */
@@ -1812,6 +1837,7 @@ export interface BomPayload {
   routingId?: number | null;
   active: boolean;
   lines: { componentId: number; quantityPerUnit: number }[];
+  byProducts?: { productId: number; quantityPerUnit: number; costSharePercent: number }[];
 }
 
 /** Mirrors the backend's ManufacturingOrderStatus enum — see that class's javadoc for the DRAFT -> CONFIRMED -> (PARTIALLY_PRODUCED ->)* PRODUCED / CANCELLED lifecycle. */
@@ -1834,6 +1860,42 @@ export interface ManufacturingOrderConsumption {
   /** Null when the component wasn't stock-tracked at the time — see Product.trackStock. */
   stockBefore: number | null;
   stockAfter: number | null;
+  /** MF-4: what the recipe called for and how far the real use was from it. */
+  plannedQuantity: number;
+  varianceQuantity: number;
+  varianceCost: number;
+}
+
+/** MF-4: a by-product that came out of one run. */
+export interface ManufacturingOrderRunByProduct {
+  productId: number | null;
+  productName: string;
+  quantity: number;
+  costValue: number;
+  stockBefore: number | null;
+  stockAfter: number | null;
+}
+
+/** MF-2: one routing step's time and charges inside one production run. */
+export interface ManufacturingOrderRunOperation {
+  sequence: number;
+  name: string;
+  workstationName: string | null;
+  plannedMinutes: number;
+  actualMinutes: number;
+  machineCost: number;
+  labourCost: number;
+}
+
+/** MF-2: a routing step as copied onto a confirmed order. */
+export interface ManufacturingOrderOperation {
+  sequence: number;
+  name: string;
+  workstationId: number | null;
+  workstationName: string | null;
+  minutesPerUnit: number;
+  machineRate: number;
+  labourRate: number;
 }
 
 /** One partial (or full) production run against a Manufacturing Order. Mirrors the backend's ManufacturingOrderDto.RunDto. */
@@ -1843,11 +1905,22 @@ export interface ManufacturingOrderRun {
   quantityProduced: number;
   materialCost: number;
   overheadCost: number;
+  /** MF-2 */
+  labourCost: number;
+  machineCost: number;
+  operations: ManufacturingOrderRunOperation[];
   totalCost: number;
   /** Null when the finished good wasn't stock-tracked at the time — see Product.trackStock. */
   stockBefore: number | null;
   stockAfter: number | null;
   consumptions: ManufacturingOrderConsumption[];
+  /** MF-4 */
+  quantityScrapped: number;
+  scrapReason: string | null;
+  scrapCost: number;
+  yieldPercent: number | null;
+  byProductCredit: number;
+  byProducts: ManufacturingOrderRunByProduct[];
 }
 
 /**
@@ -1881,6 +1954,52 @@ export interface ManufacturingOrder {
   locationId: number | null;
   locationName: string | null;
   warehouseName: string | null;
+  /** MF-2 */
+  totalLabourCost: number;
+  totalMachineCost: number;
+  plannedMaterialCost: number;
+  plannedLabourCost: number;
+  plannedMachineCost: number;
+  plannedOverheadCost: number;
+  plannedTotalCost: number;
+  operations: ManufacturingOrderOperation[];
+  /** MF-4 */
+  totalScrapped: number;
+  totalScrapCost: number;
+  yieldPercent: number | null;
+  totalByProductCredit: number;
+}
+
+/** MF-3: body for PUT /api/manufacturing/orders/{id}. Date and note replace what is there; the rest is left as it is when omitted. */
+export interface UpdateManufacturingOrderPayload {
+  bomId?: number | null;
+  quantityPlanned?: number | null;
+  scheduledDate: string | null;
+  note: string | null;
+  overheadCostIds?: number[] | null;
+  locationId?: number | null;
+}
+
+/** MF-3: one component line of the availability check. */
+export interface ComponentAvailabilityLine {
+  componentId: number;
+  componentName: string;
+  trackStock: boolean;
+  perUnit: number;
+  required: number;
+  available: number | null;
+  shortBy: number;
+}
+
+/** MF-3: can the rest of an order be made from the stock on hand? */
+export interface ComponentAvailability {
+  orderId: number;
+  orderNumber: string;
+  quantityRemaining: number;
+  canProduceAll: boolean;
+  maxProducible: number;
+  allowNegativeStock: boolean;
+  lines: ComponentAvailabilityLine[];
 }
 
 /** Body for POST /api/manufacturing/orders — see the backend's CreateManufacturingOrderRequest. */
@@ -1897,6 +2016,13 @@ export interface CreateManufacturingOrderPayload {
 /** Body for POST /api/manufacturing/orders/{id}/produce — see the backend's ProduceManufacturingOrderRequest. */
 export interface ProduceManufacturingOrderPayload {
   quantity: number;
+  /** MF-2: optional actual minutes per step (by step number); steps left out use the planned minutes. */
+  operationMinutes?: { sequence: number; minutes: number }[];
+  /** MF-4: units started that were rejected (not added to stock, not counted against the order) and why. */
+  quantityScrapped?: number;
+  scrapReason?: string | null;
+  /** MF-4: optional actual quantity used of a component. */
+  componentQuantities?: { componentId: number; quantity: number }[];
 }
 
 /** How much of one component would be short if a plan line's suggestedQuantity were produced right now, against today's stock. Mirrors the backend's ComponentShortfallDto. */
@@ -2641,6 +2767,8 @@ export interface RestaurantSettings {
   reminderTemplate?: string;
   defaultPrepMinutes?: number;
   kitchenWarnPercent?: number;
+  /** "Allow public website": the public Reserve a Table page is open to visitors. */
+  publicEnabled?: boolean;
   onlineEnabled?: boolean;
   qrEnabled?: boolean;
   onlineTakeaway?: boolean;
@@ -2908,10 +3036,13 @@ export interface PublicHelpDeskTicketStatus {
 export interface HelpDeskSettings {
   id: number;
   notificationEmails: string[];
+  /** "Allow public website": the public Help Desk page is open to visitors. */
+  publicEnabled: boolean;
 }
 
 export interface HelpDeskSettingsPayload {
   notificationEmails: string[];
+  publicEnabled?: boolean;
 }
 
 /** Fourier: "it is better to have a home page with look nice like a website" — the one sliver of StoreSettings the new public home page is allowed to see; see backend PublicBrandingDto's own javadoc for why it's this narrow. */

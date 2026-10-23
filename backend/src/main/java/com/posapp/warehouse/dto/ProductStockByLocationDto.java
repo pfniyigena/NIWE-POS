@@ -1,6 +1,7 @@
 package com.posapp.warehouse.dto;
 
-import java.util.List;
+
+import java.math.BigDecimal;import java.util.List;
 
 /**
  * Phase 1 of multi-warehouse visibility: where one product's stock actually sits. {@code
@@ -8,10 +9,10 @@ import java.util.List;
  * checkout and the warehouse-filtered reports use); {@code onHandTotal} is everything physically
  * recorded, including RECEIVING, STORAGE and DAMAGED stock. Read-only — nothing here moves stock.
  */
-public record ProductStockByLocationDto(Long productId, int sellableTotal, int onHandTotal, List<Row> locations) {
+public record ProductStockByLocationDto(Long productId, BigDecimal sellableTotal, BigDecimal onHandTotal, List<Row> locations) {
 
     public record Row(Long warehouseId, String warehouseName, boolean warehousePrimary,
                       Long locationId, String locationName, String type, boolean active,
-                      boolean sellable, int quantity) {
+                      boolean sellable, BigDecimal quantity) {
     }
 }

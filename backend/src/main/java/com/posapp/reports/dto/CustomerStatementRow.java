@@ -24,7 +24,7 @@ public record CustomerStatementRow(
         Instant completedAt,
         String registerName,
         String cashierName,
-        int itemCount,
+        BigDecimal itemCount,
         BigDecimal subtotal,
         BigDecimal taxTotal,
         BigDecimal grandTotal,

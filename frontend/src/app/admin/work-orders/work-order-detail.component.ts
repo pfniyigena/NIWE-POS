@@ -167,7 +167,7 @@ import {
                 <tbody>
                   <tr *ngFor="let l of lineEdits; let i = index">
                     <td>{{ l.name }}</td>
-                    <td><input class="form-control" type="number" min="1" [name]="'q' + i" [(ngModel)]="l.quantity" [disabled]="!canEditParts()" /></td>
+                    <td><input class="form-control" type="number" step="any" min="0.0001" [name]="'q' + i" [(ngModel)]="l.quantity" [disabled]="!canEditParts()" /></td>
                     <td><input class="form-control" type="number" min="0" step="0.01" [name]="'p' + i" [(ngModel)]="l.unitPrice" [disabled]="!canEditParts() || d.type === 'INTERNAL'" /></td>
                     <td *ngIf="d.fixedPrice > 0"><input type="checkbox" [name]="'i' + i" [(ngModel)]="l.included" [disabled]="!canEditParts()" /></td>
                     <td><button class="btn btn-sm btn-outline-danger" *ngIf="canEditParts()" (click)="lineEdits.splice(i, 1)">Remove</button></td>
@@ -263,7 +263,7 @@ import {
                     <option [ngValue]="null">Choose…</option>
                     <option *ngFor="let b of boms" [ngValue]="b.id">{{ b.code }} — {{ b.productName }}</option>
                   </select></div>
-                <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" type="number" min="1" name="mq" [(ngModel)]="mo.quantity" /></div>
+                <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" type="number" step="any" min="0.0001" name="mq" [(ngModel)]="mo.quantity" /></div>
                 <button class="btn btn-outline-primary btn-sm" [disabled]="busy || !mo.bomId" (click)="linkMo()">Create manufacturing order</button>
               </ng-container>
             </div>

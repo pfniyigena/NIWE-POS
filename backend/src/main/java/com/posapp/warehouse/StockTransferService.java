@@ -1,4 +1,6 @@
 package com.posapp.warehouse;
+import com.posapp.common.Qty;
+import java.math.BigDecimal;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.CatalogService;
@@ -79,7 +81,7 @@ public class StockTransferService {
      */
     @Transactional
     public StockTransferDto create(StockTransferRequest request) {
-        if (request.quantity() <= 0) {
+        if (request.quantity().signum() <= 0) {
             throw ApiException.badRequest("Transfer quantity must be greater than zero");
         }
         if (request.fromLocationId().equals(request.toLocationId())) {
@@ -89,9 +91,9 @@ public class StockTransferService {
         WarehouseLocation fromLocation = getActiveLocationOrThrow(request.fromLocationId());
         WarehouseLocation toLocation = getActiveLocationOrThrow(request.toLocationId());
 
-        int currentAtSource = warehouseService.getStockQuantity(product, fromLocation);
-        if (currentAtSource - request.quantity() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
-            throw ApiException.badRequest("Cannot transfer " + request.quantity() + " of '" + product.getName() + "' out of '"
+        BigDecimal currentAtSource = warehouseService.getStockQuantity(product, fromLocation);
+        if (currentAtSource.subtract(request.quantity()).signum() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
+            throw ApiException.badRequest("Cannot transfer " + Qty.str(request.quantity()) + " of '" + product.getName() + "' out of '"
                     + fromLocation.getName() + "' — it only holds " + currentAtSource + "."
                     + " Enable \"Allow negative stock\" in Inventory settings to allow this.");
         }
@@ -119,7 +121,7 @@ public class StockTransferService {
         StockTransfer saved = stockTransferRepository.save(transfer);
 
         auditLogService.record("STOCK_TRANSFER_LOGGED",
-                "Logged a transfer of " + request.quantity() + " x " + product.getName() + " from '" + describeLocation(fromLocation)
+                "Logged a transfer of " + Qty.str(request.quantity()) + " x " + product.getName() + " from '" + describeLocation(fromLocation)
                         + "' to '" + describeLocation(toLocation) + "' — awaiting approval"
                         + (request.note() != null && !request.note().isBlank() ? ": " + request.note() : ""),
                 "Product", product.getId());
@@ -152,8 +154,8 @@ public class StockTransferService {
             throw ApiException.badRequest("Cannot confirm this transfer — its product or a location no longer exists");
         }
 
-        int currentAtSource = warehouseService.getStockQuantity(product, fromLocation);
-        if (currentAtSource - transfer.getQuantity() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
+        BigDecimal currentAtSource = warehouseService.getStockQuantity(product, fromLocation);
+        if (currentAtSource.subtract(transfer.getQuantity()).signum() < 0 && !storeSettingsService.getSettings().allowNegativeStock()) {
             throw ApiException.badRequest("Cannot confirm this transfer — '" + fromLocation.getName() + "' only holds "
                     + currentAtSource + " of '" + product.getName() + "', and moving " + transfer.getQuantity()
                     + " would go negative. Enable \"Allow negative stock\" in Inventory settings to allow this.");
@@ -162,7 +164,7 @@ public class StockTransferService {
         if (interBranch) {
             // Dispatch: the stock leaves the source now and sits "in transit" until the destination receives it.
             transfer.setFromStockBefore(currentAtSource);
-            catalogService.adjustStockUntracked(product, -transfer.getQuantity(), fromLocation);
+            catalogService.adjustStockUntracked(product, transfer.getQuantity().negate(), fromLocation);
             transfer.setFromStockAfter(warehouseService.getStockQuantity(product, fromLocation));
             trackingService.dispatch(product, fromLocation, transfer.getQuantity(), transfer.getId());
             transfer.setStatus(StockTransferStatus.IN_TRANSIT);
@@ -170,13 +172,13 @@ public class StockTransferService {
             transfer.setDispatchedAt(transfer.getConfirmedAt());
             StockTransfer dispatched = stockTransferRepository.save(transfer);
             auditLogService.record("STOCK_TRANSFER_DISPATCHED",
-                    "Dispatched " + dispatched.getQuantity() + " x " + dispatched.getProductName() + " from '" + describeLocation(fromLocation)
+                    "Dispatched " + Qty.str(dispatched.getQuantity()) + " x " + dispatched.getProductName() + " from '" + describeLocation(fromLocation)
                             + "' to '" + describeLocation(toLocation) + "' (" + dispatched.getToBranchName() + ") — in transit",
                     "Product", product.getId());
             return StockTransferDto.from(dispatched);
         }
 
-        int destinationBefore = warehouseService.getStockQuantity(product, toLocation);
+        BigDecimal destinationBefore = warehouseService.getStockQuantity(product, toLocation);
         moveStock(product, fromLocation, toLocation, transfer.getQuantity());
         transfer.setFromStockBefore(currentAtSource);
         transfer.setFromStockAfter(warehouseService.getStockQuantity(product, fromLocation));
@@ -188,7 +190,7 @@ public class StockTransferService {
         StockTransfer saved = stockTransferRepository.save(transfer);
 
         auditLogService.record("STOCK_TRANSFER_CONFIRMED",
-                "Confirmed transfer of " + saved.getQuantity() + " x " + saved.getProductName() + " from '"
+                "Confirmed transfer of " + Qty.str(saved.getQuantity()) + " x " + saved.getProductName() + " from '"
                         + describeLocation(fromLocation) + "' to '" + describeLocation(toLocation) + "' — stock moved",
                 "Product", product.getId());
 
@@ -211,7 +213,7 @@ public class StockTransferService {
             transfer.setStatus(StockTransferStatus.REJECTED);
             StockTransfer returned = stockTransferRepository.save(transfer);
             auditLogService.record("STOCK_TRANSFER_RETURNED",
-                    "Returned the in-transit transfer of " + returned.getQuantity() + " x " + returned.getProductName() + " to '"
+                    "Returned the in-transit transfer of " + Qty.str(returned.getQuantity()) + " x " + returned.getProductName() + " to '"
                             + returned.getFromWarehouseName() + " / " + returned.getFromLocationName() + "'",
                     "Product", returned.getProduct() != null ? returned.getProduct().getId() : null);
             return StockTransferDto.from(returned);
@@ -223,7 +225,7 @@ public class StockTransferService {
         transfer.setStatus(StockTransferStatus.REJECTED);
         StockTransfer saved = stockTransferRepository.save(transfer);
         auditLogService.record("STOCK_TRANSFER_REJECTED",
-                "Rejected the logged transfer of " + saved.getQuantity() + " x " + saved.getProductName() + " from '"
+                "Rejected the logged transfer of " + Qty.str(saved.getQuantity()) + " x " + saved.getProductName() + " from '"
                         + saved.getFromLocationName() + "' to '" + saved.getToLocationName() + "'",
                 "Product", saved.getProduct() != null ? saved.getProduct().getId() : null);
         return StockTransferDto.from(saved);
@@ -241,9 +243,9 @@ public class StockTransferService {
         if (transfer.getStatus() != StockTransferStatus.IN_TRANSIT) {
             throw ApiException.badRequest("Only an in-transit transfer can be received — this one is " + transfer.getStatus());
         }
-        int received = request.getReceivedQuantity();
-        if (received > transfer.getQuantity()) {
-            throw ApiException.badRequest("Cannot receive more than was sent (" + transfer.getQuantity() + ")");
+        BigDecimal received = request.getReceivedQuantity();
+        if (received.compareTo(transfer.getQuantity()) > 0) {
+            throw ApiException.badRequest("Cannot receive more than was sent (" + Qty.str(transfer.getQuantity()) + ")");
         }
         Product product = transfer.getProduct();
         WarehouseLocation toLocation = transfer.getToLocation();
@@ -251,23 +253,23 @@ public class StockTransferService {
             throw ApiException.badRequest("Cannot receive this transfer — its product or destination location no longer exists");
         }
         transfer.setToStockBefore(warehouseService.getStockQuantity(product, toLocation));
-        if (received > 0) {
+        if (received.signum() > 0) {
             catalogService.adjustStockUntracked(product, received, toLocation);
         }
         transfer.setToStockAfter(warehouseService.getStockQuantity(product, toLocation));
         trackingService.arrive(product, transfer.getId(), toLocation, received);
-        int shortage = transfer.getQuantity() - received;
+        BigDecimal shortage = transfer.getQuantity().subtract(received);
         transfer.setReceivedQuantity(received);
         transfer.setReceivedAt(Instant.now());
         transfer.setReceiveNote(request.getNote());
         transfer.setStatus(StockTransferStatus.RECEIVED);
         StockTransfer saved = stockTransferRepository.save(transfer);
-        if (shortage > 0) {
+        if (shortage.signum() > 0) {
             accountingService.postTransferShortage(saved, shortage);
         }
         auditLogService.record("STOCK_TRANSFER_RECEIVED",
-                "Received " + received + " of " + saved.getQuantity() + " x " + saved.getProductName() + " at '" + describeLocation(toLocation) + "'"
-                        + (shortage > 0 ? " — " + shortage + " short" + (request.getNote() != null && !request.getNote().isBlank() ? " (" + request.getNote() + ")" : "") : ""),
+                "Received " + Qty.str(received) + " of " + Qty.str(saved.getQuantity()) + " x " + saved.getProductName() + " at '" + describeLocation(toLocation) + "'"
+                        + (shortage.signum() > 0 ? " — " + Qty.str(shortage) + " short" + (request.getNote() != null && !request.getNote().isBlank() ? " (" + request.getNote() + ")" : "") : ""),
                 "Product", product.getId());
         return StockTransferDto.from(saved);
     }
@@ -287,8 +289,8 @@ public class StockTransferService {
      * a sellable location, or stock out of DAMAGED back into circulation. {@code fromLocation !=
      * toLocation} is already enforced in {@link #create}.
      */
-    private void moveStock(Product product, WarehouseLocation fromLocation, WarehouseLocation toLocation, int quantity) {
-        catalogService.adjustStockUntracked(product, -quantity, fromLocation);
+    private void moveStock(Product product, WarehouseLocation fromLocation, WarehouseLocation toLocation, BigDecimal quantity) {
+        catalogService.adjustStockUntracked(product, quantity.negate(), fromLocation);
         catalogService.adjustStockUntracked(product, quantity, toLocation);
         trackingService.moveNow(product, fromLocation, toLocation, quantity);
     }

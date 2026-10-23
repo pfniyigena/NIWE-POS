@@ -72,6 +72,8 @@ import { RestaurantSettings } from '../core/models';
           <div class="text-muted" style="font-size:0.85rem;">For example 50 or 100 where small coins are not used. The difference is booked to a rounding account.</div>
         </div>
         <h4 style="font-size:1rem;" class="mb-2">Table bookings</h4>
+        <label class="flex gap-1 mb-1" style="align-items:center;"><input type="checkbox" class="rs-public" [(ngModel)]="s.publicEnabled" name="pubr" /> Allow public website</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">Guests can then reserve a table themselves at <strong>/reserve</strong> on this site, without signing in. Switch it off to close the page and take its tile off the home page; staff can still take bookings on the Reservations screen.</div>
         <div class="flex gap-3 mb-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group"><label class="form-label">Opens</label>
             <input class="form-control rs-open" type="time" style="width:130px;" [(ngModel)]="s.openTime" name="otm" /></div>

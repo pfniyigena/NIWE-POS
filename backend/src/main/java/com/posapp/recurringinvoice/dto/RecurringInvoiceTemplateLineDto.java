@@ -8,7 +8,7 @@ public record RecurringInvoiceTemplateLineDto(
         Long id,
         Long productId,
         String productName,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitPrice,
         String description,
         BigDecimal discountPercent

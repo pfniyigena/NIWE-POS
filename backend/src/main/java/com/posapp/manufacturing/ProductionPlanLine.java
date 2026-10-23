@@ -1,6 +1,7 @@
 package com.posapp.manufacturing;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -41,11 +42,11 @@ public class ProductionPlanLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Bom bom;
 
-    private int demandFromSales;
+    private BigDecimal demandFromSales = BigDecimal.ZERO;
 
-    private int demandFromLowStock;
+    private BigDecimal demandFromLowStock = BigDecimal.ZERO;
 
-    private int suggestedQuantity;
+    private BigDecimal suggestedQuantity = BigDecimal.ZERO;
 
     /** Set once this line has been converted into a real order (see ProductionPlanService.generateManufacturingOrder) — prevents generating a duplicate and lets the plan screen show what happened. */
     @ManyToOne(fetch = FetchType.LAZY)

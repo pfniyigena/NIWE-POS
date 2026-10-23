@@ -30,13 +30,13 @@ public interface ProductStockRepository extends JpaRepository<ProductStock, Long
     @Query("SELECT COALESCE(SUM(ps.quantity), 0) FROM ProductStock ps " +
             "WHERE ps.product = :product AND ps.location.warehouse = :warehouse AND ps.location.active = true " +
             "AND (ps.location.type IS NULL OR ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)")
-    int sumSellableQuantityByProductAndWarehouse(@Param("product") Product product, @Param("warehouse") Warehouse warehouse);
+    java.math.BigDecimal sumSellableQuantityByProductAndWarehouse(@Param("product") Product product, @Param("warehouse") Warehouse warehouse);
 
     /** Sellable stock of one product across every warehouse (active, non-damaged locations). */
     @Query("SELECT COALESCE(SUM(ps.quantity), 0) FROM ProductStock ps " +
             "WHERE ps.product = :product AND ps.location.active = true " +
             "AND (ps.location.type IS NULL OR ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)")
-    int sumSellableQuantityByProduct(@Param("product") Product product);
+    java.math.BigDecimal sumSellableQuantityByProduct(@Param("product") Product product);
 
     /** Every location row (any warehouse) holding {@code productId}; backs the "Stock by location" panel — see WarehouseService#stockByLocation. */
     List<ProductStock> findByProductId(Long productId);

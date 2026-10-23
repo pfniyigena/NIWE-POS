@@ -1,5 +1,6 @@
 package com.posapp.dataimport;
 
+import com.posapp.common.Qty;
 import com.posapp.catalog.Brand;
 import com.posapp.catalog.BrandRepository;
 import com.posapp.catalog.Category;
@@ -105,7 +106,7 @@ public class BulkImportService {
                 request.setCode(text(row, "code"));
                 request.setUnitPrice(requireDecimal(row, "unitPrice"));
                 request.setCostPrice(decimalOrNull(row, "costPrice"));
-                request.setStockQuantity(intOrDefault(row, "stockQuantity", 0));
+                request.setStockQuantity(decimalOrDefault(row, "stockQuantity", BigDecimal.ZERO));
                 request.setTrackStock(boolOrDefault(row, "trackStock", true));
                 request.setActive(boolOrDefault(row, "active", true));
                 request.setService(boolOrDefault(row, "service", false));
@@ -117,7 +118,7 @@ public class BulkImportService {
                 catalogService.createProduct(request);
                 imported++;
                 accepted.add(new SkippedRowDto(rowNumber, request.getName() + " at " + request.getUnitPrice().stripTrailingZeros().toPlainString()
-                        + (request.getStockQuantity() > 0 ? ", " + request.getStockQuantity() + " in stock" : "")));
+                        + (request.getStockQuantity().signum() > 0 ? ", " + Qty.str(request.getStockQuantity()) + " in stock" : "")));
             } catch (ApiException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, ex.getMessage()));
             } catch (RuntimeException ex) {
@@ -193,17 +194,17 @@ public class BulkImportService {
         for (Map<String, String> row : all) {
             rowNumber++;
             try {
-                int quantity = requireInt(row, "openingQuantity");
+                BigDecimal quantity = requireDecimal(row, "openingQuantity");
                 String code = text(row, "code");
                 String sku = text(row, "sku");
                 Optional<Product> byCode = code != null ? productRepository.findByCodeIgnoreCase(code) : Optional.<Product>empty();
                 Optional<Product> bySku = sku != null ? productRepository.findBySkuIgnoreCase(sku) : Optional.<Product>empty();
                 Product product = byCode.or(() -> bySku).orElseThrow(() -> ApiException.notFound("No product found for code/sku on this row"));
-                int before = product.getStockQuantity();
+                BigDecimal before = product.getStockQuantity();
                 product.setStockQuantity(quantity);
                 productRepository.save(product);
                 imported++;
-                accepted.add(new SkippedRowDto(rowNumber, product.getName() + ": stock " + before + " becomes " + quantity));
+                accepted.add(new SkippedRowDto(rowNumber, product.getName() + ": stock " + Qty.str(before) + " becomes " + Qty.str(quantity)));
             } catch (ApiException ex) {
                 skippedRows.add(new SkippedRowDto(rowNumber, ex.getMessage()));
             } catch (RuntimeException ex) {

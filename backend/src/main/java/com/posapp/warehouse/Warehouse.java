@@ -1,6 +1,7 @@
 package com.posapp.warehouse;
 
-import com.posapp.branch.Branch;
+
+import java.math.BigDecimal;import com.posapp.branch.Branch;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -64,7 +65,7 @@ public class Warehouse extends BaseEntity {
      * {@code WarehouseService#effectiveLowStockThreshold}.
      */
     @Column(name = "low_stock_threshold")
-    private Integer lowStockThreshold;
+    private BigDecimal lowStockThreshold;
 
     /**
      * Fourier: "How business branches can be introduced?" — the branch this warehouse belongs to.

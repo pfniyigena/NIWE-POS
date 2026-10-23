@@ -1,6 +1,7 @@
 package com.posapp.warehouse;
 
-import com.posapp.catalog.Product;
+
+import java.math.BigDecimal;import com.posapp.catalog.Product;
 import com.posapp.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -60,7 +61,7 @@ public class StockTransfer extends BaseEntity {
     private String toWarehouseName;
 
     /** Always positive — direction is already encoded by fromLocation/toLocation, unlike StockAdjustment.quantityDelta which has no separate "direction" field. */
-    private int quantity;
+    private BigDecimal quantity = BigDecimal.ZERO;
 
     @jakarta.persistence.Column(columnDefinition = "TEXT")
     private String note;
@@ -95,29 +96,29 @@ public class StockTransfer extends BaseEntity {
     private java.time.Instant receivedAt;
 
     @jakarta.persistence.Column(name = "received_quantity")
-    private Integer receivedQuantity;
+    private BigDecimal receivedQuantity;
 
     @jakarta.persistence.Column(name = "receive_note", columnDefinition = "TEXT")
     private String receiveNote;
 
     /** Quantity at the source location just before / after the stock left it (set on same-branch confirm and on dispatch). Feeds Stock Movement History. */
     @jakarta.persistence.Column(name = "from_stock_before")
-    private Integer fromStockBefore;
+    private BigDecimal fromStockBefore;
 
     @jakarta.persistence.Column(name = "from_stock_after")
-    private Integer fromStockAfter;
+    private BigDecimal fromStockAfter;
 
     /** Quantity at the destination location just before / after the stock arrived (same-branch confirm, or receipt of an in-transit transfer). */
     @jakarta.persistence.Column(name = "to_stock_before")
-    private Integer toStockBefore;
+    private BigDecimal toStockBefore;
 
     @jakarta.persistence.Column(name = "to_stock_after")
-    private Integer toStockAfter;
+    private BigDecimal toStockAfter;
 
     /** Source location quantity before / after an in-transit transfer was returned to the sender. */
     @jakarta.persistence.Column(name = "return_stock_before")
-    private Integer returnStockBefore;
+    private BigDecimal returnStockBefore;
 
     @jakarta.persistence.Column(name = "return_stock_after")
-    private Integer returnStockAfter;
+    private BigDecimal returnStockAfter;
 }

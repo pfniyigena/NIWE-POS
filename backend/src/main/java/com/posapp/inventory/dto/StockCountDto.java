@@ -37,10 +37,10 @@ public record StockCountDto(
         for (StockCountLine l : c.getLines()) {
             if (l.getCountedQuantity() == null) continue;
             counted++;
-            int variance = l.getCountedQuantity() - l.getSystemQuantity();
-            if (variance != 0) {
+            BigDecimal variance = l.getCountedQuantity().subtract(l.getSystemQuantity());
+            if (variance.signum() != 0) {
                 differences++;
-                if (l.getUnitCost() != null) value = value.add(l.getUnitCost().multiply(BigDecimal.valueOf(variance)));
+                if (l.getUnitCost() != null) value = value.add(l.getUnitCost().multiply(variance));
             }
         }
         return new StockCountDto(

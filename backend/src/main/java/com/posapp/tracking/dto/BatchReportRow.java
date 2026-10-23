@@ -12,7 +12,7 @@ public record BatchReportRow(
         String batchNumber,
         String expiryDate,
         String daysToExpiry,
-        int quantity,
+        BigDecimal quantity,
         BigDecimal unitCost,
         BigDecimal stockValue,
         String status

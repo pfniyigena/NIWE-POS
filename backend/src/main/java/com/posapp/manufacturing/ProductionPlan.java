@@ -1,6 +1,7 @@
 package com.posapp.manufacturing;
 
-import com.posapp.common.BaseEntity;
+
+import java.math.BigDecimal;import com.posapp.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
@@ -33,7 +34,7 @@ public class ProductionPlan extends BaseEntity {
     private String planNumber;
 
     /** The low-stock threshold this run was generated with — see ProductionPlanLine.demandFromLowStock's javadoc. Snapshotted so a later change to what threshold an admin favors doesn't reinterpret an old plan's own numbers. */
-    private int lowStockThreshold;
+    private BigDecimal lowStockThreshold = BigDecimal.ZERO;
 
     private String note;
 

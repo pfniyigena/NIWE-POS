@@ -65,5 +65,7 @@ public class RestaurantSettings extends BaseEntity {
     private int onlineMaxPending = 3;
     private int onlineExpireMinutes = 20;
     private String onlineMessage;
+    /** "Allow public website": when off, the public Reserve a Table page is closed. */
+    private boolean publicEnabled = true;
     private String notePresets = "No onions,No spice,Extra spicy,Well done,Medium,Sauce on the side,Allergy - ask guest";
 }

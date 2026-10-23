@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PublicHelpDeskApiService } from '../core/api/public-helpdesk-api.service';
 import { PublicHelpDeskCategory, PublicHelpDeskTicketConfirmation, PublicHelpDeskTicketStatus } from '../core/models';
+import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
 /**
  * Fourier: "Add Help Desk module (with its menu) should manage customer and internal support
@@ -20,7 +21,7 @@ import { PublicHelpDeskCategory, PublicHelpDeskTicketConfirmation, PublicHelpDes
 @Component({
   selector: 'app-public-helpdesk',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem 0;">
       <div class="card" style="width:480px; padding:2rem;">
@@ -134,6 +135,7 @@ import { PublicHelpDeskCategory, PublicHelpDeskTicketConfirmation, PublicHelpDes
         </p>
       </div>
     </div>
+    <app-niwe-footer [fixed]="true"></app-niwe-footer>
   `,
 })
 export class PublicHelpDeskComponent implements OnInit {

@@ -68,12 +68,12 @@ public class PriceListImportService {
                 if (price.signum() < 0) throw ApiException.badRequest("The price cannot be negative");
                 if (price.scale() > 2 && price.stripTrailingZeros().scale() > 2) throw ApiException.badRequest("The price can have at most two decimals");
                 if (!seen.add(p.getId() + ":" + min)) throw ApiException.badRequest("'" + sku + "' from " + min + " appears twice in this file");
-                PriceListEntry e = entries.findByPriceListIdAndProductIdAndMinQuantity(listId, p.getId(), min).orElse(null);
+                PriceListEntry e = entries.findByPriceListIdAndProductIdAndMinQuantity(listId, p.getId(), BigDecimal.valueOf(min)).orElse(null);
                 if (e == null) {
                     e = new PriceListEntry();
                     e.setPriceListId(listId);
                     e.setProductId(p.getId());
-                    e.setMinQuantity(min);
+                    e.setMinQuantity(BigDecimal.valueOf(min));
                 } else {
                     changed++;
                 }
