@@ -44,6 +44,22 @@ public class LoyaltyService {
 
     // ------------------------------------------------------------------ settings
 
+    /** True while the loyalty programme is switched on (Sales > Settings). */
+    @Transactional
+    public boolean isOn() {
+        return setting().isEnabled();
+    }
+
+    /** Switched from Sales > Settings; the other loyalty rules are kept as they are. */
+    @Transactional
+    public void setOn(boolean on) {
+        LoyaltySetting s = setting();
+        if (s.isEnabled() == on) return;
+        s.setEnabled(on);
+        settings.save(s);
+        audit.record("LOYALTY_SETTINGS_CHANGED", "Loyalty programme switched " + (on ? "on" : "off") + " in Sales settings", "LoyaltySetting", s.getId());
+    }
+
     @Transactional
     public Settings getSettings() {
         return toDto(setting());

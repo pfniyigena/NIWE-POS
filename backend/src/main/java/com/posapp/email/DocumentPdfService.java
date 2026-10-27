@@ -394,11 +394,12 @@ public class DocumentPdfService {
     /** Same, with the sale's branch header printed under the business details (null = none). */
     public byte[] receiptPdf(OrderDto o, StoreSettings settings, BranchReceiptInfo branch) {
         return build("Receipt", o.invoiceNumber(), settings, branch, doc -> {
-            addInfoTable(doc, List.of(
-                    new String[]{"Customer", o.customerName() != null ? o.customerName() : "—"},
-                    new String[]{"Date", o.completedAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(o.completedAt()) : "—"},
-                    new String[]{"Served by", o.cashierName() != null ? o.cashierName() : "—"}
-            ));
+            List<String[]> info = new java.util.ArrayList<>();
+            info.add(new String[]{"Customer", o.customerName() != null ? o.customerName() : "—"});
+            if (o.customerTaxId() != null) info.add(new String[]{"Customer tax ID", o.customerTaxId()});
+            info.add(new String[]{"Date", o.completedAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(o.completedAt()) : "—"});
+            info.add(new String[]{"Served by", o.cashierName() != null ? o.cashierName() : "—"});
+            addInfoTable(doc, info);
             List<String[]> rows = o.lines().stream()
                     .map((OrderLineDto l) -> new String[]{l.description(), Qty.str(l.quantity()), money(l.unitPrice()), money(l.lineTotal())})
                     .toList();

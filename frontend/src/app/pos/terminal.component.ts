@@ -1,4 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { ModuleApiService } from '../core/api/module-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../shared/date-picker.component';
@@ -194,7 +195,7 @@ interface OfflinePaymentRow {
         📄 X report
       </a>
       <button
-        class="btn btn-sm btn-outline-secondary till-giftcard-btn"
+        *ngIf="features.feature('giftCards')" class="btn btn-sm btn-outline-secondary till-giftcard-btn"
         style="margin-right:8px;"
         (click)="openGiftCard()"
         [disabled]="offline || !cashierSession"
@@ -598,7 +599,7 @@ interface OfflinePaymentRow {
               </table>
 
               <!-- CP-8b: coupon codes. A code with no saving yet stays on the cart and starts working when the right items are added. -->
-              <div class="promo-box" style="padding:6px 8px;">
+              <div class="promo-box" *ngIf="features.feature('promotions')" style="padding:6px 8px;">
                 <div class="flex gap-1">
                   <input class="form-control form-control-sm promo-coupon-input" style="text-transform:uppercase;" placeholder="Coupon code" [(ngModel)]="couponInput" (keyup.enter)="addCoupon()" autocomplete="off" />
                   <button class="btn btn-sm btn-outline-primary promo-coupon-add" [disabled]="!couponInput.trim()" (click)="addCoupon()">Apply</button>
@@ -861,6 +862,8 @@ export class TerminalComponent implements OnInit {
   creditSummary: CreditSummary | null = null;
   /** CP-8c: the customer's loyalty points, and the gift card panel's state. */
   loyalty: LoyaltyBalance | null = null;
+  /** Sales > Settings switches: Promotions (coupon box), Gift cards (button), Loyalty points. */
+  readonly features = inject(ModuleApiService);
   showGiftCard = false;
   gcTab: 'check' | 'sell' = 'check';
   gcCode = '';

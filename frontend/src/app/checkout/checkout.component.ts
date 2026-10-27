@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { ModuleApiService } from '../core/api/module-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../shared/date-picker.component';
@@ -83,7 +84,7 @@ interface PaymentRow {
                 [hidden]="!row.selected"
               />
             </div>
-            <div class="mb-3 gc-box" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;">
+            <div class="mb-3 gc-box" *ngIf="features.feature('giftCards')" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;">
               <h6 class="mb-2">Gift card</h6>
               <div class="flex gap-2 mb-2" style="align-items:center; flex-wrap:wrap;">
                 <input class="form-control gc-code" style="max-width:240px;" placeholder="Gift card code" name="gcCode" [(ngModel)]="gcCode" (keyup.enter)="checkCard()" />
@@ -100,7 +101,7 @@ interface PaymentRow {
                 <button type="button" class="btn btn-sm btn-outline-danger gc-remove" (click)="removeCard(g)">Remove</button>
               </div>
             </div>
-            <div class="mb-3 lp-box" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;" *ngIf="loyalty && loyalty.enabled">
+            <div class="mb-3 lp-box" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;" *ngIf="loyalty && loyalty.enabled && features.feature('loyalty')">
               <h6 class="mb-2">Loyalty points</h6>
               <p class="mb-2" style="font-size:0.9rem;">
                 <strong class="lp-balance">{{ loyalty.points }}</strong> points (worth {{ loyalty.value | number: '1.2-2' }}).
@@ -202,6 +203,7 @@ export class CheckoutComponent implements OnInit {
   giftCards: CardPayment[] = [];
   /** Loyalty points: the customer's balance and rules, the points typed, and the points put on this sale. */
   loyalty: LoyaltyBalance | null = null;
+  readonly features = inject(ModuleApiService);
   pointsToUse: number | null = null;
   pointsApplied = 0;
   pointsValue = 0;

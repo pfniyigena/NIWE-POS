@@ -18,6 +18,7 @@ public record OrderDto(
         String customerName,
         /** Fourier: "sending ... receipts ... to the customer's email" — for the Receipts screen's "email this" prompt to pre-fill. Null for a walk-in/no-customer sale, or a customer with none on file. */
         String customerEmail,
+        String customerTaxId,
         String status,
         String note,
         String invoiceNumber,
@@ -91,6 +92,7 @@ public record OrderDto(
                 customer != null ? customer.getId() : null,
                 customer != null ? customer.getName() : "Walk-in Customer",
                 customer != null ? customer.getEmail() : null,
+                customer != null && customer.getTaxId() != null && !customer.getTaxId().isBlank() ? customer.getTaxId().trim() : null,
                 order.getStatus().name(),
                 order.getNote(),
                 order.getInvoiceNumber(),

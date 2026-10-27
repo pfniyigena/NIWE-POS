@@ -1,8 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, tap } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 import { API_BASE } from '../constants';
 import { HotelApiService } from './hotel-api.service';
+import { SalesFeatures } from '../models';
 
 export type ModuleKey = 'SALES' | 'PURCHASES' | 'ACCOUNTING' | 'POS' | 'HOTEL' | 'RESTAURANT' | 'MANUFACTURING' | 'SUBSCRIPTIONS' | 'HELPDESK' | 'EXPENSES' | 'ASSETS' | 'INSTALLMENTS' | 'TIME_TRACKING' | 'WORK_ORDERS' | 'BOOKING' | 'LAW_FIRM' | 'REAL_ESTATE' | 'PROPERTY_MANAGEMENT' | 'EMPLOYEES' | 'ORG_STRUCTURE' | 'ATTENDANCE' | 'CONTRACTS' | 'PAYROLL';
 
@@ -37,6 +38,8 @@ export type ModuleState = 'CORE' | 'ACTIVE' | 'AVAILABLE' | 'LOCKED' | 'REQUESTE
 @Injectable({ providedIn: 'root' })
 export class ModuleApiService {
   private enabledKeys = signal<ReadonlySet<string>>(new Set());
+  /** Promotions, Gift cards and Loyalty points (Sales > Settings). Off until the server says on. */
+  private salesFeatures = signal<SalesFeatures>({ promotions: false, giftCards: false, loyalty: false });
   private loaded = false;
   private loading: Observable<void> | null = null;
 
@@ -52,7 +55,23 @@ export class ModuleApiService {
   }
 
   list(): Observable<ModuleInfo[]> {
-    return this.http.get<ModuleInfo[]>(this.base).pipe(tap((m) => this.apply(m)));
+    return this.http.get<ModuleInfo[]>(this.base).pipe(
+      tap((m) => this.apply(m)),
+      switchMap((m) => this.refreshFeatures().pipe(map(() => m)))
+    );
+  }
+
+  /** Is the sales feature switched on in Sales > Settings? Reads a signal, so templates re-render when it changes. */
+  feature(key: 'promotions' | 'giftCards' | 'loyalty'): boolean {
+    return this.salesFeatures()[key];
+  }
+
+  /** Reads the three switches again (after they are changed in Sales > Settings). Never errors: a failure leaves them off. */
+  refreshFeatures(): Observable<SalesFeatures | null> {
+    return this.http.get<SalesFeatures>(`${API_BASE}/sales/features`).pipe(
+      tap((f) => this.salesFeatures.set(f)),
+      catchError(() => of(null))
+    );
   }
 
   /** Switches a module; the answer is the whole list, because integrated modules may have changed too. */

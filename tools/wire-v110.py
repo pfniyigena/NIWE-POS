@@ -16,3 +16,15 @@ patch('shared/shell.component.ts', [
     ("imports: [NiweFooterComponent,", "imports: [", "NiweFooterComponent, ", False),
     ("<app-niwe-footer></app-niwe-footer>", "        <ng-content></ng-content>\n", "        <app-niwe-footer></app-niwe-footer>\n", False),
 ])
+
+# v1.11.0: Promotions, Gift cards and Loyalty points show in the menu only while they are switched on in Sales > Settings.
+_p = os.path.join(base, 'shared/shell.component.ts')
+_s = open(_p, encoding='utf-8').read()
+_c = False
+for _path, _key in (('/admin/promotions', 'promotions'), ('/admin/gift-cards', 'giftCards'), ('/admin/loyalty', 'loyalty')):
+    _old = "*ngIf=\"canSee('%s')\"" % _path
+    _new = "*ngIf=\"canSee('%s') && modules.feature('%s')\"" % (_path, _key)
+    if _new in _s: continue
+    if _old not in _s: print('ANCHOR MISSING shell', _path); sys.exit(1)
+    _s = _s.replace(_old, _new, 1); _c = True
+if _c: open(_p, 'w', encoding='utf-8').write(_s); print('patched shared/shell.component.ts (sales features)')

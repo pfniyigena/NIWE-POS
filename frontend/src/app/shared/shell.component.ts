@@ -276,9 +276,9 @@ import { NiweFooterComponent } from './niwe-footer.component';
           <a *ngIf="canSee('/admin/sales-orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales-orders" routerLinkActive="active"><span class="sidenav-icon">📝</span> Sale orders</a>
           <a *ngIf="canSee('/admin/pricing/price-lists')" class="sidenav-link sidenav-sublink" routerLink="/admin/pricing/price-lists" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> Price lists</a>
           <a *ngIf="canSee('/admin/pricing/groups')" class="sidenav-link sidenav-sublink" routerLink="/admin/pricing/groups" routerLinkActive="active"><span class="sidenav-icon">👥</span> Customer groups</a>
-          <a *ngIf="canSee('/admin/promotions')" class="sidenav-link sidenav-sublink" routerLink="/admin/promotions" routerLinkActive="active"><span class="sidenav-icon">🎁</span> Promotions</a>
-          <a *ngIf="canSee('/admin/gift-cards')" class="sidenav-link sidenav-sublink" routerLink="/admin/gift-cards" routerLinkActive="active"><span class="sidenav-icon">🎫</span> Gift cards</a>
-          <a *ngIf="canSee('/admin/loyalty')" class="sidenav-link sidenav-sublink" routerLink="/admin/loyalty" routerLinkActive="active"><span class="sidenav-icon">⭐</span> Loyalty points</a>
+          <a *ngIf="canSee('/admin/promotions') && modules.feature('promotions')" class="sidenav-link sidenav-sublink" routerLink="/admin/promotions" routerLinkActive="active"><span class="sidenav-icon">🎁</span> Promotions</a>
+          <a *ngIf="canSee('/admin/gift-cards') && modules.feature('giftCards')" class="sidenav-link sidenav-sublink" routerLink="/admin/gift-cards" routerLinkActive="active"><span class="sidenav-icon">🎫</span> Gift cards</a>
+          <a *ngIf="canSee('/admin/loyalty') && modules.feature('loyalty')" class="sidenav-link sidenav-sublink" routerLink="/admin/loyalty" routerLinkActive="active"><span class="sidenav-icon">⭐</span> Loyalty points</a>
           <!-- Task 3: "Sale Order Return (Cancellation after Confirmation and Payment) Sale Module" — store-wide ledger; processing itself happens from a sale order's own detail page. -->
           <a *ngIf="canSee('/admin/sales-order-returns')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales-order-returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> Sale order returns</a>
           <!-- Fourier: "Add Invoice ... without touching warehousing" — formal documents generated from a sale order above; store-wide ledger, same convention as Sale order returns just above. -->

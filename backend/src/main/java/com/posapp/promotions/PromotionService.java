@@ -42,9 +42,11 @@ public class PromotionService {
     private final CategoryRepository categories;
     private final CustomerGroupRepository groups;
     private final AuditLogService audit;
+    private final com.posapp.salessettings.SalesSettingsService features;
 
     public PromotionService(PromotionRepository promotions, PromotionUseRepository uses, ProductRepository products, CategoryRepository categories,
-                            CustomerGroupRepository groups, AuditLogService audit) {
+                            CustomerGroupRepository groups, AuditLogService audit, com.posapp.salessettings.SalesSettingsService features) {
+        this.features = features;
         this.promotions = promotions;
         this.uses = uses;
         this.products = products;
@@ -54,6 +56,11 @@ public class PromotionService {
     }
 
     // ------------------------------------------------------------------ admin
+
+    /** Promotions and coupons work only while they are switched on in Sales > Settings; the promotions already made are kept. */
+    private void requireOn() {
+        if (!features.promotionsOn()) throw ApiException.badRequest("Promotions are switched off. An administrator can switch them on in Sales > Settings.");
+    }
 
     @Transactional(readOnly = true)
     public List<Row> list() {
@@ -84,6 +91,7 @@ public class PromotionService {
 
     @Transactional
     public Row create(Request r) {
+        requireOn();
         Promotion p = new Promotion();
         fill(p, r);
         p = promotions.save(p);
@@ -93,6 +101,7 @@ public class PromotionService {
 
     @Transactional
     public Row update(Long id, Request r) {
+        requireOn();
         Promotion p = orThrow(id);
         fill(p, r);
         p = promotions.save(p);
@@ -253,6 +262,7 @@ public class PromotionService {
     /** Adds a coupon to the cart, or says exactly why it cannot be used. Works the cart's promotions out again. */
     @Transactional
     public void addCoupon(SaleOrder order, String raw) {
+        requireOn();
         String code = raw == null ? "" : raw.trim().toUpperCase();
         if (code.isEmpty()) throw ApiException.badRequest("Type the coupon code.");
         Promotion p = promotions.findByCouponCodeIgnoreCase(code).orElseThrow(() -> ApiException.badRequest("The coupon '" + code + "' was not found."));
@@ -336,7 +346,7 @@ public class PromotionService {
             l.setPromoNote(null);
         }
         order.setPromotionSummary(null);
-        if (lines.isEmpty()) return;
+        if (lines.isEmpty() || !features.promotionsOn()) return;
 
         LocalDate today = LocalDate.now();
         Customer customer = order.getCustomer();

@@ -29,8 +29,13 @@ public class SalesSettingsService {
 
     private final SalesSettingsRepository repository;
 
-    public SalesSettingsService(SalesSettingsRepository repository) {
+    private final com.posapp.loyalty.LoyaltyService loyaltyService;
+    private final com.posapp.audit.AuditLogService audit;
+
+    public SalesSettingsService(SalesSettingsRepository repository, com.posapp.loyalty.LoyaltyService loyaltyService, com.posapp.audit.AuditLogService audit) {
         this.repository = repository;
+        this.loyaltyService = loyaltyService;
+        this.audit = audit;
     }
 
     /**
@@ -41,7 +46,7 @@ public class SalesSettingsService {
     @Transactional
     public SalesSettingsDto getSettings() {
         SalesSettings settings = getOrCreate();
-        return SalesSettingsDto.from(settings, parse(settings.getInvoiceReceiverEmails()));
+        return SalesSettingsDto.from(settings, parse(settings.getInvoiceReceiverEmails()), loyaltyService.isOn());
     }
 
     /**
@@ -55,7 +60,8 @@ public class SalesSettingsService {
 
     @Transactional
     public SalesSettingsDto updateSettings(SalesSettingsRequest request) {
-        List<String> emails = request.getInvoiceReceiverEmails() == null ? List.of() : request.getInvoiceReceiverEmails();
+        // null means "leave the list as it is" (a client that only switches features does not send it)
+        List<String> emails = request.getInvoiceReceiverEmails() == null ? parse(getOrCreate().getInvoiceReceiverEmails()) : request.getInvoiceReceiverEmails();
         List<String> cleaned = new ArrayList<>();
         for (String raw : emails) {
             if (raw == null || raw.isBlank()) {
@@ -70,9 +76,31 @@ public class SalesSettingsService {
 
         SalesSettings settings = getOrCreate();
         settings.setInvoiceReceiverEmails(cleaned.isEmpty() ? null : String.join(",", cleaned));
+        if (request.getPromotionsEnabled() != null && request.getPromotionsEnabled() != settings.isPromotionsEnabled()) {
+            settings.setPromotionsEnabled(request.getPromotionsEnabled());
+            audit.record("SALES_FEATURE_CHANGED", "Promotions switched " + (request.getPromotionsEnabled() ? "on" : "off") + " in Sales settings", "SalesSettings", settings.getId());
+        }
+        if (request.getGiftCardsEnabled() != null && request.getGiftCardsEnabled() != settings.isGiftCardsEnabled()) {
+            settings.setGiftCardsEnabled(request.getGiftCardsEnabled());
+            audit.record("SALES_FEATURE_CHANGED", "Gift cards switched " + (request.getGiftCardsEnabled() ? "on" : "off") + " in Sales settings", "SalesSettings", settings.getId());
+        }
+        if (request.getLoyaltyEnabled() != null) loyaltyService.setOn(request.getLoyaltyEnabled());
         SalesSettings saved = repository.save(settings);
-        return SalesSettingsDto.from(saved, cleaned);
+        return SalesSettingsDto.from(saved, cleaned, loyaltyService.isOn());
     }
+
+    /** Which optional sales features are switched on: read by the screens (any signed-in user) and by the services that refuse use when off. */
+    @Transactional
+    public Features features() {
+        SalesSettings s = getOrCreate();
+        return new Features(s.isPromotionsEnabled(), s.isGiftCardsEnabled(), loyaltyService.isOn());
+    }
+
+    public record Features(boolean promotions, boolean giftCards, boolean loyalty) {}
+
+    public boolean promotionsOn() { return features().promotions(); }
+
+    public boolean giftCardsOn() { return features().giftCards(); }
 
     private List<String> parse(String csv) {
         if (csv == null || csv.isBlank()) {

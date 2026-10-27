@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { PagerComponent } from '../shared/pager.component';
 import { ShellComponent } from '../shared/shell.component';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { InstallmentSummaryComponent } from './installments/installment-summary.component';
@@ -9,12 +10,12 @@ import { DashboardApiService, DashboardOverview, AttentionItem } from '../core/a
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { BranchApiService } from '../core/api/branch-api.service';
-import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../core/models';
+import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } from '../core/models';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -179,7 +180,7 @@ import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../co
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let p of s.lowStockProducts">
+            <tr class="ls-row" *ngFor="let p of lowStockPage(s.lowStockProducts)">
               <td>{{ p.name }}</td>
               <td>{{ p.sku }}</td>
               <td class="text-end" [style.color]="'var(--warning-text)'">{{ p.stockQuantity }}</td>
@@ -193,6 +194,7 @@ import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../co
             </tr>
           </tbody>
         </table>
+        <app-pager class="ls-pager" [page]="lowPage" [size]="lowPageSize" [total]="s.lowStockProducts.length" (pageChange)="lowPage = $event"></app-pager>
 
         <!-- Multi-warehouse phase 1: the table above counts the primary warehouse's sales stock only. Once there's more than one warehouse, this shows low stock inside any one of them. -->
         <ng-container *ngIf="warehouses.length > 1">
@@ -214,7 +216,7 @@ import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../co
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of warehouseLowStock">
+              <tr class="wls-row" *ngFor="let r of warehouseLowStockPage()">
                 <td>{{ r.productName }}</td>
                 <td>{{ r.sku || '—' }}</td>
                 <td class="text-end" [style.color]="'var(--warning-text)'">{{ r.quantity }}</td>
@@ -225,6 +227,7 @@ import { Branch, DashboardSummary, Warehouse, WarehouseLowStockRow } from '../co
               </tr>
             </tbody>
           </table>
+          <app-pager class="wls-pager" *ngIf="selectedWarehouseId !== null" [page]="whPage" [size]="lowPageSize" [total]="warehouseLowStock.length" (pageChange)="whPage = $event"></app-pager>
         </ng-container>
       </ng-container>
     </app-shell>
@@ -244,6 +247,10 @@ export class AdminDashboardComponent implements OnInit {
   warehouses: Warehouse[] = [];
   selectedWarehouseId: number | null = null;
   warehouseLowStock: WarehouseLowStockRow[] = [];
+  /** Low-stock tables show 10 rows at a time; page numbers count from 0. */
+  readonly lowPageSize = 10;
+  lowPage = 0;
+  whPage = 0;
   warehouseLowStockError: string | null = null;
 
   constructor(
@@ -320,6 +327,19 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  /** The rows of the current page; steps back when the list got shorter than the page asked for. */
+  lowStockPage(all: Product[]): Product[] {
+    const last = Math.max(0, Math.ceil(all.length / this.lowPageSize) - 1);
+    if (this.lowPage > last) this.lowPage = last;
+    return all.slice(this.lowPage * this.lowPageSize, (this.lowPage + 1) * this.lowPageSize);
+  }
+
+  warehouseLowStockPage(): WarehouseLowStockRow[] {
+    const last = Math.max(0, Math.ceil(this.warehouseLowStock.length / this.lowPageSize) - 1);
+    if (this.whPage > last) this.whPage = last;
+    return this.warehouseLowStock.slice(this.whPage * this.lowPageSize, (this.whPage + 1) * this.lowPageSize);
+  }
+
   loadSummary(): void {
     this.error = null;
     this.loadOverview();
@@ -332,6 +352,7 @@ export class AdminDashboardComponent implements OnInit {
   loadWarehouseLowStock(): void {
     this.warehouseLowStockError = null;
     this.warehouseLowStock = [];
+    this.whPage = 0;
     if (this.selectedWarehouseId === null) return;
     this.catalogApi.listLowStockInWarehouse(this.selectedWarehouseId).subscribe({
       next: (rows) => (this.warehouseLowStock = rows),

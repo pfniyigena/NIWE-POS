@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { SalesSettingsApiService } from '../core/api/sales-settings-api.service';
+import { ModuleApiService } from '../core/api/module-api.service';
 
 /**
  * Admin > Sales > Settings — Fourier: "Every time invoice is ISSUED send try to send email to
@@ -24,6 +25,13 @@ import { SalesSettingsApiService } from '../core/api/sales-settings-api.service'
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="saved">Saved.</div>
       <form (ngSubmit)="submit()">
+        <h4 class="mb-1">Features</h4>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">
+          Switch on only what you use. When one is off its menu entry and till parts are hidden and the server refuses to use it; what was already saved (promotions, cards, points) is kept and works again when you switch it back on.
+        </div>
+        <label class="flex gap-2 align-center mb-1"><input type="checkbox" class="sf-promotions" name="promotionsEnabled" [(ngModel)]="promotionsEnabled" /> Promotions (discounts, buy-X-get-Y, coupons)</label>
+        <label class="flex gap-2 align-center mb-1"><input type="checkbox" class="sf-giftcards" name="giftCardsEnabled" [(ngModel)]="giftCardsEnabled" /> Gift cards</label>
+        <label class="flex gap-2 align-center mb-3"><input type="checkbox" class="sf-loyalty" name="loyaltyEnabled" [(ngModel)]="loyaltyEnabled" /> Loyalty points (the earning and spending rules are set on the Loyalty page)</label>
         <div class="form-group">
           <label class="form-label">Invoice receiver emails</label>
           <textarea class="form-control" name="emailsText" [(ngModel)]="emailsText" rows="5" placeholder="one address per line"></textarea>
@@ -42,15 +50,23 @@ import { SalesSettingsApiService } from '../core/api/sales-settings-api.service'
 })
 export class SalesSettingsComponent implements OnInit {
   emailsText = '';
+  promotionsEnabled = false;
+  giftCardsEnabled = false;
+  loyaltyEnabled = false;
   error: string | null = null;
   saved = false;
   saving = false;
 
-  constructor(private settingsApi: SalesSettingsApiService) {}
+  constructor(private settingsApi: SalesSettingsApiService, private modules: ModuleApiService) {}
 
   ngOnInit(): void {
     this.settingsApi.get().subscribe({
-      next: (s) => (this.emailsText = (s.invoiceReceiverEmails || []).join('\n')),
+      next: (s) => {
+        this.emailsText = (s.invoiceReceiverEmails || []).join('\n');
+        this.promotionsEnabled = s.promotionsEnabled;
+        this.giftCardsEnabled = s.giftCardsEnabled;
+        this.loyaltyEnabled = s.loyaltyEnabled;
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load settings'),
     });
   }
@@ -63,11 +79,12 @@ export class SalesSettingsComponent implements OnInit {
       .split('\n')
       .map((e) => e.trim())
       .filter((e) => e.length > 0);
-    this.settingsApi.update({ invoiceReceiverEmails }).subscribe({
+    this.settingsApi.update({ invoiceReceiverEmails, promotionsEnabled: this.promotionsEnabled, giftCardsEnabled: this.giftCardsEnabled, loyaltyEnabled: this.loyaltyEnabled }).subscribe({
       next: (s) => {
         this.saving = false;
         this.saved = true;
         this.emailsText = (s.invoiceReceiverEmails || []).join('\n');
+        this.modules.refreshFeatures().subscribe();
       },
       error: (err) => {
         this.saving = false;

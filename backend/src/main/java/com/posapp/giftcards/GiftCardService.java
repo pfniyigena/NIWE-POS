@@ -44,9 +44,11 @@ public class GiftCardService {
     private final AccountingService accounting;
     private final AuditLogService audit;
     private final OrderRepository orders;
+    private final com.posapp.salessettings.SalesSettingsService features;
 
     public GiftCardService(GiftCardRepository cards, GiftCardTxnRepository txns, CustomerRepository customers, PaymentMethodService paymentMethods,
-                           AccountingService accounting, AuditLogService audit, OrderRepository orders) {
+                           AccountingService accounting, AuditLogService audit, OrderRepository orders, com.posapp.salessettings.SalesSettingsService features) {
+        this.features = features;
         this.cards = cards;
         this.txns = txns;
         this.customers = customers;
@@ -128,6 +130,7 @@ public class GiftCardService {
      */
     @Transactional
     public Row sell(SellRequest r, CashierSession cashierSession, boolean allowComplimentary) {
+        requireOn();
         if (r == null) throw ApiException.badRequest("Nothing to sell.");
         BigDecimal amount = checkAmount(r.amount());
         String method = checkMethod(r.paymentMethod(), allowComplimentary);
@@ -164,6 +167,7 @@ public class GiftCardService {
 
     @Transactional
     public Row topUp(Long id, TopUpRequest r, CashierSession cashierSession, boolean allowComplimentary) {
+        requireOn();
         if (r == null) throw ApiException.badRequest("Nothing to add.");
         BigDecimal amount = checkAmount(r.amount());
         String method = checkMethod(r.paymentMethod(), allowComplimentary);
@@ -225,9 +229,15 @@ public class GiftCardService {
 
     // ------------------------------------------------------------------ paying with a card
 
+    /** Gift cards can be sold, topped up and paid with only while they are switched on in Sales > Settings; existing cards and their history stay as they are. */
+    private void requireOn() {
+        if (!features.giftCardsOn()) throw ApiException.badRequest("Gift cards are switched off. An administrator can switch them on in Sales > Settings.");
+    }
+
     /** Checks a card can pay this amount (used while a sale is being put together); the money is taken later, under a lock, by {@link #redeemForOrder}. */
     @Transactional(readOnly = true)
     public GiftCard checkTender(String code, BigDecimal amount) {
+        requireOn();
         if (code == null || code.isBlank()) throw ApiException.badRequest("Enter the gift card's code.");
         GiftCard c = byCodeOrThrow(code);
         assertUsable(c, amount);

@@ -72,6 +72,7 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
         {{ o.registerName }} &middot; served by {{ o.cashierName }}
       </p>
       <p style="margin:0 0 8px;">Customer: {{ o.customerName }}</p>
+      <p class="receipt-customer-tin" *ngIf="o.customerTaxId" style="margin:0 0 8px;">Customer tax ID: {{ o.customerTaxId }}</p>
       <p class="receipt-voided" *ngIf="o.voidedAt" style="margin:0 0 8px; text-align:center; font-weight:700; border:2px solid #000; padding:4px;">
         *** VOIDED {{ o.voidedAt | date: 'yyyy-MM-dd HH:mm' }} ***
         <span style="display:block; font-weight:400; font-size:0.8rem;">{{ o.voidReason }}</span>

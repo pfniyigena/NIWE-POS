@@ -431,6 +431,8 @@ export interface Order {
   customerName: string;
   /** Fourier: "sending ... receipts ... to the customer's email" — pre-fills the Receipts screen's "email this" prompt. Null for a walk-in/no-customer sale, or a customer with none on file. */
   customerEmail: string | null;
+  /** The customer's tax ID (TIN), printed on the receipt when the customer has one. */
+  customerTaxId: string | null;
   status: 'OPEN' | 'COMPLETED' | 'VOIDED';
   note: string | null;
   invoiceNumber: string | null;
@@ -3141,10 +3143,23 @@ export interface PackagingBreakdownRequest {
 export interface SalesSettings {
   id: number;
   invoiceReceiverEmails: string[];
+  promotionsEnabled: boolean;
+  giftCardsEnabled: boolean;
+  loyaltyEnabled: boolean;
 }
 
 export interface SalesSettingsPayload {
   invoiceReceiverEmails: string[];
+  promotionsEnabled?: boolean;
+  giftCardsEnabled?: boolean;
+  loyaltyEnabled?: boolean;
+}
+
+/** Which optional sales features are switched on in Sales > Settings (GET /api/sales/features). */
+export interface SalesFeatures {
+  promotions: boolean;
+  giftCards: boolean;
+  loyalty: boolean;
 }
 
 /** Multi-warehouse phase 1 — mirrors the backend's ProductStockByLocationDto. Read-only view of where one product's stock sits. */

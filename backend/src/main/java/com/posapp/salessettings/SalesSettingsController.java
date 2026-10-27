@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Admin > Sales > Settings — ADMIN-only, same tier as HelpDeskSettingsController and every other back-office "how this module is configured" screen. */
 @RestController
-@RequestMapping("/api/sales/settings")
-@PreAuthorize("hasRole('ADMIN')")
+@RequestMapping("/api/sales")
 public class SalesSettingsController {
 
     private final SalesSettingsService service;
@@ -21,12 +20,20 @@ public class SalesSettingsController {
         this.service = service;
     }
 
-    @GetMapping
+    /** Which of Promotions, Gift cards and Loyalty points are switched on: every signed-in user needs it to show or hide the menu entries and till buttons. */
+    @GetMapping("/features")
+    public SalesSettingsService.Features features() {
+        return service.features();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/settings")
     public SalesSettingsDto get() {
         return service.getSettings();
     }
 
-    @PutMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/settings")
     public SalesSettingsDto update(@RequestBody SalesSettingsRequest request) {
         return service.updateSettings(request);
     }

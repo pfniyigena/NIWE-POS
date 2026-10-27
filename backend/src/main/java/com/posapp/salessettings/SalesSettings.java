@@ -36,4 +36,11 @@ public class SalesSettings extends BaseEntity {
      */
     @Column(columnDefinition = "TEXT")
     private String invoiceReceiverEmails;
+
+    /** Switches in Sales > Settings: when off the feature is hidden on screen and refused by the server. Loyalty is switched in the loyalty setting row. */
+    @Column(nullable = false)
+    private boolean promotionsEnabled;
+
+    @Column(nullable = false)
+    private boolean giftCardsEnabled;
 }

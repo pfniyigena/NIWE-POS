@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +14,7 @@ import { LoyaltyApiService, LoyaltyCustomerDetail, LoyaltyCustomerRow, LoyaltySe
 @Component({
   selector: 'app-loyalty',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, PagerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <h3>Loyalty points</h3>
@@ -23,7 +24,9 @@ import { LoyaltyApiService, LoyaltyCustomerDetail, LoyaltyCustomerRow, LoyaltySe
 
       <div class="card mb-3 lp-settings" *ngIf="s" style="padding:1rem;">
         <h4>The rules</h4>
-        <label class="flex align-center gap-2 mb-2"><input type="checkbox" class="lp-enabled" name="enabled" [(ngModel)]="s.enabled" [disabled]="!canManage" /> Loyalty points are switched on</label>
+        <div class="lp-switch-note mb-2" style="font-size:0.9rem;">
+          Loyalty points are <strong>{{ s.enabled ? 'switched on' : 'switched off' }}</strong>. Switch them on or off in <a routerLink="/admin/sales/settings">Sales &gt; Settings</a>.
+        </div>
         <div class="grid-2">
           <div class="form-group"><label class="form-label">A customer earns points for every (amount spent)</label><input class="form-control lp-spend" type="number" min="0" step="0.01" name="spend" [(ngModel)]="s.spendAmount" [disabled]="!canManage" /></div>
           <div class="form-group"><label class="form-label">…and gets this many points</label><input class="form-control lp-earned" type="number" min="1" step="1" name="earned" [(ngModel)]="s.pointsEarned" [disabled]="!canManage" /></div>
