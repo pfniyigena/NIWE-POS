@@ -21,6 +21,8 @@ import * as OfflineCalc from '../core/offline/offline-calculator';
 import { GiftCardRow, GiftCardsApiService } from '../core/api/giftcards-api.service';
 import { LoyaltyApiService, LoyaltyBalance } from '../core/api/loyalty-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
+import { DeviceService } from '../core/hardware/device.service';
+import { PoleDisplayService } from '../core/hardware/pole-display.service';
 import { CashierSession, Category, CreditSummary, Customer, Order, OrderLine, PaymentMethodOption, PosSettings, Product, RegisterSession } from '../core/models';
 
 /** One offline payment-method row — same shape as checkout.component.ts's PaymentRow, for the inline offline payment step. */
@@ -211,6 +213,17 @@ interface OfflinePaymentRow {
       >
         📺 Customer display
       </button>
+      <button
+        *ngIf="devices.isDirect('receipt')"
+        class="btn btn-sm btn-outline-secondary open-drawer"
+        style="margin-right:8px;"
+        (click)="openDrawer()"
+        title="Open the cash drawer"
+      >
+        💵 Open drawer
+      </button>
+      <a class="btn btn-sm btn-outline-secondary devices-link" style="margin-right:8px;" routerLink="/devices" title="Printers and the COM customer display of this PC">🖨️ Devices</a>
+      <span class="text-danger drawer-note" *ngIf="drawerNote" style="margin-right:8px; font-size:0.8rem;">{{ drawerNote }}</span>
       <span class="text-muted" style="font-size:0.9rem; display:flex; align-items:center; gap:8px; padding-right:8px;">
         {{ session?.registerName ?? '—' }}
         <a [routerLink]="[exitLink]" style="color:var(--text); margin-left:6px;" title="Exit terminal">↩️ Exit</a>
@@ -858,6 +871,44 @@ export class TerminalComponent implements OnInit {
    */
   walkInCustomerId: number | null = null;
 
+  readonly pole = inject(PoleDisplayService);
+  readonly devices = inject(DeviceService);
+  private poleOrderId: number | null = null;
+  private poleLines = new Map<number, number>();
+  drawerNote: string | null = null;
+
+  /**
+   * COM customer display: the item that was just added or changed (then the running total), the total when another tab is shown,
+   * and the welcome text when the cart is empty. Does nothing when no display is set up on this PC.
+   */
+  private poleSync(order: Order | null): void {
+    if (!this.pole.active) return;
+    if (!order || order.lines.length === 0) {
+      this.poleLines.clear();
+      this.poleOrderId = order ? order.id : null;
+      this.pole.idle();
+      return;
+    }
+    const before = this.poleOrderId === order.id ? this.poleLines : null;
+    this.poleOrderId = order.id;
+    this.poleLines = new Map(order.lines.map((l) => [l.id, l.quantity]));
+    if (!before) {
+      this.pole.total(order.total);
+      return;
+    }
+    const changed = [...order.lines].reverse().find((l) => !before.has(l.id) || before.get(l.id) !== l.quantity);
+    if (changed) this.pole.itemThenTotal({ description: changed.description, quantity: changed.quantity, unitPrice: changed.unitPrice, lineTotal: changed.lineTotal }, order.total);
+    else this.pole.total(order.total);
+  }
+
+  /** Pulses the cash drawer through the receipt printer. */
+  openDrawer(): void {
+    this.drawerNote = null;
+    this.devices.openDrawer().then((r) => {
+      if (!r.ok) this.drawerNote = r.error || 'Could not open the drawer.';
+    });
+  }
+
   /** Task: "Customer balance on POS screen" — refreshed whenever the current order's customer changes. */
   creditSummary: CreditSummary | null = null;
   /** CP-8c: the customer's loyalty points, and the gift card panel's state. */
@@ -963,6 +1014,7 @@ export class TerminalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.pole.active) this.pole.idle();
     this.sessionId = Number(this.route.snapshot.paramMap.get('sessionId'));
     this.registerApi.getSession(this.sessionId).subscribe((s) => (this.session = s));
     this.registerApi.posSettings().subscribe({ next: (s) => (this.posSettings = s), error: () => {} });
@@ -1165,6 +1217,7 @@ export class TerminalComponent implements OnInit {
 
   private setCurrentOrder(order: Order): void {
     this.currentOrder = order;
+    this.poleSync(order);
     this.customerId = order.customerId;
     this.error = null;
     this.refreshCreditSummary();
@@ -1317,6 +1370,7 @@ export class TerminalComponent implements OnInit {
 
   private applyUpdatedOrder(updated: Order): void {
     this.currentOrder = updated;
+    this.poleSync(updated);
     this.orderTabs = this.orderTabs.map((t) => (t.id === updated.id ? updated : t));
     this.error = null;
     // Keep the scanner field focused so a cashier can keep scanning items back-to-back.

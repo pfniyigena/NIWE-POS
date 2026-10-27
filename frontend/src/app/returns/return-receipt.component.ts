@@ -5,6 +5,11 @@ import * as QRCode from 'qrcode';
 import { ReturnsApiService } from '../core/api/returns-api.service';
 import { EfrisApiService } from '../core/api/efris-api.service';
 import { EfrisChadApiService } from '../core/api/efris-chad-api.service';
+import { DeviceService } from '../core/hardware/device.service';
+import { PrintService } from '../core/hardware/print.service';
+import { applyThermalPrintStyle } from '../core/hardware/thermal-css';
+import { RegisterApiService } from '../core/api/register-api.service';
+import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { EfrisChadLogos, EfrisLogos, SalesReturn } from '../core/models';
 
 /**
@@ -28,6 +33,7 @@ import { EfrisChadLogos, EfrisLogos, SalesReturn } from '../core/models';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="salesReturn as r">
+      <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
       <div
         *ngIf="authorityLogoDataUrl || printEfrisLogoDataUrl; else plainReceiptTitle"
         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"
@@ -206,29 +212,67 @@ export class ReturnReceiptComponent implements OnInit, OnDestroy {
     private router: Router,
     private returnsApi: ReturnsApiService,
     private efrisApi: EfrisApiService,
-    private efrisChadApi: EfrisChadApiService
+    private efrisChadApi: EfrisChadApiService,
+    private devices: DeviceService,
+    private printSvc: PrintService,
+    private registerApi: RegisterApiService,
+    private storeApi: StoreSettingsApiService
   ) {}
+
+  private paperCfg: string | null = null;
+  private storeSettings: import('../core/models').StoreSettings | null = null;
+  private pageStyle: HTMLStyleElement | null = null;
+  directError: string | null = null;
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.autoPrint = this.route.snapshot.queryParamMap.get('autoPrint') === '1';
+    this.registerApi.posSettings().subscribe({
+      next: (c) => {
+        this.paperCfg = c.receiptPaper;
+        this.pageStyle = applyThermalPrintStyle(this.devices.layout(c.receiptPaper).paper, 'app-return-receipt', this.pageStyle);
+      },
+      error: () => (this.pageStyle = applyThermalPrintStyle(this.devices.layout(null).paper, 'app-return-receipt', this.pageStyle)),
+    });
+    this.storeApi.get().subscribe({ next: (s) => (this.storeSettings = s), error: () => (this.storeSettings = null) });
     this.returnsApi.getById(id).subscribe((r) => {
       this.salesReturn = r;
       this.generateQrCode(r);
       this.loadEfrisLogos(r);
       if (this.autoPrint) {
         window.addEventListener('afterprint', this.afterPrintHandler);
-        setTimeout(() => window.print(), 150);
+        setTimeout(() => this.print(), 150);
       }
     });
   }
 
   ngOnDestroy(): void {
     window.removeEventListener('afterprint', this.afterPrintHandler);
+    this.pageStyle?.remove();
   }
 
+  /** Thermal printer connected directly: raw ESC/POS; otherwise the browser print dialog on a roll-width page. */
   print(): void {
-    window.print();
+    const r = this.salesReturn;
+    if (!r || !this.devices.isDirect('receipt')) {
+      window.print();
+      return;
+    }
+    this.directError = null;
+    this.printSvc
+      .salesReturn(r, this.storeSettings, this.paperCfg, this.authorityLogoDataUrl, this.printEfrisLogoDataUrl, r.sdcId ? this.qrInput(r) : null)
+      .then((res) => {
+        if (res.ok) {
+          if (this.autoPrint) this.afterPrintHandler();
+          return;
+        }
+        this.directError = `The thermal printer did not answer (${res.error}). Printed through the Windows driver instead.`;
+        window.print();
+      });
+  }
+
+  private qrInput(r: SalesReturn): string {
+    return `${r.sdcDate ?? ''}#${r.sdcId ?? ''}#${r.sdcReceiptNumber ?? ''}#+${r.internalData ?? ''}#+${r.signatureData ?? ''}`;
   }
 
   /** Identical splitting rule to checkout/receipt.component.ts's own dateTimeParts — see its doc comment. */
@@ -243,7 +287,7 @@ export class ReturnReceiptComponent implements OnInit, OnDestroy {
   private generateQrCode(r: SalesReturn): void {
     this.qrCodeDataUrl = null;
     if (!r.sdcId) return;
-    const inputData = `${r.sdcDate ?? ''}#${r.sdcId ?? ''}#${r.sdcReceiptNumber ?? ''}#+${r.internalData ?? ''}#+${r.signatureData ?? ''}`;
+    const inputData = this.qrInput(r);
     QRCode.toDataURL(inputData, { margin: 1, width: 240 })
       .then((dataUrl) => (this.qrCodeDataUrl = dataUrl))
       .catch(() => (this.qrCodeDataUrl = null));

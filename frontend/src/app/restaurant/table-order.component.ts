@@ -12,6 +12,11 @@ import { DiningTable, MenuCategory, MenuItem, OptionGroup, PaymentMethodOption, 
 import { DiningTableApiService } from '../core/api/dining-table-api.service';
 
 import { q4 } from '../core/qty';
+import { DeviceService } from '../core/hardware/device.service';
+import { PrintService } from '../core/hardware/print.service';
+import { RegisterApiService } from '../core/api/register-api.service';
+import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
+import { StoreSettings } from '../core/models';
 interface PaymentRow {
   method: string;
   amount: number;
@@ -230,8 +235,11 @@ interface PaymentRow {
               <div class="flex justify-between t-balance" *ngIf="order.paidTotal > 0 || depositUsed() > 0" style="font-weight:600;"><span>Balance due</span><span>{{ order.balanceDue | number: '1.2-2' }}</span></div>
             </div>
 
+            <div class="alert alert-warning print-note" *ngIf="printNote">{{ printNote }}</div>
             <div class="flex gap-2 mb-3" *ngIf="order.status === 'OPEN'">
               <button class="btn btn-outline-primary send-kitchen" [disabled]="order.lines.length === 0" (click)="sendToKitchen()">Send to kitchen</button>
+              <button class="btn btn-outline-secondary print-bill" [disabled]="order.lines.length === 0" (click)="printBill()" title="Print the bill for the guest">🖨️ Bill</button>
+              <button class="btn btn-outline-secondary print-tickets" [disabled]="order.lines.length === 0" (click)="printKitchenTickets()" title="Print the kitchen / bar tickets again">🖨️ Tickets</button>
               <button class="btn btn-outline-primary fire-course" *ngFor="let c of heldCourses()" (click)="fireCourse(c)">Fire course {{ c }}</button>
               <button class="btn btn-outline-secondary allergy-btn" (click)="toggleAllergy()">Allergies</button>
               <button class="btn btn-primary" [disabled]="order.lines.length === 0" (click)="toggleCheckout()">Checkout</button>
@@ -527,10 +535,21 @@ export class TableOrderComponent implements OnInit {
     private hotelApi: HotelApiService,
     private tableApi: DiningTableApiService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private devices: DeviceService,
+    private printSvc: PrintService,
+    private registerApi: RegisterApiService,
+    private storeApi: StoreSettingsApiService
   ) {}
 
+  /** Thermal printing: roll width from POS settings, business header for the bill, and a note when a printer fails. */
+  private paperCfg: string | null = null;
+  private storeInfo: StoreSettings | null = null;
+  printNote: string | null = null;
+
   ngOnInit(): void {
+    this.registerApi.posSettings().subscribe({ next: (c) => (this.paperCfg = c.receiptPaper), error: () => (this.paperCfg = null) });
+    this.storeApi.get().subscribe({ next: (s) => (this.storeInfo = s), error: () => (this.storeInfo = null) });
     // Moving between checks of one table only changes the id in the address, so follow it.
     this.route.paramMap.subscribe((params) => {
       this.orderId = Number(params.get('id'));
@@ -630,8 +649,12 @@ export class TableOrderComponent implements OnInit {
 
   fireCourse(course: number): void {
     this.error = null;
+    const waiting = new Set((this.order?.lines ?? []).filter((l) => l.kitchenStatus === 'PENDING' && l.held).map((l) => l.id));
     this.orderApi.fireCourse(this.orderId, course).subscribe({
-      next: (o) => (this.order = o),
+      next: (o) => {
+        this.order = o;
+        this.autoTickets(o, waiting);
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to fire the course'),
     });
   }
@@ -977,10 +1000,54 @@ export class TableOrderComponent implements OnInit {
 
   sendToKitchen(): void {
     this.error = null;
+    const waiting = new Set((this.order?.lines ?? []).filter((l) => l.kitchenStatus === 'PENDING').map((l) => l.id));
     this.orderApi.sendToKitchen(this.orderId).subscribe({
-      next: (o) => (this.order = o),
+      next: (o) => {
+        this.order = o;
+        this.autoTickets(o, waiting);
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to send to kitchen'),
     });
+  }
+
+  /** Prints the kitchen / bar tickets for the lines that left the PENDING state, when a direct kitchen or bar printer is set. */
+  private autoTickets(o: RestaurantOrder, waiting: Set<number>): void {
+    if (!this.devices.settings.autoKitchen) return;
+    const sent = o.lines.filter((l) => waiting.has(l.id) && l.kitchenStatus !== 'PENDING');
+    if (!sent.length) return;
+    this.printSvc.kitchenTickets(o, sent, this.paperCfg, { onlyDirect: true }).then((r) => {
+      this.printNote = r.errors.length ? `Kitchen printer: ${r.errors[0]}` : null;
+    });
+  }
+
+  /** Reprints the tickets of everything that is in the kitchen and not served yet (browser dialog when no kitchen printer is set). */
+  printKitchenTickets(): void {
+    const o = this.order;
+    if (!o) return;
+    const lines = o.lines.filter((l) => l.kitchenStatus !== 'PENDING' && l.kitchenStatus !== 'SERVED');
+    if (!lines.length) {
+      this.printNote = 'Nothing is waiting in the kitchen.';
+      return;
+    }
+    this.printSvc.kitchenTickets(o, lines, this.paperCfg, { onlyDirect: false, reprint: true }).then((r) => {
+      this.printNote = r.errors.length ? `Kitchen printer: ${r.errors[0]}` : null;
+    });
+  }
+
+  /** The bill for the guest before payment: thermal printer when set, else a roll-width page through the driver. */
+  printBill(): void {
+    const o = this.order;
+    if (!o) return;
+    this.printNote = null;
+    if (this.devices.isDirect('receipt')) {
+      this.printSvc.restaurantBill(o, this.storeInfo, this.paperCfg, true).then((r) => {
+        if (r.ok) return;
+        this.printNote = `Receipt printer: ${r.error}`;
+        this.devices.printTextViaDriver(this.printSvc.restaurantBillText(o, this.storeInfo, this.paperCfg, true), this.devices.layout(this.paperCfg).paper, 'Bill');
+      });
+    } else {
+      this.devices.printTextViaDriver(this.printSvc.restaurantBillText(o, this.storeInfo, this.paperCfg, true), this.devices.layout(this.paperCfg).paper, 'Bill');
+    }
   }
 
   toggleCheckout(): void {

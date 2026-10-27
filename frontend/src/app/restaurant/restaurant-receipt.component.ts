@@ -1,8 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
+import { DeviceService } from '../core/hardware/device.service';
+import { PrintService } from '../core/hardware/print.service';
+import { applyThermalPrintStyle } from '../core/hardware/thermal-css';
+import { RegisterApiService } from '../core/api/register-api.service';
 import { RestaurantOrder, StoreSettings } from '../core/models';
 
 /**
@@ -19,6 +23,7 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="order as o">
+      <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
       <h3 style="text-align:center; margin-bottom:0;">Receipt<span class="r-copy" *ngIf="(o.printCount ?? 0) > 1"> — COPY {{ (o.printCount ?? 1) - 1 }}</span></h3>
       <div *ngIf="settings as s" style="text-align:center; margin:8px 0 12px;">
         <img *ngIf="s.logoDataUrl" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
@@ -140,7 +145,10 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
     `,
   ],
 })
-export class RestaurantReceiptComponent implements OnInit {
+export class RestaurantReceiptComponent implements OnInit, OnDestroy {
+  directError: string | null = null;
+  private paperCfg: string | null = null;
+  private pageStyle: HTMLStyleElement | null = null;
   order: RestaurantOrder | null = null;
   settings: StoreSettings | null = null;
   error: string | null = null;
@@ -148,11 +156,25 @@ export class RestaurantReceiptComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private orderApi: RestaurantOrderApiService,
-    private storeSettingsApi: StoreSettingsApiService
+    private storeSettingsApi: StoreSettingsApiService,
+    private devices: DeviceService,
+    private printSvc: PrintService,
+    private registerApi: RegisterApiService
   ) {}
+
+  ngOnDestroy(): void {
+    this.pageStyle?.remove();
+  }
 
   ngOnInit(): void {
     const orderId = Number(this.route.snapshot.paramMap.get('orderId'));
+    this.registerApi.posSettings().subscribe({
+      next: (c) => {
+        this.paperCfg = c.receiptPaper;
+        this.pageStyle = applyThermalPrintStyle(this.devices.layout(c.receiptPaper).paper, 'app-restaurant-receipt', this.pageStyle);
+      },
+      error: () => (this.pageStyle = applyThermalPrintStyle(this.devices.layout(null).paper, 'app-restaurant-receipt', this.pageStyle)),
+    });
     this.storeSettingsApi.get().subscribe({
       next: (s) => (this.settings = s),
       error: () => (this.settings = null), // header just falls back to plain "Receipt" — never blocks printing
@@ -170,12 +192,27 @@ export class RestaurantReceiptComponent implements OnInit {
       this.orderApi.recordPrint(o.id).subscribe({
         next: (updated) => {
           this.order = updated;
-          setTimeout(() => window.print(), 50);
+          setTimeout(() => this.output(), 50);
         },
-        error: () => window.print(),
+        error: () => this.output(),
       });
     } else {
-      window.print();
+      this.output();
     }
+  }
+
+  /** Thermal printer connected directly: raw ESC/POS (and the cash drawer for a cash bill); otherwise the browser print dialog. */
+  private output(): void {
+    const o = this.order;
+    if (!o || !this.devices.isDirect('receipt')) {
+      window.print();
+      return;
+    }
+    this.directError = null;
+    this.printSvc.restaurantBill(o, this.settings, this.paperCfg, o.status !== 'CLOSED').then((res) => {
+      if (res.ok) return;
+      this.directError = `The thermal printer did not answer (${res.error}). Printed through the Windows driver instead.`;
+      window.print();
+    });
   }
 }

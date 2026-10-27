@@ -9,6 +9,10 @@ import { ReturnsApiService } from '../core/api/returns-api.service';
 import { EfrisApiService } from '../core/api/efris-api.service';
 import { EfrisChadApiService } from '../core/api/efris-chad-api.service';
 import { RegisterApiService } from '../core/api/register-api.service';
+import { DeviceService } from '../core/hardware/device.service';
+import { PoleDisplayService } from '../core/hardware/pole-display.service';
+import { PrintService } from '../core/hardware/print.service';
+import { applyThermalPrintStyle } from '../core/hardware/thermal-css';
 import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, StoreSettings } from '../core/models';
 
 /**
@@ -21,6 +25,7 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
   imports: [CommonModule, RouterLink],
   template: `
     <div class="receipt" [class.paper-58]="paper === '58'" *ngIf="order as o">
+      <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
       <p class="receipt-copy" *ngIf="copyNumber > 0" style="text-align:center; font-weight:700; border:2px solid #000; padding:2px; margin:0 0 6px;">*** COPY {{ copyNumber }} — not the original ***</p>
       <!-- Fourier's own follow-up: "those two logos ... right at the top of receipt. Better put
            Receipt Label in center" — moved here from the SDC INFORMATION footer (where it first
@@ -370,7 +375,10 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     private returnsApi: ReturnsApiService,
     private efrisApi: EfrisApiService,
     private efrisChadApi: EfrisChadApiService,
-    private registerApi: RegisterApiService
+    private registerApi: RegisterApiService,
+    private devices: DeviceService,
+    private printSvc: PrintService,
+    private pole: PoleDisplayService
   ) {}
 
   ngOnInit(): void {
@@ -394,6 +402,7 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     });
     this.orderApi.getOrder(orderId).subscribe((o) => {
       this.order = o;
+      if (this.autoPrint && o.status === 'COMPLETED') this.pole.paid(o.total, 0);
       this.generateQrCode(o);
       this.generateInvoiceQr(o);
       this.loadEfrisLogos(o);
@@ -436,28 +445,58 @@ export class ReceiptComponent implements OnInit, OnDestroy {
   /** Counts the printing first (the first is the original, later ones are COPY n), then opens the print dialog; if counting fails the receipt still prints. */
   private printCounted(): void {
     if (!this.order) {
-      window.print();
+      this.output();
       return;
     }
     this.orderApi.recordPrint(this.order.id).subscribe({
       next: (r) => {
         this.copyNumber = r.copyNumber;
         if (this.order) this.order = { ...this.order, printCount: r.printCount };
-        setTimeout(() => window.print(), 120);
+        setTimeout(() => this.output(), 120);
       },
-      error: () => window.print(),
+      error: () => this.output(),
     });
+  }
+
+  /** Thermal printer connected directly: raw ESC/POS (and the cash drawer); otherwise the browser print dialog with the roll-width layout. */
+  private output(): void {
+    if (!this.order || !this.devices.isDirect('receipt')) {
+      window.print();
+      return;
+    }
+    this.sendDirect(this.order);
+  }
+
+  directError: string | null = null;
+  private pendingLogos = 0;
+
+  private async sendDirect(o: Order): Promise<void> {
+    this.directError = null;
+    // the logos arrive from separate requests; give them a moment
+    for (let i = 0; i < 20 && this.pendingLogos > 0; i++) await new Promise((r) => setTimeout(r, 100));
+    const res = await this.printSvc.sale(o, {
+      settings: this.settings,
+      branch: this.branchInfo,
+      cfg: this.cfg,
+      returned: this.returnedQuantities,
+      copyNumber: this.copyNumber,
+      authorityLogoUrl: this.authorityLogoDataUrl,
+      efrisLogoUrl: this.printEfrisLogoDataUrl,
+      efrisQr: o.sdcId ? this.qrInput(o) : null,
+    });
+    if (res.ok) {
+      if (this.autoPrint) this.returnToTerminal();
+      return;
+    }
+    // the thermal printer did not answer: print through the driver instead and tell the cashier why
+    this.directError = `The thermal printer did not answer (${res.error}). Printed through the Windows driver instead.`;
+    window.print();
   }
 
   /** The browser prints on the paper size given by @page: set it to the roll width chosen in the POS settings. */
   private applyPageSize(): void {
     this.pageStyle?.remove();
-    const width = this.paper === '58' ? '58mm' : '80mm';
-    const el = document.createElement('style');
-    el.setAttribute('data-receipt-page', width);
-    el.textContent = `@media print { @page { size: ${width} auto; margin: 3mm; } }`;
-    document.head.appendChild(el);
-    this.pageStyle = el;
+    this.pageStyle = applyThermalPrintStyle(this.devices.layout(this.cfg?.receiptPaper).paper, 'app-receipt', this.pageStyle);
   }
 
   /** A QR code of the invoice number (setting): scanning it at the returns desk finds the sale. */
@@ -497,10 +536,15 @@ export class ReceiptComponent implements OnInit, OnDestroy {
    * fails silently into `qrCodeDataUrl = null` if the `qrcode` library ever rejects — a receipt
    * missing its QR code is far better than one that fails to render at all.
    */
+  /** What the EFRIS QR code carries (also sent to the thermal printer as a native QR). */
+  private qrInput(o: Order): string {
+    return `${o.sdcDate ?? ''}#${o.sdcId ?? ''}#${o.sdcReceiptNumber ?? ''}#+${o.internalData ?? ''}#+${o.signatureData ?? ''}`;
+  }
+
   private generateQrCode(o: Order): void {
     this.qrCodeDataUrl = null;
     if (!o.sdcId) return;
-    const inputData = `${o.sdcDate ?? ''}#${o.sdcId ?? ''}#${o.sdcReceiptNumber ?? ''}#+${o.internalData ?? ''}#+${o.signatureData ?? ''}`;
+    const inputData = this.qrInput(o);
     QRCode.toDataURL(inputData, { margin: 1, width: 240 })
       .then((dataUrl) => (this.qrCodeDataUrl = dataUrl))
       .catch(() => (this.qrCodeDataUrl = null));
@@ -530,13 +574,26 @@ export class ReceiptComponent implements OnInit, OnDestroy {
     this.efrisLogos = null;
     this.efrisChadLogos = null;
     if (!o.registerId) return;
+    this.pendingLogos = 2;
     this.efrisApi.getLogosForRegister(o.registerId).subscribe({
-      next: (logos) => (this.efrisLogos = logos),
-      error: () => (this.efrisLogos = null),
+      next: (logos) => {
+        this.efrisLogos = logos;
+        this.pendingLogos--;
+      },
+      error: () => {
+        this.efrisLogos = null;
+        this.pendingLogos--;
+      },
     });
     this.efrisChadApi.getLogosForRegister(o.registerId).subscribe({
-      next: (logos) => (this.efrisChadLogos = logos),
-      error: () => (this.efrisChadLogos = null),
+      next: (logos) => {
+        this.efrisChadLogos = logos;
+        this.pendingLogos--;
+      },
+      error: () => {
+        this.efrisChadLogos = null;
+        this.pendingLogos--;
+      },
     });
   }
 

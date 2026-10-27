@@ -65,6 +65,7 @@ import { ShiftXzReportComponent } from './registers/shift-xz-report.component';
 import { CashControlComponent } from './registers/cash-control.component';
 import { CashMovementListComponent } from './admin/cash-movement-list.component';
 import { PosSettingsComponent } from './admin/pos-settings.component';
+import { DevicesComponent } from './pos/devices.component';
 import { PaymentMethodListComponent } from './admin/payment-method-list.component';
 import { PaymentMethodFormComponent } from './admin/payment-method-form.component';
 import { TaxRateListComponent } from './admin/tax-rate-list.component';
@@ -1069,6 +1070,7 @@ const baseRoutes: Routes = [
   { path: 'admin/hotel/reports', component: HotelReportComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/hotel/online', component: OnlineSettingsComponent, canActivate: [authGuard, adminGuard] },
 
+  { path: 'devices', component: DevicesComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'registers' },
 ];
 

@@ -7,6 +7,9 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 import { AuthService } from '../core/auth.service';
 import { API_BASE } from '../core/constants';
 import { downloadBlob } from '../core/download-file';
+import { DeviceService } from '../core/hardware/device.service';
+import { PrintService } from '../core/hardware/print.service';
+import { applyThermalPrintStyle } from '../core/hardware/thermal-css';
 import { ShiftReport, StoreSettings } from '../core/models';
 
 /**
@@ -20,6 +23,7 @@ import { ShiftReport, StoreSettings } from '../core/models';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="r as r">
+      <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
       <div *ngIf="settings as s" style="text-align:center; margin:0 0 12px;">
         <img *ngIf="s.logoDataUrl" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
         <div *ngIf="s.businessName" style="font-weight:700; font-size:1.1rem;">{{ s.businessName }}</div>
@@ -138,7 +142,11 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
   private readonly afterPrintHandler = () => this.router.navigate(['/admin/shifts']);
 
   constructor(private route: ActivatedRoute, private router: Router, private registerApi: RegisterApiService, private storeSettingsApi: StoreSettingsApiService,
-              private http: HttpClient, private auth: AuthService) {}
+              private http: HttpClient, private auth: AuthService, private devices: DeviceService, private printSvc: PrintService) {}
+
+  private paperCfg: string | null = null;
+  private pageStyle: HTMLStyleElement | null = null;
+  directError: string | null = null;
 
   ngOnInit(): void {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
@@ -146,6 +154,13 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
     this.autoPrint = this.route.snapshot.queryParamMap.get('autoPrint') === '1';
     this.canExport = this.auth.isAdmin() || this.auth.canView('SALES');
     this.storeSettingsApi.get().subscribe({ next: (s) => (this.settings = s), error: () => (this.settings = null) });
+    this.registerApi.posSettings().subscribe({
+      next: (c) => {
+        this.paperCfg = c.receiptPaper;
+        this.pageStyle = applyThermalPrintStyle(this.devices.layout(c.receiptPaper).paper, 'app-shift-xz-report', this.pageStyle);
+      },
+      error: () => (this.pageStyle = applyThermalPrintStyle(this.devices.layout(null).paper, 'app-shift-xz-report', this.pageStyle)),
+    });
     // The first load of a Z report is a look; printing (the button, or arriving with ?autoPrint=1) counts it, so the next print says COPY.
     const load = this.z ? this.registerApi.zReport(this.id, this.autoPrint) : this.registerApi.xReport(this.id);
     load.subscribe({
@@ -153,7 +168,7 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
         this.r = rep;
         if (this.autoPrint) {
           window.addEventListener('afterprint', this.afterPrintHandler);
-          setTimeout(() => window.print(), 150);
+          setTimeout(() => this.output(), 150);
         }
       },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to load the report'),
@@ -162,6 +177,25 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     window.removeEventListener('afterprint', this.afterPrintHandler);
+    this.pageStyle?.remove();
+  }
+
+  /** Thermal printer connected directly: raw ESC/POS; otherwise the browser print dialog. */
+  private output(): void {
+    const rep = this.r;
+    if (!rep || !this.devices.isDirect('receipt')) {
+      window.print();
+      return;
+    }
+    this.directError = null;
+    this.printSvc.shiftReport(rep, this.settings, this.paperCfg).then((res) => {
+      if (res.ok) {
+        if (this.autoPrint) this.afterPrintHandler();
+        return;
+      }
+      this.directError = `The thermal printer did not answer (${res.error}). Printed through the Windows driver instead.`;
+      window.print();
+    });
   }
 
   moves() {
@@ -181,11 +215,11 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
       // count this printing, then show the number it was printed under
       this.registerApi.zReport(this.id, true).subscribe((rep) => {
         this.r = rep;
-        setTimeout(() => window.print(), 100);
+        setTimeout(() => this.output(), 100);
       });
       return;
     }
-    window.print();
+    this.output();
   }
 
   download(format: 'xlsx' | 'pdf' | 'csv'): void {

@@ -108,6 +108,9 @@ import { NiweFooterComponent } from './niwe-footer.component';
           <a *ngIf="canSee('/admin/pos-settings')" class="sidenav-link" routerLink="/admin/pos-settings" routerLinkActive="active"
             ><span class="sidenav-icon">⚙️</span> POS settings</a
           >
+          <a *ngIf="canSee('/devices')" class="sidenav-link" routerLink="/devices" routerLinkActive="active"
+            ><span class="sidenav-icon">🖨️</span> Devices</a
+          >
           <!-- POS Reports (Task: "Add POS Report..."): a picker of Sales-Transactions/Profit reports, each with its own filters + Excel/PDF export. ADMIN-only, like every other reporting screen. -->
           <a *ngIf="canSee('/admin/reports')" class="sidenav-link" routerLink="/admin/reports" routerLinkActive="active"
             ><span class="sidenav-icon">📈</span> Reports</a
