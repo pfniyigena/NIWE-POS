@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
-import { CashMovement, CashSummary, ShiftReport, Denomination, PosException, PosSettings, RegisterSession, RegisterSummary, SessionReport } from '../models';
+import { DeviceStatus, CashMovement, CashSummary, ShiftReport, Denomination, PosException, PosSettings, RegisterSession, RegisterSummary, SessionReport } from '../models';
 import { ListFilter, pagedList } from './list-state';
 import { PageResult } from './paged';
 
@@ -43,6 +43,21 @@ export class RegisterApiService {
    */
   openSession(registerId: number, openingFloat: number, cashierId: number): Observable<RegisterSession> {
     return this.http.post<RegisterSession>(`${API_BASE}/registers/${registerId}/sessions`, { openingFloat, cashierId });
+  }
+
+  /** v1.13.0: is this till tied to a device, and is it this one? Any signed-in user may ask. */
+  deviceStatus(registerId: number): Observable<DeviceStatus> {
+    return this.http.get<DeviceStatus>(`${API_BASE}/registers/${registerId}/device-status`);
+  }
+
+  /** Admin: tie the till to the device making this call. `checkIp` false = do not require the current address. */
+  bindDevice(registerId: number, deviceName: string, checkIp: boolean): Observable<RegisterSummary> {
+    return this.http.post<RegisterSummary>(`${API_BASE}/registers/${registerId}/device-binding`, { deviceName, checkIp });
+  }
+
+  /** Admin: free the till so it can be tied to another device (works from any device). */
+  unbindDevice(registerId: number): Observable<RegisterSummary> {
+    return this.http.delete<RegisterSummary>(`${API_BASE}/registers/${registerId}/device-binding`);
   }
 
   /** Shifts with search, filters and pages (PO-1). */

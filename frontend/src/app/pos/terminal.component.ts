@@ -88,6 +88,14 @@ interface OfflinePaymentRow {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, DatePickerComponent],
   template: `
+    <div class="term-device-block flex-col align-center" *ngIf="deviceBlock"
+         style="position:fixed; inset:0; z-index:5000; background:var(--bg, #fff); color:var(--text, #111); padding:2rem; justify-content:center;">
+      <div class="card" style="width:min(460px, 92vw); padding:1.5rem; text-align:center;">
+        <h3 class="mb-2">This terminal belongs to another device</h3>
+        <p class="mb-3">{{ deviceBlock }}</p>
+        <a class="btn btn-primary" [routerLink]="[exitLink]">Back</a>
+      </div>
+    </div>
     <div class="flex-col align-center" style="min-height:100vh; padding:2rem;" *ngIf="!cashierSession">
       <div class="card" style="width:360px; padding:1.5rem;">
         <h3 class="mb-1">Enter PIN</h3>
@@ -824,6 +832,8 @@ export class TerminalComponent implements OnInit {
   /** PIN-gate state — see the class doc comment above and `openWithPin()`. */
   pinInput = '';
   pinError: string | null = null;
+  /** v1.13.0: set when this till is tied to a different device — the terminal is covered by a message and the server refuses its calls anyway. */
+  deviceBlock: string | null = null;
   openingWithPin = false;
 
   orderTabs: Order[] = [];
@@ -1016,7 +1026,15 @@ export class TerminalComponent implements OnInit {
   ngOnInit(): void {
     if (this.pole.active) this.pole.idle();
     this.sessionId = Number(this.route.snapshot.paramMap.get('sessionId'));
-    this.registerApi.getSession(this.sessionId).subscribe((s) => (this.session = s));
+    this.registerApi.getSession(this.sessionId).subscribe((s) => {
+      this.session = s;
+      if (s.registerId) {
+        this.registerApi.deviceStatus(s.registerId).subscribe({
+          next: (d) => { if (!d.allowed) this.deviceBlock = d.message ?? 'This terminal cannot be used on this device.'; },
+          error: () => {},
+        });
+      }
+    });
     this.registerApi.posSettings().subscribe({ next: (s) => (this.posSettings = s), error: () => {} });
     this.catalogApi.listCategories().subscribe((c) => (this.categories = c));
     this.customerApi.list().subscribe((c) => {

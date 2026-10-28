@@ -14,9 +14,32 @@ import java.util.List;
 public class RegisterController {
 
     private final RegisterService registerService;
+    private final DeviceBindingService deviceBindingService;
 
-    public RegisterController(RegisterService registerService) {
+    public RegisterController(RegisterService registerService, DeviceBindingService deviceBindingService) {
         this.registerService = registerService;
+        this.deviceBindingService = deviceBindingService;
+    }
+
+    /** Is this till tied to a device, and is the device making this call the one? Open to any signed-in user (the terminal asks it before showing itself). */
+    @GetMapping("/registers/{id}/device-status")
+    public DeviceStatusDto deviceStatus(@PathVariable Long id) {
+        return deviceBindingService.status(id);
+    }
+
+    /** Ties the till to the device making this call (the admin sits at the till PC and presses "Bind to this device"). */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
+    @PostMapping("/registers/{id}/device-binding")
+    public RegisterDto bindDevice(@PathVariable Long id, @RequestBody(required = false) BindDeviceRequest request,
+                                  @AuthenticationPrincipal AppUserPrincipal principal) {
+        return deviceBindingService.bind(id, request, principal.getUser());
+    }
+
+    /** Frees the till so it can be bound again. Works from any device — that is how a lost or replaced PC is dealt with. */
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('AREA_SALES_MANAGE')")
+    @DeleteMapping("/registers/{id}/device-binding")
+    public RegisterDto unbindDevice(@PathVariable Long id) {
+        return deviceBindingService.unbind(id);
     }
 
     @GetMapping("/registers")

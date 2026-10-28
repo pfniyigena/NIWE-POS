@@ -10,7 +10,8 @@ import java.util.List;
 public record RegisterDto(Long id, String name, String location, Long warehouseId, String warehouseName,
                            Long defaultLocationId, String defaultLocationName, Long openSessionId,
                            boolean active, BigDecimal defaultFloat, BigDecimal maxFloat,
-                           List<Long> allowedCashierIds, List<String> allowedCashierNames) {
+                           List<Long> allowedCashierIds, List<String> allowedCashierNames,
+                           boolean deviceBound, String deviceName, String deviceIp, java.time.Instant deviceBoundAt, String deviceBoundBy) {
     public static RegisterDto from(Register r, Long openSessionId) {
         List<AppUser> allowed = r.getAllowedCashiers() == null ? List.of()
                 : r.getAllowedCashiers().stream().sorted(Comparator.comparing(u -> String.valueOf(u.getFullName()))).toList();
@@ -25,6 +26,7 @@ public record RegisterDto(Long id, String name, String location, Long warehouseI
                 openSessionId,
                 r.isActive(), r.getDefaultFloat(), r.getMaxFloat(),
                 allowed.stream().map(AppUser::getId).toList(),
-                allowed.stream().map(AppUser::getFullName).toList());
+                allowed.stream().map(AppUser::getFullName).toList(),
+                r.getDeviceId() != null, r.getDeviceName(), r.getDeviceIp(), r.getDeviceBoundAt(), r.getDeviceBoundBy());
     }
 }

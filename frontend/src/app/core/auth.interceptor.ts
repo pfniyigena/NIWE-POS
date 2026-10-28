@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { API_BASE } from './constants';
+import { getDeviceId } from './device-id';
 
 /** Attaches the JWT to every request, and bounces to /login if the API ever says "not authenticated anymore". */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -13,7 +14,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = auth.getToken();
 
-  const authedReq = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  // X-Device-Id tells the server which device is calling: a till can be tied to one device (Registers > Bind to this device).
+  const headers: Record<string, string> = { 'X-Device-Id': getDeviceId() };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const authedReq = req.clone({ setHeaders: headers });
 
   return next(authedReq).pipe(
     catchError((error) => {

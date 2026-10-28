@@ -1,0 +1,3 @@
+### Version 1.13.0 - A till tied to one known device
+
+A register (till) can be tied to one device. An administrator at the till PC presses **Bind to this device** on *POS > Registers & Terminal* (name for the PC, and whether its address must also match); any other device is then refused by the server: the terminal, sales, opening a shift, offline sync and cash movements, with a clear message. **Unbind** (administrator, from any device) frees it. Reports, receipts, history and closing a shift stay open from the back office. A device is the till of one register only. Audit log entries for bind and unbind. Tills that are not bound behave as before. One migration (V52). Details in `RELEASE-NOTES-v1.13.0.md`.

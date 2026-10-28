@@ -162,6 +162,30 @@ export interface RegisterSummary {
   /** PO-8: empty = anyone may work this till. */
   allowedCashierIds: number[];
   allowedCashierNames: string[];
+  /** v1.13.0: tied to one device when true; any device may work the till when false. */
+  deviceBound: boolean;
+  deviceName: string | null;
+  /** The address the device had when it was bound; null = the address is not checked. */
+  deviceIp: string | null;
+  deviceBoundAt: string | null;
+  deviceBoundBy: string | null;
+}
+
+/** v1.13.0: is this till tied to a device, and is the device asking the one? `allowed` is what the server enforces. */
+export interface DeviceStatus {
+  registerId: number;
+  registerName: string;
+  bound: boolean;
+  allowed: boolean;
+  thisDevice: boolean;
+  ipChecked: boolean;
+  ipMatches: boolean;
+  deviceName: string | null;
+  boundIp: string | null;
+  boundAt: string | null;
+  boundBy: string | null;
+  yourIp: string | null;
+  message: string | null;
 }
 
 export interface RegisterSession {

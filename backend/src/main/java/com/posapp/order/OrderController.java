@@ -15,8 +15,10 @@ public class OrderController {
 
     private final OrderService orderService;
     private final ReceiptPrintService receiptPrintService;
+    private final com.posapp.register.DeviceBindingService deviceBindingService;
 
-    public OrderController(OrderService orderService, ReceiptPrintService receiptPrintService) {
+    public OrderController(OrderService orderService, ReceiptPrintService receiptPrintService, com.posapp.register.DeviceBindingService deviceBindingService) {
+        this.deviceBindingService = deviceBindingService;
         this.receiptPrintService = receiptPrintService;
         this.orderService = orderService;
     }
@@ -185,6 +187,7 @@ public class OrderController {
     @PostMapping("/orders/offline-sync")
     public OrderDto syncOfflineSale(@Valid @RequestBody OfflineSaleRequest request,
                                      @AuthenticationPrincipal AppUserPrincipal principal) {
+        deviceBindingService.assertCashierSession(request.getCashierSessionId());
         OrderDto synced = orderService.syncOfflineSale(request, principal.getUser());
         return orderService.submitToEfrisIfApplicable(synced.id());
     }

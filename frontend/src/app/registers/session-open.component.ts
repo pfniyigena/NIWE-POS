@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { UserApiService } from '../core/api/user-api.service';
-import { AppUser } from '../core/models';
+import { AppUser, DeviceStatus } from '../core/models';
 
 /**
  * ADMIN-only (Change 3). The admin opening the shift usually isn't the one who'll ring sales on
@@ -20,6 +20,7 @@ import { AppUser } from '../core/models';
     <app-shell [narrow]="true">
       <h3 class="mb-3">Open session</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-danger so-device" *ngIf="device && !device.allowed">{{ device.message }}</div>
       <div class="text-muted so-register" *ngIf="registerName" style="margin-bottom:0.75rem;">{{ registerName }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
@@ -35,7 +36,7 @@ import { AppUser } from '../core/models';
           <div class="text-muted so-float-hint" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="maxFloat !== null">The most this till may open with is {{ maxFloat | number: '1.0-2' }}.</div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-success" type="submit" [disabled]="!cashierId">Open till</button>
+          <button class="btn btn-success" type="submit" [disabled]="!cashierId || (device && !device.allowed)">Open till</button>
           <a class="btn btn-link" routerLink="/registers">Cancel</a>
         </div>
       </form>
@@ -51,6 +52,8 @@ export class SessionOpenComponent implements OnInit {
   maxFloat: number | null = null;
   allowedIds: number[] = [];
   error: string | null = null;
+  /** v1.13.0: a till tied to another device cannot be opened here. */
+  device: DeviceStatus | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -61,6 +64,7 @@ export class SessionOpenComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerId = Number(this.route.snapshot.paramMap.get('id'));
+    this.registerApi.deviceStatus(this.registerId).subscribe({ next: (d) => (this.device = d), error: () => {} });
     this.registerApi.listRegisters().subscribe({
       next: (rs) => {
         const r = rs.find((x) => x.id === this.registerId);

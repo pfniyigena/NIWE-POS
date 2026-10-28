@@ -3,6 +3,7 @@ package com.posapp.register;
 import com.posapp.common.BaseEntity;
 import com.posapp.warehouse.Warehouse;
 import com.posapp.warehouse.WarehouseLocation;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -14,6 +15,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -75,4 +77,22 @@ public class Register extends BaseEntity {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "register_cashier", joinColumns = @JoinColumn(name = "register_id"), inverseJoinColumns = @JoinColumn(name = "app_user_id"))
     private Set<AppUser> allowedCashiers = new HashSet<>();
+
+    /**
+     * Fourier: "map POS Terminal (till) with specific Device ... the Terminal can not be opened to
+     * more than one device and it is known". When {@link #deviceId} is set, only that browser
+     * (and, when {@link #deviceIp} is set, only from that address) may open the terminal, ring
+     * sales or open a shift here — see DeviceBindingService. Null means unbound: any device may
+     * work the till, exactly as before this field existed.
+     */
+    @Column(length = 64)
+    private String deviceId;
+    @Column(length = 120)
+    private String deviceName;
+    /** Address the device had when it was bound; null means the address is not checked. */
+    @Column(length = 64)
+    private String deviceIp;
+    private Instant deviceBoundAt;
+    @Column(length = 120)
+    private String deviceBoundBy;
 }
