@@ -92,4 +92,29 @@ public class WorkOrder extends BaseEntity {
     private String completionNote;
 
     private String createdByName;
+
+    /** The job needs the customer's approval of the estimate before it can be started. */
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean approvalRequired = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ApprovalStatus approvalStatus = ApprovalStatus.NONE;
+    private Instant approvalRequestedAt;
+    private Instant approvalDecidedAt;
+    /** Who at the customer approved or rejected it. */
+    @Column(length = 200)
+    private String approvalByName;
+    @Column(length = 1000)
+    private String approvalNote;
+    /** The staff member who recorded the decision. */
+    private String approvalRecordedBy;
+    /** The estimate total the customer was shown. */
+    @Column(precision = 18, scale = 2)
+    private BigDecimal approvalEstimateTotal;
+    /** Estimated hours (copied from the service package); the estimate is hours x labour rate when there is no fixed price. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal estimatedHours;
+    private Instant completionEmailedAt;
+    /** The preventive maintenance schedule that made this job. */
+    private Long scheduleId;
 }

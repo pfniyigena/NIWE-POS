@@ -1,0 +1,3 @@
+### Version 1.15.0 - Work Orders: job card and customer PDFs, estimate approval, board, calendar, planned maintenance, photos
+
+Work Orders now prints a job card for the technician, an estimate and a completion note for the customer, and can require the customer's approval of an estimate before work starts. Jobs can be seen on a status board and a week calendar (drag to start, hold or re-schedule), repeat automatically through planned-maintenance schedules (a check runs every morning), and carry notes, photos and files, a history and a timer. The customer can be e-mailed the estimate and the completion note. One migration (V54). Details in `RELEASE-NOTES-v1.15.0.md`.

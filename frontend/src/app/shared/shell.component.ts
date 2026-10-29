@@ -177,6 +177,9 @@ import { NiweFooterComponent } from './niwe-footer.component';
         <ng-container *ngIf="isOpen('workorders') && modules.on('WORK_ORDERS')">
           <a class="sidenav-link sidenav-sublink" routerLink="/work-orders/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> My jobs</a>
           <a *ngIf="canSee('/admin/work-orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📋</span> Work orders</a>
+          <a *ngIf="canSee('/admin/work-orders/board')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/board" routerLinkActive="active"><span class="sidenav-icon">🗂️</span> Board</a>
+          <a *ngIf="canSee('/admin/work-orders/calendar')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/calendar" routerLinkActive="active"><span class="sidenav-icon">📆</span> Calendar</a>
+          <a *ngIf="canSee('/admin/work-orders/schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/schedules" routerLinkActive="active"><span class="sidenav-icon">🔁</span> Planned maintenance</a>
           <a *ngIf="canSee('/admin/work-orders/packages')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/packages" routerLinkActive="active"><span class="sidenav-icon">📦</span> Service packages</a>
           <a *ngIf="canSee('/admin/work-orders/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
         </ng-container>

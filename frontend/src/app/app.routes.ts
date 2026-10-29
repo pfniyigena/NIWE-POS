@@ -177,6 +177,10 @@ import { ServicePackageListComponent } from './admin/work-orders/package-list.co
 import { ServicePackageFormComponent } from './admin/work-orders/package-form.component';
 import { WorkOrderReportListComponent } from './admin/work-orders/work-order-report-list.component';
 import { MyJobsComponent } from './work-orders/my-jobs.component';
+import { WorkOrderBoardComponent } from './admin/work-orders/work-order-board.component';
+import { WorkOrderCalendarComponent } from './admin/work-orders/work-order-calendar.component';
+import { WorkOrderSettingsComponent } from './admin/work-orders/work-order-settings.component';
+import { MaintenanceScheduleListComponent } from './admin/work-orders/maintenance-schedule-list.component';
 import { BookingCalendarComponent } from './admin/booking/calendar.component';
 import { AppointmentFormComponent } from './admin/booking/appointment-form.component';
 import { AppointmentDetailComponent } from './admin/booking/appointment-detail.component';
@@ -793,6 +797,10 @@ const baseRoutes: Routes = [
   { path: 'admin/work-orders/packages/new', component: ServicePackageFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/work-orders/packages/:id', component: ServicePackageFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/work-orders/reports', component: WorkOrderReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/board', component: WorkOrderBoardComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/calendar', component: WorkOrderCalendarComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/schedules', component: MaintenanceScheduleListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/work-orders/settings', component: WorkOrderSettingsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/work-orders/:id', component: WorkOrderDetailComponent, canActivate: [authGuard, adminGuard] },
   // Booking: "My appointments" and a single appointment are open to every signed-in user (the server only shows a person their own);
   // the calendar, list, services, rooms and reports follow the Operations area; settings are admin-only (see core/access.ts).

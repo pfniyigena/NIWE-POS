@@ -91,6 +91,7 @@ public class WorkOrderService {
     private final ManufacturingOrderService manufacturingOrderService;
     private final ManufacturingOrderRepository manufacturingOrderRepository;
     private final AuditLogService auditLogService;
+    private final WorkOrderSettingsRepository settingsRepository;
 
     public WorkOrderService(WorkOrderRepository repository, WorkOrderLineRepository lineRepository, WorkOrderChecklistItemRepository checklistRepository,
                             WorkOrderCostRepository costRepository, ServicePackageRepository packageRepository,
@@ -99,7 +100,8 @@ public class WorkOrderService {
                             InvoiceService invoiceService, InvoiceRepository invoiceRepository, CustomerRepository customerRepository,
                             FixedAssetRepository assetRepository, UserRepository userRepository, BranchService branchService, ModuleService moduleService,
                             StoreSettingsService storeSettingsService, ExpenseService expenseService, ManufacturingOrderService manufacturingOrderService,
-                            ManufacturingOrderRepository manufacturingOrderRepository, AuditLogService auditLogService) {
+                            ManufacturingOrderRepository manufacturingOrderRepository, AuditLogService auditLogService,
+                            WorkOrderSettingsRepository settingsRepository) {
         this.repository = repository;
         this.lineRepository = lineRepository;
         this.checklistRepository = checklistRepository;
@@ -122,6 +124,7 @@ public class WorkOrderService {
         this.manufacturingOrderService = manufacturingOrderService;
         this.manufacturingOrderRepository = manufacturingOrderRepository;
         this.auditLogService = auditLogService;
+        this.settingsRepository = settingsRepository;
     }
 
     private void on() {
@@ -153,7 +156,7 @@ public class WorkOrderService {
     }
 
     private static boolean canWork(Actor a, WorkOrder w) {
-        return a.manager() || (w.getAssignedToUserId() != null && w.getAssignedToUserId().equals(a.user().getId()));
+        return a.manager() || (a.user() != null && w.getAssignedToUserId() != null && w.getAssignedToUserId().equals(a.user().getId()));
     }
 
     private void requireWorker(Actor a, WorkOrder w) {
@@ -211,7 +214,8 @@ public class WorkOrderService {
             out.add(new WorkOrderSummary(w.getId(), w.getNumber(), w.getType(), w.getStatus(), w.getPriority(), w.getTitle(), w.getCustomerId(),
                     w.getCustomerName(), w.getAssetId(), w.getAssetName(), w.getPackageName(), w.getAssignedToUserId(), w.getAssignedToName(),
                     w.getScheduledDate(), w.getDueDate(), isOverdue(w), (int) items.stream().filter(WorkOrderChecklistItem::isDone).count(), items.size(),
-                    hours, w.getInvoiceId(), w.getInvoiceNumber(), readyToInvoice(w), w.getCreatedAt()));
+                    hours, w.getInvoiceId(), w.getInvoiceNumber(), readyToInvoice(w), w.getCreatedAt(), w.isApprovalRequired(), w.getApprovalStatus(),
+                    w.getScheduleId()));
         }
         return out;
     }
@@ -277,8 +281,84 @@ public class WorkOrderService {
                 checklist.stream().map(c -> new ChecklistDto(c.getId(), c.getSeq(), c.getText(), c.isDone(), c.getDoneAt(), c.getDoneByName())).toList(),
                 costs.stream().map(c -> new CostDto(c.getId(), c.getCostDate(), c.getDescription(), c.getSupplierName(), c.getAmount(), c.getChargeAmount(),
                         c.getExpenseId())).toList(),
-                money);
+                money, w.isApprovalRequired(), w.getApprovalStatus(), w.getEstimatedHours(), w.getScheduleId(), w.getCompletionEmailedAt());
     }
+
+    // ------------------------------------------------------------------ access helpers for the extras (notes, files, estimate, schedules)
+    /** The job, for someone who may see it (every job for a viewer, only their own otherwise). */
+    @Transactional
+    public WorkOrder requireView(Actor actor, Long id) {
+        on();
+        WorkOrder w = find(id);
+        if (!actor.viewer() && !canWork(actor, w)) throw ApiException.forbidden("This work order is not assigned to you.");
+        return w;
+    }
+
+    /** The job, for the person it is assigned to or a manager. */
+    @Transactional
+    public WorkOrder requireWork(Actor actor, Long id) {
+        on();
+        WorkOrder w = find(id);
+        requireWorker(actor, w);
+        return w;
+    }
+
+    /** The job, for a manager. */
+    @Transactional
+    public WorkOrder requireManage(Actor actor, Long id) {
+        on();
+        requireManager(actor);
+        return find(id);
+    }
+
+    /** The detail for printing: no signed-in person is involved, so nothing in it depends on who is asking. */
+    @Transactional
+    public WorkOrderDetail detailFor(Actor actor, Long id) {
+        return toDetail(actor, find(id));
+    }
+
+    @Transactional
+    public void saveSettings(WorkOrderSettings s) {
+        settingsRepository.save(s);
+    }
+
+    public static boolean isOverdueJob(WorkOrder w) {
+        return isOverdue(w);
+    }
+
+    /** Moves a job that is not finished to another date or person (the calendar and board use this). */
+    @Transactional
+    public WorkOrderDetail reschedule(Actor actor, Long id, RescheduleRequest r) {
+        on();
+        requireManager(actor);
+        WorkOrder w = find(id);
+        requireEditable(w);
+        if (w.getInvoiceId() != null) throw ApiException.conflict("This work order is on an invoice.");
+        if (r.scheduledDate() != null && r.dueDate() != null && r.dueDate().isBefore(r.scheduledDate())) {
+            throw ApiException.badRequest("The due date cannot be before the scheduled date.");
+        }
+        w.setScheduledDate(r.scheduledDate());
+        if (r.dueDate() != null || r.scheduledDate() == null) w.setDueDate(r.dueDate());
+        if (Boolean.TRUE.equals(r.changeAssignee())) {
+            if (r.assignedToUserId() != null) {
+                AppUser u = userRepository.findById(r.assignedToUserId()).orElseThrow(() -> ApiException.notFound("User not found."));
+                w.setAssignedToUserId(u.getId());
+                w.setAssignedToName(TimeTrackingService.actorName(u));
+            } else {
+                w.setAssignedToUserId(null);
+                w.setAssignedToName(null);
+            }
+        }
+        repository.save(w);
+        auditLogService.record("WORK_ORDER_RESCHEDULED", "Moved work order " + w.getNumber() + " to " + (w.getScheduledDate() == null ? "no date" : w.getScheduledDate())
+                + " for " + (w.getAssignedToName() == null ? "nobody" : w.getAssignedToName()), "WorkOrder", id);
+        return toDetail(actor, w);
+    }
+
+    public WorkOrderRepository repository() {
+        return repository;
+    }
+
 
     // ------------------------------------------------------------------ create / edit
 
@@ -286,26 +366,43 @@ public class WorkOrderService {
     public WorkOrderDetail create(Actor actor, WorkOrderRequest r) {
         on();
         requireManager(actor);
+        return toDetail(actor, createEntity(TimeTrackingService.actorName(actor.user()), r, null));
+    }
+
+    /** Makes the work order itself; also used by the preventive maintenance schedules' daily run (no signed-in user then). */
+    @Transactional
+    public WorkOrder createEntity(String createdBy, WorkOrderRequest r, Long scheduleId) {
+        on();
         if (!notBlank(r.title())) throw ApiException.badRequest("Give the work order a title.");
         WorkOrder w = new WorkOrder();
         w.setNumber("WO-TMP-" + System.nanoTime());
-        w.setCreatedByName(TimeTrackingService.actorName(actor.user()));
+        w.setCreatedByName(createdBy);
         w.setRequestedDate(r.requestedDate() != null ? r.requestedDate() : LocalDate.now());
+        w.setScheduleId(scheduleId);
         apply(w, r);
         ServicePackage pkg = null;
         if (r.packageId() != null) {
             pkg = packageRepository.findById(r.packageId()).orElseThrow(() -> ApiException.notFound("Service package not found."));
             w.setPackageId(pkg.getId());
             w.setPackageName(pkg.getName());
+            w.setEstimatedHours(pkg.getEstimatedHours());
             if (r.fixedPrice() == null) w.setFixedPrice(pkg.getFixedPrice());
         }
+        w.setApprovalRequired(w.getType() == WorkOrderType.CUSTOMER && settings().isRequireApprovalDefault());
         WorkOrder saved = repository.save(w);
         saved.setNumber(branchService.prefixedNumber(saved.getBranchId(), String.format("WO-%05d", saved.getId())));
         if (pkg != null) copyPackage(saved, pkg);
         syncProject(saved);
         repository.save(saved);
-        auditLogService.record("WORK_ORDER_CREATED", "Created work order " + saved.getNumber() + " — " + saved.getTitle(), "WorkOrder", saved.getId());
-        return toDetail(actor, saved);
+        auditLogService.record("WORK_ORDER_CREATED", "Created work order " + saved.getNumber() + " — " + saved.getTitle()
+                + (scheduleId != null ? " (from preventive maintenance schedule " + scheduleId + ")" : ""), "WorkOrder", saved.getId());
+        return saved;
+    }
+
+    /** The one settings row, made on first use. */
+    @Transactional
+    public WorkOrderSettings settings() {
+        return settingsRepository.findAll().stream().findFirst().orElseGet(() -> settingsRepository.save(new WorkOrderSettings()));
     }
 
     @Transactional
@@ -316,9 +413,12 @@ public class WorkOrderService {
         requireEditable(w);
         if (!notBlank(r.title())) throw ApiException.badRequest("Give the work order a title.");
         if (w.getInvoiceId() != null) throw ApiException.conflict("This work order is on an invoice.");
+        BigDecimal priceBefore = w.getFixedPrice();
+        BigDecimal rateBefore = w.getLabourRate();
         apply(w, r);
         repository.save(w);
         syncProject(w);
+        if (priceBefore.compareTo(w.getFixedPrice()) != 0 || !java.util.Objects.equals(rateBefore, w.getLabourRate())) resetApprovalIfEstimateChanged(w);
         auditLogService.record("WORK_ORDER_UPDATED", "Updated work order " + w.getNumber(), "WorkOrder", w.getId());
         return toDetail(actor, w);
     }
@@ -451,6 +551,7 @@ public class WorkOrderService {
             keep.add(lineRepository.save(l));
         }
         lineRepository.deleteAll(existing.stream().filter(l -> keep.stream().noneMatch(k -> k.getId().equals(l.getId()))).toList());
+        resetApprovalIfEstimateChanged(w);
         return toDetail(actor, w);
     }
 
@@ -555,6 +656,13 @@ public class WorkOrderService {
         if (w.getStatus() != WorkOrderStatus.OPEN && w.getStatus() != WorkOrderStatus.ON_HOLD) {
             throw ApiException.conflict("Only an open or held work order can be started.");
         }
+        if (w.isApprovalRequired() && w.getType() == WorkOrderType.CUSTOMER && w.getApprovalStatus() != ApprovalStatus.APPROVED) {
+            throw ApiException.conflict(switch (w.getApprovalStatus()) {
+                case REQUESTED -> "This job is waiting for the customer to approve the estimate. Record the approval first.";
+                case REJECTED -> "The customer did not approve the estimate. Change the estimate and send it again, or cancel the job.";
+                default -> "This job needs the customer's approval of the estimate before it can be started. Send the estimate first.";
+            });
+        }
         w.setStatus(WorkOrderStatus.IN_PROGRESS);
         if (w.getStartedAt() == null) w.setStartedAt(Instant.now());
         repository.save(w);
@@ -572,6 +680,7 @@ public class WorkOrderService {
         }
         w.setStatus(WorkOrderStatus.ON_HOLD);
         repository.save(w);
+        stopMyTimer(actor, w);
         auditLogService.record("WORK_ORDER_HELD", "Put work order " + w.getNumber() + " on hold", "WorkOrder", id);
         return toDetail(actor, w);
     }
@@ -600,10 +709,39 @@ public class WorkOrderService {
         w.setCompletedAt(Instant.now());
         if (w.getStartedAt() == null) w.setStartedAt(w.getCompletedAt());
         if (r != null && notBlank(r.note())) w.setCompletionNote(r.note().trim());
+        stopMyTimer(actor, w);
         repository.save(w);
         syncProject(w);
         auditLogService.record("WORK_ORDER_COMPLETED", "Completed work order " + w.getNumber(), "WorkOrder", id);
         return toDetail(actor, w);
+    }
+
+    /** If the person's running timer is on this job's project, stops it and saves the time (so a held or finished job never keeps counting). */
+    private void stopMyTimer(Actor actor, WorkOrder w) {
+        if (actor == null || actor.user() == null || w.getTimeProjectId() == null || !moduleService.isEnabled(ModuleKey.TIME_TRACKING)) return;
+        var t = timeService.timer(actor.user());
+        if (t != null && t.running() && w.getTimeProjectId().equals(t.projectId())) {
+            try {
+                timeService.stopTimer(actor.user(), new com.posapp.timetracking.dto.TimeRequests.TimerStopRequest(null, null));
+                auditLogService.record("WORK_ORDER_TIMER_STOPPED", "Stopped the running timer on work order " + w.getNumber(), "WorkOrder", w.getId());
+            } catch (ApiException ex) {
+                auditLogService.record("WORK_ORDER_TIMER_NOT_SAVED", "The running timer on work order " + w.getNumber() + " could not be saved: " + ex.getMessage(), "WorkOrder", w.getId());
+            }
+        }
+    }
+
+    /** A change to the price, hours or parts of a job that has not started invalidates an estimate the customer has seen. */
+    void resetApprovalIfEstimateChanged(WorkOrder w) {
+        if (w.getStatus() != WorkOrderStatus.OPEN) return;
+        if (w.getApprovalStatus() == ApprovalStatus.APPROVED || w.getApprovalStatus() == ApprovalStatus.REQUESTED || w.getApprovalStatus() == ApprovalStatus.REJECTED) {
+            w.setApprovalStatus(ApprovalStatus.NONE);
+            w.setApprovalDecidedAt(null);
+            w.setApprovalByName(null);
+            w.setApprovalNote(null);
+            w.setApprovalRecordedBy(null);
+            repository.save(w);
+            auditLogService.record("WORK_ORDER_ESTIMATE_RESET", "The estimate of " + w.getNumber() + " changed, so the customer's approval was cleared", "WorkOrder", w.getId());
+        }
     }
 
     /** Takes the parts out of stock and posts their cost (cost of goods for a customer job, repairs for an internal one). */

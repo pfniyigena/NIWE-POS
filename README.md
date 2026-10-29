@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.15.0 - Work Orders: job card and customer PDFs, estimate approval, board, calendar, planned maintenance, photos
+
+Work Orders now prints a job card for the technician, an estimate and a completion note for the customer, and can require the customer's approval of an estimate before work starts. Jobs can be seen on a status board and a week calendar (drag to start, hold or re-schedule), repeat automatically through planned-maintenance schedules (a check runs every morning), and carry notes, photos and files, a history and a timer. The customer can be e-mailed the estimate and the completion note. One migration (V54). Details in `RELEASE-NOTES-v1.15.0.md`.
+
 ### Version 1.14.0 - Server logs, sign-in log, business name on module requests, currency by chart
 
 The server now writes rotating log files (`niwe-erp.log`, `niwe-erp-error.log`, `niwe-access.log`) with a request id and user on every line; administrators read and download them under *Settings > Server logs* and see every sign-in and failed attempt under *Settings > Sign-in log*. More actions are recorded in the audit log (customers, categories and brands, imports and exports, shifts, time tracking, own profile, help desk settings and more). A module request now carries the business name in its text and e-mail subject. Choosing the Rwanda chart sets the currency to RWF and the Chad chart to XAF while the currency is still the untouched default. One migration (V53). Details in `RELEASE-NOTES-v1.14.0.md`.

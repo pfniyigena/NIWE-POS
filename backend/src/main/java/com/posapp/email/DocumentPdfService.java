@@ -32,6 +32,9 @@ import com.posapp.inventory.PayableType;
 import com.posapp.inventory.dto.SupplierPaymentDto;
 import com.posapp.subscription.SubscriptionStatus;
 import com.posapp.subscription.dto.SubscriptionDto;
+import com.posapp.workorder.dto.WorkOrderDtos.EstimateDto;
+import com.posapp.workorder.dto.WorkOrderDtos.NoteDto;
+import com.posapp.workorder.dto.WorkOrderDtos.WorkOrderDetail;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -613,6 +616,132 @@ public class DocumentPdfService {
                 // firstRightAlignedColumn = 3 (= headers.size()) — none of Date/By/Update is numeric, so nothing right-aligns.
                 addTable(doc, List.of("Date", "By", "Update"), rows, new float[]{1.1f, 1.1f, 3.3f}, 3);
             }
+        });
+    }
+
+    /**
+     * v1.15.0 Work Orders: the job card for the person doing the job (no prices), the estimate for the customer to approve, and the completion
+     * note for the customer. {@code kind} is JOBCARD, ESTIMATE or COMPLETION.
+     */
+    public byte[] workOrderPdf(String kind, WorkOrderDetail d, EstimateDto est, List<NoteDto> notes, StoreSettings settings) {
+        String title = switch (kind) {
+            case "ESTIMATE" -> "Estimate";
+            case "COMPLETION" -> "Job completion note";
+            default -> "Job card";
+        };
+        java.time.format.DateTimeFormatter day = DATE_FMT;
+        return build(title, d.number(), settings, doc -> {
+            List<String[]> info = new java.util.ArrayList<>();
+            boolean forCustomer = !"JOBCARD".equals(kind);
+            if (d.customerName() != null) info.add(new String[]{"Customer", d.customerName()});
+            info.add(new String[]{"Job", d.title()});
+            if (d.itemDescription() != null) info.add(new String[]{"Item", d.itemDescription()});
+            if (d.assetName() != null) info.add(new String[]{"Asset", d.assetName()});
+            if (!forCustomer) {
+                info.add(new String[]{"Type", d.type().name().equals("CUSTOMER") ? "Customer job" : "Internal job"});
+                info.add(new String[]{"Priority", d.priority().name()});
+                info.add(new String[]{"Status", d.status().name()});
+            }
+            if (d.assignedToName() != null) info.add(new String[]{forCustomer ? "Technician" : "Assigned to", d.assignedToName()});
+            if (d.scheduledDate() != null) info.add(new String[]{"Scheduled", day.format(d.scheduledDate())});
+            if (d.dueDate() != null) info.add(new String[]{"Due", day.format(d.dueDate())});
+            if ("COMPLETION".equals(kind) && d.completedAt() != null) {
+                info.add(new String[]{"Completed", DATE_FMT.withZone(ZoneId.systemDefault()).format(d.completedAt())});
+            }
+            addInfoTable(doc, info);
+            Font section = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+            Font body = FontFactory.getFont(FontFactory.HELVETICA, 9);
+            if (d.description() != null && !d.description().isBlank()) {
+                Paragraph h = new Paragraph("Description", section);
+                h.setSpacingAfter(3);
+                doc.add(h);
+                Paragraph t = new Paragraph(d.description(), body);
+                t.setSpacingAfter(10);
+                doc.add(t);
+            }
+            if ("JOBCARD".equals(kind)) {
+                if (!d.checklist().isEmpty()) {
+                    Paragraph h = new Paragraph("Checklist", section);
+                    h.setSpacingAfter(4);
+                    doc.add(h);
+                    addTable(doc, List.of("Done", "Step"), d.checklist().stream().map(c -> new String[]{c.done() ? "[x]" : "[  ]", c.text()}).toList(), new float[]{0.6f, 6f}, 2);
+                }
+                if (!d.lines().isEmpty()) {
+                    Paragraph h = new Paragraph("Parts and materials", section);
+                    h.setSpacingAfter(4);
+                    doc.add(h);
+                    addTable(doc, List.of("Part", "Qty"), d.lines().stream().map(l -> new String[]{l.productName(), Qty.str(l.quantity())}).toList(), new float[]{5f, 1f}, 1);
+                }
+                if (notes != null && !notes.isEmpty()) {
+                    Paragraph h = new Paragraph("Notes", section);
+                    h.setSpacingAfter(4);
+                    doc.add(h);
+                    addTable(doc, List.of("Date", "By", "Note"), notes.stream().map(n -> new String[]{
+                            n.createdAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(n.createdAt()) : "—", n.authorName() == null ? "—" : n.authorName(), n.text()}).toList(),
+                            new float[]{1.1f, 1.1f, 3.5f}, 3);
+                }
+                Paragraph sign = new Paragraph("\nStarted: ____________   Finished: ____________   Hours: ________\n\nTechnician signature: ______________________________", body);
+                sign.setSpacingBefore(14);
+                doc.add(sign);
+                return;
+            }
+            if ("ESTIMATE".equals(kind) && est != null) {
+                Paragraph h = new Paragraph("Estimate", section);
+                h.setSpacingAfter(4);
+                doc.add(h);
+                addTable(doc, List.of("Item", "Qty", "Unit price", "Amount"), est.lines().stream().map(l -> new String[]{l.description(), Qty.str(l.quantity()),
+                        l.unitPrice() == null ? "" : money(l.unitPrice()), l.amount().signum() == 0 && "PART_INCLUDED".equals(l.kind()) ? "included" : money(l.amount())}).toList(),
+                        new float[]{4f, 0.8f, 1.3f, 1.3f}, 1);
+                addTotal(doc, est.total());
+                if (est.status() == com.posapp.workorder.ApprovalStatus.APPROVED) {
+                    Paragraph ok = new Paragraph("Approved by " + est.decidedByName() + (est.decidedAt() != null ? " on " + DATE_FMT.withZone(ZoneId.systemDefault()).format(est.decidedAt()) : "")
+                            + (est.note() != null ? " (" + est.note() + ")" : ""), section);
+                    ok.setSpacingBefore(10);
+                    doc.add(ok);
+                } else {
+                    Paragraph sign = new Paragraph("\nTo approve this estimate, sign below and return a copy.\n\nName: ______________________________   Signature: ______________________________   Date: ____________", body);
+                    sign.setSpacingBefore(14);
+                    doc.add(sign);
+                }
+                return;
+            }
+            // COMPLETION
+            if (d.completionNote() != null && !d.completionNote().isBlank()) {
+                Paragraph h = new Paragraph("Work done", section);
+                h.setSpacingAfter(3);
+                doc.add(h);
+                Paragraph t = new Paragraph(d.completionNote(), body);
+                t.setSpacingAfter(10);
+                doc.add(t);
+            }
+            List<String> steps = d.checklist().stream().filter(c -> c.done()).map(c -> c.text()).toList();
+            if (!steps.isEmpty()) {
+                Paragraph h = new Paragraph("Steps carried out", section);
+                h.setSpacingAfter(4);
+                doc.add(h);
+                addTable(doc, List.of("Step"), steps.stream().map(x -> new String[]{x}).toList(), new float[]{6f}, 1);
+            }
+            boolean fixed = d.fixedPrice() != null && d.fixedPrice().signum() > 0;
+            List<String[]> rows = new java.util.ArrayList<>();
+            if (fixed) rows.add(new String[]{"Fixed price for the job", "1", money(d.fixedPrice()), money(d.fixedPrice())});
+            else if (d.billableHours() != null && d.hours() != null && d.hours().signum() > 0) rows.add(new String[]{"Labour", d.hours().stripTrailingZeros().toPlainString() + " h", "", money(d.money().labourBillable())});
+            for (var l : d.lines()) {
+                boolean incl = l.included() && fixed;
+                rows.add(new String[]{l.productName() + (incl ? " (included)" : ""), Qty.str(l.quantity()), incl ? "" : money(l.unitPrice()), incl ? "" : money(l.lineTotal())});
+            }
+            for (var c : d.costs()) {
+                if (c.chargeAmount() != null && c.chargeAmount().signum() > 0) rows.add(new String[]{c.description(), "1", money(c.chargeAmount()), money(c.chargeAmount())});
+            }
+            if (d.type().name().equals("CUSTOMER") && !rows.isEmpty()) {
+                Paragraph h = new Paragraph("Charges", section);
+                h.setSpacingAfter(4);
+                doc.add(h);
+                addTable(doc, List.of("Item", "Qty", "Unit price", "Amount"), rows, new float[]{4f, 0.8f, 1.3f, 1.3f}, 1);
+                addTotal(doc, d.money().invoiceTotal() != null ? d.money().invoiceTotal() : d.money().expectedRevenue());
+            }
+            Paragraph sign = new Paragraph("\nReceived by: ______________________________   Date: ____________", body);
+            sign.setSpacingBefore(14);
+            doc.add(sign);
         });
     }
 

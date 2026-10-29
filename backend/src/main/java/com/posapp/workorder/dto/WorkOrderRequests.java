@@ -1,5 +1,6 @@
 package com.posapp.workorder.dto;
 
+import com.posapp.workorder.IntervalUnit;
 import com.posapp.workorder.WorkOrderPriority;
 import com.posapp.workorder.WorkOrderType;
 
@@ -44,5 +45,30 @@ public final class WorkOrderRequests {
     }
 
     public record InvoiceRequestBody(LocalDate dueDate, String notes) {
+    }
+
+    // ---- v1.15.0
+    public record EstimateSettingsRequest(Boolean approvalRequired, BigDecimal estimatedHours) {
+    }
+
+    public record EstimateSendRequest(Boolean email, String note) {
+    }
+
+    public record ApprovalDecisionRequest(String byName, String note) {
+    }
+
+    public record NoteRequest(String text) {
+    }
+
+    public record RescheduleRequest(LocalDate scheduledDate, LocalDate dueDate, Long assignedToUserId, Boolean changeAssignee) {
+    }
+
+    public record SettingsRequest(Boolean requireApprovalDefault, Boolean emailCustomerOnComplete) {
+    }
+
+    public record ScheduleRequest(String title, String description, String itemDescription, WorkOrderType type, WorkOrderPriority priority, Long customerId,
+                                  Long assetId, Long packageId, Long assignedToUserId, BigDecimal fixedPrice, BigDecimal labourRate, Long branchId,
+                                  IntervalUnit intervalUnit, Integer intervalCount, LocalDate nextDueDate, Integer leadDays, Integer dueAfterDays,
+                                  Boolean skipIfOpen, Boolean active) {
     }
 }

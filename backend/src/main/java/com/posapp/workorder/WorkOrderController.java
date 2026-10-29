@@ -4,10 +4,18 @@ import com.posapp.security.AppUserPrincipal;
 import com.posapp.workorder.WorkOrderService.Actor;
 import com.posapp.workorder.dto.WorkOrderDtos.*;
 import com.posapp.workorder.dto.WorkOrderRequests.*;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 import java.util.List;
 import java.util.Set;
@@ -28,9 +36,13 @@ public class WorkOrderController {
     private static final String BILL = "hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')";
 
     private final WorkOrderService service;
+    private final WorkOrderExtrasService extras;
+    private final MaintenanceScheduleService schedules;
 
-    public WorkOrderController(WorkOrderService service) {
+    public WorkOrderController(WorkOrderService service, WorkOrderExtrasService extras, MaintenanceScheduleService schedules) {
         this.service = service;
+        this.extras = extras;
+        this.schedules = schedules;
     }
 
     private static Actor actor(AppUserPrincipal me) {
@@ -163,7 +175,9 @@ public class WorkOrderController {
 
     @PostMapping("/{id}/complete")
     public WorkOrderDetail complete(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody(required = false) CompleteRequest request) {
-        return service.complete(actor(me), id, request);
+        WorkOrderDetail d = service.complete(actor(me), id, request);
+        extras.afterComplete(id);
+        return d;
     }
 
     @PreAuthorize(MANAGE)
@@ -210,5 +224,170 @@ public class WorkOrderController {
     @PostMapping("/{id}/release-invoice")
     public WorkOrderDetail release(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
         return service.releaseInvoice(actor(me), id);
+    }
+
+    // ---- v1.15.0: settings, preventive maintenance schedules (declared before /{id})
+    @PreAuthorize(VIEW)
+    @GetMapping("/settings")
+    public SettingsDto settings() {
+        return extras.settings();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/settings")
+    public SettingsDto saveSettings(@AuthenticationPrincipal AppUserPrincipal me, @RequestBody SettingsRequest request) {
+        return extras.saveSettings(actor(me), request);
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/schedules")
+    public List<ScheduleDto> schedules() {
+        return schedules.list();
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/schedules/{id}")
+    public ScheduleDto schedule(@PathVariable Long id) {
+        return schedules.get(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/schedules")
+    public ScheduleDto createSchedule(@AuthenticationPrincipal AppUserPrincipal me, @RequestBody ScheduleRequest request) {
+        return schedules.save(actor(me), null, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/schedules/{id}")
+    public ScheduleDto updateSchedule(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody ScheduleRequest request) {
+        return schedules.save(actor(me), id, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/schedules/{id}/pause")
+    public ScheduleDto pauseSchedule(@PathVariable Long id) {
+        return schedules.setActive(id, false);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/schedules/{id}/resume")
+    public ScheduleDto resumeSchedule(@PathVariable Long id) {
+        return schedules.setActive(id, true);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/schedules/{id}/run")
+    public ScheduleRunResult runSchedule(@PathVariable Long id) {
+        return schedules.runNow(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/schedules/run-due")
+    public ScheduleRunResult runDueSchedules() {
+        return schedules.runDueNow();
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/schedules/{id}")
+    public void deleteSchedule(@PathVariable Long id) {
+        schedules.delete(id);
+    }
+
+    // ---- v1.15.0: one work order's estimate, notes, files, history, documents
+    @PutMapping("/{id}/reschedule")
+    @PreAuthorize(MANAGE)
+    public WorkOrderDetail reschedule(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody RescheduleRequest request) {
+        return service.reschedule(actor(me), id, request);
+    }
+
+    @GetMapping("/{id}/estimate")
+    @PreAuthorize(VIEW)
+    public EstimateDto estimate(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        return extras.getEstimate(actor(me), id);
+    }
+
+    @PutMapping("/{id}/estimate")
+    @PreAuthorize(MANAGE)
+    public EstimateDto saveEstimateSettings(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody EstimateSettingsRequest request) {
+        return extras.saveEstimateSettings(actor(me), id, request);
+    }
+
+    @PostMapping("/{id}/estimate/send")
+    @PreAuthorize(MANAGE)
+    public EstimateDto sendEstimate(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody(required = false) EstimateSendRequest request) {
+        return extras.sendEstimate(actor(me), id, request);
+    }
+
+    @PostMapping("/{id}/estimate/approve")
+    @PreAuthorize(MANAGE)
+    public EstimateDto approve(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody ApprovalDecisionRequest request) {
+        return extras.approve(actor(me), id, request);
+    }
+
+    @PostMapping("/{id}/estimate/reject")
+    @PreAuthorize(MANAGE)
+    public EstimateDto reject(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody(required = false) ApprovalDecisionRequest request) {
+        return extras.reject(actor(me), id, request);
+    }
+
+    @GetMapping("/{id}/notes")
+    public List<NoteDto> notes(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        return extras.notes(actor(me), id);
+    }
+
+    @PostMapping("/{id}/notes")
+    public NoteDto addNote(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestBody NoteRequest request) {
+        return extras.addNote(actor(me), id, request);
+    }
+
+    @DeleteMapping("/{id}/notes/{noteId}")
+    public void deleteNote(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @PathVariable Long noteId) {
+        extras.deleteNote(actor(me), id, noteId);
+    }
+
+    @GetMapping("/{id}/attachments")
+    public List<AttachmentDto> attachments(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        return extras.attachments(actor(me), id);
+    }
+
+    @PostMapping(value = "/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public AttachmentDto addAttachment(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestParam("file") MultipartFile file,
+                                       @RequestParam(value = "caption", required = false) String caption) throws IOException {
+        return extras.addAttachment(actor(me), id, file, caption);
+    }
+
+    /** Photos are shown inline; anything else is a download. Never sniffed: the type is the one checked when it was added. */
+    @GetMapping("/{id}/attachments/{attachmentId}")
+    public ResponseEntity<byte[]> attachment(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @PathVariable Long attachmentId) {
+        WorkOrderExtrasService.FileData f = extras.file(actor(me), id, attachmentId);
+        boolean inline = f.contentType().startsWith("image/") || f.contentType().equals("application/pdf");
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(f.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, (inline ? ContentDisposition.inline() : ContentDisposition.attachment()).filename(f.fileName()).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .cacheControl(CacheControl.noStore())
+                .body(f.data());
+    }
+
+    @DeleteMapping("/{id}/attachments/{attachmentId}")
+    public void deleteAttachment(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @PathVariable Long attachmentId) {
+        extras.deleteAttachment(actor(me), id, attachmentId);
+    }
+
+    @GetMapping("/{id}/history")
+    public List<HistoryDto> history(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        return extras.history(actor(me), id);
+    }
+
+    /** kind = jobcard (default), estimate or completion. Opened in a new tab to view and print, like the other documents. */
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> pdf(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id, @RequestParam(defaultValue = "jobcard") String kind) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(extras.document(actor(me), id, kind));
+    }
+
+    @PostMapping("/{id}/email-completion")
+    @PreAuthorize(MANAGE)
+    public WorkOrderExtrasService.Result emailCompletion(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        return extras.emailCompletion(actor(me), id);
     }
 }

@@ -13,6 +13,7 @@ import { ModuleApiService } from '../../core/api/module-api.service';
 import { StaffOption, TimeApiService } from '../../core/api/time-api.service';
 import { Account, Bom, Customer, Product } from '../../core/models';
 import { QuickCustomerComponent } from '../../shared/quick-customer.component';
+import { WorkOrderExtrasComponent } from './work-order-extras.component';
 import {
   InvoicePreview, PackageSummary, WoLinePayload, WorkOrderApiService, WorkOrderDetail, WorkOrderPayload,
 } from '../../core/api/work-order-api.service';
@@ -24,7 +25,7 @@ import {
 @Component({
   selector: 'app-work-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, QuickCustomerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, QuickCustomerComponent, WorkOrderExtrasComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
@@ -98,6 +99,10 @@ import {
               <span class="badge badge-danger" style="margin-left:0.3rem;" *ngIf="d.priority === 'URGENT'">Urgent</span>
               <span class="badge badge-warning" style="margin-left:0.3rem;" *ngIf="d.priority === 'HIGH'">High priority</span>
               <span class="badge badge-danger" style="margin-left:0.3rem;" *ngIf="d.overdue">Overdue</span>
+              <span class="badge" style="margin-left:0.3rem;" id="wo-head-approval" *ngIf="d.type === 'CUSTOMER' && d.approvalRequired"
+                    [class.badge-success]="d.approvalStatus === 'APPROVED'" [class.badge-warning]="d.approvalStatus === 'NONE' || d.approvalStatus === 'REQUESTED'"
+                    [class.badge-danger]="d.approvalStatus === 'REJECTED'">{{ approvalLabel() }}</span>
+              <span class="badge badge-secondary" style="margin-left:0.3rem;" *ngIf="d.scheduleId">Planned maintenance</span>
               <p style="margin:0.6rem 0 0;" *ngIf="d.description">{{ d.description }}</p>
               <p class="text-muted" style="margin:0.3rem 0 0;" *ngIf="d.itemDescription">Working on: {{ d.itemDescription }}</p>
             </div>
@@ -117,7 +122,7 @@ import {
 
         <!-- actions -->
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap; align-items:center;">
-          <button class="btn btn-primary" *ngIf="d.canWork && (d.status === 'OPEN' || d.status === 'ON_HOLD')" [disabled]="busy" (click)="act('start')">{{ d.status === 'ON_HOLD' ? 'Resume' : 'Start work' }}</button>
+          <button class="btn btn-primary" *ngIf="d.canWork && (d.status === 'OPEN' || d.status === 'ON_HOLD')" [disabled]="busy || !approvedToStart()" [title]="approvedToStart() ? '' : 'The customer has to approve the estimate first'" (click)="act('start')">{{ d.status === 'ON_HOLD' ? 'Resume' : 'Start work' }}</button>
           <button class="btn btn-outline-secondary" *ngIf="d.canWork && (d.status === 'OPEN' || d.status === 'IN_PROGRESS')" [disabled]="busy" (click)="act('hold')">Put on hold</button>
           <button class="btn btn-success" *ngIf="d.canWork && active()" [disabled]="busy" (click)="showComplete = !showComplete">Complete…</button>
           <a class="btn btn-outline-primary" routerLink="/time" *ngIf="modules.on('TIME_TRACKING') && active()">Log time</a>
@@ -135,6 +140,8 @@ import {
           <div class="flex gap-2"><button class="btn btn-success" [disabled]="busy" (click)="complete()">Complete job</button>
             <button class="btn btn-outline-secondary" (click)="showComplete = false">Not yet</button></div>
         </div>
+
+        <app-work-order-extras [d]="d" (changed)="apply($event)"></app-work-order-extras>
 
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-start;">
           <div style="flex:2; min-width:22rem;">
@@ -376,7 +383,7 @@ export class WorkOrderDetailComponent implements OnInit {
     }
   }
 
-  private apply(d: WorkOrderDetail, notice?: string): void {
+  apply(d: WorkOrderDetail, notice?: string): void {
     this.busy = false;
     this.error = null;
     this.notice = notice ?? null;
@@ -396,6 +403,17 @@ export class WorkOrderDetailComponent implements OnInit {
 
   active(): boolean {
     return !!this.d && (this.d.status === 'OPEN' || this.d.status === 'IN_PROGRESS' || this.d.status === 'ON_HOLD');
+  }
+
+  /** A customer job that needs the customer's approval cannot be started until it has been given. */
+  approvedToStart(): boolean {
+    const d = this.d;
+    return !d || d.type !== 'CUSTOMER' || !d.approvalRequired || d.approvalStatus === 'APPROVED';
+  }
+
+  approvalLabel(): string {
+    const s = this.d?.approvalStatus;
+    return s === 'APPROVED' ? 'Estimate approved' : s === 'REQUESTED' ? 'Waiting for the customer' : s === 'REJECTED' ? 'Estimate declined' : 'Estimate to be sent';
   }
 
   openSteps(): number {

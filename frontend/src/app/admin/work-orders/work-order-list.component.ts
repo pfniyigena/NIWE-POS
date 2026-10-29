@@ -4,18 +4,20 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { WorkOrderApiService, WorkOrderSummary, WorkOrderSummaryCounts } from '../../core/api/work-order-api.service';
+import { WorkOrderTabsComponent } from './work-order-tabs.component';
 
 /** Work Orders > Work orders: every job with its status, assignee, due date and what is waiting to be invoiced. */
 @Component({
   selector: 'app-work-order-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, WorkOrderTabsComponent],
   template: `
     <app-shell [wide]="true">
-      <div class="flex justify-between align-center mb-3">
+      <div class="flex justify-between align-center mb-2">
         <h3>Work orders<span class="text-muted" *ngIf="assetId" style="font-size:0.9rem;"> · for one asset</span></h3>
         <a class="btn btn-primary" routerLink="/admin/work-orders/new">+ New work order</a>
       </div>
+      <app-work-order-tabs></app-work-order-tabs>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="stat-grid mb-3" *ngIf="s">
@@ -49,7 +51,10 @@ import { WorkOrderApiService, WorkOrderSummary, WorkOrderSummaryCounts } from '.
             <td><a [routerLink]="['/admin/work-orders', w.id]">{{ w.number }}</a></td>
             <td>{{ w.title }}
               <span class="badge badge-danger" *ngIf="w.priority === 'URGENT'" style="margin-left:0.3rem;">Urgent</span>
-              <span class="badge badge-warning" *ngIf="w.priority === 'HIGH'" style="margin-left:0.3rem;">High</span></td>
+              <span class="badge badge-warning" *ngIf="w.priority === 'HIGH'" style="margin-left:0.3rem;">High</span>
+              <span class="badge badge-warning" *ngIf="w.approvalRequired && (w.approvalStatus === 'NONE' || w.approvalStatus === 'REQUESTED')" style="margin-left:0.3rem;">{{ w.approvalStatus === 'REQUESTED' ? 'Waiting for customer' : 'Needs estimate' }}</span>
+              <span class="badge badge-danger" *ngIf="w.approvalRequired && w.approvalStatus === 'REJECTED'" style="margin-left:0.3rem;">Declined</span>
+              <span class="badge badge-secondary" *ngIf="w.scheduleId" style="margin-left:0.3rem;">Planned</span></td>
             <td>
               <span *ngIf="w.type === 'CUSTOMER'">{{ w.customerName || '—' }}</span>
               <span *ngIf="w.type === 'INTERNAL'" class="text-muted">Internal<span *ngIf="w.assetName"> · {{ w.assetName }}</span></span>
