@@ -30,8 +30,10 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerRepository customerRepository;
+    private final com.posapp.audit.AuditLogService auditLogService;
 
-    public CustomerController(CustomerRepository customerRepository) {
+    public CustomerController(CustomerRepository customerRepository, com.posapp.audit.AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
         this.customerRepository = customerRepository;
     }
 
@@ -62,7 +64,9 @@ public class CustomerController {
         if (principal.getUser().canManage(com.posapp.user.AccessArea.SALES)) {
             applyCreditFields(customer, request);
         }
-        return CustomerDto.from(customerRepository.save(customer));
+        Customer saved = customerRepository.save(customer);
+        auditLogService.record("CUSTOMER_CREATED", "Added customer " + saved.getName(), "Customer", saved.getId());
+        return CustomerDto.from(saved);
     }
 
     /** Any logged-in user — see the class doc comment above. A non-admin's request simply can't touch this customer's existing credit fields, whatever it sends for them. */
@@ -70,11 +74,17 @@ public class CustomerController {
     public CustomerDto update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Customer not found: " + id));
+        boolean wasCredit = customer.isCreditEnabled();
+        java.math.BigDecimal wasLimit = customer.getCreditLimit();
         applyBasicFields(customer, request);
         if (principal.getUser().canManage(com.posapp.user.AccessArea.SALES)) {
             applyCreditFields(customer, request);
         }
-        return CustomerDto.from(customerRepository.save(customer));
+        Customer saved = customerRepository.save(customer);
+        String credit = saved.isCreditEnabled() != wasCredit ? "; credit " + (saved.isCreditEnabled() ? "switched on" : "switched off")
+                : (saved.getCreditLimit() != null && wasLimit != null && saved.getCreditLimit().compareTo(wasLimit) != 0 ? "; credit limit " + wasLimit.toPlainString() + " -> " + saved.getCreditLimit().toPlainString() : "");
+        auditLogService.record("CUSTOMER_UPDATED", "Updated customer " + saved.getName() + credit, "Customer", saved.getId());
+        return CustomerDto.from(saved);
     }
 
     private void applyBasicFields(Customer customer, CustomerRequest request) {

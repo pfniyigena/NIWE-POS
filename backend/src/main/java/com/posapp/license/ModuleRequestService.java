@@ -7,6 +7,7 @@ import com.posapp.license.LicenseDtos.LicenseStatus;
 import com.posapp.license.LicenseDtos.ModuleRequestDto;
 import com.posapp.license.LicenseDtos.RequestResult;
 import com.posapp.modules.ModuleKey;
+import com.posapp.settings.StoreSettingsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,14 +31,16 @@ public class ModuleRequestService {
     private final LicenseService licenseService;
     private final MailService mailService;
     private final AuditLogService auditLogService;
+    private final StoreSettingsService storeSettingsService;
     private final String vendorEmail;
 
-    public ModuleRequestService(ModuleRequestRepository requests, LicenseService licenseService, MailService mailService, AuditLogService auditLogService,
+    public ModuleRequestService(ModuleRequestRepository requests, LicenseService licenseService, MailService mailService, AuditLogService auditLogService, StoreSettingsService storeSettingsService,
                                 @Value("${app.license.vendor-email:}") String vendorEmail) {
         this.requests = requests;
         this.licenseService = licenseService;
         this.mailService = mailService;
         this.auditLogService = auditLogService;
+        this.storeSettingsService = storeSettingsService;
         this.vendorEmail = vendorEmail == null ? "" : vendorEmail.trim();
     }
 
@@ -69,7 +72,8 @@ public class ModuleRequestService {
         auditLogService.record("MODULE_REQUESTED", "Requested module " + key.label() + (cleanNote != null ? ": " + cleanNote : ""));
 
         LicenseStatus status = licenseService.status();
-        String text = requestText(key, cleanNote, r.getRequestedBy(), status);
+        String business = businessName();
+        String text = requestText(key, cleanNote, r.getRequestedBy(), status, business);
         boolean sent = false;
         String emailNote;
         if (vendorEmail.isEmpty()) {
@@ -78,7 +82,7 @@ public class ModuleRequestService {
             emailNote = "E-mail is not set up on this system (Settings > Email), so nothing was sent. Send the text below to NIWE.";
         } else {
             try {
-                mailService.send(vendorEmail, "NIWE ERP module request: " + key.label() + " (" + status.installationId() + ")", html(text), List.of());
+                mailService.send(vendorEmail, "NIWE ERP module request: " + key.label() + (business.isEmpty() ? "" : " - " + business) + " (" + status.installationId() + ")", html(text), List.of());
                 sent = true;
                 emailNote = "The request was e-mailed to NIWE.";
             } catch (RuntimeException e) {
@@ -107,13 +111,24 @@ public class ModuleRequestService {
         return toDto(r);
     }
 
-    private static String requestText(ModuleKey key, String note, String user, LicenseStatus s) {
+    /** The name of the business as entered in Settings > Business details; empty when nothing was entered yet. */
+    private String businessName() {
+        try {
+            String n = storeSettingsService.getSettingsEntity().getBusinessName();
+            return n == null ? "" : n.trim().replaceAll("[\\r\\n]+", " ");
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    private static String requestText(ModuleKey key, String note, String user, LicenseStatus s, String business) {
         StringBuilder sb = new StringBuilder();
         sb.append("NIWE ERP: request to add a module to the license\n");
         sb.append("Module: ").append(key.label()).append(" (").append(key.name()).append(")\n");
         if (!key.requires().isEmpty()) {
             sb.append("It also needs: ").append(String.join(", ", key.requires().stream().map(ModuleKey::label).toList())).append("\n");
         }
+        sb.append("Business: ").append(business.isEmpty() ? "(not entered in Settings > Business details)" : business).append("\n");
         sb.append("Installation id: ").append(s.installationId()).append("\n");
         sb.append("Customer: ").append(s.customer() == null ? "(no license installed yet)" : s.customer()).append("\n");
         if (s.licenseId() != null) sb.append("Current license: ").append(s.licenseId()).append(" number ").append(s.serial()).append("\n");

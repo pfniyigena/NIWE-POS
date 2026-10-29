@@ -108,6 +108,7 @@ public class CustomerCreditService {
     private final StoreSettingsService storeSettingsService;
     /** Attributes a payment to the branch of the documents it settles. */
     private final com.posapp.branch.BranchService branchService;
+    private final com.posapp.audit.AuditLogService auditLogService;
     /** Fourier: "Wiring a handful of business events to that same mailer" — see {@link #assertWithinLimit}. */
     private final int creditLimitWarningPercent;
 
@@ -124,6 +125,7 @@ public class CustomerCreditService {
                                   DocumentPdfService documentPdfService,
                                   StoreSettingsService storeSettingsService,
                                   com.posapp.branch.BranchService branchService,
+                                  com.posapp.audit.AuditLogService auditLogService,
                                   @Value("${app.pos.credit-limit-warning-percent:90}") int creditLimitWarningPercent) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
@@ -138,6 +140,7 @@ public class CustomerCreditService {
         this.documentPdfService = documentPdfService;
         this.storeSettingsService = storeSettingsService;
         this.branchService = branchService;
+        this.auditLogService = auditLogService;
         this.creditLimitWarningPercent = creditLimitWarningPercent;
     }
 
@@ -472,6 +475,7 @@ public class CustomerCreditService {
         payment.setBranchId(branchService.commonBranchId(payment.getAllocations().stream().map(CustomerCreditService::allocationBranchId).toList()));
 
         CustomerPayment saved = customerPaymentRepository.save(payment);
+        auditPayment(saved, customer);
 
         // Fourier: "all POS, Sale...module will be integrated when accounting is enabled" — see
         // AccountingService.postCustomerPayment's own javadoc.
@@ -553,6 +557,7 @@ public class CustomerCreditService {
         payment.setBranchId(invoice.getBranchId());
 
         CustomerPayment saved = customerPaymentRepository.save(payment);
+        auditPayment(saved, customer);
 
         // Fourier: "all POS, Sale...module will be integrated when accounting is enabled" — see
         // AccountingService.postCustomerPayment's own javadoc.
@@ -679,6 +684,12 @@ public class CustomerCreditService {
      * the database at all).
      */
     @Transactional
+    /** v1.14.0: a payment received from a customer is recorded in the Audit Log (who took how much, by which method, against which receipt). */
+    private void auditPayment(CustomerPayment p, Customer customer) {
+        auditLogService.record("CUSTOMER_PAYMENT_RECORDED", "Received " + p.getAmount().toPlainString() + " from " + customer.getName() + " (" + p.getMethod() + ", receipt " + p.getReceiptNumber() + ")",
+                "CustomerPayment", p.getId());
+    }
+
     public void addCustomerCredit(Customer customer, BigDecimal amount) {
         BigDecimal current = customer.getCreditBalance() != null ? customer.getCreditBalance() : BigDecimal.ZERO;
         customer.setCreditBalance(current.add(amount));

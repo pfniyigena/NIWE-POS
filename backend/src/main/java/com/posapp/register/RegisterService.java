@@ -211,6 +211,8 @@ public class RegisterService {
         // their PIN — see CashierSessionController.
         CashierSessionDto assignedSession = cashierSessionService.getOrStartMine(saved.getId(), assignedCashier);
         orderService.startNewOrder(assignedSession.id(), caller);
+        auditLogService.record("POS_SHIFT_OPENED", "Opened a shift on " + register.getName() + " for " + assignedCashier.getFullName() + " with a float of "
+                + (request.getOpeningFloat() == null ? "0" : request.getOpeningFloat().toPlainString()), "RegisterSession", saved.getId());
         return toDto(saved);
     }
 

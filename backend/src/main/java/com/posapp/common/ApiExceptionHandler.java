@@ -1,5 +1,8 @@
 package com.posapp.common;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -20,8 +23,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
+        if (ex.getStatus().is5xxServerError()) log.error("API error {}: {}", ex.getStatus().value(), ex.getMessage(), ex);
+        else log.debug("API refused {}: {}", ex.getStatus().value(), ex.getMessage());
         return ResponseEntity.status(ex.getStatus()).body(body(ex.getStatus(), ex.getMessage()));
     }
 
@@ -68,6 +75,9 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleOther(Exception ex) {
+        // v1.14.0: an unexpected failure used to leave no trace; the reference (X-Request-Id) ties this entry to the screen's error
+        if (ex instanceof org.springframework.security.access.AccessDeniedException) log.warn("Access denied: {}", ex.getMessage());
+        else log.error("Unexpected error: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(body(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + ex.getMessage()));
     }
@@ -77,6 +87,8 @@ public class ApiExceptionHandler {
         map.put("status", status.value());
         map.put("error", status.getReasonPhrase());
         map.put("message", message);
+        String ref = MDC.get("req");
+        if (ref != null) map.put("requestId", ref);
         map.put("timestamp", Instant.now().toString());
         return map;
     }

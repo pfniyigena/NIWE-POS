@@ -30,9 +30,12 @@ public class DataImportExportController {
     private final LedgerBalanceImportService ledgerBalanceImportService;
     private final DataExportService dataExportService;
     private final YearEndArchiveService yearEndArchiveService;
+    private final com.posapp.audit.AuditLogService auditLogService;
 
     public DataImportExportController(BulkImportService bulkImportService, MasterImportService masterImportService, OpeningBalanceImportService openingBalanceImportService, LedgerBalanceImportService ledgerBalanceImportService,
-                                       DataExportService dataExportService, YearEndArchiveService yearEndArchiveService) {
+                                       DataExportService dataExportService, YearEndArchiveService yearEndArchiveService,
+                                       com.posapp.audit.AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
         this.masterImportService = masterImportService;
         this.openingBalanceImportService = openingBalanceImportService;
         this.ledgerBalanceImportService = ledgerBalanceImportService;
@@ -49,7 +52,7 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importProducts(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return bulkImportService.importProducts(file, dryRun);
+        return audited("products", dryRun, bulkImportService.importProducts(file, dryRun));
     }
 
     @GetMapping("/import/customers/template")
@@ -59,7 +62,7 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/customers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importCustomers(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return bulkImportService.importCustomers(file, dryRun);
+        return audited("customers", dryRun, bulkImportService.importCustomers(file, dryRun));
     }
 
     @GetMapping("/import/opening-stock/template")
@@ -69,13 +72,13 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/opening-stock", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importOpeningStock(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return bulkImportService.importOpeningStock(file, dryRun);
+        return audited("opening stock", dryRun, bulkImportService.importOpeningStock(file, dryRun));
     }
 
     /** {@code dryRun=true}: read the file and report exactly what would happen, saving nothing. */
     @PostMapping(value = "/import/suppliers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importSuppliers(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return masterImportService.importSuppliers(file, dryRun);
+        return audited("suppliers", dryRun, masterImportService.importSuppliers(file, dryRun));
     }
 
     @GetMapping("/import/suppliers/template")
@@ -85,7 +88,7 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/categories", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importCategories(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return masterImportService.importCategories(file, dryRun);
+        return audited("categories", dryRun, masterImportService.importCategories(file, dryRun));
     }
 
     @GetMapping("/import/categories/template")
@@ -95,7 +98,7 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/brands", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importBrands(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return masterImportService.importBrands(file, dryRun);
+        return audited("brands", dryRun, masterImportService.importBrands(file, dryRun));
     }
 
     @GetMapping("/import/brands/template")
@@ -105,7 +108,7 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/customer-balances", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importCustomerBalances(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return openingBalanceImportService.importCustomerBalances(file, dryRun);
+        return audited("customer balances", dryRun, openingBalanceImportService.importCustomerBalances(file, dryRun));
     }
 
     @GetMapping("/import/customer-balances/template")
@@ -115,7 +118,7 @@ public class DataImportExportController {
 
     @PostMapping(value = "/import/supplier-balances", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importSupplierBalances(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return openingBalanceImportService.importSupplierBalances(file, dryRun);
+        return audited("supplier balances", dryRun, openingBalanceImportService.importSupplierBalances(file, dryRun));
     }
 
     @GetMapping("/import/supplier-balances/template")
@@ -126,7 +129,7 @@ public class DataImportExportController {
     @PostMapping(value = "/import/ledger-balances", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importLedgerBalances(@RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun,
                                                 @RequestParam(defaultValue = "false") boolean balanceToEquity) {
-        return ledgerBalanceImportService.importBalances(file, dryRun, balanceToEquity);
+        return audited("ledger balances", dryRun, ledgerBalanceImportService.importBalances(file, dryRun, balanceToEquity));
     }
 
     @GetMapping("/import/ledger-balances/template")
@@ -134,19 +137,30 @@ public class DataImportExportController {
         return csvDownload("ledger-balances-import-template.csv", ledgerBalanceImportService.templateCsv());
     }
 
+    /** v1.14.0: a real (not dry-run) import is recorded in the Audit Log, with how many rows went in and how many were skipped. */
+    private ImportResultDto audited(String what, boolean dryRun, ImportResultDto result) {
+        if (!dryRun && result != null) {
+            auditLogService.record("DATA_IMPORTED", "Imported " + what + ": " + result.imported() + " row(s) imported, " + result.skipped() + " skipped");
+        }
+        return result;
+    }
+
     @GetMapping("/export/products")
     public ResponseEntity<byte[]> exportProducts() {
+        auditLogService.record("DATA_EXPORTED", "Exported the product list");
         return xlsxDownload("products.xlsx", dataExportService.exportProductsXlsx());
     }
 
     @GetMapping("/export/customers")
     public ResponseEntity<byte[]> exportCustomers() {
+        auditLogService.record("DATA_EXPORTED", "Exported the customer list");
         return xlsxDownload("customers.xlsx", dataExportService.exportCustomersXlsx());
     }
 
     @GetMapping("/export/year-end")
     public ResponseEntity<byte[]> exportYearEnd(@RequestParam int year) {
         byte[] content = yearEndArchiveService.exportYear(year);
+        auditLogService.record("YEAR_END_EXPORTED", "Downloaded the year-end archive for " + year);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.builder("attachment").filename("year-end-" + year + ".zip").build().toString())

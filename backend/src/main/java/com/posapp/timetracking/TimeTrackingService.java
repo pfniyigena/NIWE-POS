@@ -423,6 +423,7 @@ public class TimeTrackingService {
         t.setName(r.name().trim());
         t.setEstimatedHours(r.estimatedHours());
         taskRepository.save(t);
+        auditLogService.record("TIME_TASK_ADDED", "Added task " + t.getName() + " to time project " + project(projectId).getName(), "TimeTask", t.getId());
         return taskDto(t, 0);
     }
 
@@ -434,6 +435,7 @@ public class TimeTrackingService {
         t.setEstimatedHours(r.estimatedHours());
         if (r.active() != null) t.setActive(r.active());
         taskRepository.save(t);
+        auditLogService.record("TIME_TASK_UPDATED", "Updated time task " + t.getName() + (t.isActive() ? "" : " (switched off)"), "TimeTask", t.getId());
         long minutes = entryRepository.findByTaskId(taskId).stream().mapToLong(TimeEntry::getMinutes).sum();
         return taskDto(t, minutes);
     }
@@ -448,6 +450,7 @@ public class TimeTrackingService {
         } else {
             taskRepository.delete(t);
         }
+        auditLogService.record("TIME_TASK_DELETED", "Removed time task " + t.getName(), "TimeTask", taskId);
     }
 
     @Transactional
@@ -465,13 +468,17 @@ public class TimeTrackingService {
         });
         rate.setHourlyRate(r.hourlyRate());
         rateRepository.save(rate);
+        auditLogService.record("TIME_RATE_SET", "Set the hourly rate of user " + r.userId() + " to " + r.hourlyRate().toPlainString() + " on time project " + project(projectId).getName(), "TimeProject", projectId);
         return projectDetail(projectId).rates();
     }
 
     @Transactional
     public List<RateDto> removeRate(Long projectId, Long userId) {
         on();
-        rateRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rateRepository::delete);
+        rateRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rate -> {
+            rateRepository.delete(rate);
+            auditLogService.record("TIME_RATE_REMOVED", "Removed the hourly rate of user " + userId + " from time project " + project(projectId).getName(), "TimeProject", projectId);
+        });
         return projectDetail(projectId).rates();
     }
 
@@ -606,6 +613,7 @@ public class TimeTrackingService {
             throw ApiException.conflict("Only draft or rejected time can be deleted.");
         }
         entryRepository.delete(e);
+        auditLogService.record("TIME_ENTRY_DELETED", actorName(user) + " deleted their time entry of " + e.getWorkDate(), "TimeEntry", id);
     }
 
     private void applyEntry(TimeEntry e, EntryRequest r) {
@@ -679,6 +687,7 @@ public class TimeTrackingService {
             n++;
         }
         entryRepository.saveAll(targets);
+        if (n > 0) auditLogService.record("TIME_SUBMITTED", actorName(user) + " submitted " + n + " time entr" + (n == 1 ? "y" : "ies") + (approval ? " for approval" : ""));
         return n;
     }
 

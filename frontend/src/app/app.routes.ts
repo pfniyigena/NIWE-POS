@@ -79,6 +79,8 @@ import { EmailSettingsComponent } from './admin/email-settings.component';
 import { AppListComponent } from './admin/apps/app-list.component';
 import { AppSettingsComponent } from './admin/apps/app-settings.component';
 import { AuditLogListComponent } from './admin/audit-log-list.component';
+import { LoginLogComponent } from './admin/login-log.component';
+import { ServerLogsComponent } from './admin/server-logs.component';
 import { DataManagementComponent } from './admin/data-management.component';
 import { SupplierListComponent } from './admin/supplier-list.component';
 import { SupplierFormComponent } from './admin/supplier-form.component';
@@ -724,6 +726,8 @@ const baseRoutes: Routes = [
 
   // Task: "Implement an audit log of who did what and when" — ADMIN-only, same tier as Reports/Apps.
   { path: 'admin/audit-log', component: AuditLogListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/login-log', component: LoginLogComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/server-logs', component: ServerLogsComponent, canActivate: [authGuard, adminGuard] },
 
   // Fourier: "no backup/restore or bulk import-export anywhere in the backend" — ADMIN-only, same tier as Audit Log/Reports.
   { path: 'admin/data', component: DataManagementComponent, canActivate: [authGuard, adminGuard] },

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.14.0 - Server logs, sign-in log, business name on module requests, currency by chart
+
+The server now writes rotating log files (`niwe-erp.log`, `niwe-erp-error.log`, `niwe-access.log`) with a request id and user on every line; administrators read and download them under *Settings > Server logs* and see every sign-in and failed attempt under *Settings > Sign-in log*. More actions are recorded in the audit log (customers, categories and brands, imports and exports, shifts, time tracking, own profile, help desk settings and more). A module request now carries the business name in its text and e-mail subject. Choosing the Rwanda chart sets the currency to RWF and the Chad chart to XAF while the currency is still the untouched default. One migration (V53). Details in `RELEASE-NOTES-v1.14.0.md`.
+
 ### Version 1.13.0 - A till tied to one known device
 
 A register (till) can be tied to one device. An administrator at the till PC presses **Bind to this device** on *POS > Registers & Terminal* (name for the PC, and whether its address must also match); any other device is then refused by the server: the terminal, sales, opening a shift, offline sync and cash movements, with a clear message. **Unbind** (administrator, from any device) frees it. Reports, receipts, history and closing a shift stay open from the back office. A device is the till of one register only. Audit log entries for bind and unbind. Tills that are not bound behave as before. One migration (V52). Details in `RELEASE-NOTES-v1.13.0.md`.

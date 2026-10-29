@@ -732,6 +732,13 @@ import { NiweFooterComponent } from './niwe-footer.component';
             <a *ngIf="canSee('/admin/audit-log')" class="sidenav-link sidenav-sublink" routerLink="/admin/audit-log" routerLinkActive="active"
               ><span class="sidenav-icon">🕵️</span> Audit Log</a
             >
+            <!-- v1.14.0: sign-in log and server log viewer -->
+            <a *ngIf="canSee('/admin/login-log')" class="sidenav-link sidenav-sublink" routerLink="/admin/login-log" routerLinkActive="active"
+              ><span class="sidenav-icon">🔑</span> Sign-in log</a
+            >
+            <a *ngIf="canSee('/admin/server-logs')" class="sidenav-link sidenav-sublink" routerLink="/admin/server-logs" routerLinkActive="active"
+              ><span class="sidenav-icon">📜</span> Server logs</a
+            >
             <!-- Fourier: "no backup/restore or bulk import-export anywhere in the backend" — DB backup/restore, CSV import, and export/year-end archive, all on one screen. -->
             <a *ngIf="canSee('/admin/data')" class="sidenav-link sidenav-sublink" routerLink="/admin/data" routerLinkActive="active"
               ><span class="sidenav-icon">🗄️</span> Backup &amp; Data</a

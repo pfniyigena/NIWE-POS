@@ -27,8 +27,10 @@ public class PricingController {
 
     private final PricingService service;
     private final PriceListImportService importer;
+    private final com.posapp.audit.AuditLogService auditLogService;
 
-    public PricingController(PricingService service, PriceListImportService importer) {
+    public PricingController(PricingService service, PriceListImportService importer, com.posapp.audit.AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
         this.service = service;
         this.importer = importer;
     }
@@ -88,7 +90,9 @@ public class PricingController {
     @PreAuthorize(MANAGE)
     @PostMapping(value = "/price-lists/{id}/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ImportResultDto importEntries(@PathVariable Long id, @RequestParam("file") MultipartFile file, @RequestParam(defaultValue = "false") boolean dryRun) {
-        return importer.importEntries(id, file, dryRun);
+        ImportResultDto r = importer.importEntries(id, file, dryRun);
+        if (!dryRun && r != null) auditLogService.record("DATA_IMPORTED", "Imported price list entries into price list " + id + ": " + r.imported() + " row(s) imported, " + r.skipped() + " skipped", "PriceList", id);
+        return r;
     }
 
     @PreAuthorize(MANAGE)

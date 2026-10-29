@@ -78,7 +78,9 @@ public class CatalogService {
         Category category = new Category();
         category.setName(request.getName());
         category.setColorHex(request.getColorHex());
-        return CategoryDto.from(categoryRepository.save(category));
+        Category saved = categoryRepository.save(category);
+        auditLogService.record("CATEGORY_CREATED", "Created product category " + saved.getName(), "Category", saved.getId());
+        return CategoryDto.from(saved);
     }
 
     @Transactional
@@ -88,9 +90,12 @@ public class CatalogService {
         if (!category.getName().equalsIgnoreCase(request.getName()) && categoryRepository.existsByNameIgnoreCase(request.getName())) {
             throw ApiException.conflict("A category named '" + request.getName() + "' already exists");
         }
+        String was = category.getName();
         category.setName(request.getName());
         category.setColorHex(request.getColorHex());
-        return CategoryDto.from(categoryRepository.save(category));
+        Category saved = categoryRepository.save(category);
+        auditLogService.record("CATEGORY_UPDATED", "Updated product category " + (was.equals(saved.getName()) ? saved.getName() : was + " -> " + saved.getName()), "Category", saved.getId());
+        return CategoryDto.from(saved);
     }
 
     @Transactional
@@ -101,6 +106,7 @@ public class CatalogService {
             throw ApiException.conflict("Cannot delete '" + category.getName() + "' — products still use this category");
         }
         categoryRepository.delete(category);
+        auditLogService.record("CATEGORY_DELETED", "Deleted product category " + category.getName(), "Category", id);
     }
 
     // ---- brands: same simple CRUD shape as categories above, minus the color (Fourier: "Add product brands") ----
@@ -117,7 +123,9 @@ public class CatalogService {
         }
         Brand brand = new Brand();
         brand.setName(request.getName());
-        return BrandDto.from(brandRepository.save(brand));
+        Brand saved = brandRepository.save(brand);
+        auditLogService.record("BRAND_CREATED", "Created product brand " + saved.getName(), "Brand", saved.getId());
+        return BrandDto.from(saved);
     }
 
     @Transactional
@@ -127,8 +135,11 @@ public class CatalogService {
         if (!brand.getName().equalsIgnoreCase(request.getName()) && brandRepository.existsByNameIgnoreCase(request.getName())) {
             throw ApiException.conflict("A brand named '" + request.getName() + "' already exists");
         }
+        String was = brand.getName();
         brand.setName(request.getName());
-        return BrandDto.from(brandRepository.save(brand));
+        Brand saved = brandRepository.save(brand);
+        auditLogService.record("BRAND_UPDATED", "Updated product brand " + (was.equals(saved.getName()) ? saved.getName() : was + " -> " + saved.getName()), "Brand", saved.getId());
+        return BrandDto.from(saved);
     }
 
     @Transactional
@@ -139,6 +150,7 @@ public class CatalogService {
             throw ApiException.conflict("Cannot delete '" + brand.getName() + "' — products still use this brand");
         }
         brandRepository.delete(brand);
+        auditLogService.record("BRAND_DELETED", "Deleted product brand " + brand.getName(), "Brand", id);
     }
 
     /**

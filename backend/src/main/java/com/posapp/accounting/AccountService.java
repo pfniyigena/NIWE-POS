@@ -480,6 +480,20 @@ public class AccountService {
         auditLogService.record("TAX_RATE_CREATED", "Created tax rate " + code + " (" + name + ", " + percent + "%) with the Rwanda chart", "TaxRate", rate.getId());
     }
 
+    /**
+     * v1.14.0: the Rwanda chart means Rwandan francs (RWF) and the Chad chart means Central African CFA francs (XAF). Applied when the chart is
+     * chosen, and only while the currency is still the untouched default (USD shown as $), so a currency somebody typed in (or configured with
+     * app.pos.currency-symbol) is never overwritten. It stays editable in Settings > System settings.
+     */
+    private void applyCountryCurrency(StoreSettings settings, ChartCountry country) {
+        boolean untouched = "USD".equalsIgnoreCase(settings.getCurrencyCode()) && "$".equals(settings.getCurrencySymbol());
+        if (!untouched) return;
+        String code = country == ChartCountry.RWANDA ? "RWF" : "XAF";
+        settings.setCurrencyCode(code);
+        settings.setCurrencySymbol(code);
+        auditLogService.record("SYSTEM_SETTINGS_UPDATED", "Currency set to " + code + " with the " + country + " chart of accounts", "StoreSettings", settings.getId());
+    }
+
     private void seedChart(ChartCountry country) {
         List<ChartRow> chart = chart(country);
         for (ChartRow row : chart) {
@@ -487,6 +501,7 @@ public class AccountService {
         }
         StoreSettings settings = getOrCreateStoreSettings();
         settings.setChartCountry(country);
+        applyCountryCurrency(settings, country);
         storeSettingsRepository.save(settings);
         if (country == ChartCountry.RWANDA) {
             ensureRwandaTaxCodes();

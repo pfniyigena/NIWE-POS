@@ -33,6 +33,7 @@ public class CashierSessionService {
     /** Staff limited to certain branches can only work a till at their branches — see {@link #assertBranchAccess}. */
     private final com.posapp.branch.BranchAccessService branchAccessService;
     private final com.posapp.warehouse.WarehouseService warehouseService;
+    private final com.posapp.audit.AuditLogService auditLogService;
 
     public CashierSessionService(CashierSessionRepository cashierSessionRepository,
                                   RegisterSessionRepository registerSessionRepository,
@@ -40,7 +41,9 @@ public class CashierSessionService {
                                   PasswordEncoder passwordEncoder,
                                   OrderService orderService,
                                   com.posapp.branch.BranchAccessService branchAccessService,
-                                  com.posapp.warehouse.WarehouseService warehouseService) {
+                                  com.posapp.warehouse.WarehouseService warehouseService,
+                                  com.posapp.audit.AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
         this.cashierSessionRepository = cashierSessionRepository;
         this.registerSessionRepository = registerSessionRepository;
         this.userRepository = userRepository;
@@ -128,7 +131,12 @@ public class CashierSessionService {
     private CashierSessionDto findOrCreate(RegisterSession shift, AppUser cashier) {
         CashierSession session = cashierSessionRepository
                 .findByRegisterSessionIdAndCashierIdAndStatus(shift.getId(), cashier.getId(), CashierSessionStatus.OPEN)
-                .orElseGet(() -> cashierSessionRepository.save(newSession(shift, cashier)));
+                .orElseGet(() -> {
+                    CashierSession created = cashierSessionRepository.save(newSession(shift, cashier));
+                    auditLogService.record("POS_CASHIER_SESSION_STARTED", cashier.getFullName() + " started working on " + (shift.getRegister() == null ? "a till" : shift.getRegister().getName()),
+                            "CashierSession", created.getId());
+                    return created;
+                });
         return CashierSessionDto.from(session);
     }
 
@@ -201,6 +209,8 @@ public class CashierSessionService {
             session.setStatus(CashierSessionStatus.CLOSED);
             session.setEndedAt(Instant.now());
             cashierSessionRepository.save(session);
+            auditLogService.record("POS_CASHIER_SESSION_CLOSED", "Ended the working session of " + (session.getCashier() == null ? "a cashier" : session.getCashier().getFullName())
+                    + " (closed by " + (caller == null ? "system" : caller.getUsername()) + ")", "CashierSession", session.getId());
         }
         return CashierSessionDto.from(session);
     }

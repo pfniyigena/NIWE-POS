@@ -29,8 +29,10 @@ public class HelpDeskSettingsService {
     private static final Pattern SIMPLE_EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final HelpDeskSettingsRepository repository;
+    private final com.posapp.audit.AuditLogService auditLogService;
 
-    public HelpDeskSettingsService(HelpDeskSettingsRepository repository) {
+    public HelpDeskSettingsService(HelpDeskSettingsRepository repository, com.posapp.audit.AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
         this.repository = repository;
     }
 
@@ -77,6 +79,8 @@ public class HelpDeskSettingsService {
             settings.setPublicEnabled(request.getPublicEnabled());
         }
         HelpDeskSettings saved = repository.save(settings);
+        auditLogService.record("HELPDESK_SETTINGS_UPDATED", "Updated help desk settings (" + cleaned.size() + " notification address" + (cleaned.size() == 1 ? "" : "es")
+                + ", public tickets " + (saved.isPublicEnabled() ? "on" : "off") + ")", "HelpDeskSettings", saved.getId());
         return HelpDeskSettingsDto.from(saved, cleaned);
     }
 

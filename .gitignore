@@ -12,3 +12,7 @@
 *.niwelic
 niwe-license-private.key
 licenses.csv
+
+# server log files (v1.14.0)
+backend/logs/
+logs/

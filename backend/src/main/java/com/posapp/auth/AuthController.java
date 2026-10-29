@@ -6,7 +6,12 @@ import com.posapp.hr.Employee;
 import com.posapp.hr.EmployeeRepository;
 import com.posapp.security.AppUserPrincipal;
 import com.posapp.security.JwtService;
+import com.posapp.logging.LoginLogService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,9 +32,11 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordResetService passwordResetService;
     private final EmployeeRepository employeeRepository;
+    private final LoginLogService loginLog;
 
     public AuthController(AuthenticationManager authenticationManager, JwtService jwtService, PasswordResetService passwordResetService,
-                          EmployeeRepository employeeRepository) {
+                          EmployeeRepository employeeRepository, LoginLogService loginLog) {
+        this.loginLog = loginLog;
         this.employeeRepository = employeeRepository;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -37,13 +44,23 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         var authToken = new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
-        var authentication = authenticationManager.authenticate(authToken);
+        org.springframework.security.core.Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(authToken);
+        } catch (AuthenticationException e) {
+            // v1.14.0: the sign-in log. The caller still gets exactly the same answer as before.
+            String reason = e instanceof DisabledException ? "Account switched off" : e instanceof LockedException ? "Account locked" : "Wrong user name or password";
+            loginLog.record(http, request.getUsername(), null, false, reason);
+            throw e;
+        }
         if (!(authentication.getPrincipal() instanceof AppUserPrincipal principal)) {
+            loginLog.record(http, request.getUsername(), null, false, "Not a staff account");
             throw new BadCredentialsException("Invalid credentials");
         }
         var user = principal.getUser();
+        loginLog.record(http, user.getUsername(), user.getId(), true, null);
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name(), user.getId());
         var permissionNames = user.getPermissions().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
         return new LoginResponse(token, user.getId(), user.getUsername(), user.getFullName(), user.getRole().name(), permissionNames,

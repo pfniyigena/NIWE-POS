@@ -1104,6 +1104,7 @@ public class OrderService {
         // See checkout()'s own comment on postPosSale — called here too, with the now-saved entity,
         // so an offline-synced sale posts to the ledger exactly the same as one rung online.
         accountingService.postPosSale(saved);
+        auditLogService.record("OFFLINE_SALE_SYNCED", "Synced a sale rung offline (" + saved.getInvoiceNumber() + ")", "SaleOrder", saved.getId());
         return OrderDto.from(saved);
     }
 

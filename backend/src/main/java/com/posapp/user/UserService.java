@@ -198,7 +198,9 @@ public class UserService {
         assertEmailAvailable(request.getEmail(), userId);
         user.setFullName(request.getFullName());
         user.setEmail(normalizeEmail(request.getEmail()));
-        return UserDto.from(userRepository.save(user));
+        AppUser saved = userRepository.save(user);
+        auditLogService.record("USER_PROFILE_UPDATED", saved.getUsername() + " updated their own profile", "AppUser", saved.getId());
+        return UserDto.from(saved);
     }
 
     /**
