@@ -50,6 +50,9 @@ import { ProjectDetail, ProjectPayload, ProjectStatus, StaffOption, TimeApiServi
           <div class="form-group"><label class="form-label">End</label><app-date-picker name="ed" [(ngModel)]="f.endDate"></app-date-picker></div>
         </div>
         <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="bl" [(ngModel)]="f.billable" /> Time on this project is billable to the customer</label></div>
+        <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="bb" [(ngModel)]="f.blockOverBudget" [disabled]="f.budgetHours == null || f.budgetHours <= 0" />
+          Refuse time that would go over the budget</label>
+          <div class="text-muted" style="font-size:0.8rem;">Needs a budget. Managers can still correct entries after the fact.</div></div>
         <div class="flex gap-2">
           <button class="btn btn-primary" type="submit" [disabled]="busy">Save</button>
           <button class="btn btn-outline-danger" type="button" *ngIf="id" (click)="remove()">Delete</button>
@@ -65,6 +68,22 @@ import { ProjectDetail, ProjectPayload, ProjectStatus, StaffOption, TimeApiServi
           <a *ngIf="detail.summary.unbilledAmount > 0" routerLink="/admin/time/billing" style="font-size:0.9rem;">Go to billing</a>
         </div>
 
+        <div class="card mb-3" style="padding:1rem; max-width:44rem;" *ngIf="detail.summary.sourceType === 'MANUAL'">
+          <strong class="mb-2">Project team</strong>
+          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="rt" [(ngModel)]="restrict" /> Only the people below can log time on this project</label>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">Administrators can always log time. People outside the team still show in reports for time they logged earlier.</div>
+          <div class="flex gap-2" style="flex-wrap:wrap;" *ngIf="team.length">
+            <span class="badge badge-secondary" *ngFor="let m of team" style="font-size:0.85rem;">{{ m.userName }}
+              <a href="javascript:void(0)" (click)="dropMember(m.userId)" style="margin-left:0.3rem;" title="Remove">✕</a></span>
+          </div>
+          <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
+            <select class="form-select" style="width:auto;" name="tm" [(ngModel)]="teamPick"><option [ngValue]="null">Add a person…</option>
+              <option *ngFor="let u of teamChoices()" [ngValue]="u.id">{{ u.fullName }}</option></select>
+            <button class="btn btn-outline-primary" type="button" [disabled]="!teamPick" (click)="addMember()">Add</button>
+            <button class="btn btn-primary" type="button" (click)="saveTeam()">Save team</button>
+          </div>
+        </div>
+
         <div class="card mb-3" style="padding:1rem; max-width:44rem;">
           <strong class="mb-2">Tasks (optional)</strong>
           <table class="table-sm" *ngIf="detail.tasks.length">
@@ -73,7 +92,8 @@ import { ProjectDetail, ProjectPayload, ProjectStatus, StaffOption, TimeApiServi
               <tr *ngFor="let t of detail.tasks">
                 <td [style.opacity]="t.active ? 1 : 0.5">{{ t.name }}<span class="text-muted" *ngIf="!t.active"> (closed)</span></td>
                 <td class="text-end">{{ t.estimatedHours != null ? (t.estimatedHours | number: '1.0-2') : '—' }}</td>
-                <td class="text-end">{{ t.hoursLogged | number: '1.0-2' }}</td>
+                <td class="text-end" [style.color]="t.estimatedHours != null && t.hoursLogged > t.estimatedHours ? '#c0392b' : ''">{{ t.hoursLogged | number: '1.0-2' }}
+                  <span class="text-muted" *ngIf="t.estimatedHours" style="font-size:0.75rem;">({{ t.hoursLogged / t.estimatedHours * 100 | number: '1.0-0' }}%)</span></td>
                 <td style="white-space:nowrap;">
                   <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleTask(t)">{{ t.active ? 'Close' : 'Reopen' }}</button>
                   <button class="btn btn-sm btn-outline-danger" type="button" style="margin-left:0.3rem;" (click)="removeTask(t.id)">Remove</button>
@@ -120,7 +140,34 @@ export class TimeProjectFormComponent implements OnInit {
   rateValue: number | null = null;
   f: ProjectPayload & { status: ProjectStatus; billable: boolean } = {
     name: '', code: '', customerId: null, description: '', status: 'ACTIVE', billable: true, defaultRate: null, budgetHours: null, startDate: null, endDate: null,
+    blockOverBudget: false,
   };
+  team: { userId: number; userName: string }[] = [];
+  restrict = false;
+  teamPick: number | null = null;
+
+  teamChoices(): StaffOption[] {
+    return this.staff.filter((u) => !this.team.some((m) => m.userId === u.id));
+  }
+
+  addMember(): void {
+    const u = this.staff.find((x) => x.id === this.teamPick);
+    if (u) this.team = [...this.team, { userId: u.id, userName: u.fullName }];
+    this.teamPick = null;
+  }
+
+  dropMember(userId: number): void {
+    this.team = this.team.filter((m) => m.userId !== userId);
+  }
+
+  saveTeam(): void {
+    this.error = null;
+    this.saved = false;
+    this.api.setTeam(this.id!, this.team.map((m) => m.userId), this.restrict).subscribe({
+      next: (d) => { this.show(d); this.saved = true; },
+      error: (e) => (this.error = e?.error?.message ?? 'Could not save the team'),
+    });
+  }
 
   onCustomerCreated(c: Customer): void {
     this.customers = [...this.customers, c].sort((a, b) => a.name.localeCompare(b.name));
@@ -152,7 +199,10 @@ export class TimeProjectFormComponent implements OnInit {
     this.f = {
       name: s.name, code: s.code ?? '', customerId: s.customerId, description: d.description ?? '', status: s.status, billable: s.billable,
       defaultRate: s.defaultRate, budgetHours: s.budgetHours, startDate: s.startDate, endDate: s.endDate, branchId: d.branchId,
+      blockOverBudget: s.blockOverBudget, restrictToTeam: s.restrictToTeam,
     };
+    this.team = [...(d.team ?? [])];
+    this.restrict = s.restrictToTeam;
   }
 
   save(): void {

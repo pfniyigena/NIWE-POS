@@ -13,7 +13,7 @@ public final class TimeRequests {
     }
 
     public record ProjectRequest(String name, String code, Long customerId, String description, ProjectStatus status, Boolean billable,
-                                 BigDecimal defaultRate, BigDecimal budgetHours, LocalDate startDate, LocalDate endDate, Long branchId) {
+                                 BigDecimal defaultRate, BigDecimal budgetHours, LocalDate startDate, LocalDate endDate, Long branchId, Boolean restrictToTeam, Boolean blockOverBudget) {
     }
 
     public record TaskRequest(String name, BigDecimal estimatedHours, Boolean active) {
@@ -40,10 +40,20 @@ public final class TimeRequests {
     }
 
     public record SettingsRequest(Boolean requireApproval, Integer timerRoundingMinutes, BigDecimal defaultHourlyRate, Integer maxHoursPerDay,
-                                  BigDecimal dailyCapacityHours, Long billingProductId) {
+                                  BigDecimal dailyCapacityHours, Long billingProductId, Integer timerAutoStopHours, LocalDate lockedThrough, Boolean clearLock,
+                                  Boolean reminderEnabled, Integer reminderDay, Integer budgetWarnPercent) {
     }
 
     /** Which approved time to bill: these entries, or all billable approved time of the project up to {@code to}. */
     public record BillingRequest(Long projectId, Long customerId, LocalDate from, LocalDate to, List<Long> entryIds, LocalDate dueDate, String notes) {
+    }
+
+    public record TeamRequest(List<Long> userIds, Boolean restrictToTeam) {
+    }
+
+    public record CopyWeekRequest(LocalDate week) {
+    }
+
+    public record ReminderRequest(LocalDate week, List<Long> userIds) {
     }
 }

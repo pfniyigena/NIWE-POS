@@ -16,7 +16,13 @@ export interface TimeSettings {
   dailyCapacityHours: number;
   billingProductId: number | null;
   billingProductName: string | null;
+  timerAutoStopHours: number;
+  lockedThrough: string | null;
+  reminderEnabled: boolean;
+  reminderDay: number;
+  budgetWarnPercent: number;
 }
+export type SettingsSave = Partial<TimeSettings> & { clearLock?: boolean };
 
 export interface TimeTask { id: number; projectId: number; name: string; estimatedHours: number | null; active: boolean; hoursLogged: number; }
 export interface TimeRate { userId: number; userName: string; hourlyRate: number; }
@@ -25,15 +31,18 @@ export interface ProjectSummary {
   id: number; name: string; code: string | null; customerId: number | null; customerName: string | null; status: ProjectStatus; billable: boolean;
   defaultRate: number | null; budgetHours: number | null; hoursLogged: number; billableHours: number; unbilledAmount: number; percentOfBudget: number | null;
   sourceType: string; sourceId: number | null; startDate: string | null; endDate: string | null;
+  restrictToTeam: boolean; blockOverBudget: boolean;
 }
 
-export interface ProjectDetail { summary: ProjectSummary; description: string | null; branchId: number | null; tasks: TimeTask[]; rates: TimeRate[]; }
+export interface TeamMember { userId: number; userName: string; }
+export interface ProjectDetail { summary: ProjectSummary; description: string | null; branchId: number | null; tasks: TimeTask[]; rates: TimeRate[]; team: TeamMember[]; }
 
-export interface ProjectChoice { id: number; name: string; code: string | null; customerName: string | null; billable: boolean; tasks: TimeTask[]; }
+export interface ProjectChoice { id: number; name: string; code: string | null; customerName: string | null; billable: boolean; tasks: TimeTask[]; budgetHours: number | null; hoursLogged: number | null; blockOverBudget: boolean; }
 
 export interface ProjectPayload {
   name: string; code?: string | null; customerId?: number | null; description?: string | null; status?: ProjectStatus; billable?: boolean;
   defaultRate?: number | null; budgetHours?: number | null; startDate?: string | null; endDate?: string | null; branchId?: number | null;
+  restrictToTeam?: boolean; blockOverBudget?: boolean;
 }
 
 export interface TimeEntry {
@@ -47,7 +56,7 @@ export interface EntryPayload { projectId: number; taskId?: number | null; workD
 
 export interface Timer {
   running: boolean; projectId: number | null; projectName: string | null; taskId: number | null; taskName: string | null; description: string | null;
-  billable: boolean; startedAt: string | null; elapsedSeconds: number;
+  billable: boolean; startedAt: string | null; elapsedSeconds: number; autoStopHours: number;
 }
 
 export interface Week {
@@ -57,6 +66,11 @@ export interface Week {
 
 export interface MySummary { hoursToday: number; hoursThisWeek: number; billableHoursThisWeek: number; hoursThisMonth: number; toSubmit: number; rejected: number; }
 export interface TimeSummary { pendingApprovals: number; hoursThisMonth: number; billableHoursThisMonth: number; unbilledAmount: number; activeProjects: number; overBudgetProjects: number; }
+
+export interface MissingRow { userId: number; userName: string; hasEmail: boolean; status: 'NOTHING' | 'DRAFTS' | 'SENT_BACK'; hoursLogged: number; hoursNotSubmitted: number; hoursSubmitted: number; }
+export interface MissingList { weekStart: string; weekEnd: string; rows: MissingRow[]; }
+export interface ReminderResult { sent: number; noEmail: number; failed: number; notes: string[]; }
+export interface CopyResult { copied: number; skipped: number; notes: string[]; }
 
 export interface InvoiceLinePreview { userId: number; userName: string; hourlyRate: number; hours: number; amount: number; description: string; entries: number; }
 export interface BillingPreview {
@@ -133,7 +147,20 @@ export class TimeApiService {
 
   // settings
   settings(): Observable<TimeSettings> { return this.http.get<TimeSettings>(`${this.base}/settings`); }
-  saveSettings(s: Partial<TimeSettings>): Observable<TimeSettings> { return this.http.put<TimeSettings>(`${this.base}/settings`, s); }
+  saveSettings(s: SettingsSave): Observable<TimeSettings> { return this.http.put<TimeSettings>(`${this.base}/settings`, s); }
+  autoStopNow(): Observable<{ stopped: number }> { return this.http.post<{ stopped: number }>(`${this.base}/timers/auto-stop`, {}); }
+
+  // discipline
+  copyWeek(week?: string): Observable<CopyResult> { return this.http.post<CopyResult>(`${this.base}/my/copy-week`, week ? { week } : {}); }
+  missing(week?: string): Observable<MissingList> {
+    let params = new HttpParams();
+    if (week) params = params.set('week', week);
+    return this.http.get<MissingList>(`${this.base}/missing`, { params });
+  }
+  remind(week: string, userIds: number[] | null): Observable<ReminderResult> { return this.http.post<ReminderResult>(`${this.base}/reminders`, { week, userIds }); }
+  setTeam(projectId: number, userIds: number[], restrictToTeam: boolean): Observable<ProjectDetail> {
+    return this.http.put<ProjectDetail>(`${this.base}/projects/${projectId}/team`, { userIds, restrictToTeam });
+  }
 
   // billing
   ready(): Observable<ProjectSummary[]> { return this.http.get<ProjectSummary[]>(`${this.base}/billing/ready`); }

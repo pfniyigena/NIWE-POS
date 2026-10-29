@@ -25,9 +25,11 @@ public class TimeTrackingController {
     private static final String BILL = "hasRole('ADMIN') or hasAuthority('AREA_BILLING_MANAGE')";
 
     private final TimeTrackingService service;
+    private final TimesheetDisciplineService discipline;
 
-    public TimeTrackingController(TimeTrackingService service) {
+    public TimeTrackingController(TimeTrackingService service, TimesheetDisciplineService discipline) {
         this.service = service;
+        this.discipline = discipline;
     }
 
     // ---- pickers, open to every signed-in user
@@ -74,6 +76,12 @@ public class TimeTrackingController {
         return Map.of("submitted", service.submit(me.getUser(), request));
     }
 
+    @PostMapping("/my/copy-week")
+    public CopyResult copyWeek(@AuthenticationPrincipal AppUserPrincipal me, @RequestBody(required = false) CopyWeekRequest request) {
+        service.requireModule();
+        return discipline.copyWeek(me.getUser(), request == null ? null : request.week());
+    }
+
     @GetMapping("/my/timer")
     public TimerDto timer(@AuthenticationPrincipal AppUserPrincipal me) {
         return service.timer(me.getUser());
@@ -92,6 +100,29 @@ public class TimeTrackingController {
     @DeleteMapping("/my/timer")
     public void discard(@AuthenticationPrincipal AppUserPrincipal me) {
         service.discardTimer(me.getUser());
+    }
+
+    // ---- who has not finished their week
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/missing")
+    public MissingDto missing(@RequestParam(required = false) LocalDate week) {
+        return discipline.missing(week);
+    }
+
+    /** Stops, right now, every timer that has been running longer than the limit in the settings. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/timers/auto-stop")
+    public Map<String, Integer> autoStop() {
+        service.requireModule();
+        return Map.of("stopped", discipline.autoStopLongTimers());
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/reminders")
+    public ReminderResult reminders(@AuthenticationPrincipal AppUserPrincipal me, @RequestBody(required = false) ReminderRequest request) {
+        return discipline.sendReminders(me.getUser(), request == null ? null : request.week(), request == null ? null : request.userIds(),
+                TimeTrackingService.actorName(me.getUser()));
     }
 
     // ---- projects
@@ -143,6 +174,12 @@ public class TimeTrackingController {
     @DeleteMapping("/tasks/{taskId}")
     public void deleteTask(@PathVariable Long taskId) {
         service.deleteTask(taskId);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/projects/{id}/team")
+    public ProjectDetailDto setTeam(@PathVariable Long id, @RequestBody TeamRequest request) {
+        return service.setTeam(id, request);
     }
 
     @PreAuthorize(MANAGE)

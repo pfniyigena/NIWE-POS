@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.16.0 - Time Tracking: timesheet discipline and project control
+
+Time Tracking now helps keep timesheets complete and projects on budget: a timer left running is stopped automatically (and a warning shows while it runs), *Copy last week* starts a week from the one before, a lock date stops changes to past weeks, a *Not submitted* list shows who has not handed in their week and can e-mail a reminder (by hand or every week), projects can be limited to a team, and budget warnings (with an optional hard stop) show on the project list and when logging time. One migration (V55). Details in `RELEASE-NOTES-v1.16.0.md`.
+
 ### Version 1.15.0 - Work Orders: job card and customer PDFs, estimate approval, board, calendar, planned maintenance, photos
 
 Work Orders now prints a job card for the technician, an estimate and a completion note for the customer, and can require the customer's approval of an estimate before work starts. Jobs can be seen on a status board and a week calendar (drag to start, hold or re-schedule), repeat automatically through planned-maintenance schedules (a check runs every morning), and carry notes, photos and files, a history and a timer. The customer can be e-mailed the estimate and the completion note. One migration (V54). Details in `RELEASE-NOTES-v1.15.0.md`.

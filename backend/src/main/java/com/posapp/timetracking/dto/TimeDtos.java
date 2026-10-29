@@ -18,7 +18,8 @@ public final class TimeDtos {
     }
 
     public record SettingsDto(boolean requireApproval, int timerRoundingMinutes, BigDecimal defaultHourlyRate, int maxHoursPerDay,
-                              BigDecimal dailyCapacityHours, Long billingProductId, String billingProductName) {
+                              BigDecimal dailyCapacityHours, Long billingProductId, String billingProductName, int timerAutoStopHours, LocalDate lockedThrough,
+                              boolean reminderEnabled, int reminderDay, int budgetWarnPercent) {
     }
 
     public record TaskDto(Long id, Long projectId, String name, BigDecimal estimatedHours, boolean active, BigDecimal hoursLogged) {
@@ -31,14 +32,18 @@ public final class TimeDtos {
     public record ProjectSummaryDto(Long id, String name, String code, Long customerId, String customerName, ProjectStatus status, boolean billable,
                                     BigDecimal defaultRate, BigDecimal budgetHours, BigDecimal hoursLogged, BigDecimal billableHours,
                                     BigDecimal unbilledAmount, BigDecimal percentOfBudget, String sourceType, Long sourceId,
-                                    LocalDate startDate, LocalDate endDate) {
+                                    LocalDate startDate, LocalDate endDate, boolean restrictToTeam, boolean blockOverBudget) {
     }
 
-    public record ProjectDetailDto(ProjectSummaryDto summary, String description, Long branchId, List<TaskDto> tasks, List<RateDto> rates) {
+    public record MemberDto(Long userId, String userName) {
+    }
+
+    public record ProjectDetailDto(ProjectSummaryDto summary, String description, Long branchId, List<TaskDto> tasks, List<RateDto> rates, List<MemberDto> team) {
     }
 
     /** A project as offered in the "log time" pickers. */
-    public record ProjectChoice(Long id, String name, String code, String customerName, boolean billable, List<TaskDto> tasks) {
+    public record ProjectChoice(Long id, String name, String code, String customerName, boolean billable, List<TaskDto> tasks, BigDecimal budgetHours,
+                                BigDecimal hoursLogged, boolean blockOverBudget) {
     }
 
     public record EntryDto(Long id, Long userId, String userName, Long projectId, String projectName, String customerName, Long taskId, String taskName,
@@ -48,7 +53,7 @@ public final class TimeDtos {
     }
 
     public record TimerDto(boolean running, Long projectId, String projectName, Long taskId, String taskName, String description, boolean billable,
-                           Instant startedAt, long elapsedSeconds) {
+                           Instant startedAt, long elapsedSeconds, int autoStopHours) {
     }
 
     /** Totals for one person's week. */
@@ -75,5 +80,19 @@ public final class TimeDtos {
     }
 
     public record BillingResultDto(Long invoiceId, String invoiceNumber, int entries, BigDecimal totalAmount) {
+    }
+
+    /** One person whose timesheet for a week is not complete. status: NOTHING (no time logged) or DRAFTS (some time not submitted) or SENT_BACK. */
+    public record MissingRow(Long userId, String userName, boolean hasEmail, String status, BigDecimal hoursLogged, BigDecimal hoursNotSubmitted,
+                             BigDecimal hoursSubmitted) {
+    }
+
+    public record MissingDto(LocalDate weekStart, LocalDate weekEnd, List<MissingRow> rows) {
+    }
+
+    public record ReminderResult(int sent, int noEmail, int failed, List<String> notes) {
+    }
+
+    public record CopyResult(int copied, int skipped, List<String> notes) {
     }
 }

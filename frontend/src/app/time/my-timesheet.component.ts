@@ -29,6 +29,10 @@ import { addDays, formatClock, formatMinutes, mondayOf, parseDuration, parseIso,
           <div class="text-muted" style="font-size:0.75rem;" *ngIf="summary.rejected">{{ summary.rejected }} sent back</div></div>
       </div>
 
+      <div class="alert alert-warning" id="long-timer" *ngIf="timer?.running && tooLong()">
+        This timer has been running for {{ clock }}. If you forgot it, stop it and correct the time below; it will be stopped for you at {{ timer!.autoStopHours }} hours.
+      </div>
+
       <!-- Stopwatch -->
       <div class="card mb-3" style="padding:1rem;">
         <ng-container *ngIf="timer?.running; else idle">
@@ -81,6 +85,7 @@ import { addDays, formatClock, formatMinutes, mondayOf, parseDuration, parseIso,
             <input class="form-control" style="width:7rem;" name="fh" [(ngModel)]="form.duration" placeholder="1:30 or 1.5" /></div>
           <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">What did you do?</label>
             <input class="form-control" name="fd" [(ngModel)]="form.description" /></div>
+          <div class="form-group" *ngIf="budgetNote()" style="flex-basis:100%;"><div id="budget-note" [style.color]="budgetNote()!.over ? '#c0392b' : '#b07d00'" style="font-size:0.85rem;">{{ budgetNote()!.text }}</div></div>
           <div class="form-group" *ngIf="currentProject()?.billable"><label style="display:flex; gap:0.3rem; align-items:center;">
             <input type="checkbox" name="fb" [(ngModel)]="form.billable" /> Billable</label></div>
           <div class="form-group">
@@ -99,6 +104,8 @@ import { addDays, formatClock, formatMinutes, mondayOf, parseDuration, parseIso,
         <button class="btn btn-outline-secondary btn-sm" type="button" (click)="thisWeek()">This week</button>
         <span class="spacer"></span>
         <span>{{ week.totalHours | number: '1.0-2' }} h total · {{ week.billableHours | number: '1.0-2' }} h billable</span>
+        <button class="btn btn-outline-secondary" type="button" id="copy-week" [disabled]="busy" (click)="copyLast()"
+          title="Copy the entries of the week before as drafts">Copy last week</button>
         <button class="btn btn-success" type="button" [disabled]="!submittable().length || busy" (click)="submitWeek()">
           Submit {{ submittable().length }} for approval</button>
       </div>
@@ -176,6 +183,36 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
   currentProject(): ProjectChoice | undefined {
     return this.projects.find((p) => p.id === this.form.projectId);
+  }
+
+  tooLong(): boolean {
+    const h = this.timer?.autoStopHours ?? 0;
+    return h > 0 && this.startedMs > 0 && (Date.now() - this.startedMs) / 3600000 >= Math.min(8, h);
+  }
+
+  budgetNote(): { text: string; over: boolean } | null {
+    const p = this.currentProject();
+    if (!p || !p.budgetHours || p.hoursLogged == null) return null;
+    const left = p.budgetHours - p.hoursLogged;
+    const pct = (p.hoursLogged / p.budgetHours) * 100;
+    if (left <= 0) return { over: true, text: p.blockOverBudget ? `The ${p.budgetHours} h budget of this project is used up, so no more time can be added.` : `This project is over its ${p.budgetHours} h budget (${p.hoursLogged} h logged).` };
+    if (pct >= 80 || p.blockOverBudget) return { over: false, text: `${Math.round(pct)}% of this project's ${p.budgetHours} h budget is used; ${Math.round(left * 100) / 100} h left${p.blockOverBudget ? ' (time over it is refused)' : ''}.` };
+    return null;
+  }
+
+  copyLast(): void {
+    this.error = null;
+    this.notice = null;
+    this.busy = true;
+    this.api.copyWeek(this.from).subscribe({
+      next: (r) => {
+        this.busy = false;
+        this.notice = r.copied ? `${r.copied} entr${r.copied === 1 ? 'y' : 'ies'} copied from the week before as drafts.` : 'Nothing to copy from the week before.';
+        if (r.skipped) this.notice += ` ${r.skipped} skipped${r.notes?.length ? ': ' + r.notes.slice(0, 3).join('; ') : ''}.`;
+        this.reload();
+      },
+      error: (e) => this.fail(e, 'Could not copy'),
+    });
   }
 
   onProject(): void {

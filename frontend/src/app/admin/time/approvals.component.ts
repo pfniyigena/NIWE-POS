@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
-import { ProjectSummary, StaffOption, TimeApiService, TimeEntry } from '../../core/api/time-api.service';
-import { addDays, formatMinutes, parseDuration, today } from '../../core/time-util';
+import { MissingList, ProjectSummary, StaffOption, TimeApiService, TimeEntry } from '../../core/api/time-api.service';
+import { addDays, formatMinutes, mondayOf, parseDuration, today } from '../../core/time-util';
 
 /** Time Tracking > Approvals: time waiting for a decision, and everyone's time over a period. */
 @Component({
@@ -18,6 +18,33 @@ import { addDays, formatMinutes, parseDuration, today } from '../../core/time-ut
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
+      <div class="flex gap-2 mb-3" role="tablist">
+        <button type="button" class="btn btn-sm" [class.btn-primary]="!missingMode" [class.btn-outline-secondary]="missingMode" (click)="setMissing(false)">Approvals and team time</button>
+        <button type="button" id="tab-missing" class="btn btn-sm" [class.btn-primary]="missingMode" [class.btn-outline-secondary]="!missingMode" (click)="setMissing(true)">Not submitted</button>
+      </div>
+
+      <ng-container *ngIf="missingMode">
+        <div class="flex gap-2 mb-2 align-center" style="flex-wrap:wrap;">
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shiftWeek(-7)">‹ Earlier</button>
+          <strong>Week of {{ missingWeek }}</strong>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shiftWeek(7)">Later ›</button>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm" type="button" id="remind-all" [disabled]="!missing?.rows?.length || sending" (click)="remind(null)">Send reminder to everyone listed</button>
+        </div>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">People who normally log time but have not handed in everything for this week (Monday to Sunday).</div>
+        <table class="table-sm" *ngIf="missing?.rows?.length">
+          <thead><tr><th>Person</th><th>Where they are</th><th class="text-end">Logged</th><th class="text-end">Not handed in</th><th class="text-end">Waiting</th><th></th></tr></thead>
+          <tbody><tr *ngFor="let r of missing!.rows">
+            <td>{{ r.userName }}<span class="text-muted" *ngIf="!r.hasEmail" style="font-size:0.75rem;"> · no e-mail address</span></td>
+            <td><span class="badge" [class.badge-danger]="r.status === 'NOTHING'" [class.badge-warning]="r.status !== 'NOTHING'">{{ statusLabel(r.status) }}</span></td>
+            <td class="text-end">{{ r.hoursLogged | number: '1.0-2' }} h</td><td class="text-end">{{ r.hoursNotSubmitted | number: '1.0-2' }} h</td><td class="text-end">{{ r.hoursSubmitted | number: '1.0-2' }} h</td>
+            <td><button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!r.hasEmail || sending" (click)="remind([r.userId])">Remind</button></td>
+          </tr></tbody>
+        </table>
+        <p class="text-muted" *ngIf="missing && !missing.rows.length">Everyone who normally logs time has handed in this week.</p>
+      </ng-container>
+
+      <ng-container *ngIf="!missingMode">
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
           <option value="SUBMITTED">Waiting for approval</option>
@@ -83,6 +110,7 @@ import { addDays, formatMinutes, parseDuration, today } from '../../core/time-ut
       </table>
       <p class="text-muted" *ngIf="!entries.length">{{ status === 'SUBMITTED' ? 'Nothing is waiting for approval.' : 'No time found for these filters.' }}</p>
       <p class="text-muted" *ngIf="entries.length">Total: {{ totalHours() | number: '1.0-2' }} h</p>
+      </ng-container>
     </app-shell>
   `,
 })
@@ -103,6 +131,47 @@ export class TimeApprovalsComponent implements OnInit {
   editDuration = '';
   editDescription = '';
   editBillable = true;
+  missingMode = false;
+  missingWeek = addDays(mondayOf(today()), -7);
+  missing: MissingList | null = null;
+  sending = false;
+
+  statusLabel(s: string): string {
+    return s === 'NOTHING' ? 'Nothing logged' : s === 'SENT_BACK' ? 'Sent back' : 'Drafts not handed in';
+  }
+
+  setMissing(on: boolean): void {
+    this.missingMode = on;
+    this.error = null;
+    this.notice = null;
+    if (on) this.loadMissing();
+  }
+
+  shiftWeek(days: number): void {
+    this.missingWeek = addDays(this.missingWeek, days);
+    this.loadMissing();
+  }
+
+  loadMissing(): void {
+    this.missing = null;
+    this.api.missing(this.missingWeek).subscribe({ next: (m) => (this.missing = m), error: (e) => (this.error = e?.error?.message ?? 'Could not load the list') });
+  }
+
+  remind(userIds: number[] | null): void {
+    this.error = null;
+    this.notice = null;
+    this.sending = true;
+    this.api.remind(this.missingWeek, userIds).subscribe({
+      next: (r) => {
+        this.sending = false;
+        const parts = [`${r.sent} reminder${r.sent === 1 ? '' : 's'} sent`];
+        if (r.noEmail) parts.push(`${r.noEmail} without an e-mail address`);
+        if (r.failed) parts.push(`${r.failed} failed`);
+        this.notice = parts.join(', ') + '.' + (r.notes?.length ? ' ' + r.notes.join(' ') : '');
+      },
+      error: (e) => { this.sending = false; this.error = e?.error?.message ?? 'Could not send the reminders'; },
+    });
+  }
 
   constructor(private api: TimeApiService) {}
 

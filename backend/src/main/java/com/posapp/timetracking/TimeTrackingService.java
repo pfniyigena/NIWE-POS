@@ -55,6 +55,7 @@ public class TimeTrackingService {
     private final TimeTaskRepository taskRepository;
     private final TimeEntryRepository entryRepository;
     private final TimeTimerRepository timerRepository;
+    private final TimeProjectMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final InvoiceService invoiceService;
@@ -66,7 +67,7 @@ public class TimeTrackingService {
 
     public TimeTrackingService(TimeSettingsRepository settingsRepository, TimeProjectRepository projectRepository,
                                TimeProjectRateRepository rateRepository, TimeTaskRepository taskRepository, TimeEntryRepository entryRepository,
-                               TimeTimerRepository timerRepository, UserRepository userRepository, CustomerRepository customerRepository,
+                               TimeTimerRepository timerRepository, TimeProjectMemberRepository memberRepository, UserRepository userRepository, CustomerRepository customerRepository,
                                InvoiceService invoiceService, InvoiceRepository invoiceRepository, CatalogService catalogService,
                                ModuleService moduleService, AuditLogService auditLogService,
                                org.springframework.beans.factory.ObjectProvider<TimeProjectGate> gates) {
@@ -77,6 +78,7 @@ public class TimeTrackingService {
         this.taskRepository = taskRepository;
         this.entryRepository = entryRepository;
         this.timerRepository = timerRepository;
+        this.memberRepository = memberRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.invoiceService = invoiceService;
@@ -90,6 +92,11 @@ public class TimeTrackingService {
 
     private void on() {
         moduleService.requireEnabled(ModuleKey.TIME_TRACKING);
+    }
+
+    /** For the sibling services: refuses when the module is off. */
+    void requireModule() {
+        on();
     }
 
     @Transactional
@@ -107,7 +114,8 @@ public class TimeTrackingService {
         String productName = s.getBillingProductId() == null ? null
                 : catalogService.getProductOrThrow(s.getBillingProductId()).getName();
         return new SettingsDto(s.isRequireApproval(), s.getTimerRoundingMinutes(), s.getDefaultHourlyRate(), s.getMaxHoursPerDay(),
-                s.getDailyCapacityHours(), s.getBillingProductId(), productName);
+                s.getDailyCapacityHours(), s.getBillingProductId(), productName, s.getTimerAutoStopHours(), s.getLockedThrough(), s.isReminderEnabled(),
+                s.getReminderDay(), s.getBudgetWarnPercent());
     }
 
     @Transactional
@@ -139,6 +147,25 @@ public class TimeTrackingService {
             Product p = catalogService.getProductOrThrow(r.billingProductId());
             if (!p.isService()) throw ApiException.badRequest("Choose a service product (not a stocked item) for billed time.");
             s.setBillingProductId(p.getId());
+        }
+        if (r.timerAutoStopHours() != null) {
+            if (r.timerAutoStopHours() < 0 || r.timerAutoStopHours() > 24) throw ApiException.badRequest("Stop a forgotten timer after 0 (never) to 24 hours.");
+            s.setTimerAutoStopHours(r.timerAutoStopHours());
+        }
+        if (Boolean.TRUE.equals(r.clearLock())) {
+            s.setLockedThrough(null);
+        } else if (r.lockedThrough() != null) {
+            if (r.lockedThrough().isAfter(LocalDate.now())) throw ApiException.badRequest("You cannot lock a date that has not happened yet.");
+            s.setLockedThrough(r.lockedThrough());
+        }
+        if (r.reminderEnabled() != null) s.setReminderEnabled(r.reminderEnabled());
+        if (r.reminderDay() != null) {
+            if (r.reminderDay() < 1 || r.reminderDay() > 7) throw ApiException.badRequest("Choose the reminder day, Monday (1) to Sunday (7).");
+            s.setReminderDay(r.reminderDay());
+        }
+        if (r.budgetWarnPercent() != null) {
+            if (r.budgetWarnPercent() < 0 || r.budgetWarnPercent() > 100) throw ApiException.badRequest("The budget warning is a percentage from 0 (off) to 100.");
+            s.setBudgetWarnPercent(r.budgetWarnPercent());
         }
         settingsRepository.save(s);
         auditLogService.record("TIME_SETTINGS_UPDATED", "Updated time tracking settings");
@@ -240,7 +267,8 @@ public class TimeTrackingService {
         }
         return new ProjectSummaryDto(p.getId(), p.getName(), p.getCode(), p.getCustomerId(),
                 p.getCustomerId() == null ? null : customers.get(p.getCustomerId()), p.getStatus(), p.isBillable(), p.getDefaultRate(),
-                p.getBudgetHours(), hours(total), hours(billable), unbilled, percent, p.getSourceType(), p.getSourceId(), p.getStartDate(), p.getEndDate());
+                p.getBudgetHours(), hours(total), hours(billable), unbilled, percent, p.getSourceType(), p.getSourceId(), p.getStartDate(), p.getEndDate(),
+                p.isRestrictToTeam(), p.isBlockOverBudget());
     }
 
     @Transactional
@@ -254,7 +282,10 @@ public class TimeTrackingService {
         Map<Long, String> names = userNames();
         List<RateDto> rates = rateRepository.findByProjectId(id).stream()
                 .map(r -> new RateDto(r.getUserId(), names.getOrDefault(r.getUserId(), "User " + r.getUserId()), r.getHourlyRate())).toList();
-        return new ProjectDetailDto(summary(p, customerNames(), entries), p.getDescription(), p.getBranchId(), tasks, rates);
+        List<MemberDto> team = memberRepository.findByProjectId(id).stream()
+                .map(m -> new MemberDto(m.getUserId(), names.getOrDefault(m.getUserId(), "User " + m.getUserId())))
+                .sorted(Comparator.comparing(MemberDto::userName, String.CASE_INSENSITIVE_ORDER)).toList();
+        return new ProjectDetailDto(summary(p, customerNames(), entries), p.getDescription(), p.getBranchId(), tasks, rates, team);
     }
 
     private static TaskDto taskDto(TimeTask t, long minutes) {
@@ -306,6 +337,59 @@ public class TimeTrackingService {
         p.setStartDate(r.startDate());
         p.setEndDate(r.endDate());
         p.setBranchId(r.branchId());
+        boolean manual = p.getSourceType() == null || "MANUAL".equals(p.getSourceType());
+        if (r.restrictToTeam() != null) p.setRestrictToTeam(manual && r.restrictToTeam());
+        if (r.blockOverBudget() != null) {
+            if (r.blockOverBudget() && p.getBudgetHours() == null) throw ApiException.badRequest("Set a budget in hours before switching on \"refuse time over budget\".");
+            p.setBlockOverBudget(r.blockOverBudget());
+        }
+        if (p.getBudgetHours() == null) p.setBlockOverBudget(false);
+    }
+
+    /** Replaces the project's team and switches the team restriction on or off. */
+    @Transactional
+    public ProjectDetailDto setTeam(Long projectId, TeamRequest r) {
+        on();
+        TimeProject p = project(projectId);
+        if (!"MANUAL".equals(p.getSourceType() == null ? "MANUAL" : p.getSourceType())) {
+            throw ApiException.badRequest("Who can log time on a work order or matter follows that job, not a team list.");
+        }
+        java.util.Set<Long> ids = new java.util.LinkedHashSet<>(r.userIds() == null ? List.of() : r.userIds());
+        Map<Long, String> names = userNames();
+        for (Long id : ids) if (id == null || !names.containsKey(id)) throw ApiException.badRequest("One of the people chosen was not found.");
+        boolean restrict = r.restrictToTeam() != null ? r.restrictToTeam() : p.isRestrictToTeam();
+        if (restrict && ids.isEmpty()) throw ApiException.badRequest("Add at least one person to the team before limiting the project to it.");
+        memberRepository.deleteByProjectId(projectId);
+        memberRepository.flush();
+        for (Long id : ids) {
+            TimeProjectMember m = new TimeProjectMember();
+            m.setProjectId(projectId);
+            m.setUserId(id);
+            memberRepository.save(m);
+        }
+        p.setRestrictToTeam(restrict);
+        projectRepository.save(p);
+        auditLogService.record("TIME_PROJECT_TEAM_UPDATED", "Set the team of time project " + p.getName() + " to " + ids.size() + " person(s); "
+                + (restrict ? "only the team can log time" : "everyone can log time"), "TimeProject", projectId);
+        return projectDetail(projectId);
+    }
+
+    /** True when this person may log time on the project (administrators always; others only if it is not restricted, or they are on the team). */
+    private boolean canLog(TimeProject p, AppUser user) {
+        if (!allowed(p, user)) return false;
+        if (!p.isRestrictToTeam() || user == null || user.getRole() == com.posapp.user.Role.ADMIN) return true;
+        return memberRepository.existsByProjectIdAndUserId(p.getId(), user.getId());
+    }
+
+    private void requireCanLog(TimeProject p, AppUser user) {
+        if (!canLog(p, user)) throw ApiException.forbidden("Time on \"" + p.getName() + "\" can only be logged by the people on its team.");
+    }
+
+    private void requireNotLocked(LocalDate date) {
+        LocalDate lock = settingsEntity().getLockedThrough();
+        if (lock != null && date != null && !date.isAfter(lock)) {
+            throw ApiException.conflict("Time up to " + lock + " is locked, so " + date + " cannot be added, changed or deleted. Ask an administrator to move the lock if this is a mistake.");
+        }
     }
 
     @Transactional
@@ -318,6 +402,7 @@ public class TimeTrackingService {
         timerRepository.findAll().stream().filter(t -> t.getProjectId().equals(id)).forEach(timerRepository::delete);
         taskRepository.deleteAll(taskRepository.findByProjectIdOrderByNameAsc(id));
         rateRepository.deleteByProjectId(id);
+        memberRepository.deleteByProjectId(id);
         projectRepository.delete(p);
         auditLogService.record("TIME_PROJECT_DELETED", "Deleted time project " + p.getName(), "TimeProject", id);
     }
@@ -497,9 +582,12 @@ public class TimeTrackingService {
         on();
         Map<Long, String> customers = customerNames();
         Map<Long, List<TimeTask>> tasks = taskRepository.findByActiveTrueOrderByNameAsc().stream().collect(Collectors.groupingBy(TimeTask::getProjectId));
-        return projectRepository.findByStatusOrderByNameAsc(ProjectStatus.ACTIVE).stream().filter(p -> allowed(p, user))
+        Map<Long, Long> logged = new HashMap<>();
+        for (Object[] row : entryRepository.minutesByProject()) logged.put((Long) row[0], ((Number) row[1]).longValue());
+        return projectRepository.findByStatusOrderByNameAsc(ProjectStatus.ACTIVE).stream().filter(p -> canLog(p, user))
                 .map(p -> new ProjectChoice(p.getId(), p.getName(), p.getCode(), p.getCustomerId() == null ? null : customers.get(p.getCustomerId()), p.isBillable(),
-                        tasks.getOrDefault(p.getId(), List.of()).stream().map(t -> taskDto(t, 0)).toList())).toList();
+                        tasks.getOrDefault(p.getId(), List.of()).stream().map(t -> taskDto(t, 0)).toList(), p.getBudgetHours(),
+                        hours(logged.getOrDefault(p.getId(), 0L)), p.isBlockOverBudget())).toList();
     }
 
     // ------------------------------------------------------------------ entries
@@ -563,12 +651,14 @@ public class TimeTrackingService {
     @Transactional
     public EntryDto createEntry(AppUser user, EntryRequest r) {
         on();
-        if (r.projectId() != null) requireAllowed(r.projectId(), user);
+        if (r.projectId() != null) requireCanLog(project(r.projectId()), user);
         TimeEntry e = new TimeEntry();
         e.setUserId(user.getId());
         e.setUserName(actorName(user));
-        applyEntry(e, r);
+        long before = r.projectId() == null ? 0 : entryRepository.minutesOfProject(r.projectId());
+        applyEntry(e, r, true);
         entryRepository.save(e);
+        budgetAlert(project(e.getProjectId()), before, entryRepository.minutesOfProject(e.getProjectId()));
         return entryDtos(List.of(e)).get(0);
     }
 
@@ -580,13 +670,18 @@ public class TimeTrackingService {
         if (e.getStatus() != TimeEntryStatus.DRAFT && e.getStatus() != TimeEntryStatus.REJECTED) {
             throw ApiException.conflict("This time is already " + e.getStatus().name().toLowerCase() + " and can no longer be changed.");
         }
-        if (r.projectId() != null) requireAllowed(r.projectId(), user);
-        applyEntry(e, r);
+        if (r.projectId() != null) {
+            requireAllowed(r.projectId(), user);
+            if (!r.projectId().equals(e.getProjectId())) requireCanLog(project(r.projectId()), user);
+        }
+        long before = r.projectId() == null ? 0 : entryRepository.minutesOfProject(r.projectId());
+        applyEntry(e, r, true);
         if (e.getStatus() == TimeEntryStatus.REJECTED) {
             e.setStatus(TimeEntryStatus.DRAFT);
             e.setRejectReason(null);
         }
         entryRepository.save(e);
+        budgetAlert(project(e.getProjectId()), before, entryRepository.minutesOfProject(e.getProjectId()));
         return entryDtos(List.of(e)).get(0);
     }
 
@@ -598,7 +693,7 @@ public class TimeTrackingService {
         if (e.getStatus() == TimeEntryStatus.INVOICED) throw ApiException.conflict("This time is already on an invoice.");
         requireAllowed(e.getProjectId(), actor);
         if (r.projectId() != null) requireAllowed(r.projectId(), actor);
-        applyEntry(e, r);
+        applyEntry(e, r, false);
         entryRepository.save(e);
         auditLogService.record("TIME_ENTRY_CORRECTED", actorName(actor) + " corrected " + e.getUserName() + "'s time on " + e.getWorkDate(), "TimeEntry", e.getId());
         return entryDtos(List.of(e)).get(0);
@@ -612,11 +707,17 @@ public class TimeTrackingService {
         if (e.getStatus() != TimeEntryStatus.DRAFT && e.getStatus() != TimeEntryStatus.REJECTED) {
             throw ApiException.conflict("Only draft or rejected time can be deleted.");
         }
+        requireNotLocked(e.getWorkDate());
         entryRepository.delete(e);
         auditLogService.record("TIME_ENTRY_DELETED", actorName(user) + " deleted their time entry of " + e.getWorkDate(), "TimeEntry", id);
     }
 
     private void applyEntry(TimeEntry e, EntryRequest r) {
+        applyEntry(e, r, true);
+    }
+
+    /** {@code enforceBudget} is false for a manager's correction, which may go over a budget that refuses people's own time. */
+    private void applyEntry(TimeEntry e, EntryRequest r, boolean enforceBudget) {
         if (r.projectId() == null) throw ApiException.badRequest("Choose a project.");
         TimeProject p = project(r.projectId());
         boolean projectChanged = e.getProjectId() == null || !e.getProjectId().equals(p.getId());
@@ -625,6 +726,8 @@ public class TimeTrackingService {
         }
         if (r.workDate() == null) throw ApiException.badRequest("Choose the date.");
         if (r.workDate().isAfter(LocalDate.now())) throw ApiException.badRequest("You cannot log time for a future date.");
+        requireNotLocked(r.workDate());
+        if (e.getWorkDate() != null) requireNotLocked(e.getWorkDate());
         int minutes;
         if (r.minutes() != null) {
             minutes = r.minutes();
@@ -641,6 +744,14 @@ public class TimeTrackingService {
         if (already + minutes > cap) {
             throw ApiException.badRequest("That would be more than " + s.getMaxHoursPerDay() + " hours on " + r.workDate() + " (" + hours(already) + " h already logged).");
         }
+        if (enforceBudget && p.isBlockOverBudget() && p.getBudgetHours() != null) {
+            long others = entryRepository.minutesOfProject(p.getId()) - (e.getId() != null && e.getProjectId() != null && e.getProjectId().equals(p.getId()) ? e.getMinutes() : 0);
+            long limit = p.getBudgetHours().multiply(SIXTY).setScale(0, RoundingMode.HALF_UP).longValue();
+            if (others + minutes > limit) {
+                throw ApiException.conflict("\"" + p.getName() + "\" has a budget of " + p.getBudgetHours().stripTrailingZeros().toPlainString() + " hours and "
+                        + hours(others) + " are already logged, so " + hours(minutes) + " more is refused. Ask a manager to raise the budget.");
+            }
+        }
         if (r.taskId() != null) {
             TimeTask t = taskRepository.findById(r.taskId()).orElseThrow(() -> ApiException.badRequest("Task not found."));
             if (!t.getProjectId().equals(p.getId())) throw ApiException.badRequest("That task belongs to another project.");
@@ -653,6 +764,25 @@ public class TimeTrackingService {
         e.setDescription(r.description() == null || r.description().isBlank() ? null : r.description().trim());
         e.setBillable(p.isBillable() && (r.billable() == null || r.billable()));
         e.setHourlyRate(resolveRate(p, e.getUserId()));
+    }
+
+    /** Records (once, when the line is crossed) that a project reached its warning share of the budget or went over it. */
+    private void budgetAlert(TimeProject p, long beforeMinutes, long afterMinutes) {
+        if (p.getBudgetHours() == null || p.getBudgetHours().signum() <= 0 || afterMinutes <= beforeMinutes) return;
+        long budget = p.getBudgetHours().multiply(SIXTY).setScale(0, RoundingMode.HALF_UP).longValue();
+        if (beforeMinutes <= budget && afterMinutes > budget) {
+            auditLogService.record("TIME_BUDGET_EXCEEDED", "Time project " + p.getName() + " went over its budget of " + p.getBudgetHours().stripTrailingZeros().toPlainString()
+                    + " hours (" + hours(afterMinutes) + " logged)", "TimeProject", p.getId());
+            return;
+        }
+        int warn = settingsEntity().getBudgetWarnPercent();
+        if (warn > 0 && warn < 100) {
+            long line = budget * warn / 100;
+            if (beforeMinutes < line && afterMinutes >= line) {
+                auditLogService.record("TIME_BUDGET_WARNING", "Time project " + p.getName() + " has used " + warn + "% of its budget of "
+                        + p.getBudgetHours().stripTrailingZeros().toPlainString() + " hours (" + hours(afterMinutes) + " logged)", "TimeProject", p.getId());
+            }
+        }
     }
 
     // ---- submit / approve
@@ -720,6 +850,7 @@ public class TimeTrackingService {
         Map<Long, TimeProject> projects = projectRepository.findAll().stream().collect(Collectors.toMap(TimeProject::getId, x -> x));
         for (TimeEntry e : entryRepository.findByIdIn(ids)) {
             if ((e.getStatus() != TimeEntryStatus.SUBMITTED && e.getStatus() != TimeEntryStatus.APPROVED) || !allowedEntry(e, projects, actor)) continue;
+            requireNotLocked(e.getWorkDate());
             e.setStatus(TimeEntryStatus.REJECTED);
             e.setDecidedById(actor.getId());
             e.setDecidedByName(actorName(actor));
@@ -776,13 +907,13 @@ public class TimeTrackingService {
     @Transactional
     public TimerDto timer(AppUser user) {
         on();
-        return timerRepository.findByUserId(user.getId()).map(this::timerDto).orElse(new TimerDto(false, null, null, null, null, null, true, null, 0));
+        return timerRepository.findByUserId(user.getId()).map(this::timerDto).orElse(new TimerDto(false, null, null, null, null, null, true, null, 0, settingsEntity().getTimerAutoStopHours()));
     }
 
     private TimerDto timerDto(TimeTimer t) {
         String task = t.getTaskId() == null ? null : taskRepository.findById(t.getTaskId()).map(TimeTask::getName).orElse(null);
         return new TimerDto(true, t.getProjectId(), project(t.getProjectId()).getName(), t.getTaskId(), task, t.getDescription(), t.isBillable(),
-                t.getStartedAt(), Math.max(0, Duration.between(t.getStartedAt(), Instant.now()).getSeconds()));
+                t.getStartedAt(), Math.max(0, Duration.between(t.getStartedAt(), Instant.now()).getSeconds()), settingsEntity().getTimerAutoStopHours());
     }
 
     /** Starting a timer while another is running stops the old one first and saves its time. */
@@ -791,7 +922,7 @@ public class TimeTrackingService {
         on();
         if (r.projectId() == null) throw ApiException.badRequest("Choose a project.");
         TimeProject p = project(r.projectId());
-        if (!allowed(p, user)) throw ApiException.notFound("Project not found: " + r.projectId());
+        requireCanLog(p, user);
         if (p.getStatus() != ProjectStatus.ACTIVE) throw ApiException.badRequest("Time can only be logged on an active project.");
         if (r.taskId() != null) {
             TimeTask t = taskRepository.findById(r.taskId()).orElseThrow(() -> ApiException.badRequest("Task not found."));
@@ -831,9 +962,11 @@ public class TimeTrackingService {
         e.setUserId(user.getId());
         e.setUserName(actorName(user));
         e.setOrigin("TIMER");
+        long before = entryRepository.minutesOfProject(t.getProjectId());
         applyEntry(e, new EntryRequest(t.getProjectId(), t.getTaskId(), date, null, minutes, description, t.isBillable()));
         entryRepository.save(e);
         timerRepository.delete(t);
+        budgetAlert(project(e.getProjectId()), before, entryRepository.minutesOfProject(e.getProjectId()));
         return entryDtos(List.of(e)).get(0);
     }
 

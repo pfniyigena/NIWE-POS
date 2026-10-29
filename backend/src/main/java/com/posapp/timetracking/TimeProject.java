@@ -56,4 +56,12 @@ public class TimeProject extends BaseEntity {
 
     @Column(name = "branch_id")
     private Long branchId;
+
+    /** When on, only the people on the project's team (and administrators) can log time on it. */
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean restrictToTeam = false;
+
+    /** When on, time that would take the project over its budget hours is refused. */
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean blockOverBudget = false;
 }

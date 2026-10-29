@@ -42,16 +42,18 @@ import { ProjectSummary, TimeApiService, TimeSummary } from '../../core/api/time
           <tr *ngFor="let p of visible()">
             <td><a [routerLink]="['/admin/time/projects', p.id]">{{ p.name }}</a>
               <span class="text-muted" *ngIf="p.code"> · {{ p.code }}</span>
-              <span class="badge badge-secondary" *ngIf="p.sourceType !== 'MANUAL'" style="margin-left:0.3rem;">{{ p.sourceType }}</span></td>
+              <span class="badge badge-secondary" *ngIf="p.sourceType !== 'MANUAL'" style="margin-left:0.3rem;">{{ p.sourceType }}</span>
+              <span class="badge badge-secondary" *ngIf="p.restrictToTeam" style="margin-left:0.3rem;" title="Only the project team can log time">team only</span>
+              <span class="badge badge-warning" *ngIf="p.blockOverBudget" style="margin-left:0.3rem;" title="Time over the budget is refused">stops at budget</span></td>
             <td>{{ p.customerName || '—' }}</td>
             <td><span class="badge" [class.badge-success]="p.status === 'ACTIVE'" [class.badge-secondary]="p.status !== 'ACTIVE'">{{ p.status }}</span></td>
             <td class="text-end">{{ p.hoursLogged | number: '1.0-2' }}</td>
             <td class="text-end">{{ p.budgetHours != null ? (p.budgetHours | number: '1.0-2') : '—' }}</td>
             <td>
               <div *ngIf="p.percentOfBudget != null" style="background:#e5e7eb; border-radius:4px; height:8px; overflow:hidden;">
-                <div [style.width.%]="min100(p.percentOfBudget)" [style.background]="p.percentOfBudget > 100 ? '#c0392b' : p.percentOfBudget > 85 ? '#e6a700' : '#2e9e5b'" style="height:8px;"></div>
+                <div [style.width.%]="min100(p.percentOfBudget)" [style.background]="p.percentOfBudget > 100 ? '#c0392b' : p.percentOfBudget >= warnAt ? '#e6a700' : '#2e9e5b'" style="height:8px;"></div>
               </div>
-              <span style="font-size:0.75rem;" *ngIf="p.percentOfBudget != null">{{ p.percentOfBudget | number: '1.0-0' }}%</span>
+              <span style="font-size:0.75rem;" *ngIf="p.percentOfBudget != null" [style.color]="p.percentOfBudget > 100 ? '#c0392b' : p.percentOfBudget >= warnAt ? '#e6a700' : ''">{{ p.percentOfBudget | number: '1.0-0' }}%<ng-container *ngIf="p.percentOfBudget > 100"> over budget</ng-container></span>
               <span *ngIf="p.percentOfBudget == null" class="text-muted">—</span>
             </td>
             <td class="text-end">{{ p.unbilledAmount | number: '1.0-2' }}</td>
@@ -68,11 +70,13 @@ export class TimeProjectListComponent implements OnInit {
   status = '';
   search = '';
   error: string | null = null;
+  warnAt = 80;
 
   constructor(private api: TimeApiService) {}
 
   ngOnInit(): void {
     this.load();
+    this.api.settings().subscribe({ next: (c) => (this.warnAt = c.budgetWarnPercent > 0 ? c.budgetWarnPercent : 101), error: () => {} });
     this.api.summary().subscribe({ next: (s) => (this.s = s), error: () => {} });
   }
 
