@@ -38,6 +38,18 @@ const DAYS = [
           <div class="form-group mb-2"><label class="form-label">Online cancel until (hours before)</label><input class="form-control" type="number" min="0" name="cn" [(ngModel)]="s.cancelNoticeHours" /></div>
         </div>
 
+        <strong class="mt-2">Reminders and moving a booking</strong>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" id="bk-reminders" name="re" [(ngModel)]="s.reminderEnabled" />
+          E-mail the guest a reminder before the visit (with a calendar file)</label>
+        <div class="flex gap-2 align-center mb-1" *ngIf="s.reminderEnabled">
+          <span>Send it about</span><input class="form-control" style="width:6rem;" type="number" min="1" max="168" name="rh" [(ngModel)]="s.reminderHours" /><span>hours before</span>
+        </div>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">Needs e-mail set up in Settings and an e-mail address on the booking. A visit booked less than this many hours ahead is not reminded; you can still send one by hand from the appointment.</div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" id="bk-guest-move" name="gr" [(ngModel)]="s.allowGuestReschedule" /> Guests can move their own booking on the public page</label>
+        <div class="flex gap-2 align-center mb-3" *ngIf="s.allowGuestReschedule">
+          <span>At most</span><input class="form-control" style="width:5rem;" type="number" min="0" max="10" name="gm" [(ngModel)]="s.maxGuestReschedules" /><span>times, and only until the cancellation notice above</span>
+        </div>
+
         <strong class="mt-2">Public website</strong>
         <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" class="bk-public" name="pe" [(ngModel)]="s.publicEnabled" /> Allow public website</label>
         <div class="text-muted mb-2" style="font-size:0.85rem;">Guests can then pick a service and a time themselves at <strong>/book</strong> on this site, without signing in. Switch it off to close the page and take its tile off the home page; staff still book appointments as usual.</div>

@@ -108,4 +108,10 @@ public class Appointment extends BaseEntity {
     @Column(length = 40)
     private String sourceType;
     private Long sourceId;
+
+    /** When the reminder e-mail went out (null = not sent). */
+    private Instant reminderSentAt;
+
+    @Column(nullable = false, columnDefinition = "integer default 0 not null")
+    private int rescheduleCount = 0;
 }

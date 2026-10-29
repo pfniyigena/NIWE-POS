@@ -195,6 +195,7 @@ import { NiweFooterComponent } from './niwe-footer.component';
           <a *ngIf="canSee('/admin/booking')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📋</span> Appointments</a>
           <a *ngIf="canSee('/admin/booking/services')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/services" routerLinkActive="active"><span class="sidenav-icon">💈</span> Services</a>
           <a *ngIf="canSee('/admin/booking/resources')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/resources" routerLinkActive="active"><span class="sidenav-icon">🚪</span> Rooms &amp; equipment</a>
+          <a *ngIf="canSee('/admin/booking/schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/schedules" routerLinkActive="active"><span class="sidenav-icon">🕘</span> Working hours</a>
           <a *ngIf="canSee('/admin/booking/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
           <a *ngIf="canSee('/admin/booking/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
         </ng-container>

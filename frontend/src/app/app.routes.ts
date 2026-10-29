@@ -188,6 +188,7 @@ import { AppointmentListComponent } from './admin/booking/appointment-list.compo
 import { BookingServiceListComponent } from './admin/booking/service-list.component';
 import { BookingServiceFormComponent } from './admin/booking/service-form.component';
 import { BookingResourcesComponent } from './admin/booking/resources.component';
+import { BookingStaffSchedulesComponent } from './admin/booking/staff-schedules.component';
 import { BookingSettingsComponent } from './admin/booking/booking-settings.component';
 import { BookingReportListComponent } from './admin/booking/booking-report-list.component';
 import { MyAppointmentsComponent } from './booking/my-appointments.component';
@@ -814,6 +815,7 @@ const baseRoutes: Routes = [
   { path: 'admin/booking/services/new', component: BookingServiceFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/booking/services/:id', component: BookingServiceFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/booking/resources', component: BookingResourcesComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/booking/schedules', component: BookingStaffSchedulesComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/booking/reports', component: BookingReportListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/booking/settings', component: BookingSettingsComponent, canActivate: [authGuard, adminGuard] },
   // Law Firm: my work, a single matter, the conflict check and the contacts are open to every signed-in user (the server decides which matters and contacts

@@ -21,6 +21,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     Optional<Appointment> findFirstByInvoiceId(Long invoiceId);
 
+    List<Appointment> findByStatusAndReminderSentAtIsNullAndStartAtBetweenOrderByStartAtAsc(AppointmentStatus status, LocalDateTime from, LocalDateTime to);
+
+    List<Appointment> findByCustomerId(Long customerId);
+
+    List<Appointment> findByGuestPhone(String guestPhone);
+
     long countByServiceId(Long serviceId);
 
     long countByResourceId(Long resourceId);

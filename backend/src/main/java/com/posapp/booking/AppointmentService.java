@@ -167,6 +167,7 @@ public class AppointmentService {
                 .filter(a -> occupies(a, nowInstant) && (ignoreId == null || !ignoreId.equals(a.getId()))).toList();
         List<BookingBlock> blocks = blockRepository.findByStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(dayTo, dayFrom);
 
+        Map<Long, BookingSetupService.StaffWindow> windows = setup.staffWindows(c.staff().stream().map(Option::id).toList(), date);
         List<SlotDto> out = new ArrayList<>();
         LocalTime t = settings.getDayStart();
         int step = settings.getSlotStepMinutes();
@@ -176,7 +177,7 @@ public class AppointmentService {
             LocalDateTime busyUntil = end.plusMinutes(svc.getBufferMinutes());
             if (end.isAfter(date.atTime(settings.getDayEnd())) || !end.toLocalDate().equals(date)) break;
             if (!start.isBefore(earliest) && blocks.stream().noneMatch(b -> b.getTargetType() == BlockTarget.ALL && overlaps(start, end, b.getStartAt(), b.getEndAt()))) {
-                List<Option> freeStaff = c.staff().stream().filter(o -> isFree(o.id(), true, start, busyUntil, busy, blocks)).toList();
+                List<Option> freeStaff = c.staff().stream().filter(o -> inWindow(windows.get(o.id()), start, end) && isFree(o.id(), true, start, busyUntil, busy, blocks)).toList();
                 List<Option> freeRes = c.resources().stream().filter(o -> isFree(o.id(), false, start, busyUntil, busy, blocks)).toList();
                 boolean ok = (!c.staffRequired() || !freeStaff.isEmpty()) && (!c.resourceRequired() || !freeRes.isEmpty());
                 if (ok) out.add(new SlotDto(t.toString(), freeStaff, freeRes));
@@ -186,6 +187,13 @@ public class AppointmentService {
             t = next;
         }
         return out;
+    }
+
+    /** Is the person working for the whole visit (their own hours, or the opening hours; not on leave)? */
+    private static boolean inWindow(BookingSetupService.StaffWindow w, LocalDateTime start, LocalDateTime end) {
+        if (w == null) return true;
+        if (!w.working() || w.start() == null || w.end() == null) return false;
+        return !start.toLocalTime().isBefore(w.start()) && !end.toLocalTime().isAfter(w.end());
     }
 
     private static boolean isFree(Long id, boolean staff, LocalDateTime start, LocalDateTime busyUntil, List<Appointment> busy, List<BookingBlock> blocks) {
@@ -217,7 +225,7 @@ public class AppointmentService {
         if (!svc.isActive()) throw ApiException.badRequest("This service is not available for booking.");
         SlotDto slot = slots(svc, start.toLocalDate(), staffId, ignoreId, publicRules).stream()
                 .filter(s -> LocalTime.parse(s.time()).equals(start.toLocalTime())).findFirst()
-                .orElseThrow(() -> ApiException.conflict("That time is not available (taken, outside opening hours, in the past or blocked). Please pick another."));
+                .orElseThrow(() -> ApiException.conflict("That time is not available (taken, outside opening or working hours, on leave, in the past or blocked). Please pick another."));
         Option staff = null;
         if (!slot.staff().isEmpty() || staffId != null) {
             staff = slot.staff().stream().filter(o -> staffId == null || o.id().equals(staffId)).findFirst()
@@ -518,8 +526,17 @@ public class AppointmentService {
         settingsRepository.lockAll();
         BookableService svc = setup.findService(a.getServiceId());
         Chosen chosen = choose(svc, r.start(), r.staffUserId() != null ? r.staffUserId() : a.getStaffUserId(), r.resourceId() != null ? r.resourceId() : a.getResourceId(), id, false);
-        a.setStartAt(r.start());
-        a.setEndAt(r.start().plusMinutes(a.getDurationMinutes()));
+        LocalDateTime oldStart = a.getStartAt();
+        applyMove(a, svc, r.start(), chosen);
+        repository.save(a);
+        auditLogService.record("APPOINTMENT_MOVED", "Moved appointment " + a.getNumber() + " to " + a.getStartAt().format(WHEN), "Appointment", id);
+        if (setup.settingsEntity().isEmailConfirmations() && a.getStatus() == AppointmentStatus.CONFIRMED) mail.moved(a, oldStart);
+        return toDto(a, actor);
+    }
+
+    private void applyMove(Appointment a, BookableService svc, LocalDateTime start, Chosen chosen) {
+        a.setStartAt(start);
+        a.setEndAt(start.plusMinutes(a.getDurationMinutes()));
         a.setBusyUntil(a.getEndAt().plusMinutes(svc.getBufferMinutes()));
         if (chosen.staff() != null) {
             a.setStaffUserId(chosen.staff().id());
@@ -529,10 +546,7 @@ public class AppointmentService {
             a.setResourceId(chosen.resource().id());
             a.setResourceName(chosen.resource().name());
         }
-        repository.save(a);
-        auditLogService.record("APPOINTMENT_MOVED", "Moved appointment " + a.getNumber() + " to " + a.getStartAt().format(WHEN), "Appointment", id);
-        if (setup.settingsEntity().isEmailConfirmations() && a.getStatus() == AppointmentStatus.CONFIRMED) mail.confirmed(a);
-        return toDto(a, actor);
+        a.setReminderSentAt(null);
     }
 
     @Transactional
@@ -552,7 +566,30 @@ public class AppointmentService {
                 a.getServiceColor(), a.getStartAt(), a.getEndAt(), a.getDurationMinutes(), a.getStaffUserId(), a.getStaffName(), a.getResourceId(),
                 a.getResourceName(), a.getCustomerId(), a.getGuestName(), a.getGuestPhone(), a.getGuestEmail(), a.getNotes(), a.getPrice(), a.getPaymentMode(),
                 a.getAmountDue(), a.getAmountPaid(), a.getInvoiceId(), a.getInvoiceNumber(), a.getHoldExpiresAt(), a.getCancelReason(), a.getCreatedAt(),
-                a.getCreatedByName(), canWork(actor, a), actor.manager());
+                a.getCreatedByName(), canWork(actor, a), actor.manager(), a.getReminderSentAt(), a.getRescheduleCount(), null);
+    }
+
+    private AppointmentDto toDto(Appointment a, Actor actor, GuestHistoryDto history) {
+        AppointmentDto d = toDto(a, actor);
+        return new AppointmentDto(d.id(), d.number(), d.confirmationCode(), d.status(), d.source(), d.serviceId(), d.serviceName(), d.serviceColor(), d.startAt(),
+                d.endAt(), d.durationMinutes(), d.staffUserId(), d.staffName(), d.resourceId(), d.resourceName(), d.customerId(), d.guestName(), d.guestPhone(),
+                d.guestEmail(), d.notes(), d.price(), d.paymentMode(), d.amountDue(), d.amountPaid(), d.invoiceId(), d.invoiceNumber(), d.holdExpiresAt(),
+                d.cancelReason(), d.createdAt(), d.createdByName(), d.canWork(), d.canManage(), d.reminderSentAt(), d.rescheduleCount(), history);
+    }
+
+    /** What is already known about the guest (matched by customer or phone number), not counting this appointment. */
+    private GuestHistoryDto history(Appointment a) {
+        Map<Long, Appointment> others = new LinkedHashMap<>();
+        if (a.getCustomerId() != null) repository.findByCustomerId(a.getCustomerId()).forEach(x -> others.put(x.getId(), x));
+        if (notBlank(a.getGuestPhone())) repository.findByGuestPhone(a.getGuestPhone()).forEach(x -> others.put(x.getId(), x));
+        others.remove(a.getId());
+        LocalDateTime now = now();
+        long completed = others.values().stream().filter(x -> x.getStatus() == AppointmentStatus.COMPLETED).count();
+        long noShows = others.values().stream().filter(x -> x.getStatus() == AppointmentStatus.NO_SHOW).count();
+        long cancelled = others.values().stream().filter(x -> x.getStatus() == AppointmentStatus.CANCELLED).count();
+        long upcoming = others.values().stream().filter(x -> (x.getStatus() == AppointmentStatus.CONFIRMED || x.getStatus() == AppointmentStatus.PENDING_PAYMENT) && x.getStartAt().isAfter(now)).count();
+        LocalDateTime last = others.values().stream().filter(x -> x.getStatus() == AppointmentStatus.COMPLETED).map(Appointment::getStartAt).max(Comparator.naturalOrder()).orElse(null);
+        return new GuestHistoryDto(completed, noShows, cancelled, upcoming, last);
     }
 
     @Transactional
@@ -561,7 +598,7 @@ public class AppointmentService {
         Appointment a = find(id);
         if (!actor.viewer() && !canWork(actor, a)) throw ApiException.forbidden("This appointment is not yours.");
         syncPayment(a);
-        return toDto(a, actor);
+        return toDto(a, actor, history(a));
     }
 
     @Transactional
@@ -600,8 +637,11 @@ public class AppointmentService {
         resourceRepository.findByActiveTrueOrderByNameAsc().forEach(r -> resources.put(r.getId(), new Option(r.getId(), r.getName())));
         shown.stream().filter(a -> a.getResourceId() != null).forEach(a -> resources.putIfAbsent(a.getResourceId(), new Option(a.getResourceId(), a.getResourceName())));
         List<BlockDto> blocks = setup.blockDtos(blockRepository.findByStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(d.plusDays(1).atStartOfDay(), d.atStartOfDay()));
+        List<StaffDayDto> staffDays = new ArrayList<>();
+        setup.staffWindows(new ArrayList<>(staff.keySet()), d).forEach((id, w) -> staffDays.add(new StaffDayDto(id, w.working(),
+                w.start() == null ? null : w.start().toString(), w.end() == null ? null : w.end().toString(), w.note())));
         return new DayDto(d.toString(), shown.stream().map(a -> toDto(a, actor)).toList(), blocks, new ArrayList<>(staff.values()), new ArrayList<>(resources.values()),
-                settings.getDayStart().toString(), settings.getDayEnd().toString(), BookingSetupService.workDays(settings).contains(d.getDayOfWeek()));
+                settings.getDayStart().toString(), settings.getDayEnd().toString(), BookingSetupService.workDays(settings).contains(d.getDayOfWeek()), staffDays);
     }
 
     @Transactional
@@ -678,9 +718,10 @@ public class AppointmentService {
     private PublicConfirmationDto publicView(Appointment a, BookingSettings s) {
         boolean open = a.getStatus() == AppointmentStatus.PENDING_PAYMENT || a.getStatus() == AppointmentStatus.CONFIRMED;
         boolean canCancel = open && a.getStartAt().minusHours(s.getCancelNoticeHours()).isAfter(now());
+        boolean canReschedule = canCancel && s.isAllowGuestReschedule() && a.getRescheduleCount() < s.getMaxGuestReschedules();
         return new PublicConfirmationDto(a.getConfirmationCode(), a.getNumber(), a.getStatus(), a.getServiceName(), a.getStartAt(), a.getEndAt(), a.getStaffName(),
                 a.getPrice(), a.getAmountDue(), a.getAmountPaid(), a.getInvoiceNumber(), a.getHoldExpiresAt(),
-                a.getStatus() == AppointmentStatus.PENDING_PAYMENT ? s.getPaymentInstructions() : null, canCancel);
+                a.getStatus() == AppointmentStatus.PENDING_PAYMENT ? s.getPaymentInstructions() : null, canCancel, canReschedule);
     }
 
     private Appointment byCodeAndPhone(String code, String phone) {
@@ -713,5 +754,147 @@ public class AppointmentService {
         applyCancel(a, "Cancelled by the guest.", true);
         repository.save(a);
         return publicView(a, s);
+    }
+
+    // ------------------------------------------------------------------ guests moving their own booking
+
+    private void requireGuestMovable(Appointment a, BookingSettings s) {
+        if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT && a.getStatus() != AppointmentStatus.CONFIRMED) {
+            throw ApiException.conflict("This booking can no longer be moved.");
+        }
+        if (!s.isAllowGuestReschedule()) throw ApiException.conflict("Bookings cannot be moved online. Please call us.");
+        if (a.getRescheduleCount() >= s.getMaxGuestReschedules()) {
+            throw ApiException.conflict("This booking has already been moved " + a.getRescheduleCount() + " time(s) online. Please call us to change it again.");
+        }
+        if (!a.getStartAt().minusHours(s.getCancelNoticeHours()).isAfter(now())) {
+            throw ApiException.conflict("It is too late to move this online (less than " + s.getCancelNoticeHours() + " hours to go). Please call us.");
+        }
+    }
+
+    /** The free times of a day for moving a booking: its own current time counts as free. */
+    @Transactional
+    public List<String> publicRescheduleSlots(String code, PublicRescheduleRequest r) {
+        on();
+        Appointment a = byCodeAndPhone(code, r.phone());
+        requireGuestMovable(a, setup.settingsEntity());
+        if (r.date() == null) throw ApiException.badRequest("Choose a day.");
+        return slots(setup.findService(a.getServiceId()), r.date(), null, a.getId(), true).stream().map(SlotDto::time).toList();
+    }
+
+    @Transactional
+    public PublicConfirmationDto publicReschedule(String code, PublicRescheduleRequest r) {
+        on();
+        Appointment a = byCodeAndPhone(code, r.phone());
+        BookingSettings s = setup.settingsEntity();
+        requireGuestMovable(a, s);
+        if (r.date() == null || !notBlank(r.time())) throw ApiException.badRequest("Choose a day and a time.");
+        LocalDateTime start;
+        try {
+            start = r.date().atTime(LocalTime.parse(r.time()));
+        } catch (DateTimeParseException e) {
+            throw ApiException.badRequest("Choose a time from the list.");
+        }
+        settingsRepository.lockAll();
+        BookableService svc = setup.findService(a.getServiceId());
+        Chosen chosen;
+        try {
+            chosen = choose(svc, start, a.getStaffUserId(), a.getResourceId(), a.getId(), true);
+        } catch (ApiException first) {
+            chosen = choose(svc, start, null, null, a.getId(), true);
+        }
+        LocalDateTime oldStart = a.getStartAt();
+        applyMove(a, svc, start, chosen);
+        a.setRescheduleCount(a.getRescheduleCount() + 1);
+        repository.save(a);
+        auditLogService.record("APPOINTMENT_MOVED", "Appointment " + a.getNumber() + " moved by the guest from " + oldStart.format(WHEN) + " to " + start.format(WHEN), "Appointment", a.getId());
+        if (s.isEmailConfirmations() && a.getStatus() == AppointmentStatus.CONFIRMED) mail.moved(a, oldStart);
+        return publicView(a, s);
+    }
+
+    // ------------------------------------------------------------------ calendar file
+
+    public record CalendarFile(String filename, byte[] bytes) {
+    }
+
+    private CalendarFile calendarFile(Appointment a) {
+        String business = null;
+        try {
+            business = storeSettingsService.getSettingsEntity().getBusinessName();
+        } catch (Exception ignored) {
+            // the file works without it
+        }
+        return new CalendarFile(BookingIcs.filename(a), BookingIcs.build(a, zone(), business));
+    }
+
+    @Transactional
+    public CalendarFile calendar(Actor actor, Long id) {
+        on();
+        Appointment a = find(id);
+        if (!actor.viewer() && !canWork(actor, a)) throw ApiException.forbidden("This appointment is not yours.");
+        return calendarFile(a);
+    }
+
+    @Transactional
+    public CalendarFile publicCalendar(String code, String phone) {
+        on();
+        return calendarFile(byCodeAndPhone(code, phone));
+    }
+
+    // ------------------------------------------------------------------ reminders
+
+    /** Every 15 minutes: reminds the guests whose confirmed visit has just come within the reminder period. */
+    @Scheduled(cron = "0 11,26,41,56 * * * *")
+    public void reminderJob() {
+        try {
+            if (!moduleService.isEnabled(ModuleKey.BOOKING)) return;
+            sendDueReminders();
+        } catch (Exception e) {
+            log.warn("Booking reminders failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Visits that start in the last 45 minutes of the reminder period get their reminder now (so one that was booked after the
+     * period began is not reminded, the guest was only just told about it). Returns how many reminders went out.
+     */
+    @Transactional
+    public int sendDueReminders() {
+        BookingSettings s = setup.settingsEntity();
+        if (!s.isReminderEnabled() || !mail.mailConfigured()) return 0;
+        LocalDateTime to = now().plusHours(s.getReminderHours());
+        int sent = 0;
+        for (Appointment a : repository.findByStatusAndReminderSentAtIsNullAndStartAtBetweenOrderByStartAtAsc(AppointmentStatus.CONFIRMED, to.minusMinutes(45), to)) {
+            if (!notBlank(a.getGuestEmail())) continue;
+            if (mail.reminder(a)) {
+                a.setReminderSentAt(Instant.now());
+                repository.save(a);
+                auditLogService.record("APPOINTMENT_REMINDER_SENT", "Reminder e-mailed for " + a.getNumber() + " (" + a.getStartAt().format(WHEN) + ")", "Appointment", a.getId());
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    @Transactional
+    public int runReminders(Actor actor) {
+        on();
+        if (!actor.manager()) throw ApiException.forbidden("Only a manager can do that.");
+        return sendDueReminders();
+    }
+
+    /** Sends the reminder now, whatever the schedule says. */
+    @Transactional
+    public AppointmentDto remindNow(Actor actor, Long id) {
+        on();
+        Appointment a = find(id);
+        if (!canWork(actor, a)) throw ApiException.forbidden("Only the person this is booked with, or a manager, can do that.");
+        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict("Only a confirmed appointment can be reminded.");
+        if (!notBlank(a.getGuestEmail())) throw ApiException.conflict("This guest has no e-mail address.");
+        if (!mail.mailConfigured()) throw ApiException.conflict("E-mail is not set up yet (Settings > Email settings), so no reminder was sent.");
+        if (!mail.reminder(a)) throw ApiException.conflict("The reminder could not be sent. Check the e-mail settings.");
+        a.setReminderSentAt(Instant.now());
+        repository.save(a);
+        auditLogService.record("APPOINTMENT_REMINDER_SENT", "Reminder e-mailed for " + a.getNumber() + " by " + BookingSetupService.name(actor.user()), "Appointment", id);
+        return toDto(a, actor);
     }
 }

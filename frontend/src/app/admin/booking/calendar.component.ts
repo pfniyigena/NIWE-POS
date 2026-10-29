@@ -20,7 +20,10 @@ const ROW_H = 56; // pixels per hour
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
         <h3>Booking calendar</h3>
-        <a class="btn btn-primary" [routerLink]="['/admin/booking/appointments/new']" [queryParams]="{ date: date }">+ New appointment</a>
+        <div class="flex gap-2">
+          <button class="btn btn-outline-secondary" type="button" id="print-day" (click)="printSheet()" [disabled]="!view">Print day sheet</button>
+          <a class="btn btn-primary" [routerLink]="['/admin/booking/appointments/new']" [queryParams]="{ date: date }">+ New appointment</a>
+        </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
@@ -50,8 +53,11 @@ const ROW_H = 56; // pixels per hour
             <div *ngFor="let h of hours()" [style.height.px]="rowH" class="text-muted" style="font-size:0.7rem; text-align:right; padding-right:0.3rem;">{{ h }}:00</div>
           </div>
           <div *ngFor="let c of columns()" style="min-width:11rem; flex:1; border-left:1px solid var(--border, #d0d7de);">
-            <div style="height:2rem; font-weight:600; font-size:0.85rem; padding:0.3rem 0.4rem; border-bottom:1px solid var(--border, #d0d7de);">{{ c.name }}</div>
+            <div style="height:2rem; font-weight:600; font-size:0.85rem; padding:0.3rem 0.4rem; border-bottom:1px solid var(--border, #d0d7de); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                 [title]="offNote(c) || c.name">{{ c.name }}<span *ngIf="offNote(c)" class="text-muted" style="font-weight:400; font-size:0.7rem;"> · {{ offNote(c) }}</span></div>
             <div style="position:relative;" [style.height.px]="hours().length * rowH">
+              <div *ngFor="let z of offZones(c)" class="bk-off" [style.top.px]="z.top" [style.height.px]="z.height"
+                   style="position:absolute; left:0; right:0; background:rgba(128,128,128,0.16); pointer-events:none;"></div>
               <div *ngFor="let h of hours(); let i = index" style="position:absolute; left:0; right:0; border-top:1px dashed var(--border, #d0d7de); opacity:0.5;" [style.top.px]="i * rowH"></div>
               <div *ngFor="let b of blocksFor(c)" [style.top.px]="top(b.startAt, view.date)" [style.height.px]="height(b.startAt, b.endAt, view.date)"
                    style="position:absolute; left:0; right:0; background:repeating-linear-gradient(45deg, rgba(128,128,128,0.18), rgba(128,128,128,0.18) 6px, transparent 6px, transparent 12px); font-size:0.7rem; padding:0.1rem 0.3rem; overflow:hidden;"
@@ -156,6 +162,62 @@ export class BookingCalendarComponent implements OnInit {
     if (!this.view) return [];
     return this.view.blocks.filter((b) => b.targetType === 'ALL' || (b.targetType === 'STAFF' && this.mode === 'staff' && b.targetId === c.id)
       || (b.targetType === 'RESOURCE' && this.mode === 'resource' && b.targetId === c.id));
+  }
+
+  private dayOf(c: Col) {
+    if (!this.view || this.mode !== 'staff' || c.id == null) return null;
+    return this.view.staffDays?.find((d) => d.userId === c.id) ?? null;
+  }
+
+  /** "On leave: Training", "Day off" or the person's own hours when they differ from the opening hours. */
+  offNote(c: Col): string | null {
+    const d = this.dayOf(c);
+    if (!d || !this.view) return null;
+    if (!d.working) return d.note;
+    const ownHours = (d.start ?? '').slice(0, 5) !== this.view.dayStart.slice(0, 5) || (d.end ?? '').slice(0, 5) !== this.view.dayEnd.slice(0, 5);
+    return ownHours ? (d.start ?? '').slice(0, 5) + '–' + (d.end ?? '').slice(0, 5) : null;
+  }
+
+  /** Greyed parts of a person's column: all day when they are off, otherwise before they start and after they finish. */
+  offZones(c: Col): { top: number; height: number }[] {
+    const d = this.dayOf(c);
+    if (!d || !this.view) return [];
+    const r = this.range();
+    const px = (m: number) => ((m - r.from) / 60) * this.rowH;
+    if (!d.working || !d.start || !d.end) return [{ top: 0, height: px(r.to) }];
+    const out: { top: number; height: number }[] = [];
+    const s = this.minutes(d.start);
+    const e = this.minutes(d.end);
+    if (s > r.from) out.push({ top: 0, height: px(s) });
+    if (e < r.to) out.push({ top: px(e), height: px(r.to) - px(e) });
+    return out;
+  }
+
+  /** A plain list of the day for the front desk: opens the print dialog. */
+  printSheet(): void {
+    if (!this.view) return;
+    const esc = (t: string | null | undefined) => (t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const rows = [...this.view.appointments].sort((a, b) => a.startAt.localeCompare(b.startAt)).map((a) =>
+      `<tr><td>${esc(a.startAt.slice(11, 16))}–${esc(a.endAt.slice(11, 16))}</td><td>${esc(a.guestName)}<br><small>${esc(a.guestPhone)}</small></td><td>${esc(a.serviceName)}</td>` +
+      `<td>${esc(a.staffName)}${a.resourceName ? '<br><small>' + esc(a.resourceName) + '</small>' : ''}</td><td>${esc(this.statusText(a.status))}</td><td>${esc(a.notes)}</td></tr>`).join('');
+    const off = (this.view.staffDays ?? []).filter((d) => !d.working).map((d) => esc(this.view!.staff.find((s) => s.id === d.userId)?.name) + ' (' + esc(d.note ?? 'off') + ')').join(', ');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Day sheet ${esc(this.view.date)}</title>` +
+      `<style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 4px}table{border-collapse:collapse;width:100%;margin-top:12px}` +
+      `th,td{border:1px solid #999;padding:6px 8px;text-align:left;font-size:13px;vertical-align:top}th{background:#eee}small{color:#555}</style></head><body>` +
+      `<h1>Appointments for ${esc(new Date(this.view.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</h1>` +
+      (off ? `<div>Away: ${off}</div>` : '') +
+      (rows ? `<table><thead><tr><th>Time</th><th>Guest</th><th>Service</th><th>With</th><th>Status</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>` : '<p>Nothing booked on this day.</p>') +
+      `</body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { this.error = 'Allow pop-ups for this site to print the day sheet.'; return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  }
+
+  private statusText(s: string): string {
+    return s === 'PENDING_PAYMENT' ? 'Waiting for payment' : s === 'NO_SHOW' ? 'No-show' : s.charAt(0) + s.slice(1).toLowerCase();
   }
 
   color(a: Appointment): string {

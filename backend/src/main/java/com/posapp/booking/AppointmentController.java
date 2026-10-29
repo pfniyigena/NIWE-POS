@@ -207,6 +207,53 @@ public class AppointmentController {
         setup.deleteBlock(id);
     }
 
+    // ---- reminders and calendar file
+
+    @PostMapping("/appointments/{id}/remind")
+    public AppointmentDto remind(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        return service.remindNow(actor(me), id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/reminders/run")
+    public java.util.Map<String, Integer> runReminders(@AuthenticationPrincipal AppUserPrincipal me) {
+        return java.util.Map.of("sent", service.runReminders(actor(me)));
+    }
+
+    @GetMapping("/appointments/{id}/calendar.ics")
+    public org.springframework.http.ResponseEntity<byte[]> calendar(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long id) {
+        AppointmentService.CalendarFile f = service.calendar(actor(me), id);
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + f.filename() + "\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/calendar;charset=UTF-8")).body(f.bytes());
+    }
+
+    // ---- staff working hours and leave
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/schedules")
+    public List<ScheduleDto> schedules() {
+        return setup.schedules();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/schedules/{userId}")
+    public ScheduleDto saveSchedule(@PathVariable Long userId, @RequestBody ScheduleRequest request) {
+        return setup.saveSchedule(userId, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/schedules/{userId}/leave")
+    public LeaveAddedDto addLeave(@AuthenticationPrincipal AppUserPrincipal me, @PathVariable Long userId, @RequestBody LeaveRequest request) {
+        return setup.addLeave(me.getUser(), userId, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/leave/{id}")
+    public void deleteLeave(@PathVariable Long id) {
+        setup.deleteLeave(id);
+    }
+
     @PreAuthorize(VIEW)
     @GetMapping("/settings")
     public SettingsDto settings() {

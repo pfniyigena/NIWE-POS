@@ -104,8 +104,21 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
             Pay {{ confirmation.amountDue - confirmation.amountPaid | number: '1.0-2' }}<span *ngIf="confirmation.invoiceNumber"> (invoice {{ confirmation.invoiceNumber }})</span> to confirm it; otherwise it is released.
             <div style="white-space:pre-line; margin-top:0.5rem;" *ngIf="confirmation.paymentInstructions">{{ confirmation.paymentInstructions }}</div>
           </div>
+          <div class="alert alert-success mt-3" *ngIf="moved && confirmation.status !== 'CANCELLED'" id="moved-note">Your booking has been moved to the time shown above.</div>
           <div class="alert alert-success mt-3" *ngIf="confirmation.status === 'CONFIRMED'">Confirmed.<span *ngIf="confirmation.amountPaid > 0"> Paid {{ confirmation.amountPaid | number: '1.0-2' }}.</span></div>
+          <div class="card mt-3" style="padding:1rem;" *ngIf="moving && confirmation.canReschedule" id="move-panel">
+            <strong>Pick a new time</strong>
+            <input class="form-control mt-2" type="date" name="mdate" [(ngModel)]="mdate" [min]="min" [max]="max" (ngModelChange)="loadMoveSlots()" />
+            <div class="text-muted mt-2" *ngIf="mloading">Checking availability…</div>
+            <div class="text-muted mt-2" *ngIf="!mloading && mloaded && !mslots.length">Nothing free on that day — try another.</div>
+            <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
+              <button type="button" class="btn" *ngFor="let t of mslots" [class.btn-primary]="mtime === t" [class.btn-outline-secondary]="mtime !== t" (click)="mtime = t">{{ t }}</button>
+            </div>
+            <div class="mt-2"><button class="btn btn-primary" id="move-confirm" type="button" [disabled]="!mtime || saving" (click)="move()">Move my booking</button></div>
+          </div>
           <div class="mt-3 flex gap-2" style="flex-wrap:wrap;">
+            <button class="btn btn-outline-primary" id="move-open" *ngIf="confirmation.canReschedule" (click)="openMove()" [disabled]="saving">Move to another time</button>
+            <button class="btn btn-outline-secondary" id="add-calendar" *ngIf="confirmation.status === 'CONFIRMED' || confirmation.status === 'PENDING_PAYMENT'" (click)="addToCalendar()">Add to my calendar</button>
             <button class="btn btn-outline-danger" *ngIf="confirmation.canCancel" (click)="cancel()" [disabled]="saving">Cancel this booking</button>
             <button class="btn btn-outline-secondary" (click)="reset()">Book another</button>
           </div>
@@ -141,6 +154,13 @@ export class PublicBookingComponent implements OnInit {
   lookupCode = '';
   lookupPhone = '';
   lookupError: string | null = null;
+  moving = false;
+  moved = false;
+  mdate = '';
+  mtime: string | null = null;
+  mslots: string[] = [];
+  mloaded = false;
+  mloading = false;
 
   constructor(private api: PublicBookingApiService) {}
 
@@ -206,8 +226,61 @@ export class PublicBookingComponent implements OnInit {
     });
   }
 
+  private contactPhone(): string {
+    return (this.phone || this.lookupPhone).trim();
+  }
+
+  openMove(): void {
+    this.moving = !this.moving;
+    this.error = null;
+    if (this.moving && this.confirmation) {
+      this.mdate = this.confirmation.startAt.slice(0, 10);
+      this.loadMoveSlots();
+    }
+  }
+
+  loadMoveSlots(): void {
+    this.mslots = [];
+    this.mtime = null;
+    this.mloaded = false;
+    if (!this.confirmation || !this.mdate) return;
+    this.mloading = true;
+    this.api.rescheduleSlots(this.confirmation.confirmationCode, this.contactPhone(), this.mdate).subscribe({
+      next: (l) => { this.mslots = l; this.mloading = false; this.mloaded = true; },
+      error: (e) => { this.mloading = false; this.error = e?.error?.message ?? 'Could not check availability'; },
+    });
+  }
+
+  move(): void {
+    if (!this.confirmation || !this.mtime) return;
+    this.saving = true;
+    this.error = null;
+    this.api.reschedule(this.confirmation.confirmationCode, this.contactPhone(), this.mdate, this.mtime).subscribe({
+      next: (c) => { this.confirmation = c; this.saving = false; this.moving = false; this.moved = true; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not move this booking.'; this.loadMoveSlots(); },
+    });
+  }
+
+  addToCalendar(): void {
+    if (!this.confirmation) return;
+    const code = this.confirmation.confirmationCode;
+    this.api.calendar(code, this.contactPhone()).subscribe({
+      next: (b) => {
+        const url = URL.createObjectURL(b);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = code + '.ics';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      },
+      error: () => (this.error = 'Could not create the calendar file.'),
+    });
+  }
+
   reset(): void {
     this.confirmation = null;
+    this.moving = false;
+    this.moved = false;
     this.serviceId = null;
     this.staffId = null;
     this.date = '';

@@ -43,6 +43,29 @@ import { Appointment, BookingApiService, Slot } from '../../core/api/booking-api
           <div *ngIf="a.cancelReason" class="text-muted">Cancelled: {{ a.cancelReason }}</div>
         </div>
 
+        <div class="card mb-3" style="padding:1rem;" *ngIf="a.history && (a.history.completed || a.history.noShows || a.history.cancelled || a.history.upcoming)" id="guest-history">
+          <strong>This guest's other visits</strong>
+          <div [style.color]="a.history.noShows >= 2 ? 'var(--danger, #c0392b)' : ''">
+            {{ a.history.completed }} done · {{ a.history.noShows }} no-show{{ a.history.noShows === 1 ? '' : 's' }} · {{ a.history.cancelled }} cancelled · {{ a.history.upcoming }} coming up
+            <span *ngIf="a.history.lastVisit" class="text-muted"> · last visit {{ a.history.lastVisit | date: 'd MMM y' }}</span>
+          </div>
+          <div style="font-size:0.85rem; color:var(--danger, #c0392b);" *ngIf="a.history.noShows >= 2">This guest has missed {{ a.history.noShows }} earlier appointments. You may want to confirm with them first.</div>
+        </div>
+
+        <div class="card mb-3" style="padding:1rem;" *ngIf="a.status === 'CONFIRMED' || a.status === 'PENDING_PAYMENT'">
+          <strong>Reminder and calendar</strong>
+          <div class="text-muted" id="reminder-state">
+            <span *ngIf="a.reminderSentAt">Reminder e-mailed {{ a.reminderSentAt | date: 'd MMM, HH:mm' }}.</span>
+            <span *ngIf="!a.reminderSentAt">No reminder sent yet.</span>
+            <span *ngIf="a.rescheduleCount"> The guest has moved this booking online {{ a.rescheduleCount }} time{{ a.rescheduleCount === 1 ? '' : 's' }}.</span>
+          </div>
+          <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
+            <button class="btn btn-sm btn-outline-primary" id="remind-now" *ngIf="a.canWork && a.status === 'CONFIRMED' && a.guestEmail" (click)="remind()" [disabled]="busy">Send reminder now</button>
+            <button class="btn btn-sm btn-outline-secondary" id="download-ics" (click)="downloadIcs()">Download calendar file</button>
+          </div>
+          <div class="text-muted mt-1" style="font-size:0.8rem;" *ngIf="a.canWork && a.status === 'CONFIRMED' && !a.guestEmail">No e-mail address on this booking, so no reminder can be sent.</div>
+        </div>
+
         <div class="card mb-3" style="padding:1rem;" *ngIf="a.price > 0">
           <strong>Payment</strong>
           <div>Price {{ a.price | number: '1.0-2' }}<span *ngIf="a.paymentMode === 'DEPOSIT'"> · deposit to confirm {{ a.amountDue | number: '1.0-2' }}</span>
@@ -142,6 +165,24 @@ export class AppointmentDetailComponent implements OnInit {
     if (kind === 'confirm') this.run(this.api.confirm(id), 'Confirmed.');
     else if (kind === 'complete') this.run(this.api.complete(id), 'Marked as done.');
     else this.run(this.api.noShow(id), 'Marked as a no-show.');
+  }
+
+  remind(): void { if (this.a) this.run(this.api.remind(this.a.id), 'Reminder sent.'); }
+
+  downloadIcs(): void {
+    if (!this.a) return;
+    const name = this.a.number + '.ics';
+    this.api.calendarFile(this.a.id).subscribe({
+      next: (b) => {
+        const url = URL.createObjectURL(b);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      },
+      error: () => (this.error = 'Could not download the calendar file'),
+    });
   }
 
   cancelNow(): void { if (this.a) this.run(this.api.cancel(this.a.id, this.cancelReason.trim() || null), 'Cancelled.'); }

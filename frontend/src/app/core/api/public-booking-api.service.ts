@@ -9,7 +9,7 @@ export interface PublicInfo { title: string | null; intro: string | null; paymen
 
 export interface PublicConfirmation {
   confirmationCode: string; number: string; status: AppointmentStatus; serviceName: string; startAt: string; endAt: string; staffName: string | null; price: number;
-  amountDue: number; amountPaid: number; invoiceNumber: string | null; holdExpiresAt: string | null; paymentInstructions: string | null; canCancel: boolean;
+  amountDue: number; amountPaid: number; invoiceNumber: string | null; holdExpiresAt: string | null; paymentInstructions: string | null; canCancel: boolean; canReschedule: boolean;
 }
 
 export interface PublicBookPayload { serviceId: number; date: string; time: string; staffUserId: number | null; name: string; phone: string; email: string | null; notes: string | null; website: string; }
@@ -30,4 +30,13 @@ export class PublicBookingApiService {
   book(p: PublicBookPayload): Observable<PublicConfirmation> { return this.http.post<PublicConfirmation>(`${this.base}/appointments`, p); }
   lookup(code: string, phone: string): Observable<PublicConfirmation> { return this.http.post<PublicConfirmation>(`${this.base}/appointments/${encodeURIComponent(code)}/lookup`, { phone }); }
   cancel(code: string, phone: string): Observable<PublicConfirmation> { return this.http.post<PublicConfirmation>(`${this.base}/appointments/${encodeURIComponent(code)}/cancel`, { phone }); }
+  rescheduleSlots(code: string, phone: string, date: string): Observable<string[]> {
+    return this.http.post<string[]>(`${this.base}/appointments/${encodeURIComponent(code)}/reschedule-slots`, { phone, date });
+  }
+  reschedule(code: string, phone: string, date: string, time: string): Observable<PublicConfirmation> {
+    return this.http.post<PublicConfirmation>(`${this.base}/appointments/${encodeURIComponent(code)}/reschedule`, { phone, date, time });
+  }
+  calendar(code: string, phone: string): Observable<Blob> {
+    return this.http.post(`${this.base}/appointments/${encodeURIComponent(code)}/calendar`, { phone }, { responseType: 'blob' });
+  }
 }

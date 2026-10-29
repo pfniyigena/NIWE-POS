@@ -7,6 +7,7 @@ import com.posapp.booking.PaymentMode;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -21,7 +22,8 @@ public final class BookingDtos {
 
     public record SettingsDto(LocalTime dayStart, LocalTime dayEnd, String workDays, int slotStepMinutes, int minNoticeMinutes, int maxAdvanceDays,
                               int holdMinutes, int cancelNoticeHours, int maxPublicPerPhonePerDay, boolean publicEnabled, boolean emailConfirmations,
-                              String publicTitle, String publicIntro, String paymentInstructions) {
+                              String publicTitle, String publicIntro, String paymentInstructions, boolean reminderEnabled, int reminderHours,
+                              boolean allowGuestReschedule, int maxGuestReschedules) {
     }
 
     public record ServiceDto(Long id, String name, String description, int durationMinutes, int bufferMinutes, BigDecimal price, PaymentMode paymentMode,
@@ -41,15 +43,39 @@ public final class BookingDtos {
                                  String staffName, Long resourceId, String resourceName, Long customerId, String guestName, String guestPhone,
                                  String guestEmail, String notes, BigDecimal price, PaymentMode paymentMode, BigDecimal amountDue, BigDecimal amountPaid,
                                  Long invoiceId, String invoiceNumber, Instant holdExpiresAt, String cancelReason, Instant createdAt, String createdByName,
-                                 boolean canWork, boolean canManage) {
+                                 boolean canWork, boolean canManage, Instant reminderSentAt, int rescheduleCount, GuestHistoryDto history) {
+    }
+
+    /** What the business already knows about this guest (matched by customer or phone number), not counting this appointment. */
+    public record GuestHistoryDto(long completed, long noShows, long cancelled, long upcoming, LocalDateTime lastVisit) {
     }
 
     public record SlotDto(String time, List<Option> staff, List<Option> resources) {
     }
 
-    public record DayDto(String date, List<AppointmentDto> appointments, List<BlockDto> blocks, List<Option> staff, List<Option> resources,
-                         String dayStart, String dayEnd, boolean workDay) {
+    /** One person's availability on the day shown: off (day off, leave) or working between start and end. */
+    public record StaffDayDto(Long userId, boolean working, String start, String end, String note) {
     }
+
+    public record DayDto(String date, List<AppointmentDto> appointments, List<BlockDto> blocks, List<Option> staff, List<Option> resources,
+                         String dayStart, String dayEnd, boolean workDay, List<StaffDayDto> staffDays) {
+    }
+
+    // ---- staff schedules
+
+    public record HoursDto(String day, String start, String end) {
+    }
+
+    public record LeaveDto(Long id, LocalDate fromDate, LocalDate toDate, String reason, String createdByName) {
+    }
+
+    /** {@code custom} false = follows the business opening hours. */
+    public record ScheduleDto(Long userId, String userName, boolean custom, List<HoursDto> days, List<LeaveDto> leave) {
+    }
+
+    public record LeaveAddedDto(LeaveDto leave, long appointmentsInPeriod) {
+    }
+
 
     public record SummaryDto(long today, long upcomingWeek, long awaitingPayment, long noShowsThisMonth) {
     }
@@ -65,6 +91,6 @@ public final class BookingDtos {
 
     public record PublicConfirmationDto(String confirmationCode, String number, AppointmentStatus status, String serviceName, LocalDateTime startAt,
                                         LocalDateTime endAt, String staffName, BigDecimal price, BigDecimal amountDue, BigDecimal amountPaid,
-                                        String invoiceNumber, Instant holdExpiresAt, String paymentInstructions, boolean canCancel) {
+                                        String invoiceNumber, Instant holdExpiresAt, String paymentInstructions, boolean canCancel, boolean canReschedule) {
     }
 }

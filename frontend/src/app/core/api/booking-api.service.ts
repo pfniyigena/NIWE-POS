@@ -13,6 +13,7 @@ export interface BookingSettings {
   dayStart: string; dayEnd: string; workDays: string; slotStepMinutes: number; minNoticeMinutes: number; maxAdvanceDays: number; holdMinutes: number;
   cancelNoticeHours: number; maxPublicPerPhonePerDay: number; publicEnabled: boolean; emailConfirmations: boolean; publicTitle: string | null;
   publicIntro: string | null; paymentInstructions: string | null;
+  reminderEnabled: boolean; reminderHours: number; allowGuestReschedule: boolean; maxGuestReschedules: number;
 }
 
 export interface BookableService {
@@ -38,13 +39,24 @@ export interface Appointment {
   resourceId: number | null; resourceName: string | null; customerId: number | null; guestName: string; guestPhone: string | null; guestEmail: string | null;
   notes: string | null; price: number; paymentMode: PaymentMode; amountDue: number; amountPaid: number; invoiceId: number | null; invoiceNumber: string | null;
   holdExpiresAt: string | null; cancelReason: string | null; createdAt: string; createdByName: string | null; canWork: boolean; canManage: boolean;
+  reminderSentAt: string | null; rescheduleCount: number; history: GuestHistory | null;
 }
+
+export interface GuestHistory { completed: number; noShows: number; cancelled: number; upcoming: number; lastVisit: string | null; }
 
 export interface Slot { time: string; staff: Option[]; resources: Option[]; }
 
 export interface DayView {
   date: string; appointments: Appointment[]; blocks: BookingBlock[]; staff: Option[]; resources: Option[]; dayStart: string; dayEnd: string; workDay: boolean;
+  staffDays: StaffDay[];
 }
+
+export interface StaffDay { userId: number; working: boolean; start: string | null; end: string | null; note: string | null; }
+
+export interface DayHours { day: string; start: string; end: string; }
+export interface Leave { id: number; fromDate: string; toDate: string; reason: string | null; createdByName: string | null; }
+export interface Schedule { userId: number; userName: string; custom: boolean; days: DayHours[]; leave: Leave[]; }
+export interface LeaveAdded { leave: Leave; appointmentsInPeriod: number; }
 
 export interface BookingSummary { today: number; upcomingWeek: number; awaitingPayment: number; noShowsThisMonth: number; }
 
@@ -90,6 +102,16 @@ export class BookingApiService {
   confirm(id: number): Observable<Appointment> { return this.http.post<Appointment>(`${this.base}/appointments/${id}/confirm`, {}); }
   cancel(id: number, reason: string | null): Observable<Appointment> { return this.http.post<Appointment>(`${this.base}/appointments/${id}/cancel`, { reason }); }
   invoice(id: number): Observable<Appointment> { return this.http.post<Appointment>(`${this.base}/appointments/${id}/invoice`, {}); }
+  remind(id: number): Observable<Appointment> { return this.http.post<Appointment>(`${this.base}/appointments/${id}/remind`, {}); }
+  runReminders(): Observable<{ sent: number }> { return this.http.post<{ sent: number }>(`${this.base}/reminders/run`, {}); }
+  calendarFile(id: number): Observable<Blob> { return this.http.get(`${this.base}/appointments/${id}/calendar.ics`, { responseType: 'blob' }); }
+
+  schedules(): Observable<Schedule[]> { return this.http.get<Schedule[]>(`${this.base}/schedules`); }
+  saveSchedule(userId: number, custom: boolean, days: DayHours[]): Observable<Schedule> { return this.http.put<Schedule>(`${this.base}/schedules/${userId}`, { custom, days }); }
+  addLeave(userId: number, fromDate: string, toDate: string, reason: string | null): Observable<LeaveAdded> {
+    return this.http.post<LeaveAdded>(`${this.base}/schedules/${userId}/leave`, { fromDate, toDate, reason });
+  }
+  deleteLeave(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/leave/${id}`); }
 
   services(activeOnly = false): Observable<BookableService[]> { return this.http.get<BookableService[]>(`${this.base}/services`, { params: new HttpParams().set('activeOnly', activeOnly) }); }
   service(id: number): Observable<BookableService> { return this.http.get<BookableService>(`${this.base}/services/${id}`); }

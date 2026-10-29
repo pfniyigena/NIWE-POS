@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.17.0 - Booking: reminders, guest rescheduling, working hours and leave
+
+Booking now e-mails guests a reminder before the visit and a "moved" notice (with a calendar file attached), lets guests move their own booking on the public page, shows a guest's earlier visits and no-shows on the appointment, prints a day sheet, and respects each person's own working hours and leave when offering times. One migration (V56) and a new page under Booking > Working hours. Details in `RELEASE-NOTES-v1.17.0.md`.
+
 ### Version 1.16.0 - Time Tracking: timesheet discipline and project control
 
 Time Tracking now helps keep timesheets complete and projects on budget: a timer left running is stopped automatically (and a warning shows while it runs), *Copy last week* starts a week from the one before, a lock date stops changes to past weeks, a *Not submitted* list shows who has not handed in their week and can e-mail a reminder (by hand or every week), projects can be limited to a team, and budget warnings (with an optional hard stop) show on the project list and when logging time. One migration (V55). Details in `RELEASE-NOTES-v1.16.0.md`.

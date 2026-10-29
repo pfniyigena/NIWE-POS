@@ -19,6 +19,7 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -36,6 +37,8 @@ public class BookingSetupService {
     private final BookableServiceStaffRepository serviceStaffRepository;
     private final BookableResourceRepository resourceRepository;
     private final BookingBlockRepository blockRepository;
+    private final BookingStaffHoursRepository hoursRepository;
+    private final BookingStaffLeaveRepository leaveRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final CatalogService catalogService;
@@ -44,13 +47,16 @@ public class BookingSetupService {
 
     public BookingSetupService(BookingSettingsRepository settingsRepository, BookableServiceRepository serviceRepository,
                                BookableServiceStaffRepository serviceStaffRepository, BookableResourceRepository resourceRepository,
-                               BookingBlockRepository blockRepository, AppointmentRepository appointmentRepository, UserRepository userRepository,
+                               BookingBlockRepository blockRepository, BookingStaffHoursRepository hoursRepository, BookingStaffLeaveRepository leaveRepository,
+                               AppointmentRepository appointmentRepository, UserRepository userRepository,
                                CatalogService catalogService, ModuleService moduleService, AuditLogService auditLogService) {
         this.settingsRepository = settingsRepository;
         this.serviceRepository = serviceRepository;
         this.serviceStaffRepository = serviceStaffRepository;
         this.resourceRepository = resourceRepository;
         this.blockRepository = blockRepository;
+        this.hoursRepository = hoursRepository;
+        this.leaveRepository = leaveRepository;
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.catalogService = catalogService;
@@ -104,7 +110,8 @@ public class BookingSetupService {
     static SettingsDto toDto(BookingSettings s) {
         return new SettingsDto(s.getDayStart(), s.getDayEnd(), s.getWorkDays(), s.getSlotStepMinutes(), s.getMinNoticeMinutes(), s.getMaxAdvanceDays(),
                 s.getHoldMinutes(), s.getCancelNoticeHours(), s.getMaxPublicPerPhonePerDay(), s.isPublicEnabled(), s.isEmailConfirmations(),
-                s.getPublicTitle(), s.getPublicIntro(), s.getPaymentInstructions());
+                s.getPublicTitle(), s.getPublicIntro(), s.getPaymentInstructions(), s.isReminderEnabled(), s.getReminderHours(), s.isAllowGuestReschedule(),
+                s.getMaxGuestReschedules());
     }
 
     @Transactional
@@ -132,6 +139,16 @@ public class BookingSetupService {
         if (r.maxPublicPerPhonePerDay() != null) s.setMaxPublicPerPhonePerDay(Math.min(50, Math.max(1, r.maxPublicPerPhonePerDay())));
         if (r.publicEnabled() != null) s.setPublicEnabled(r.publicEnabled());
         if (r.emailConfirmations() != null) s.setEmailConfirmations(r.emailConfirmations());
+        if (r.reminderEnabled() != null) s.setReminderEnabled(r.reminderEnabled());
+        if (r.reminderHours() != null) {
+            if (r.reminderHours() < 1 || r.reminderHours() > 168) throw ApiException.badRequest("Send the reminder between 1 and 168 hours before the visit.");
+            s.setReminderHours(r.reminderHours());
+        }
+        if (r.allowGuestReschedule() != null) s.setAllowGuestReschedule(r.allowGuestReschedule());
+        if (r.maxGuestReschedules() != null) {
+            if (r.maxGuestReschedules() < 0 || r.maxGuestReschedules() > 10) throw ApiException.badRequest("A guest can move a booking between 0 and 10 times.");
+            s.setMaxGuestReschedules(r.maxGuestReschedules());
+        }
         s.setPublicTitle(clean(r.publicTitle()));
         s.setPublicIntro(clean(r.publicIntro()));
         s.setPaymentInstructions(clean(r.paymentInstructions()));
@@ -366,5 +383,134 @@ public class BookingSetupService {
         BookingBlock b = blockRepository.findById(id).orElseThrow(() -> ApiException.notFound("Block not found: " + id));
         blockRepository.delete(b);
         auditLogService.record("BOOKING_BLOCK_REMOVED", "Removed a blocked period", "BookingBlock", id);
+    }
+
+    // ------------------------------------------------------------------ staff schedules
+
+    /** One person's availability on one day. */
+    record StaffWindow(boolean working, LocalTime start, LocalTime end, String note) {
+    }
+
+    private static final List<String> DAY_CODES = List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN");
+
+    private static String hhmm(LocalTime t) {
+        return t.withSecond(0).withNano(0).toString();
+    }
+
+    /** Availability of each person on a day: leave and days off come first, then their own hours, otherwise the business opening hours. */
+    Map<Long, StaffWindow> staffWindows(java.util.Collection<Long> userIds, LocalDate date) {
+        Map<Long, StaffWindow> out = new java.util.LinkedHashMap<>();
+        if (userIds.isEmpty()) return out;
+        BookingSettings s = settingsEntity();
+        Map<Long, List<BookingStaffHours>> hours = hoursRepository.findByUserIdIn(userIds).stream().collect(Collectors.groupingBy(BookingStaffHours::getUserId));
+        Map<Long, BookingStaffLeave> leave = new java.util.HashMap<>();
+        for (BookingStaffLeave l : leaveRepository.findByUserIdInAndFromDateLessThanEqualAndToDateGreaterThanEqual(userIds, date, date)) leave.putIfAbsent(l.getUserId(), l);
+        for (Long id : userIds) {
+            BookingStaffLeave l = leave.get(id);
+            if (l != null) {
+                out.put(id, new StaffWindow(false, null, null, "On leave" + (notBlank(l.getReason()) ? ": " + l.getReason() : "")));
+                continue;
+            }
+            List<BookingStaffHours> rows = hours.get(id);
+            if (rows == null || rows.isEmpty()) {
+                boolean working = workDays(s).contains(date.getDayOfWeek());
+                out.put(id, new StaffWindow(working, s.getDayStart(), s.getDayEnd(), working ? null : "Closed"));
+                continue;
+            }
+            BookingStaffHours row = rows.stream().filter(h -> h.getWeekday() == date.getDayOfWeek().getValue()).findFirst().orElse(null);
+            out.put(id, row == null ? new StaffWindow(false, null, null, "Day off") : new StaffWindow(true, row.getStartTime(), row.getEndTime(), null));
+        }
+        return out;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleDto> schedules() {
+        on();
+        Set<Long> ids = new java.util.LinkedHashSet<>();
+        serviceStaffRepository.findAll().forEach(x -> ids.add(x.getUserId()));
+        List<BookingStaffHours> allHours = hoursRepository.findAll();
+        allHours.forEach(h -> ids.add(h.getUserId()));
+        List<BookingStaffLeave> allLeave = leaveRepository.findByToDateGreaterThanEqualOrderByFromDateAsc(LocalDate.now().minusDays(1));
+        allLeave.forEach(l -> ids.add(l.getUserId()));
+        List<ScheduleDto> out = new ArrayList<>();
+        for (AppUser u : userRepository.findAllById(ids)) {
+            if (!u.isActive()) continue;
+            List<HoursDto> days = allHours.stream().filter(h -> h.getUserId().equals(u.getId())).sorted(Comparator.comparingInt(BookingStaffHours::getWeekday))
+                    .map(h -> new HoursDto(DAY_CODES.get(h.getWeekday() - 1), hhmm(h.getStartTime()), hhmm(h.getEndTime()))).toList();
+            List<LeaveDto> leave = allLeave.stream().filter(l -> l.getUserId().equals(u.getId())).map(BookingSetupService::toDto).toList();
+            out.add(new ScheduleDto(u.getId(), name(u), !days.isEmpty(), days, leave));
+        }
+        out.sort(Comparator.comparing(x -> x.userName().toLowerCase()));
+        return out;
+    }
+
+    private static LeaveDto toDto(BookingStaffLeave l) {
+        return new LeaveDto(l.getId(), l.getFromDate(), l.getToDate(), l.getReason(), l.getCreatedByName());
+    }
+
+    @Transactional
+    public ScheduleDto saveSchedule(Long userId, ScheduleRequest r) {
+        on();
+        AppUser user = userRepository.findById(userId).orElseThrow(() -> ApiException.notFound("User not found."));
+        BookingSettings s = settingsEntity();
+        hoursRepository.deleteByUserId(userId);
+        hoursRepository.flush();
+        if (Boolean.TRUE.equals(r.custom())) {
+            if (r.days() == null || r.days().isEmpty()) throw ApiException.badRequest("Choose at least one working day, or switch to the business opening hours.");
+            Set<Integer> seen = new java.util.HashSet<>();
+            Set<DayOfWeek> open = workDays(s);
+            for (DayHoursRequest d : r.days()) {
+                int idx = d.day() == null ? -1 : DAY_CODES.indexOf(d.day().trim().toUpperCase());
+                if (idx < 0) throw ApiException.badRequest("Unknown day: " + d.day());
+                DayOfWeek dow = DayOfWeek.of(idx + 1);
+                if (!seen.add(idx + 1)) throw ApiException.badRequest("The same day is listed twice: " + d.day());
+                if (!open.contains(dow)) throw ApiException.badRequest(DAY_CODES.get(idx) + " is not a working day in the business opening hours (Booking settings).");
+                if (d.start() == null || d.end() == null || !d.end().isAfter(d.start())) throw ApiException.badRequest("On " + DAY_CODES.get(idx) + ", the end must be after the start.");
+                if (d.start().isBefore(s.getDayStart()) || d.end().isAfter(s.getDayEnd())) {
+                    throw ApiException.badRequest("On " + DAY_CODES.get(idx) + ", the hours must be inside the business opening hours (" + hhmm(s.getDayStart()) + " to " + hhmm(s.getDayEnd()) + ").");
+                }
+                BookingStaffHours h = new BookingStaffHours();
+                h.setUserId(userId);
+                h.setWeekday(idx + 1);
+                h.setStartTime(d.start());
+                h.setEndTime(d.end());
+                hoursRepository.save(h);
+            }
+        }
+        auditLogService.record("BOOKING_SCHEDULE_UPDATED", name(user) + (Boolean.TRUE.equals(r.custom()) ? " now has their own working hours" : " now follows the business opening hours"), "User", userId);
+        hoursRepository.flush();
+        return schedules().stream().filter(x -> x.userId().equals(userId)).findFirst()
+                .orElse(new ScheduleDto(userId, name(user), Boolean.TRUE.equals(r.custom()), List.of(), List.of()));
+    }
+
+    @Transactional
+    public LeaveAddedDto addLeave(AppUser actor, Long userId, LeaveRequest r) {
+        on();
+        AppUser user = userRepository.findById(userId).orElseThrow(() -> ApiException.notFound("User not found."));
+        if (r.fromDate() == null || r.toDate() == null) throw ApiException.badRequest("Enter the first and the last day.");
+        if (r.toDate().isBefore(r.fromDate())) throw ApiException.badRequest("The last day cannot be before the first day.");
+        if (r.toDate().isBefore(LocalDate.now().minusDays(1))) throw ApiException.badRequest("That leave is already in the past.");
+        if (java.time.temporal.ChronoUnit.DAYS.between(r.fromDate(), r.toDate()) > 366) throw ApiException.badRequest("Leave can be at most a year long.");
+        BookingStaffLeave l = new BookingStaffLeave();
+        l.setUserId(userId);
+        l.setFromDate(r.fromDate());
+        l.setToDate(r.toDate());
+        l.setReason(clean(r.reason()));
+        l.setCreatedByName(name(actor));
+        BookingStaffLeave saved = leaveRepository.save(l);
+        long booked = appointmentRepository.findByStaffUserIdAndStartAtGreaterThanEqualOrderByStartAtAsc(userId, r.fromDate().atStartOfDay()).stream()
+                .filter(a -> a.getStartAt().isBefore(r.toDate().plusDays(1).atStartOfDay()))
+                .filter(a -> a.getStatus() == AppointmentStatus.CONFIRMED || a.getStatus() == AppointmentStatus.PENDING_PAYMENT).count();
+        auditLogService.record("BOOKING_LEAVE_ADDED", name(user) + " is away " + r.fromDate() + " to " + r.toDate() + (l.getReason() != null ? " — " + l.getReason() : "")
+                + (booked > 0 ? " (" + booked + " appointment(s) already booked in that period)" : ""), "User", userId);
+        return new LeaveAddedDto(toDto(saved), booked);
+    }
+
+    @Transactional
+    public void deleteLeave(Long id) {
+        on();
+        BookingStaffLeave l = leaveRepository.findById(id).orElseThrow(() -> ApiException.notFound("Leave not found: " + id));
+        leaveRepository.delete(l);
+        auditLogService.record("BOOKING_LEAVE_REMOVED", "Removed a leave period " + l.getFromDate() + " to " + l.getToDate(), "User", l.getUserId());
     }
 }

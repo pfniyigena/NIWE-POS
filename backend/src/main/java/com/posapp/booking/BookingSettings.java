@@ -63,4 +63,18 @@ public class BookingSettings extends BaseEntity {
     private String paymentInstructions;
 
     private Long billingProductId;
+
+    /** E-mail the guest a reminder this many hours before the visit. */
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean reminderEnabled = false;
+
+    @Column(nullable = false, columnDefinition = "integer default 24 not null")
+    private int reminderHours = 24;
+
+    /** A guest can move their own booking on the public page (within the cancellation notice), this many times. */
+    @Column(nullable = false, columnDefinition = "boolean default true not null")
+    private boolean allowGuestReschedule = true;
+
+    @Column(nullable = false, columnDefinition = "integer default 2 not null")
+    private int maxGuestReschedules = 2;
 }
