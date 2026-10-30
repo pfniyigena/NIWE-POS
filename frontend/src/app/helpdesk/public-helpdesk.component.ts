@@ -24,7 +24,7 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
   imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem 0;">
-      <div class="card" style="width:480px; padding:2rem;">
+      <div class="card" style="width:520px; max-width:96vw; padding:2rem;">
         <h3 class="mb-3" style="text-align:center;">Help Desk</h3>
         <div class="flex gap-2 mb-3" style="justify-content:center;">
           <button type="button" class="btn" [class.btn-primary]="tab === 'submit'" [class.btn-outline-secondary]="tab !== 'submit'" (click)="switchTab('submit')">
@@ -108,24 +108,58 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
           <ng-container *ngIf="status as s">
             <div class="flex justify-between align-center mb-2">
               <strong>{{ s.ticketNumber }}</strong>
-              <span class="badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span>
+              <span class="badge" [ngClass]="statusClass(s.status)">{{ statusLabel(s.status) }}</span>
             </div>
             <h4 class="mb-1">{{ s.subject }}</h4>
             <div class="text-muted mb-2" style="font-size:0.85rem;">
               {{ s.categoryName || 'Uncategorized' }} · submitted {{ s.createdAt | date: 'medium' }}
             </div>
+            <div class="alert alert-info" *ngIf="s.status === 'WAITING'">We are waiting for your answer. Reply below to carry on.</div>
+            <div class="alert alert-info" *ngIf="s.status === 'MERGED'">This request was combined with another one. Please check the newer ticket number we sent you.</div>
             <div class="card mt-2" style="padding:0.75rem;" *ngIf="s.resolutionNotes">
               <strong>Resolution:</strong>
               <p style="white-space:pre-wrap; margin:0.25rem 0 0;">{{ s.resolutionNotes }}</p>
             </div>
             <h5 class="mt-3 mb-1">Updates</h5>
             <div class="flex flex-col gap-2">
-              <div class="card" style="padding:0.6rem;" *ngFor="let u of s.updates">
-                <p style="white-space:pre-wrap; margin:0;">{{ u.body }}</p>
-                <div class="text-muted" style="font-size:0.75rem;">{{ u.createdAt | date: 'medium' }}</div>
+              <div class="card hd-update" style="padding:0.6rem;" *ngFor="let u of s.updates" [style.background]="u.fromRequester ? 'var(--hover, rgba(0,0,0,0.04))' : ''">
+                <div class="text-muted" style="font-size:0.75rem;">{{ u.fromRequester ? 'You' : 'Help desk' }} · {{ u.createdAt | date: 'medium' }}</div>
+                <p style="white-space:pre-wrap; margin:0.2rem 0 0;">{{ u.body }}</p>
               </div>
               <p class="text-muted" *ngIf="s.updates.length === 0">No updates yet.</p>
             </div>
+
+            <ng-container *ngIf="s.files.length">
+              <h5 class="mt-3 mb-1">Files</h5>
+              <div *ngFor="let f of s.files" style="font-size:0.9rem;">
+                <a href="javascript:void(0)" (click)="openFile(f.id, f.fileName, f.contentType)">{{ f.fileName }}</a>
+                <span class="text-muted" style="font-size:0.75rem;"> · {{ f.fromRequester ? 'from you' : 'from the help desk' }}</span>
+              </div>
+            </ng-container>
+
+            <div class="mt-3 hd-reply-box" *ngIf="s.canReply">
+              <h5 class="mb-1">Add a reply</h5>
+              <textarea class="form-control hd-public-reply" rows="3" name="replyBody" [(ngModel)]="replyBody" placeholder="Write your message here" maxlength="5000"></textarea>
+              <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:center;">
+                <button type="button" class="btn btn-primary btn-sm hd-public-send" [disabled]="loading || !replyBody.trim()" (click)="sendReply()">Send</button>
+                <input type="file" id="hd-public-file" class="hd-public-file" (change)="pickFile($event)" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain" />
+                <button type="button" class="btn btn-outline-secondary btn-sm hd-public-upload" [disabled]="loading || !pickedFile" (click)="sendFile()">Attach file</button>
+              </div>
+              <div class="text-muted mt-1" style="font-size:0.75rem;">Pictures, PDF or text files, up to 10 MB.</div>
+            </div>
+
+            <div class="mt-3 hd-rate-box" *ngIf="s.canRate">
+              <h5 class="mb-1">How did we do?</h5>
+              <div style="font-size:1.6rem; line-height:1;">
+                <span *ngFor="let n of [1,2,3,4,5]" class="hd-star" [attr.data-star]="n" style="cursor:pointer;" [style.color]="n <= ratingChoice ? '#f5a623' : '#bbb'" (click)="ratingChoice = n">★</span>
+              </div>
+              <textarea class="form-control mt-2 hd-rate-comment" rows="2" name="ratingComment" [(ngModel)]="ratingComment" placeholder="Anything you'd like to add? (optional)" maxlength="1000"></textarea>
+              <button type="button" class="btn btn-primary btn-sm mt-2 hd-rate-send" [disabled]="loading || !ratingChoice" (click)="sendRating()">Send rating</button>
+            </div>
+            <div class="mt-3 hd-rated" *ngIf="s.rating">
+              <strong>Your rating:</strong> <span style="color:#f5a623;">{{ stars(s.rating) }}</span> Thank you!
+            </div>
+
             <button type="button" class="btn btn-link mt-2" (click)="status = null">Check another ticket</button>
           </ng-container>
         </ng-container>
@@ -154,6 +188,10 @@ export class PublicHelpDeskComponent implements OnInit {
   lookupTicketNumber = '';
   lookupEmail = '';
   status: PublicHelpDeskTicketStatus | null = null;
+  replyBody = '';
+  pickedFile: File | null = null;
+  ratingChoice = 0;
+  ratingComment = '';
 
   error: string | null = null;
   loading = false;
@@ -216,18 +254,98 @@ export class PublicHelpDeskComponent implements OnInit {
     });
   }
 
+  private applyStatus(s: PublicHelpDeskTicketStatus): void {
+    this.loading = false;
+    this.status = s;
+  }
+
+  private fail(err: any, fallback: string): void {
+    this.loading = false;
+    this.error = err?.error?.message ?? fallback;
+  }
+
+  sendReply(): void {
+    if (!this.replyBody.trim()) return;
+    this.error = null;
+    this.loading = true;
+    this.publicHelpDeskApi.reply(this.lookupTicketNumber.trim(), this.lookupEmail.trim(), this.replyBody.trim()).subscribe({
+      next: (s) => { this.replyBody = ''; this.applyStatus(s); },
+      error: (err) => this.fail(err, 'Could not send your reply'),
+    });
+  }
+
+  pickFile(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    this.pickedFile = input.files && input.files.length ? input.files[0] : null;
+  }
+
+  sendFile(): void {
+    if (!this.pickedFile) return;
+    this.error = null;
+    this.loading = true;
+    this.publicHelpDeskApi.addFile(this.lookupTicketNumber.trim(), this.lookupEmail.trim(), this.pickedFile).subscribe({
+      next: (s) => {
+        this.pickedFile = null;
+        const el = document.getElementById('hd-public-file') as HTMLInputElement | null;
+        if (el) el.value = '';
+        this.applyStatus(s);
+      },
+      error: (err) => this.fail(err, 'Could not attach the file'),
+    });
+  }
+
+  openFile(id: number, name: string, type: string): void {
+    this.publicHelpDeskApi.fileBlob(id, this.lookupTicketNumber.trim(), this.lookupEmail.trim()).subscribe({
+      next: (b) => {
+        const url = URL.createObjectURL(b);
+        if (type === 'text/plain') {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = name;
+          a.click();
+        } else {
+          window.open(url, '_blank');
+        }
+      },
+      error: (err) => this.fail(err, 'Could not open the file'),
+    });
+  }
+
+  sendRating(): void {
+    if (!this.ratingChoice) return;
+    this.error = null;
+    this.loading = true;
+    this.publicHelpDeskApi.rate(this.lookupTicketNumber.trim(), this.lookupEmail.trim(), this.ratingChoice, this.ratingComment.trim() || null).subscribe({
+      next: (s) => { this.ratingChoice = 0; this.ratingComment = ''; this.applyStatus(s); },
+      error: (err) => this.fail(err, 'Could not save your rating'),
+    });
+  }
+
+  stars(n: number): string { return '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n)); }
+
+  statusLabel(s: string): string {
+    switch (s) {
+      case 'IN_PROGRESS': return 'In progress';
+      case 'WAITING': return 'Waiting for your reply';
+      case 'OPEN': return 'Received';
+      case 'RESOLVED': return 'Resolved';
+      case 'CLOSED': return 'Closed';
+      case 'MERGED': return 'Combined with another ticket';
+      default: return s;
+    }
+  }
+
   statusClass(s: string): string {
     switch (s) {
       case 'OPEN':
+      case 'WAITING':
         return 'badge-warning';
       case 'IN_PROGRESS':
         return 'badge-secondary';
       case 'RESOLVED':
         return 'badge-success';
-      case 'CLOSED':
-        return 'badge-outline';
       default:
-        return 'badge-secondary';
+        return 'badge-outline';
     }
   }
 }

@@ -133,6 +133,8 @@ import { HelpDeskTicketFormComponent } from './admin/helpdesk-ticket-form.compon
 import { HelpDeskTicketDetailComponent } from './admin/helpdesk-ticket-detail.component';
 import { HelpDeskSettingsComponent } from './admin/helpdesk-settings.component';
 import { HelpDeskReportListComponent } from './admin/helpdesk-report-list.component';
+import { HelpDeskOverviewComponent } from './admin/helpdesk-overview.component';
+import { HelpDeskCannedListComponent } from './admin/helpdesk-canned-list.component';
 import { CreditNoteListComponent } from './admin/credit-note-list.component';
 import { InvoiceDetailComponent } from './admin/invoice-detail.component';
 import { InvoiceFormComponent } from './admin/invoice-form.component';
@@ -672,6 +674,8 @@ const baseRoutes: Routes = [
   { path: 'admin/helpdesk/tickets/:id/edit', component: HelpDeskTicketFormComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/helpdesk/tickets/:id', component: HelpDeskTicketDetailComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/helpdesk/settings', component: HelpDeskSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/helpdesk/overview', component: HelpDeskOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/helpdesk/canned', component: HelpDeskCannedListComponent, canActivate: [authGuard, adminGuard] },
   // Fourier: "Add Helpdesk reports(XLS,PDF)" — the picker; ReportViewerComponent itself is already
   // registered at 'admin/reports/:key' further up (shared by every report in the app).
   { path: 'admin/helpdesk/reports', component: HelpDeskReportListComponent, canActivate: [authGuard, adminGuard] },

@@ -15,6 +15,10 @@ package com.posapp.helpdesk;
 public enum HelpDeskStatus {
     OPEN,
     IN_PROGRESS,
+    /** Waiting for the requester to answer — the SLA clock is paused. */
+    WAITING,
     RESOLVED,
-    CLOSED
+    CLOSED,
+    /** A duplicate that was merged into another ticket. */
+    MERGED
 }

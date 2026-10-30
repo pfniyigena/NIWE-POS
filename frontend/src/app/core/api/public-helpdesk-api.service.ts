@@ -35,4 +35,24 @@ export class PublicHelpDeskApiService {
       params: { ticketNumber, email },
     });
   }
+
+  reply(ticketNumber: string, email: string, body: string): Observable<PublicHelpDeskTicketStatus> {
+    return this.http.post<PublicHelpDeskTicketStatus>(`${API_BASE}/public/helpdesk/tickets/reply`, { ticketNumber, email, body });
+  }
+
+  rate(ticketNumber: string, email: string, rating: number, comment: string | null): Observable<PublicHelpDeskTicketStatus> {
+    return this.http.post<PublicHelpDeskTicketStatus>(`${API_BASE}/public/helpdesk/tickets/rate`, { ticketNumber, email, rating, comment });
+  }
+
+  addFile(ticketNumber: string, email: string, file: File): Observable<PublicHelpDeskTicketStatus> {
+    const fd = new FormData();
+    fd.append('ticketNumber', ticketNumber);
+    fd.append('email', email);
+    fd.append('file', file, file.name);
+    return this.http.post<PublicHelpDeskTicketStatus>(`${API_BASE}/public/helpdesk/tickets/attachments`, fd);
+  }
+
+  fileBlob(id: number, ticketNumber: string, email: string): Observable<Blob> {
+    return this.http.get(`${API_BASE}/public/helpdesk/tickets/attachments/${id}`, { params: { ticketNumber, email }, responseType: 'blob' });
+  }
 }

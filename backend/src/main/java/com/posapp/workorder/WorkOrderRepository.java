@@ -14,5 +14,7 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
 
     Optional<WorkOrder> findFirstByInvoiceId(Long invoiceId);
 
+    Optional<WorkOrder> findFirstByNumberIgnoreCase(String number);
+
     long countByPackageId(Long packageId);
 }

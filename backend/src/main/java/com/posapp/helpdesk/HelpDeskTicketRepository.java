@@ -10,6 +10,8 @@ public interface HelpDeskTicketRepository extends JpaRepository<HelpDeskTicket, 
 
     boolean existsByCategoryId(Long categoryId);
 
+    boolean existsByTicketNumber(String ticketNumber);
+
     /**
      * The admin ticket list's own filtered query — same null-safe-parameter shape as {@code
      * ProductRepository.search}/{@code AuditLogRepository.search}: every filter is always bound
@@ -28,7 +30,9 @@ public interface HelpDeskTicketRepository extends JpaRepository<HelpDeskTicket, 
            "and (:assignedToUserId is null or t.assignedToUserId = :assignedToUserId) " +
            "and (:q = '' or lower(t.ticketNumber) like lower(concat('%', :q, '%')) " +
            "or lower(t.subject) like lower(concat('%', :q, '%')) " +
-           "or lower(t.requesterName) like lower(concat('%', :q, '%'))) " +
+           "or lower(t.requesterName) like lower(concat('%', :q, '%')) " +
+           "or lower(coalesce(t.requesterEmail, '')) like lower(concat('%', :q, '%')) " +
+           "or lower(coalesce(t.tags, '')) like lower(concat('%', :q, '%'))) " +
            "order by t.createdAt desc")
     java.util.List<HelpDeskTicket> search(HelpDeskTicketType type, HelpDeskStatus status, HelpDeskPriority priority,
                                             Long categoryId, Long assignedToUserId, String q);
@@ -43,4 +47,10 @@ public interface HelpDeskTicketRepository extends JpaRepository<HelpDeskTicket, 
 
     /** Fourier: "Add Helpdesk reports(XLS,PDF)" — backs HelpDeskTicketService.reportRows; a plain date-range read, same "dateOnly" shape as the simpler reports in ReportController (no other filter — the report is a period export, not the filtered working list {@link #search} already covers). */
     java.util.List<HelpDeskTicket> findByCreatedAtBetweenOrderByCreatedAtDesc(Instant from, Instant to);
+
+    java.util.List<HelpDeskTicket> findByStatusIn(java.util.Collection<HelpDeskStatus> statuses);
+
+    java.util.List<HelpDeskTicket> findByStatusAndResolvedAtBefore(HelpDeskStatus status, Instant before);
+
+    java.util.List<HelpDeskTicket> findAllByOrderByIdDesc();
 }

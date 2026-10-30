@@ -92,4 +92,32 @@ public class HelpDeskTicket extends BaseEntity {
 
     private Instant resolvedAt;
     private Instant closedAt;
+
+    // ---- v1.20.0: SLA, waiting, tags, links, merge, rating ----
+    private Instant firstResponseDueAt;
+    private Instant resolutionDueAt;
+    private Instant firstRespondedAt;
+    private Instant waitingSince;
+    @Column(nullable = false)
+    private long waitingSeconds;
+    private Instant responseEscalatedAt;
+    private Instant resolutionWarnedAt;
+    private Instant resolutionEscalatedAt;
+    private Instant lastRequesterReplyAt;
+    /** Comma-separated, lower case. */
+    @Column(length = 500)
+    private String tags;
+    private Long linkedInvoiceId;
+    @Column(length = 100)
+    private String linkedInvoiceNumber;
+    private Long linkedWorkOrderId;
+    @Column(length = 100)
+    private String linkedWorkOrderNumber;
+    private Long mergedIntoId;
+    @Column(length = 100)
+    private String mergedIntoNumber;
+    private Integer satisfactionRating;
+    @Column(columnDefinition = "TEXT")
+    private String satisfactionComment;
+    private Instant ratedAt;
 }

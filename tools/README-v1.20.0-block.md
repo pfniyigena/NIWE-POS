@@ -1,0 +1,3 @@
+### Version 1.20.0 - Help Desk: deadlines (SLA), replies and files, overview, reports, workflow and history
+
+Help Desk tickets now carry first-reply and resolution deadlines by priority (with a "waiting for the customer" status that pauses the clock, warning and escalation e-mails and automatic closing of old resolved tickets), agents can reply to the customer by e-mail with saved replies and attach files, and customers can answer, add files and rate the help on the public ticket page. There is a new Overview, five new reports, ticket views and bulk actions, a full history, tags, links to an invoice or a job, and merging of duplicate tickets. One migration (V59) and two new pages under Help Desk (Overview, Saved replies). Details in `RELEASE-NOTES-v1.20.0.md`.

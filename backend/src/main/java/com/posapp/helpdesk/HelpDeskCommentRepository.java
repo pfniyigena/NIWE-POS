@@ -10,4 +10,6 @@ public interface HelpDeskCommentRepository extends JpaRepository<HelpDeskComment
 
     /** The public lookup page's own timeline — see HelpDeskComment.internal's javadoc for why only these are ever shown to a requester. */
     List<HelpDeskComment> findByTicketIdAndInternalFalseOrderByCreatedAtAsc(Long ticketId);
+
+    long countByTicketIdAndFromRequesterTrue(Long ticketId);
 }

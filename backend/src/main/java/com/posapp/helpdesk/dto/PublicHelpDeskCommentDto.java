@@ -4,9 +4,9 @@ import com.posapp.helpdesk.HelpDeskComment;
 
 import java.time.Instant;
 
-/** One entry on the public "check my ticket" timeline — never the author's name (an internal staff identity has no business being shown to an anonymous guest), just what was said and when. */
-public record PublicHelpDeskCommentDto(String body, Instant createdAt) {
+/** One update a requester may see: their own replies and the staff replies marked visible. Staff names are not shown. */
+public record PublicHelpDeskCommentDto(String body, Instant createdAt, boolean fromRequester) {
     public static PublicHelpDeskCommentDto from(HelpDeskComment c) {
-        return new PublicHelpDeskCommentDto(c.getBody(), c.getCreatedAt());
+        return new PublicHelpDeskCommentDto(c.getBody(), c.getCreatedAt(), c.isFromRequester());
     }
 }

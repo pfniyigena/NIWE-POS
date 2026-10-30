@@ -1122,6 +1122,70 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'closedAt', label: 'Closed', format: 'date' },
     ],
   },
+  // Help Desk deadlines, workload and satisfaction (v1.20.0).
+  {
+    key: 'helpdesk-sla', title: 'Help Desk Deadlines (SLA)', section: 'Help Desk', endpoint: 'helpdesk-sla', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'priority', label: 'Priority', format: 'text' },
+      { key: 'tickets', label: 'Tickets', format: 'int' },
+      { key: 'responseMet', label: 'First reply on time', format: 'int' },
+      { key: 'responseMissed', label: 'First reply late', format: 'int' },
+      { key: 'avgFirstResponseHours', label: 'Avg first reply (h)', format: 'moneyN' },
+      { key: 'resolved', label: 'Resolved', format: 'int' },
+      { key: 'resolutionMet', label: 'Resolved on time', format: 'int' },
+      { key: 'resolutionMissed', label: 'Resolved late', format: 'int' },
+      { key: 'avgResolutionHours', label: 'Avg resolution (h)', format: 'moneyN' },
+      { key: 'compliancePercent', label: 'On time', format: 'percentN' },
+    ],
+  },
+  {
+    key: 'helpdesk-by-agent', title: 'Help Desk by Agent', section: 'Help Desk', endpoint: 'helpdesk-by-agent', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'agent', label: 'Agent', format: 'text' },
+      { key: 'assigned', label: 'Tickets', format: 'int' },
+      { key: 'open', label: 'Still open', format: 'int' },
+      { key: 'resolved', label: 'Resolved', format: 'int' },
+      { key: 'overdue', label: 'Overdue', format: 'int' },
+      { key: 'avgResolutionHours', label: 'Avg resolution (h)', format: 'moneyN' },
+      { key: 'avgRating', label: 'Avg rating', format: 'moneyN' },
+    ],
+  },
+  {
+    key: 'helpdesk-by-category', title: 'Help Desk by Category', section: 'Help Desk', endpoint: 'helpdesk-by-category', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'category', label: 'Category', format: 'text' },
+      { key: 'tickets', label: 'Tickets', format: 'int' },
+      { key: 'open', label: 'Still open', format: 'int' },
+      { key: 'resolved', label: 'Resolved', format: 'int' },
+      { key: 'avgResolutionHours', label: 'Avg resolution (h)', format: 'moneyN' },
+      { key: 'avgRating', label: 'Avg rating', format: 'moneyN' },
+    ],
+  },
+  {
+    key: 'helpdesk-satisfaction', title: 'Help Desk Satisfaction', section: 'Help Desk', endpoint: 'helpdesk-satisfaction', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'ticketNumber', label: 'Ticket #', format: 'text' },
+      { key: 'subject', label: 'Subject', format: 'text' },
+      { key: 'requester', label: 'Requester', format: 'text' },
+      { key: 'agent', label: 'Agent', format: 'text' },
+      { key: 'rating', label: 'Rating (1-5)', format: 'int' },
+      { key: 'comment', label: 'Comment', format: 'text' },
+      { key: 'ratedAt', label: 'Rated', format: 'date' },
+    ],
+  },
+  {
+    key: 'helpdesk-overdue', title: 'Overdue Help Desk Tickets', section: 'Help Desk', endpoint: 'helpdesk-overdue', categoryFilter: false, filterMode: 'none',
+    columns: [
+      { key: 'ticketNumber', label: 'Ticket #', format: 'text' },
+      { key: 'subject', label: 'Subject', format: 'text' },
+      { key: 'priority', label: 'Priority', format: 'text' },
+      { key: 'status', label: 'Status', format: 'text' },
+      { key: 'agent', label: 'Agent', format: 'text' },
+      { key: 'deadline', label: 'Deadline missed', format: 'text' },
+      { key: 'due', label: 'Was due', format: 'date' },
+      { key: 'hoursLate', label: 'Hours late', format: 'int' },
+    ],
+  },
   // Assets > Reports — built by AssetReportService (Assets Management module).
   {
     key: 'asset-register',

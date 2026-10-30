@@ -27,7 +27,7 @@ public class HelpDeskComment extends BaseEntity {
     @JoinColumn(nullable = false)
     private HelpDeskTicket ticket;
 
-    @Column(nullable = false)
+    /** Null when the requester wrote it on the public page. */
     private Long authorUserId;
 
     @Column(nullable = false)
@@ -39,4 +39,8 @@ public class HelpDeskComment extends BaseEntity {
     /** Defaults to true (private note) — a comment is only ever shown to the requester when a staff member deliberately unchecks this. */
     @Column(nullable = false)
     private boolean internal = true;
+    @Column(nullable = false)
+    private boolean fromRequester;
+    @Column(nullable = false)
+    private boolean emailed;
 }

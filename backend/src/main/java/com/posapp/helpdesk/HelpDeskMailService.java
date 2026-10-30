@@ -84,13 +84,72 @@ public class HelpDeskMailService {
         String html = "<p>Ticket " + escapeHtml(ticket.getTicketNumber()) + " (\"" + escapeHtml(ticket.getSubject())
                 + "\") has been marked resolved.</p>"
                 + (ticket.getResolutionNotes() != null && !ticket.getResolutionNotes().isBlank()
-                        ? "<p><strong>Resolution notes:</strong><br/>" + escapeHtml(ticket.getResolutionNotes()) + "</p>" : "");
+                        ? "<p><strong>Resolution notes:</strong><br/>" + escapeHtml(ticket.getResolutionNotes()) + "</p>" : "")
+                + (settingsService.entity().isSatisfactionEnabled() && ticket.getRequesterEmail() != null
+                        ? "<p>You can rate our help on the Help Desk page of our website: look up this ticket with your e-mail address.</p>" : "");
         for (String to : recipientsForAssigneeAndCreator(ticket)) {
             send(to, subject, html);
         }
     }
 
     /** Dedupes the assignee and the creator in case they're the same person, and drops whichever has no resolvable address. */
+    /** A visible reply from staff goes to the requester (when "e-mail replies to the requester" is on). */
+    @Async
+    public void notifyStaffReply(HelpDeskTicket ticket, String body, String agent) {
+        String to = ticket.getRequesterEmail();
+        if (to == null || to.isBlank()) {
+            return;
+        }
+        String subject = "Re: " + ticket.getSubject() + " [" + ticket.getTicketNumber() + "]";
+        String html = "<p>" + escapeHtml(agent == null ? "Support" : agent) + " replied to your ticket <strong>" + escapeHtml(ticket.getTicketNumber()) + "</strong>:</p>"
+                + "<blockquote style=\"margin:0 0 1em 0;padding-left:1em;border-left:3px solid #ccc;white-space:pre-wrap;\">" + escapeHtml(body) + "</blockquote>"
+                + (settingsService.entity().isPublicReplyEnabled()
+                        ? "<p>To answer, open the Help Desk page of our website, look the ticket up with this e-mail address and add your reply.</p>"
+                        : "");
+        send(to, subject, html);
+    }
+
+    /** The requester answered on the public page: tell the assignee, or the help desk inbox when nobody has the ticket yet. */
+    @Async
+    public void notifyRequesterReply(HelpDeskTicket ticket, String body) {
+        Set<String> recipients = new LinkedHashSet<>();
+        String assignee = ticket.getAssignedToUserId() != null ? userEmail(ticket.getAssignedToUserId()) : null;
+        if (assignee != null) {
+            recipients.add(assignee);
+        } else {
+            recipients.addAll(settingsService.getNotificationEmailList());
+        }
+        String subject = "New reply on help desk ticket " + ticket.getTicketNumber();
+        String html = "<p>" + escapeHtml(ticket.getRequesterName() == null ? "The requester" : ticket.getRequesterName()) + " replied to ticket <strong>"
+                + escapeHtml(ticket.getTicketNumber()) + "</strong> (" + escapeHtml(ticket.getSubject()) + "):</p>"
+                + "<blockquote style=\"margin:0;padding-left:1em;border-left:3px solid #ccc;white-space:pre-wrap;\">" + escapeHtml(body) + "</blockquote>";
+        for (String to : recipients) {
+            send(to, subject, html);
+        }
+    }
+
+    /** kind: RESPONSE_BREACH, RESOLUTION_WARNING or RESOLUTION_BREACH — to the assignee and the help desk inbox. */
+    @Async
+    public void notifySla(HelpDeskTicket ticket, String kind) {
+        Set<String> recipients = new LinkedHashSet<>(settingsService.getNotificationEmailList());
+        String assignee = ticket.getAssignedToUserId() != null ? userEmail(ticket.getAssignedToUserId()) : null;
+        if (assignee != null) {
+            recipients.add(assignee);
+        }
+        String what = switch (kind) {
+            case "RESPONSE_BREACH" -> "No first response yet - the response deadline has passed";
+            case "RESOLUTION_WARNING" -> "The resolution deadline is close";
+            default -> "The resolution deadline has passed";
+        };
+        String subject = ("RESOLUTION_WARNING".equals(kind) ? "Deadline close: " : "SLA breached: ") + ticket.getTicketNumber();
+        String html = "<p><strong>" + escapeHtml(what) + ".</strong></p>"
+                + "<p>Ticket " + escapeHtml(ticket.getTicketNumber()) + ": " + escapeHtml(ticket.getSubject()) + "</p>"
+                + "<p>Priority: " + ticket.getPriority() + " &middot; Assigned to: " + escapeHtml(ticket.getAssignedToUserFullName() == null ? "nobody" : ticket.getAssignedToUserFullName()) + "</p>";
+        for (String to : recipients) {
+            send(to, subject, html);
+        }
+    }
+
     private Set<String> recipientsForAssigneeAndCreator(HelpDeskTicket ticket) {
         Set<String> recipients = new LinkedHashSet<>();
         String assigneeEmail = ticket.getAssignedToUserId() != null ? userEmail(ticket.getAssignedToUserId()) : null;

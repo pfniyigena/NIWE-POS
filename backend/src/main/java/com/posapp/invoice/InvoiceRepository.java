@@ -19,6 +19,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      */
     Optional<Invoice> findBySalesOrderId(Long salesOrderId);
 
+    Optional<Invoice> findFirstByInvoiceNumberIgnoreCase(String invoiceNumber);
+
     /** Every invoice ever issued to one customer — Sales-Order-derived and standalone alike — oldest first; backs {@code CustomerCreditService.listOutstandingOrders}/{@code outstandingBalance}'s standalone-invoice sweep. */
     List<Invoice> findByCustomerIdOrderByInvoiceDateAsc(Long customerId);
 

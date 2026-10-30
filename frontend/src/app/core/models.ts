@@ -2986,7 +2986,9 @@ export interface WaitlistEntry {
 
 export type HelpDeskTicketType = 'CUSTOMER' | 'INTERNAL';
 export type HelpDeskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-export type HelpDeskStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type HelpDeskStatus = 'OPEN' | 'IN_PROGRESS' | 'WAITING' | 'RESOLVED' | 'CLOSED' | 'MERGED';
+/** Where a ticket stands against its deadlines; null when no deadline was set. */
+export type HelpDeskSlaState = 'OK' | 'PAUSED' | 'DUE_SOON' | 'BREACHED' | 'MET' | 'MISSED';
 
 /** Admin > Help Desk > Categories — a simple, admin-managed lookup list tickets route through, same shape as Product Category/Brand minus the color. */
 export interface HelpDeskCategory {
@@ -3027,6 +3029,23 @@ export interface HelpDeskTicket {
   closedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  firstResponseDueAt: string | null;
+  resolutionDueAt: string | null;
+  firstRespondedAt: string | null;
+  waitingSince: string | null;
+  responseState: HelpDeskSlaState | null;
+  resolutionState: HelpDeskSlaState | null;
+  tags: string[];
+  linkedInvoiceId: number | null;
+  linkedInvoiceNumber: string | null;
+  linkedWorkOrderId: number | null;
+  linkedWorkOrderNumber: string | null;
+  mergedIntoId: number | null;
+  mergedIntoNumber: string | null;
+  satisfactionRating: number | null;
+  satisfactionComment: string | null;
+  ratedAt: string | null;
+  lastRequesterReplyAt: string | null;
 }
 
 /** Body for POST/PUT /api/helpdesk/tickets — the staff "New ticket"/edit form. type is read on create, ignored on update (see backend HelpDeskTicketRequest's own javadoc). */
@@ -3052,6 +3071,10 @@ export interface HelpDeskComment {
   body: string;
   internal: boolean;
   createdAt: string;
+  /** Written by the requester on the public page. */
+  fromRequester: boolean;
+  /** The requester was sent this reply by e-mail. */
+  emailed: boolean;
 }
 
 /** The public "Submit a ticket" form's own confirmation (Fourier: "supporting ... guest ticket creation") — deliberately slim, same shape as PublicReservationConfirmation. */
@@ -3072,6 +3095,17 @@ export interface PublicHelpDeskCategory {
 export interface PublicHelpDeskUpdate {
   body: string;
   createdAt: string;
+  /** True for what the requester wrote; false for the help desk's answers. */
+  fromRequester: boolean;
+}
+
+export interface PublicHelpDeskFile {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  fromRequester: boolean;
+  createdAt: string;
 }
 
 /** The public lookup page's own result, by ticket number + the email given at creation — no internal fields. */
@@ -3085,6 +3119,11 @@ export interface PublicHelpDeskTicketStatus {
   closedAt: string | null;
   resolutionNotes: string | null;
   updates: PublicHelpDeskUpdate[];
+  canReply: boolean;
+  canRate: boolean;
+  rating: number | null;
+  ratingComment: string | null;
+  files: PublicHelpDeskFile[];
 }
 
 /**
@@ -3097,11 +3136,38 @@ export interface HelpDeskSettings {
   notificationEmails: string[];
   /** "Allow public website": the public Help Desk page is open to visitors. */
   publicEnabled: boolean;
+  slaEnabled: boolean;
+  slaInternal: boolean;
+  slaResponseLow: number;
+  slaResponseMedium: number;
+  slaResponseHigh: number;
+  slaResponseUrgent: number;
+  slaResolutionLow: number;
+  slaResolutionMedium: number;
+  slaResolutionHigh: number;
+  slaResolutionUrgent: number;
+  escalationEnabled: boolean;
+  warnHours: number;
+  replyEmailEnabled: boolean;
+  publicReplyEnabled: boolean;
+  satisfactionEnabled: boolean;
+  autoCloseDays: number;
 }
 
-export interface HelpDeskSettingsPayload {
-  notificationEmails: string[];
-  publicEnabled?: boolean;
+export type HelpDeskSettingsPayload = Partial<Omit<HelpDeskSettings, 'id'>>;
+
+export interface HelpDeskEvent { id: number; kind: string; detail: string | null; by: string | null; at: string; }
+export interface HelpDeskAttachment { id: number; fileName: string; contentType: string; sizeBytes: number; uploadedBy: string | null; fromRequester: boolean; visibleToRequester: boolean; createdAt: string; image: boolean; }
+export interface HelpDeskCanned { id: number; title: string; body: string; categoryId: number | null; active: boolean; }
+export interface HelpDeskBulkResult { done: number; skipped: { id: number; ticketNumber: string | null; reason: string }[]; }
+export interface HelpDeskSummary {
+  open: number; inProgress: number; waiting: number; resolvedNotClosed: number; unassigned: number; overdue: number; dueSoon: number; unanswered: number; mine: number;
+  createdLast7: number; resolvedLast7: number; avgFirstResponseHours: number | null; avgResolutionHours: number | null; slaCompliancePercent: number | null;
+  avgRating: number | null; ratingsLast30: number;
+  byPriority: { priority: HelpDeskPriority; count: number }[];
+  byAge: { label: string; count: number }[];
+  agents: { userId: number | null; name: string; open: number; overdue: number; resolvedLast30: number }[];
+  attention: { id: number; ticketNumber: string; subject: string; priority: HelpDeskPriority; status: HelpDeskStatus; assignedTo: string | null; reason: string; due: string | null }[];
 }
 
 /** Fourier: "it is better to have a home page with look nice like a website" — the one sliver of StoreSettings the new public home page is allowed to see; see backend PublicBrandingDto's own javadoc for why it's this narrow. */

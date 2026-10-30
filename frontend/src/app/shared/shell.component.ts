@@ -488,7 +488,9 @@ import { NiweFooterComponent } from './niwe-footer.component';
             <span class="sidenav-arrow">{{ isOpen('helpdesk') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('helpdesk') && showGroup('helpdesk')">
+            <a *ngIf="canSee('/admin/helpdesk/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
             <a *ngIf="canSee('/admin/helpdesk/tickets')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/tickets" routerLinkActive="active"><span class="sidenav-icon">🎫</span> Tickets</a>
+            <a *ngIf="canSee('/admin/helpdesk/canned')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/canned" routerLinkActive="active"><span class="sidenav-icon">💬</span> Saved replies</a>
             <a *ngIf="canSee('/admin/helpdesk/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/categories" routerLinkActive="active"><span class="sidenav-icon">📋</span> Categories</a>
             <a *ngIf="canSee('/admin/helpdesk/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
             <a *ngIf="canSee('/admin/helpdesk/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>

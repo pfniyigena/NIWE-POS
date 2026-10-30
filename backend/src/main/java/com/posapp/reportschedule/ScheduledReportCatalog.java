@@ -120,6 +120,16 @@ public final class ScheduledReportCatalog {
                 (c, p) -> c.installmentsOverdue(p.branchId(), p.format())));
         add(new Def("installments-defaulted", "Defaulted and written-off instalments", "Installments", false, false, false, true, false, null,
                 (c, p) -> c.installmentsDefaulted(p.branchId(), p.format())));
+        add(new Def("helpdesk-sla", "Help desk SLA performance", "Help Desk", true, false, false, false, false, null,
+                (c, p) -> c.helpdeskSla(p.from(), p.to(), p.format())));
+        add(new Def("helpdesk-by-agent", "Help desk tickets by agent", "Help Desk", true, false, false, false, false, null,
+                (c, p) -> c.helpdeskByAgent(p.from(), p.to(), p.format())));
+        add(new Def("helpdesk-by-category", "Help desk tickets by category", "Help Desk", true, false, false, false, false, null,
+                (c, p) -> c.helpdeskByCategory(p.from(), p.to(), p.format())));
+        add(new Def("helpdesk-satisfaction", "Help desk satisfaction", "Help Desk", true, false, false, false, false, null,
+                (c, p) -> c.helpdeskSatisfaction(p.from(), p.to(), p.format())));
+        add(new Def("helpdesk-overdue", "Help desk overdue tickets", "Help Desk", false, false, false, false, false, null,
+                (c, p) -> c.helpdeskOverdue(p.format())));
         add(new Def("subscriptions-by-plan", "Subscriptions by plan", "Subscriptions", false, false, false, false, false, null,
                 (c, p) -> c.subscriptionsByPlan(p.format())));
         add(new Def("subscriptions-churn", "Subscription churn", "Subscriptions", true, false, false, false, false, null,

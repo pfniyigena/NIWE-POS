@@ -32,6 +32,7 @@ const GROUP_ROUTE_PREFIXES: { group: string; prefixes: string[] }[] = [
   { group: 'contracts', prefixes: ['/admin/hr/contracts'] },
   { group: 'payroll', prefixes: ['/admin/hr/payroll'] },
   { group: 'subscriptions', prefixes: ['/admin/subscription'] },
+  { group: 'helpdesk', prefixes: ['/admin/helpdesk'] },
   { group: 'users', prefixes: ['/admin/staff'] },
   {
     group: 'settings',

@@ -1,16 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { HelpDeskCategoryApiService, HelpDeskTicketApiService } from '../core/api/helpdesk-api.service';
 import { UserApiService } from '../core/api/user-api.service';
 import { AppUser, HelpDeskCategory, HelpDeskPriority, HelpDeskStatus, HelpDeskTicket, HelpDeskTicketType } from '../core/models';
+import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla } from './helpdesk-ui';
 
 /**
- * Admin > Help Desk > Tickets — the unified list for both HelpDeskTicketType values (Fourier, via
- * AskUserQuestion: "One unified list with a Type field"). Filters mirror the fields a real queue
- * needs to triage by: type, status, priority, category, assignee, free-text search.
+ * Admin > Help Desk > Tickets — the unified list for both ticket types, with ready-made views
+ * (active, mine, unassigned, overdue, due soon, waiting, unanswered), a tag filter, deadline
+ * badges, and a bulk bar for acting on several tickets at once.
  */
 @Component({
   selector: 'app-helpdesk-ticket-list',
@@ -19,41 +20,51 @@ import { AppUser, HelpDeskCategory, HelpDeskPriority, HelpDeskStatus, HelpDeskTi
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3>Help Desk tickets</h3>
         <div class="flex gap-2">
+          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/overview">Overview</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/canned">Saved replies</a>
           <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/categories">Categories</a>
           <a class="btn btn-primary" routerLink="/admin/helpdesk/tickets/new">+ New ticket</a>
         </div>
       </div>
 
+      <div class="flex gap-2 mb-3 hd-views" style="flex-wrap:wrap;">
+        <button type="button" *ngFor="let v of views" class="btn btn-sm" [ngClass]="view === v.key ? 'btn-primary' : 'btn-outline-primary'" (click)="setView(v.key)">{{ v.label }}</button>
+      </div>
+
       <div class="card mb-3" style="padding:0.9rem;">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <input class="form-control" style="max-width:220px;" placeholder="Search ticket #, subject, requester…" name="q" [(ngModel)]="q" (ngModelChange)="load()" />
-          <select class="form-select" style="max-width:160px;" name="type" [(ngModel)]="type" (ngModelChange)="load()">
+          <input class="form-control" style="max-width:240px;" placeholder="Search ticket #, subject, requester, tag…" name="q" [(ngModel)]="q" (ngModelChange)="load()" />
+          <input class="form-control hd-tag-filter" style="max-width:140px;" placeholder="Tag" name="tag" [(ngModel)]="tag" (ngModelChange)="load()" />
+          <select class="form-select" style="max-width:150px;" name="type" [(ngModel)]="type" (ngModelChange)="load()">
             <option [ngValue]="null">All types</option>
             <option value="CUSTOMER">Customer</option>
             <option value="INTERNAL">Internal</option>
           </select>
-          <select class="form-select" style="max-width:160px;" name="status" [(ngModel)]="status" (ngModelChange)="load()">
+          <select class="form-select" style="max-width:190px;" name="status" [(ngModel)]="status" (ngModelChange)="load()">
             <option [ngValue]="null">All statuses</option>
             <option value="OPEN">Open</option>
             <option value="IN_PROGRESS">In progress</option>
+            <option value="WAITING">Waiting for customer</option>
             <option value="RESOLVED">Resolved</option>
             <option value="CLOSED">Closed</option>
+            <option value="MERGED">Merged</option>
           </select>
-          <select class="form-select" style="max-width:160px;" name="priority" [(ngModel)]="priority" (ngModelChange)="load()">
+          <select class="form-select" style="max-width:150px;" name="priority" [(ngModel)]="priority" (ngModelChange)="load()">
             <option [ngValue]="null">All priorities</option>
             <option value="LOW">Low</option>
             <option value="MEDIUM">Medium</option>
             <option value="HIGH">High</option>
             <option value="URGENT">Urgent</option>
           </select>
-          <select class="form-select" style="max-width:180px;" name="categoryId" [(ngModel)]="categoryId" (ngModelChange)="load()">
+          <select class="form-select" style="max-width:170px;" name="categoryId" [(ngModel)]="categoryId" (ngModelChange)="load()">
             <option [ngValue]="null">All categories</option>
             <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
           </select>
-          <select class="form-select" style="max-width:180px;" name="assignedToUserId" [(ngModel)]="assignedToUserId" (ngModelChange)="load()">
+          <select class="form-select" style="max-width:170px;" name="assignedToUserId" [(ngModel)]="assignedToUserId" (ngModelChange)="load()">
             <option [ngValue]="null">All assignees</option>
             <option [ngValue]="-1">Unassigned</option>
             <option *ngFor="let u of users" [ngValue]="u.id">{{ u.fullName }}</option>
@@ -61,16 +72,43 @@ import { AppUser, HelpDeskCategory, HelpDeskPriority, HelpDeskStatus, HelpDeskTi
         </div>
       </div>
 
+      <div class="card mb-3 hd-bulk" style="padding:0.75rem;" *ngIf="selected.size > 0">
+        <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
+          <strong>{{ selected.size }} selected</strong>
+          <select class="form-select" style="max-width:190px;" name="bulkAssignee" [(ngModel)]="bulkAssignee">
+            <option [ngValue]="undefined">Assign to…</option>
+            <option [ngValue]="null">— Unassigned —</option>
+            <option *ngFor="let u of users" [ngValue]="u.id">{{ u.fullName }}</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || bulkAssignee === undefined" (click)="bulk('ASSIGN')">Assign</button>
+          <select class="form-select" style="max-width:150px;" name="bulkPriority" [(ngModel)]="bulkPriority">
+            <option [ngValue]="null">Priority…</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+            <option value="URGENT">Urgent</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || !bulkPriority" (click)="bulk('PRIORITY')">Set priority</button>
+          <input class="form-control" style="max-width:130px;" placeholder="Tag" name="bulkTag" [(ngModel)]="bulkTag" />
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || !bulkTag.trim()" (click)="bulk('TAG')">Add tag</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy" (click)="bulk('START')">Start</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy" (click)="bulk('WAIT')">Wait for customer</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary hd-bulk-close" [disabled]="busy" (click)="bulk('CLOSE')">Close</button>
+          <button type="button" class="btn btn-link btn-sm" (click)="clearSelection()">Clear</button>
+        </div>
+        <div class="text-muted mt-1" style="font-size:0.85rem;" *ngIf="skippedText">{{ skippedText }}</div>
+      </div>
+
       <table class="table-sm">
         <thead>
           <tr>
+            <th style="width:30px;"><input type="checkbox" name="all" [checked]="allSelected" (change)="toggleAll($event)" /></th>
             <th>Ticket #</th>
-            <th>Type</th>
             <th>Subject</th>
             <th>Requester</th>
-            <th>Category</th>
             <th>Priority</th>
             <th>Status</th>
+            <th>Deadline</th>
             <th>Assigned to</th>
             <th>Created</th>
             <th></th>
@@ -78,18 +116,24 @@ import { AppUser, HelpDeskCategory, HelpDeskPriority, HelpDeskStatus, HelpDeskTi
         </thead>
         <tbody>
           <tr *ngFor="let t of filteredTickets">
+            <td><input type="checkbox" [checked]="selected.has(t.id)" (change)="toggle(t.id)" /></td>
             <td>{{ t.ticketNumber }}</td>
-            <td><span class="badge" [ngClass]="t.type === 'CUSTOMER' ? 'badge-secondary' : 'badge-outline'">{{ t.type === 'CUSTOMER' ? 'Customer' : 'Internal' }}</span></td>
-            <td>{{ t.subject }}</td>
+            <td>
+              {{ t.subject }}
+              <span class="badge badge-outline" style="margin-left:0.25rem;" *ngIf="t.type === 'INTERNAL'">Internal</span>
+              <div class="text-muted" style="font-size:0.75rem;" *ngIf="t.tags.length">{{ t.tags.join(' · ') }}</div>
+            </td>
             <td>{{ t.requesterName || t.customerName || '—' }}</td>
-            <td>{{ t.categoryName || '—' }}</td>
             <td><span class="badge" [ngClass]="priorityClass(t.priority)">{{ t.priority }}</span></td>
-            <td><span class="badge" [ngClass]="statusClass(t.status)">{{ t.status }}</span></td>
+            <td><span class="badge" [ngClass]="statusClass(t.status)">{{ statusLabel(t.status) }}</span></td>
+            <td>
+              <ng-container *ngIf="worst(t) as w"><span class="badge" [ngClass]="w.cls">{{ w.label }}</span></ng-container>
+              <div class="text-muted" style="font-size:0.75rem;" *ngIf="t.resolutionDueAt && (t.status === 'OPEN' || t.status === 'IN_PROGRESS')">{{ distance(t.resolutionDueAt) }}</div>
+              <span *ngIf="!t.resolutionDueAt">—</span>
+            </td>
             <td>{{ t.assignedToUserFullName || '—' }}</td>
             <td>{{ t.createdAt | date: 'mediumDate' }}</td>
-            <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/helpdesk/tickets', t.id]">View</a>
-            </td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/helpdesk/tickets', t.id]">View</a></td>
           </tr>
           <tr *ngIf="filteredTickets.length === 0">
             <td colspan="10" class="text-muted">No tickets match these filters.</td>
@@ -104,8 +148,23 @@ export class HelpDeskTicketListComponent implements OnInit {
   categories: HelpDeskCategory[] = [];
   users: AppUser[] = [];
   error: string | null = null;
+  notice: string | null = null;
+  busy = false;
+
+  views = [
+    { key: 'active', label: 'Active' },
+    { key: 'mine', label: 'Mine' },
+    { key: 'unassigned', label: 'Unassigned' },
+    { key: 'unanswered', label: 'Unanswered' },
+    { key: 'overdue', label: 'Overdue' },
+    { key: 'due-soon', label: 'Due soon' },
+    { key: 'waiting', label: 'Waiting' },
+    { key: '', label: 'All' },
+  ];
+  view = 'active';
 
   q = '';
+  tag = '';
   type: HelpDeskTicketType | null = null;
   status: HelpDeskStatus | null = null;
   priority: HelpDeskPriority | null = null;
@@ -113,15 +172,30 @@ export class HelpDeskTicketListComponent implements OnInit {
   /** -1 is the sentinel "Unassigned" option — see filteredTickets' own handling. */
   assignedToUserId: number | null = null;
 
+  selected = new Set<number>();
+  bulkAssignee: number | null | undefined = undefined;
+  bulkPriority: HelpDeskPriority | null = null;
+  bulkTag = '';
+  skippedText = '';
+
   constructor(
     private ticketApi: HelpDeskTicketApiService,
     private categoryApi: HelpDeskCategoryApiService,
-    private userApi: UserApiService
+    private userApi: UserApiService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    const v = this.route.snapshot.queryParamMap.get('view');
+    if (v !== null) this.view = v;
     this.categoryApi.listAll().subscribe({ next: (c) => (this.categories = c) });
     this.userApi.list().subscribe({ next: (u) => (this.users = u) });
+    this.load();
+  }
+
+  setView(key: string): void {
+    this.view = key;
+    this.status = null;
     this.load();
   }
 
@@ -132,6 +206,8 @@ export class HelpDeskTicketListComponent implements OnInit {
     this.ticketApi
       .search({
         q: this.q || null,
+        tag: this.tag.trim() || null,
+        view: this.view || null,
         type: this.type,
         status: this.status,
         priority: this.priority,
@@ -139,7 +215,11 @@ export class HelpDeskTicketListComponent implements OnInit {
         assignedToUserId,
       })
       .subscribe({
-        next: (t) => (this.tickets = t),
+        next: (t) => {
+          this.tickets = t;
+          const ids = new Set(t.map((x) => x.id));
+          this.selected.forEach((id) => { if (!ids.has(id)) this.selected.delete(id); });
+        },
         error: (err) => (this.error = err?.error?.message ?? 'Failed to load tickets'),
       });
   }
@@ -151,31 +231,59 @@ export class HelpDeskTicketListComponent implements OnInit {
     return this.tickets;
   }
 
-  priorityClass(p: HelpDeskPriority): string {
-    switch (p) {
-      case 'URGENT':
-        return 'badge-danger';
-      case 'HIGH':
-        return 'badge-warning';
-      case 'MEDIUM':
-        return 'badge-secondary';
-      default:
-        return 'badge-outline';
-    }
+  get allSelected(): boolean {
+    const rows = this.filteredTickets;
+    return rows.length > 0 && rows.every((t) => this.selected.has(t.id));
   }
 
-  statusClass(s: HelpDeskStatus): string {
-    switch (s) {
-      case 'OPEN':
-        return 'badge-warning';
-      case 'IN_PROGRESS':
-        return 'badge-secondary';
-      case 'RESOLVED':
-        return 'badge-success';
-      case 'CLOSED':
-        return 'badge-outline';
-      default:
-        return 'badge-secondary';
-    }
+  toggle(id: number): void {
+    if (this.selected.has(id)) this.selected.delete(id);
+    else this.selected.add(id);
   }
+
+  toggleAll(ev: Event): void {
+    const on = (ev.target as HTMLInputElement).checked;
+    this.filteredTickets.forEach((t) => (on ? this.selected.add(t.id) : this.selected.delete(t.id)));
+  }
+
+  clearSelection(): void {
+    this.selected.clear();
+    this.skippedText = '';
+  }
+
+  bulk(action: string): void {
+    if (this.selected.size === 0) return;
+    this.error = null;
+    this.notice = null;
+    this.skippedText = '';
+    this.busy = true;
+    this.ticketApi
+      .bulk({
+        ids: Array.from(this.selected),
+        action,
+        assignedToUserId: action === 'ASSIGN' ? (this.bulkAssignee ?? null) : null,
+        priority: action === 'PRIORITY' ? this.bulkPriority : null,
+        tag: action === 'TAG' ? this.bulkTag.trim() : null,
+      })
+      .subscribe({
+        next: (r) => {
+          this.busy = false;
+          this.notice = r.done + ' ticket(s) updated' + (r.skipped.length ? ', ' + r.skipped.length + ' skipped.' : '.');
+          this.skippedText = r.skipped.map((s) => (s.ticketNumber || '#' + s.id) + ': ' + s.reason).join('  ·  ');
+          this.selected.clear();
+          if (action === 'TAG') this.bulkTag = '';
+          this.load();
+        },
+        error: (err) => {
+          this.busy = false;
+          this.error = err?.error?.message ?? 'Could not update the tickets';
+        },
+      });
+  }
+
+  priorityClass = hdPriorityClass;
+  statusClass = hdStatusClass;
+  statusLabel = hdStatusLabel;
+  worst = hdWorstSla;
+  distance = hdDistance;
 }

@@ -9,6 +9,11 @@ import {
   HelpDeskPriority,
   HelpDeskSettings,
   HelpDeskSettingsPayload,
+  HelpDeskEvent,
+  HelpDeskAttachment,
+  HelpDeskCanned,
+  HelpDeskBulkResult,
+  HelpDeskSummary,
   HelpDeskStatus,
   HelpDeskTicket,
   HelpDeskTicketPayload,
@@ -44,6 +49,9 @@ export interface HelpDeskTicketFilter {
   categoryId?: number | null;
   assignedToUserId?: number | null;
   q?: string | null;
+  /** active | mine | unassigned | overdue | due-soon | waiting | unanswered */
+  view?: string | null;
+  tag?: string | null;
 }
 
 /** Admin > Help Desk > Tickets — ADMIN-only on the backend; status moves through named actions (start/resolve/close/reopen), same convention as SubscriptionApiService's pause/resume/cancel. */
@@ -59,6 +67,8 @@ export class HelpDeskTicketApiService {
     if (filter.categoryId != null) params['categoryId'] = String(filter.categoryId);
     if (filter.assignedToUserId != null) params['assignedToUserId'] = String(filter.assignedToUserId);
     if (filter.q) params['q'] = filter.q;
+    if (filter.view) params['view'] = filter.view;
+    if (filter.tag) params['tag'] = filter.tag;
     return this.http.get<HelpDeskTicket[]>(`${API_BASE}/helpdesk/tickets`, { params });
   }
 
@@ -98,8 +108,59 @@ export class HelpDeskTicketApiService {
     return this.http.get<HelpDeskComment[]>(`${API_BASE}/helpdesk/tickets/${id}/comments`);
   }
 
-  addComment(id: number, body: string, internal: boolean): Observable<HelpDeskComment> {
-    return this.http.post<HelpDeskComment>(`${API_BASE}/helpdesk/tickets/${id}/comments`, { body, internal });
+  addComment(id: number, body: string, internal: boolean, waitForCustomer = false): Observable<HelpDeskComment> {
+    return this.http.post<HelpDeskComment>(`${API_BASE}/helpdesk/tickets/${id}/comments`, { body, internal, waitForCustomer });
+  }
+
+  wait(id: number): Observable<HelpDeskTicket> {
+    return this.http.post<HelpDeskTicket>(`${API_BASE}/helpdesk/tickets/${id}/wait`, {});
+  }
+
+  summary(): Observable<HelpDeskSummary> {
+    return this.http.get<HelpDeskSummary>(`${API_BASE}/helpdesk/tickets/summary`);
+  }
+
+  events(id: number): Observable<HelpDeskEvent[]> {
+    return this.http.get<HelpDeskEvent[]>(`${API_BASE}/helpdesk/tickets/${id}/events`);
+  }
+
+  setTags(id: number, tags: string[]): Observable<HelpDeskTicket> {
+    return this.http.put<HelpDeskTicket>(`${API_BASE}/helpdesk/tickets/${id}/tags`, { tags });
+  }
+
+  setLinks(id: number, invoiceNumber: string | null, workOrderNumber: string | null): Observable<HelpDeskTicket> {
+    return this.http.put<HelpDeskTicket>(`${API_BASE}/helpdesk/tickets/${id}/links`, { invoiceNumber, workOrderNumber });
+  }
+
+  merge(id: number, targetId: number): Observable<HelpDeskTicket> {
+    return this.http.post<HelpDeskTicket>(`${API_BASE}/helpdesk/tickets/${id}/merge`, { targetId });
+  }
+
+  bulk(body: { ids: number[]; action: string; assignedToUserId?: number | null; priority?: HelpDeskPriority | null; tag?: string | null }): Observable<HelpDeskBulkResult> {
+    return this.http.post<HelpDeskBulkResult>(`${API_BASE}/helpdesk/tickets/bulk`, body);
+  }
+
+  attachments(id: number): Observable<HelpDeskAttachment[]> {
+    return this.http.get<HelpDeskAttachment[]>(`${API_BASE}/helpdesk/tickets/${id}/attachments`);
+  }
+
+  addAttachment(id: number, file: File, visible: boolean): Observable<HelpDeskAttachment> {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    fd.append('visible', String(visible));
+    return this.http.post<HelpDeskAttachment>(`${API_BASE}/helpdesk/tickets/${id}/attachments`, fd);
+  }
+
+  attachmentBlob(id: number, attachmentId: number): Observable<Blob> {
+    return this.http.get(`${API_BASE}/helpdesk/tickets/${id}/attachments/${attachmentId}`, { responseType: 'blob' });
+  }
+
+  setAttachmentVisible(id: number, attachmentId: number, value: boolean): Observable<void> {
+    return this.http.put<void>(`${API_BASE}/helpdesk/tickets/${id}/attachments/${attachmentId}/visible`, {}, { params: { value: String(value) } });
+  }
+
+  deleteAttachment(id: number, attachmentId: number): Observable<void> {
+    return this.http.delete<void>(`${API_BASE}/helpdesk/tickets/${id}/attachments/${attachmentId}`);
   }
 
   /** Fourier: "print tick[et] on PDF" — opened in a new tab via openPdfForPrint, same convention as InvoiceApiService.pdf/SalesOrderApiService.pdf. */
@@ -119,5 +180,32 @@ export class HelpDeskSettingsApiService {
 
   update(payload: HelpDeskSettingsPayload): Observable<HelpDeskSettings> {
     return this.http.put<HelpDeskSettings>(`${API_BASE}/helpdesk/settings`, payload);
+  }
+}
+
+
+/** Admin > Help Desk > Saved replies — ready-made answers with {{requester}}, {{ticket}}, {{subject}} and {{agent}} filled in when used. */
+@Injectable({ providedIn: 'root' })
+export class HelpDeskCannedApiService {
+  constructor(private http: HttpClient) {}
+
+  list(activeOnly = false): Observable<HelpDeskCanned[]> {
+    return this.http.get<HelpDeskCanned[]>(`${API_BASE}/helpdesk/canned`, { params: { activeOnly: String(activeOnly) } });
+  }
+
+  render(id: number, ticketId: number): Observable<{ body: string }> {
+    return this.http.get<{ body: string }>(`${API_BASE}/helpdesk/canned/${id}/render`, { params: { ticketId: String(ticketId) } });
+  }
+
+  create(payload: { title: string; body: string; categoryId: number | null; active: boolean }): Observable<HelpDeskCanned> {
+    return this.http.post<HelpDeskCanned>(`${API_BASE}/helpdesk/canned`, payload);
+  }
+
+  update(id: number, payload: { title: string; body: string; categoryId: number | null; active: boolean }): Observable<HelpDeskCanned> {
+    return this.http.put<HelpDeskCanned>(`${API_BASE}/helpdesk/canned/${id}`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${API_BASE}/helpdesk/canned/${id}`);
   }
 }

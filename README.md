@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.20.0 - Help Desk: deadlines (SLA), replies and files, overview, reports, workflow and history
+
+Help Desk tickets now carry first-reply and resolution deadlines by priority (with a "waiting for the customer" status that pauses the clock, warning and escalation e-mails and automatic closing of old resolved tickets), agents can reply to the customer by e-mail with saved replies and attach files, and customers can answer, add files and rate the help on the public ticket page. There is a new Overview, five new reports, ticket views and bulk actions, a full history, tags, links to an invoice or a job, and merging of duplicate tickets. One migration (V59) and two new pages under Help Desk (Overview, Saved replies). Details in `RELEASE-NOTES-v1.20.0.md`.
+
 ### Version 1.19.0 - Subscriptions: edit and change plan, trials and terms, pauses, overview, reports, overdue reminders
 
 Subscriptions can now be edited and moved to another plan with proration, sold per seat with a setup fee, started with a free trial or a fixed term, paused with a reason and an automatic resume date, skipped for one cycle and cancelled at the end of the paid period. There is a new Overview (recurring revenue, churn, what bills next and what is unpaid), list filters, three reports and optional e-mail reminders for overdue subscription invoices. One migration (V58) and two new pages under Subscriptions (Overview, Reports). Details in `RELEASE-NOTES-v1.19.0.md`.

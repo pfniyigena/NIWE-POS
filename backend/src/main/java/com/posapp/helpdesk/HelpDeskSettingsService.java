@@ -60,7 +60,8 @@ public class HelpDeskSettingsService {
 
     @Transactional
     public HelpDeskSettingsDto updateSettings(HelpDeskSettingsRequest request) {
-        List<String> emails = request.getNotificationEmails() == null ? List.of() : request.getNotificationEmails();
+        HelpDeskSettings current = getOrCreate();
+        List<String> emails = request.getNotificationEmails() == null ? parse(current.getNotificationEmails()) : request.getNotificationEmails();
         List<String> cleaned = new ArrayList<>();
         for (String raw : emails) {
             if (raw == null || raw.isBlank()) {
@@ -78,6 +79,28 @@ public class HelpDeskSettingsService {
         if (request.getPublicEnabled() != null) {
             settings.setPublicEnabled(request.getPublicEnabled());
         }
+        if (request.getSlaEnabled() != null) settings.setSlaEnabled(request.getSlaEnabled());
+        if (request.getSlaInternal() != null) settings.setSlaInternal(request.getSlaInternal());
+        if (request.getEscalationEnabled() != null) settings.setEscalationEnabled(request.getEscalationEnabled());
+        if (request.getReplyEmailEnabled() != null) settings.setReplyEmailEnabled(request.getReplyEmailEnabled());
+        if (request.getPublicReplyEnabled() != null) settings.setPublicReplyEnabled(request.getPublicReplyEnabled());
+        if (request.getSatisfactionEnabled() != null) settings.setSatisfactionEnabled(request.getSatisfactionEnabled());
+        if (request.getSlaResponseLow() != null) settings.setSlaResponseLow(hours(request.getSlaResponseLow(), "Response time (low)"));
+        if (request.getSlaResponseMedium() != null) settings.setSlaResponseMedium(hours(request.getSlaResponseMedium(), "Response time (medium)"));
+        if (request.getSlaResponseHigh() != null) settings.setSlaResponseHigh(hours(request.getSlaResponseHigh(), "Response time (high)"));
+        if (request.getSlaResponseUrgent() != null) settings.setSlaResponseUrgent(hours(request.getSlaResponseUrgent(), "Response time (urgent)"));
+        if (request.getSlaResolutionLow() != null) settings.setSlaResolutionLow(hours(request.getSlaResolutionLow(), "Resolution time (low)"));
+        if (request.getSlaResolutionMedium() != null) settings.setSlaResolutionMedium(hours(request.getSlaResolutionMedium(), "Resolution time (medium)"));
+        if (request.getSlaResolutionHigh() != null) settings.setSlaResolutionHigh(hours(request.getSlaResolutionHigh(), "Resolution time (high)"));
+        if (request.getSlaResolutionUrgent() != null) settings.setSlaResolutionUrgent(hours(request.getSlaResolutionUrgent(), "Resolution time (urgent)"));
+        if (request.getWarnHours() != null) {
+            if (request.getWarnHours() < 0 || request.getWarnHours() > 168) throw ApiException.badRequest("Warn before a deadline must be between 0 and 168 hours");
+            settings.setWarnHours(request.getWarnHours());
+        }
+        if (request.getAutoCloseDays() != null) {
+            if (request.getAutoCloseDays() < 0 || request.getAutoCloseDays() > 365) throw ApiException.badRequest("Auto-close must be between 0 and 365 days (0 = never)");
+            settings.setAutoCloseDays(request.getAutoCloseDays());
+        }
         HelpDeskSettings saved = repository.save(settings);
         auditLogService.record("HELPDESK_SETTINGS_UPDATED", "Updated help desk settings (" + cleaned.size() + " notification address" + (cleaned.size() == 1 ? "" : "es")
                 + ", public tickets " + (saved.isPublicEnabled() ? "on" : "off") + ")", "HelpDeskSettings", saved.getId());
@@ -85,6 +108,17 @@ public class HelpDeskSettingsService {
     }
 
     /** True when visitors may use the public Help Desk page ("Allow public website"). */
+    private int hours(int v, String label) {
+        if (v < 1 || v > 2160) throw ApiException.badRequest(label + " must be between 1 and 2160 hours");
+        return v;
+    }
+
+    /** The settings row itself, for the services that need several of its fields. */
+    @Transactional
+    public HelpDeskSettings entity() {
+        return getOrCreate();
+    }
+
     @Transactional
     public boolean isPublicOpen() {
         return getOrCreate().isPublicEnabled();

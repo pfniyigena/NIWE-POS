@@ -74,6 +74,7 @@ public class ReportController {
     private final HrReportService hrReportService;
     private final InstallmentReportService installmentReportService;
     private final SubscriptionReportService subscriptionReportService;
+    private final HelpDeskReportService helpDeskReportService;
     private final TimeReportService timeReportService;
     private final WorkOrderReportService workOrderReportService;
     private final BookingReportService bookingReportService;
@@ -81,7 +82,7 @@ public class ReportController {
     private final ReportExportService exportService;
     private final com.posapp.tracking.TrackingService trackingService;
 
-    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
+    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, HelpDeskReportService helpDeskReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
         this.reportService = reportService;
         this.purchaseReportService = purchaseReportService;
         this.salesReportService = salesReportService;
@@ -89,6 +90,7 @@ public class ReportController {
         this.hrReportService = hrReportService;
         this.installmentReportService = installmentReportService;
         this.subscriptionReportService = subscriptionReportService;
+        this.helpDeskReportService = helpDeskReportService;
         this.timeReportService = timeReportService;
         this.workOrderReportService = workOrderReportService;
         this.bookingReportService = bookingReportService;
@@ -758,6 +760,7 @@ public class ReportController {
 
     // ---- HR reports (HR > Reports) — see HrReportService. Payroll and contract reports need the Payroll area; the rest need the HR area. ----
 
+    private static final String HELPDESK_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_REPORTS_VIEW') or hasAuthority('AREA_OPERATIONS_VIEW')";
     private static final String HR_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_HR_VIEW')";
     private static final String PAYROLL_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_PAYROLL_VIEW')";
 
@@ -1016,6 +1019,88 @@ public class ReportController {
                         money(r.outstanding()), String.valueOf(r.reminders()), orDash(r.subscriptionStatus())));
             }
             return export("Unpaid Subscription Invoices", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Help Desk reports — see HelpDeskReportService. ----
+
+    private static String hours(Double h) {
+        return h == null ? "—" : String.valueOf(h);
+    }
+
+    @PreAuthorize(HELPDESK_VIEW)
+    @GetMapping("/helpdesk-sla")
+    public ResponseEntity<?> helpdeskSla(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        var rows = helpDeskReportService.sla(start(from), end(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Priority", "Tickets", "Answered in time", "Answered late or not yet", "Avg first response (h)", "Resolved", "Resolved in time", "Resolved late or overdue", "Avg resolution (h)", "On time %");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.priority(), String.valueOf(r.tickets()), String.valueOf(r.responseMet()), String.valueOf(r.responseMissed()), hours(r.avgFirstResponseHours()),
+                        String.valueOf(r.resolved()), String.valueOf(r.resolutionMet()), String.valueOf(r.resolutionMissed()), hours(r.avgResolutionHours()), hours(r.compliancePercent())));
+            }
+            return export("Help Desk SLA Performance", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HELPDESK_VIEW)
+    @GetMapping("/helpdesk-by-agent")
+    public ResponseEntity<?> helpdeskByAgent(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        var rows = helpDeskReportService.byAgent(start(from), end(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Agent", "Tickets", "Still open", "Resolved", "Overdue now", "Avg resolution (h)", "Avg rating");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.agent(), String.valueOf(r.assigned()), String.valueOf(r.open()), String.valueOf(r.resolved()), String.valueOf(r.overdue()), hours(r.avgResolutionHours()), hours(r.avgRating())));
+            }
+            return export("Help Desk Tickets by Agent", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HELPDESK_VIEW)
+    @GetMapping("/helpdesk-by-category")
+    public ResponseEntity<?> helpdeskByCategory(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        var rows = helpDeskReportService.byCategory(start(from), end(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Category", "Tickets", "Still open", "Resolved", "Avg resolution (h)", "Avg rating");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.category(), String.valueOf(r.tickets()), String.valueOf(r.open()), String.valueOf(r.resolved()), hours(r.avgResolutionHours()), hours(r.avgRating())));
+            }
+            return export("Help Desk Tickets by Category", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HELPDESK_VIEW)
+    @GetMapping("/helpdesk-satisfaction")
+    public ResponseEntity<?> helpdeskSatisfaction(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        var rows = helpDeskReportService.satisfaction(start(from), end(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Ticket #", "Subject", "Requester", "Agent", "Rating", "Comment", "Rated on");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.ticketNumber(), r.subject(), orDash(r.requester()), orDash(r.agent()), r.rating() + " / 5", orDash(r.comment()), String.valueOf(r.ratedAt())));
+            }
+            return export("Help Desk Satisfaction", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(HELPDESK_VIEW)
+    @GetMapping("/helpdesk-overdue")
+    public ResponseEntity<?> helpdeskOverdue(@RequestParam(defaultValue = "json") String format) {
+        var rows = helpDeskReportService.overdue();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Ticket #", "Subject", "Priority", "Status", "Agent", "Deadline missed", "Was due", "Hours late");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.ticketNumber(), r.subject(), r.priority(), r.status(), orDash(r.agent()), r.deadline(), String.valueOf(r.due()), String.valueOf(r.hoursLate())));
+            }
+            return export("Help Desk Overdue Tickets", headers, body, format);
         }
         return ResponseEntity.ok(rows);
     }

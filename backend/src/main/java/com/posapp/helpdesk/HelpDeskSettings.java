@@ -37,4 +37,41 @@ public class HelpDeskSettings extends BaseEntity {
     /** "Allow public website": when off, the public Help Desk page (submit a ticket, check a ticket) is closed. */
     @Column(nullable = false, columnDefinition = "boolean default true not null")
     private boolean publicEnabled = true;
+
+    // ---- v1.20.0 ----
+    @Column(nullable = false)
+    private boolean slaEnabled;
+    /** Whether INTERNAL tickets get deadlines too (customer tickets always do when SLA is on). */
+    @Column(nullable = false)
+    private boolean slaInternal;
+    @Column(nullable = false)
+    private int slaResponseLow = 72;
+    @Column(nullable = false)
+    private int slaResponseMedium = 24;
+    @Column(nullable = false)
+    private int slaResponseHigh = 8;
+    @Column(nullable = false)
+    private int slaResponseUrgent = 2;
+    @Column(nullable = false)
+    private int slaResolutionLow = 240;
+    @Column(nullable = false)
+    private int slaResolutionMedium = 120;
+    @Column(nullable = false)
+    private int slaResolutionHigh = 48;
+    @Column(nullable = false)
+    private int slaResolutionUrgent = 8;
+    @Column(nullable = false)
+    private boolean escalationEnabled;
+    /** Hours before a resolution deadline to warn the assignee. */
+    @Column(nullable = false)
+    private int warnHours = 4;
+    @Column(nullable = false)
+    private boolean replyEmailEnabled = true;
+    @Column(nullable = false)
+    private boolean publicReplyEnabled = true;
+    @Column(nullable = false)
+    private boolean satisfactionEnabled = true;
+    /** Resolved tickets close by themselves after this many days; 0 = never. */
+    @Column(nullable = false)
+    private int autoCloseDays;
 }
