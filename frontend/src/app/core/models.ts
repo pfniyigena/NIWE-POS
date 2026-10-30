@@ -2386,7 +2386,7 @@ export interface SubscriptionPlanPayload {
 }
 
 /** Mirrors the backend's SubscriptionStatus enum — see Subscription's javadoc. PAUSED is reversible; CANCELLED is terminal. */
-export type SubscriptionStatus = 'ACTIVE' | 'PAUSED' | 'CANCELLED';
+export type SubscriptionStatus = 'ACTIVE' | 'PAUSED' | 'CANCELLED' | 'ENDED';
 
 /** One customer's own enrollment in a SubscriptionPlan (Admin > Sales > Subscriptions) — see the backend Subscription's javadoc. */
 export interface Subscription {
@@ -2412,6 +2412,33 @@ export interface Subscription {
   cancelledAt: string | null;
   cancelReason: string | null;
   notes: string | null;
+  /** Seats / units billed each cycle. */
+  quantity: number;
+  setupFee: number;
+  setupFeeBilled: boolean;
+  trialDays: number;
+  trialEndDate: string | null;
+  /** Active and still inside the free trial. */
+  onTrial: boolean;
+  /** Billing cycles in a term; null = open-ended. */
+  termCycles: number | null;
+  cyclesBilled: number;
+  autoRenew: boolean;
+  renewals: number;
+  resumeOn: string | null;
+  pauseReason: string | null;
+  pausedAt: string | null;
+  /** A cancellation is scheduled for the next billing date. */
+  cancelAtPeriodEnd: boolean;
+  /** Credit from a downgrade, taken off the next invoice(s). */
+  creditBalance: number;
+  endedAt: string | null;
+  dunningCount: number;
+  dunningLastOn: string | null;
+  /** quantity x price less discount, before tax, per billing cycle. */
+  cycleAmount: number;
+  /** The same amount per month (weekly x 52/12, quarterly / 3, yearly / 12). */
+  monthlyValue: number;
 }
 
 /**
@@ -2433,6 +2460,12 @@ export interface CreateSubscriptionPayload {
   /** Fourier: "may be some subscription will be paid after service other will be prepaid" — chosen fresh for this one subscription; omitted/null defaults to true (prepaid), today's unchanged behavior. */
   billInAdvance?: boolean | null;
   notes?: string | null;
+  quantity?: number | null;
+  setupFee?: number | null;
+  trialDays?: number | null;
+  /** Number of billing cycles; null = open-ended. */
+  termCycles?: number | null;
+  autoRenew?: boolean | null;
 }
 
 /** Body for POST/PUT /api/invoices — creating/editing a standalone, DRAFT invoice (Fourier: "someone can create invoice (with invoice lines) without creating sales order"). Catalog products only, same convention as SalesOrderPayload. */

@@ -120,6 +120,12 @@ public final class ScheduledReportCatalog {
                 (c, p) -> c.installmentsOverdue(p.branchId(), p.format())));
         add(new Def("installments-defaulted", "Defaulted and written-off instalments", "Installments", false, false, false, true, false, null,
                 (c, p) -> c.installmentsDefaulted(p.branchId(), p.format())));
+        add(new Def("subscriptions-by-plan", "Subscriptions by plan", "Subscriptions", false, false, false, false, false, null,
+                (c, p) -> c.subscriptionsByPlan(p.format())));
+        add(new Def("subscriptions-churn", "Subscription churn", "Subscriptions", true, false, false, false, false, null,
+                (c, p) -> c.subscriptionsChurn(p.from(), p.to(), p.format())));
+        add(new Def("subscriptions-unpaid", "Unpaid subscription invoices", "Subscriptions", false, false, false, false, false, null,
+                (c, p) -> c.subscriptionsUnpaid(p.format())));
         add(new Def("installment-collections", "Instalment collections", "Installments", true, false, false, true, false, null,
                 (c, p) -> c.installmentCollections(p.from(), p.to(), p.branchId(), p.format())));
         add(new Def("time-timesheets", "Timesheet summary", "Time Tracking", true, false, false, false, false, null,

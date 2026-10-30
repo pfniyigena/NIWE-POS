@@ -28,6 +28,8 @@ export interface SubscriptionJobResult {
   overdueActioned: number;
   digestSent: boolean;
   message: string;
+  resumed: number;
+  overdueReminders: number;
 }
 
 @Injectable({ providedIn: 'root' })

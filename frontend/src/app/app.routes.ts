@@ -165,6 +165,8 @@ import { InstallmentPlanFormComponent } from './admin/installments/plan-form.com
 import { InstallmentPlanDetailComponent } from './admin/installments/plan-detail.component';
 import { InstallmentSettingsComponent } from './admin/installments/installment-settings.component';
 import { InstallmentReportListComponent } from './admin/installments/installment-report-list.component';
+import { SubscriptionOverviewComponent } from './admin/subscription-overview.component';
+import { SubscriptionReportListComponent } from './admin/subscription-report-list.component';
 import { MyTimesheetComponent } from './time/my-timesheet.component';
 import { TimeProjectListComponent } from './admin/time/project-list.component';
 import { TimeProjectFormComponent } from './admin/time/project-form.component';
@@ -655,6 +657,8 @@ const baseRoutes: Routes = [
   { path: 'admin/subscriptions/new', component: SubscriptionFormComponent, canActivate: [authGuard, adminGuard] },
   // Daily job settings (billing, reminders, unpaid handling, digest) — before '/:id'.
   { path: 'admin/subscriptions/job-settings', component: SubscriptionJobSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/subscriptions/overview', component: SubscriptionOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/subscriptions/reports', component: SubscriptionReportListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/subscriptions/:id', component: SubscriptionDetailComponent, canActivate: [authGuard, adminGuard] },
 
   // Fourier: "Add Help Desk module (with its menu) should manage customer and internal support

@@ -31,6 +31,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     /** Fourier: "Subscriptions Module" — every invoice ever generated for one subscription, newest first; backs its own billing-history view. */
     List<Invoice> findBySubscriptionIdOrderByInvoiceDateDesc(Long subscriptionId);
 
+    /** Issued invoices that came from a subscription, oldest first. */
+    List<Invoice> findBySubscriptionIdIsNotNullAndStatusOrderByInvoiceDateAsc(InvoiceStatus status);
+
     /** Fourier: "Add Recurring Invoice" — every invoice ever generated for one recurring invoice template, newest first; backs its own "Generated invoices" history view. */
     List<Invoice> findByRecurringInvoiceTemplateIdOrderByInvoiceDateDesc(Long recurringInvoiceTemplateId);
 

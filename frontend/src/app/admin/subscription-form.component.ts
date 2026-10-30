@@ -168,6 +168,23 @@ import { BillingInterval, Customer, SubscriptionPlan, TaxRateOption } from '../c
             Pre-filled from the plan's own default discount — change it to give this customer a different discount.
           </div>
         </div>
+        <div class="flex gap-2" *ngIf="selectedPlan">
+          <div class="form-group grow">
+            <label class="form-label">Quantity (seats / units)</label>
+            <input class="form-control" type="number" step="1" min="1" name="quantity" [(ngModel)]="quantity" />
+          </div>
+          <div class="form-group grow">
+            <label class="form-label">Setup fee (one time)</label>
+            <input class="form-control" type="number" step="0.01" min="0" name="setupFee" [(ngModel)]="setupFee" />
+          </div>
+          <div class="form-group grow">
+            <label class="form-label">Free trial (days)</label>
+            <input class="form-control" type="number" step="1" min="0" max="365" name="trialDays" [(ngModel)]="trialDays" />
+          </div>
+        </div>
+        <div class="text-muted mb-2" style="font-size:0.8rem;" *ngIf="selectedPlan">
+          Each invoice bills quantity × price. The setup fee is added to the first invoice only. Billing starts when the free trial ends.
+        </div>
         <div class="form-group">
           <label class="form-label">Start date</label>
           <app-date-picker name="startDate" [(ngModel)]="startDate" required></app-date-picker>
@@ -184,6 +201,19 @@ import { BillingInterval, Customer, SubscriptionPlan, TaxRateOption } from '../c
               ? 'First invoice is generated on the start date itself (or the next daily sweep after it).'
               : 'First invoice is generated one billing cycle after the start date, once that cycle of service is done.' }}
             Each later invoice follows this subscription's own billing interval above either way.
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <div class="form-group grow">
+            <label class="form-label">Term (billing cycles)</label>
+            <input class="form-control" type="number" step="1" min="1" max="1200" name="termCycles" [(ngModel)]="termCycles" placeholder="Blank = until cancelled" />
+          </div>
+          <div class="form-group grow" *ngIf="termCycles">
+            <label class="form-label">At the end of the term</label>
+            <select class="form-select" name="autoRenew" [(ngModel)]="autoRenew">
+              <option [ngValue]="true">Renew for another term</option>
+              <option [ngValue]="false">End the subscription</option>
+            </select>
           </div>
         </div>
         <div class="form-group">
@@ -210,6 +240,11 @@ export class SubscriptionFormComponent implements OnInit {
   /** Fourier: "may be some subscription will be paid after service other will be prepaid" — true (prepaid) is the default, same behavior every subscription had before this field existed. */
   billInAdvance = true;
   notes: string | null = null;
+  quantity = 1;
+  setupFee = 0;
+  trialDays = 0;
+  termCycles: number | null = null;
+  autoRenew = true;
 
   customers: Customer[] = [];
   plans: SubscriptionPlan[] = [];
@@ -370,6 +405,11 @@ export class SubscriptionFormComponent implements OnInit {
         startDate: this.startDate || null,
         billInAdvance: this.billInAdvance,
         notes: this.notes || null,
+        quantity: this.quantity || 1,
+        setupFee: this.setupFee || 0,
+        trialDays: this.trialDays || 0,
+        termCycles: this.termCycles || null,
+        autoRenew: this.autoRenew,
       })
       .subscribe({
         next: (s) => this.router.navigate(['/admin/subscriptions', s.id]),

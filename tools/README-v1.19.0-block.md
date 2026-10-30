@@ -1,0 +1,3 @@
+### Version 1.19.0 - Subscriptions: edit and change plan, trials and terms, pauses, overview, reports, overdue reminders
+
+Subscriptions can now be edited and moved to another plan with proration, sold per seat with a setup fee, started with a free trial or a fixed term, paused with a reason and an automatic resume date, skipped for one cycle and cancelled at the end of the paid period. There is a new Overview (recurring revenue, churn, what bills next and what is unpaid), list filters, three reports and optional e-mail reminders for overdue subscription invoices. One migration (V58) and two new pages under Subscriptions (Overview, Reports). Details in `RELEASE-NOTES-v1.19.0.md`.

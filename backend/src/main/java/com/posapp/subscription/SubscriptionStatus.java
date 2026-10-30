@@ -11,5 +11,7 @@ package com.posapp.subscription;
 public enum SubscriptionStatus {
     ACTIVE,
     PAUSED,
-    CANCELLED
+    CANCELLED,
+    /** A fixed-term subscription whose last cycle has been billed and that does not renew. Terminal, like CANCELLED. */
+    ENDED
 }

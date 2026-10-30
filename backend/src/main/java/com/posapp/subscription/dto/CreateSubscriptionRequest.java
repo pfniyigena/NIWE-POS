@@ -61,6 +61,21 @@ public class CreateSubscriptionRequest {
 
     private String notes;
 
+    /** Seats / units billed each cycle (default 1). */
+    private Integer quantity;
+
+    /** One-time fee added to the first invoice. */
+    private BigDecimal setupFee;
+
+    /** Free days before billing starts. */
+    private Integer trialDays;
+
+    /** Number of billing cycles; null = open-ended. */
+    private Integer termCycles;
+
+    /** At the end of the term: renew (default) or end. */
+    private Boolean autoRenew;
+
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public Long getPlanId() { return planId; }
@@ -77,6 +92,16 @@ public class CreateSubscriptionRequest {
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public Boolean getBillInAdvance() { return billInAdvance; }
     public void setBillInAdvance(Boolean billInAdvance) { this.billInAdvance = billInAdvance; }
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public BigDecimal getSetupFee() { return setupFee; }
+    public void setSetupFee(BigDecimal setupFee) { this.setupFee = setupFee; }
+    public Integer getTrialDays() { return trialDays; }
+    public void setTrialDays(Integer trialDays) { this.trialDays = trialDays; }
+    public Integer getTermCycles() { return termCycles; }
+    public void setTermCycles(Integer termCycles) { this.termCycles = termCycles; }
+    public Boolean getAutoRenew() { return autoRenew; }
+    public void setAutoRenew(Boolean autoRenew) { this.autoRenew = autoRenew; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
 }

@@ -445,6 +445,8 @@ import { NiweFooterComponent } from './niwe-footer.component';
           <ng-container *ngIf="isOpen('subscriptions') && showGroup('subscriptions')">
             <a *ngIf="canSee('/admin/subscription-plans')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscription-plans" routerLinkActive="active"><span class="sidenav-icon">📋</span> Subscription plans</a>
             <a *ngIf="canSee('/admin/subscriptions')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🔁</span> Subscriptions</a>
+            <a *ngIf="canSee('/admin/subscriptions/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/overview" routerLinkActive="active"><span class="sidenav-icon">📊</span> Overview</a>
+            <a *ngIf="canSee('/admin/subscriptions/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/reports" routerLinkActive="active"><span class="sidenav-icon">📑</span> Reports</a>
             <a *ngIf="canSee('/admin/subscriptions/job-settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/job-settings" routerLinkActive="active"><span class="sidenav-icon">⏰</span> Job settings</a>
           </ng-container>
           <!-- Hotel group (Fourier: "add hotel management ... integrated with POS, Restaurant, Accounting"). Shown once the

@@ -640,56 +640,85 @@ public class InvoiceService {
     public InvoiceDto generateForSubscription(Long customerId, String customerName, Long subscriptionId, String planName, BigDecimal amount,
                                                String taxCode, BigDecimal taxRatePercent, Boolean taxInclusive, BigDecimal discountPercent,
                                                LocalDate periodStart, LocalDate periodEnd) {
+        return generateForSubscription(new SubscriptionInvoiceSpec(customerId, customerName, subscriptionId, planName, amount, 1,
+                taxCode, taxRatePercent, taxInclusive, discountPercent, periodStart, periodEnd, List.of()));
+    }
+
+    /**
+     * Subscription billing invoice: the recurring line (quantity x unit price, the subscription's own discount and tax) plus any extra
+     * lines (setup fee, credit, adjustment) that carry the same tax but no discount. Issued and posted to accounting immediately.
+     */
+    @Transactional
+    public InvoiceDto generateForSubscription(SubscriptionInvoiceSpec spec) {
         Invoice invoice = new Invoice();
         // Subscriptions aren't branch-specific yet: the branch stays unset (= head office), so head office's prefix applies.
         invoice.setInvoiceNumber(branchService.prefixedNumber(null, "INV-" + System.currentTimeMillis()));
         invoice.setStatus(InvoiceStatus.ISSUED);
-        invoice.setSubscriptionId(subscriptionId);
-        invoice.setCustomerId(customerId);
-        invoice.setCustomerName(customerName);
-        // Fourier: "when I click to Bill now, it will create an invoice from the last end date.
-        // Now it is still creating same invoice with same start and end date" — the cycle this
-        // bill actually covers, computed by SubscriptionService.billOne from the subscription's
-        // own nextBillingDate before/after advancing it, so each successive invoice's periodStart
-        // is the previous one's periodEnd rather than every invoice looking like the same single
-        // day. See Invoice.periodStart's own javadoc.
-        invoice.setPeriodStart(periodStart);
-        invoice.setPeriodEnd(periodEnd);
+        invoice.setSubscriptionId(spec.subscriptionId());
+        invoice.setCustomerId(spec.customerId());
+        invoice.setCustomerName(spec.customerName());
+        // The cycle this bill covers: each invoice's periodStart is the previous one's periodEnd (see Invoice.periodStart's javadoc).
+        invoice.setPeriodStart(spec.periodStart());
+        invoice.setPeriodEnd(spec.periodEnd());
+        String planName = spec.planName();
+        LocalDate periodStart = spec.periodStart();
+        LocalDate periodEnd = spec.periodEnd();
 
-        InvoiceLine line = new InvoiceLine();
-        line.setInvoice(invoice);
-        line.setProductName(planName);
-        line.setDescription(periodStart != null && periodEnd != null
-                ? "Subscription billing — " + planName + " (" + PERIOD_DATE_FMT.format(periodStart) + " to " + PERIOD_DATE_FMT.format(periodEnd) + ")"
-                : "Subscription billing — " + planName);
-        line.setQuantity(BigDecimal.ONE);
-        line.setUnitPrice(amount);
-        // Fourier: "subscription plan should also have tax and discount on it" — discount knocked
-        // off this line's gross before tax is even considered, same ordering TaxMath.applyDiscount
-        // (and every other document module) already uses; taxCode/taxRatePercent/taxInclusive are
-        // snapshotted straight from the subscription (see SubscriptionService.billOne) rather than
-        // re-derived here, same "freeze what was actually billed" reasoning as every other line's
-        // own tax snapshot.
-        BigDecimal discount = discountPercent != null ? discountPercent : BigDecimal.ZERO;
-        line.setDiscountPercent(discount);
-        line.setLineTotal(TaxMath.applyDiscount(amount, discount).setScale(2, RoundingMode.HALF_UP));
-        line.setTaxCode(taxCode);
-        line.setTaxRatePercent(taxRatePercent);
-        line.setTaxInclusive(taxInclusive);
-        invoice.getLines().add(line);
+        if (spec.unitPrice() != null) {
+            InvoiceLine line = new InvoiceLine();
+            line.setInvoice(invoice);
+            line.setProductName(planName);
+            line.setDescription(periodStart != null && periodEnd != null
+                    ? "Subscription billing — " + planName + " (" + PERIOD_DATE_FMT.format(periodStart) + " to " + PERIOD_DATE_FMT.format(periodEnd) + ")"
+                    : "Subscription billing — " + planName);
+            line.setQuantity(BigDecimal.valueOf(Math.max(1, spec.quantity())));
+            line.setUnitPrice(spec.unitPrice());
+            // Discount is knocked off the line's gross before tax, same ordering every other document uses.
+            BigDecimal discount = spec.discountPercent() != null ? spec.discountPercent() : BigDecimal.ZERO;
+            line.setDiscountPercent(discount);
+            line.setLineTotal(TaxMath.applyDiscount(spec.unitPrice().multiply(line.getQuantity()), discount).setScale(2, RoundingMode.HALF_UP));
+            line.setTaxCode(spec.taxCode());
+            line.setTaxRatePercent(spec.taxRatePercent());
+            line.setTaxInclusive(spec.taxInclusive());
+            invoice.getLines().add(line);
+        }
+        for (SubscriptionInvoiceSpec.Extra extra : spec.extras()) {
+            if (extra.amount() == null || extra.amount().signum() == 0) continue;
+            InvoiceLine line = new InvoiceLine();
+            line.setInvoice(invoice);
+            line.setProductName(extra.description().length() > 120 ? extra.description().substring(0, 120) : extra.description());
+            line.setDescription(extra.description());
+            line.setQuantity(BigDecimal.ONE);
+            line.setUnitPrice(extra.amount());
+            line.setDiscountPercent(BigDecimal.ZERO);
+            line.setLineTotal(extra.amount().setScale(2, RoundingMode.HALF_UP));
+            line.setTaxCode(spec.taxCode());
+            line.setTaxRatePercent(spec.taxRatePercent());
+            line.setTaxInclusive(spec.taxInclusive());
+            invoice.getLines().add(line);
+        }
         invoice.setTotalAmount(subtotalAmount(invoice).add(taxAmount(invoice)).setScale(2, RoundingMode.HALF_UP));
 
         Invoice saved = invoiceRepository.save(invoice);
         auditLogService.record("INVOICE_GENERATED",
                 "Generated and issued invoice " + saved.getInvoiceNumber() + " for subscription billing (" + planName + ", " + saved.getTotalAmount() + ")",
                 "Invoice", saved.getId());
-        // Fourier: "make then ISSUED and hit accounting" — posted immediately, same call issue()
-        // makes for any other standalone invoice; see this method's own javadoc for why this is
-        // safe to call unconditionally here (exactly once per billing cycle, never retried).
+        // Posted immediately, exactly once per billing cycle (never retried).
         accountingService.postInvoiceIssued(saved);
         InvoiceDto dto = toDto(saved);
         sendIssuedEmail(dto);
         return dto;
+    }
+
+    /** Issued invoices of subscriptions that still have an amount outstanding, oldest first; backs the subscriptions overview and overdue reminders. */
+    @Transactional(readOnly = true)
+    public List<InvoiceDto> unpaidSubscriptionInvoices() {
+        List<InvoiceDto> out = new java.util.ArrayList<>();
+        for (Invoice i : invoiceRepository.findBySubscriptionIdIsNotNullAndStatusOrderByInvoiceDateAsc(InvoiceStatus.ISSUED)) {
+            InvoiceDto dto = toDto(i);
+            if (dto.amountOutstanding() != null && dto.amountOutstanding().signum() > 0) out.add(dto);
+        }
+        return out;
     }
 
     /** Fourier: "Subscriptions Module" — every invoice ever generated for one subscription, newest first; backs its own billing-history view. */

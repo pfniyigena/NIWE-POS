@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.19.0 - Subscriptions: edit and change plan, trials and terms, pauses, overview, reports, overdue reminders
+
+Subscriptions can now be edited and moved to another plan with proration, sold per seat with a setup fee, started with a free trial or a fixed term, paused with a reason and an automatic resume date, skipped for one cycle and cancelled at the end of the paid period. There is a new Overview (recurring revenue, churn, what bills next and what is unpaid), list filters, three reports and optional e-mail reminders for overdue subscription invoices. One migration (V58) and two new pages under Subscriptions (Overview, Reports). Details in `RELEASE-NOTES-v1.19.0.md`.
+
 ### Version 1.18.0 - Installments: collections, early payoff, reversals, default and write-off, statements
 
 Installments now has a Collections page (who to chase, with a log of calls, visits and promises to pay), early payoff with an interest waiver, reversal of a wrongly recorded payment, defaulting and writing off a plan, and a printable or e-mailed statement and agreement. One migration (V57) and a new page under Installments > Collections. Details in `RELEASE-NOTES-v1.18.0.md`.

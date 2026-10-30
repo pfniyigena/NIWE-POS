@@ -73,6 +73,7 @@ public class ReportController {
     private final AssetReportService assetReportService;
     private final HrReportService hrReportService;
     private final InstallmentReportService installmentReportService;
+    private final SubscriptionReportService subscriptionReportService;
     private final TimeReportService timeReportService;
     private final WorkOrderReportService workOrderReportService;
     private final BookingReportService bookingReportService;
@@ -80,13 +81,14 @@ public class ReportController {
     private final ReportExportService exportService;
     private final com.posapp.tracking.TrackingService trackingService;
 
-    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
+    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
         this.reportService = reportService;
         this.purchaseReportService = purchaseReportService;
         this.salesReportService = salesReportService;
         this.assetReportService = assetReportService;
         this.hrReportService = hrReportService;
         this.installmentReportService = installmentReportService;
+        this.subscriptionReportService = subscriptionReportService;
         this.timeReportService = timeReportService;
         this.workOrderReportService = workOrderReportService;
         this.bookingReportService = bookingReportService;
@@ -965,6 +967,55 @@ public class ReportController {
                         money(r.interestAndFees()), money(r.total()), orDash(r.method()), orDash(r.recordedBy())));
             }
             return export("Instalment Collections", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Subscription reports — see SubscriptionReportService. ----
+
+    @GetMapping("/subscriptions-by-plan")
+    public ResponseEntity<?> subscriptionsByPlan(@RequestParam(defaultValue = "json") String format) {
+        var rows = subscriptionReportService.byPlan();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Plan", "Active", "On trial", "Paused", "Cancelled or ended", "Seats", "Monthly recurring", "Yearly recurring", "Average per subscription");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.plan()), String.valueOf(r.active()), String.valueOf(r.onTrial()), String.valueOf(r.paused()), String.valueOf(r.cancelledOrEnded()),
+                        String.valueOf(r.seats()), money(r.mrr()), money(r.arr()), money(r.averageMonthly())));
+            }
+            return export("Subscriptions by Plan", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/subscriptions-churn")
+    public ResponseEntity<?> subscriptionsChurn(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = subscriptionReportService.churn(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Customer", "Plan", "Status", "Started", "Left on", "Months", "Monthly value lost", "Cycles billed", "Reason");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.customer()), orDash(r.plan()), r.status(), String.valueOf(r.started()), String.valueOf(r.leftOn()), String.valueOf(r.monthsActive()),
+                        money(r.monthlyValue()), String.valueOf(r.cyclesBilled()), orDash(r.reason())));
+            }
+            return export("Subscription Churn", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/subscriptions-unpaid")
+    public ResponseEntity<?> subscriptionsUnpaid(@RequestParam(defaultValue = "json") String format) {
+        var rows = subscriptionReportService.unpaid();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Customer", "Plan", "Invoice", "Due", "Days late", "Total", "Outstanding", "Reminders sent", "Subscription");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(orDash(r.customer()), orDash(r.plan()), r.invoiceNumber(), String.valueOf(r.dueOn()), String.valueOf(r.daysLate()), money(r.total()),
+                        money(r.outstanding()), String.valueOf(r.reminders()), orDash(r.subscriptionStatus())));
+            }
+            return export("Unpaid Subscription Invoices", headers, body, format);
         }
         return ResponseEntity.ok(rows);
     }

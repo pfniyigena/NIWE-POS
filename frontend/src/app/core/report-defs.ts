@@ -20,7 +20,7 @@ export interface ReportColumn {
 export interface ReportDef {
   key: string;
   title: string;
-  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing';
+  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing' | 'Subscriptions';
   /** Path segment under /api/reports/ — see ReportController. */
   endpoint: string;
   columns: ReportColumn[];
@@ -86,6 +86,8 @@ export function reportListRouteForSection(section: ReportDef['section']): string
       return '/admin/restaurant/reports';
     case 'Help Desk':
       return '/admin/helpdesk/reports';
+    case 'Subscriptions':
+      return '/admin/subscriptions/reports';
     default:
       return '/admin/reports';
   }
@@ -1471,6 +1473,63 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'total', label: 'Total', format: 'money' },
       { key: 'method', label: 'Method', format: 'text' },
       { key: 'recordedBy', label: 'Recorded by', format: 'text' },
+    ],
+  },
+  {
+    key: 'subscriptions-by-plan',
+    title: 'Subscriptions by Plan',
+    section: 'Subscriptions',
+    endpoint: 'subscriptions-by-plan',
+    categoryFilter: false,
+    filterMode: 'none',
+    columns: [
+      { key: 'plan', label: 'Plan', format: 'text' },
+      { key: 'active', label: 'Active', format: 'int' },
+      { key: 'onTrial', label: 'On trial', format: 'int' },
+      { key: 'paused', label: 'Paused', format: 'int' },
+      { key: 'cancelledOrEnded', label: 'Cancelled or ended', format: 'int' },
+      { key: 'seats', label: 'Seats', format: 'int' },
+      { key: 'mrr', label: 'Monthly revenue', format: 'money' },
+      { key: 'arr', label: 'Yearly revenue', format: 'money' },
+      { key: 'averageMonthly', label: 'Average per subscription', format: 'money' },
+    ],
+  },
+  {
+    key: 'subscriptions-churn',
+    title: 'Cancelled and Ended Subscriptions',
+    section: 'Subscriptions',
+    endpoint: 'subscriptions-churn',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'customer', label: 'Customer', format: 'text' },
+      { key: 'plan', label: 'Plan', format: 'text' },
+      { key: 'status', label: 'Status', format: 'text' },
+      { key: 'started', label: 'Started', format: 'text' },
+      { key: 'leftOn', label: 'Left on', format: 'text' },
+      { key: 'monthsActive', label: 'Months active', format: 'int' },
+      { key: 'monthlyValue', label: 'Monthly value', format: 'money' },
+      { key: 'cyclesBilled', label: 'Cycles billed', format: 'int' },
+      { key: 'reason', label: 'Reason', format: 'text' },
+    ],
+  },
+  {
+    key: 'subscriptions-unpaid',
+    title: 'Unpaid Subscription Invoices',
+    section: 'Subscriptions',
+    endpoint: 'subscriptions-unpaid',
+    categoryFilter: false,
+    filterMode: 'none',
+    columns: [
+      { key: 'customer', label: 'Customer', format: 'text' },
+      { key: 'plan', label: 'Plan', format: 'text' },
+      { key: 'invoiceNumber', label: 'Invoice', format: 'text' },
+      { key: 'dueOn', label: 'Invoice date', format: 'text' },
+      { key: 'daysLate', label: 'Days late', format: 'int' },
+      { key: 'total', label: 'Total', format: 'money' },
+      { key: 'outstanding', label: 'Outstanding', format: 'money' },
+      { key: 'reminders', label: 'Reminders sent', format: 'int' },
+      { key: 'subscriptionStatus', label: 'Subscription', format: 'text' },
     ],
   },
   {

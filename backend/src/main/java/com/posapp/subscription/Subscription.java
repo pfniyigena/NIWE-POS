@@ -120,4 +120,62 @@ public class Subscription extends BaseEntity {
     /** The nextBillingDate a billing reminder email was last sent for, so each upcoming bill is announced only once. */
     @Column(name = "reminder_sent_for")
     private LocalDate reminderSentFor;
+
+    // ---- v1.19.0: seats, trial, term, scheduled cancel, pause details, credit, overdue reminders ----
+
+    /** Seats / units billed each cycle: the invoice line is quantity x price. */
+    @Column(nullable = false, columnDefinition = "integer default 1 not null")
+    private int quantity = 1;
+
+    /** One-time fee added to the first invoice. */
+    @Column(nullable = false, columnDefinition = "numeric(38,2) default 0 not null")
+    private BigDecimal setupFee = BigDecimal.ZERO;
+
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean setupFeeBilled = false;
+
+    @Column(nullable = false, columnDefinition = "integer default 0 not null")
+    private int trialDays = 0;
+
+    /** Billing starts on this date; null = no trial. */
+    private LocalDate trialEndDate;
+
+    /** The subscription is for this many billing cycles; null = open-ended. */
+    private Integer termCycles;
+
+    /** Invoices billed in the current term (reset on renewal). */
+    @Column(nullable = false, columnDefinition = "integer default 0 not null")
+    private int cyclesBilled = 0;
+
+    /** At the end of the term: true = start a new term, false = the subscription ENDS. */
+    @Column(nullable = false, columnDefinition = "boolean default true not null")
+    private boolean autoRenew = true;
+
+    @Column(nullable = false, columnDefinition = "integer default 0 not null")
+    private int renewals = 0;
+
+    /** A paused subscription resumes by itself on this date; null = stays paused until resumed by hand. */
+    private LocalDate resumeOn;
+
+    private String pauseReason;
+
+    private Instant pausedAt;
+
+    /** Cancellation scheduled for the end of the period that is already paid (or, for paid-after-service, after the last cycle is billed). */
+    @Column(nullable = false, columnDefinition = "boolean default false not null")
+    private boolean cancelAtPeriodEnd = false;
+
+    /** Credit from a downgrade, taken off the next invoice(s). */
+    @Column(nullable = false, columnDefinition = "numeric(38,2) default 0 not null")
+    private BigDecimal creditBalance = BigDecimal.ZERO;
+
+    private Instant endedAt;
+
+    /** Overdue-reminder bookkeeping: the unpaid invoice being chased, how many reminders went out for it, and when the last one did. */
+    private Long dunningInvoiceId;
+
+    @Column(nullable = false, columnDefinition = "integer default 0 not null")
+    private int dunningCount = 0;
+
+    private LocalDate dunningLastOn;
 }

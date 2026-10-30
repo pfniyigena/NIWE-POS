@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { SubscriptionAutomationApiService, SubscriptionJobResult } from '../core/api/subscription-automation-api.service';
+import { SubscriptionApiService } from '../core/api/subscription-api.service';
 
 /**
  * Admin > Subscriptions > Job settings — the daily subscription job: bills due subscriptions, optionally
@@ -96,6 +97,27 @@ import { SubscriptionAutomationApiService, SubscriptionJobResult } from '../core
         <div class="alert alert-info mt-2" *ngIf="runResult">{{ runResult.message }}</div>
         <div class="text-muted mt-2" *ngIf="lastSummary">Last run: {{ lastSummary }}</div>
       </form>
+
+      <form class="card mt-3" style="padding:1rem;" (ngSubmit)="saveExtra()" *ngIf="extraLoaded">
+        <h4 class="mb-2">Overdue reminders and catching up</h4>
+        <div class="alert alert-success" *ngIf="extraSaved">Saved.</div>
+        <div class="alert alert-danger" *ngIf="extraError">{{ extraError }}</div>
+        <div class="form-group">
+          <label class="form-label"><input type="checkbox" name="dunningEnabled" [(ngModel)]="x.dunningEnabled" /> E-mail the customer when a subscription invoice is overdue</label>
+          <div *ngIf="x.dunningEnabled" class="flex gap-2 align-center" style="flex-wrap:wrap; margin-left:1.5rem;">
+            <span>First reminder</span><input class="form-control" style="width:80px;" type="number" min="0" max="90" name="dunningFirstDays" [(ngModel)]="x.dunningFirstDays" /><span>day(s) after the due date, then every</span>
+            <input class="form-control" style="width:80px;" type="number" min="1" max="90" name="dunningRepeatDays" [(ngModel)]="x.dunningRepeatDays" /><span>day(s), at most</span>
+            <input class="form-control" style="width:80px;" type="number" min="1" max="10" name="dunningMax" [(ngModel)]="x.dunningMax" /><span>reminder(s) per invoice</span>
+          </div>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Needs e-mail set up under Settings and an e-mail address on the customer. The reminders go out before the pause/cancel step above.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Missed billing cycles to bill in one run</label>
+          <input class="form-control" style="width:90px;" type="number" min="1" max="12" name="catchUpMax" [(ngModel)]="x.catchUpMax" />
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">1 = one cycle per day, so a subscription that was missed for months catches up slowly. A higher number bills the missed cycles at once, each with its own period.</div>
+        </div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="extraSaving">{{ extraSaving ? 'Saving…' : 'Save' }}</button></div>
+      </form>
     </app-shell>
   `,
 })
@@ -118,9 +140,26 @@ export class SubscriptionJobSettingsComponent implements OnInit {
   overdueAction: 'NONE' | 'PAUSE' | 'CANCEL' = 'NONE';
   overdueDays = 30;
 
-  constructor(private api: SubscriptionAutomationApiService) {}
+  x = { dunningEnabled: false, dunningFirstDays: 3, dunningRepeatDays: 7, dunningMax: 3, catchUpMax: 1 };
+  extraLoaded = false;
+  extraSaving = false;
+  extraSaved = false;
+  extraError: string | null = null;
+
+  constructor(private api: SubscriptionAutomationApiService, private subApi: SubscriptionApiService) {}
+
+  saveExtra(): void {
+    this.extraSaving = true;
+    this.extraSaved = false;
+    this.extraError = null;
+    this.subApi.saveSettings(this.x).subscribe({
+      next: (r) => { this.extraSaving = false; this.extraSaved = true; this.x = { ...r }; },
+      error: (err) => { this.extraSaving = false; this.extraError = err?.error?.message ?? 'Failed to save'; },
+    });
+  }
 
   ngOnInit(): void {
+    this.subApi.settings().subscribe({ next: (r) => { this.x = { ...r }; this.extraLoaded = true; }, error: () => (this.extraLoaded = false) });
     this.api.get().subscribe({
       next: (s) => {
         this.jobTime = s.jobTime;

@@ -14,4 +14,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     /** The scheduled sweep's own input — every still-ACTIVE subscription whose next billing date has arrived (or passed, e.g. the app was offline that day). */
     List<Subscription> findByStatusAndNextBillingDateLessThanEqual(SubscriptionStatus status, LocalDate date);
+
+    /** Paused subscriptions whose planned resume date has come. */
+    List<Subscription> findByStatusAndResumeOnLessThanEqual(SubscriptionStatus status, LocalDate date);
 }

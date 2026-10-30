@@ -57,7 +57,7 @@ public class SubscriptionAutomationService {
     }
 
     /** What one run did; also what "Run now" shows. */
-    public record RunResult(int billed, int failed, int remindersSent, int overdueActioned, boolean digestSent, String message) {
+    public record RunResult(int billed, int failed, int remindersSent, int overdueActioned, boolean digestSent, String message, int resumed, int overdueReminders) {
     }
 
     @Scheduled(fixedDelay = 300_000L, initialDelay = 75_000L)
@@ -66,7 +66,7 @@ public class SubscriptionAutomationService {
             // The daily job only runs while the Subscriptions module is licensed and activated.
             if (!moduleService.isEnabled(ModuleKey.SUBSCRIPTIONS)) return;
             StoreSettings settings = storeSettingsService.getSettingsEntity();
-            if (!anythingEnabled(settings)) return;
+            if (!anythingEnabled(settings) && !subscriptionService.settingsEntity().isDunningEnabled()) return;
             LocalDateTime now = LocalDateTime.now(zoneOf(settings));
             LocalDate today = now.toLocalDate();
             if (today.equals(settings.getSubscriptionJobLastRun())) return;
@@ -98,6 +98,22 @@ public class SubscriptionAutomationService {
         List<String[]> failed = new ArrayList<>();      // customer, error
         int reminders = 0;
 
+        // 0. Paused subscriptions whose resume date has come go back to ACTIVE (before billing, so they are billed today if due).
+        int resumed = 0;
+        try {
+            resumed = subscriptionService.resumeDue(today).size();
+        } catch (Exception ex) {
+            log.warn("Subscription auto-resume failed: {}", ex.getMessage(), ex);
+        }
+
+        // 0b. Overdue-invoice reminders to the customer (before the pause/cancel step below, so the customer is warned first).
+        int overdueReminders = 0;
+        try {
+            overdueReminders = sendDunning(settings, today);
+        } catch (Exception ex) {
+            log.warn("Subscription overdue reminders failed: {}", ex.getMessage(), ex);
+        }
+
         // 1. Overdue subscriptions
         String action = settings.getSubscriptionOverdueAction();
         if (!"NONE".equals(action)) {
@@ -124,15 +140,26 @@ public class SubscriptionAutomationService {
             }
         }
 
-        // 2. Billing
+        // 2. Billing (up to the configured number of missed cycles per subscription per run)
         if (settings.isSubscriptionBillingEnabled()) {
+            int catchUp = Math.max(1, subscriptionService.settingsEntity().getCatchUpMax());
             for (Long id : subscriptionService.dueSubscriptionIds(today)) {
-                try {
-                    billed.add(subscriptionService.billDue(id, today));
-                } catch (Exception ex) {
-                    String name = "Subscription #" + id;
-                    auditLogService.record("SUBSCRIPTION_BILLING_FAILED", "Failed to bill " + name + ": " + ex.getMessage(), "Subscription", id);
-                    failed.add(new String[]{name, ex.getMessage()});
+                for (int n = 0; n < catchUp; n++) {
+                    try {
+                        SubscriptionService.BillResult r = subscriptionService.billDue(id, today);
+                        if ("CANCELLED".equals(r.outcome())) {
+                            actioned.add(new String[]{r.customerName(), "-", "cancelled as scheduled"});
+                        } else {
+                            billed.add(r);
+                            if ("BILLED_AND_CANCELLED".equals(r.outcome())) actioned.add(new String[]{r.customerName(), nz(r.invoiceNumber()), "cancelled as scheduled"});
+                        }
+                    } catch (Exception ex) {
+                        String name = "Subscription #" + id;
+                        auditLogService.record("SUBSCRIPTION_BILLING_FAILED", "Failed to bill " + name + ": " + ex.getMessage(), "Subscription", id);
+                        failed.add(new String[]{name, ex.getMessage()});
+                        break;
+                    }
+                    if (!subscriptionService.isDue(id, today)) break;
                 }
             }
         }
@@ -148,19 +175,21 @@ public class SubscriptionAutomationService {
 
         // 4. Digest
         boolean digestSent = false;
-        if (settings.isSubscriptionDigestEnabled() && (!billed.isEmpty() || !failed.isEmpty() || !actioned.isEmpty() || reminders > 0)) {
-            digestSent = sendDigest(settings, today, billed, failed, actioned, reminders);
+        if (settings.isSubscriptionDigestEnabled() && (!billed.isEmpty() || !failed.isEmpty() || !actioned.isEmpty() || reminders > 0 || overdueReminders > 0)) {
+            digestSent = sendDigest(settings, today, billed, failed, actioned, reminders, overdueReminders);
         }
 
         StringBuilder m = new StringBuilder("Billed ").append(billed.size()).append(", failed ").append(failed.size());
         if (settings.isSubscriptionReminderEnabled()) m.append(", reminders sent ").append(reminders);
+        if (resumed > 0) m.append(", ").append(resumed).append(" resumed");
+        if (overdueReminders > 0) m.append(", ").append(overdueReminders).append(" overdue reminder(s) sent");
         if (!"NONE".equals(action)) {
             m.append(", ").append(actioned.size()).append(" subscription(s) ").append("CANCEL".equals(action) ? "cancelled" : "paused").append(" for non-payment");
         }
         if (settings.isSubscriptionDigestEnabled()) m.append(digestSent ? "; digest emailed" : "; digest not sent");
         String message = m.append(".").toString();
         storeSettingsService.markSubscriptionJobRan(today, today + ": " + message);
-        return new RunResult(billed.size(), failed.size(), reminders, actioned.size(), digestSent, message);
+        return new RunResult(billed.size(), failed.size(), reminders, actioned.size(), digestSent, message, resumed, overdueReminders);
     }
 
     private int sendReminders(StoreSettings settings, LocalDate today) {
@@ -193,8 +222,28 @@ public class SubscriptionAutomationService {
         return sent;
     }
 
+    private int sendDunning(StoreSettings settings, LocalDate today) {
+        if (!mailService.isConfigured()) return 0;
+        String business = settings.getBusinessName() == null ? "" : settings.getBusinessName();
+        String currency = settings.getCurrencySymbol() == null ? "" : settings.getCurrencySymbol();
+        int sent = 0;
+        for (SubscriptionService.DunningInfo d : subscriptionService.dunningCandidates(today, zoneOf(settings))) {
+            if (d.customerEmail() == null || d.customerEmail().isBlank()) continue;
+            String subject = "Payment reminder: invoice " + d.invoiceNumber();
+            String html = "<p>Hello " + escape(d.customerName()) + ",</p>"
+                    + "<p>Our records show that invoice <b>" + escape(d.invoiceNumber()) + "</b> for your subscription still has <b>" + escape(currency) + d.outstanding()
+                    + "</b> outstanding (" + d.daysLate() + " day(s) past its due date). Please arrange payment, or get in touch if you already have.</p>"
+                    + "<p>Thank you,<br/>" + escape(business) + "</p>";
+            if (trySend(d.customerEmail().trim(), subject, html)) {
+                subscriptionService.markDunned(d.subscriptionId(), d.invoiceId(), today, d.reminderNumber(), d.invoiceNumber());
+                sent++;
+            }
+        }
+        return sent;
+    }
+
     private boolean sendDigest(StoreSettings settings, LocalDate today, List<SubscriptionService.BillResult> billed,
-                               List<String[]> failed, List<String[]> actioned, int reminders) {
+                               List<String[]> failed, List<String[]> actioned, int reminders, int overdueReminders) {
         String to = settings.getNotificationsEmail();
         if (to == null || to.isBlank() || !mailService.isConfigured()) return false;
         StringBuilder html = new StringBuilder("<p>Subscription job results for ").append(today).append(".</p>");
@@ -214,10 +263,13 @@ public class SubscriptionAutomationService {
         if (!actioned.isEmpty()) {
             List<List<String>> rows = new ArrayList<>();
             for (String[] a : actioned) rows.add(List.of(nz(a[0]), nz(a[1]), nz(a[2])));
-            html.append("<h3>Unpaid too long (").append(actioned.size()).append(")</h3>").append(table(List.of("Customer", "Invoice", "Action"), rows));
+            html.append("<h3>Paused or cancelled (").append(actioned.size()).append(")</h3>").append(table(List.of("Customer", "Invoice", "Action"), rows));
         }
         if (reminders > 0) {
             html.append("<p>").append(reminders).append(" upcoming-billing reminder(s) were sent.</p>");
+        }
+        if (overdueReminders > 0) {
+            html.append("<p>").append(overdueReminders).append(" overdue-invoice reminder(s) were sent to customers.</p>");
         }
         return trySend(to.trim(), "Subscription job: " + billed.size() + " billed, " + failed.size() + " need attention", html.toString());
     }
