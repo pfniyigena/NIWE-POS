@@ -74,4 +74,8 @@ public class CustomerPayment extends BaseEntity {
      */
     @jakarta.persistence.Column(name = "branch_id")
     private Long branchId;
+
+    /** Set on the negative payment that takes an earlier payment back (a wrong amount, the wrong customer): the id of the payment reversed. Null on every ordinary payment. */
+    @jakarta.persistence.Column(name = "reversal_of_payment_id")
+    private Long reversalOfPaymentId;
 }

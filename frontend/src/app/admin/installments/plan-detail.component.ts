@@ -5,11 +5,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { PaymentMethodApiService } from '../../core/api/payment-method-api.service';
-import { InstallmentApiService, InstallmentPlanDetail, RescheduleLine } from '../../core/api/installment-api.service';
+import { FollowUp, FollowUpKind, InstallmentApiService, InstallmentPlanDetail, PayoffQuote, RescheduleLine } from '../../core/api/installment-api.service';
 import { openPdfForPrint } from '../../core/download-file';
 import { PaymentMethodOption } from '../../core/models';
 
-/** Installments > a plan: the schedule, what's paid, record a payment, remind the customer, cancel. */
+/** Installments > a plan: the schedule, what's paid, record a payment, pay off early, reverse a payment, remind or e-mail the customer, log contacts, default / write off, cancel. */
 @Component({
   selector: 'app-installment-plan-detail',
   standalone: true,
@@ -21,15 +21,65 @@ import { PaymentMethodOption } from '../../core/models';
       <ng-container *ngIf="d as x">
         <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
           <h3 style="margin:0;">{{ x.plan.planNumber }}
-            <span class="badge" [class.badge-success]="x.plan.status === 'COMPLETED'" [class.badge-warning]="x.plan.status === 'ACTIVE'" [class.badge-secondary]="x.plan.status === 'CANCELLED'">{{ x.plan.status }}</span></h3>
+            <span class="badge" [class.badge-success]="x.plan.status === 'COMPLETED'" [class.badge-warning]="x.plan.status === 'ACTIVE'" [class.badge-secondary]="x.plan.status === 'CANCELLED' || x.plan.status === 'WRITTEN_OFF'" [class.badge-danger]="x.plan.status === 'DEFAULTED'">{{ statusLabel(x.plan.status) }}</span></h3>
           <div class="flex gap-2" style="flex-wrap:wrap;">
             <button class="btn btn-outline-primary" type="button" (click)="pdf()">Schedule (PDF)</button>
+            <button class="btn btn-outline-primary" type="button" (click)="statementPdf()">Statement (PDF)</button>
+            <button class="btn btn-outline-primary" type="button" (click)="agreementPdf()">Agreement (PDF)</button>
+            <button class="btn btn-outline-primary" type="button" (click)="closePanels(); showEmail = !showEmail">E-mail statement</button>
             <button class="btn btn-outline-primary" type="button" *ngIf="x.plan.status === 'ACTIVE'" [disabled]="busy" (click)="remind()">Send reminder</button>
-            <button class="btn btn-outline-primary" type="button" *ngIf="x.plan.status === 'ACTIVE'" (click)="startEdit()">Edit schedule</button>
-            <button class="btn btn-outline-danger" type="button" *ngIf="x.plan.status === 'ACTIVE'" (click)="showCancel = !showCancel">Cancel plan</button>
+            <button class="btn btn-primary" type="button" *ngIf="isOpen()" (click)="openPayoff()">Pay off early</button>
+            <button class="btn btn-outline-primary" type="button" *ngIf="isOpen()" (click)="startEdit()">Edit schedule</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="x.plan.status === 'ACTIVE'" (click)="closePanels(); showDefault = !showDefault">Mark defaulted</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="x.plan.status === 'DEFAULTED'" [disabled]="busy" (click)="restore()">Back to active</button>
+            <button class="btn btn-outline-danger" type="button" *ngIf="isOpen()" (click)="closePanels(); showWriteOff = !showWriteOff">Write off</button>
+            <button class="btn btn-outline-danger" type="button" *ngIf="isOpen()" (click)="closePanels(); showCancel = !showCancel">Cancel plan</button>
             <a class="btn btn-link" routerLink="/admin/installments">Back</a>
           </div>
         </div>
+
+        <div class="alert alert-danger" *ngIf="x.plan.status === 'DEFAULTED'">In default since {{ x.terms.defaultedOn }}<span *ngIf="x.terms.defaultReason"> — {{ x.terms.defaultReason }}</span>. No more late fees or reminders are added; payments can still be recorded.</div>
+        <div class="alert alert-info" *ngIf="x.plan.status === 'WRITTEN_OFF'">Written off on {{ x.terms.writtenOffOn }}: {{ x.terms.writtenOffAmount | number: '1.0-2' }} was booked as a bad debt<span *ngIf="x.terms.writeOffReason"> — {{ x.terms.writeOffReason }}</span>.</div>
+
+        <form class="card mb-3" style="padding:1rem;" *ngIf="showEmail" (ngSubmit)="emailStatement()">
+          <strong class="mb-2">E-mail the statement to {{ x.plan.customerName }}</strong>
+          <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-2"><input type="checkbox" name="ia" [(ngModel)]="includeAgreement" /> Also attach the agreement</label>
+          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Send</button><button class="btn btn-link" type="button" (click)="showEmail = false">Close</button></div>
+          <div class="text-muted mt-1" style="font-size:0.8rem;">Needs the customer's e-mail address and e-mail set up under Settings > Email. The send is added to the collections log.</div>
+        </form>
+
+        <form class="card mb-3" style="padding:1rem;" *ngIf="showPayoff && quote" (ngSubmit)="payoff()">
+          <strong class="mb-2">Pay off early</strong>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">Settles every unpaid instalment today. Part of the interest not yet earned on instalments that are not yet due can be waived.</div>
+          <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
+            <div class="form-group"><label class="form-label">Interest waived on instalments not yet due (%)</label>
+              <input class="form-control" type="number" min="0" max="100" step="1" style="width:10rem;" name="rb" [(ngModel)]="rebatePct" (ngModelChange)="refreshQuote()" /></div>
+            <div class="form-group"><label class="form-label">Method</label><select class="form-select" name="pm" [(ngModel)]="method"><option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option></select></div>
+            <div class="form-group" style="min-width:14rem;"><label class="form-label">Note</label><input class="form-control" name="pn" [(ngModel)]="note" /></div>
+          </div>
+          <table class="table-sm mb-2" style="max-width:26rem;">
+            <tbody>
+              <tr><td>Principal left</td><td class="text-end">{{ quote.principalLeft | number: '1.0-2' }}</td></tr>
+              <tr><td>Interest left</td><td class="text-end">{{ quote.interestLeft | number: '1.0-2' }}</td></tr>
+              <tr><td>Late fees left</td><td class="text-end">{{ quote.feesLeft | number: '1.0-2' }}</td></tr>
+              <tr><td>Interest waived</td><td class="text-end">− {{ quote.rebate | number: '1.0-2' }}</td></tr>
+              <tr><td><strong>To pay now</strong></td><td class="text-end"><strong>{{ quote.amountToSettle | number: '1.0-2' }}</strong></td></tr>
+            </tbody>
+          </table>
+          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy || !method">Receive {{ quote.amountToSettle | number: '1.0-2' }} and close the plan</button><button class="btn btn-link" type="button" (click)="showPayoff = false">Close</button></div>
+        </form>
+
+        <form class="card mb-3" style="padding:1rem;" *ngIf="showDefault" (ngSubmit)="markDefaulted()">
+          <strong class="mb-2">Mark this plan as defaulted?</strong>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">The customer has stopped paying. No more late fees or reminders are added. Payments are still accepted, and you can put the plan back to active at any time.</div>
+          <div class="flex gap-2 align-center"><input class="form-control" style="max-width:26rem;" name="dr" placeholder="Reason (optional)" [(ngModel)]="reason" /><button class="btn btn-danger" type="submit" [disabled]="busy">Mark defaulted</button></div>
+        </form>
+
+        <form class="card mb-3" style="padding:1rem;" *ngIf="showWriteOff" (ngSubmit)="writeOff()">
+          <strong class="mb-2">Write off the unpaid balance?</strong>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">The unpaid principal ({{ unpaidPrincipal() | number: '1.0-2' }}) is booked as a bad debt and the invoice shows nothing outstanding. Unpaid interest and late fees are dropped. This can't be undone from here.</div>
+          <div class="flex gap-2 align-center"><input class="form-control" style="max-width:26rem;" name="wr" placeholder="Reason (required)" [(ngModel)]="reason" required /><button class="btn btn-danger" type="submit" [disabled]="busy || !reason.trim()">Write off {{ unpaidPrincipal() | number: '1.0-2' }}</button></div>
+        </form>
 
         <div class="alert alert-info" *ngIf="x.terms.adjustmentNote" style="white-space:pre-line;">{{ x.terms.adjustmentNote }}</div>
 
@@ -84,7 +134,7 @@ import { PaymentMethodOption } from '../../core/models';
           <div class="stat-tile" [class.warn]="x.plan.overdueAmount > 0"><div class="stat-label">Overdue</div><div class="stat-value">{{ x.plan.overdueAmount | number: '1.0-2' }}</div></div>
         </div>
 
-        <form class="card mb-3" style="padding:1rem;" *ngIf="x.plan.status === 'ACTIVE'" (ngSubmit)="pay()">
+        <form class="card mb-3" style="padding:1rem;" *ngIf="isOpen()" (ngSubmit)="pay()">
           <strong class="mb-2">Record a payment</strong>
           <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
             <div class="form-group"><label class="form-label">Amount</label><input class="form-control" type="number" min="0.01" step="0.01" style="width:10rem;" name="am" [(ngModel)]="amount" required />
@@ -106,20 +156,58 @@ import { PaymentMethodOption } from '../../core/models';
             <td class="text-end">{{ i.totalDue | number: '1.0-2' }}</td><td class="text-end">{{ i.paid | number: '1.0-2' }}</td><td class="text-end">{{ i.balance | number: '1.0-2' }}</td>
             <td><span class="badge" [class.badge-success]="i.state === 'PAID'" [class.badge-danger]="i.state === 'OVERDUE'" [class.badge-warning]="i.state === 'PARTIAL'" [class.badge-secondary]="i.state === 'PENDING'">{{ i.state }}</span>
               <span class="text-muted" style="font-size:0.75rem;" *ngIf="i.state === 'OVERDUE'"> {{ i.daysOverdue }} day(s)</span></td>
-            <td><button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="x.plan.status === 'ACTIVE' && i.lateFee > 0" (click)="waive(i.seq)">Waive late fee</button></td>
+            <td><button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="isOpen() && i.lateFee > 0" (click)="waive(i.seq)">Waive late fee</button></td>
           </tr></tbody>
         </table>
 
         <h4 class="mb-2">Payments</h4>
         <table class="table-sm">
-          <thead><tr><th>Date</th><th>Receipt</th><th class="text-end">Amount</th><th class="text-end">Principal</th><th class="text-end">Interest and fees</th><th>Method</th><th>Recorded by</th><th>Note</th></tr></thead>
-          <tbody><tr *ngFor="let p of x.payments">
-            <td>{{ p.paidAt | date: 'medium' }}</td><td>{{ p.receiptNumber || '—' }}</td><td class="text-end">{{ p.amount | number: '1.0-2' }}</td>
-            <td class="text-end">{{ p.principalPart | number: '1.0-2' }}</td><td class="text-end">{{ p.chargesPart | number: '1.0-2' }}</td>
-            <td>{{ p.method || '—' }}</td><td>{{ p.recordedByName || '—' }}</td><td>{{ p.note || '—' }}</td>
-          </tr></tbody>
+          <thead><tr><th>Date</th><th>Receipt</th><th class="text-end">Amount</th><th class="text-end">Principal</th><th class="text-end">Interest and fees</th><th>Method</th><th>Recorded by</th><th>Note</th><th></th></tr></thead>
+          <tbody>
+            <ng-container *ngFor="let p of x.payments">
+              <tr [style.opacity]="p.reversed ? 0.55 : 1">
+                <td>{{ p.paidAt | date: 'medium' }}</td><td>{{ p.receiptNumber || '—' }}</td><td class="text-end" [style.text-decoration]="p.reversed ? 'line-through' : ''">{{ p.amount | number: '1.0-2' }}</td>
+                <td class="text-end">{{ p.principalPart | number: '1.0-2' }}</td><td class="text-end">{{ p.chargesPart | number: '1.0-2' }}</td>
+                <td>{{ p.method || '—' }}</td><td>{{ p.recordedByName || '—' }}</td><td>{{ p.note || '—' }}</td>
+                <td>
+                  <span class="badge badge-secondary" *ngIf="p.reversed" [title]="'Reversed by ' + (p.reversedByName || '—') + ': ' + (p.reverseReason || '')">Reversed</span>
+                  <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="!p.reversed && x.plan.status !== 'WRITTEN_OFF'" (click)="startReverse(p.id)">Reverse</button>
+                </td>
+              </tr>
+              <tr *ngIf="reversingId === p.id"><td colspan="9">
+                <form class="flex gap-2 align-center" style="flex-wrap:wrap;" (ngSubmit)="reverse(p.id)">
+                  <span>Why is {{ p.receiptNumber }} ({{ p.amount | number: '1.0-2' }}) being taken back?</span>
+                  <input class="form-control" style="max-width:24rem;" name="rv{{ p.id }}" placeholder="Reason (required)" [(ngModel)]="reverseReason" required />
+                  <button class="btn btn-danger btn-sm" type="submit" [disabled]="busy || !reverseReason.trim()">Reverse payment</button>
+                  <button class="btn btn-link btn-sm" type="button" (click)="reversingId = null">Cancel</button>
+                </form>
+                <div class="text-muted" style="font-size:0.8rem;">The invoice payment is undone with a negative entry (nothing is deleted) and the books get the mirror posting.</div>
+              </td></tr>
+            </ng-container>
+          </tbody>
         </table>
         <p class="text-muted" *ngIf="!x.payments.length">No payments recorded through this plan yet. Payments recorded directly on the invoice also count toward the schedule.</p>
+
+        <h4 class="mb-2 mt-3">Collections log</h4>
+        <form class="card mb-2" style="padding:1rem;" (ngSubmit)="addFollowUp()">
+          <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
+            <div class="form-group"><label class="form-label">Contact</label>
+              <select class="form-select" name="fk" [(ngModel)]="fuKind"><option value="CALL">Phone call</option><option value="VISIT">Visit</option><option value="PROMISE">Promise to pay</option><option value="NOTE">Note</option></select></div>
+            <div class="form-group" *ngIf="fuKind === 'PROMISE'"><label class="form-label">Promised for</label><app-date-picker name="fpd" [(ngModel)]="fuDate"></app-date-picker></div>
+            <div class="form-group" *ngIf="fuKind === 'PROMISE'"><label class="form-label">Amount (optional)</label><input class="form-control" type="number" min="0" step="0.01" style="width:9rem;" name="fpa" [(ngModel)]="fuAmount" /></div>
+            <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">What was said</label><input class="form-control" name="fn" [(ngModel)]="fuNote" [placeholder]="fuKind === 'PROMISE' ? 'Optional' : 'Required'" /></div>
+            <button class="btn btn-primary" type="submit" [disabled]="busy || (fuKind === 'PROMISE' ? !fuDate : !fuNote.trim())">Add to log</button>
+          </div>
+        </form>
+        <table class="table-sm" *ngIf="followUps.length">
+          <thead><tr><th>When</th><th>What</th><th>Note</th><th>Promise</th><th>By</th></tr></thead>
+          <tbody><tr *ngFor="let f of followUps">
+            <td>{{ f.at | date: 'medium' }}</td><td>{{ kindLabel(f.kind) }}</td><td style="white-space:pre-line;">{{ f.note || '—' }}</td>
+            <td><span *ngIf="f.promisedOn">by {{ f.promisedOn }}<span *ngIf="f.promisedAmount"> ({{ f.promisedAmount | number: '1.0-2' }})</span></span><span *ngIf="!f.promisedOn">—</span></td>
+            <td>{{ f.byName || '—' }}</td>
+          </tr></tbody>
+        </table>
+        <p class="text-muted" *ngIf="!followUps.length">No contact has been logged for this plan yet.</p>
       </ng-container>
     </app-shell>
   `,
@@ -135,6 +223,21 @@ export class InstallmentPlanDetailComponent implements OnInit {
   editFirstSeq = 1;
   editTotal = 0;
   cancelReason = '';
+  showEmail = false;
+  includeAgreement = true;
+  showPayoff = false;
+  quote: PayoffQuote | null = null;
+  rebatePct: number | null = null;
+  showDefault = false;
+  showWriteOff = false;
+  reason = '';
+  reversingId: number | null = null;
+  reverseReason = '';
+  followUps: FollowUp[] = [];
+  fuKind: FollowUpKind = 'CALL';
+  fuNote = '';
+  fuDate = '';
+  fuAmount: number | null = null;
   error: string | null = null;
   info: string | null = null;
   busy = false;
@@ -149,6 +252,11 @@ export class InstallmentPlanDetailComponent implements OnInit {
       this.method = m[0]?.code ?? '';
     });
     this.api.plan(this.id).subscribe({ next: (d) => this.set(d), error: (e) => (this.error = e?.error?.message ?? 'Could not load the plan') });
+    this.loadFollowUps();
+  }
+
+  private loadFollowUps(): void {
+    this.api.followUps(this.id).subscribe({ next: (f) => (this.followUps = f), error: () => (this.followUps = []) });
   }
 
   private set(d: InstallmentPlanDetail): void {
@@ -165,10 +273,138 @@ export class InstallmentPlanDetailComponent implements OnInit {
         this.set(d);
         this.info = ok;
         this.busy = false;
-        this.showCancel = false;
+        this.closePanels();
+        this.reversingId = null;
+        this.reason = '';
       },
       error: (e) => {
         this.error = e?.error?.message ?? 'That did not work';
+        this.busy = false;
+      },
+    });
+  }
+
+  // ---- v1.18.0: status, payoff, reversal, default, write-off, log ----
+
+  isOpen(): boolean {
+    return !!this.d && (this.d.plan.status === 'ACTIVE' || this.d.plan.status === 'DEFAULTED');
+  }
+
+  statusLabel(s: string): string {
+    return { WRITTEN_OFF: 'WRITTEN OFF' }[s] ?? s;
+  }
+
+  kindLabel(k: FollowUpKind): string {
+    return { CALL: 'Phone call', VISIT: 'Visit', EMAIL: 'E-mail', PROMISE: 'Promise to pay', NOTE: 'Note' }[k] ?? k;
+  }
+
+  closePanels(): void {
+    this.showCancel = false;
+    this.showEmail = false;
+    this.showPayoff = false;
+    this.showDefault = false;
+    this.showWriteOff = false;
+  }
+
+  unpaidPrincipal(): number {
+    return this.d ? Math.round(this.d.installments.reduce((a, r) => a + r.principalLeft, 0) * 100) / 100 : 0;
+  }
+
+  openPayoff(): void {
+    this.closePanels();
+    this.error = null;
+    this.info = null;
+    this.api.payoffQuote(this.id, null).subscribe({
+      next: (q) => {
+        this.quote = q;
+        this.rebatePct = q.rebatePercent;
+        this.showPayoff = true;
+      },
+      error: (e) => (this.error = e?.error?.message ?? 'Could not work out the payoff'),
+    });
+  }
+
+  refreshQuote(): void {
+    if (this.rebatePct === null || this.rebatePct < 0 || this.rebatePct > 100) return;
+    this.api.payoffQuote(this.id, this.rebatePct).subscribe({ next: (q) => (this.quote = q), error: (e) => (this.error = e?.error?.message ?? 'Could not work out the payoff') });
+  }
+
+  payoff(): void {
+    if (!this.quote) return;
+    this.run(
+      this.api.payoff(this.id, { method: this.method, note: this.note || null, rebatePercent: this.rebatePct, expectedAmount: this.quote.amountToSettle }),
+      'The plan has been paid off.'
+    );
+    this.note = '';
+  }
+
+  startReverse(paymentId: number): void {
+    this.reversingId = paymentId;
+    this.reverseReason = '';
+  }
+
+  reverse(paymentId: number): void {
+    this.run(this.api.reversePayment(this.id, paymentId, this.reverseReason.trim()), 'Payment reversed.');
+  }
+
+  markDefaulted(): void {
+    this.run(this.api.markDefaulted(this.id, this.reason.trim() || null), 'The plan is marked as defaulted.');
+  }
+
+  restore(): void {
+    this.run(this.api.restore(this.id), 'The plan is active again.');
+  }
+
+  writeOff(): void {
+    if (!confirm(`Write off ${this.unpaidPrincipal()} as a bad debt?`)) return;
+    this.run(this.api.writeOff(this.id, this.reason.trim()), 'The balance was written off.');
+  }
+
+  addFollowUp(): void {
+    this.busy = true;
+    this.error = null;
+    this.api
+      .addFollowUp(this.id, {
+        kind: this.fuKind,
+        note: this.fuNote.trim() || null,
+        promisedOn: this.fuKind === 'PROMISE' ? this.fuDate || null : null,
+        promisedAmount: this.fuKind === 'PROMISE' ? this.fuAmount : null,
+      })
+      .subscribe({
+        next: (f) => {
+          this.followUps = f;
+          this.fuNote = '';
+          this.fuAmount = null;
+          this.busy = false;
+        },
+        error: (e) => {
+          this.error = e?.error?.message ?? 'Could not save the note';
+          this.busy = false;
+        },
+      });
+  }
+
+  statementPdf(): void {
+    this.api.statementPdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = 'Could not create the statement') });
+  }
+
+  agreementPdf(): void {
+    this.api.agreementPdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = 'Could not create the agreement') });
+  }
+
+  emailStatement(): void {
+    this.busy = true;
+    this.error = null;
+    this.info = null;
+    this.api.emailStatement(this.id, this.includeAgreement).subscribe({
+      next: (r) => {
+        this.info = `Statement sent to ${r.sentTo}.`;
+        this.busy = false;
+        this.showEmail = false;
+        this.loadFollowUps();
+      },
+      error: (e) => {
+        this.error = e?.error?.message ?? 'Could not send the statement';
         this.busy = false;
       },
     });
@@ -272,6 +508,7 @@ export class InstallmentPlanDetailComponent implements OnInit {
       next: (r) => {
         this.info = `Reminder sent to ${r.sentTo}.`;
         this.busy = false;
+        this.loadFollowUps();
       },
       error: (e) => {
         this.error = e?.error?.message ?? 'Could not send the reminder';

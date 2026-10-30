@@ -22,4 +22,8 @@ public final class InstallmentReportRows {
     public record CollectionRow(Instant paidAt, String receiptNumber, String planNumber, String customer, BigDecimal principal,
                                 BigDecimal interestAndFees, BigDecimal total, String method, String recordedBy) {
     }
+
+    public record DefaultedRow(String planNumber, String customer, String invoiceNumber, String status, LocalDate since, long daysSince, BigDecimal financed,
+                               BigDecimal paid, BigDecimal outstanding, BigDecimal writtenOff, String reason) {
+    }
 }

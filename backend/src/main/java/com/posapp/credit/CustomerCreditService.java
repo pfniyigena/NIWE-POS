@@ -683,6 +683,92 @@ public class CustomerCreditService {
      * DataSeeder.backfillWalkInCustomer} — because a primitive can't hold a null read back from
      * the database at all).
      */
+    /** v1.18.0 Installments: the method code of the entry that writes an uncollectable balance off an invoice (not money received, so it is left out of the collection reports). */
+    public static final String WRITE_OFF_METHOD = "WRITE_OFF";
+
+    /**
+     * v1.18.0: takes a payment on an invoice back — a wrong amount or a payment entered by mistake. Nothing is deleted: a second, negative
+     * payment (receipt REV-…) is recorded against the same invoice, so the invoice's paid and outstanding figures move back, and the books get
+     * the mirror entry (Dr Accounts receivable / Cr Cash). A payment can be reversed once.
+     */
+    @Transactional
+    public CustomerPayment reverseInvoicePayment(Long paymentId, String reason, AppUser caller) {
+        CustomerPayment original = customerPaymentRepository.findById(paymentId)
+                .orElseThrow(() -> ApiException.notFound("Payment not found: " + paymentId));
+        if (original.getReversalOfPaymentId() != null || original.getAmount() == null || original.getAmount().signum() <= 0) {
+            throw ApiException.badRequest("This entry is itself a reversal and can't be reversed.");
+        }
+        if (WRITE_OFF_METHOD.equals(original.getMethod())) {
+            throw ApiException.badRequest("A write-off can't be reversed here.");
+        }
+        if (customerPaymentRepository.existsByReversalOfPaymentId(paymentId)) {
+            throw ApiException.conflict("This payment has already been reversed.");
+        }
+        CustomerPaymentAllocation target = original.getAllocations().stream().filter(a -> a.getInvoice() != null).findFirst()
+                .orElseThrow(() -> ApiException.badRequest("Only a payment recorded on an invoice can be reversed here."));
+        Invoice invoice = target.getInvoice();
+        if (amountPaidForInvoice(invoice).compareTo(target.getAmountApplied()) < 0) {
+            throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " has received less than this payment, so it can't be taken back.");
+        }
+        BigDecimal amount = target.getAmountApplied();
+        CustomerPayment rev = new CustomerPayment();
+        rev.setCustomer(original.getCustomer());
+        rev.setAmount(amount.negate());
+        rev.setPaidAt(Instant.now());
+        rev.setMethod(original.getMethod());
+        rev.setNote("Reversal of " + original.getReceiptNumber() + (reason != null && !reason.isBlank() ? " — " + reason.trim() : ""));
+        rev.setReceiptNumber("REV-" + System.currentTimeMillis());
+        rev.setRecordedBy(caller);
+        rev.setBranchId(original.getBranchId());
+        rev.setReversalOfPaymentId(original.getId());
+        CustomerPaymentAllocation allocation = new CustomerPaymentAllocation();
+        allocation.setPayment(rev);
+        allocation.setAmountApplied(amount.negate());
+        allocation.setInvoice(invoice);
+        rev.getAllocations().add(allocation);
+        CustomerPayment saved = customerPaymentRepository.save(rev);
+        accountingService.postCustomerPaymentReversal(saved.getId(), "Reversal of payment " + original.getReceiptNumber() + " from " + original.getCustomer().getName(),
+                amount, saved.getBranchId());
+        auditLogService.record("CUSTOMER_PAYMENT_REVERSED", "Reversed payment " + original.getReceiptNumber() + " of " + amount.toPlainString() + " from "
+                + original.getCustomer().getName() + (reason != null && !reason.isBlank() ? " — " + reason.trim() : ""), "CustomerPayment", saved.getId());
+        return saved;
+    }
+
+    /**
+     * v1.18.0 Installments: writes the uncollectable part of an invoice off. Recorded like a payment on the invoice (so the invoice shows nothing
+     * outstanding) but with method WRITE_OFF, and the books get Dr Bad debts / Cr Accounts receivable instead of cash.
+     */
+    @Transactional
+    public CustomerPayment writeOffInvoice(Long invoiceId, BigDecimal amount, String note, AppUser caller) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> ApiException.notFound("Invoice not found: " + invoiceId));
+        if (invoice.getStatus() != InvoiceStatus.ISSUED || invoice.getCustomerId() == null) {
+            throw ApiException.badRequest("Only an issued invoice with a customer can be written off.");
+        }
+        BigDecimal outstanding = outstandingForInvoice(invoice);
+        if (amount == null || amount.signum() <= 0 || amount.compareTo(outstanding) > 0) {
+            throw ApiException.badRequest("The amount to write off must be between 0 and the " + outstanding.toPlainString() + " outstanding on the invoice.");
+        }
+        Customer customer = getCustomerOrThrow(invoice.getCustomerId());
+        CustomerPayment payment = new CustomerPayment();
+        payment.setCustomer(customer);
+        payment.setAmount(amount);
+        payment.setPaidAt(Instant.now());
+        payment.setMethod(WRITE_OFF_METHOD);
+        payment.setNote(note);
+        payment.setReceiptNumber("WO-" + System.currentTimeMillis());
+        payment.setRecordedBy(caller);
+        payment.setBranchId(invoice.getBranchId());
+        CustomerPaymentAllocation allocation = new CustomerPaymentAllocation();
+        allocation.setPayment(payment);
+        allocation.setAmountApplied(amount);
+        allocation.setInvoice(invoice);
+        payment.getAllocations().add(allocation);
+        CustomerPayment saved = customerPaymentRepository.save(payment);
+        accountingService.postCustomerWriteOff(saved.getId(), "Bad debt written off: invoice " + invoice.getInvoiceNumber() + " (" + customer.getName() + ")", amount, saved.getBranchId());
+        auditLogService.record("CUSTOMER_DEBT_WRITTEN_OFF", "Wrote off " + amount.toPlainString() + " on invoice " + invoice.getInvoiceNumber() + " (" + customer.getName() + ")", "CustomerPayment", saved.getId());
+        return saved;
+    }
+
     @Transactional
     /** v1.14.0: a payment received from a customer is recorded in the Audit Log (who took how much, by which method, against which receipt). */
     private void auditPayment(CustomerPayment p, Customer customer) {

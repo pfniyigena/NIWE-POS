@@ -28,7 +28,7 @@ public class InstallmentReportService {
                 .filter(p -> branchId == null || branchId.equals(p.branchId()))
                 .map(p -> new AgreementRow(p.planNumber(), p.customerName(), p.invoiceNumber(), p.status().name(), p.numberOfInstallments(),
                         p.paidInstallments(), p.financedAmount(), p.totalInterest(), p.totalPayable(), p.paid(),
-                        p.status() == InstallmentPlanStatus.ACTIVE ? p.outstanding() : java.math.BigDecimal.ZERO, p.overdueAmount(), p.nextDueDate())).toList();
+                        p.status() == InstallmentPlanStatus.ACTIVE || p.status() == InstallmentPlanStatus.DEFAULTED ? p.outstanding() : java.math.BigDecimal.ZERO, p.overdueAmount(), p.nextDueDate())).toList();
     }
 
     /** Unpaid instalments falling due from today through the next {@code days} days. */
@@ -54,6 +54,26 @@ public class InstallmentReportService {
         return installmentService.paymentsBetween(from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant(), branchId).stream()
                 .map(x -> new CollectionRow(x.getPaidAt(), x.getReceiptNumber(), x.getPlan().getPlanNumber(), x.getPlan().getCustomerName(),
                         x.getPrincipalPart(), x.getChargesPart(), x.getAmount(), x.getMethod(), x.getRecordedByName())).toList();
+    }
+
+    /** Plans that went into default or were written off, with how much is still owed or was written off and why. */
+    public List<DefaultedRow> defaulted(Long branchId) {
+        LocalDate today = LocalDate.now();
+        List<DefaultedRow> rows = new java.util.ArrayList<>();
+        for (PlanSummaryDto p : installmentService.list(null, null)) {
+            if ((p.status() != InstallmentPlanStatus.DEFAULTED && p.status() != InstallmentPlanStatus.WRITTEN_OFF) || (branchId != null && !branchId.equals(p.branchId()))) {
+                continue;
+            }
+            var d = installmentService.get(p.id());
+            LocalDate since = p.status() == InstallmentPlanStatus.WRITTEN_OFF ? d.terms().writtenOffOn() : d.terms().defaultedOn();
+            rows.add(new DefaultedRow(p.planNumber(), p.customerName(), p.invoiceNumber(), p.status().name(), since,
+                    since == null ? 0 : java.time.temporal.ChronoUnit.DAYS.between(since, today), p.financedAmount(), p.paid(),
+                    p.status() == InstallmentPlanStatus.DEFAULTED ? p.outstanding() : java.math.BigDecimal.ZERO,
+                    p.status() == InstallmentPlanStatus.WRITTEN_OFF && d.terms().writtenOffAmount() != null ? d.terms().writtenOffAmount() : java.math.BigDecimal.ZERO,
+                    p.status() == InstallmentPlanStatus.WRITTEN_OFF ? d.terms().writeOffReason() : d.terms().defaultReason()));
+        }
+        rows.sort(Comparator.comparing(DefaultedRow::since, Comparator.nullsLast(Comparator.naturalOrder())));
+        return rows;
     }
 
     private static DueRow row(InstallmentLine l) {

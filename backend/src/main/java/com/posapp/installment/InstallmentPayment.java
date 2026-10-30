@@ -38,4 +38,14 @@ public class InstallmentPayment extends BaseEntity {
     private Long customerPaymentId;
     private String note;
     private String recordedByName;
+
+    /** Set when the payment was taken back: when, by whom, why, and the negative customer payment that undid the principal part. */
+    private Instant reversedAt;
+    private String reversedByName;
+    private String reverseReason;
+    private Long reversalPaymentId;
+
+    public boolean isReversed() {
+        return reversedAt != null;
+    }
 }

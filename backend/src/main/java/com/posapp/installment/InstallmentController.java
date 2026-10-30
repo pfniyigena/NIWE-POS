@@ -105,4 +105,84 @@ public class InstallmentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"instalment-schedule-" + id + ".pdf\"")
                 .body(service.schedulePdf(id));
     }
+
+    // ---- v1.18.0 ----
+
+    @GetMapping("/collections")
+    public CollectionsDto collections(@RequestParam(required = false) String filter, @RequestParam(required = false) String search) {
+        return service.collections(filter, search);
+    }
+
+    @GetMapping("/plans/{id}/follow-ups")
+    public List<FollowUpDto> followUps(@PathVariable Long id) {
+        return service.followUps(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/follow-ups")
+    public List<FollowUpDto> addFollowUp(@PathVariable Long id, @RequestBody FollowUpRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return service.addFollowUp(id, request, principal.getUser());
+    }
+
+    @GetMapping("/plans/{id}/payoff-quote")
+    public PayoffQuoteDto payoffQuote(@PathVariable Long id, @RequestParam(required = false) java.math.BigDecimal rebatePercent) {
+        return service.payoffQuote(id, rebatePercent);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/payoff")
+    public PlanDetailDto payoff(@PathVariable Long id, @RequestBody PayoffRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return service.payoff(id, request, principal.getUser());
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/payments/{paymentId}/reverse")
+    public PlanDetailDto reversePayment(@PathVariable Long id, @PathVariable Long paymentId, @RequestBody(required = false) ReasonRequest request,
+                                        @AuthenticationPrincipal AppUserPrincipal principal) {
+        return service.reversePayment(id, paymentId, request != null ? request.reason() : null, principal.getUser());
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/default")
+    public PlanDetailDto markDefaulted(@PathVariable Long id, @RequestBody(required = false) ReasonRequest request) {
+        return service.markDefaulted(id, request != null ? request.reason() : null);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/restore")
+    public PlanDetailDto restore(@PathVariable Long id) {
+        return service.restoreFromDefault(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/write-off")
+    public PlanDetailDto writeOff(@PathVariable Long id, @RequestBody(required = false) ReasonRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return service.writeOff(id, request != null ? request.reason() : null, principal.getUser());
+    }
+
+    @GetMapping("/plans/{id}/statement-pdf")
+    public ResponseEntity<byte[]> statementPdf(@PathVariable Long id) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"instalment-statement-" + id + ".pdf\"")
+                .body(service.statementPdf(id));
+    }
+
+    @GetMapping("/plans/{id}/agreement-pdf")
+    public ResponseEntity<byte[]> agreementPdf(@PathVariable Long id) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"instalment-agreement-" + id + ".pdf\"")
+                .body(service.agreementPdf(id));
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/plans/{id}/email-statement")
+    public ReminderResultDto emailStatement(@PathVariable Long id, @RequestBody(required = false) StatementEmailRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return service.emailStatement(id, request != null && Boolean.TRUE.equals(request.includeAgreement()), principal.getUser());
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/nightly/run")
+    public NightlyResultDto runNightly() {
+        return service.runNightlyNow();
+    }
 }

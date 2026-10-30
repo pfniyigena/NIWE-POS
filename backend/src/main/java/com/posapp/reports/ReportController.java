@@ -936,6 +936,21 @@ public class ReportController {
         return ResponseEntity.ok(rows);
     }
 
+    @GetMapping("/installments-defaulted")
+    public ResponseEntity<?> installmentsDefaulted(@RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        var rows = installmentReportService.defaulted(branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Plan", "Customer", "Invoice", "Status", "Since", "Days", "Financed", "Paid", "Still owed", "Written off", "Reason");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.planNumber(), orDash(r.customer()), orDash(r.invoiceNumber()), r.status(), r.since() != null ? String.valueOf(r.since()) : "—",
+                        String.valueOf(r.daysSince()), money(r.financed()), money(r.paid()), money(r.outstanding()), money(r.writtenOff()), orDash(r.reason())));
+            }
+            return export("Defaulted and Written-off Instalment Plans", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
     @GetMapping("/installment-collections")
     public ResponseEntity<?> installmentCollections(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
                                                     @RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {

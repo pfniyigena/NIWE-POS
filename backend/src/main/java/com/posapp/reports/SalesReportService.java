@@ -212,6 +212,7 @@ public class SalesReportService {
         List<CustomerPaymentReportRow> rows = new ArrayList<>();
         for (CustomerPayment payment : customerPaymentRepository.findAllByOrderByPaidAtDesc()) {
             if (payment.getPaidAt().isBefore(from) || payment.getPaidAt().isAfter(to)) continue;
+            if (com.posapp.credit.CustomerCreditService.WRITE_OFF_METHOD.equals(payment.getMethod())) continue;   // a write-off is not money collected
             if (branchId != null && !ReportService.branchMatches(payment.getBranchId(), branchId, headquartersId)) continue;
             Customer customer = payment.getCustomer();
             rows.add(new CustomerPaymentReportRow(payment.getId(), payment.getReceiptNumber(),

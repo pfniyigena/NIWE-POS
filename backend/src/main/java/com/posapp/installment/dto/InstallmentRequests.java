@@ -34,6 +34,20 @@ public final class InstallmentRequests {
 
     public record SettingsRequest(Boolean remindersEnabled, Integer reminderDaysBefore, Integer overdueReminderEveryDays, Boolean defaultWholeUnits,
                                   BigDecimal defaultInterestRate, Integer defaultGraceDays, BigDecimal defaultLateFeeFixed,
-                                  BigDecimal defaultLateFeePercent) {
+                                  BigDecimal defaultLateFeePercent, BigDecimal payoffRebatePercent, Integer defaultAfterDays, String agreementTerms) {
+    }
+
+    /** A contact note; for kind PROMISE the date (and optionally the amount) promised is required/allowed. */
+    public record FollowUpRequest(com.posapp.installment.InstallmentFollowUpKind kind, String note, LocalDate promisedOn, BigDecimal promisedAmount) {
+    }
+
+    /** Settles the plan in full today. {@code expectedAmount} is the figure the screen showed; the call is refused if it has changed since. */
+    public record PayoffRequest(String method, String note, BigDecimal rebatePercent, BigDecimal expectedAmount) {
+    }
+
+    public record ReasonRequest(String reason) {
+    }
+
+    public record StatementEmailRequest(Boolean includeAgreement) {
     }
 }

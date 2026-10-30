@@ -40,4 +40,16 @@ public class InstallmentSettings extends BaseEntity {
 
     @Column(nullable = false)
     private BigDecimal defaultLateFeePercent = BigDecimal.ZERO;
+
+    /** On an early payoff, this share (0-100) of the interest not yet earned on instalments not yet due is waived. */
+    @Column(nullable = false, columnDefinition = "numeric(38,2) default 100 not null")
+    private BigDecimal payoffRebatePercent = BigDecimal.valueOf(100);
+
+    /** A plan whose oldest unpaid instalment is this many days overdue is marked defaulted by the nightly job; 0 = never automatically. */
+    @Column(nullable = false, columnDefinition = "integer default 0 not null")
+    private int defaultAfterDays = 0;
+
+    /** The business's own wording for the agreement paper; empty = the standard text. */
+    @Column(columnDefinition = "TEXT")
+    private String agreementTerms;
 }

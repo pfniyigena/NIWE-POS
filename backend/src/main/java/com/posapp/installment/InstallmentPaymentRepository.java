@@ -14,6 +14,8 @@ public interface InstallmentPaymentRepository extends JpaRepository<InstallmentP
 
     List<InstallmentPayment> findByPaidAtBetweenOrderByPaidAtDescIdDesc(Instant from, Instant to);
 
-    @Query("select coalesce(sum(p.chargesPart), 0) from InstallmentPayment p where p.plan.id = :planId")
+    java.util.Optional<InstallmentPayment> findByIdAndPlanId(Long id, Long planId);
+
+    @Query("select coalesce(sum(p.chargesPart), 0) from InstallmentPayment p where p.plan.id = :planId and p.reversedAt is null")
     BigDecimal sumChargesPart(@Param("planId") Long planId);
 }

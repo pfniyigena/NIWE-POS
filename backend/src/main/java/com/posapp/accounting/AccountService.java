@@ -129,6 +129,8 @@ public class AccountService {
     public static final String CASH_OVER_SHORT = "CASH_OVER_SHORT";
     /** POS: small expenses paid in cash out of the till drawer (cleaning, transport, supplies). */
     public static final String TILL_EXPENSE = "TILL_EXPENSE";
+    /** Installments: instalment balances written off as uncollectable (Dr bad debts / Cr accounts receivable). */
+    public static final String BAD_DEBT_EXPENSE = "BAD_DEBT_EXPENSE";
 
     /** Assets Management module: the cost of equipment, vehicles, furniture and other long-lived assets (at cost, before depreciation). */
     public static final String FIXED_ASSETS = "FIXED_ASSETS";
@@ -245,6 +247,8 @@ public class AccountService {
                     "Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (a credit balance means rounding gained money)."),
             new ChartRow(CASH_OVER_SHORT, "5870", "Cash Over / Short", AccountType.EXPENSE, true,
                     "POS: the difference found when a till is counted at the end of a shift (a debit balance is cash missing, a credit balance is cash over)."),
+            new ChartRow(BAD_DEBT_EXPENSE, "5230", "Bad Debts Written Off", AccountType.EXPENSE, true,
+                    "Installments: the unpaid part of an instalment agreement written off as uncollectable."),
             new ChartRow(TILL_EXPENSE, "5220", "Till Paid-out Expenses", AccountType.EXPENSE, true,
                     "POS: small expenses paid in cash out of a till drawer during a shift."),
             new ChartRow("5200", "Operating Expenses", AccountType.EXPENSE, false, null),
@@ -344,6 +348,8 @@ public class AccountService {
                     "Restaurant: the small difference when a bill is rounded to the nearest 10, 50 or 100 (a credit balance means rounding gained money)."),
             new ChartRow(CASH_OVER_SHORT, "6589", "Écarts de caisse (Cash Over / Short)", AccountType.EXPENSE, true,
                     "POS: the difference found when a till is counted at the end of a shift (a debit balance is cash missing, a credit balance is cash over)."),
+            new ChartRow(BAD_DEBT_EXPENSE, "654", "Pertes sur créances clients (Bad Debts Written Off)", AccountType.EXPENSE, true,
+                    "Installments: the unpaid part of an instalment agreement written off as uncollectable."),
             new ChartRow(TILL_EXPENSE, "6189", "Menues dépenses de caisse (Till Paid-out Expenses)", AccountType.EXPENSE, true,
                     "POS: small expenses paid in cash out of a till drawer during a shift."),
             new ChartRow("628", "Autres charges externes (Operating Expenses)", AccountType.EXPENSE, false, null),

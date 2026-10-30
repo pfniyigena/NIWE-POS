@@ -582,6 +582,7 @@ public class ReportService {
         Map<LocalDate, Acc> byDay = new LinkedHashMap<>();
         Long headquartersId = branchId != null ? branchService.headquartersId() : null;
         for (CustomerPayment payment : customerPaymentRepository.findByPaidAtBetweenOrderByPaidAtAsc(from, to)) {
+            if (com.posapp.credit.CustomerCreditService.WRITE_OFF_METHOD.equals(payment.getMethod())) continue;   // a write-off is not money collected
             if (branchId != null && !branchMatches(payment.getBranchId(), branchId, headquartersId)) continue;
             LocalDate day = payment.getPaidAt().atZone(ZoneOffset.UTC).toLocalDate();
             Acc acc = byDay.computeIfAbsent(day, k -> new Acc(new int[]{0}, new BigDecimal[]{BigDecimal.ZERO}));

@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { InstallmentApiService, InstallmentSummary } from '../../core/api/installment-api.service';
 
 /** The four instalment figures (active agreements, outstanding balance, overdue, due this month) — on the Installments page and the dashboard. */
 @Component({
   selector: 'app-installment-summary',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <ng-container *ngIf="s">
       <div class="stat-grid mb-3">
@@ -18,6 +19,10 @@ import { InstallmentApiService, InstallmentSummary } from '../../core/api/instal
         </div>
         <div class="stat-tile"><div class="stat-label">Due this month</div><div class="stat-value">{{ s.dueThisMonth | number: '1.0-2' }}</div>
           <div class="text-muted" style="font-size:0.75rem;">Collected this month: {{ s.collectedThisMonth | number: '1.0-2' }}</div></div>
+      </div>
+      <div class="alert alert-warning" *ngIf="s.brokenPromises > 0 || s.defaultedAgreements > 0" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        <span *ngIf="s.brokenPromises > 0"><strong>{{ s.brokenPromises }}</strong> broken promise(s) to pay — <a routerLink="/admin/installments/collections">open Collections</a></span>
+        <span *ngIf="s.defaultedAgreements > 0"><strong>{{ s.defaultedAgreements }}</strong> defaulted plan(s), {{ s.defaultedBalance | number: '1.0-2' }} still owed</span>
       </div>
     </ng-container>
   `,

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.18.0 - Installments: collections, early payoff, reversals, default and write-off, statements
+
+Installments now has a Collections page (who to chase, with a log of calls, visits and promises to pay), early payoff with an interest waiver, reversal of a wrongly recorded payment, defaulting and writing off a plan, and a printable or e-mailed statement and agreement. One migration (V57) and a new page under Installments > Collections. Details in `RELEASE-NOTES-v1.18.0.md`.
+
 ### Version 1.17.0 - Booking: reminders, guest rescheduling, working hours and leave
 
 Booking now e-mails guests a reminder before the visit and a "moved" notice (with a calendar file attached), lets guests move their own booking on the public page, shows a guest's earlier visits and no-shows on the appointment, prints a day sheet, and respects each person's own working hours and leave when offering times. One migration (V56) and a new page under Booking > Working hours. Details in `RELEASE-NOTES-v1.17.0.md`.

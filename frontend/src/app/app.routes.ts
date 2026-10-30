@@ -160,6 +160,7 @@ import { ManufacturingOrderDetailComponent } from './admin/manufacturing/manufac
 import { ProductionPlanListComponent } from './admin/manufacturing/production-plan-list.component';
 import { ProductionPlanDetailComponent } from './admin/manufacturing/production-plan-detail.component';
 import { InstallmentPlanListComponent } from './admin/installments/plan-list.component';
+import { InstallmentCollectionsComponent } from './admin/installments/collections.component';
 import { InstallmentPlanFormComponent } from './admin/installments/plan-form.component';
 import { InstallmentPlanDetailComponent } from './admin/installments/plan-detail.component';
 import { InstallmentSettingsComponent } from './admin/installments/installment-settings.component';
@@ -775,6 +776,7 @@ const baseRoutes: Routes = [
   // Assets Management module (optional; activated in Settings > Modules)
   { path: 'admin/installments', component: InstallmentPlanListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/installments/new', component: InstallmentPlanFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/installments/collections', component: InstallmentCollectionsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/installments/settings', component: InstallmentSettingsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/installments/reports', component: InstallmentReportListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/installments/:id', component: InstallmentPlanDetailComponent, canActivate: [authGuard, adminGuard] },

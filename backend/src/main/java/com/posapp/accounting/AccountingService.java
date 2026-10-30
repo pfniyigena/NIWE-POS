@@ -515,6 +515,33 @@ public class AccountingService {
         post("CUSTOMER_PAYMENT", payment.getId(), "Payment received from " + payment.getCustomer().getName(), null, lines, payment.getBranchId());
     }
 
+    /** A customer payment taken back (a wrong payment reversed): Dr Accounts receivable / Cr Cash, the mirror of {@link #postCustomerPayment}. {@code amount} is positive. */
+    @Transactional
+    public void postCustomerPaymentReversal(Long paymentId, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, null, true);
+        addIfPositive(lines, AccountService.CASH, amount, null, false);
+        post("CUSTOMER_PAYMENT_REVERSAL", paymentId, memo, null, lines, branchId);
+    }
+
+    /** Installments: interest and fees taken back with a reversed instalment payment. Dr Instalment income / Cr Cash. */
+    @Transactional
+    public void postInstallmentChargesReversal(Long paymentId, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.INSTALLMENT_INCOME, amount, null, true);
+        addIfPositive(lines, AccountService.CASH, amount, null, false);
+        post("INSTALLMENT_CHARGES_REVERSAL", paymentId, memo, null, lines, branchId);
+    }
+
+    /** Installments: the unpaid principal of an agreement written off. Dr Bad debts / Cr Accounts receivable. */
+    @Transactional
+    public void postCustomerWriteOff(Long paymentId, String memo, BigDecimal amount, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.BAD_DEBT_EXPENSE, amount, null, true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, null, false);
+        post("CUSTOMER_WRITE_OFF", paymentId, memo, null, lines, branchId);
+    }
+
     /** Instalments: the interest and late-fee part of an instalment payment (the principal part is posted as an ordinary invoice payment). Dr Cash / Cr Instalment income. */
     @Transactional
     public void postInstallmentCharges(Long paymentId, String memo, BigDecimal amount, Long branchId) {

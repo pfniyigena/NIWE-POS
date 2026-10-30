@@ -3,7 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
 
-export type InstallmentPlanStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type InstallmentPlanStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DEFAULTED' | 'WRITTEN_OFF';
+export type FollowUpKind = 'CALL' | 'VISIT' | 'EMAIL' | 'PROMISE' | 'NOTE';
 export type InterestMethod = 'NONE' | 'FLAT' | 'REDUCING';
 export type InstallmentFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY';
 export type InstallmentState = 'PAID' | 'PARTIAL' | 'PENDING' | 'OVERDUE';
@@ -43,6 +44,7 @@ export interface InstallmentRow {
   balance: number;
   state: InstallmentState;
   daysOverdue: number;
+  principalLeft: number;
 }
 
 export interface InstallmentPaymentRow {
@@ -55,6 +57,10 @@ export interface InstallmentPaymentRow {
   receiptNumber: string | null;
   note: string | null;
   recordedByName: string | null;
+  reversed: boolean;
+  reversedAt: string | null;
+  reversedByName: string | null;
+  reverseReason: string | null;
 }
 
 export interface InstallmentTerms {
@@ -74,6 +80,11 @@ export interface InstallmentTerms {
   createdByName: string | null;
   cancelledOn: string | null;
   cancelReason: string | null;
+  defaultedOn: string | null;
+  defaultReason: string | null;
+  writtenOffOn: string | null;
+  writtenOffAmount: number | null;
+  writeOffReason: string | null;
 }
 
 export interface InstallmentPlanDetail {
@@ -101,6 +112,9 @@ export interface InstallmentSummary {
   overdueInstallments: number;
   dueThisMonth: number;
   collectedThisMonth: number;
+  defaultedAgreements: number;
+  defaultedBalance: number;
+  brokenPromises: number;
 }
 
 export interface InstallmentSettings {
@@ -112,6 +126,63 @@ export interface InstallmentSettings {
   defaultGraceDays: number;
   defaultLateFeeFixed: number;
   defaultLateFeePercent: number;
+  payoffRebatePercent: number;
+  defaultAfterDays: number;
+  agreementTerms: string | null;
+}
+
+export interface FollowUp {
+  id: number;
+  at: string;
+  kind: FollowUpKind;
+  note: string | null;
+  promisedOn: string | null;
+  promisedAmount: number | null;
+  byName: string | null;
+}
+
+export interface PayoffQuote {
+  asOf: string;
+  principalLeft: number;
+  interestLeft: number;
+  feesLeft: number;
+  rebatePercent: number;
+  rebate: number;
+  amountToSettle: number;
+  instalmentsLeft: number;
+}
+
+export interface CollectionItem {
+  planId: number;
+  planNumber: string;
+  customerId: number | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  invoiceNumber: string;
+  status: InstallmentPlanStatus;
+  overdueAmount: number;
+  overdueInstallments: number;
+  oldestOverdueDays: number;
+  ageBucket: string;
+  nextDueDate: string | null;
+  nextDueAmount: number | null;
+  outstanding: number;
+  lastContactAt: string | null;
+  lastContactKind: FollowUpKind | null;
+  lastContactNote: string | null;
+  promisedOn: string | null;
+  promisedAmount: number | null;
+  promiseBroken: boolean;
+}
+
+export interface Collections {
+  items: CollectionItem[];
+  plans: number;
+  totalOverdue: number;
+  brokenPromises: number;
+  promisesToday: number;
+  neverContacted: number;
 }
 
 export interface InstallmentPlanRequest {
@@ -188,5 +259,48 @@ export class InstallmentApiService {
   }
   schedulePdf(id: number): Observable<Blob> {
     return this.http.get(`${this.base}/plans/${id}/schedule-pdf`, { responseType: 'blob' });
+  }
+
+  // ---- v1.18.0 ----
+
+  collections(filter: string, search: string): Observable<Collections> {
+    let params = new HttpParams().set('filter', filter);
+    if (search.trim()) params = params.set('search', search.trim());
+    return this.http.get<Collections>(`${this.base}/collections`, { params });
+  }
+  followUps(id: number): Observable<FollowUp[]> {
+    return this.http.get<FollowUp[]>(`${this.base}/plans/${id}/follow-ups`);
+  }
+  addFollowUp(id: number, body: { kind: FollowUpKind; note: string | null; promisedOn: string | null; promisedAmount: number | null }): Observable<FollowUp[]> {
+    return this.http.post<FollowUp[]>(`${this.base}/plans/${id}/follow-ups`, body);
+  }
+  payoffQuote(id: number, rebatePercent: number | null): Observable<PayoffQuote> {
+    let params = new HttpParams();
+    if (rebatePercent !== null && rebatePercent !== undefined) params = params.set('rebatePercent', rebatePercent);
+    return this.http.get<PayoffQuote>(`${this.base}/plans/${id}/payoff-quote`, { params });
+  }
+  payoff(id: number, body: { method: string; note: string | null; rebatePercent: number | null; expectedAmount: number }): Observable<InstallmentPlanDetail> {
+    return this.http.post<InstallmentPlanDetail>(`${this.base}/plans/${id}/payoff`, body);
+  }
+  reversePayment(id: number, paymentId: number, reason: string): Observable<InstallmentPlanDetail> {
+    return this.http.post<InstallmentPlanDetail>(`${this.base}/plans/${id}/payments/${paymentId}/reverse`, { reason });
+  }
+  markDefaulted(id: number, reason: string | null): Observable<InstallmentPlanDetail> {
+    return this.http.post<InstallmentPlanDetail>(`${this.base}/plans/${id}/default`, { reason });
+  }
+  restore(id: number): Observable<InstallmentPlanDetail> {
+    return this.http.post<InstallmentPlanDetail>(`${this.base}/plans/${id}/restore`, null);
+  }
+  writeOff(id: number, reason: string): Observable<InstallmentPlanDetail> {
+    return this.http.post<InstallmentPlanDetail>(`${this.base}/plans/${id}/write-off`, { reason });
+  }
+  statementPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/plans/${id}/statement-pdf`, { responseType: 'blob' });
+  }
+  agreementPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/plans/${id}/agreement-pdf`, { responseType: 'blob' });
+  }
+  emailStatement(id: number, includeAgreement: boolean): Observable<{ sent: boolean; sentTo: string }> {
+    return this.http.post<{ sent: boolean; sentTo: string }>(`${this.base}/plans/${id}/email-statement`, { includeAgreement });
   }
 }

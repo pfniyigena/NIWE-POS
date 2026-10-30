@@ -15,7 +15,7 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../../core/api/in
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
         <h3>Installments</h3>
-        <a class="btn btn-primary" routerLink="/admin/installments/new">+ New instalment plan</a>
+        <div class="flex gap-2"><a class="btn btn-outline-primary" routerLink="/admin/installments/collections">Collections</a><a class="btn btn-primary" routerLink="/admin/installments/new">+ New instalment plan</a></div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <app-installment-summary></app-installment-summary>
@@ -23,7 +23,7 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../../core/api/in
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
           <option value="">All agreements</option>
-          <option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option>
+          <option value="ACTIVE">Active</option><option value="DEFAULTED">Defaulted</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option><option value="WRITTEN_OFF">Written off</option>
         </select>
         <input class="form-control" style="width:16rem;" placeholder="Search customer, plan or invoice" name="q" [(ngModel)]="search" />
         <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="od" [(ngModel)]="overdueOnly" /> Overdue only</label>
@@ -42,7 +42,7 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../../core/api/in
             <td>{{ p.paidInstallments }} / {{ p.numberOfInstallments }}
               <span class="badge badge-danger" *ngIf="p.overdueInstallments" style="margin-left:0.3rem;">{{ p.overdueInstallments }} overdue</span></td>
             <td><span *ngIf="p.nextDueDate">{{ p.nextDueDate }} <span class="text-muted">({{ p.nextDueAmount | number: '1.0-2' }})</span></span><span *ngIf="!p.nextDueDate">—</span></td>
-            <td><span class="badge" [class.badge-success]="p.status === 'COMPLETED'" [class.badge-warning]="p.status === 'ACTIVE'" [class.badge-secondary]="p.status === 'CANCELLED'">{{ p.status }}</span></td>
+            <td><span class="badge" [class.badge-success]="p.status === 'COMPLETED'" [class.badge-warning]="p.status === 'ACTIVE'" [class.badge-danger]="p.status === 'DEFAULTED'" [class.badge-secondary]="p.status === 'CANCELLED' || p.status === 'WRITTEN_OFF'">{{ p.status === 'WRITTEN_OFF' ? 'WRITTEN OFF' : p.status }}</span></td>
           </tr>
         </tbody>
       </table>

@@ -609,6 +609,9 @@ import { NiweFooterComponent } from './niwe-footer.component';
             <a *ngIf="canSee('/admin/installments')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
               ><span class="sidenav-icon">📋</span> Agreements</a
             >
+            <a *ngIf="canSee('/admin/installments/collections')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments/collections" routerLinkActive="active"
+              ><span class="sidenav-icon">📞</span> Collections</a
+            >
             <a *ngIf="canSee('/admin/installments/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments/new" routerLinkActive="active"
               ><span class="sidenav-icon">➕</span> New plan</a
             >

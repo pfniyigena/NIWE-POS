@@ -15,4 +15,7 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     /** Backs the Daily Credit Collection report (Task: "Daily credit collection report") — every payment recorded in a date range, oldest first so grouping-by-day accumulates in order. */
     List<CustomerPayment> findByPaidAtBetweenOrderByPaidAtAsc(Instant from, Instant to);
+
+    /** True when an earlier payment has already been taken back by a reversal. */
+    boolean existsByReversalOfPaymentId(Long paymentId);
 }

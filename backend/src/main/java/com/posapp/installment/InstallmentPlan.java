@@ -91,6 +91,15 @@ public class InstallmentPlan extends BaseEntity {
     private LocalDate cancelledOn;
     private String cancelReason;
 
+    /** When the plan was marked defaulted (by hand or by the nightly job) and why. */
+    private LocalDate defaultedOn;
+    private String defaultReason;
+
+    /** When the unpaid principal was written off, how much it was, and why. */
+    private LocalDate writtenOffOn;
+    private BigDecimal writtenOffAmount;
+    private String writeOffReason;
+
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("seq asc")
     private List<Installment> installments = new ArrayList<>();
