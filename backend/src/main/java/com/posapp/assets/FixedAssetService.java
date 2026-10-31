@@ -1,6 +1,10 @@
 package com.posapp.assets;
 
+import com.posapp.accounting.Account;
+import com.posapp.accounting.AccountRepository;
+import com.posapp.accounting.AccountType;
 import com.posapp.accounting.AccountingService;
+import com.posapp.accounting.AccountingService.AssetAccounts;
 import com.posapp.assets.dto.AssetDtos.*;
 import com.posapp.assets.dto.AssetRequests.*;
 import com.posapp.audit.AuditLogService;
@@ -30,11 +34,23 @@ public class FixedAssetService {
     private final BranchService branchService;
     private final BranchAccessService branchAccessService;
     private final AssetTransferRepository transferRepository;
+    private final AccountRepository accountRepository;
+    private final AssetHistoryService history;
+    private final AssetCustodyService custodyService;
+    private final AssetSettingsService settingsService;
+    private final AssetAttachmentRepository attachmentRepository;
 
     public FixedAssetService(AssetCategoryRepository categoryRepository, FixedAssetRepository assetRepository,
                              DepreciationEntryRepository entryRepository, AssetDepreciationService depreciationService,
                              AccountingService accountingService, AuditLogService auditLogService, BranchService branchService,
-                             BranchAccessService branchAccessService, AssetTransferRepository transferRepository) {
+                             BranchAccessService branchAccessService, AssetTransferRepository transferRepository,
+                             AccountRepository accountRepository, AssetHistoryService history, AssetCustodyService custodyService,
+                             AssetSettingsService settingsService, AssetAttachmentRepository attachmentRepository) {
+        this.accountRepository = accountRepository;
+        this.history = history;
+        this.custodyService = custodyService;
+        this.settingsService = settingsService;
+        this.attachmentRepository = attachmentRepository;
         this.branchService = branchService;
         this.branchAccessService = branchAccessService;
         this.transferRepository = transferRepository;
@@ -93,21 +109,118 @@ public class FixedAssetService {
         category.setUsefulLifeMonths(request.usefulLifeMonths());
         category.setSalvagePercent(salvage);
         category.setProrateFirstMonth(Boolean.TRUE.equals(request.prorateFirstMonth()));
+        Account assetAccount = pickAccount(request.assetAccountId(), AccountType.ASSET, "asset");
+        Account accumulated = pickAccount(request.accumulatedAccountId(), AccountType.ASSET, "accumulated depreciation");
+        Account expense = pickAccount(request.expenseAccountId(), AccountType.EXPENSE, "depreciation expense");
+        boolean changed = !sameAccount(category.getAssetAccount(), assetAccount) || !sameAccount(category.getAccumulatedAccount(), accumulated)
+                || !sameAccount(category.getExpenseAccount(), expense);
+        if (changed && category.getId() != null && assetRepository.countByCategoryId(category.getId()) > 0) {
+            throw ApiException.conflict("The accounts of a category can only be changed while it has no assets, because their postings are already in the books.");
+        }
+        category.setAssetAccount(assetAccount);
+        category.setAccumulatedAccount(accumulated);
+        category.setExpenseAccount(expense);
         if (request.active() != null) {
             category.setActive(request.active());
         }
     }
 
+    private Account pickAccount(Long id, AccountType type, String what) {
+        if (id == null) return null;
+        Account a = accountRepository.findById(id).orElseThrow(() -> ApiException.badRequest("The " + what + " account was not found."));
+        if (a.getType() != type || !a.isActive()) {
+            throw ApiException.badRequest("The " + what + " account must be an active " + type.name().toLowerCase() + " account.");
+        }
+        return a;
+    }
+
+    private static boolean sameAccount(Account a, Account b) {
+        return (a == null && b == null) || (a != null && b != null && a.getId().equals(b.getId()));
+    }
+
+    /** The accounts postings for this category use (the standard ones unless the category has its own). */
+    public AssetAccounts accountsFor(Long categoryId) {
+        return categoryRepository.findById(categoryId).map(AssetDepreciationService::accountsOf).orElse(AssetAccounts.STANDARD);
+    }
+
     // ---- assets ----
+
+    /** What the register can be filtered on. Every field is optional. */
+    public record Filter(AssetStatus status, Long branchId, Long categoryId, String q, String location, String custodian, String view) {
+        public static Filter of(AssetStatus status, Long branchId) {
+            return new Filter(status, branchId, null, null, null, null, null);
+        }
+    }
 
     @Transactional(readOnly = true)
     public List<AssetDto> list(AssetStatus status, Long branchId) {
+        return list(Filter.of(status, branchId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssetDto> list(Filter filter) {
         Map<Long, String> names = branchNames();
-        return visibleAssets(status, branchId).stream().map(a -> toDto(a, names)).toList();
+        Map<Long, Long> files = fileCounts();
+        AssetSettings settings = settingsService.entity();
+        LocalDate today = LocalDate.now();
+        List<AssetDto> out = new java.util.ArrayList<>();
+        for (FixedAsset a : visibleAssets(filter.status(), filter.branchId())) {
+            if (!matches(a, filter, settings, today)) continue;
+            out.add(toDto(a, names, files.getOrDefault(a.getId(), 0L), settings, today));
+        }
+        String view = filter.view() == null ? "" : filter.view();
+        if (view.equals("soon")) {
+            out.removeIf(d -> d.monthsLeft() == null || d.monthsLeft() > settings.getSoonMonths());
+        }
+        return out;
+    }
+
+    /** The register's filters in one place, so the list, the Excel export and the bulk actions agree. */
+    public boolean matches(FixedAsset a, Filter f, AssetSettings settings, LocalDate today) {
+        if (f.categoryId() != null && !f.categoryId().equals(a.getCategory().getId())) return false;
+        if (f.location() != null && !f.location().isBlank() && (a.getLocation() == null || !a.getLocation().toLowerCase().contains(f.location().trim().toLowerCase()))) return false;
+        if (f.custodian() != null && !f.custodian().isBlank() && (a.getCustodianName() == null || !a.getCustodianName().toLowerCase().contains(f.custodian().trim().toLowerCase()))) return false;
+        if (f.q() != null && !f.q().isBlank()) {
+            String needle = f.q().trim().toLowerCase();
+            boolean hit = false;
+            for (String v : new String[]{a.getCode(), a.getName(), a.getSerialNumber(), a.getLocation(), a.getCustodianName(), a.getSupplierName(), a.getPurchaseOrderNumber(), a.getInsurancePolicy()}) {
+                if (v != null && v.toLowerCase().contains(needle)) {
+                    hit = true;
+                    break;
+                }
+            }
+            if (!hit) return false;
+        }
+        String view = f.view() == null ? "" : f.view();
+        boolean open = a.getStatus() != AssetStatus.DISPOSED;
+        return switch (view) {
+            case "no-custodian" -> open && a.getCustodianName() == null;
+            case "held" -> open && a.getCustodianName() != null;
+            case "warranty-expiring" -> open && "EXPIRING".equals(state(a.getWarrantyExpiresOn(), settings.getAlertDays(), today));
+            case "insurance-expiring" -> open && "EXPIRING".equals(state(a.getInsuranceExpiresOn(), settings.getAlertDays(), today));
+            case "expired" -> open && ("EXPIRED".equals(state(a.getWarrantyExpiresOn(), settings.getAlertDays(), today))
+                    || "EXPIRED".equals(state(a.getInsuranceExpiresOn(), settings.getAlertDays(), today)));
+            default -> true;
+        };
+    }
+
+    public static String state(LocalDate expires, int alertDays, LocalDate today) {
+        if (expires == null) return null;
+        if (expires.isBefore(today)) return "EXPIRED";
+        if (!expires.isAfter(today.plusDays(alertDays))) return "EXPIRING";
+        return "OK";
+    }
+
+    private Map<Long, Long> fileCounts() {
+        Map<Long, Long> m = new HashMap<>();
+        for (Object[] row : attachmentRepository.countsByAsset()) {
+            m.put((Long) row[0], (Long) row[1]);
+        }
+        return m;
     }
 
     /** Assets of one status (or all), optionally of one branch, limited to the branches the signed-in user may work with. */
-    private List<FixedAsset> visibleAssets(AssetStatus status, Long branchId) {
+    public List<FixedAsset> visibleAssets(AssetStatus status, Long branchId) {
         List<FixedAsset> assets = status == null ? assetRepository.findAllByOrderByCodeAsc() : assetRepository.findByStatusOrderByCodeAsc(status);
         Long hq = branchService.headquartersId();
         return assets.stream()
@@ -198,7 +311,15 @@ public class FixedAssetService {
             asset.setPurchaseOrderLineId(link.lineId());
             asset.setAcquisitionPosted(true); // the caller posts the Inventory -> Fixed Assets reclassification
         }
-        return persistNew(asset, link != null ? AcquisitionFunding.NONE : request.acquisitionFunding());
+        asset.setOriginalCost(asset.getCost());
+        FixedAsset saved = persistNew(asset, link != null ? AcquisitionFunding.NONE : request.acquisitionFunding());
+        history.event(saved.getId(), "REGISTERED", "Registered at cost " + saved.getCost() + (link != null ? " from purchase order " + link.orderNumber() : ""));
+        if (request.assignedTo() != null && !request.assignedTo().isBlank()) {
+            LocalDate on = request.purchaseDate().isAfter(LocalDate.now()) ? LocalDate.now() : request.purchaseDate();
+            custodyService.checkOut(saved, null, request.assignedTo(), on, null, null);
+            saved = assetRepository.save(saved);
+        }
+        return saved;
     }
 
     private FixedAsset persistNew(FixedAsset asset, AcquisitionFunding funding) {
@@ -206,7 +327,7 @@ public class FixedAssetService {
         AcquisitionFunding how = funding != null ? funding : AcquisitionFunding.NONE;
         if (how != AcquisitionFunding.NONE) {
             accountingService.postAssetAcquisition(saved.getId(), "Asset purchase " + saved.getCode() + " " + saved.getName(),
-                    saved.getCost(), how == AcquisitionFunding.CASH, saved.getBranchId());
+                    saved.getCost(), how == AcquisitionFunding.CASH, saved.getBranchId(), AssetDepreciationService.accountsOf(saved.getCategory()));
             saved.setAcquisitionPosted(true);
             saved = assetRepository.save(saved);
         }
@@ -236,10 +357,15 @@ public class FixedAssetService {
             validateMoney(request);
             asset.setCategory(category);
             applyDepreciationTerms(asset, request, category);
+            asset.setOriginalCost(asset.getCost());
+            asset.setMonthlyCharge(null);
+            asset.setRateLifeMonths(null);
         } else if (asset.getCost().compareTo(request.cost()) != 0 || !asset.getPurchaseDate().equals(request.purchaseDate())) {
             throw ApiException.conflict("Cost and purchase date can't be changed once depreciation or the purchase has been posted to Accounting.");
         }
+        custodyService.applyAssignment(asset, request.assignedTo(), null);
         FixedAsset saved = assetRepository.save(asset);
+        history.event(saved.getId(), "UPDATED", "Details changed");
         auditLogService.record("ASSET_UPDATED", "Updated asset " + saved.getCode() + " " + saved.getName(), "FixedAsset", saved.getId());
         return toDto(saved);
     }
@@ -250,8 +376,15 @@ public class FixedAssetService {
         if (asset.getLastDepreciatedThrough() != null || asset.isAcquisitionPosted() || asset.getStatus() == AssetStatus.DISPOSED) {
             throw ApiException.conflict("This asset has accounting history (depreciation, purchase posting or disposal) and can't be deleted.");
         }
+        deleteDependents(id);
         assetRepository.delete(asset);
         auditLogService.record("ASSET_DELETED", "Deleted asset " + asset.getCode() + " " + asset.getName(), "FixedAsset", id);
+    }
+
+    private void deleteDependents(Long id) {
+        attachmentRepository.deleteAll(attachmentRepository.findByAssetIdOrderByIdAsc(id));
+        custodyService.deleteAllOf(id);
+        history.deleteAllOf(id);
     }
 
     /**
@@ -279,6 +412,10 @@ public class FixedAssetService {
             depreciationService.runFor(asset, date.withDayOfMonth(1).minusDays(1));
         }
         BigDecimal bookValue = asset.bookValue();
+        BigDecimal limit = settingsService.entity().getDisposalApprovalLimit();
+        if (limit.signum() > 0 && bookValue.compareTo(limit) > 0 && !AssetHistoryService.actor().disposalApprover()) {
+            throw ApiException.forbidden("This asset is worth " + bookValue + ", above the disposal limit of " + limit + ". Ask someone with the 'Approve large asset disposals' permission to do it.");
+        }
         asset.setDisposalDate(date);
         asset.setDisposalProceeds(proceeds);
         asset.setDisposalGainLoss(proceeds.subtract(bookValue));
@@ -286,7 +423,11 @@ public class FixedAssetService {
         asset.setStatus(AssetStatus.DISPOSED);
         FixedAsset saved = assetRepository.save(asset);
         accountingService.postAssetDisposal(saved.getId(), "Disposal of asset " + saved.getCode() + " " + saved.getName(),
-                saved.getCost(), saved.getAccumulatedDepreciation(), proceeds, saved.getBranchId());
+                saved.getCost(), saved.getAccumulatedDepreciation(), proceeds, saved.getBranchId(),
+                AssetDepreciationService.accountsOf(saved.getCategory()), false);
+        custodyReleaseOnDisposal(saved, date);
+        history.event(saved.getId(), "DISPOSED", (proceeds.signum() > 0 ? "Sold for " + proceeds : "Written off") + ", gain/loss " + saved.getDisposalGainLoss()
+                + (request.note() != null && !request.note().isBlank() ? " - " + request.note().trim() : ""));
         auditLogService.record("ASSET_DISPOSED", "Disposed asset " + saved.getCode() + " " + saved.getName() + " for " + proceeds
                 + " (gain/loss " + saved.getDisposalGainLoss() + ")", "FixedAsset", saved.getId());
         return toDto(saved);
@@ -337,14 +478,31 @@ public class FixedAssetService {
         transferRepository.save(t);
         asset.setBranchId(toBranch);
         if (toLocation != null) asset.setLocation(toLocation);
-        if (request.assignedTo() != null && !request.assignedTo().isBlank()) asset.setAssignedTo(request.assignedTo().trim());
+        if (request.assignedTo() != null && !request.assignedTo().isBlank()) custodyService.applyAssignment(asset, request.assignedTo(), date);
         FixedAsset saved = assetRepository.save(asset);
+        history.event(saved.getId(), "TRANSFER", "Moved from " + names.get(fromBranch) + (t.getFromLocation() != null ? " / " + t.getFromLocation() : "")
+                + " to " + names.get(toBranch) + (t.getToLocation() != null ? " / " + t.getToLocation() : "")
+                + (t.getReason() != null ? " - " + t.getReason() : ""));
         auditLogService.record("ASSET_TRANSFERRED", "Transferred asset " + saved.getCode() + " " + saved.getName() + " from "
                 + names.get(fromBranch) + " to " + names.get(toBranch), "FixedAsset", saved.getId());
         return toDto(saved, names);
     }
 
+    /** A disposed asset is no longer held by anyone: the open spell ends on the disposal date. */
+    private void custodyReleaseOnDisposal(FixedAsset asset, LocalDate date) {
+        if (asset.getCustodianName() != null) {
+            LocalDate on = date.isBefore(asset.getCheckedOutOn() != null ? asset.getCheckedOutOn() : date) ? asset.getCheckedOutOn() : date;
+            custodyService.checkIn(asset, on, "Disposed", null);
+            assetRepository.save(asset);
+        }
+    }
+
     // ---- helpers ----
+
+    /** The entity, with the branch access check (for the handover sheet). */
+    FixedAsset entity(Long id) {
+        return find(id);
+    }
 
     private FixedAsset find(Long id) {
         FixedAsset asset = assetRepository.findById(id).orElseThrow(() -> ApiException.notFound("Asset not found: " + id));
@@ -353,12 +511,21 @@ public class FixedAssetService {
     }
 
     AssetDto toDto(FixedAsset asset) {
-        return toDto(asset, branchNames());
+        return toDto(asset, branchNames(), attachmentRepository.countByAssetId(asset.getId()), settingsService.entity(), LocalDate.now());
     }
 
     private AssetDto toDto(FixedAsset asset, Map<Long, String> names) {
+        return toDto(asset, names, attachmentRepository.countByAssetId(asset.getId()), settingsService.entity(), LocalDate.now());
+    }
+
+    private AssetDto toDto(FixedAsset asset, Map<Long, String> names, long fileCount, AssetSettings settings, LocalDate today) {
         Long id = asset.getBranchId() != null ? asset.getBranchId() : branchService.headquartersId();
-        return AssetDto.from(asset, asset.getLastDepreciatedThrough() != null, names.get(id));
+        boolean open = asset.getStatus() != AssetStatus.DISPOSED;
+        List<BigDecimal> projection = asset.getStatus() == AssetStatus.ACTIVE ? depreciationService.project(asset, 600) : List.of();
+        return AssetDto.from(asset, asset.getLastDepreciatedThrough() != null, names.get(id), fileCount,
+                open ? state(asset.getWarrantyExpiresOn(), settings.getAlertDays(), today) : null,
+                open ? state(asset.getInsuranceExpiresOn(), settings.getAlertDays(), today) : null,
+                projection.isEmpty() ? null : projection.get(0), projection.isEmpty() ? null : projection.size());
     }
 
     private Map<Long, String> branchNames() {
@@ -392,7 +559,9 @@ public class FixedAssetService {
         asset.setCost(request.cost().setScale(2, RoundingMode.HALF_UP));
         asset.setPurchaseDate(request.purchaseDate());
         asset.setLocation(blankToNull(request.location()));
-        asset.setAssignedTo(blankToNull(request.assignedTo()));
+        asset.setWarrantyExpiresOn(request.warrantyExpiresOn());
+        asset.setInsuranceExpiresOn(request.insuranceExpiresOn());
+        asset.setInsurancePolicy(blankToNull(request.insurancePolicy()));
         asset.setSerialNumber(blankToNull(request.serialNumber()));
         asset.setSupplierName(blankToNull(request.supplierName()));
         asset.setNotes(blankToNull(request.notes()));

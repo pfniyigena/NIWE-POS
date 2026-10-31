@@ -1,6 +1,7 @@
 package com.posapp.assets;
 
 import com.posapp.accounting.AccountingService;
+import com.posapp.accounting.AccountingService.AssetAccounts;
 import com.posapp.assets.dto.AssetDtos.DepreciationRunResult;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
@@ -117,11 +118,13 @@ public class AssetDepreciationService {
             entry.setAsset(asset);
             entry.setPeriodEnd(month.atEndOfMonth());
             entry.setBranchId(asset.getBranchId());
+            Long customCategory = hasOwnAccounts(asset.getCategory()) ? asset.getCategory().getId() : null;
+            entry.setCategoryId(customCategory);
             entry.setAmount(amount);
             entry.setAccumulatedAfter(asset.getAccumulatedDepreciation());
             entry.setBookValueAfter(asset.bookValue());
             entryRepository.save(entry);
-            perMonth.merge(new MonthBranch(month, asset.getBranchId()), amount, BigDecimal::add);
+            perMonth.merge(new MonthBranch(month, asset.getBranchId(), customCategory, accountsOf(asset.getCategory())), amount, BigDecimal::add);
             created++;
 
             if (depreciable.subtract(asset.getAccumulatedDepreciation()).compareTo(new BigDecimal("0.005")) < 0) {
@@ -134,11 +137,13 @@ public class AssetDepreciationService {
         return created;
     }
 
-    private BigDecimal monthlyAmount(FixedAsset asset, BigDecimal depreciable, BigDecimal remaining, YearMonth month) {
-        int life = Math.max(1, asset.getUsefulLifeMonths());
+    BigDecimal monthlyAmount(FixedAsset asset, BigDecimal depreciable, BigDecimal remaining, YearMonth month) {
+        int life = Math.max(1, asset.getRateLifeMonths() != null ? asset.getRateLifeMonths() : asset.getUsefulLifeMonths());
         BigDecimal amount;
         if (asset.getMethod() == DepreciationMethod.DECLINING_BALANCE) {
             amount = asset.bookValue().multiply(BigDecimal.valueOf(2)).divide(BigDecimal.valueOf(life), 2, RoundingMode.HALF_UP);
+        } else if (asset.getMonthlyCharge() != null) {
+            amount = asset.getMonthlyCharge();
         } else {
             amount = depreciable.divide(BigDecimal.valueOf(life), 2, RoundingMode.HALF_UP);
         }
@@ -155,8 +160,59 @@ public class AssetDepreciationService {
         return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
+
+    /** The first month that has not been charged yet. */
+    public static YearMonth nextMonth(FixedAsset asset) {
+        return asset.getLastDepreciatedThrough() == null
+                ? YearMonth.from(asset.getDepreciationStartDate())
+                : YearMonth.from(asset.getLastDepreciatedThrough()).plusMonths(1);
+    }
+
+    /**
+     * What the next {@code months} months would charge (a straight simulation, nothing is saved): used for the forecast report,
+     * the "next charge" shown on an asset and the "fully depreciated within N months" list. An asset that is not ACTIVE charges nothing.
+     */
+    public List<BigDecimal> project(FixedAsset asset, int months) {
+        List<BigDecimal> out = new ArrayList<>();
+        if (asset.getStatus() != AssetStatus.ACTIVE) {
+            return out;
+        }
+        BigDecimal depreciable = asset.getCost().subtract(asset.getSalvageValue());
+        BigDecimal accumulated = asset.getAccumulatedDepreciation();
+        YearMonth month = nextMonth(asset);
+        FixedAsset probe = new FixedAsset();
+        probe.setMethod(asset.getMethod());
+        probe.setUsefulLifeMonths(asset.getUsefulLifeMonths());
+        probe.setRateLifeMonths(asset.getRateLifeMonths());
+        probe.setMonthlyCharge(asset.getMonthlyCharge());
+        probe.setCost(asset.getCost());
+        probe.setSalvageValue(asset.getSalvageValue());
+        probe.setProrateFirstMonth(asset.isProrateFirstMonth());
+        probe.setDepreciationStartDate(asset.getDepreciationStartDate());
+        for (int i = 0; i < months; i++) {
+            BigDecimal remaining = depreciable.subtract(accumulated);
+            if (remaining.compareTo(new BigDecimal("0.005")) < 0) {
+                break;
+            }
+            probe.setAccumulatedDepreciation(accumulated);
+            BigDecimal amount = monthlyAmount(probe, depreciable, remaining, month);
+            out.add(amount);
+            accumulated = accumulated.add(amount);
+            month = month.plusMonths(1);
+        }
+        return out;
+    }
+
     /** One month's charges of one branch (null = head office) — posted together as one journal entry. */
-    private record MonthBranch(YearMonth month, Long branchId) {
+    private record MonthBranch(YearMonth month, Long branchId, Long categoryId, AssetAccounts accounts) {
+    }
+
+    static boolean hasOwnAccounts(AssetCategory c) {
+        return c != null && (c.getAssetAccount() != null || c.getAccumulatedAccount() != null || c.getExpenseAccount() != null);
+    }
+
+    public static AssetAccounts accountsOf(AssetCategory c) {
+        return hasOwnAccounts(c) ? new AssetAccounts(c.getAssetAccount(), c.getAccumulatedAccount(), c.getExpenseAccount()) : AssetAccounts.STANDARD;
     }
 
     private void postMonths(Map<MonthBranch, BigDecimal> perMonth) {
@@ -165,8 +221,9 @@ public class AssetDepreciationService {
         for (MonthBranch key : keys) {
             BigDecimal amount = perMonth.get(key);
             if (amount.signum() > 0) {
+                AssetAccounts accounts = key.accounts();
                 accountingService.postAssetDepreciation(key.month().getYear() * 100L + key.month().getMonthValue(),
-                        "Depreciation for " + key.month(), amount, key.branchId());
+                        "Depreciation for " + key.month(), amount, key.branchId(), accounts, false);
             }
         }
     }

@@ -642,6 +642,9 @@ import { NiweFooterComponent } from './niwe-footer.component';
             <a *ngIf="canSee('/admin/assets')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
               ><span class="sidenav-icon">📋</span> Asset register</a
             >
+            <a *ngIf="canSee('/admin/assets/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/overview" routerLinkActive="active"
+              ><span class="sidenav-icon">📈</span> Overview</a
+            >
             <a *ngIf="canSee('/admin/assets/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/new" routerLinkActive="active"
               ><span class="sidenav-icon">➕</span> New asset</a
             >
@@ -651,8 +654,16 @@ import { NiweFooterComponent } from './niwe-footer.component';
             <a *ngIf="canSee('/admin/assets/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/categories" routerLinkActive="active"
               ><span class="sidenav-icon">🗂️</span> Categories</a
             >
+            <a *ngIf="canSee('/admin/assets/verifications')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/verifications" routerLinkActive="active"
+              ><span class="sidenav-icon">✅</span> Verification</a
+            >
             <a *ngIf="canSee('/admin/assets/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/reports" routerLinkActive="active"
               ><span class="sidenav-icon">📊</span> Reports</a
+            >
+          </ng-container>
+          <ng-container *ngIf="isOpen('assets') && showGroup('assets')">
+            <a *ngIf="canSee('/admin/assets/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/settings" routerLinkActive="active"
+              ><span class="sidenav-icon">⚙️</span> Settings</a
             >
           </ng-container>
           <!-- Accounting group (Fourier: "We need to add Accounting module. Then all POS, Sale,

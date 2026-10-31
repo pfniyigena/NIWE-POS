@@ -44,6 +44,18 @@ export interface ReportDef {
   filterMode?: 'dateRegister' | 'dateOnly' | 'none';
   /** Law Firm reports that list open matters by default: the label of a tick box that adds the closed ones (sent as openOnly=false). */
   openOnlyToggle?: string;
+  /** Report-specific filters shown next to the standard ones and sent as query parameters under their `key` (the Assets reports use them). */
+  extraFilters?: ReportExtraFilter[];
+}
+
+export interface ReportExtraFilter {
+  key: string;
+  label: string;
+  /** 'verification' is a picker over the asset verification rounds. */
+  type: 'number' | 'text' | 'select' | 'verification';
+  options?: { value: string; label: string }[];
+  placeholder?: string;
+  defaultValue?: string;
 }
 
 /**
@@ -1258,6 +1270,12 @@ export const REPORT_DEFS: ReportDef[] = [
     branchFilter: true,
     categoryFilter: false,
     filterMode: 'none',
+    extraFilters: [
+      { key: 'status', label: 'Status', type: 'select', options: [{ value: 'ACTIVE', label: 'Active' }, { value: 'FULLY_DEPRECIATED', label: 'Fully depreciated' }, { value: 'DISPOSED', label: 'Disposed' }] },
+      { key: 'q', label: 'Search', type: 'text', placeholder: 'tag, name, serial' },
+      { key: 'location', label: 'Place', type: 'text' },
+      { key: 'custodian', label: 'Held by', type: 'text' },
+    ],
     columns: [
       { key: 'code', label: 'Tag', format: 'text' },
       { key: 'name', label: 'Asset', format: 'text' },
@@ -1269,7 +1287,10 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'bookValue', label: 'Book value', format: 'money' },
       { key: 'branchName', label: 'Branch', format: 'text' },
       { key: 'location', label: 'Location', format: 'text' },
-      { key: 'assignedTo', label: 'Assigned to', format: 'text' },
+      { key: 'assignedTo', label: 'Held by', format: 'text' },
+      { key: 'serialNumber', label: 'Serial no.', format: 'text' },
+      { key: 'warrantyExpiresOn', label: 'Warranty ends', format: 'date' },
+      { key: 'insuranceExpiresOn', label: 'Insurance ends', format: 'date' },
     ],
   },
   {
@@ -1286,6 +1307,120 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'cost', label: 'Cost', format: 'money' },
       { key: 'accumulatedDepreciation', label: 'Accumulated depreciation', format: 'money' },
       { key: 'bookValue', label: 'Book value', format: 'money' },
+    ],
+  },
+  {
+    key: 'assets-by-location',
+    title: 'Assets by Location',
+    section: 'Assets',
+    endpoint: 'assets-by-location',
+    branchFilter: true,
+    categoryFilter: false,
+    filterMode: 'none',
+    columns: [
+      { key: 'holder', label: 'Place', format: 'text' },
+      { key: 'assetCount', label: 'Assets', format: 'int' },
+      { key: 'cost', label: 'Cost', format: 'money' },
+      { key: 'accumulatedDepreciation', label: 'Accumulated depreciation', format: 'money' },
+      { key: 'bookValue', label: 'Book value', format: 'money' },
+    ],
+  },
+  {
+    key: 'assets-by-custodian',
+    title: 'Assets by Holder',
+    section: 'Assets',
+    endpoint: 'assets-by-custodian',
+    branchFilter: true,
+    categoryFilter: false,
+    filterMode: 'none',
+    columns: [
+      { key: 'holder', label: 'Held by', format: 'text' },
+      { key: 'assetCount', label: 'Assets', format: 'int' },
+      { key: 'cost', label: 'Cost', format: 'money' },
+      { key: 'accumulatedDepreciation', label: 'Accumulated depreciation', format: 'money' },
+      { key: 'bookValue', label: 'Book value', format: 'money' },
+    ],
+  },
+  {
+    key: 'assets-expiry',
+    title: 'Warranty and Insurance Expiry',
+    section: 'Assets',
+    endpoint: 'assets-expiry',
+    branchFilter: true,
+    categoryFilter: false,
+    filterMode: 'none',
+    extraFilters: [{ key: 'days', label: 'Ending within (days)', type: 'number', defaultValue: '30' }],
+    columns: [
+      { key: 'code', label: 'Tag', format: 'text' },
+      { key: 'name', label: 'Asset', format: 'text' },
+      { key: 'categoryName', label: 'Category', format: 'text' },
+      { key: 'branchName', label: 'Branch', format: 'text' },
+      { key: 'kind', label: 'What', format: 'text' },
+      { key: 'expiresOn', label: 'Ends', format: 'date' },
+      { key: 'daysLeft', label: 'Days left', format: 'int' },
+      { key: 'state', label: 'State', format: 'text' },
+      { key: 'detail', label: 'Detail', format: 'text' },
+    ],
+  },
+  {
+    key: 'assets-forecast',
+    title: 'Depreciation Forecast',
+    section: 'Assets',
+    endpoint: 'assets-forecast',
+    branchFilter: true,
+    categoryFilter: false,
+    filterMode: 'none',
+    extraFilters: [{ key: 'days', label: 'Months ahead', type: 'number', defaultValue: '12' }],
+    columns: [
+      { key: 'month', label: 'Month', format: 'text' },
+      { key: 'assetCount', label: 'Assets', format: 'int' },
+      { key: 'depreciation', label: 'Depreciation', format: 'money' },
+      { key: 'bookValueEnd', label: 'Book value at month end', format: 'money' },
+    ],
+  },
+  {
+    key: 'assets-movement',
+    title: 'Fixed Asset Movement',
+    section: 'Assets',
+    endpoint: 'assets-movement',
+    branchFilter: true,
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'categoryName', label: 'Category', format: 'text' },
+      { key: 'openingCost', label: 'Opening cost', format: 'money' },
+      { key: 'additions', label: 'Additions', format: 'money' },
+      { key: 'improvements', label: 'Improvements', format: 'money' },
+      { key: 'disposals', label: 'Disposals', format: 'money' },
+      { key: 'closingCost', label: 'Closing cost', format: 'money' },
+      { key: 'openingAccumulated', label: 'Opening depreciation', format: 'money' },
+      { key: 'depreciation', label: 'Charged', format: 'money' },
+      { key: 'disposalsAccumulated', label: 'Removed on disposal', format: 'money' },
+      { key: 'closingAccumulated', label: 'Closing depreciation', format: 'money' },
+      { key: 'closingBookValue', label: 'Closing book value', format: 'money' },
+    ],
+  },
+  {
+    key: 'assets-verification',
+    title: 'Asset Verification',
+    section: 'Assets',
+    endpoint: 'assets-verification',
+    categoryFilter: false,
+    filterMode: 'none',
+    extraFilters: [{ key: 'verificationId', label: 'Round', type: 'verification' }],
+    columns: [
+      { key: 'round', label: 'Round', format: 'text' },
+      { key: 'roundStatus', label: 'Status', format: 'text' },
+      { key: 'startedOn', label: 'Started', format: 'date' },
+      { key: 'code', label: 'Tag', format: 'text' },
+      { key: 'name', label: 'Asset', format: 'text' },
+      { key: 'expectedLocation', label: 'Should be at', format: 'text' },
+      { key: 'expectedCustodian', label: 'Held by', format: 'text' },
+      { key: 'result', label: 'Result', format: 'text' },
+      { key: 'foundLocation', label: 'Found at', format: 'text' },
+      { key: 'checkedBy', label: 'Checked by', format: 'text' },
+      { key: 'writtenOff', label: 'Written off', format: 'text' },
+      { key: 'note', label: 'Note', format: 'text' },
     ],
   },
   {

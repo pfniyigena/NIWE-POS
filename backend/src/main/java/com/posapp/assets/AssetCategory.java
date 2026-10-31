@@ -5,6 +5,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
+import com.posapp.accounting.Account;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -38,4 +41,12 @@ public class AssetCategory extends BaseEntity {
     private boolean prorateFirstMonth = false;
 
     private boolean active = true;
+
+    /** Optional own accounts for this kind of asset; empty = the standard Fixed Assets / Accumulated Depreciation / Depreciation Expense accounts. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Account assetAccount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Account accumulatedAccount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Account expenseAccount;
 }

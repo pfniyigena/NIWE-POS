@@ -21,7 +21,7 @@ import { AcquisitionFunding, AssetApiService, AssetCategory, DepreciationMethod,
       <h3 class="mb-3">{{ id ? 'Edit asset' : 'New asset' }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-info" *ngIf="locked">
-        Depreciation or the purchase posting already exists for this asset, so cost, dates and depreciation terms can't be changed. You can still edit the details below.
+        Depreciation or the purchase posting already exists for this asset, so cost, dates and depreciation terms can't be changed here. Use <em>Add improvement</em>, <em>Write value down</em> or <em>Change terms</em> on the asset page, and edit the details below.
       </div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
@@ -97,9 +97,21 @@ import { AcquisitionFunding, AssetApiService, AssetCategory, DepreciationMethod,
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
           <div class="form-group"><label class="form-label">Location</label><input class="form-control" name="location" [(ngModel)]="f.location" /></div>
-          <div class="form-group"><label class="form-label">Assigned to</label><input class="form-control" name="assignedTo" [(ngModel)]="f.assignedTo" /></div>
+          <div class="form-group"><label class="form-label">Held by</label><input class="form-control" name="assignedTo" [(ngModel)]="f.assignedTo" /></div>
           <div class="form-group"><label class="form-label">Serial number</label><input class="form-control" name="serial" [(ngModel)]="f.serialNumber" /></div>
           <div class="form-group"><label class="form-label">Supplier</label><input class="form-control" name="supplier" [(ngModel)]="f.supplierName" /></div>
+        </div>
+        <div class="card mb-3" style="padding:0.75rem 1rem;">
+          <strong class="mb-2">Warranty and insurance (optional)</strong>
+          <div class="flex gap-3" style="flex-wrap:wrap;">
+            <div class="form-group"><label class="form-label">Warranty ends</label>
+              <app-date-picker name="warrantyExpiresOn" [(ngModel)]="f.warrantyExpiresOn"></app-date-picker></div>
+            <div class="form-group"><label class="form-label">Insurance ends</label>
+              <app-date-picker name="insuranceExpiresOn" [(ngModel)]="f.insuranceExpiresOn"></app-date-picker></div>
+            <div class="form-group"><label class="form-label">Insurance policy</label>
+              <input class="form-control" name="insurancePolicy" [(ngModel)]="f.insurancePolicy" /></div>
+          </div>
+          <div class="text-muted" style="font-size:0.8rem;">The register and the overview warn you before these dates.</div>
         </div>
         <div class="form-group">
           <label class="form-label">Notes</label>
@@ -139,6 +151,9 @@ export class AssetFormComponent implements OnInit {
     openingAccumulatedDepreciation: null as number | null,
     prorateFirstMonth: false,
     branchId: null as number | null,
+    warrantyExpiresOn: null as string | null,
+    insuranceExpiresOn: null as string | null,
+    insurancePolicy: '' as string | null,
   };
 
   constructor(private api: AssetApiService, private branchApi: BranchApiService, private route: ActivatedRoute, private router: Router) {}
@@ -169,6 +184,7 @@ export class AssetFormComponent implements OnInit {
           salvageValue: a.salvageValue, usefulLifeMonths: a.usefulLifeMonths, method: a.method,
           depreciationStartDate: a.depreciationStartDate, location: a.location, assignedTo: a.assignedTo,
           serialNumber: a.serialNumber, supplierName: a.supplierName, notes: a.notes, prorateFirstMonth: a.prorateFirstMonth,
+          warrantyExpiresOn: a.warrantyExpiresOn, insuranceExpiresOn: a.insuranceExpiresOn, insurancePolicy: a.insurancePolicy,
         };
       },
       error: (e) => (this.error = e?.error?.message ?? 'Failed to load the asset'),
@@ -211,6 +227,9 @@ export class AssetFormComponent implements OnInit {
       openingAccumulatedDepreciation: this.f.openingAccumulatedDepreciation,
       prorateFirstMonth: this.f.prorateFirstMonth,
       branchId: this.f.branchId,
+      warrantyExpiresOn: this.f.warrantyExpiresOn || null,
+      insuranceExpiresOn: this.f.insuranceExpiresOn || null,
+      insurancePolicy: this.f.insurancePolicy || null,
     };
     this.saving = true;
     const call = this.id ? this.api.update(this.id, payload) : this.api.create(payload);

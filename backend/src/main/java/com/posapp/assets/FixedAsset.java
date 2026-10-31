@@ -94,6 +94,30 @@ public class FixedAsset extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String disposalNote;
 
+    /** Warranty and insurance end dates (alerts and the expiry report look at them). */
+    private LocalDate warrantyExpiresOn;
+    private LocalDate insuranceExpiresOn;
+    private String insurancePolicy;
+
+    /** Who holds the asset now: a user of the system when chosen from the list, otherwise just a name. */
+    @Column(name = "custodian_user_id")
+    private Long custodianUserId;
+    private String custodianName;
+    private LocalDate checkedOutOn;
+
+    /**
+     * Set when the depreciation terms were re-based by an improvement, an impairment or a change of life: straight line then
+     * charges this amount every month, and declining balance uses {@link #rateLifeMonths} instead of the useful life.
+     */
+    private BigDecimal monthlyCharge;
+    private Integer rateLifeMonths;
+
+    /** What the asset cost when it was registered; {@link #cost} also holds later improvements. */
+    @Column(nullable = false)
+    private BigDecimal originalCost = BigDecimal.ZERO;
+    @Column(nullable = false)
+    private int disposalUndoneCount = 0;
+
     public BigDecimal bookValue() {
         return cost.subtract(accumulatedDepreciation);
     }

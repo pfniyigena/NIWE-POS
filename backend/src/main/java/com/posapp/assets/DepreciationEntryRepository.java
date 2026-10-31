@@ -11,4 +11,8 @@ public interface DepreciationEntryRepository extends JpaRepository<DepreciationE
     List<DepreciationEntry> findByPeriodEndBetweenOrderByPeriodEndAscIdAsc(LocalDate from, LocalDate to);
 
     boolean existsByAssetId(Long assetId);
+
+    long countByAssetId(Long assetId);
+
+    java.util.Optional<DepreciationEntry> findFirstByAssetIdOrderByPeriodEndDescIdDesc(Long assetId);
 }

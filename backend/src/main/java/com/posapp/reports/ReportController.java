@@ -677,16 +677,107 @@ public class ReportController {
 
     @GetMapping("/asset-register")
     public ResponseEntity<?> assetRegister(@RequestParam(required = false) Long branchId,
+                                           @RequestParam(required = false) com.posapp.assets.AssetStatus status,
+                                           @RequestParam(required = false) Long categoryId,
+                                           @RequestParam(required = false) String q,
+                                           @RequestParam(required = false) String location,
+                                           @RequestParam(required = false) String custodian,
+                                           @RequestParam(required = false) String view,
                                            @RequestParam(defaultValue = "json") String format) {
-        var rows = assetReportService.register(branchId);
+        var filter = new com.posapp.assets.FixedAssetService.Filter(status, null, categoryId, q, location, custodian, view);
+        var rows = assetReportService.register(branchId, filter);
         if (isDownload(format)) {
-            List<String> headers = List.of("Tag", "Asset", "Category", "Status", "Purchased", "Cost", "Accumulated depreciation", "Book value", "Branch", "Location", "Assigned to", "Serial no.");
+            List<String> headers = List.of("Tag", "Asset", "Category", "Status", "Purchased", "Cost", "Accumulated depreciation", "Book value", "Branch", "Location", "Held by", "Serial no.", "Warranty until", "Insurance until");
             List<List<String>> body = new ArrayList<>();
             for (var r : rows) {
                 body.add(java.util.Arrays.asList(r.code(), r.name(), r.categoryName(), r.status(), String.valueOf(r.purchaseDate()), money(r.cost()),
-                        money(r.accumulatedDepreciation()), money(r.bookValue()), orDash(r.branchName()), orDash(r.location()), orDash(r.assignedTo()), orDash(r.serialNumber())));
+                        money(r.accumulatedDepreciation()), money(r.bookValue()), orDash(r.branchName()), orDash(r.location()), orDash(r.assignedTo()), orDash(r.serialNumber()),
+                        r.warrantyExpiresOn() != null ? r.warrantyExpiresOn().toString() : "-", r.insuranceExpiresOn() != null ? r.insuranceExpiresOn().toString() : "-"));
             }
             return export("Asset Register", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/assets-by-location")
+    public ResponseEntity<?> assetsByLocation(@RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        return holderReport("Assets by Location", "Location", assetReportService.byHolder(branchId, false), format);
+    }
+
+    @GetMapping("/assets-by-custodian")
+    public ResponseEntity<?> assetsByCustodian(@RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        return holderReport("Assets by Custodian", "Held by", assetReportService.byHolder(branchId, true), format);
+    }
+
+    private ResponseEntity<?> holderReport(String title, String first, List<com.posapp.reports.dto.AssetReportRows.AssetHolderRow> rows, String format) {
+        if (isDownload(format)) {
+            List<String> headers = List.of(first, "Assets", "Cost", "Accumulated depreciation", "Book value");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.holder(), String.valueOf(r.assetCount()), money(r.cost()), money(r.accumulatedDepreciation()), money(r.bookValue())));
+            }
+            return export(title, headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/assets-expiry")
+    public ResponseEntity<?> assetsExpiry(@RequestParam(required = false) Long branchId, @RequestParam(required = false) Integer days,
+                                          @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.expiry(branchId, days);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Tag", "Asset", "Category", "Branch", "What", "Ends", "Days left", "State", "Policy");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.code(), r.name(), r.categoryName(), orDash(r.branchName()), r.kind(), String.valueOf(r.expiresOn()), String.valueOf(r.daysLeft()), r.state(), orDash(r.detail())));
+            }
+            return export("Warranty and Insurance Expiry", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/assets-forecast")
+    public ResponseEntity<?> assetsForecast(@RequestParam(required = false) Long branchId, @RequestParam(required = false) Integer days,
+                                            @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.forecast(branchId, days);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Month", "Assets depreciating", "Depreciation", "Projected book value");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.month(), String.valueOf(r.assetCount()), money(r.depreciation()), money(r.bookValueEnd())));
+            }
+            return export("Depreciation Forecast", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/assets-movement")
+    public ResponseEntity<?> assetsMovement(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                            @RequestParam(required = false) Long branchId, @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.movement(assetFrom(from), assetTo(to), branchId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Category", "Opening cost", "Additions", "Improvements", "Disposals", "Closing cost", "Opening depreciation", "Depreciation", "Disposals depreciation", "Closing depreciation", "Closing book value");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.categoryName(), money(r.openingCost()), money(r.additions()), money(r.improvements()), money(r.disposals()), money(r.closingCost()),
+                        money(r.openingAccumulated()), money(r.depreciation()), money(r.disposalsAccumulated()), money(r.closingAccumulated()), money(r.closingBookValue())));
+            }
+            return export("Fixed Asset Movement", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/assets-verification")
+    public ResponseEntity<?> assetsVerification(@RequestParam(required = false) Long verificationId, @RequestParam(defaultValue = "json") String format) {
+        var rows = assetReportService.verification(verificationId);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Round", "Status", "Started", "Tag", "Asset", "Expected location", "Expected holder", "Result", "Found at", "Checked by", "Note", "Written off");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.round(), r.roundStatus(), String.valueOf(r.startedOn()), r.code(), r.name(), orDash(r.expectedLocation()), orDash(r.expectedCustodian()),
+                        r.result(), orDash(r.foundLocation()), orDash(r.checkedBy()), orDash(r.note()), r.writtenOff()));
+            }
+            return export("Asset Verification", headers, body, format);
         }
         return ResponseEntity.ok(rows);
     }

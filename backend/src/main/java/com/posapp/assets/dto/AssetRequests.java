@@ -14,7 +14,8 @@ public final class AssetRequests {
     }
 
     public record CategoryRequest(@NotBlank String name, @NotNull DepreciationMethod method, @NotNull Integer usefulLifeMonths,
-                                  BigDecimal salvagePercent, Boolean prorateFirstMonth, Boolean active) {
+                                  BigDecimal salvagePercent, Boolean prorateFirstMonth, Boolean active,
+                                  Long assetAccountId, Long accumulatedAccountId, Long expenseAccountId) {
     }
 
     /**
@@ -25,7 +26,8 @@ public final class AssetRequests {
                                @NotNull BigDecimal cost, BigDecimal salvageValue, Integer usefulLifeMonths,
                                DepreciationMethod method, LocalDate depreciationStartDate, String location, String assignedTo,
                                String serialNumber, String supplierName, String notes, AcquisitionFunding acquisitionFunding,
-                               BigDecimal openingAccumulatedDepreciation, Boolean prorateFirstMonth, Long branchId) {
+                               BigDecimal openingAccumulatedDepreciation, Boolean prorateFirstMonth, Long branchId,
+                               LocalDate warrantyExpiresOn, LocalDate insuranceExpiresOn, String insurancePolicy) {
     }
 
     /**
@@ -45,5 +47,43 @@ public final class AssetRequests {
     }
 
     public record RunDepreciationRequest(LocalDate upTo) {
+    }
+
+    /** Cost added after registration; spreads over {@code remainingLifeMonths} (default: the life left). */
+    public record ImprovementRequest(@NotNull LocalDate date, @NotNull BigDecimal amount, AcquisitionFunding funding, Integer remainingLifeMonths, String note) {
+    }
+
+    /** A write-down for damage or obsolescence; reduces book value by {@code amount}. */
+    public record ImpairmentRequest(@NotNull LocalDate date, @NotNull BigDecimal amount, Integer remainingLifeMonths, @NotBlank String note) {
+    }
+
+    /** New remaining life, salvage value and/or method from {@code date}'s month on. */
+    public record TermsRequest(@NotNull LocalDate date, @NotNull Integer remainingLifeMonths, BigDecimal salvageValue, DepreciationMethod method, String note) {
+    }
+
+    public record ReasonRequest(String reason) {
+    }
+
+    public record CheckOutRequest(Long custodianUserId, String custodianName, LocalDate date, String condition, String note) {
+    }
+
+    public record CheckInRequest(LocalDate date, String condition, String note) {
+    }
+
+    /** One action on several assets: TRANSFER (branch/location), CHECK_OUT (custodian) or CHECK_IN. */
+    public record BulkRequest(@NotBlank String action, @NotNull java.util.List<Long> ids, Long toBranchId, String toLocation, LocalDate date,
+                              Long custodianUserId, String custodianName, String reason) {
+    }
+
+    public record VerificationRequest(@NotBlank String name, Long branchId, Long categoryId, String location, String note) {
+    }
+
+    public record MarkRequest(@NotBlank String result, String foundLocation, String note) {
+    }
+
+    public record MarkRestRequest(@NotBlank String result) {
+    }
+
+    public record CloseVerificationRequest(Boolean applyLocations) {
     }
 }

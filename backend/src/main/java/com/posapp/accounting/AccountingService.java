@@ -839,13 +839,46 @@ public class AccountingService {
 
     // ---- Assets Management (com.posapp.assets) ----
 
+    /** The accounts of one asset category when it has its own; any member left null means the standard well-known account. */
+    public record AssetAccounts(Account asset, Account accumulated, Account expense) {
+        public static final AssetAccounts STANDARD = new AssetAccounts(null, null, null);
+    }
+
+    private void assetLine(List<LineSpec> lines, String key, Account own, BigDecimal amount, String description, boolean debit) {
+        if (own != null) addAccountLine(lines, own, amount, description, debit, null);
+        else addIfPositive(lines, key, amount, description, debit);
+    }
+
     /** Buying a fixed asset: cost into Fixed Assets, paid from Cash or owed to suppliers (Accounts Payable). */
     @Transactional
     public void postAssetAcquisition(Long assetId, String memo, BigDecimal cost, boolean paidInCash, Long branchId) {
+        postAssetAcquisition(assetId, memo, cost, paidInCash, branchId, AssetAccounts.STANDARD);
+    }
+
+    @Transactional
+    public void postAssetAcquisition(Long assetId, String memo, BigDecimal cost, boolean paidInCash, Long branchId, AssetAccounts accounts) {
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.FIXED_ASSETS, cost, null, true);
+        assetLine(lines, AccountService.FIXED_ASSETS, accounts.asset(), cost, null, true);
         addIfPositive(lines, paidInCash ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, cost, null, false);
         post("ASSET_ACQUISITION", assetId, memo, null, lines, branchId);
+    }
+
+    /** A cost added to an asset after it was registered (an improvement): same entry as buying it. */
+    @Transactional
+    public void postAssetImprovement(Long assetId, String memo, BigDecimal cost, boolean paidInCash, Long branchId, AssetAccounts accounts) {
+        List<LineSpec> lines = new ArrayList<>();
+        assetLine(lines, AccountService.FIXED_ASSETS, accounts.asset(), cost, "Improvement", true);
+        addIfPositive(lines, paidInCash ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, cost, null, false);
+        post("ASSET_IMPROVEMENT", assetId, memo, null, lines, branchId);
+    }
+
+    /** A write-down of an asset's value that is not wear and tear (damage, obsolescence): expense up, accumulated depreciation up. */
+    @Transactional
+    public void postAssetImpairment(Long assetId, String memo, BigDecimal loss, Long branchId, AssetAccounts accounts) {
+        List<LineSpec> lines = new ArrayList<>();
+        assetLine(lines, AccountService.DEPRECIATION_EXPENSE, accounts.expense(), loss, "Impairment loss", true);
+        assetLine(lines, AccountService.ACCUMULATED_DEPRECIATION, accounts.accumulated(), loss, null, false);
+        post("ASSET_IMPAIRMENT", assetId, memo, null, lines, branchId);
     }
 
     /**
@@ -854,8 +887,13 @@ public class AccountingService {
      */
     @Transactional
     public void postAssetFromPurchase(Long purchaseOrderLineId, String memo, BigDecimal cost, Long branchId) {
+        postAssetFromPurchase(purchaseOrderLineId, memo, cost, branchId, AssetAccounts.STANDARD);
+    }
+
+    @Transactional
+    public void postAssetFromPurchase(Long purchaseOrderLineId, String memo, BigDecimal cost, Long branchId, AssetAccounts accounts) {
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.FIXED_ASSETS, cost, null, true);
+        assetLine(lines, AccountService.FIXED_ASSETS, accounts.asset(), cost, null, true);
         addIfPositive(lines, AccountService.INVENTORY, cost, "Moved out of inventory", false);
         post("ASSET_FROM_PURCHASE", purchaseOrderLineId, memo, null, lines, branchId);
     }
@@ -863,10 +901,16 @@ public class AccountingService {
     /** One month's depreciation for all assets of one branch together: expense up, accumulated depreciation up. {@code periodKey} is yyyyMM. */
     @Transactional
     public void postAssetDepreciation(Long periodKey, String memo, BigDecimal amount, Long branchId) {
+        postAssetDepreciation(periodKey, memo, amount, branchId, AssetAccounts.STANDARD, false);
+    }
+
+    /** Same, on a category's own accounts; {@code reverse} takes the charge back (a month undone). */
+    @Transactional
+    public void postAssetDepreciation(Long periodKey, String memo, BigDecimal amount, Long branchId, AssetAccounts accounts, boolean reverse) {
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.DEPRECIATION_EXPENSE, amount, null, true);
-        addIfPositive(lines, AccountService.ACCUMULATED_DEPRECIATION, amount, null, false);
-        post("ASSET_DEPRECIATION", periodKey, memo, null, lines, branchId);
+        assetLine(lines, AccountService.DEPRECIATION_EXPENSE, accounts.expense(), amount, null, !reverse);
+        assetLine(lines, AccountService.ACCUMULATED_DEPRECIATION, accounts.accumulated(), amount, null, reverse);
+        post(reverse ? "ASSET_DEPRECIATION_VOID" : "ASSET_DEPRECIATION", periodKey, memo, null, lines, branchId);
     }
 
     /**
@@ -875,14 +919,21 @@ public class AccountingService {
      */
     @Transactional
     public void postAssetDisposal(Long assetId, String memo, BigDecimal cost, BigDecimal accumulatedDepreciation, BigDecimal proceeds, Long branchId) {
+        postAssetDisposal(assetId, memo, cost, accumulatedDepreciation, proceeds, branchId, AssetAccounts.STANDARD, false);
+    }
+
+    /** Same, on a category's own accounts; {@code reverse} undoes an earlier disposal entry with the opposite one. */
+    @Transactional
+    public void postAssetDisposal(Long assetId, String memo, BigDecimal cost, BigDecimal accumulatedDepreciation, BigDecimal proceeds, Long branchId,
+                                  AssetAccounts accounts, boolean reverse) {
         BigDecimal bookValue = cost.subtract(accumulatedDepreciation);
         BigDecimal gainLoss = proceeds.subtract(bookValue); // positive = gain
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.CASH, proceeds, "Disposal proceeds", true);
-        addIfPositive(lines, AccountService.ACCUMULATED_DEPRECIATION, accumulatedDepreciation, null, true);
-        addSigned(lines, AccountService.ASSET_DISPOSAL_GAIN_LOSS, gainLoss, false, gainLoss.signum() >= 0 ? "Gain on disposal" : "Loss on disposal");
-        addIfPositive(lines, AccountService.FIXED_ASSETS, cost, null, false);
-        post("ASSET_DISPOSAL", assetId, memo, null, lines, branchId);
+        addIfPositive(lines, AccountService.CASH, proceeds, reverse ? "Disposal proceeds returned" : "Disposal proceeds", !reverse);
+        assetLine(lines, AccountService.ACCUMULATED_DEPRECIATION, accounts.accumulated(), accumulatedDepreciation, null, !reverse);
+        addSigned(lines, AccountService.ASSET_DISPOSAL_GAIN_LOSS, gainLoss, reverse, gainLoss.signum() >= 0 ? "Gain on disposal" : "Loss on disposal");
+        assetLine(lines, AccountService.FIXED_ASSETS, accounts.asset(), cost, null, reverse);
+        post(reverse ? "ASSET_DISPOSAL_VOID" : "ASSET_DISPOSAL", assetId, (reverse ? "Undone: " : "") + memo, null, lines, branchId);
     }
 
     // ---- Payroll (com.posapp.hr) ----

@@ -272,6 +272,11 @@ import { AssetListComponent } from './admin/assets/asset-list.component';
 import { AssetFormComponent } from './admin/assets/asset-form.component';
 import { AssetFromPurchaseComponent } from './admin/assets/asset-from-purchase.component';
 import { AssetDetailComponent } from './admin/assets/asset-detail.component';
+import { AssetOverviewComponent } from './admin/assets/asset-overview.component';
+import { AssetSettingsComponent } from './admin/assets/asset-settings.component';
+import { AssetLabelsComponent } from './admin/assets/asset-labels.component';
+import { AssetVerificationListComponent } from './admin/assets/asset-verification-list.component';
+import { AssetVerificationDetailComponent } from './admin/assets/asset-verification-detail.component';
 import { AssetCategoryListComponent } from './admin/assets/asset-category-list.component';
 import { EmployeeListComponent } from './admin/hr/employee-list.component';
 import { EmployeeFormComponent } from './admin/hr/employee-form.component';
@@ -912,6 +917,11 @@ const baseRoutes: Routes = [
   { path: 'admin/assets/from-purchase', component: AssetFromPurchaseComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets/categories', component: AssetCategoryListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets/reports', component: AssetReportListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/overview', component: AssetOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/settings', component: AssetSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/labels', component: AssetLabelsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/verifications', component: AssetVerificationListComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/assets/verifications/:id', component: AssetVerificationDetailComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets/:id', component: AssetDetailComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/assets/:id/edit', component: AssetFormComponent, canActivate: [authGuard, adminGuard] },
   // HR modules (optional; activated in Settings > Modules): Employees, Organizational Structure, Attendance & Leaves, Contracts, Payroll

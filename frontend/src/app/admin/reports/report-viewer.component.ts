@@ -9,6 +9,7 @@ import { RegisterApiService } from '../../core/api/register-api.service';
 import { CatalogApiService } from '../../core/api/catalog-api.service';
 import { WarehouseApiService } from '../../core/api/warehouse-api.service';
 import { BranchApiService } from '../../core/api/branch-api.service';
+import { AssetApiService, Verification } from '../../core/api/asset-api.service';
 import { ModuleApiService, ModuleKey } from '../../core/api/module-api.service';
 import { REPORT_DEFS, ReportColumn, ReportDef, reportListRouteForSection } from '../../core/report-defs';
 import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../core/models';
@@ -61,6 +62,19 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
               <option [ngValue]="null">All categories</option>
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select>
+          </div>
+          <div class="form-group" style="margin:0;" *ngFor="let x of def.extraFilters">
+            <label class="form-label">{{ x.label }}</label>
+            <select class="form-select" *ngIf="x.type === 'select'" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key">
+              <option value="">Any</option>
+              <option *ngFor="let o of x.options" [value]="o.value">{{ o.label }}</option>
+            </select>
+            <select class="form-select" *ngIf="x.type === 'verification'" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key">
+              <option value="">Latest round</option>
+              <option *ngFor="let r of rounds" [value]="'' + r.id">{{ r.name }} ({{ r.startedOn }})</option>
+            </select>
+            <input class="form-control" *ngIf="x.type === 'number'" type="number" min="1" style="width:8rem;" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key" />
+            <input class="form-control" *ngIf="x.type === 'text'" style="width:11rem;" [placeholder]="x.placeholder || ''" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key" />
           </div>
           <div class="form-group" style="margin:0;" *ngIf="def.openOnlyToggle">
             <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="includeClosed" (ngModelChange)="hasRun && run()" /> {{ def.openOnlyToggle }}</label>
@@ -169,6 +183,10 @@ export class ReportViewerComponent implements OnInit {
   filter: ReportFilter = { from: null, to: null, registerId: null, branchId: null, categoryId: null, productId: null };
   /** Law Firm reports with ReportDef.openOnlyToggle: also list closed matters. */
   includeClosed = false;
+  /** Values of ReportDef.extraFilters, by key. */
+  extra: Record<string, string> = {};
+  /** Asset verification rounds, for the 'verification' extra filter. */
+  rounds: Verification[] = [];
 
   /** Fourier: "can we have Stock Movement History for a specific product" — search-to-select, same pattern as BomFormComponent's own component-line search. */
   selectedProductName = '';
@@ -188,7 +206,8 @@ export class ReportViewerComponent implements OnInit {
     private catalogApi: CatalogApiService,
     private warehouseApi: WarehouseApiService,
     private branchApi: BranchApiService,
-    private modules: ModuleApiService
+    private modules: ModuleApiService,
+    private assetApi: AssetApiService
   ) {}
 
   ngOnInit(): void {
@@ -238,6 +257,13 @@ export class ReportViewerComponent implements OnInit {
     // runs immediately, same as the snapshot-style reports below, so the product's own page lands
     // straight on its own history rather than an empty "click Run" state.
     let arrivedWithProductFilter = false;
+    (this.def.extraFilters ?? []).forEach((x) => {
+      this.extra[x.key] = this.route.snapshot.queryParamMap.get(x.key) ?? x.defaultValue ?? '';
+      if (x.type === 'verification') {
+        this.assetApi.verifications().subscribe({ next: (r) => (this.rounds = r), error: () => {} });
+        if (this.extra[x.key]) arrivedWithProductFilter = true;
+      }
+    });
     if (this.def.productFilter) {
       const productIdParam = this.route.snapshot.queryParamMap.get('productId');
       const productNameParam = this.route.snapshot.queryParamMap.get('productName');
@@ -299,6 +325,7 @@ export class ReportViewerComponent implements OnInit {
   run(): void {
     if (!this.def) return;
     this.filter.openOnly = this.def.openOnlyToggle ? !this.includeClosed : null;
+    this.filter.extra = { ...this.extra };
     this.error = null;
     this.loading = true;
     this.reportApi.run(this.def.endpoint, this.filter).subscribe({
@@ -317,6 +344,7 @@ export class ReportViewerComponent implements OnInit {
   exportAs(format: 'xlsx' | 'pdf'): void {
     if (!this.def) return;
     this.filter.openOnly = this.def.openOnlyToggle ? !this.includeClosed : null;
+    this.filter.extra = { ...this.extra };
     this.error = null;
     this.exporting = true;
     this.reportApi.download(this.def.endpoint, this.filter, format).subscribe({

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.22.0 - Assets: register search and files, cost and value changes, custody and verification, overview and reports
+
+The asset register now has search, filters and quick views, several photos and files per asset, warranty and insurance dates with expiry warnings, printable QR tags and a history of everything done to an asset. Value changes after purchase are supported: improvements, write-downs, new depreciation terms, taking back the last month, and undoing a disposal. Assets can be handed to staff (with a handover sheet), checked in physical counting rounds, written off when missing, and disposals above a limit need approval. There is an overview page, a depreciation forecast and five new reports, and each category can have its own accounts. One migration (V61), a new permission (Approve large asset disposals) and four new pages under Assets (Overview, Verification, Settings, Print tags). Details in `RELEASE-NOTES-v1.22.0.md`.
+
 ### Version 1.21.0 - Expenses: VAT, payment accounts, bills with part-payments, budgets, approval rules, files, overview, reports
 
 Expenses now keep recoverable VAT in its own account, can be paid from a bank or mobile money account, and unpaid bills have due dates, part-payments and an overdue view. Every expense gets a number and a supplier reference, the list has search, filters and quick views, several files can be attached, a pending or rejected expense can be deleted, and several can be approved or rejected at once. Monthly budgets per category or cost center, an approval limit, a "not your own expense" rule and a new Expenses overview and four new reports are included. One migration (V60), a new permission (Approve large expenses) and four new pages under Expenses (Overview, Budgets, Reports, Settings). Details in `RELEASE-NOTES-v1.21.0.md`.

@@ -31,5 +31,7 @@ public enum Permission {
     /** Approve a hand-changed price at the till by PIN. */
     APPROVE_POS_PRICE,
     /** Approve a large paid-out and cancel a mistaken cash movement. */
-    APPROVE_POS_CASH
+    APPROVE_POS_CASH,
+    /** Sell or write off an asset whose book value is above the limit set in Asset settings — see FixedAssetService.dispose. */
+    APPROVE_ASSET_DISPOSAL
 }

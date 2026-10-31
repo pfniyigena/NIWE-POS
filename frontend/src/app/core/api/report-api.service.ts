@@ -22,6 +22,8 @@ export interface ReportFilter {
   openOnly?: boolean | null;
   /** Required by the Supplier Statement report only (Task 5 — see supplier-statement.component.ts); every other report ignores it. */
   supplierId?: number | null;
+  /** Extra, report-specific query parameters (ReportDef.extraFilters) — e.g. the Assets reports' holder, place, days and round. */
+  extra?: Record<string, string>;
 }
 
 /** Backs every screen under /admin/reports — see ../report-defs.ts for what each report looks like. */
@@ -55,6 +57,9 @@ export class ReportApiService {
     if (filter.customerId != null) params['customerId'] = String(filter.customerId);
     if (filter.openOnly != null) params['openOnly'] = String(filter.openOnly);
     if (filter.supplierId != null) params['supplierId'] = String(filter.supplierId);
+    Object.entries(filter.extra ?? {}).forEach(([k, v]) => {
+      if (v !== '' && v != null) params[k] = String(v);
+    });
     return params;
   }
 }

@@ -103,7 +103,17 @@ public final class ScheduledReportCatalog {
         add(new Def("overdue-credit", "Overdue credit", "Credit", false, false, false, true, false, null,
                 (c, p) -> c.overdueCredit(p.branchId(), p.format())));
         add(new Def("asset-register", "Asset register", "Assets", false, false, false, true, false, null,
-                (c, p) -> c.assetRegister(p.branchId(), p.format())));
+                (c, p) -> c.assetRegister(p.branchId(), null, null, null, null, null, null, p.format())));
+        add(new Def("assets-by-location", "Assets by location", "Assets", false, false, false, true, false, null,
+                (c, p) -> c.assetsByLocation(p.branchId(), p.format())));
+        add(new Def("assets-by-custodian", "Assets by custodian", "Assets", false, false, false, true, false, null,
+                (c, p) -> c.assetsByCustodian(p.branchId(), p.format())));
+        add(new Def("assets-expiry", "Warranty and insurance expiry", "Assets", false, false, false, true, true, 30,
+                (c, p) -> c.assetsExpiry(p.branchId(), p.days() != null ? p.days() : 30, p.format())));
+        add(new Def("assets-forecast", "Depreciation forecast (months ahead)", "Assets", false, false, false, true, true, 12,
+                (c, p) -> c.assetsForecast(p.branchId(), p.days() != null ? p.days() : 12, p.format())));
+        add(new Def("assets-movement", "Fixed asset movement", "Assets", true, false, false, true, false, null,
+                (c, p) -> c.assetsMovement(p.from(), p.to(), p.branchId(), p.format())));
         add(new Def("assets-by-category", "Assets by category", "Assets", false, false, false, true, false, null,
                 (c, p) -> c.assetsByCategory(p.branchId(), p.format())));
         add(new Def("depreciation-schedule", "Depreciation schedule", "Assets", true, false, false, true, false, null,

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
+import { AccountApiService } from '../../core/api/account-api.service';
+import { Account } from '../../core/models';
 import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/api/asset-api.service';
 
 /** Assets > Categories: the kinds of asset and the depreciation terms new assets of that kind start with. */
@@ -20,6 +22,8 @@ import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/a
       <p class="text-muted">
         Each category sets the depreciation method, useful life and salvage value that a new asset of that kind starts with.
         Changing a category later does not change assets already registered.
+        You can also give a category its own accounts (for example one for Vehicles and another for Computers); left empty, the standard Fixed Assets,
+        Accumulated Depreciation and Depreciation Expense accounts are used.
       </p>
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="save()">
         <strong class="mb-2">{{ editingId ? 'Edit category' : 'New category' }}</strong>
@@ -36,6 +40,22 @@ import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/a
           <div class="form-group"><label class="form-label">Salvage value (% of cost)</label>
             <input class="form-control" type="number" min="0" max="99.99" step="0.01" name="salvage" [(ngModel)]="form.salvagePercent" style="width:8rem;" /></div>
           <div class="form-group"><label class="form-label"><input type="checkbox" name="prorate" [(ngModel)]="form.prorateFirstMonth" /> Prorate the first month by days</label></div>
+          <div class="form-group"><label class="form-label">Asset account</label>
+            <select class="form-select" name="assetAccount" [(ngModel)]="form.assetAccountId" [disabled]="locked">
+              <option [ngValue]="null">Standard (Fixed Assets)</option>
+              <option *ngFor="let a of assetAccounts" [ngValue]="a.id">{{ a.code }} {{ a.name }}</option>
+            </select></div>
+          <div class="form-group"><label class="form-label">Accumulated depreciation account</label>
+            <select class="form-select" name="accumAccount" [(ngModel)]="form.accumulatedAccountId" [disabled]="locked">
+              <option [ngValue]="null">Standard (Accumulated Depreciation)</option>
+              <option *ngFor="let a of assetAccounts" [ngValue]="a.id">{{ a.code }} {{ a.name }}</option>
+            </select></div>
+          <div class="form-group"><label class="form-label">Depreciation expense account</label>
+            <select class="form-select" name="expenseAccount" [(ngModel)]="form.expenseAccountId" [disabled]="locked">
+              <option [ngValue]="null">Standard (Depreciation Expense)</option>
+              <option *ngFor="let a of expenseAccounts" [ngValue]="a.id">{{ a.code }} {{ a.name }}</option>
+            </select></div>
+          <div class="text-muted" style="flex-basis:100%; font-size:0.8rem;" *ngIf="locked">This category already has assets, so its accounts can't be changed.</div>
           <div class="form-group" *ngIf="editingId"><label class="form-label"><input type="checkbox" name="active" [(ngModel)]="form.active" /> Active</label></div>
           <div class="flex gap-2">
             <button class="btn btn-primary" type="submit">Save</button>
@@ -44,7 +64,7 @@ import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/a
         </div>
       </form>
       <table class="table-sm">
-        <thead><tr><th>Name</th><th>Method</th><th>Useful life</th><th>Salvage</th><th>First month</th><th>Assets</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Method</th><th>Useful life</th><th>Salvage</th><th>First month</th><th>Accounts</th><th>Assets</th><th>Status</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let c of categories">
             <td>{{ c.name }}</td>
@@ -52,6 +72,10 @@ import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/a
             <td>{{ c.usefulLifeMonths }} months</td>
             <td>{{ c.salvagePercent }}%</td>
             <td>{{ c.prorateFirstMonth ? 'By days' : 'Full month' }}</td>
+            <td style="font-size:0.8rem;">
+              <span *ngIf="!c.assetAccountName && !c.accumulatedAccountName && !c.expenseAccountName" class="text-muted">Standard</span>
+              <span *ngIf="c.assetAccountName">{{ c.assetAccountName }}</span><span *ngIf="c.accumulatedAccountName"> / {{ c.accumulatedAccountName }}</span><span *ngIf="c.expenseAccountName"> / {{ c.expenseAccountName }}</span>
+            </td>
             <td>{{ c.assetCount }}</td>
             <td><span class="badge" [class.badge-success]="c.active" [class.badge-secondary]="!c.active">{{ c.active ? 'Active' : 'Inactive' }}</span></td>
             <td><button class="btn btn-sm btn-outline-primary" type="button" (click)="edit(c)">Edit</button></td>
@@ -64,18 +88,28 @@ import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/a
 })
 export class AssetCategoryListComponent implements OnInit {
   categories: AssetCategory[] = [];
+  assetAccounts: Account[] = [];
+  expenseAccounts: Account[] = [];
+  editing: AssetCategory | null = null;
   error: string | null = null;
   editingId: number | null = null;
   form = AssetCategoryListComponent.blank();
 
-  constructor(private api: AssetApiService) {}
+  constructor(private api: AssetApiService, private accountApi: AccountApiService) {}
+
+  get locked(): boolean {
+    return !!this.editing && this.editing.assetCount > 0;
+  }
 
   ngOnInit(): void {
+    this.accountApi.listActiveByType('ASSET').subscribe({ next: (a) => (this.assetAccounts = a), error: () => {} });
+    this.accountApi.listActiveByType('EXPENSE').subscribe({ next: (a) => (this.expenseAccounts = a), error: () => {} });
     this.load();
   }
 
   private static blank() {
-    return { name: '', method: 'STRAIGHT_LINE' as DepreciationMethod, usefulLifeMonths: 60, salvagePercent: 0, prorateFirstMonth: false, active: true };
+    return { name: '', method: 'STRAIGHT_LINE' as DepreciationMethod, usefulLifeMonths: 60, salvagePercent: 0, prorateFirstMonth: false, active: true,
+      assetAccountId: null as number | null, accumulatedAccountId: null as number | null, expenseAccountId: null as number | null };
   }
 
   load(): void {
@@ -87,11 +121,16 @@ export class AssetCategoryListComponent implements OnInit {
 
   edit(c: AssetCategory): void {
     this.editingId = c.id;
-    this.form = { name: c.name, method: c.method, usefulLifeMonths: c.usefulLifeMonths, salvagePercent: c.salvagePercent, prorateFirstMonth: c.prorateFirstMonth, active: c.active };
+    this.editing = c;
+    this.form = {
+      name: c.name, method: c.method, usefulLifeMonths: c.usefulLifeMonths, salvagePercent: c.salvagePercent, prorateFirstMonth: c.prorateFirstMonth, active: c.active,
+      assetAccountId: c.assetAccountId, accumulatedAccountId: c.accumulatedAccountId, expenseAccountId: c.expenseAccountId,
+    };
   }
 
   reset(): void {
     this.editingId = null;
+    this.editing = null;
     this.form = AssetCategoryListComponent.blank();
   }
 

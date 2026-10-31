@@ -98,11 +98,12 @@ public class AssetPurchaseService {
             String name = quantity > 1 ? baseName + " #" + (already + i) : baseName;
             AssetRequest asset = new AssetRequest(null, name, request.categoryId(), date, unitCost, null, null, null, null,
                     request.location(), request.assignedTo(), null, po.getSupplier() != null ? po.getSupplier().getName() : null,
-                    request.notes(), AcquisitionFunding.NONE, null, request.prorateFirstMonth(), po.getBranchId());
+                    request.notes(), AcquisitionFunding.NONE, null, request.prorateFirstMonth(), po.getBranchId(), null, null, null);
             created.add(assetService.toDto(assetService.createAsset(asset, link)));
         }
         BigDecimal total = unitCost.multiply(BigDecimal.valueOf(quantity));
-        accountingService.postAssetFromPurchase(line.getId(), "Asset(s) from purchase order " + po.getOrderNumber() + ": " + quantity + " x " + baseName, total, po.getBranchId());
+        accountingService.postAssetFromPurchase(line.getId(), "Asset(s) from purchase order " + po.getOrderNumber() + ": " + quantity + " x " + baseName, total, po.getBranchId(),
+                assetService.accountsFor(request.categoryId()));
         auditLogService.record("ASSET_FROM_PURCHASE", "Registered " + quantity + " asset(s) from purchase order " + po.getOrderNumber()
                 + " (" + baseName + ", cost " + total + ")", "PurchaseOrder", po.getId());
         return created;

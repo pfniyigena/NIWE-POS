@@ -28,6 +28,10 @@ public class DepreciationEntry extends BaseEntity {
     @Column(name = "branch_id")
     private Long branchId;
 
+    /** Set when the asset's category has its own accounts, so the monthly posting can be reversed on the same ones. */
+    @Column(name = "category_id")
+    private Long categoryId;
+
     @Column(nullable = false)
     private BigDecimal amount;
 
