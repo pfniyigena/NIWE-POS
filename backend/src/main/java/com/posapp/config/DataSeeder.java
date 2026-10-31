@@ -64,6 +64,12 @@ public class DataSeeder implements CommandLineRunner {
     private final BranchService branchService;
     private final PasswordEncoder passwordEncoder;
     private final boolean seedEnabled;
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DataSeeder.class);
+
+    /** Password of the first administrator when demo data is off and no user exists yet; blank = generate one. */
+    @Value("${app.initial-admin-password:}")
+    private String initialAdminPassword;
     private final BigDecimal defaultTaxRatePercent;
     private final String defaultCurrencySymbol;
 
@@ -156,6 +162,7 @@ public class DataSeeder implements CommandLineRunner {
         branchService.seedDefaultBranchIfNeeded();
         warehouseService.assignMissingBranches();
         if (!seedEnabled) {
+            ensureInitialAdmin();
             return;
         }
         seedUsers();
@@ -191,6 +198,42 @@ public class DataSeeder implements CommandLineRunner {
         if (!legacy.isEmpty()) {
             stockAdjustmentRepository.saveAll(legacy);
         }
+    }
+
+    /**
+     * Production first start (app.seed-demo-data=false): with no demo data there would otherwise be
+     * no user at all and nobody could sign in. If - and only if - the user table is empty, create the
+     * administrator "admin". The password is app.initial-admin-password when it is set, otherwise a
+     * random one that is written once to the log. It is never created again once any user exists.
+     */
+    private void ensureInitialAdmin() {
+        if (userRepository.count() > 0) {
+            return;
+        }
+        boolean generated = initialAdminPassword == null || initialAdminPassword.isBlank();
+        String password = generated ? randomPassword() : initialAdminPassword;
+        AppUser admin = new AppUser();
+        admin.setUsername("admin");
+        admin.setPasswordHash(passwordEncoder.encode(password));
+        admin.setFullName("Administrator");
+        admin.setRole(Role.ADMIN);
+        userRepository.save(admin);
+        if (generated) {
+            log.warn("FIRST START: no users existed, so the administrator 'admin' was created with the one-time password '{}'. "
+                    + "Sign in and change it now (Profile). It is not shown again.", password);
+        } else {
+            log.info("FIRST START: no users existed, so the administrator 'admin' was created with the password from app.initial-admin-password.");
+        }
+    }
+
+    private static String randomPassword() {
+        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            sb.append(alphabet.charAt(random.nextInt(alphabet.length())));
+        }
+        return sb.toString();
     }
 
     private void seedUsers() {

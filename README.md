@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.22.2 - First-start administrator, 404 and 405 answers
+
+Found in a clean-install rehearsal: with demo data switched off (`app.seed-demo-data=false`) a new database had no users and nobody could sign in. Now, only when there are no users at all, the administrator `admin` is created, with the password in `app.initial-admin-password` or a random one written once to the log (line `FIRST START`). Mistyped addresses under `/api` now answer 404, and wrong methods 405, instead of 500. No migration, no screen changes. Details in `RELEASE-NOTES-v1.22.2.md`.
+
 ### Version 1.22.1 - Subscriptions: month-end billing fix
 
 Subscriptions that start on the 29th, 30th or 31st no longer drift to the 28th after a short month: 31 January now bills 28 February, 31 March, 30 April and so on, in the same way for quarterly and yearly plans (29 February returns in leap years). Invoice periods join up, the plan-change quote uses the true period length, and subscriptions that had already drifted are put back by the migration. One migration (V62), no screen changes. Details in `RELEASE-NOTES-v1.22.1.md`.
