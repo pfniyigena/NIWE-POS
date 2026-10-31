@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.22.1 - Subscriptions: month-end billing fix
+
+Subscriptions that start on the 29th, 30th or 31st no longer drift to the 28th after a short month: 31 January now bills 28 February, 31 March, 30 April and so on, in the same way for quarterly and yearly plans (29 February returns in leap years). Invoice periods join up, the plan-change quote uses the true period length, and subscriptions that had already drifted are put back by the migration. One migration (V62), no screen changes. Details in `RELEASE-NOTES-v1.22.1.md`.
+
 ### Version 1.22.0 - Assets: register search and files, cost and value changes, custody and verification, overview and reports
 
 The asset register now has search, filters and quick views, several photos and files per asset, warranty and insurance dates with expiry warnings, printable QR tags and a history of everything done to an asset. Value changes after purchase are supported: improvements, write-downs, new depreciation terms, taking back the last month, and undoing a disposal. Assets can be handed to staff (with a handover sheet), checked in physical counting rounds, written off when missing, and disposals above a limit need approval. There is an overview page, a depreciation forecast and five new reports, and each category can have its own accounts. One migration (V61), a new permission (Approve large asset disposals) and four new pages under Assets (Overview, Verification, Settings, Print tags). Details in `RELEASE-NOTES-v1.22.0.md`.

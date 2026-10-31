@@ -14,7 +14,8 @@ import java.time.LocalDate;
  * no extra day-of-month bookkeeping needed. {@link #subtractFrom} is its exact inverse, same
  * clamping behavior via minusWeeks/minusMonths/minusYears — used by {@code
  * SubscriptionService.billOne} to find where a "paid after service" cycle actually started, given
- * only the date it's now due.
+ * only the date it's now due. Both take the billing day of month so that a subscription that
+ * started on the 31st goes back to the 31st after a short month (v1.22.1).
  */
 public enum BillingInterval {
     WEEKLY,
@@ -23,20 +24,40 @@ public enum BillingInterval {
     YEARLY;
 
     public LocalDate addTo(LocalDate date) {
-        return switch (this) {
-            case WEEKLY -> date.plusWeeks(1);
-            case MONTHLY -> date.plusMonths(1);
-            case QUARTERLY -> date.plusMonths(3);
-            case YEARLY -> date.plusYears(1);
-        };
+        return addTo(date, null);
     }
 
     public LocalDate subtractFrom(LocalDate date) {
+        return subtractFrom(date, null);
+    }
+
+    /**
+     * One interval after {@code date}, keeping the billing day of month. {@code anchorDay} is the day the subscription is meant to bill on
+     * (31 for a subscription that started on the 31st). Without it a short month would pull the day down for good (Jan 31, Feb 28, Mar 28...);
+     * with it the day goes back up as soon as the month is long enough (Jan 31, Feb 28, Mar 31). Null keeps the plain calendar arithmetic.
+     * Weekly cycles have no day of month and ignore it.
+     */
+    public LocalDate addTo(LocalDate date, Integer anchorDay) {
+        return switch (this) {
+            case WEEKLY -> date.plusWeeks(1);
+            case MONTHLY -> anchored(date.plusMonths(1), anchorDay);
+            case QUARTERLY -> anchored(date.plusMonths(3), anchorDay);
+            case YEARLY -> anchored(date.plusYears(1), anchorDay);
+        };
+    }
+
+    /** The exact inverse of {@link #addTo(LocalDate, Integer)}: where the cycle that ends (or is billed) on {@code date} started. */
+    public LocalDate subtractFrom(LocalDate date, Integer anchorDay) {
         return switch (this) {
             case WEEKLY -> date.minusWeeks(1);
-            case MONTHLY -> date.minusMonths(1);
-            case QUARTERLY -> date.minusMonths(3);
-            case YEARLY -> date.minusYears(1);
+            case MONTHLY -> anchored(date.minusMonths(1), anchorDay);
+            case QUARTERLY -> anchored(date.minusMonths(3), anchorDay);
+            case YEARLY -> anchored(date.minusYears(1), anchorDay);
         };
+    }
+
+    private static LocalDate anchored(LocalDate date, Integer anchorDay) {
+        if (anchorDay == null || anchorDay < 1) return date;
+        return date.withDayOfMonth(Math.min(anchorDay, date.lengthOfMonth()));
     }
 }

@@ -259,7 +259,8 @@ public class SubscriptionService {
         subscription.setBillInAdvance(billInAdvance);
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setStartDate(startDate);
-        subscription.setNextBillingDate(billInAdvance ? billingStart : subscription.getBillingInterval().addTo(billingStart));
+        subscription.setBillingAnchorDay(billingStart.getDayOfMonth());
+        subscription.setNextBillingDate(billInAdvance ? billingStart : subscription.getBillingInterval().addTo(billingStart, billingStart.getDayOfMonth()));
         subscription.setNotes(request.getNotes());
         Subscription saved = repository.save(subscription);
 
@@ -345,14 +346,14 @@ public class SubscriptionService {
             return new SubscriptionViews.ChangeQuoteDto(false, 0, 0, oldCycle, newCycle, BigDecimal.ZERO, BigDecimal.ZERO, monthlyBefore, monthlyAfter, why);
         }
         LocalDate periodEnd = s.getNextBillingDate();
-        LocalDate periodStart = s.getBillingInterval().subtractFrom(periodEnd);
+        LocalDate periodStart = s.getBillingInterval().subtractFrom(periodEnd, anchorOf(s));
         long periodDays = Math.max(1, ChronoUnit.DAYS.between(periodStart, periodEnd));
         long remaining = Math.min(periodDays, Math.max(0, ChronoUnit.DAYS.between(today, periodEnd)));
         if (remaining == 0) {
             return new SubscriptionViews.ChangeQuoteDto(false, 0, periodDays, oldCycle, newCycle, BigDecimal.ZERO, BigDecimal.ZERO, monthlyBefore, monthlyAfter,
                     "The period already billed has run out, so the new terms apply from the next bill.");
         }
-        long newDays = Math.max(1, ChronoUnit.DAYS.between(periodEnd, newInterval.addTo(periodEnd)));
+        long newDays = Math.max(1, ChronoUnit.DAYS.between(periodEnd, newInterval.addTo(periodEnd, anchorOf(s))));
         BigDecimal oldDaily = oldCycle.divide(BigDecimal.valueOf(periodDays), 8, RoundingMode.HALF_UP);
         BigDecimal newDaily = newCycle.divide(BigDecimal.valueOf(newDays), 8, RoundingMode.HALF_UP);
         BigDecimal delta = newDaily.subtract(oldDaily).multiply(BigDecimal.valueOf(remaining)).setScale(2, RoundingMode.HALF_UP);
@@ -448,6 +449,7 @@ public class SubscriptionService {
         subscription.setPausedAt(null);
         if (subscription.getNextBillingDate().isBefore(today())) {
             subscription.setNextBillingDate(today());
+            subscription.setBillingAnchorDay(today().getDayOfMonth());
         }
         Subscription saved = repository.save(subscription);
         auditLogService.record("SUBSCRIPTION_RESUMED", (automatic ? "Resumed automatically the subscription for " : "Resumed subscription for ") + saved.getCustomerName()
@@ -478,7 +480,7 @@ public class SubscriptionService {
             throw ApiException.badRequest("A cancellation is scheduled - undo it first or just let the subscription end.");
         }
         LocalDate skipped = s.getNextBillingDate();
-        s.setNextBillingDate(s.getBillingInterval().addTo(skipped));
+        s.setNextBillingDate(s.getBillingInterval().addTo(skipped, anchorOf(s)));
         Subscription saved = repository.save(s);
         auditLogService.record("SUBSCRIPTION_SKIPPED", "Skipped the billing of " + skipped + " for " + saved.getCustomerName(), "Subscription", saved.getId());
         event(saved, SubscriptionEventKind.SKIPPED, "Skipped the billing due " + skipped + " - next billing " + saved.getNextBillingDate());
@@ -832,12 +834,19 @@ public class SubscriptionService {
      * with tax), a setup fee on the first invoice, and any credit left over from a downgrade. A fixed term counts cycles billed and then renews
      * or ends the subscription; a scheduled cancellation on a paid-after-service subscription is carried out right after its last cycle is billed.
      */
+    /** The billing day of month: the stored anchor, or (rows from before 1.22.1 the migration could not fill) the day of the next billing date. */
+    static Integer anchorOf(Subscription s) {
+        if (s.getBillingAnchorDay() != null) return s.getBillingAnchorDay();
+        return s.getNextBillingDate() == null ? null : s.getNextBillingDate().getDayOfMonth();
+    }
+
     private String billOne(Subscription subscription) {
         String planName = subscription.getPlan() != null ? subscription.getPlan().getName() : "Subscription";
         LocalDate dueDate = subscription.getNextBillingDate();
         boolean advance = !Boolean.FALSE.equals(subscription.getBillInAdvance());
-        LocalDate periodStart = advance ? dueDate : subscription.getBillingInterval().subtractFrom(dueDate);
-        LocalDate periodEnd = advance ? subscription.getBillingInterval().addTo(dueDate) : dueDate;
+        Integer anchor = anchorOf(subscription);
+        LocalDate periodStart = advance ? dueDate : subscription.getBillingInterval().subtractFrom(dueDate, anchor);
+        LocalDate periodEnd = advance ? subscription.getBillingInterval().addTo(dueDate, anchor) : dueDate;
 
         List<SubscriptionInvoiceSpec.Extra> extras = new ArrayList<>();
         BigDecimal base = TaxMath.applyDiscount(subscription.getPrice().multiply(BigDecimal.valueOf(Math.max(1, subscription.getQuantity()))), subscription.getDiscountPercent());
@@ -859,7 +868,7 @@ public class SubscriptionService {
                 subscription.getDiscountPercent(), periodStart, periodEnd, extras));
 
         subscription.setLastBilledAt(Instant.now());
-        subscription.setNextBillingDate(subscription.getBillingInterval().addTo(dueDate));
+        subscription.setNextBillingDate(subscription.getBillingInterval().addTo(dueDate, anchor));
         subscription.setCyclesBilled(subscription.getCyclesBilled() + 1);
         if (addSetup) subscription.setSetupFeeBilled(true);
         if (credit.signum() > 0) subscription.setCreditBalance(subscription.getCreditBalance().subtract(credit));

@@ -137,6 +137,13 @@ public class Subscription extends BaseEntity {
     @Column(nullable = false, columnDefinition = "integer default 0 not null")
     private int trialDays = 0;
 
+    /**
+     * The day of the month this subscription bills on (1 to 31). A subscription that started on the 31st keeps 31 here, so after February's 28th it goes back
+     * to the 31st instead of staying on the 28th. Set when the subscription starts and again when it resumes on a new date; null on rows made before 1.22.1
+     * until the migration fills it. Use {@code SubscriptionService.anchorOf}, which falls back to the next billing date's day.
+     */
+    private Integer billingAnchorDay;
+
     /** Billing starts on this date; null = no trial. */
     private LocalDate trialEndDate;
 
