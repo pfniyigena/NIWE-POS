@@ -314,6 +314,10 @@ import { CostCenterFormComponent } from './admin/accounting/cost-center-form.com
 import { ExpenseListComponent } from './admin/accounting/expense-list.component';
 import { ExpenseFormComponent } from './admin/accounting/expense-form.component';
 import { ExpenseDetailComponent } from './admin/accounting/expense-detail.component';
+import { ExpenseOverviewComponent } from './admin/accounting/expense-overview.component';
+import { ExpenseBudgetsComponent } from './admin/accounting/expense-budgets.component';
+import { ExpenseSettingsComponent } from './admin/accounting/expense-settings.component';
+import { ExpenseReportListComponent } from './admin/accounting/expense-report-list.component';
 import { RecurringExpenseListComponent } from './admin/accounting/recurring-expense-list.component';
 import { RecurringExpenseFormComponent } from './admin/accounting/recurring-expense-form.component';
 import { IncomeListComponent } from './admin/accounting/income-list.component';
@@ -948,6 +952,10 @@ const baseRoutes: Routes = [
 
   { path: 'admin/accounting/expenses', component: ExpenseListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/expenses/new', component: ExpenseFormComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/accounting/expenses/overview', component: ExpenseOverviewComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/accounting/expenses/budgets', component: ExpenseBudgetsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/accounting/expenses/settings', component: ExpenseSettingsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/accounting/expenses/reports', component: ExpenseReportListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/expenses/:id', component: ExpenseDetailComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/accounting/expenses/:id/edit', component: ExpenseFormComponent, canActivate: [authGuard, adminGuard] },
 

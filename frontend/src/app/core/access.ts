@@ -22,6 +22,7 @@ const RULES: AccessRule[] = [
   // Admin-only settings screens that live under an otherwise shared prefix — listed first so they win.
   { prefix: 'admin/inventory/settings', areas: 'ADMIN' },
   { prefix: 'admin/helpdesk/settings', areas: 'ADMIN' },
+  { prefix: 'admin/accounting/expenses/settings', areas: 'ADMIN' },
   { prefix: 'admin/subscriptions/job-settings', areas: 'ADMIN' },
   { prefix: 'admin/installments/settings', areas: 'ADMIN' },
   { prefix: 'admin/time/settings', areas: 'ADMIN' },
@@ -39,6 +40,7 @@ const RULES: AccessRule[] = [
 
   // Reports and dashboard.
   { prefix: 'admin/accounting/reports', areas: ['REPORTS', 'ACCOUNTING'] },
+  { prefix: 'admin/accounting/expenses/reports', areas: ['REPORTS', 'ACCOUNTING'] },
   { prefix: 'admin/helpdesk/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/dashboard', areas: ['REPORTS'] },
   { prefix: 'admin/reports', areas: ['REPORTS'] },

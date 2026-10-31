@@ -108,6 +108,7 @@ export class UserListComponent implements OnInit {
       APPROVE_POS_VOID_RETURN: 'Approve voids/returns',
       APPROVE_POS_PRICE: 'Approve price changes',
       APPROVE_POS_CASH: 'Approve paid-outs',
+      APPROVE_LARGE_EXPENSE: 'Approve large expenses',
     };
     return (u.permissions ?? []).map((p) => labels[p] ?? p).join(', ');
   }

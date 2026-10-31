@@ -123,6 +123,7 @@ export class UserFormComponent implements OnInit {
     { value: 'APPROVE_PURCHASE_REQUISITION', label: 'Approve Purchase requisitions', hint: 'Approve or reject a requisition awaiting approval.' },
     { value: 'OVERRIDE_DISCOUNT_CAP', label: 'Override the store-wide discount cap', hint: 'Apply a discount at checkout, and exceed the configured maximum discount.' },
     { value: 'APPROVE_EXPENSE', label: 'Approve/reject Expenses', hint: 'Approve or reject an expense awaiting approval, and void an already-approved one.' },
+    { value: 'APPROVE_LARGE_EXPENSE', label: 'Approve large Expenses', hint: 'Approve an expense above the approval limit set in Expenses > Settings. Administrators can always do this.' },
     { value: 'APPROVE_STOCK_TRANSFER', label: 'Approve/reject Stock transfers', hint: 'Review a logged transfer between warehouses — moves the stock or discards it.' },
     { value: 'APPROVE_POS_VOID_RETURN', label: 'Approve voids and returns at the till', hint: 'Approve a void or a large return by typing a PIN, without any other manager right.' },
     { value: 'APPROVE_POS_PRICE', label: 'Approve price changes at the till', hint: 'Approve a hand-changed price by typing a PIN.' },

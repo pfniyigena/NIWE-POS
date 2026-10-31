@@ -988,43 +988,69 @@ public class AccountingService {
     @Transactional
     public void postExpense(Expense expense) {
         Long costCenterId = expense.getCostCenter() != null ? expense.getCostCenter().getId() : null;
+        BigDecimal tax = expense.getTaxAmount() != null ? expense.getTaxAmount() : BigDecimal.ZERO;
+        BigDecimal net = expense.getAmount().subtract(tax);
         List<LineSpec> lines = new ArrayList<>();
-        addAccountLine(lines, expense.getAccount(), expense.getAmount(), expense.getMemo(), true, costCenterId);
-        addIfPositive(lines, expense.isPaid() ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, expense.getAmount(), null, false);
+        addAccountLine(lines, expense.getAccount(), net, expense.getMemo(), true, costCenterId);
+        // Recoverable input VAT is not a cost: it goes to its own account so it can be claimed back.
+        addIfPositive(lines, AccountService.INPUT_VAT_RECOVERABLE, tax, "Input VAT on expense", true);
+        creditSide(lines, expense, expense.getAmount(), null, false);
 
         post("EXPENSE", expense.getId(), "Expense — " + safe(expense.getPayeeName()), toInstant(expense.getExpenseDate()), lines, expense.getBranchId());
+    }
+
+    /** The "money out / owed" side of an expense: the paid-from account (Cash when none chosen) for a paid expense, Accounts Payable for a bill. */
+    private void creditSide(List<LineSpec> lines, Expense expense, BigDecimal amount, String description, boolean debit) {
+        if (expense.isPaid() && expense.getPaidFromAccount() != null) {
+            addAccountLine(lines, expense.getPaidFromAccount(), amount, description, debit, null);
+        } else {
+            addIfPositive(lines, expense.isPaid() ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, amount, description, debit);
+        }
     }
 
     /**
      * Called from ExpenseService.voidExpense — reverses an already-APPROVED (and so already
      * posted) expense's entry with an equal-and-opposite one, same "never erase a real posted
      * event, reverse it instead" stance as {@code postPosReturn}/{@code postSalesOrderReturn}/
-     * {@code postPurchaseReturn}. What {@code postExpense} debited (the expense-category account)
-     * is credited here, and what it credited (Cash or Accounts Payable) is debited here.
+     * {@code postPurchaseReturn}. What {@code postExpense} debited (the expense-category account
+     * and input VAT) is credited here, and what it credited (the paid-from account or Accounts Payable) is debited here.
      */
     @Transactional
     public void postExpenseVoid(Expense expense) {
         Long costCenterId = expense.getCostCenter() != null ? expense.getCostCenter().getId() : null;
+        BigDecimal tax = expense.getTaxAmount() != null ? expense.getTaxAmount() : BigDecimal.ZERO;
+        BigDecimal net = expense.getAmount().subtract(tax);
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, expense.isPaid() ? AccountService.CASH : AccountService.ACCOUNTS_PAYABLE, expense.getAmount(), "Expense void", true);
-        addAccountLine(lines, expense.getAccount(), expense.getAmount(), "Expense void — " + safe(expense.getMemo()), false, costCenterId);
+        creditSide(lines, expense, expense.getAmount(), "Expense void", true);
+        addAccountLine(lines, expense.getAccount(), net, "Expense void — " + safe(expense.getMemo()), false, costCenterId);
+        addIfPositive(lines, AccountService.INPUT_VAT_RECOVERABLE, tax, "Input VAT reversed", false);
 
         post("EXPENSE_VOID", expense.getId(), "Void of expense — " + safe(expense.getPayeeName()), null, lines, expense.getBranchId());
     }
 
     /**
-     * Called from ExpenseService.settle — the moment a bill that posted unpaid (paid == false,
-     * credited to Accounts Payable at approval time via postExpense) is actually paid off. Only
-     * moves cash against the payable; never touches the expense-category side again, since that
-     * was already recognized in full at approval time, not deferred until settlement.
+     * Called when a bill that posted unpaid (credited to Accounts Payable at approval time via postExpense)
+     * is paid, in full or in part. Only moves money against the payable, from the chosen account
+     * (Cash when none given); never touches the expense-category side again, since that was already
+     * recognised in full at approval time, not deferred until payment.
      */
     @Transactional
-    public void postExpenseSettlement(Expense expense, java.time.LocalDate settledDate) {
+    public void postExpensePayment(Expense expense, BigDecimal amount, java.time.LocalDate date, Account paidFrom) {
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.ACCOUNTS_PAYABLE, expense.getAmount(), "Bill settled", true);
-        addIfPositive(lines, AccountService.CASH, expense.getAmount(), null, false);
+        addIfPositive(lines, AccountService.ACCOUNTS_PAYABLE, amount, "Bill payment", true);
+        if (paidFrom != null) {
+            addAccountLine(lines, paidFrom, amount, null, false, null);
+        } else {
+            addIfPositive(lines, AccountService.CASH, amount, null, false);
+        }
 
-        post("EXPENSE_SETTLEMENT", expense.getId(), "Settled bill — " + safe(expense.getPayeeName()), toInstant(settledDate), lines, expense.getBranchId());
+        post("EXPENSE_SETTLEMENT", expense.getId(), "Paid bill — " + safe(expense.getPayeeName()), toInstant(date), lines, expense.getBranchId());
+    }
+
+    /** Pays the whole bill in one go (kept for older callers). */
+    @Transactional
+    public void postExpenseSettlement(Expense expense, java.time.LocalDate settledDate) {
+        postExpensePayment(expense, expense.getAmount(), settledDate, expense.getPaidFromAccount());
     }
 
     /** Called from IncomeService.create — see postExpense's javadoc on cost-center tagging (the same rule applies to the revenue-side line here). */

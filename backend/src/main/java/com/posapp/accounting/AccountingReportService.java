@@ -451,7 +451,7 @@ public class AccountingReportService {
     public List<GroupedAmountDto> expensesGrouped(LocalDate from, LocalDate to, String groupBy) {
         List<GroupRow> rows = expenseRepository.findByStatusAndExpenseDateBetweenOrderByExpenseDateAsc(ExpenseStatus.APPROVED, from, to).stream()
                 .map(e -> new GroupRow(e.getAccount() != null ? e.getAccount().getCode() + " — " + e.getAccount().getName() : "Unknown",
-                        e.getPayeeType(), e.getPayeeName(), e.getAmount(), e.getExpenseDate(), e.getMemo()))
+                        e.getPayeeType(), e.getPayeeName(), e.getAmount().subtract(e.getTaxAmount() != null ? e.getTaxAmount() : java.math.BigDecimal.ZERO), e.getExpenseDate(), e.getMemo()))
                 .toList();
         return groupAmounts(rows, groupBy, true);
     }

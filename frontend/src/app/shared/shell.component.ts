@@ -506,12 +506,18 @@ import { NiweFooterComponent } from './niwe-footer.component';
             <span class="sidenav-arrow">{{ isOpen('expenses') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('expenses') && showGroup('expenses')">
-            <a *ngIf="canSee('/admin/accounting/expenses')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses" routerLinkActive="active"
+            <a *ngIf="canSee('/admin/accounting/expenses/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
+            <a *ngIf="canSee('/admin/accounting/expenses')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
               ><span class="sidenav-icon">💸</span> Expenses</a
             >
+            <a *ngIf="canSee('/admin/accounting/expenses/budgets')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/budgets" routerLinkActive="active"><span class="sidenav-icon">🎯</span> Budgets</a>
             <a *ngIf="canSee('/admin/accounting/recurring-expenses')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/recurring-expenses" routerLinkActive="active"
               ><span class="sidenav-icon">🔁</span> Recurring expenses</a
             >
+          </ng-container>
+          <ng-container *ngIf="isOpen('expenses') && showGroup('expenses')">
+            <a *ngIf="canSee('/admin/accounting/expenses/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+            <a *ngIf="canSee('/admin/accounting/expenses/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
           </ng-container>
           <!-- HR modules (Settings > Modules): Employees, Organizational Structure, Attendance & Leaves, Contracts, Payroll — placed just before Assets. -->
           <button type="button" *ngIf="showGroup('employees')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('employees')">

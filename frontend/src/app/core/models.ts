@@ -1,5 +1,5 @@
 /** Fourier: "Build a full permissions system" — additive ADMIN-tier powers a non-admin can be individually granted. Mirrors the backend's Permission enum. */
-export type Permission = 'CONFIRM_RESTAURANT_WASTAGE' | 'APPROVE_STOCK_ADJUSTMENT' | 'APPROVE_PURCHASE_REQUISITION' | 'OVERRIDE_DISCOUNT_CAP' | 'APPROVE_EXPENSE' | 'APPROVE_STOCK_TRANSFER' | 'APPROVE_POS_VOID_RETURN' | 'APPROVE_POS_PRICE' | 'APPROVE_POS_CASH';
+export type Permission = 'CONFIRM_RESTAURANT_WASTAGE' | 'APPROVE_STOCK_ADJUSTMENT' | 'APPROVE_PURCHASE_REQUISITION' | 'OVERRIDE_DISCOUNT_CAP' | 'APPROVE_EXPENSE' | 'APPROVE_STOCK_TRANSFER' | 'APPROVE_POS_VOID_RETURN' | 'APPROVE_POS_PRICE' | 'APPROVE_POS_CASH' | 'APPROVE_LARGE_EXPENSE';
 
 export interface LoginResponse {
   token: string;
@@ -1064,6 +1064,28 @@ export interface Expense {
   recurringTemplateId: number | null;
   /** Branch this expense belongs to; null on older rows (= head office). */
   branchId?: number | null;
+  expenseNumber: string;
+  reference: string | null;
+  /** Recoverable input VAT included in `amount`. */
+  taxAmount: number;
+  /** `amount` without the VAT: what the category is charged. */
+  netAmount: number;
+  paidFromAccountId: number | null;
+  paidFromAccountName: string | null;
+  dueDate: string | null;
+  amountPaid: number;
+  /** Still owed on an approved unpaid bill. */
+  balance: number;
+  /** Only on approved open bills. */
+  dueState: 'OK' | 'DUE_SOON' | 'OVERDUE' | null;
+  createdByUserId: number | null;
+  createdByName: string | null;
+  approvedByName: string | null;
+  rejectedByName: string | null;
+  voidedByName: string | null;
+  attachmentCount: number;
+  /** Set on a pending expense that would take its category or cost center over the monthly budget. */
+  budgetWarning: string | null;
 }
 
 export interface ExpensePayload {
@@ -1079,6 +1101,116 @@ export interface ExpensePayload {
   receiptDataUrl: string | null;
   /** Optional branch; omit/null = head office (or unchanged on edit). */
   branchId?: number | null;
+  reference?: string | null;
+  taxAmount?: number | null;
+  paidFromAccountId?: number | null;
+  dueDate?: string | null;
+}
+
+export interface ExpenseFilter {
+  status?: string;
+  accountId?: number | null;
+  q?: string;
+  from?: string;
+  to?: string;
+  minAmount?: number | null;
+  maxAmount?: number | null;
+  view?: string;
+  branchId?: number | null;
+}
+
+export interface ExpensePayment {
+  id: number;
+  amount: number;
+  paidOn: string;
+  paidFromAccountId: number | null;
+  paidFromAccountName: string;
+  note: string | null;
+  createdByName: string | null;
+  createdAt: string;
+}
+
+export interface ExpenseFile {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: string | null;
+  createdAt: string;
+  image: boolean;
+}
+
+export interface ExpenseEvent {
+  id: number;
+  kind: string;
+  detail: string | null;
+  by: string | null;
+  at: string;
+}
+
+export interface ExpensePaymentAccount {
+  id: number;
+  code: string;
+  name: string;
+  cash: boolean;
+}
+
+export interface ExpenseSettings {
+  approvalLimit: number;
+  blockSelfApproval: boolean;
+  blockOverBudget: boolean;
+  defaultDueDays: number;
+  dueSoonDays: number;
+}
+
+export interface ExpenseBudget {
+  id: number;
+  accountId: number | null;
+  accountCode: string | null;
+  accountName: string | null;
+  costCenterId: number | null;
+  costCenterName: string | null;
+  year: number;
+  monthlyAmount: number;
+  note: string | null;
+}
+
+export interface ExpenseBudgetStatus {
+  budgetId: number;
+  label: string;
+  kind: 'CATEGORY' | 'COST_CENTER';
+  budget: number;
+  spent: number;
+  pending: number;
+  remaining: number;
+  percentUsed: number;
+  state: 'OK' | 'WARNING' | 'OVER';
+}
+
+export interface ExpenseBulkResult {
+  done: number;
+  skipped: { id: number; expenseNumber: string | null; reason: string }[];
+}
+
+export interface ExpenseSummary {
+  thisMonth: number;
+  lastMonth: number;
+  yearToDate: number;
+  awaitingApprovalCount: number;
+  awaitingApprovalAmount: number;
+  unpaidCount: number;
+  unpaidBalance: number;
+  overdueCount: number;
+  overdueBalance: number;
+  dueSoonCount: number;
+  dueSoonBalance: number;
+  recoverableVatThisMonth: number;
+  topCategories: { name: string; amount: number; count: number }[];
+  topVendors: { name: string; amount: number; count: number }[];
+  byPaymentAccount: { name: string; amount: number; count: number }[];
+  lastSixMonths: { month: string; amount: number }[];
+  budgetAlerts: ExpenseBudgetStatus[];
+  attention: { id: number; expenseNumber: string; payee: string; amount: number; balance: number; dueDate: string; reason: 'OVERDUE' | 'DUE_SOON' }[];
 }
 
 /** Fourier: "Recurring expenses" — a saved template RecurringExpenseTemplateService's daily sweep turns into a new PENDING Expense. */

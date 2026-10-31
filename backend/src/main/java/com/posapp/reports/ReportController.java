@@ -75,6 +75,7 @@ public class ReportController {
     private final InstallmentReportService installmentReportService;
     private final SubscriptionReportService subscriptionReportService;
     private final HelpDeskReportService helpDeskReportService;
+    private final ExpenseReportService expenseReportService;
     private final TimeReportService timeReportService;
     private final WorkOrderReportService workOrderReportService;
     private final BookingReportService bookingReportService;
@@ -82,7 +83,7 @@ public class ReportController {
     private final ReportExportService exportService;
     private final com.posapp.tracking.TrackingService trackingService;
 
-    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, HelpDeskReportService helpDeskReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
+    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, HelpDeskReportService helpDeskReportService, ExpenseReportService expenseReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
         this.reportService = reportService;
         this.purchaseReportService = purchaseReportService;
         this.salesReportService = salesReportService;
@@ -91,6 +92,7 @@ public class ReportController {
         this.installmentReportService = installmentReportService;
         this.subscriptionReportService = subscriptionReportService;
         this.helpDeskReportService = helpDeskReportService;
+        this.expenseReportService = expenseReportService;
         this.timeReportService = timeReportService;
         this.workOrderReportService = workOrderReportService;
         this.bookingReportService = bookingReportService;
@@ -760,6 +762,7 @@ public class ReportController {
 
     // ---- HR reports (HR > Reports) — see HrReportService. Payroll and contract reports need the Payroll area; the rest need the HR area. ----
 
+    private static final String EXPENSE_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_REPORTS_VIEW') or hasAuthority('AREA_ACCOUNTING_VIEW')";
     private static final String HELPDESK_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_REPORTS_VIEW') or hasAuthority('AREA_OPERATIONS_VIEW')";
     private static final String HR_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_HR_VIEW')";
     private static final String PAYROLL_VIEW = "hasRole('ADMIN') or hasAuthority('AREA_PAYROLL_VIEW')";
@@ -1101,6 +1104,81 @@ public class ReportController {
                 body.add(List.of(r.ticketNumber(), r.subject(), r.priority(), r.status(), orDash(r.agent()), r.deadline(), String.valueOf(r.due()), String.valueOf(r.hoursLate())));
             }
             return export("Help Desk Overdue Tickets", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    // ---- Expenses reports — see ExpenseReportService. ----
+
+    private static LocalDate rangeFrom(LocalDate from) {
+        return from != null ? from : LocalDate.now().withDayOfMonth(1);
+    }
+
+    private static LocalDate rangeTo(LocalDate to) {
+        return to != null ? to : LocalDate.now();
+    }
+
+    @PreAuthorize(EXPENSE_VIEW)
+    @GetMapping("/expense-register")
+    public ResponseEntity<?> expenseRegister(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                             @RequestParam(required = false) String status, @RequestParam(defaultValue = "json") String format) {
+        var rows = expenseReportService.register(rangeFrom(from), rangeTo(to), status);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Number", "Date", "Payee", "Category", "Cost center", "Reference", "Status", "Total", "VAT", "Cost without VAT", "Paid", "Paid from", "Due date", "Still owed", "Entered by", "Approved by");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.expenseNumber(), String.valueOf(r.date()), orDash(r.payee()), orDash(r.category()), orDash(r.costCenter()), orDash(r.reference()), r.status(),
+                        money(r.amount()), money(r.tax()), money(r.net()), r.paid() ? "Yes" : "No", orDash(r.paidFrom()), r.dueDate() == null ? "—" : String.valueOf(r.dueDate()),
+                        money(r.balance()), orDash(r.enteredBy()), orDash(r.approvedBy())));
+            }
+            return export("Expense Register", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(EXPENSE_VIEW)
+    @GetMapping("/expenses-unpaid-aging")
+    public ResponseEntity<?> expensesUnpaidAging(@RequestParam(defaultValue = "json") String format) {
+        var rows = expenseReportService.unpaidAging();
+        if (isDownload(format)) {
+            List<String> headers = List.of("Number", "Payee", "Reference", "Bill date", "Due date", "Days late", "Age", "Total", "Paid so far", "Still owed");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.expenseNumber(), orDash(r.payee()), orDash(r.reference()), String.valueOf(r.billDate()), String.valueOf(r.dueDate()), String.valueOf(r.daysOverdue()),
+                        r.bucket(), money(r.amount()), money(r.paidSoFar()), money(r.balance())));
+            }
+            return export("Unpaid Bills by Age", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(EXPENSE_VIEW)
+    @GetMapping("/expense-budget-vs-actual")
+    public ResponseEntity<?> expenseBudgetVsActual(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        var rows = expenseReportService.budgetVsActual(rangeFrom(from), rangeTo(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Month", "Budget for", "Type", "Monthly budget", "Spent", "Waiting for approval", "Left", "Used %", "State");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.month(), r.label(), r.kind().equals("CATEGORY") ? "Category" : "Cost center", money(r.budget()), money(r.spent()), money(r.pending()), money(r.remaining()),
+                        String.valueOf(r.percentUsed()), r.state()));
+            }
+            return export("Budget vs Actual", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @PreAuthorize(EXPENSE_VIEW)
+    @GetMapping("/expenses-by-payment-account")
+    public ResponseEntity<?> expensesByPaymentAccount(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to, @RequestParam(defaultValue = "json") String format) {
+        var rows = expenseReportService.byPaymentAccount(rangeFrom(from), rangeTo(to));
+        if (isDownload(format)) {
+            List<String> headers = List.of("Paid from", "Paid at once", "Amount", "Bill payments", "Amount", "Total paid");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.account(), String.valueOf(r.paidAtOnce()), money(r.paidAtOnceAmount()), String.valueOf(r.billPayments()), money(r.billPaymentsAmount()), money(r.total())));
+            }
+            return export("Expenses by Payment Account", headers, body, format);
         }
         return ResponseEntity.ok(rows);
     }

@@ -20,7 +20,7 @@ export interface ReportColumn {
 export interface ReportDef {
   key: string;
   title: string;
-  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing' | 'Subscriptions';
+  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Expenses' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing' | 'Subscriptions';
   /** Path segment under /api/reports/ — see ReportController. */
   endpoint: string;
   columns: ReportColumn[];
@@ -86,6 +86,8 @@ export function reportListRouteForSection(section: ReportDef['section']): string
       return '/admin/restaurant/reports';
     case 'Help Desk':
       return '/admin/helpdesk/reports';
+    case 'Expenses':
+      return '/admin/accounting/expenses/reports';
     case 'Subscriptions':
       return '/admin/subscriptions/reports';
     default:
@@ -1184,6 +1186,67 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'deadline', label: 'Deadline missed', format: 'text' },
       { key: 'due', label: 'Was due', format: 'date' },
       { key: 'hoursLate', label: 'Hours late', format: 'int' },
+    ],
+  },
+  // Expenses reports (v1.21.0).
+  {
+    key: 'expense-register', title: 'Expense Register', section: 'Expenses', endpoint: 'expense-register', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'expenseNumber', label: 'Number', format: 'text' },
+      { key: 'date', label: 'Date', format: 'date' },
+      { key: 'payee', label: 'Payee', format: 'text' },
+      { key: 'category', label: 'Category', format: 'text' },
+      { key: 'costCenter', label: 'Cost center', format: 'text' },
+      { key: 'reference', label: 'Reference', format: 'text' },
+      { key: 'status', label: 'Status', format: 'text' },
+      { key: 'amount', label: 'Total', format: 'money' },
+      { key: 'tax', label: 'VAT', format: 'money' },
+      { key: 'net', label: 'Cost without VAT', format: 'money' },
+      { key: 'paidFrom', label: 'Paid from', format: 'text' },
+      { key: 'dueDate', label: 'Due date', format: 'date' },
+      { key: 'balance', label: 'Still owed', format: 'money' },
+      { key: 'enteredBy', label: 'Entered by', format: 'text' },
+      { key: 'approvedBy', label: 'Approved by', format: 'text' },
+    ],
+  },
+  {
+    key: 'expenses-unpaid-aging', title: 'Unpaid Bills by Age', section: 'Expenses', endpoint: 'expenses-unpaid-aging', categoryFilter: false, filterMode: 'none',
+    columns: [
+      { key: 'expenseNumber', label: 'Number', format: 'text' },
+      { key: 'payee', label: 'Payee', format: 'text' },
+      { key: 'reference', label: 'Reference', format: 'text' },
+      { key: 'billDate', label: 'Bill date', format: 'date' },
+      { key: 'dueDate', label: 'Due date', format: 'date' },
+      { key: 'daysOverdue', label: 'Days late', format: 'int' },
+      { key: 'bucket', label: 'Age', format: 'text' },
+      { key: 'amount', label: 'Total', format: 'money' },
+      { key: 'paidSoFar', label: 'Paid so far', format: 'money' },
+      { key: 'balance', label: 'Still owed', format: 'money' },
+    ],
+  },
+  {
+    key: 'expense-budget-vs-actual', title: 'Budget vs Actual', section: 'Expenses', endpoint: 'expense-budget-vs-actual', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'month', label: 'Month', format: 'text' },
+      { key: 'label', label: 'Budget for', format: 'text' },
+      { key: 'kind', label: 'Type', format: 'text' },
+      { key: 'budget', label: 'Monthly budget', format: 'money' },
+      { key: 'spent', label: 'Spent', format: 'money' },
+      { key: 'pending', label: 'Waiting for approval', format: 'money' },
+      { key: 'remaining', label: 'Left', format: 'money' },
+      { key: 'percentUsed', label: 'Used', format: 'percent' },
+      { key: 'state', label: 'State', format: 'text' },
+    ],
+  },
+  {
+    key: 'expenses-by-payment-account', title: 'Expenses by Payment Account', section: 'Expenses', endpoint: 'expenses-by-payment-account', categoryFilter: false, filterMode: 'dateOnly',
+    columns: [
+      { key: 'account', label: 'Paid from', format: 'text' },
+      { key: 'paidAtOnce', label: 'Paid at once', format: 'int' },
+      { key: 'paidAtOnceAmount', label: 'Amount', format: 'money' },
+      { key: 'billPayments', label: 'Bill payments', format: 'int' },
+      { key: 'billPaymentsAmount', label: 'Amount', format: 'money' },
+      { key: 'total', label: 'Total paid', format: 'money' },
     ],
   },
   // Assets > Reports — built by AssetReportService (Assets Management module).

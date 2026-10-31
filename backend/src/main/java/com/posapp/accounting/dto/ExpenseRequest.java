@@ -39,6 +39,16 @@ public class ExpenseRequest {
 
     /** Optional branch this expense belongs to; null = head office (or unchanged when editing). */
     private Long branchId;
+    /** The vendor's invoice or receipt number. */
+    @jakarta.validation.constraints.Size(max = 100, message = "The reference can be at most 100 characters")
+    private String reference;
+    /** Recoverable VAT included in amount. */
+    @jakarta.validation.constraints.PositiveOrZero(message = "Tax cannot be negative")
+    private BigDecimal taxAmount;
+    /** An ASSET account the money was paid from; null = Cash. */
+    private Long paidFromAccountId;
+    /** Due date of an unpaid bill. */
+    private LocalDate dueDate;
 
     public LocalDate getExpenseDate() { return expenseDate; }
     public void setExpenseDate(LocalDate expenseDate) { this.expenseDate = expenseDate; }
@@ -62,4 +72,12 @@ public class ExpenseRequest {
     public void setBranchId(Long branchId) { this.branchId = branchId; }
     public String getReceiptDataUrl() { return receiptDataUrl; }
     public void setReceiptDataUrl(String receiptDataUrl) { this.receiptDataUrl = receiptDataUrl; }
+    public String getReference() { return reference; }
+    public void setReference(String reference) { this.reference = reference; }
+    public BigDecimal getTaxAmount() { return taxAmount; }
+    public void setTaxAmount(BigDecimal taxAmount) { this.taxAmount = taxAmount; }
+    public Long getPaidFromAccountId() { return paidFromAccountId; }
+    public void setPaidFromAccountId(Long paidFromAccountId) { this.paidFromAccountId = paidFromAccountId; }
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
 }

@@ -39,6 +39,8 @@ public class LicenseGateFilter extends OncePerRequestFilter {
             new Rule("/api/helpdesk", ModuleKey.HELPDESK),
             new Rule("/api/accounting/expenses", ModuleKey.EXPENSES),
             new Rule("/api/accounting/recurring-expenses", ModuleKey.EXPENSES),
+            new Rule("/api/accounting/expense-budgets", ModuleKey.EXPENSES),
+            new Rule("/api/accounting/expense-settings", ModuleKey.EXPENSES),
             new Rule("/api/assets", ModuleKey.ASSETS),
             new Rule("/api/installments", ModuleKey.INSTALLMENTS),
             new Rule("/api/time", ModuleKey.TIME_TRACKING),

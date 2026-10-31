@@ -128,6 +128,14 @@ public final class ScheduledReportCatalog {
                 (c, p) -> c.helpdeskByCategory(p.from(), p.to(), p.format())));
         add(new Def("helpdesk-satisfaction", "Help desk satisfaction", "Help Desk", true, false, false, false, false, null,
                 (c, p) -> c.helpdeskSatisfaction(p.from(), p.to(), p.format())));
+        add(new Def("expense-register", "Expense register", "Expenses", true, false, false, false, false, null,
+                (c, p) -> c.expenseRegister(p.from(), p.to(), null, p.format())));
+        add(new Def("expenses-unpaid-aging", "Unpaid bills by age", "Expenses", false, false, false, false, false, null,
+                (c, p) -> c.expensesUnpaidAging(p.format())));
+        add(new Def("expense-budget-vs-actual", "Budget vs actual", "Expenses", true, false, false, false, false, null,
+                (c, p) -> c.expenseBudgetVsActual(p.from(), p.to(), p.format())));
+        add(new Def("expenses-by-payment-account", "Expenses by payment account", "Expenses", true, false, false, false, false, null,
+                (c, p) -> c.expensesByPaymentAccount(p.from(), p.to(), p.format())));
         add(new Def("helpdesk-overdue", "Help desk overdue tickets", "Help Desk", false, false, false, false, false, null,
                 (c, p) -> c.helpdeskOverdue(p.format())));
         add(new Def("subscriptions-by-plan", "Subscriptions by plan", "Subscriptions", false, false, false, false, false, null,

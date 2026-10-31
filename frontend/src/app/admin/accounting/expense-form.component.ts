@@ -11,7 +11,8 @@ import { SupplierApiService } from '../../core/api/supplier-api.service';
 import { UserApiService } from '../../core/api/user-api.service';
 import { CustomerApiService } from '../../core/api/customer-api.service';
 import { BranchApiService } from '../../core/api/branch-api.service';
-import { Account, AppUser, Branch, CostCenter, Customer, PayeeType, Supplier } from '../../core/models';
+import { Account, AppUser, Branch, CostCenter, Customer, ExpensePaymentAccount, PayeeType, Supplier } from '../../core/models';
+import { forkJoin } from 'rxjs';
 
 /**
  * Admin > Accounting > Expenses > New/Edit — Fourier's own scoping choice for this batch of work
@@ -81,16 +82,45 @@ import { Account, AppUser, Branch, CostCenter, Customer, PayeeType, Supplier } f
           <input class="form-control" name="payeeName" [(ngModel)]="payeeName" placeholder="e.g. City Water Authority" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Amount</label>
+          <label class="form-label">Total amount (including any VAT)</label>
           <input class="form-control" type="number" step="0.01" min="0.01" name="amount" [(ngModel)]="amount" required />
         </div>
         <div class="form-group">
+          <label class="form-label">VAT included in the total (optional)</label>
+          <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
+            <input class="form-control" style="width:10rem;" type="number" step="0.01" min="0" name="taxAmount" [(ngModel)]="taxAmount" placeholder="0.00" />
+            <span class="text-muted" style="font-size:0.85rem;">or work it out at</span>
+            <input class="form-control" style="width:5rem;" type="number" step="0.1" min="0" name="vatRate" [(ngModel)]="vatRate" />
+            <span class="text-muted">%</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="applyRate()">Calculate</button>
+          </div>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            Only VAT you can claim back. It is kept in its own account, so the category only carries the cost without VAT<span *ngIf="amount && taxAmount"> ({{ (amount || 0) - (taxAmount || 0) | number: '1.2-2' }})</span>.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference (optional)</label>
+          <input class="form-control" name="reference" [(ngModel)]="reference" maxlength="100" placeholder="Supplier invoice or receipt number" />
+        </div>
+        <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="paid" [(ngModel)]="paid" /> Paid immediately (from Cash)
+            <input type="checkbox" name="paid" [(ngModel)]="paid" /> Paid immediately
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="!paid">
-            Left unchecked, this posts as a bill owed to the payee (Accounts Payable) instead of a cash payment.
+            Left unchecked, this posts as a bill owed to the payee (Accounts Payable). You can pay it later, in full or in parts.
           </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ paid ? 'Paid from' : 'Usually paid from' }}</label>
+          <select class="form-select" name="paidFromAccountId" [(ngModel)]="paidFromAccountId">
+            <option [ngValue]="null">Cash</option>
+            <ng-container *ngFor="let a of paymentAccounts"><option *ngIf="!a.cash" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option></ng-container>
+          </select>
+        </div>
+        <div class="form-group" *ngIf="!paid">
+          <label class="form-label">Due date</label>
+          <input class="form-control" type="date" name="dueDate" [(ngModel)]="dueDate" />
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Left empty, it is set from the expense date using the days in Expenses settings.</div>
         </div>
         <div class="form-group" *ngIf="branches.length > 1">
           <label class="form-label">Branch</label>
@@ -109,17 +139,18 @@ import { Account, AppUser, Branch, CostCenter, Customer, PayeeType, Supplier } f
           <label class="form-label">Memo (optional)</label>
           <input class="form-control" name="memo" [(ngModel)]="memo" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Receipt (optional)</label>
-          <div class="flex gap-2 align-center">
-            <img *ngIf="receiptDataUrl" [src]="receiptDataUrl" alt="Receipt" style="max-width:80px; max-height:80px; border:1px solid #444; border-radius:4px; object-fit:cover;" />
-            <span class="text-muted" style="font-size:0.85rem;" *ngIf="!receiptDataUrl">No receipt uploaded</span>
-          </div>
-          <input type="file" accept="image/*,application/pdf" (change)="onReceiptSelected($event)" style="margin-top:0.5rem;" />
+        <div class="form-group" *ngIf="!id">
+          <label class="form-label">Receipts and bills (optional)</label>
+          <input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain" (change)="onFilesSelected($event)" />
+          <div class="text-muted" style="font-size:0.8rem;">Photos, PDF or text files, up to 10 MB each. They are attached when you save.</div>
+          <div *ngFor="let f of pendingFiles; let i = index" style="font-size:0.85rem;">{{ f.name }} <button type="button" class="btn btn-link btn-sm" (click)="pendingFiles.splice(i, 1)">Remove</button></div>
           <div class="text-danger" style="font-size:0.8rem;" *ngIf="receiptError">{{ receiptError }}</div>
-          <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-top:0.5rem;" *ngIf="receiptDataUrl" (click)="removeReceipt()">
-            Remove receipt
-          </button>
+        </div>
+        <div class="form-group" *ngIf="id && receiptDataUrl">
+          <label class="form-label">Receipt kept from before</label>
+          <div><img [src]="receiptDataUrl" alt="Receipt" style="max-width:80px; max-height:80px; border:1px solid #444; border-radius:4px; object-fit:cover;" /></div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-top:0.5rem;" (click)="removeReceipt()">Remove receipt</button>
+          <div class="text-muted" style="font-size:0.8rem;">More files can be added on the expense page.</div>
         </div>
         <div class="flex gap-2">
           <button class="btn btn-primary" type="submit">Save</button>
@@ -145,7 +176,14 @@ export class ExpenseFormComponent implements OnInit {
   branches: Branch[] = [];
   receiptDataUrl: string | null = null;
   receiptError: string | null = null;
-  private readonly maxReceiptBytes = 4 * 1024 * 1024;
+  reference = '';
+  taxAmount: number | null = null;
+  vatRate: number | null = 18;
+  paidFromAccountId: number | null = null;
+  dueDate = '';
+  paymentAccounts: ExpensePaymentAccount[] = [];
+  pendingFiles: File[] = [];
+  private readonly maxFileBytes = 10 * 1024 * 1024;
 
   accounts: Account[] = [];
   costCenters: CostCenter[] = [];
@@ -173,6 +211,7 @@ export class ExpenseFormComponent implements OnInit {
         this.branchId = b.find((x) => x.headquarters)?.id ?? null;
       }
     });
+    this.expenseApi.paymentAccounts().subscribe({ next: (a) => (this.paymentAccounts = a) });
     this.accountApi.listActiveByType('EXPENSE').subscribe({ next: (a) => (this.accounts = a) });
     this.costCenterApi.listActive().subscribe({ next: (c) => (this.costCenters = c) });
     this.supplierApi.listActive().subscribe({ next: (s) => (this.suppliers = s) });
@@ -199,6 +238,10 @@ export class ExpenseFormComponent implements OnInit {
           this.costCenterId = e.costCenterId;
           this.branchId = e.branchId ?? this.branchId;
           this.receiptDataUrl = e.receiptDataUrl;
+          this.reference = e.reference ?? '';
+          this.taxAmount = e.taxAmount || null;
+          this.paidFromAccountId = e.paidFromAccountId;
+          this.dueDate = e.dueDate ?? '';
         },
         error: (err) => (this.error = err?.error?.message ?? 'Failed to load expense'),
       });
@@ -215,20 +258,23 @@ export class ExpenseFormComponent implements OnInit {
     this.payeeName = picked ? (picked.name ?? picked.fullName ?? '') : '';
   }
 
-  onReceiptSelected(event: Event): void {
+  onFilesSelected(event: Event): void {
     this.receiptError = null;
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    if (file.size > this.maxReceiptBytes) {
-      this.receiptError = 'Receipt file is too large (max 4MB) — choose a smaller file';
-      input.value = '';
-      return;
+    for (const f of Array.from(input.files ?? [])) {
+      if (f.size > this.maxFileBytes) {
+        this.receiptError = f.name + ' is larger than 10 MB and was left out.';
+        continue;
+      }
+      this.pendingFiles.push(f);
     }
-    const reader = new FileReader();
-    reader.onload = () => (this.receiptDataUrl = reader.result as string);
-    reader.onerror = () => (this.receiptError = 'Failed to read the selected file');
-    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  /** Works the VAT out of a total that already includes it: total x rate / (100 + rate). */
+  applyRate(): void {
+    if (!this.amount || this.vatRate == null) return;
+    this.taxAmount = Math.round(((this.amount * this.vatRate) / (100 + this.vatRate)) * 100) / 100;
   }
 
   removeReceipt(): void {
@@ -257,10 +303,24 @@ export class ExpenseFormComponent implements OnInit {
       costCenterId: this.costCenterId,
       branchId: this.branchId,
       receiptDataUrl: this.receiptDataUrl,
+      reference: this.reference.trim() || null,
+      taxAmount: this.taxAmount || 0,
+      paidFromAccountId: this.paidFromAccountId,
+      dueDate: this.paid ? null : this.dueDate || null,
     };
     const call = this.id ? this.expenseApi.update(this.id, payload) : this.expenseApi.create(payload);
     call.subscribe({
-      next: (e) => this.router.navigate(['/admin/accounting/expenses', e.id]),
+      next: (e) => {
+        const uploads = this.id ? [] : this.pendingFiles.map((f) => this.expenseApi.addFile(e.id, f));
+        if (!uploads.length) {
+          this.router.navigate(['/admin/accounting/expenses', e.id]);
+          return;
+        }
+        forkJoin(uploads).subscribe({
+          next: () => this.router.navigate(['/admin/accounting/expenses', e.id]),
+          error: () => this.router.navigate(['/admin/accounting/expenses', e.id]),
+        });
+      },
       error: (err) => (this.error = err?.error?.message ?? 'Failed to save expense'),
     });
   }

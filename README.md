@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.21.0 - Expenses: VAT, payment accounts, bills with part-payments, budgets, approval rules, files, overview, reports
+
+Expenses now keep recoverable VAT in its own account, can be paid from a bank or mobile money account, and unpaid bills have due dates, part-payments and an overdue view. Every expense gets a number and a supplier reference, the list has search, filters and quick views, several files can be attached, a pending or rejected expense can be deleted, and several can be approved or rejected at once. Monthly budgets per category or cost center, an approval limit, a "not your own expense" rule and a new Expenses overview and four new reports are included. One migration (V60), a new permission (Approve large expenses) and four new pages under Expenses (Overview, Budgets, Reports, Settings). Details in `RELEASE-NOTES-v1.21.0.md`.
+
 ### Version 1.20.0 - Help Desk: deadlines (SLA), replies and files, overview, reports, workflow and history
 
 Help Desk tickets now carry first-reply and resolution deadlines by priority (with a "waiting for the customer" status that pauses the clock, warning and escalation e-mails and automatic closing of old resolved tickets), agents can reply to the customer by e-mail with saved replies and attach files, and customers can answer, add files and rate the help on the public ticket page. There is a new Overview, five new reports, ticket views and bulk actions, a full history, tags, links to an invoice or a job, and merging of duplicate tickets. One migration (V59) and two new pages under Help Desk (Overview, Saved replies). Details in `RELEASE-NOTES-v1.20.0.md`.

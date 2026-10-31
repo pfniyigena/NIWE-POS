@@ -22,6 +22,8 @@ public enum Permission {
     OVERRIDE_DISCOUNT_CAP,
     /** Approve/reject a PENDING {@code com.posapp.accounting.Expense}, and void an already-APPROVED one — see ExpenseController. */
     APPROVE_EXPENSE,
+    /** Approve an expense above the approval limit set in Expense settings — see ExpenseService.approve. */
+    APPROVE_LARGE_EXPENSE,
     /** Confirm/reject a PENDING {@code com.posapp.warehouse.StockTransfer} — see StockTransferController. */
     APPROVE_STOCK_TRANSFER,
     /** Approve a void or a large return at the till by typing a PIN, without being given every manager right — see ManagerApprovalService.canApprove. */
