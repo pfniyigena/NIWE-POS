@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.22.3 - No password or secret in git
+
+The database address, user and password and the JWT secret are now read from the environment (`DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`), or from a private `backend/config/application.properties` that git ignores. Release packages are no longer tracked. The old password is still in git history: change it if it protects anything real. No migration, no code change. Details in `RELEASE-NOTES-v1.22.3.md`.
+
 ### Version 1.22.2 - First-start administrator, 404 and 405 answers
 
 Found in a clean-install rehearsal: with demo data switched off (`app.seed-demo-data=false`) a new database had no users and nobody could sign in. Now, only when there are no users at all, the administrator `admin` is created, with the password in `app.initial-admin-password` or a random one written once to the log (line `FIRST START`). Mistyped addresses under `/api` now answer 404, and wrong methods 405, instead of 500. No migration, no screen changes. Details in `RELEASE-NOTES-v1.22.2.md`.
