@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.22.5 - Print the list of modules as a PDF
+
+Settings > Modules has a **Print PDF** button: the license (holder, number, expiry, installation id), a count by state, and every module with what it does, what it works together with and its status. No migration. Details in `RELEASE-NOTES-v1.22.5.md`.
+
 ### Version 1.22.4 - Logs next to the jar
 
 When the backend runs as a jar (for example as a service), `niwe-erp.log`, `niwe-erp-error.log` and `niwe-access.log` are written in the same folder as the jar. `app.logging.dir` still overrides it; without a jar (IDE, `mvn spring-boot:run`) the logs stay in `logs/`. Settings > Server logs lists only `niwe-*.log` files. No migration. Details in `RELEASE-NOTES-v1.22.4.md`.

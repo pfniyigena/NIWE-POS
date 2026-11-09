@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
+import { PaperButtonComponent } from '../shared/paper-button.component';
 import { ModuleApiService, ModuleInfo } from '../core/api/module-api.service';
 import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } from '../core/api/license-api.service';
 
@@ -15,10 +16,13 @@ import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } fr
 @Component({
   selector: 'app-modules',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-1">Modules</h3>
+      <div class="flex justify-between align-center gap-3">
+        <h3 class="mb-1">Modules</h3>
+        <app-paper-button label="Print PDF" path="/modules/list-pdf" file="niwe-erp-modules.pdf" cls="btn-outline-primary"></app-paper-button>
+      </div>
       <p class="text-muted mb-3">
         Your license decides which modules you may use; you then activate the ones your business needs. A module that is locked or not activated is hidden from the menu for everyone.
         <strong>Activation is permanent: once a module is activated it can't be deactivated.</strong>
