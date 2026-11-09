@@ -1,7 +1,6 @@
 package com.posapp.realestate;
 
 import com.posapp.audit.AuditLogService;
-import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
 import com.posapp.realestate.RealEstateAccess.Actor;
 import com.posapp.realestate.dto.RealEstateDtos.LeadRow;

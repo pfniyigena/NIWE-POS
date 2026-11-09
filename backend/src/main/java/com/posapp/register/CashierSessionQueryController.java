@@ -4,7 +4,6 @@ import com.posapp.register.dto.CashierSessionDto;
 import com.posapp.register.dto.CashierSessionZReportDto;
 import com.posapp.register.dto.SetActiveOrderRequest;
 import com.posapp.security.AppUserPrincipal;
-import com.posapp.user.Role;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 

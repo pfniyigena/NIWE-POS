@@ -18,9 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /** {@code /api/propertymgmt/statements}: owner statements. Operations viewers read and print; Operations managers and admins make, agree and pay them. */

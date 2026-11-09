@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /** Module settings, and the code series (PR-0001...) used by the Real Estate records. */
 @Service

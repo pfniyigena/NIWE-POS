@@ -1,14 +1,11 @@
 package com.posapp.customer;
 
 import org.springframework.http.ResponseEntity;
-import java.time.LocalDate;
-import org.springframework.format.annotation.DateTimeFormat;
 import com.posapp.common.ListPaging;
 import com.posapp.common.ApiException;
 import com.posapp.customer.dto.CustomerDto;
 import com.posapp.customer.dto.CustomerRequest;
 import com.posapp.security.AppUserPrincipal;
-import com.posapp.user.Role;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;

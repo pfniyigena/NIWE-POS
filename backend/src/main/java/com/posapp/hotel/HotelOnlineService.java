@@ -32,7 +32,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The hotel's online side: the manager's settings, the public booking page (what is free and at what price, taking a booking, looking it up and

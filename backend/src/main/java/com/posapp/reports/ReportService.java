@@ -92,7 +92,6 @@ import com.posapp.salesorder.SalesOrderReturn;
 import com.posapp.salesorder.SalesOrderReturnLine;
 import com.posapp.salesorder.SalesOrderReturnRepository;
 import com.posapp.salesorder.SalesOrderService;
-import com.posapp.salesorder.SalesOrderStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

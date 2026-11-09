@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /** The guest register: a guest's history and spend, duplicate detection and merging, and the police / immigration register. */
 @Service

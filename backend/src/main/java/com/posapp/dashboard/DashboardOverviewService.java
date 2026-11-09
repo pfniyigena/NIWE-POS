@@ -4,7 +4,6 @@ import com.posapp.bill.BillService;
 import com.posapp.bill.dto.BillDto;
 import com.posapp.branch.BranchService;
 import com.posapp.catalog.CatalogService;
-import com.posapp.collections.CollectionDtos.CustomerRow;
 import com.posapp.collections.CollectionDtos.CustomersPage;
 import com.posapp.collections.CollectionDtos.Summary;
 import com.posapp.collections.CollectionService;

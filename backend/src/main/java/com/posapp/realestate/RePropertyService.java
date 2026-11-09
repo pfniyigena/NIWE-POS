@@ -1,6 +1,5 @@
 package com.posapp.realestate;
 
-import com.posapp.common.Qty;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.realestate.RealEstateAccess.Actor;
@@ -22,7 +21,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;

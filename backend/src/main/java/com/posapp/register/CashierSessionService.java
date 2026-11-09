@@ -7,7 +7,6 @@ import com.posapp.register.dto.CashierSessionDto;
 import com.posapp.register.dto.CashierSessionZReportDto;
 import com.posapp.register.dto.PinRequest;
 import com.posapp.user.AppUser;
-import com.posapp.user.Role;
 import com.posapp.user.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

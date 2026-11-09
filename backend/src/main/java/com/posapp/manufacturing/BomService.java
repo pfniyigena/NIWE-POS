@@ -1,5 +1,4 @@
 package com.posapp.manufacturing;
-import com.posapp.common.Qty;
 import java.math.BigDecimal;
 
 import com.posapp.audit.AuditLogService;

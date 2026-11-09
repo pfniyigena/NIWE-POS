@@ -1,5 +1,4 @@
 package com.posapp.restaurant;
-import com.posapp.common.Qty;
 
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
@@ -9,7 +8,6 @@ import com.posapp.restaurant.dto.AddRestaurantLineRequest;
 import com.posapp.restaurant.dto.OnlineOrderingDtos.*;
 import com.posapp.restaurant.dto.OpenOffPremiseOrderRequest;
 import com.posapp.restaurant.dto.OpenTableOrderRequest;
-import com.posapp.restaurant.dto.RestaurantOrderDto;
 import com.posapp.settings.StoreSettingsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

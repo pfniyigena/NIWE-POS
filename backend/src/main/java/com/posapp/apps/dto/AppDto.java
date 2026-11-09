@@ -1,7 +1,6 @@
 package com.posapp.apps.dto;
 
 import com.posapp.apps.AppCatalog;
-import com.posapp.apps.AppKey;
 import com.posapp.apps.InstalledApp;
 
 /** One row of the Apps catalog, merged with this store's install/enable state — see AppsService.list(). */

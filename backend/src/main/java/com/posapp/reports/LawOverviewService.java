@@ -9,7 +9,6 @@ import com.posapp.law.LawDocumentRepository;
 import com.posapp.law.LawMatter;
 import com.posapp.law.LawMatterDeadline;
 import com.posapp.law.LawMatterDeadlineRepository;
-import com.posapp.law.LawMatterPortal;
 import com.posapp.law.LawMatterPortalRepository;
 import com.posapp.law.LawMatterRepository;
 import com.posapp.law.LawPortalMessageRepository;

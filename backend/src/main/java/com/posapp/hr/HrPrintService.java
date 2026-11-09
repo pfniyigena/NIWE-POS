@@ -7,7 +7,6 @@ import com.lowagie.text.FontFactory;
 import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Phrase;
-import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.Barcode128;
 import com.lowagie.text.pdf.ColumnText;
 import com.lowagie.text.pdf.PdfContentByte;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 
