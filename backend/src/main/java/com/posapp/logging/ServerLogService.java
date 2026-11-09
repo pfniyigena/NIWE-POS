@@ -29,7 +29,7 @@ public class ServerLogService {
     public record Entry(String time, String level, String text) {}
     public record Tail(String file, long size, Instant modified, boolean truncated, int matched, List<Entry> entries) {}
 
-    private static final Pattern NAME = Pattern.compile("[A-Za-z0-9._-]{1,120}\\.log");
+    private static final Pattern NAME = Pattern.compile("niwe-[A-Za-z0-9._-]{1,110}\\.log");
     private static final Pattern START = Pattern.compile("^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?)\\s+([A-Z]{4,5})\\b.*");
     private static final List<String> ORDER = List.of("TRACE", "DEBUG", "INFO", "WARN", "ERROR");
     private static final long MAX_READ = 4L * 1024 * 1024;

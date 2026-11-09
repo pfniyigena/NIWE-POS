@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.22.4 - Logs next to the jar
+
+When the backend runs as a jar (for example as a service), `niwe-erp.log`, `niwe-erp-error.log` and `niwe-access.log` are written in the same folder as the jar. `app.logging.dir` still overrides it; without a jar (IDE, `mvn spring-boot:run`) the logs stay in `logs/`. Settings > Server logs lists only `niwe-*.log` files. No migration. Details in `RELEASE-NOTES-v1.22.4.md`.
+
 ### Version 1.22.3 - No password or secret in git
 
 The database address, user and password and the JWT secret are now read from the environment (`DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`), or from a private `backend/config/application.properties` that git ignores. Release packages are no longer tracked. The old password is still in git history: change it if it protects anything real. No migration, no code change. Details in `RELEASE-NOTES-v1.22.3.md`.
