@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -21,25 +22,25 @@ import { q4 } from '../core/qty';
 @Component({
   selector: 'app-stock-transfer-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Stock transfers</h3>
-        <a class="btn btn-primary" routerLink="/admin/stock-transfers/new">+ New transfer</a>
+        <h3>{{ 'Stock transfers' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/stock-transfers/new">{{ '+ New transfer' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th class="text-end">Qty</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Note</th>
-            <th>Status</th>
-            <th>Paper</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th class="text-end">{{ 'Qty' | translate }}</th>
+            <th>{{ 'From' | translate }}</th>
+            <th>{{ 'To' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th>{{ 'Paper' | translate }}</th>
             <th *ngIf="canApprove"></th>
           </tr>
         </thead>
@@ -49,7 +50,7 @@ import { q4 } from '../core/qty';
             <td>{{ t.productName }}</td>
             <td class="text-end">{{ t.quantity }}</td>
             <td>{{ t.fromWarehouseName }} / {{ t.fromLocationName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="t.interBranch">{{ t.fromBranchName }}</div></td>
-            <td>{{ t.toWarehouseName }} / {{ t.toLocationName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="t.interBranch">{{ t.toBranchName }}</div> <span class="badge badge-warning" *ngIf="t.interBranch">Inter-branch</span></td>
+            <td>{{ t.toWarehouseName }} / {{ t.toLocationName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="t.interBranch">{{ t.toBranchName }}</div> <span class="badge badge-warning" *ngIf="t.interBranch">{{ 'Inter-branch' | translate }}</span></td>
             <td>{{ t.note }}</td>
             <td>
               <span
@@ -59,32 +60,32 @@ import { q4 } from '../core/qty';
                 >{{ t.status === 'IN_TRANSIT' ? 'IN TRANSIT' : t.status }}</span
               >
               <div class="text-muted" style="font-size:0.75rem;" *ngIf="t.status === 'RECEIVED'">
-                {{ t.receivedQuantity }} of {{ t.quantity }} received<span *ngIf="t.receivedQuantity !== null && t.receivedQuantity !== undefined && t.receivedQuantity < t.quantity"> — {{ t.quantity - t.receivedQuantity! }} short</span>
+                {{ '{p0} of {p1} received' | translate: { p0: (t.receivedQuantity), p1: (t.quantity) } }}<span *ngIf="t.receivedQuantity !== null && t.receivedQuantity !== undefined && t.receivedQuantity < t.quantity"> {{ '— {p0} short' | translate: { p0: (t.quantity - t.receivedQuantity!) } }}</span>
                 <span *ngIf="t.receiveNote"> ({{ t.receiveNote }})</span>
               </div>
             </td>
-            <td><app-paper-button class="paper-transfer" label="Transfer note" cls="btn-sm btn-outline-secondary" [path]="'/stock-transfers/' + t.id + '/note'" file="stock-transfer.pdf"></app-paper-button></td>
+            <td><app-paper-button class="paper-transfer" [label]="'Transfer note' | translate" cls="btn-sm btn-outline-secondary" [path]="'/stock-transfers/' + t.id + '/note'" file="stock-transfer.pdf"></app-paper-button></td>
             <td *ngIf="canApprove" class="flex gap-2">
               <ng-container *ngIf="t.status === 'PENDING'">
-                <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="confirm(t)">{{ t.interBranch ? 'Dispatch' : 'Confirm' }}</button>
-                <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === t.id" (click)="reject(t)">Reject</button>
+                <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="confirm(t)">{{ t.interBranch ? ('Dispatch' | translate) : ('Confirm' | translate) }}</button>
+                <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === t.id" (click)="reject(t)">{{ 'Reject' | translate }}</button>
               </ng-container>
               <ng-container *ngIf="t.status === 'IN_TRANSIT'">
                 <ng-container *ngIf="receivingId !== t.id; else receiveForm">
-                  <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="startReceive(t)">Receive</button>
-                  <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === t.id" (click)="reject(t)">Return to sender</button>
+                  <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="startReceive(t)">{{ 'Receive' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === t.id" (click)="reject(t)">{{ 'Return to sender' | translate }}</button>
                 </ng-container>
                 <ng-template #receiveForm>
-                  <input class="form-control form-control-sm" style="width:80px;" type="number" step="any" min="0" [max]="t.quantity" [(ngModel)]="receivedQty" name="rq{{ t.id }}" title="Quantity that arrived" />
-                  <input class="form-control form-control-sm" style="width:140px;" placeholder="Note (e.g. damaged)" [(ngModel)]="receiveNote" name="rn{{ t.id }}" />
-                  <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="receive(t)">Save</button>
-                  <button class="btn btn-sm btn-link" (click)="receivingId = null">Cancel</button>
+                  <input class="form-control form-control-sm" style="width:80px;" type="number" step="any" min="0" [max]="t.quantity" [(ngModel)]="receivedQty" name="rq{{ t.id }}" [title]="'Quantity that arrived' | translate" />
+                  <input class="form-control form-control-sm" style="width:140px;" [placeholder]="'Note (e.g. damaged)' | translate" [(ngModel)]="receiveNote" name="rn{{ t.id }}" />
+                  <button class="btn btn-sm btn-primary" [disabled]="busyId === t.id" (click)="receive(t)">{{ 'Save' | translate }}</button>
+                  <button class="btn btn-sm btn-link" (click)="receivingId = null">{{ 'Cancel' | translate }}</button>
                 </ng-template>
               </ng-container>
             </td>
           </tr>
           <tr *ngIf="transfers.length === 0">
-            <td [attr.colspan]="canApprove ? 9 : 8" class="text-muted">No stock transfers yet.</td>
+            <td [attr.colspan]="canApprove ? 9 : 8" class="text-muted">{{ 'No stock transfers yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

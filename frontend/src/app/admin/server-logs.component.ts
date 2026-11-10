@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -12,44 +13,43 @@ import { downloadBlob } from '../core/download-file';
 @Component({
   selector: 'app-server-logs',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Server logs</h3>
+        <h3>{{ 'Server logs' | translate }}</h3>
       </div>
 
-      <p class="text-muted" *ngIf="!filesLoading && files.length === 0">No log files yet. They appear once the server has written something.</p>
+      <p class="text-muted" *ngIf="!filesLoading && files.length === 0">{{ 'No log files yet. They appear once the server has written something.' | translate }}</p>
 
       <div class="flex gap-2 mb-3" style="align-items:center; flex-wrap:wrap;" *ngIf="files.length > 0">
         <select class="form-select" style="max-width:260px;" [(ngModel)]="selected" (ngModelChange)="onFileChange()" data-testid="log-file">
           <option *ngFor="let f of files" [ngValue]="f.name">{{ f.name }} ({{ sizeText(f.size) }})</option>
         </select>
         <select class="form-select" style="max-width:170px;" [(ngModel)]="level" (ngModelChange)="load()" data-testid="log-level">
-          <option value="">All levels</option>
-          <option value="INFO">Info and above</option>
-          <option value="WARN">Warnings and errors</option>
-          <option value="ERROR">Errors only</option>
+          <option value="">{{ 'All levels' | translate }}</option>
+          <option value="INFO">{{ 'Info and above' | translate }}</option>
+          <option value="WARN">{{ 'Warnings and errors' | translate }}</option>
+          <option value="ERROR">{{ 'Errors only' | translate }}</option>
         </select>
-        <input class="form-control" style="max-width:240px;" placeholder="Search the text" [(ngModel)]="search" (input)="onSearchChange()" />
+        <input class="form-control" style="max-width:240px;" [placeholder]="'Search the text' | translate" [(ngModel)]="search" (input)="onSearchChange()" />
         <select class="form-select" style="max-width:150px;" [(ngModel)]="lines" (ngModelChange)="load()">
-          <option [ngValue]="100">Last 100</option>
-          <option [ngValue]="300">Last 300</option>
-          <option [ngValue]="1000">Last 1000</option>
-          <option [ngValue]="2000">Last 2000</option>
+          <option [ngValue]="100">{{ 'Last 100' | translate }}</option>
+          <option [ngValue]="300">{{ 'Last 300' | translate }}</option>
+          <option [ngValue]="1000">{{ 'Last 1000' | translate }}</option>
+          <option [ngValue]="2000">{{ 'Last 2000' | translate }}</option>
         </select>
         <label class="flex gap-1" style="align-items:center; font-size:0.85rem;">
-          <input type="checkbox" [(ngModel)]="auto" (ngModelChange)="onAutoChange()" /> Auto-refresh
+          <input type="checkbox" [(ngModel)]="auto" (ngModelChange)="onAutoChange()" /> {{ 'Auto-refresh' | translate }}
         </label>
-        <button class="btn btn-sm btn-outline-secondary" (click)="load()">Refresh</button>
-        <button class="btn btn-sm btn-primary" (click)="download()" [disabled]="!selected" data-testid="log-download">Download file</button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="load()">{{ 'Refresh' | translate }}</button>
+        <button class="btn btn-sm btn-primary" (click)="download()" [disabled]="!selected" data-testid="log-download">{{ 'Download file' | translate }}</button>
       </div>
 
       <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="tail">
-        {{ tail.matched | number }} entr{{ tail.matched === 1 ? 'y' : 'ies' }} shown from the end of {{ tail.file }}
-        ({{ sizeText(tail.size) }}, last written {{ tail.modified | date: 'yyyy-MM-dd HH:mm:ss' }}).
-        <span *ngIf="tail.truncated"> Only the last part of a large file is read; download it for everything.</span>
+        {{ '{p0} entr{p1} shown from the end of {p2} ({p3}, last written {p4}).' | translate: { p0: (tail.matched | number), p1: (tail.matched === 1 ? 'y' : 'ies'), p2: (tail.file), p3: (sizeText(tail.size)), p4: (tail.modified | date: 'yyyy-MM-dd HH:mm:ss') } }}
+        <span *ngIf="tail.truncated"> {{ 'Only the last part of a large file is read; download it for everything.' | translate }}</span>
       </div>
 
       <div class="card" style="padding:0; overflow:auto; max-height:70vh;" *ngIf="tail">
@@ -60,7 +60,7 @@ import { downloadBlob } from '../core/download-file';
               <td style="vertical-align:top;"><span class="badge" [ngClass]="badge(e.level)">{{ e.level }}</span></td>
               <td style="white-space:pre-wrap; word-break:break-word;">{{ body(e.text) }}</td>
             </tr>
-            <tr *ngIf="tail.entries.length === 0"><td class="text-muted" colspan="3">Nothing matches.</td></tr>
+            <tr *ngIf="tail.entries.length === 0"><td class="text-muted" colspan="3">{{ 'Nothing matches.' | translate }}</td></tr>
           </tbody>
         </table>
       </div>

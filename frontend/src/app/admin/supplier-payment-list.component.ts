@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -27,26 +28,26 @@ import { SupplierPayment } from '../core/models';
 @Component({
   selector: 'app-supplier-payment-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Supplier payments</h3>
-        <a class="btn btn-link" routerLink="/admin/suppliers">Back to suppliers</a>
+        <h3>{{ 'Supplier payments' | translate }}</h3>
+        <a class="btn btn-link" routerLink="/admin/suppliers">{{ 'Back to suppliers' | translate }}</a>
       </div>
-      <app-list-filter exportKind="supplier-payments" statusParam="method" placeholder="Search supplier, receipt no., note…" [statuses]="methods" statusAll="All methods" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportKind="supplier-payments" statusParam="method" [placeholder]="'Search supplier, receipt no., note…' | translate" [statuses]="methods" statusAll="All methods" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Receipt #</th>
-            <th>Supplier</th>
-            <th>Date</th>
-            <th class="text-end">Amount</th>
-            <th>Method</th>
-            <th>Recorded by</th>
-            <th>Note</th>
-            <th>Applied to</th>
+            <th>{{ 'Receipt #' | translate }}</th>
+            <th>{{ 'Supplier' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
+            <th>{{ 'Method' | translate }}</th>
+            <th>{{ 'Recorded by' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
+            <th>{{ 'Applied to' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -67,11 +68,11 @@ import { SupplierPayment } from '../core/models';
               </span>
             </td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/supplier-payments', p.id]">View details</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/supplier-payments', p.id]">{{ 'View details' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No supplier payments recorded yet.</ng-template></td>
+            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ 'No supplier payments recorded yet.' | translate }}</ng-template></td>
           </tr>
         </tbody>
       </table>

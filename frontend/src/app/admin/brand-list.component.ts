@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -9,18 +10,18 @@ import { Brand } from '../core/models';
 @Component({
   selector: 'app-brand-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Brands</h3>
-        <a class="btn btn-primary" routerLink="/admin/brands/new">+ New brand</a>
+        <h3>{{ 'Brands' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/brands/new">{{ '+ New brand' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Name</th>
+            <th>{{ 'Name' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -28,12 +29,12 @@ import { Brand } from '../core/models';
           <tr *ngFor="let b of brands">
             <td>{{ b.name }}</td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/brands', b.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-danger" (click)="remove(b)">Delete</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/brands', b.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-danger" (click)="remove(b)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="brands.length === 0">
-            <td colspan="2" class="text-muted">No brands yet.</td>
+            <td colspan="2" class="text-muted">{{ 'No brands yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

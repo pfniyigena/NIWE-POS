@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -45,11 +46,11 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../core/api/insta
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="emailSent">Invoice emailed to {{ emailedTo }}.</div>
+      <div class="alert alert-success" *ngIf="emailSent">{{ 'Invoice emailed to {p0}.' | translate: { p0: (emailedTo) } }}</div>
       <ng-container *ngIf="inv as o">
         <div class="flex justify-between align-center mb-3">
           <div>
@@ -66,144 +67,144 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../core/api/insta
                  subscription line still has no catalog product behind it (see
                  InvoiceLine.product's own javadoc), so the ordinary Edit form (built around
                  picking a product per line) still wouldn't suit it if one ever did. -->
-            <a class="btn btn-outline-primary" *ngIf="o.status === 'DRAFT' && !o.subscriptionId" [routerLink]="['/admin/invoices', o.id, 'edit']">Edit</a>
-            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="issue()">Issue invoice</button>
-            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT'" (click)="deleteDraft()">Delete draft</button>
+            <a class="btn btn-outline-primary" *ngIf="o.status === 'DRAFT' && !o.subscriptionId" [routerLink]="['/admin/invoices', o.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="issue()">{{ 'Issue invoice' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT'" (click)="deleteDraft()">{{ 'Delete draft' | translate }}</button>
 
             <!-- Fourier: "add print (PDF with A4)". -->
-            <button class="btn btn-outline-primary" *ngIf="o.status !== 'DRAFT'" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
+            <button class="btn btn-outline-primary" *ngIf="o.status !== 'DRAFT'" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
             <!-- Fourier: "sending ... invoices ... to the customer's email" — see InvoiceService.emailToCustomer's javadoc. -->
             <button class="btn btn-outline-primary" *ngIf="o.status !== 'DRAFT'" [disabled]="emailing" (click)="emailToCustomer()">
-              {{ emailing ? 'Sending…' : 'Email to customer' }}
+              {{ emailing ? ('Sending…' | translate) : ('Email to customer' | translate) }}
             </button>
             <!-- Fourier: "create invoice related to the Sale Order and record payment on invoice" — this replaces the "Record payment" link that used to live on the Sales Order itself. Fourier's own later follow-up: "Let record payment per invoice not per customer (all outstanding invoices)" — now a dedicated per-invoice screen, not the customer-wide allocation-table one. -->
             <a class="btn btn-outline-primary" *ngIf="o.status === 'ISSUED' && o.customerId && o.amountOutstanding > 0" [routerLink]="['/admin/invoices', o.id, 'record-payment']">
-              Record payment
+              {{ 'Record payment' | translate }}
             </a>
             <a class="btn btn-outline-primary" *ngIf="modules.on('INSTALLMENTS') && o.status === 'ISSUED' && o.customerId && o.amountOutstanding > 0 && !hasActivePlan()" routerLink="/admin/installments/new" [queryParams]="{ invoiceId: o.id }">
-              Pay in instalments
+              {{ 'Pay in instalments' | translate }}
             </a>
-            <a class="btn btn-outline-secondary" *ngFor="let p of plans" [routerLink]="['/admin/installments', p.id]">Plan {{ p.planNumber }} ({{ p.status }})</a>
+            <a class="btn btn-outline-secondary" *ngFor="let p of plans" [routerLink]="['/admin/installments', p.id]">{{ 'Plan {p0} ({p1})' | translate: { p0: (p.planNumber), p1: (p.status) } }}</a>
             <!-- Fourier: "VOID INVOICE → Only allowed when there is NO payment" — hidden (not just blocked server-side) once anything has been paid, in favor of the Cancel & credit action below. -->
-            <button class="btn btn-outline-danger" *ngIf="o.status === 'ISSUED' && !hasPayment(o)" (click)="showVoidForm = !showVoidForm">Void invoice</button>
+            <button class="btn btn-outline-danger" *ngIf="o.status === 'ISSUED' && !hasPayment(o)" (click)="showVoidForm = !showVoidForm">{{ 'Void invoice' | translate }}</button>
             <!-- Fourier: "CANCEL/CREDIT PAID INVOICE → Create Credit Note → Handle the payment → Refund OR → Customer Credit" — the separate path for an invoice Void invoice would otherwise refuse. -->
             <button class="btn btn-outline-danger" *ngIf="o.status === 'ISSUED' && hasPayment(o)" (click)="toggleCancelPaidForm()">Cancel &amp; credit invoice</button>
 
-            <a class="btn btn-outline-primary" *ngIf="o.salesOrderId" [routerLink]="['/admin/sales-orders', o.salesOrderId]">Back to sale order</a>
+            <a class="btn btn-outline-primary" *ngIf="o.salesOrderId" [routerLink]="['/admin/sales-orders', o.salesOrderId]">{{ 'Back to sale order' | translate }}</a>
           </div>
         </div>
 
         <div *ngIf="showVoidForm" class="form-group mb-3" style="max-width:400px;">
-          <label>Void reason (optional)</label>
-          <input class="form-control" placeholder="Reason" [(ngModel)]="voidReason" name="voidReason" />
+          <label>{{ 'Void reason (optional)' | translate }}</label>
+          <input class="form-control" [placeholder]="'Reason' | translate" [(ngModel)]="voidReason" name="voidReason" />
           <div class="flex gap-2 mt-2">
-            <button class="btn btn-outline-danger" (click)="confirmVoid()">Confirm void</button>
-            <button class="btn btn-link" (click)="showVoidForm = false">Cancel</button>
+            <button class="btn btn-outline-danger" (click)="confirmVoid()">{{ 'Confirm void' | translate }}</button>
+            <button class="btn btn-link" (click)="showVoidForm = false">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
 
         <!-- Fourier: "CANCEL/CREDIT PAID INVOICE → Create Credit Note → Handle the payment → Refund OR → Customer Credit" -->
         <div *ngIf="showCancelPaidForm" class="card mb-3" style="max-width:420px; padding:1rem;">
           <p class="text-muted" style="margin-top:0;">
-            {{ o.amountPaid | number: '1.2-2' }} has already been paid on this invoice. Cancelling it creates a credit note — choose what happens to that amount.
+            {{ '{p0} has already been paid on this invoice. Cancelling it creates a credit note — choose what happens to that amount.' | translate: { p0: (o.amountPaid | number: '1.2-2') } }}
           </p>
           <div class="form-group">
-            <label class="form-label">Handle the payment</label>
+            <label class="form-label">{{ 'Handle the payment' | translate }}</label>
             <div class="flex gap-3">
-              <label class="flex align-center gap-1"><input type="radio" name="disposition" value="REFUND" [(ngModel)]="disposition" /> Refund</label>
-              <label class="flex align-center gap-1"><input type="radio" name="disposition" value="CUSTOMER_CREDIT" [(ngModel)]="disposition" /> Customer credit</label>
+              <label class="flex align-center gap-1"><input type="radio" name="disposition" value="REFUND" [(ngModel)]="disposition" /> {{ 'Refund' | translate }}</label>
+              <label class="flex align-center gap-1"><input type="radio" name="disposition" value="CUSTOMER_CREDIT" [(ngModel)]="disposition" /> {{ 'Customer credit' | translate }}</label>
             </div>
           </div>
           <div class="form-group" *ngIf="disposition === 'REFUND'">
-            <label class="form-label">Refund method</label>
+            <label class="form-label">{{ 'Refund method' | translate }}</label>
             <select class="form-select" [(ngModel)]="refundMethod">
               <option *ngFor="let m of paymentMethods" [value]="m.code">{{ m.name }}</option>
             </select>
           </div>
           <div class="text-muted mb-2" *ngIf="disposition === 'CUSTOMER_CREDIT'" style="font-size:0.85rem;">
-            {{ o.amountPaid | number: '1.2-2' }} will be added to {{ o.customerName }}'s customer credit balance instead of being paid back out now.
+            {{ '{p0} will be added to {p1}\\'s customer credit balance instead of being paid back out now.' | translate: { p0: (o.amountPaid | number: '1.2-2'), p1: (o.customerName) } }}
           </div>
           <div class="form-group">
-            <label class="form-label">Reason (optional)</label>
-            <input class="form-control" placeholder="Reason" [(ngModel)]="cancelPaidReason" />
+            <label class="form-label">{{ 'Reason (optional)' | translate }}</label>
+            <input class="form-control" [placeholder]="'Reason' | translate" [(ngModel)]="cancelPaidReason" />
           </div>
           <div class="flex gap-2 mt-2">
             <button class="btn btn-outline-danger" [disabled]="!canConfirmCancelPaid()" (click)="confirmCancelPaid()">Confirm cancel &amp; credit</button>
-            <button class="btn btn-link" (click)="showCancelPaidForm = false">Cancel</button>
+            <button class="btn btn-link" (click)="showCancelPaidForm = false">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Customer</div>
+            <div class="stat-label">{{ 'Customer' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.customerName ?? '—' }}</div>
           </div>
           <div class="stat-tile" *ngIf="branches.length > 1">
-            <div class="stat-label">Branch</div>
+            <div class="stat-label">{{ 'Branch' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ branchName(o.branchId) }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Sale order</div>
+            <div class="stat-label">{{ 'Sale order' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.salesOrderNumber ?? '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Invoice date</div>
+            <div class="stat-label">{{ 'Invoice date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.invoiceDate ? (o.invoiceDate | date: 'medium') : '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Due date</div>
+            <div class="stat-label">{{ 'Due date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.dueDate || '—' }}</div>
           </div>
           <!-- Fourier: "create an invoice from the last end date" — only a subscription-generated invoice ever has a billing period; see the backend Invoice.periodStart's own javadoc. -->
           <div class="stat-tile" *ngIf="o.periodStart">
-            <div class="stat-label">Billing period</div>
+            <div class="stat-label">{{ 'Billing period' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.periodStart | date: 'mediumDate' }} – {{ o.periodEnd | date: 'mediumDate' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Subtotal</div>
+            <div class="stat-label">{{ 'Subtotal' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.subtotalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Tax</div>
+            <div class="stat-label">{{ 'Tax' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.taxAmount | number: '1.2-2' }}</div>
           </div>
           <!-- Fourier: "Same for discount (but discount should be activate in the setting or configuration) and it will be per line" — only shown once this document actually has one, same convention as the printed PDF's own addSubtotalBreakdown. -->
           <div class="stat-tile" *ngIf="o.discountAmount">
-            <div class="stat-label">Discount</div>
+            <div class="stat-label">{{ 'Discount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.discountAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total amount</div>
+            <div class="stat-label">{{ 'Total amount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalAmount | number: '1.2-2' }}</div>
           </div>
           <!-- Fourier: "record payment on invoice" — only meaningful once this is a real, ISSUED document; a VOID invoice's amountPaid still shows (it isn't reversed just by voiding), amountOutstanding reads zero since it's no longer payable. -->
           <div class="stat-tile" *ngIf="o.status !== 'DRAFT'">
-            <div class="stat-label">Paid</div>
+            <div class="stat-label">{{ 'Paid' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountPaid | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.status !== 'DRAFT'">
-            <div class="stat-label">Outstanding</div>
+            <div class="stat-label">{{ 'Outstanding' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountOutstanding | number: '1.2-2' }}</div>
           </div>
         </div>
         <p class="text-muted mb-3" *ngIf="o.notes">{{ o.notes }}</p>
-        <p class="text-muted mb-3" *ngIf="o.voidReason">Voided — {{ o.voidReason }}</p>
+        <p class="text-muted mb-3" *ngIf="o.voidReason">{{ 'Voided — {p0}' | translate: { p0: (o.voidReason) } }}</p>
         <!-- Fourier: "CANCEL/CREDIT PAID INVOICE → Handle the payment → Refund OR → Customer Credit" -->
-        <p class="text-muted mb-3" *ngIf="o.paymentDisposition === 'REFUND'">Cancelled — {{ o.amountPaid | number: '1.2-2' }} refunded via {{ o.refundMethod }}.</p>
-        <p class="text-muted mb-3" *ngIf="o.paymentDisposition === 'CUSTOMER_CREDIT'">Cancelled — {{ o.amountPaid | number: '1.2-2' }} converted to customer credit.</p>
+        <p class="text-muted mb-3" *ngIf="o.paymentDisposition === 'REFUND'">{{ 'Cancelled — {p0} refunded via {p1}.' | translate: { p0: (o.amountPaid | number: '1.2-2'), p1: (o.refundMethod) } }}</p>
+        <p class="text-muted mb-3" *ngIf="o.paymentDisposition === 'CUSTOMER_CREDIT'">{{ 'Cancelled — {p0} converted to customer credit.' | translate: { p0: (o.amountPaid | number: '1.2-2') } }}</p>
 
-        <h4 class="mb-2">Lines</h4>
+        <h4 class="mb-2">{{ 'Lines' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Qty</th>
-              <th class="text-end">Unit price</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Qty' | translate }}</th>
+              <th class="text-end">{{ 'Unit price' | translate }}</th>
               <!-- Fourier: "Same for discount ... it will be per line" — only shown once this document actually has a discount on at least one line. -->
-              <th class="text-end" *ngIf="o.discountAmount">Discount</th>
+              <th class="text-end" *ngIf="o.discountAmount">{{ 'Discount' | translate }}</th>
               <!-- Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill, Refund)" -->
-              <th class="text-end">Tax</th>
-              <th class="text-end">Total</th>
+              <th class="text-end">{{ 'Tax' | translate }}</th>
+              <th class="text-end">{{ 'Total' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -219,7 +220,7 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../core/api/insta
               <td class="text-end">{{ l.lineTotal | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="o.lines.length === 0">
-              <td [attr.colspan]="o.discountAmount ? 6 : 5" class="text-muted">No lines on this invoice.</td>
+              <td [attr.colspan]="o.discountAmount ? 6 : 5" class="text-muted">{{ 'No lines on this invoice.' | translate }}</td>
             </tr>
           </tbody>
         </table>

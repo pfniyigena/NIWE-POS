@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -18,25 +19,25 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-stock-adjustment-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Stock adjustments</h3>
-        <a class="btn btn-primary" routerLink="/admin/stock-adjustments/new">+ New adjustment</a>
+        <h3>{{ 'Stock adjustments' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/stock-adjustments/new">{{ '+ New adjustment' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Location</th>
-            <th class="text-end">Change</th>
-            <th class="text-end">Stock after</th>
-            <th>Reason</th>
-            <th>Note</th>
-            <th>Status</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th>{{ 'Location' | translate }}</th>
+            <th class="text-end">{{ 'Change' | translate }}</th>
+            <th class="text-end">{{ 'Stock after' | translate }}</th>
+            <th>{{ 'Reason' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th *ngIf="canApprove"></th>
           </tr>
         </thead>
@@ -61,13 +62,13 @@ import { AuthService } from '../core/auth.service';
             </td>
             <td *ngIf="canApprove" class="flex gap-2">
               <ng-container *ngIf="a.status === 'PENDING'">
-                <button class="btn btn-sm btn-primary" [disabled]="busyId === a.id" (click)="confirm(a)">Confirm</button>
-                <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === a.id" (click)="reject(a)">Reject</button>
+                <button class="btn btn-sm btn-primary" [disabled]="busyId === a.id" (click)="confirm(a)">{{ 'Confirm' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === a.id" (click)="reject(a)">{{ 'Reject' | translate }}</button>
               </ng-container>
             </td>
           </tr>
           <tr *ngIf="adjustments.length === 0">
-            <td [attr.colspan]="canApprove ? 9 : 8" class="text-muted">No stock adjustments yet.</td>
+            <td [attr.colspan]="canApprove ? 9 : 8" class="text-muted">{{ 'No stock adjustments yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -25,102 +26,102 @@ const QUICK_ADD_DEFAULTS = { costPrice: 0, stockQuantity: 0, active: true, categ
 @Component({
   selector: 'app-packaging-rule-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit packaging rule' : 'New packaging rule' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit packaging rule' | translate) : ('New packaging rule' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3" style="position:relative;">
-        <label class="form-label">Parent product (what gets broken down)</label>
+        <label class="form-label">{{ 'Parent product (what gets broken down)' | translate }}</label>
         <input
           class="form-control"
           [(ngModel)]="parentSearch"
           name="parentSearch"
-          placeholder="Search products by name, SKU or code — e.g. Whiskey 750ml bottle"
+          [placeholder]="'Search products by name, SKU or code — e.g. Whiskey 750ml bottle' | translate"
           (input)="onParentSearch()"
         />
         <div class="dropdown-panel" *ngIf="parentResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of parentResults" (click)="selectParent(p)">{{ p.name }}</div>
         </div>
         <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;" *ngIf="selectedParent">
-          Selected: <strong>{{ selectedParent.name }}</strong>
+          {{ 'Selected:' | translate }} <strong>{{ selectedParent.name }}</strong>
         </div>
       </div>
 
       <div class="form-group mb-3" style="position:relative;">
-        <label class="form-label">Child product (what it becomes)</label>
+        <label class="form-label">{{ 'Child product (what it becomes)' | translate }}</label>
         <div class="flex gap-2">
           <input
             class="form-control"
             [(ngModel)]="childSearch"
             name="childSearch"
-            placeholder="Search products by name, SKU or code — e.g. Whiskey shot"
+            [placeholder]="'Search products by name, SKU or code — e.g. Whiskey shot' | translate"
             (input)="onChildSearch()"
           />
           <button type="button" class="btn btn-outline-secondary" style="white-space:nowrap;" *ngIf="!showNewChildProduct" (click)="openNewChildProduct()">
-            + New product
+            {{ '+ New product' | translate }}
           </button>
         </div>
         <div class="dropdown-panel" *ngIf="childResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of childResults" (click)="selectChild(p)">{{ p.name }}</div>
         </div>
         <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;" *ngIf="selectedChild">
-          Selected: <strong>{{ selectedChild.name }}</strong>
+          {{ 'Selected:' | translate }} <strong>{{ selectedChild.name }}</strong>
         </div>
 
         <div class="card mt-2" style="padding:0.9rem; border:1px solid var(--border, #ddd); border-radius:0.375rem;" *ngIf="showNewChildProduct">
           <div class="alert alert-danger" *ngIf="newChildProductError">{{ newChildProductError }}</div>
           <div class="flex gap-2 mb-2">
             <div class="grow">
-              <label class="form-label">Name</label>
-              <input class="form-control" name="newChildProductName" [(ngModel)]="newChildProductName" placeholder="e.g. Whiskey shot" />
+              <label class="form-label">{{ 'Name' | translate }}</label>
+              <input class="form-control" name="newChildProductName" [(ngModel)]="newChildProductName" [placeholder]="'e.g. Whiskey shot' | translate" />
             </div>
             <div class="grow">
-              <label class="form-label">Unit price</label>
+              <label class="form-label">{{ 'Unit price' | translate }}</label>
               <input class="form-control" type="number" min="0" step="0.01" name="newChildProductUnitPrice" [(ngModel)]="newChildProductUnitPrice" />
             </div>
             <div class="grow">
-              <label class="form-label">Tax rate</label>
+              <label class="form-label">{{ 'Tax rate' | translate }}</label>
               <select class="form-select" name="newChildProductTaxRateId" [(ngModel)]="newChildProductTaxRateId">
-                <option [ngValue]="null">— None (tax-exempt) —</option>
+                <option [ngValue]="null">{{ '— None (tax-exempt) —' | translate }}</option>
                 <option *ngFor="let t of activeTaxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option>
               </select>
             </div>
             <div class="grow">
-              <label class="form-label">Description (optional)</label>
+              <label class="form-label">{{ 'Description (optional)' | translate }}</label>
               <input class="form-control" name="newChildProductDescription" [(ngModel)]="newChildProductDescription" />
             </div>
           </div>
           <div class="flex gap-2">
             <button type="button" class="btn btn-primary btn-sm" (click)="saveNewChildProduct()">Save product &amp; select</button>
-            <button type="button" class="btn btn-link btn-sm" (click)="cancelNewChildProduct()">Cancel</button>
+            <button type="button" class="btn btn-link btn-sm" (click)="cancelNewChildProduct()">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Units per parent</label>
+        <label class="form-label">{{ 'Units per parent' | translate }}</label>
         <input type="number" class="form-control" style="max-width:160px;" min="1" name="unitsPerParent" [(ngModel)]="unitsPerParent" />
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-          How many whole units of the child product one unit of the parent breaks down into — e.g. 25 for a bottle into shots, or 24 for a case into bottles.
+          {{ 'How many whole units of the child product one unit of the parent breaks down into — e.g. 25 for a bottle into shots, or 24 for a case into bottles.' | translate }}
         </div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Notes (optional)</label>
+        <label class="form-label">{{ 'Notes (optional)' | translate }}</label>
         <textarea class="form-control" rows="2" name="notes" [(ngModel)]="notes" placeholder="e.g. Count shots carefully — spillage is normal"></textarea>
       </div>
 
       <div class="form-group mb-3" *ngIf="id">
         <label class="form-label">
-          <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+          <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
         </label>
       </div>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save</button>
-        <a class="btn btn-link" routerLink="/admin/packaging/rules">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/packaging/rules">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

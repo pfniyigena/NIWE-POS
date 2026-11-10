@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -18,21 +19,20 @@ import { AppSummary } from '../../core/models';
 @Component({
   selector: 'app-app-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <h3 class="mb-1">Apps</h3>
+      <h3 class="mb-1">{{ 'Apps' | translate }}</h3>
       <p class="text-muted mb-3">
-        Optional integrations you can install and configure for this store. Installing an app
-        leaves it disabled until its settings are filled in and you turn it on.
+        {{ 'Optional integrations you can install and configure for this store. Installing an app leaves it disabled until its settings are filled in and you turn it on.' | translate }}
       </p>
       <table>
         <thead>
           <tr>
-            <th>App</th>
-            <th>Category</th>
-            <th>Status</th>
+            <th>{{ 'App' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -44,23 +44,23 @@ import { AppSummary } from '../../core/models';
             </td>
             <td>{{ a.category }}</td>
             <td>
-              <span class="badge badge-secondary" *ngIf="!a.installed">Not installed</span>
-              <span class="badge badge-warning" *ngIf="a.installed && !a.enabled">Installed — disabled</span>
-              <span class="badge badge-success" *ngIf="a.installed && a.enabled">Enabled</span>
+              <span class="badge badge-secondary" *ngIf="!a.installed">{{ 'Not installed' | translate }}</span>
+              <span class="badge badge-warning" *ngIf="a.installed && !a.enabled">{{ 'Installed — disabled' | translate }}</span>
+              <span class="badge badge-success" *ngIf="a.installed && a.enabled">{{ 'Enabled' | translate }}</span>
             </td>
             <td>
               <div class="flex gap-2">
                 <button *ngIf="!a.installed" class="btn btn-sm btn-primary" (click)="install(a)" [disabled]="busyKey === a.key">
-                  Install
+                  {{ 'Install' | translate }}
                 </button>
-                <a *ngIf="a.installed" class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/apps', a.key]">Configure</a>
+                <a *ngIf="a.installed" class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/apps', a.key]">{{ 'Configure' | translate }}</a>
                 <button
                   *ngIf="a.installed && !a.enabled"
                   class="btn btn-sm btn-outline-secondary"
                   (click)="enable(a)"
                   [disabled]="busyKey === a.key"
                 >
-                  Enable
+                  {{ 'Enable' | translate }}
                 </button>
                 <button
                   *ngIf="a.installed && a.enabled"
@@ -68,16 +68,16 @@ import { AppSummary } from '../../core/models';
                   (click)="disable(a)"
                   [disabled]="busyKey === a.key"
                 >
-                  Disable
+                  {{ 'Disable' | translate }}
                 </button>
                 <button *ngIf="a.installed" class="btn btn-sm btn-outline-danger" (click)="uninstall(a)" [disabled]="busyKey === a.key">
-                  Uninstall
+                  {{ 'Uninstall' | translate }}
                 </button>
               </div>
             </td>
           </tr>
           <tr *ngIf="apps.length === 0">
-            <td colspan="4" class="text-muted">No apps available.</td>
+            <td colspan="4" class="text-muted">{{ 'No apps available.' | translate }}</td>
           </tr>
         </tbody>
       </table>

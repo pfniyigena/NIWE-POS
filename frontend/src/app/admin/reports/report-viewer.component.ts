@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -28,7 +29,7 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
 @Component({
   selector: 'app-report-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
@@ -41,36 +42,36 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
           <ng-container *ngIf="def.filterMode !== 'none'">
             <div class="form-group" style="margin:0;">
-              <label class="form-label">From</label>
+              <label class="form-label">{{ 'From' | translate }}</label>
               <app-date-picker [(ngModel)]="filter.from" ></app-date-picker>
             </div>
             <div class="form-group" style="margin:0;">
-              <label class="form-label">To</label>
+              <label class="form-label">{{ 'To' | translate }}</label>
               <app-date-picker [(ngModel)]="filter.to" ></app-date-picker>
             </div>
           </ng-container>
           <div class="form-group" style="margin:0;" *ngIf="def.filterMode !== 'none' && def.filterMode !== 'dateOnly'">
-            <label class="form-label">Register</label>
+            <label class="form-label">{{ 'Register' | translate }}</label>
             <select class="form-select" [(ngModel)]="filter.registerId">
-              <option [ngValue]="null">All registers</option>
+              <option [ngValue]="null">{{ 'All registers' | translate }}</option>
               <option *ngFor="let r of registers" [ngValue]="r.id">{{ r.name }}</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;" *ngIf="def.categoryFilter">
-            <label class="form-label">Category</label>
+            <label class="form-label">{{ 'Category' | translate }}</label>
             <select class="form-select" [(ngModel)]="filter.categoryId">
-              <option [ngValue]="null">All categories</option>
+              <option [ngValue]="null">{{ 'All categories' | translate }}</option>
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;" *ngFor="let x of def.extraFilters">
             <label class="form-label">{{ x.label }}</label>
             <select class="form-select" *ngIf="x.type === 'select'" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key">
-              <option value="">Any</option>
+              <option value="">{{ 'Any' | translate }}</option>
               <option *ngFor="let o of x.options" [value]="o.value">{{ o.label }}</option>
             </select>
             <select class="form-select" *ngIf="x.type === 'verification'" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key">
-              <option value="">Latest round</option>
+              <option value="">{{ 'Latest round' | translate }}</option>
               <option *ngFor="let r of rounds" [value]="'' + r.id">{{ r.name }} ({{ r.startedOn }})</option>
             </select>
             <input class="form-control" *ngIf="x.type === 'number'" type="number" min="1" style="width:8rem;" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key" />
@@ -80,24 +81,24 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
             <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="includeClosed" (ngModelChange)="hasRun && run()" /> {{ def.openOnlyToggle }}</label>
           </div>
           <div class="form-group" style="margin:0;" *ngIf="def.branchFilter && branches.length > 1">
-            <label class="form-label">Branch</label>
+            <label class="form-label">{{ 'Branch' | translate }}</label>
             <select class="form-select" [(ngModel)]="filter.branchId">
-              <option [ngValue]="null">All branches</option>
+              <option [ngValue]="null">{{ 'All branches' | translate }}</option>
               <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;" *ngIf="def.warehouseFilter && warehouses.length > 1">
-            <label class="form-label">Warehouse</label>
+            <label class="form-label">{{ 'Warehouse' | translate }}</label>
             <select class="form-select" [(ngModel)]="warehouseChoice" (ngModelChange)="onWarehouseChoice()">
               <!-- Stock Movement History has just two modes: every warehouse, or one. Stock On Hand has a third (the classic primary-warehouse view). -->
-              <option value="default" *ngIf="twoModeWarehouse">All warehouses</option>
-              <option value="default" *ngIf="!twoModeWarehouse">Default view (primary warehouse sales stock)</option>
-              <option value="all" *ngIf="!twoModeWarehouse">All warehouses (sellable)</option>
+              <option value="default" *ngIf="twoModeWarehouse">{{ 'All warehouses' | translate }}</option>
+              <option value="default" *ngIf="!twoModeWarehouse">{{ 'Default view (primary warehouse sales stock)' | translate }}</option>
+              <option value="all" *ngIf="!twoModeWarehouse">{{ 'All warehouses (sellable)' | translate }}</option>
               <option *ngFor="let w of warehouses" [value]="'w' + w.id">{{ w.name }}</option>
             </select>
           </div>
           <div class="form-group" style="margin:0; position:relative; min-width:260px;" *ngIf="def.productFilter">
-            <label class="form-label">Product</label>
+            <label class="form-label">{{ 'Product' | translate }}</label>
             <div class="flex gap-2 align-center" *ngIf="filter.productId != null; else productSearchBox">
               <input class="form-control" [value]="selectedProductName" disabled />
               <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearProductFilter()">&times;</button>
@@ -105,7 +106,7 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
             <ng-template #productSearchBox>
               <input
                 class="form-control"
-                placeholder="Search products by name/SKU…"
+                [placeholder]="'Search products by name/SKU…' | translate"
                 [(ngModel)]="productSearch"
                 (input)="onProductSearch()"
               />
@@ -114,10 +115,10 @@ import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../cor
               </div>
             </ng-template>
           </div>
-          <button class="btn btn-primary" (click)="run()" [disabled]="loading">{{ loading ? 'Running…' : 'Run report' }}</button>
+          <button class="btn btn-primary" (click)="run()" [disabled]="loading">{{ loading ? ('Running…' | translate) : ('Run report' | translate) }}</button>
           <span class="grow"></span>
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -86,35 +87,35 @@ interface OfflinePaymentRow {
 @Component({
   selector: 'app-terminal',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, DatePickerComponent],
   template: `
     <div class="term-device-block flex-col align-center" *ngIf="deviceBlock"
          style="position:fixed; inset:0; z-index:5000; background:var(--bg, #fff); color:var(--text, #111); padding:2rem; justify-content:center;">
       <div class="card" style="width:min(460px, 92vw); padding:1.5rem; text-align:center;">
-        <h3 class="mb-2">This terminal belongs to another device</h3>
+        <h3 class="mb-2">{{ 'This terminal belongs to another device' | translate }}</h3>
         <p class="mb-3">{{ deviceBlock }}</p>
-        <a class="btn btn-primary" [routerLink]="[exitLink]">Back</a>
+        <a class="btn btn-primary" [routerLink]="[exitLink]">{{ 'Back' | translate }}</a>
       </div>
     </div>
     <div class="flex-col align-center" style="min-height:100vh; padding:2rem;" *ngIf="!cashierSession">
       <div class="card" style="width:360px; padding:1.5rem;">
-        <h3 class="mb-1">Enter PIN</h3>
-        <p class="text-muted mb-3">{{ session?.registerName ?? 'Terminal' }} — enter your PIN to open the terminal.</p>
+        <h3 class="mb-1">{{ 'Enter PIN' | translate }}</h3>
+        <p class="text-muted mb-3">{{ '{p0} — enter your PIN to open the terminal.' | translate: { p0: (session?.registerName ?? 'Terminal') } }}</p>
         <div class="alert alert-danger" *ngIf="pinError">{{ pinError }}</div>
         <input
           class="form-control mb-2"
           type="password"
           inputmode="numeric"
-          placeholder="PIN"
+          [placeholder]="'PIN' | translate"
           [(ngModel)]="pinInput"
           (keyup.enter)="openWithPin()"
           [disabled]="openingWithPin"
           autofocus
         />
         <button class="btn btn-primary btn-block mb-2" (click)="openWithPin()" [disabled]="openingWithPin || !pinInput">
-          {{ openingWithPin ? 'Checking…' : 'Open terminal' }}
+          {{ openingWithPin ? ('Checking…' | translate) : ('Open terminal' | translate) }}
         </button>
-        <a class="btn btn-link btn-block" [routerLink]="[exitLink]">Cancel</a>
+        <a class="btn btn-link btn-block" [routerLink]="[exitLink]">{{ 'Cancel' | translate }}</a>
         <!-- Issue 2: "The Cashier is not able to sale in terminal (reason no selling cart
              available for him)" — traced to a cashier who was never given a PIN (Admin > Staff
              shows this as a "Not set" badge) getting stuck on this screen with no way forward: the
@@ -123,7 +124,7 @@ interface OfflinePaymentRow {
              profile") — this screen just never pointed them there. -->
         <p class="text-muted text-center mt-2" style="font-size:0.8rem;">
           Don't have a PIN yet? Ask an admin to set one for you (Admin &gt; Staff), or
-          <a [routerLink]="['/profile']">set your own in My Profile</a>.
+          <a [routerLink]="['/profile']">{{ 'set your own in My Profile' | translate }}</a>.
         </p>
       </div>
     </div>
@@ -140,7 +141,7 @@ interface OfflinePaymentRow {
       </button>
       <button
         class="pos-new-tab"
-        title="New order"
+        [title]="'New order' | translate"
         (click)="newOrder()"
         [disabled]="!cashierSession || offline"
       >+</button>
@@ -153,7 +154,7 @@ interface OfflinePaymentRow {
         *ngIf="offlineQueue.length > 0"
         [title]="failedQueueCount > 0 ? failedQueueCount + ' offline sale(s) need review' : 'Offline sales waiting to sync'"
       >
-        📥 Offline queue ({{ offlineQueue.length }})<span *ngIf="failedQueueCount > 0"> ⚠</span>
+        {{ '📥 Offline queue ({p0})' | translate: { p0: (offlineQueue.length) } }}<span *ngIf="failedQueueCount > 0"> ⚠</span>
       </button>
       <!-- Issue 1: "Missing 'Switch cashier' in the terminal" — the button always did this (see
            switchCashier() below), but its visible label used to be just the current cashier's own
@@ -165,18 +166,18 @@ interface OfflinePaymentRow {
         style="margin-right:8px;"
         (click)="switchCashier()"
         [disabled]="offline"
-        title="Let another staff member ring sales on this shift under their own PIN — requires connectivity"
+        [title]="'Let another staff member ring sales on this shift under their own PIN — requires connectivity' | translate"
       >
-        🔁 Switch cashier ({{ cashierSession.cashierName }})
+        {{ '🔁 Switch cashier ({p0})' | translate: { p0: (cashierSession.cashierName) } }}
       </button>
       <button
         class="btn btn-sm btn-outline-secondary"
         style="margin-right:8px;"
         (click)="endMySession()"
         [disabled]="!cashierSession || offline"
-        title="Done working this shift — end your own session (any unfinished carts are discarded) — requires connectivity"
+        [title]="'Done working this shift — end your own session (any unfinished carts are discarded) — requires connectivity' | translate"
       >
-        🚪 End my session
+        {{ '🚪 End my session' | translate }}
       </button>
       <button
         class="btn btn-sm btn-outline-secondary"
@@ -184,115 +185,113 @@ interface OfflinePaymentRow {
         (click)="toggleReceipts()"
         [class.active]="showReceipts"
         [disabled]="offline"
-        title="Requires connectivity"
+        [title]="'Requires connectivity' | translate"
       >
-        🧾 Receipts
+        {{ '🧾 Receipts' | translate }}
       </button>
       <a
         class="btn btn-sm btn-outline-secondary till-cash-btn"
         style="margin-right:8px;"
         [routerLink]="['/cash-control', sessionId]"
-        title="Money paid in or out of the drawer, drops into the safe, and cash counts"
+        [title]="'Money paid in or out of the drawer, drops into the safe, and cash counts' | translate"
       >
-        💵 Cash
+        {{ '💵 Cash' | translate }}
       </a>
       <a
         class="btn btn-sm btn-outline-secondary till-xreport-btn"
         style="margin-right:8px;"
         [routerLink]="['/sessions', sessionId, 'x-report']"
-        title="X report: how the shift stands right now (nothing is closed)"
+        [title]="'X report: how the shift stands right now (nothing is closed)' | translate"
       >
-        📄 X report
+        {{ '📄 X report' | translate }}
       </a>
       <button
         *ngIf="features.feature('giftCards')" class="btn btn-sm btn-outline-secondary till-giftcard-btn"
         style="margin-right:8px;"
         (click)="openGiftCard()"
         [disabled]="offline || !cashierSession"
-        title="Check a gift card's balance, sell a new one or add money to one — requires connectivity"
+        [title]="'Check a gift card\\'s balance, sell a new one or add money to one — requires connectivity' | translate"
       >
-        🎫 Gift card
+        {{ '🎫 Gift card' | translate }}
       </button>
       <button
         class="btn btn-sm btn-outline-secondary"
         style="margin-right:8px;"
         (click)="openCustomerDisplay()"
-        title="Open a customer-facing screen — put it on a second monitor, or open the same link on a separate device"
+        [title]="'Open a customer-facing screen — put it on a second monitor, or open the same link on a separate device' | translate"
       >
-        📺 Customer display
+        {{ '📺 Customer display' | translate }}
       </button>
       <button
         *ngIf="devices.isDirect('receipt')"
         class="btn btn-sm btn-outline-secondary open-drawer"
         style="margin-right:8px;"
         (click)="openDrawer()"
-        title="Open the cash drawer"
+        [title]="'Open the cash drawer' | translate"
       >
-        💵 Open drawer
+        {{ '💵 Open drawer' | translate }}
       </button>
-      <a class="btn btn-sm btn-outline-secondary devices-link" style="margin-right:8px;" routerLink="/devices" title="Printers and the COM customer display of this PC">🖨️ Devices</a>
+      <a class="btn btn-sm btn-outline-secondary devices-link" style="margin-right:8px;" routerLink="/devices" [title]="'Printers and the COM customer display of this PC' | translate">{{ '🖨️ Devices' | translate }}</a>
       <span class="text-danger drawer-note" *ngIf="drawerNote" style="margin-right:8px; font-size:0.8rem;">{{ drawerNote }}</span>
       <span class="text-muted" style="font-size:0.9rem; display:flex; align-items:center; gap:8px; padding-right:8px;">
         {{ session?.registerName ?? '—' }}
-        <a [routerLink]="[exitLink]" style="color:var(--text); margin-left:6px;" title="Exit terminal">↩️ Exit</a>
+        <a [routerLink]="[exitLink]" style="color:var(--text); margin-left:6px;" [title]="'Exit terminal' | translate">{{ '↩️ Exit' | translate }}</a>
       </span>
     </div>
 
     <div class="alert alert-warning" style="margin:8px 12px 0; padding:6px 12px;" *ngIf="offline">
-      📴 Offline — the product grid is working from the catalog as of the last sync, and any tab that
-      was already open on the server is frozen until you're back online. Start a sale below and it'll
-      queue locally, then sync automatically the moment connectivity returns.
+      {{ '📴 Offline — the product grid is working from the catalog as of the last sync, and any tab that was already open on the server is frozen until you\\'re back online. Start a sale below and it\\'ll queue locally, then sync automatically the moment connectivity returns.' | translate }}
     </div>
 
     <!-- CP-8c: gift cards at the till. Money taken here goes into this cashier's session; the card is owed back as goods, not counted as sales. -->
     <div class="till-gc-overlay" *ngIf="showGiftCard" style="position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:50; display:flex; align-items:center; justify-content:center; padding:12px;">
       <div class="card till-gc-panel" style="width:100%; max-width:460px; max-height:90vh; overflow:auto; padding:16px;">
         <div class="flex justify-between align-center mb-2">
-          <h4 style="margin:0;">Gift card</h4>
-          <button class="btn btn-link till-gc-close" (click)="closeGiftCard()">Close</button>
+          <h4 style="margin:0;">{{ 'Gift card' | translate }}</h4>
+          <button class="btn btn-link till-gc-close" (click)="closeGiftCard()">{{ 'Close' | translate }}</button>
         </div>
         <div class="flex gap-2 mb-3">
-          <button class="btn btn-sm till-gc-tab-check" [class.btn-primary]="gcTab === 'check'" [class.btn-outline-secondary]="gcTab !== 'check'" (click)="gcTab = 'check'; gcErr = null; gcMsg = null">Check / add money</button>
-          <button class="btn btn-sm till-gc-tab-sell" [class.btn-primary]="gcTab === 'sell'" [class.btn-outline-secondary]="gcTab !== 'sell'" (click)="gcTab = 'sell'; gcErr = null; gcMsg = null">Sell a new card</button>
+          <button class="btn btn-sm till-gc-tab-check" [class.btn-primary]="gcTab === 'check'" [class.btn-outline-secondary]="gcTab !== 'check'" (click)="gcTab = 'check'; gcErr = null; gcMsg = null">{{ 'Check / add money' | translate }}</button>
+          <button class="btn btn-sm till-gc-tab-sell" [class.btn-primary]="gcTab === 'sell'" [class.btn-outline-secondary]="gcTab !== 'sell'" (click)="gcTab = 'sell'; gcErr = null; gcMsg = null">{{ 'Sell a new card' | translate }}</button>
         </div>
         <div class="alert alert-danger till-gc-error" *ngIf="gcErr" style="padding:6px 10px;">{{ gcErr }}</div>
         <div class="alert alert-success till-gc-msg" *ngIf="gcMsg" style="padding:6px 10px;">{{ gcMsg }}</div>
 
         <div *ngIf="gcTab === 'check'">
           <div class="flex gap-2 mb-2">
-            <input class="form-control till-gc-code" placeholder="Gift card code" [(ngModel)]="gcCode" (keyup.enter)="lookupGiftCard()" autocomplete="off" />
-            <button class="btn btn-outline-primary till-gc-lookup" (click)="lookupGiftCard()">Check</button>
+            <input class="form-control till-gc-code" [placeholder]="'Gift card code' | translate" [(ngModel)]="gcCode" (keyup.enter)="lookupGiftCard()" autocomplete="off" />
+            <button class="btn btn-outline-primary till-gc-lookup" (click)="lookupGiftCard()">{{ 'Check' | translate }}</button>
           </div>
           <div *ngIf="gcCard" class="till-gc-card mb-2">
-            <div>Balance: <strong class="till-gc-balance">{{ gcCard.balance | number: '1.2-2' }}</strong></div>
+            <div>{{ 'Balance:' | translate }} <strong class="till-gc-balance">{{ gcCard.balance | number: '1.2-2' }}</strong></div>
             <div class="text-muted" style="font-size:0.85rem;">
-              <span *ngIf="gcCard.status === 'BLOCKED'">Blocked. </span><span *ngIf="gcCard.expired">Expired {{ gcCard.expiresOn }}. </span><span *ngIf="!gcCard.expired && gcCard.expiresOn">Expires {{ gcCard.expiresOn }}. </span><span *ngIf="gcCard.recipientName">For {{ gcCard.recipientName }}.</span>
+              <span *ngIf="gcCard.status === 'BLOCKED'">{{ 'Blocked.' | translate }} </span><span *ngIf="gcCard.expired">{{ 'Expired {p0}.' | translate: { p0: (gcCard.expiresOn) } }} </span><span *ngIf="!gcCard.expired && gcCard.expiresOn">{{ 'Expires {p0}.' | translate: { p0: (gcCard.expiresOn) } }} </span><span *ngIf="gcCard.recipientName">{{ 'For {p0}.' | translate: { p0: (gcCard.recipientName) } }}</span>
             </div>
             <div class="mt-2" *ngIf="gcCard.usable">
-              <label class="form-label">Add money</label>
+              <label class="form-label">{{ 'Add money' | translate }}</label>
               <div class="flex gap-2" style="flex-wrap:wrap;">
-                <input class="form-control till-gc-top-amount" type="number" min="0" step="0.01" style="max-width:140px;" placeholder="Amount" [(ngModel)]="gcTopAmount" />
+                <input class="form-control till-gc-top-amount" type="number" min="0" step="0.01" style="max-width:140px;" [placeholder]="'Amount' | translate" [(ngModel)]="gcTopAmount" />
                 <select class="form-control till-gc-top-method" style="max-width:170px;" [(ngModel)]="gcMethod">
                   <option *ngFor="let m of gcMethods" [value]="m.code">{{ m.name }}</option>
                 </select>
-                <button class="btn btn-primary till-gc-top" [disabled]="gcBusy" (click)="topUpGiftCard()">Add</button>
+                <button class="btn btn-primary till-gc-top" [disabled]="gcBusy" (click)="topUpGiftCard()">{{ 'Add' | translate }}</button>
               </div>
             </div>
           </div>
         </div>
 
         <div *ngIf="gcTab === 'sell'">
-          <div class="form-group mb-2"><label class="form-label">Amount</label><input class="form-control till-gc-sell-amount" type="number" min="0" step="0.01" [(ngModel)]="gcSellAmount" /></div>
-          <div class="form-group mb-2"><label class="form-label">Paid by</label>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control till-gc-sell-amount" type="number" min="0" step="0.01" [(ngModel)]="gcSellAmount" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Paid by' | translate }}</label>
             <select class="form-control till-gc-sell-method" [(ngModel)]="gcMethod">
               <option *ngFor="let m of gcMethods" [value]="m.code">{{ m.name }}</option>
             </select></div>
-          <div class="form-group mb-2"><label class="form-label">For (optional)</label><input class="form-control till-gc-sell-recipient" [(ngModel)]="gcRecipient" /></div>
-          <button class="btn btn-primary till-gc-sell" [disabled]="gcBusy" (click)="sellGiftCard()">Sell card</button>
+          <div class="form-group mb-2"><label class="form-label">{{ 'For (optional)' | translate }}</label><input class="form-control till-gc-sell-recipient" [(ngModel)]="gcRecipient" /></div>
+          <button class="btn btn-primary till-gc-sell" [disabled]="gcBusy" (click)="sellGiftCard()">{{ 'Sell card' | translate }}</button>
           <div class="till-gc-new mt-3" *ngIf="gcNewCard" style="padding:10px; border:2px dashed var(--border, #bbb); text-align:center;">
-            <div class="text-muted" style="font-size:0.85rem;">Give the customer this code</div>
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Give the customer this code' | translate }}</div>
             <div style="font-size:1.4rem; font-weight:700; letter-spacing:1px;" class="till-gc-new-code">{{ gcNewCard.code }}</div>
-            <div>Balance {{ gcNewCard.balance | number: '1.2-2' }}</div>
+            <div>{{ 'Balance {p0}' | translate: { p0: (gcNewCard.balance | number: '1.2-2') } }}</div>
           </div>
         </div>
       </div>
@@ -301,16 +300,16 @@ interface OfflinePaymentRow {
     <div class="app-shell" *ngIf="showOfflineQueue">
       <main class="app-main wide" style="padding:1rem;">
         <div class="flex justify-between align-center mb-3">
-          <h3>Offline sale queue</h3>
+          <h3>{{ 'Offline sale queue' | translate }}</h3>
           <button class="btn btn-outline-secondary" (click)="toggleOfflineQueue()">&larr; Back to terminal</button>
         </div>
         <table>
           <thead>
             <tr>
-              <th>Rung at</th>
-              <th>Customer</th>
-              <th class="text-end">Est. total</th>
-              <th>Status</th>
+              <th>{{ 'Rung at' | translate }}</th>
+              <th>{{ 'Customer' | translate }}</th>
+              <th class="text-end">{{ 'Est. total' | translate }}</th>
+              <th>{{ 'Status' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -320,13 +319,13 @@ interface OfflinePaymentRow {
               <td>{{ s.customerName }}</td>
               <td class="text-end">{{ s.clientEstimatedTotal | number: '1.2-2' }}</td>
               <td>
-                <span *ngIf="s.status === 'pending'">⏳ Waiting to sync</span>
-                <span *ngIf="s.status === 'failed'" class="text-danger">⚠ Failed — {{ s.lastError }}</span>
+                <span *ngIf="s.status === 'pending'">{{ '⏳ Waiting to sync' | translate }}</span>
+                <span *ngIf="s.status === 'failed'" class="text-danger">{{ '⚠ Failed — {p0}' | translate: { p0: (s.lastError) } }}</span>
               </td>
-              <td><button class="btn btn-sm btn-outline-danger" (click)="discardQueuedSale(s)">Discard</button></td>
+              <td><button class="btn btn-sm btn-outline-danger" (click)="discardQueuedSale(s)">{{ 'Discard' | translate }}</button></td>
             </tr>
             <tr *ngIf="offlineQueue.length === 0">
-              <td colspan="5" class="text-muted">Nothing queued.</td>
+              <td colspan="5" class="text-muted">{{ 'Nothing queued.' | translate }}</td>
             </tr>
           </tbody>
         </table>
@@ -337,17 +336,17 @@ interface OfflinePaymentRow {
       <main class="app-main wide" style="padding:1rem;">
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
         <div class="flex justify-between align-center mb-3">
-          <h3>Receipts — this shift</h3>
+          <h3>{{ 'Receipts — this shift' | translate }}</h3>
           <button class="btn btn-outline-secondary" (click)="toggleReceipts()">&larr; Back to terminal</button>
         </div>
         <table>
           <thead>
             <tr>
-              <th>Time</th>
-              <th>Invoice</th>
-              <th>Customer</th>
-              <th class="text-end">Total</th>
-              <th>Payment</th>
+              <th>{{ 'Time' | translate }}</th>
+              <th>{{ 'Invoice' | translate }}</th>
+              <th>{{ 'Customer' | translate }}</th>
+              <th class="text-end">{{ 'Total' | translate }}</th>
+              <th>{{ 'Payment' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -364,10 +363,10 @@ interface OfflinePaymentRow {
               <td>
                 <span *ngFor="let p of o.payments; let last = last">{{ p.method }}{{ !last ? ' + ' : '' }}</span>
               </td>
-              <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/receipt', o.id]">View / Reprint</a></td>
+              <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/receipt', o.id]">{{ 'View / Reprint' | translate }}</a></td>
             </tr>
             <tr *ngIf="receipts.length === 0">
-              <td colspan="6" class="text-muted">No completed sales on this shift yet.</td>
+              <td colspan="6" class="text-muted">{{ 'No completed sales on this shift yet.' | translate }}</td>
             </tr>
           </tbody>
         </table>
@@ -388,14 +387,14 @@ interface OfflinePaymentRow {
             <div class="flex gap-2 mb-2">
               <input
                 class="form-control"
-                placeholder="Scan or type barcode, then press Enter"
+                [placeholder]="'Scan or type barcode, then press Enter' | translate"
                 [(ngModel)]="barcodeText"
                 (keyup.enter)="addByBarcode()"
                 #barcodeField
               />
               <input
                 class="form-control"
-                placeholder="Search products by name or SKU"
+                [placeholder]="'Search products by name or SKU' | translate"
                 [(ngModel)]="searchTerm"
                 (input)="reloadProducts()"
               />
@@ -403,7 +402,7 @@ interface OfflinePaymentRow {
 
             <div class="flex gap-2 mb-3" style="overflow-x:auto;">
               <button class="category-tile all" [class.selected]="selectedCategoryId === null" (click)="selectCategory(null)">
-                All products
+                {{ 'All products' | translate }}
               </button>
               <button
                 *ngFor="let c of categories"
@@ -434,7 +433,7 @@ interface OfflinePaymentRow {
                   {{ p.stockQuantity > 0 ? 'Stock: ' + p.stockQuantity : 'Out of stock' }}
                 </div>
               </button>
-              <div class="text-muted" *ngIf="products.length === 0">No products match.</div>
+              <div class="text-muted" *ngIf="products.length === 0">{{ 'No products match.' | translate }}</div>
               <!--
                 Task: "check the loading of 100000 products" — the backend caps this list at 200
                 tiles regardless of category/search (see CatalogService.TERMINAL_SEARCH_CAP), so a
@@ -443,7 +442,7 @@ interface OfflinePaymentRow {
                 are exactly 200 results — so it stays silent for any store small enough to never hit it.
               -->
               <div class="text-muted" style="width:100%; font-size:0.8rem;" *ngIf="products.length === 200">
-                Showing the first 200 matches — type to search for more.
+                {{ 'Showing the first 200 matches — type to search for more.' | translate }}
               </div>
             </div>
           </div>
@@ -451,11 +450,11 @@ interface OfflinePaymentRow {
           <div class="card pos-cart-panel">
             <div class="card-body" *ngIf="!offline && currentOrder as order">
               <div style="padding:8px;">
-                <label class="form-label">Customer</label>
+                <label class="form-label">{{ 'Customer' | translate }}</label>
                 <div class="flex gap-1 mb-1">
                   <input
                     class="form-control form-control-sm"
-                    placeholder="Search customer by name or phone"
+                    [placeholder]="'Search customer by name or phone' | translate"
                     [(ngModel)]="customerSearch"
                     (input)="filterCustomers()"
                   />
@@ -463,9 +462,9 @@ interface OfflinePaymentRow {
                     type="button"
                     class="btn btn-sm btn-outline-secondary"
                     (click)="toggleAddCustomer()"
-                    title="Add a new customer"
+                    [title]="'Add a new customer' | translate"
                   >
-                    👤+ Add
+                    {{ '👤+ Add' | translate }}
                   </button>
                 </div>
                 <select class="form-select" [(ngModel)]="customerId" (change)="setCustomer()">
@@ -480,24 +479,24 @@ interface OfflinePaymentRow {
                 <!-- Task: "Customer balance on POS screen" -->
                 <div class="text-muted" style="font-size:0.8rem; margin-top:4px;" *ngIf="customerId && creditSummary">
                   <span *ngIf="creditSummary.creditEnabled">
-                    Owes {{ creditSummary.outstandingBalance | number: '1.2-2' }} · available credit {{ creditSummary.availableCredit | number: '1.2-2' }}
+                    {{ 'Owes {p0} · available credit {p1}' | translate: { p0: (creditSummary.outstandingBalance | number: '1.2-2'), p1: (creditSummary.availableCredit | number: '1.2-2') } }}
                   </span>
-                  <span *ngIf="!creditSummary.creditEnabled">Not enabled for credit</span>
+                  <span *ngIf="!creditSummary.creditEnabled">{{ 'Not enabled for credit' | translate }}</span>
                 </div>
 
                 <!-- CP-8c: the customer's loyalty points; spent on the payment screen. -->
                 <div class="till-points" style="font-size:0.8rem; margin-top:2px; color:var(--success, #1a7f37);" *ngIf="customerId && loyalty && loyalty.enabled && loyalty.points > 0">
-                  ⭐ {{ loyalty.points }} points (worth {{ loyalty.value | number: '1.2-2' }})
+                  {{ '⭐ {p0} points (worth {p1})' | translate: { p0: (loyalty.points), p1: (loyalty.value | number: '1.2-2') } }}
                 </div>
 
                 <div class="card" style="margin-top:6px; padding:8px;" *ngIf="showAddCustomer">
                   <div class="alert alert-danger" style="padding:4px 8px; font-size:0.85rem;" *ngIf="addCustomerError">
                     {{ addCustomerError }}
                   </div>
-                  <input class="form-control form-control-sm mb-1" placeholder="Name" [(ngModel)]="newCustomerName" />
-                  <input class="form-control form-control-sm mb-1" placeholder="Phone" [(ngModel)]="newCustomerPhone" />
-                  <input class="form-control form-control-sm mb-1" placeholder="Email" [(ngModel)]="newCustomerEmail" />
-                  <input class="form-control form-control-sm mb-2" placeholder="Tax ID" [(ngModel)]="newCustomerTaxId" />
+                  <input class="form-control form-control-sm mb-1" [placeholder]="'Name' | translate" [(ngModel)]="newCustomerName" />
+                  <input class="form-control form-control-sm mb-1" [placeholder]="'Phone' | translate" [(ngModel)]="newCustomerPhone" />
+                  <input class="form-control form-control-sm mb-1" [placeholder]="'Email' | translate" [(ngModel)]="newCustomerEmail" />
+                  <input class="form-control form-control-sm mb-2" [placeholder]="'Tax ID' | translate" [(ngModel)]="newCustomerTaxId" />
                   <div class="flex gap-2">
                     <button
                       type="button"
@@ -505,23 +504,23 @@ interface OfflinePaymentRow {
                       (click)="saveNewCustomer()"
                       [disabled]="!newCustomerName.trim() || savingCustomer"
                     >
-                      {{ savingCustomer ? 'Saving…' : 'Save' }}
+                      {{ savingCustomer ? ('Saving…' | translate) : ('Save' | translate) }}
                     </button>
-                    <button type="button" class="btn btn-sm btn-link" (click)="toggleAddCustomer()">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-link" (click)="toggleAddCustomer()">{{ 'Cancel' | translate }}</button>
                   </div>
                 </div>
               </div>
 
               <div class="flex justify-between align-center pos-summary-bar" style="padding:8px;">
-                <strong>{{ order.totalQuantity }} items</strong>
-                <strong>Total: {{ order.total | number: '1.2-2' }}</strong>
+                <strong>{{ '{p0} items' | translate: { p0: (order.totalQuantity) } }}</strong>
+                <strong>{{ 'Total: {p0}' | translate: { p0: (order.total | number: '1.2-2') } }}</strong>
               </div>
 
               <div class="flex cart-col-header" style="padding:6px 8px;">
-                <div style="width:45%">Item</div>
-                <div style="width:20%">Qty</div>
-                <div style="width:20%">Dis.</div>
-                <div style="width:15%" class="text-end">Price</div>
+                <div style="width:45%">{{ 'Item' | translate }}</div>
+                <div style="width:20%">{{ 'Qty' | translate }}</div>
+                <div style="width:20%">{{ 'Dis.' | translate }}</div>
+                <div style="width:15%" class="text-end">{{ 'Price' | translate }}</div>
               </div>
 
               <table class="table-sm" style="margin-bottom:0;">
@@ -531,15 +530,15 @@ interface OfflinePaymentRow {
                       <div>{{ l.description }}</div>
                       <!-- CP-8: the customer buys at a price list: show the normal price crossed out and which list the price is from. -->
                       <div class="text-muted line-price-note" *ngIf="l.priceNote" style="font-size:0.78rem;">
-                        {{ l.priceNote }}: <s>{{ l.listPrice | number: '1.2-2' }}</s> {{ l.unitPrice | number: '1.2-2' }} each
+                        {{ l.priceNote }}: <s>{{ l.listPrice | number: '1.2-2' }}</s> {{ '{p0} each' | translate: { p0: (l.unitPrice | number: '1.2-2') } }}
                       </div>
                       <!-- CP-8b: which promotion took something off this line. -->
                       <div class="line-override-note text-muted" *ngIf="l.priceOverridden" style="font-size:0.78rem;">
-                        Price changed: <s>{{ l.originalUnitPrice | number: '1.2-2' }}</s> {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.priceOverrideReason"> ({{ l.priceOverrideReason }})</span>
-                        <button class="btn btn-sm btn-link line-price-reset" style="padding:0 4px;" (click)="resetPrice(l)" title="Put the normal price back">↺</button>
+                        {{ 'Price changed:' | translate }} <s>{{ l.originalUnitPrice | number: '1.2-2' }}</s> {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.priceOverrideReason"> ({{ l.priceOverrideReason }})</span>
+                        <button class="btn btn-sm btn-link line-price-reset" style="padding:0 4px;" (click)="resetPrice(l)" [title]="'Put the normal price back' | translate">↺</button>
                       </div>
                       <div class="line-discount-note text-muted" *ngIf="l.discountPercent > 0 && l.discountReason" style="font-size:0.78rem;">
-                        Discount: {{ l.discountReason }}<span *ngIf="l.discountApprovedBy"> (approved by {{ l.discountApprovedBy }})</span>
+                        {{ 'Discount: {p0}' | translate: { p0: (l.discountReason) } }}<span *ngIf="l.discountApprovedBy"> {{ '(approved by {p0})' | translate: { p0: (l.discountApprovedBy) } }}</span>
                       </div>
                       <div class="line-promo-note" *ngIf="l.promoNote" style="font-size:0.78rem; color:var(--success, #1a7f37);">
                         🏷 {{ l.promoNote }} (−{{ l.promoPercent | number: '1.0-2' }}%)
@@ -567,13 +566,13 @@ interface OfflinePaymentRow {
                           [max]="effectiveMaxDiscountPercent"
                           class="form-control form-control-sm"
                           style="width:65px; padding:0.2rem 0.4rem;"
-                          placeholder="disc %"
+                          [placeholder]="'disc %' | translate"
                           [ngModel]="l.discountPercent"
                           [title]="canDiscount ? '' : 'A manager approves a discount above the cashier allowance'"
                           (change)="updateDiscount(l, $event)"
                         />
-                        <button class="btn btn-sm btn-outline-secondary line-price-btn" (click)="openPanel('price', l)" title="Change the price">✎</button>
-                        <button class="btn btn-sm btn-outline-danger" (click)="removeLine(l)" title="Remove">🗑</button>
+                        <button class="btn btn-sm btn-outline-secondary line-price-btn" (click)="openPanel('price', l)" [title]="'Change the price' | translate">✎</button>
+                        <button class="btn btn-sm btn-outline-danger" (click)="removeLine(l)" [title]="'Remove' | translate">🗑</button>
                       </div>
                       <!-- Serial-numbered products: type or scan the serial of each unit sold (comma-separated).
                            Left empty, the oldest units in stock are used. -->
@@ -590,7 +589,7 @@ interface OfflinePaymentRow {
                     <td class="text-end">{{ l.lineTotal | number: '1.2-2' }}</td>
                   </tr>
                   <tr *ngIf="order.lines.length === 0">
-                    <td colspan="2" class="text-muted" style="padding:1rem;">Cart is empty — tap a product or scan a barcode.</td>
+                    <td colspan="2" class="text-muted" style="padding:1rem;">{{ 'Cart is empty — tap a product or scan a barcode.' | translate }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -598,22 +597,22 @@ interface OfflinePaymentRow {
               <table class="table-sm" style="margin-bottom:0;">
                 <tbody>
                   <tr>
-                    <td>Subtotal</td>
+                    <td>{{ 'Subtotal' | translate }}</td>
                     <td class="text-end">{{ order.subtotal | number: '1.2-2' }}</td>
                   </tr>
                   <tr>
-                    <td>Tax</td>
+                    <td>{{ 'Tax' | translate }}</td>
                     <td class="text-end">{{ order.taxTotal | number: '1.2-2' }}</td>
                   </tr>
                   <tr class="order-discount-row" *ngIf="order.orderDiscountPercent && order.orderDiscountPercent > 0">
                     <td>
-                      Discount on the sale ({{ order.orderDiscountPercent | number: '1.0-2' }}%)<span class="text-muted" *ngIf="order.orderDiscountReason"> — {{ order.orderDiscountReason }}</span>
-                      <button class="btn btn-sm btn-link order-discount-remove" style="padding:0 4px;" (click)="clearOrderDiscount()" title="Take this discount off">✕</button>
+                      {{ 'Discount on the sale ({p0}%)' | translate: { p0: (order.orderDiscountPercent | number: '1.0-2') } }}<span class="text-muted" *ngIf="order.orderDiscountReason"> — {{ order.orderDiscountReason }}</span>
+                      <button class="btn btn-sm btn-link order-discount-remove" style="padding:0 4px;" (click)="clearOrderDiscount()" [title]="'Take this discount off' | translate">✕</button>
                     </td>
                     <td class="text-end">−{{ order.orderDiscountValue | number: '1.2-2' }}</td>
                   </tr>
                   <tr class="promo-saved-row" *ngIf="order.promoSavings && order.promoSavings > 0" style="color:var(--success, #1a7f37);">
-                    <td>Saved with promotions</td>
+                    <td>{{ 'Saved with promotions' | translate }}</td>
                     <td class="text-end">{{ order.promoSavings | number: '1.2-2' }}</td>
                   </tr>
                 </tbody>
@@ -622,15 +621,15 @@ interface OfflinePaymentRow {
               <!-- CP-8b: coupon codes. A code with no saving yet stays on the cart and starts working when the right items are added. -->
               <div class="promo-box" *ngIf="features.feature('promotions')" style="padding:6px 8px;">
                 <div class="flex gap-1">
-                  <input class="form-control form-control-sm promo-coupon-input" style="text-transform:uppercase;" placeholder="Coupon code" [(ngModel)]="couponInput" (keyup.enter)="addCoupon()" autocomplete="off" />
-                  <button class="btn btn-sm btn-outline-primary promo-coupon-add" [disabled]="!couponInput.trim()" (click)="addCoupon()">Apply</button>
+                  <input class="form-control form-control-sm promo-coupon-input" style="text-transform:uppercase;" [placeholder]="'Coupon code' | translate" [(ngModel)]="couponInput" (keyup.enter)="addCoupon()" autocomplete="off" />
+                  <button class="btn btn-sm btn-outline-primary promo-coupon-add" [disabled]="!couponInput.trim()" (click)="addCoupon()">{{ 'Apply' | translate }}</button>
                 </div>
                 <div class="promo-coupon-error" *ngIf="couponError" style="color:var(--danger, #c0392b); font-size:0.8rem; margin-top:2px;">{{ couponError }}</div>
                 <div class="promo-chip flex align-center gap-1" *ngFor="let code of order.couponCodes" [attr.data-code]="code" style="font-size:0.85rem; margin-top:4px;">
                   <code>{{ code }}</code>
-                  <span *ngIf="couponAmount(order, code) > 0" style="color:var(--success, #1a7f37);">saves {{ couponAmount(order, code) | number: '1.2-2' }}</span>
-                  <span *ngIf="couponAmount(order, code) <= 0" class="text-muted">not applying yet</span>
-                  <button class="btn btn-sm btn-link promo-coupon-remove" (click)="removeCoupon(code)" title="Take this coupon off">✕</button>
+                  <span *ngIf="couponAmount(order, code) > 0" style="color:var(--success, #1a7f37);">{{ 'saves {p0}' | translate: { p0: (couponAmount(order, code) | number: '1.2-2') } }}</span>
+                  <span *ngIf="couponAmount(order, code) <= 0" class="text-muted">{{ 'not applying yet' | translate }}</span>
+                  <button class="btn btn-sm btn-link promo-coupon-remove" (click)="removeCoupon(code)" [title]="'Take this coupon off' | translate">✕</button>
                 </div>
               </div>
 
@@ -639,34 +638,34 @@ interface OfflinePaymentRow {
                 <strong class="mb-2">{{ panel.kind === 'price' ? 'Change the price of ' + (panel.line?.description || '') : panel.kind === 'order' ? 'Discount on the whole sale' : 'Discount on ' + (panel.line?.description || '') }}</strong>
                 <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
                   <select class="form-select form-select-sm till-panel-mode" style="width:auto;" *ngIf="panel.kind === 'order'" [(ngModel)]="panel.mode" name="pmode">
-                    <option value="percent">Percent</option>
-                    <option value="amount">Amount</option>
+                    <option value="percent">{{ 'Percent' | translate }}</option>
+                    <option value="amount">{{ 'Amount' | translate }}</option>
                   </select>
                   <input class="form-control form-control-sm till-panel-value" style="width:110px;" type="number" min="0" step="0.01" [(ngModel)]="panel.value" name="pvalue"
                     [placeholder]="panel.kind === 'price' ? 'New price' : panel.mode === 'amount' ? 'Amount' : 'Percent'" />
                   <select class="form-select form-select-sm till-panel-reason" style="width:auto;" [(ngModel)]="panel.reason" name="preason">
-                    <option value="">Reason…</option>
+                    <option value="">{{ 'Reason…' | translate }}</option>
                     <option *ngFor="let r of reasonsFor(panel.kind)" [value]="r">{{ r }}</option>
                   </select>
-                  <input class="form-control form-control-sm till-panel-pin" style="width:140px;" type="password" autocomplete="off" *ngIf="panel.needPin" [(ngModel)]="panel.pin" name="ppin" placeholder="Manager PIN" />
+                  <input class="form-control form-control-sm till-panel-pin" style="width:140px;" type="password" autocomplete="off" *ngIf="panel.needPin" [(ngModel)]="panel.pin" name="ppin" [placeholder]="'Manager PIN' | translate" />
                 </div>
                 <div class="text-danger till-panel-error mb-2" style="font-size:0.85rem;" *ngIf="panel.error">{{ panel.error }}</div>
                 <div class="flex gap-2">
-                  <button class="btn btn-sm btn-primary till-panel-apply" [disabled]="panel.busy || panel.value === ''" (click)="submitPanel()">Apply</button>
-                  <button class="btn btn-sm btn-outline-secondary till-panel-cancel" (click)="panel = null">Cancel</button>
+                  <button class="btn btn-sm btn-primary till-panel-apply" [disabled]="panel.busy || panel.value === ''" (click)="submitPanel()">{{ 'Apply' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary till-panel-cancel" (click)="panel = null">{{ 'Cancel' | translate }}</button>
                 </div>
               </div>
 
               <div class="flex gap-2" style="padding:8px;">
-                <button class="btn btn-outline-secondary till-order-discount-btn" (click)="openPanel('order')" [disabled]="order.lines.length === 0" title="Give a discount on the whole sale">% Discount</button>
-                <button class="btn btn-outline-secondary" (click)="hold()" [disabled]="order.lines.length === 0" title="Hold this sale and start a new one">⏸ Hold</button>
-                <button class="btn btn-outline-danger" (click)="discard()" title="Discard this order — cannot be undone">🗑 Discard</button>
+                <button class="btn btn-outline-secondary till-order-discount-btn" (click)="openPanel('order')" [disabled]="order.lines.length === 0" [title]="'Give a discount on the whole sale' | translate">{{ '% Discount' | translate }}</button>
+                <button class="btn btn-outline-secondary" (click)="hold()" [disabled]="order.lines.length === 0" [title]="'Hold this sale and start a new one' | translate">{{ '⏸ Hold' | translate }}</button>
+                <button class="btn btn-outline-danger" (click)="discard()" [title]="'Discard this order — cannot be undone' | translate">{{ '🗑 Discard' | translate }}</button>
                 <a
                   class="btn pos-payment-btn grow"
                   [class.disabled]="order.lines.length === 0"
                   [routerLink]="order.lines.length ? ['/checkout', order.id] : null"
                 >
-                  Payment
+                  {{ 'Payment' | translate }}
                 </a>
               </div>
             </div>
@@ -674,7 +673,7 @@ interface OfflinePaymentRow {
             <!-- Offline cart — see the class doc comment's "Offline mode" section. Same layout/styling as the online cart above, bound to a local array instead of a server Order. -->
             <div class="card-body" *ngIf="offline">
               <div style="padding:8px;">
-                <label class="form-label">Customer (offline — from last sync)</label>
+                <label class="form-label">{{ 'Customer (offline — from last sync)' | translate }}</label>
                 <select class="form-select" [(ngModel)]="offlineCustomerId">
                   <!-- Fourier: "Instead of No customer (in select box) replaced by Walk-in Customer
                        Customer from DB" — no more null/"No customer" placeholder option; the real
@@ -684,20 +683,20 @@ interface OfflinePaymentRow {
                   <option *ngFor="let c of offlineCustomers" [ngValue]="c.id">{{ c.name }}</option>
                 </select>
                 <div class="text-muted" style="font-size:0.8rem; margin-top:4px;" *ngIf="offlineCatalog.length === 0">
-                  No cached catalog yet — connect once while online so this device has products/customers to sell offline.
+                  {{ 'No cached catalog yet — connect once while online so this device has products/customers to sell offline.' | translate }}
                 </div>
               </div>
 
               <div class="flex justify-between align-center pos-summary-bar" style="padding:8px;">
-                <strong>{{ offlineItemCount }} items</strong>
-                <strong>Total (est.): {{ offlineTotal | number: '1.2-2' }}</strong>
+                <strong>{{ '{p0} items' | translate: { p0: (offlineItemCount) } }}</strong>
+                <strong>{{ 'Total (est.): {p0}' | translate: { p0: (offlineTotal | number: '1.2-2') } }}</strong>
               </div>
 
               <div class="flex cart-col-header" style="padding:6px 8px;" *ngIf="!offlineCheckoutOpen">
-                <div style="width:45%">Item</div>
-                <div style="width:20%">Qty</div>
-                <div style="width:20%">Dis.</div>
-                <div style="width:15%" class="text-end">Price</div>
+                <div style="width:45%">{{ 'Item' | translate }}</div>
+                <div style="width:20%">{{ 'Qty' | translate }}</div>
+                <div style="width:20%">{{ 'Dis.' | translate }}</div>
+                <div style="width:15%" class="text-end">{{ 'Price' | translate }}</div>
               </div>
 
               <table class="table-sm" style="margin-bottom:0;" *ngIf="!offlineCheckoutOpen">
@@ -723,19 +722,19 @@ interface OfflinePaymentRow {
                           [max]="effectiveMaxDiscountPercent"
                           class="form-control form-control-sm"
                           style="width:65px; padding:0.2rem 0.4rem;"
-                          placeholder="disc %"
+                          [placeholder]="'disc %' | translate"
                           [ngModel]="l.discountPercent"
                           [disabled]="!canDiscount"
                           [title]="canDiscount ? '' : 'Only an admin (or someone granted the discount-override permission) can apply a discount'"
                           (change)="updateOfflineDiscount(l, $event)"
                         />
-                        <button class="btn btn-sm btn-outline-danger" (click)="removeOfflineLine(l)" title="Remove">🗑</button>
+                        <button class="btn btn-sm btn-outline-danger" (click)="removeOfflineLine(l)" [title]="'Remove' | translate">🗑</button>
                       </div>
                     </td>
                     <td class="text-end">{{ offlineLineTotal(l) | number: '1.2-2' }}</td>
                   </tr>
                   <tr *ngIf="offlineCart.length === 0">
-                    <td colspan="2" class="text-muted" style="padding:1rem;">Offline cart is empty — tap a cached product or scan a barcode.</td>
+                    <td colspan="2" class="text-muted" style="padding:1rem;">{{ 'Offline cart is empty — tap a cached product or scan a barcode.' | translate }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -743,11 +742,11 @@ interface OfflinePaymentRow {
               <table class="table-sm" style="margin-bottom:0;" *ngIf="!offlineCheckoutOpen">
                 <tbody>
                   <tr>
-                    <td>Subtotal (est.)</td>
+                    <td>{{ 'Subtotal (est.)' | translate }}</td>
                     <td class="text-end">{{ offlineSubtotal | number: '1.2-2' }}</td>
                   </tr>
                   <tr>
-                    <td>Tax (est.)</td>
+                    <td>{{ 'Tax (est.)' | translate }}</td>
                     <td class="text-end">{{ offlineTaxTotal | number: '1.2-2' }}</td>
                   </tr>
                 </tbody>
@@ -758,19 +757,19 @@ interface OfflinePaymentRow {
               </div>
 
               <div class="flex gap-2" style="padding:8px;" *ngIf="!offlineCheckoutOpen">
-                <button class="btn btn-outline-danger" (click)="discardOfflineCart()" [disabled]="offlineCart.length === 0" title="Discard this offline sale — cannot be undone">🗑 Discard</button>
+                <button class="btn btn-outline-danger" (click)="discardOfflineCart()" [disabled]="offlineCart.length === 0" [title]="'Discard this offline sale — cannot be undone' | translate">{{ '🗑 Discard' | translate }}</button>
                 <button
                   class="btn pos-payment-btn grow"
                   [class.disabled]="offlineCart.length === 0"
                   (click)="openOfflineCheckout()"
                 >
-                  Payment
+                  {{ 'Payment' | translate }}
                 </button>
               </div>
 
               <!-- Inline payment step — same shape as checkout.component.ts, but queues locally instead of calling the server. -->
               <div style="padding:8px;" *ngIf="offlineCheckoutOpen">
-                <h6 class="mb-2">Payment — queued until you're back online</h6>
+                <h6 class="mb-2">{{ 'Payment — queued until you\\'re back online' | translate }}</h6>
                 <div class="flex gap-2 mb-2" style="align-items:center;" *ngFor="let row of offlinePaymentRows">
                   <button
                     type="button"
@@ -788,7 +787,7 @@ interface OfflinePaymentRow {
                     step="0.01"
                     min="0"
                     [max]="maxOfflineAmountFor(row)"
-                    placeholder="Amount"
+                    [placeholder]="'Amount' | translate"
                     [ngModel]="row.amount"
                     (ngModelChange)="onOfflineAmountChange(row, $event)"
                     [disabled]="!row.selected"
@@ -796,19 +795,18 @@ interface OfflinePaymentRow {
                   />
                 </div>
                 <p class="text-muted" style="font-size:0.85rem;" *ngIf="offlineCreditRowSelected() && !offlineCustomerId">
-                  Select a customer on this sale before paying with store credit.
+                  {{ 'Select a customer on this sale before paying with store credit.' | translate }}
                 </p>
                 <p class="text-muted" style="font-size:0.85rem;" *ngIf="offlineCreditRowSelected()">
-                  Credit limit isn't checked offline — it's enforced for real once this syncs; a sale that turns out
-                  to exceed the limit will land in the offline queue as "failed" for review, not silently accepted.
+                  {{ 'Credit limit isn\\'t checked offline — it\\'s enforced for real once this syncs; a sale that turns out to exceed the limit will land in the offline queue as "failed" for review, not silently accepted.' | translate }}
                 </p>
                 <div class="form-group mb-2" *ngIf="offlineCreditRowSelected()">
-                  <label class="form-label">Due date (optional)</label>
+                  <label class="form-label">{{ 'Due date (optional)' | translate }}</label>
                   <app-date-picker [(ngModel)]="offlineDueDate" ></app-date-picker>
                 </div>
                 <div class="flex gap-2">
                   <button class="btn btn-link" (click)="offlineCheckoutOpen = false">&larr; Back to cart</button>
-                  <button class="btn btn-success grow" (click)="queueOfflineSale()">Queue sale</button>
+                  <button class="btn btn-success grow" (click)="queueOfflineSale()">{{ 'Queue sale' | translate }}</button>
                 </div>
               </div>
             </div>

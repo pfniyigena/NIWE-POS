@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -19,32 +20,32 @@ import { PagerComponent } from '../shared/pager.component';
 @Component({
   selector: 'app-shift-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Shifts</h3>
+        <h3>{{ 'Shifts' | translate }}</h3>
       </div>
-      <app-list-filter exportPath="/sessions/export" [exportExtra]="extra" [extraActive]="registerId !== ''" placeholder="Search register or cashier" [statuses]="statuses" statusAll="All shifts" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <app-list-filter exportPath="/sessions/export" [exportExtra]="extra" [extraActive]="registerId !== ''" [placeholder]="'Search register or cashier' | translate" [statuses]="statuses" statusAll="All shifts" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
       <div class="flex gap-2 mb-3 align-center">
-        <select class="form-select sh-register" style="width:auto;" [(ngModel)]="registerId" (ngModelChange)="extraChanged()" name="register" title="Register">
-          <option value="">Any register</option>
+        <select class="form-select sh-register" style="width:auto;" [(ngModel)]="registerId" (ngModelChange)="extraChanged()" name="register" [title]="'Register' | translate">
+          <option value="">{{ 'Any register' | translate }}</option>
           <option *ngFor="let r of registers" [value]="r.id">{{ r.name }}</option>
         </select>
-        <span class="text-muted" style="font-size:0.85rem;">Dates filter by the day the shift was opened.</span>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Dates filter by the day the shift was opened.' | translate }}</span>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Register</th>
-            <th>Z</th>
-            <th>Cashier</th>
-            <th>Opened</th>
-            <th>Closed</th>
-            <th>Status</th>
-            <th class="text-end">Sales</th>
-            <th class="text-end">Variance</th>
+            <th>{{ 'Register' | translate }}</th>
+            <th>{{ 'Z' | translate }}</th>
+            <th>{{ 'Cashier' | translate }}</th>
+            <th>{{ 'Opened' | translate }}</th>
+            <th>{{ 'Closed' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th class="text-end">{{ 'Sales' | translate }}</th>
+            <th class="text-end">{{ 'Variance' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -62,34 +63,34 @@ import { PagerComponent } from '../shared/pager.component';
               <td class="text-end">{{ s.saleCount }} &middot; {{ s.grossSales | number: '1.2-2' }}</td>
               <td class="text-end">{{ s.cashVariance != null ? (s.cashVariance | number: '1.2-2') : '—' }}</td>
               <td class="flex gap-2">
-                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/sessions', s.id, 'close']">Force close</a>
-                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/cash-control', s.id]">Cash</a>
-                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/sessions', s.id, 'x-report']">X report</a>
-                <a *ngIf="s.status === 'CLOSED'" [routerLink]="['/sessions', s.id, 'z-report']">Z report</a>
+                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/sessions', s.id, 'close']">{{ 'Force close' | translate }}</a>
+                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/cash-control', s.id]">{{ 'Cash' | translate }}</a>
+                <a *ngIf="s.status === 'OPEN'" [routerLink]="['/sessions', s.id, 'x-report']">{{ 'X report' | translate }}</a>
+                <a *ngIf="s.status === 'CLOSED'" [routerLink]="['/sessions', s.id, 'z-report']">{{ 'Z report' | translate }}</a>
                 <button class="btn btn-sm btn-outline-secondary" (click)="toggleCashiers(s.id)">
-                  {{ expandedShiftId === s.id ? '▾' : '▸' }} Cashiers
+                  {{ '{p0} Cashiers' | translate: { p0: (expandedShiftId === s.id ? '▾' : '▸') } }}
                 </button>
               </td>
             </tr>
             <tr *ngIf="expandedShiftId === s.id">
               <td colspan="9" style="padding:0.5rem 1rem; background:rgba(255,255,255,0.03);">
-                <div class="text-muted" *ngIf="!cashierSessionsByShift[s.id]">Loading…</div>
+                <div class="text-muted" *ngIf="!cashierSessionsByShift[s.id]">{{ 'Loading…' | translate }}</div>
                 <div
                   class="flex justify-between align-center mb-2"
                   *ngIf="cashierSessionsByShift[s.id] as sessions"
                 >
                   <div class="flex gap-2 align-center" *ngIf="s.status === 'OPEN'">
                     <select class="form-select form-select-sm" style="width:auto;" [(ngModel)]="addCashierId[s.id]">
-                      <option [ngValue]="null" disabled>Add cashier…</option>
+                      <option [ngValue]="null" disabled>{{ 'Add cashier…' | translate }}</option>
                       <option *ngFor="let u of activeStaff" [ngValue]="u.id">{{ u.fullName }}</option>
                     </select>
                     <button
                       class="btn btn-sm btn-outline-primary"
                       [disabled]="!addCashierId[s.id]"
                       (click)="addCashier(s.id)"
-                      title="Gives this staff member their own cashier session on this shift, no PIN needed"
+                      [title]="'Gives this staff member their own cashier session on this shift, no PIN needed' | translate"
                     >
-                      + Add cashier
+                      {{ '+ Add cashier' | translate }}
                     </button>
                   </div>
                   <span *ngIf="s.status !== 'OPEN'"></span>
@@ -97,18 +98,18 @@ import { PagerComponent } from '../shared/pager.component';
                     class="btn btn-sm btn-outline-danger"
                     (click)="closeAllSessions(s.id)"
                     [disabled]="!sessions.some(hasOpenSession)"
-                    title="Ends every open cashier session on this shift — the shift itself stays open"
+                    [title]="'Ends every open cashier session on this shift — the shift itself stays open' | translate"
                   >
-                    Close all sessions
+                    {{ 'Close all sessions' | translate }}
                   </button>
                 </div>
                 <table class="table-sm" *ngIf="cashierSessionsByShift[s.id] as sessions">
                   <thead>
                     <tr>
-                      <th>Cashier</th>
-                      <th>Joined</th>
-                      <th>Ended</th>
-                      <th>Status</th>
+                      <th>{{ 'Cashier' | translate }}</th>
+                      <th>{{ 'Joined' | translate }}</th>
+                      <th>{{ 'Ended' | translate }}</th>
+                      <th>{{ 'Status' | translate }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -121,7 +122,7 @@ import { PagerComponent } from '../shared/pager.component';
                       </td>
                     </tr>
                     <tr *ngIf="sessions.length === 0">
-                      <td colspan="4" class="text-muted">No cashier sessions recorded on this shift.</td>
+                      <td colspan="4" class="text-muted">{{ 'No cashier sessions recorded on this shift.' | translate }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -130,7 +131,7 @@ import { PagerComponent } from '../shared/pager.component';
           </ng-container>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || registerId ? 'No shifts match these filters.' : 'No shifts yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || registerId ? ('No shifts match these filters.' | translate) : ('No shifts yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

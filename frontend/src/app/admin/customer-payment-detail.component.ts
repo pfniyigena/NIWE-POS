@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -23,40 +24,40 @@ import { CustomerPayment } from '../core/models';
 @Component({
   selector: 'app-customer-payment-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Payment{{ payment ? ' — ' + (payment.receiptNumber || '#' + id) : '' }}</h3>
+        <h3>{{ 'Payment{p0}' | translate: { p0: (payment ? ' — ' + (payment.receiptNumber || '#' + id) : '') } }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
-          <a class="btn btn-link" routerLink="/admin/customer-payments">Back to customer payments</a>
+          <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
+          <a class="btn btn-link" routerLink="/admin/customer-payments">{{ 'Back to customer payments' | translate }}</a>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="payment as p">
         <div class="flex gap-3" style="flex-wrap:wrap;">
           <div>
-            <strong>Customer:</strong>
+            <strong>{{ 'Customer:' | translate }}</strong>
             <a [routerLink]="['/admin/customers', p.customerId, 'record-payment']">{{ p.customerName }}</a>
           </div>
-          <div><strong>Date:</strong> {{ p.paidAt | date: 'medium' }}</div>
-          <div><strong>Amount:</strong> {{ p.amount | number: '1.2-2' }}</div>
-          <div><strong>Method:</strong> {{ p.method || '—' }}</div>
-          <div><strong>Receipt #:</strong> {{ p.receiptNumber || '—' }}</div>
-          <div><strong>Recorded by:</strong> {{ p.recordedByName || '—' }}</div>
+          <div><strong>{{ 'Date:' | translate }}</strong> {{ p.paidAt | date: 'medium' }}</div>
+          <div><strong>{{ 'Amount:' | translate }}</strong> {{ p.amount | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Method:' | translate }}</strong> {{ p.method || '—' }}</div>
+          <div><strong>{{ 'Receipt #:' | translate }}</strong> {{ p.receiptNumber || '—' }}</div>
+          <div><strong>{{ 'Recorded by:' | translate }}</strong> {{ p.recordedByName || '—' }}</div>
           <!-- Always today's outstanding balance, not frozen at the time of this payment — see CustomerPaymentDto's own class javadoc. -->
-          <div><strong>Customer balance:</strong> {{ p.customerBalanceAfter | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Customer balance:' | translate }}</strong> {{ p.customerBalanceAfter | number: '1.2-2' }}</div>
         </div>
         <div class="text-muted mt-2" *ngIf="p.note">{{ p.note }}</div>
 
-        <h4 class="mt-3 mb-2">Applied to</h4>
+        <h4 class="mt-3 mb-2">{{ 'Applied to' | translate }}</h4>
         <table>
           <thead>
             <tr>
-              <th>Order</th>
-              <th class="text-end">Amount applied</th>
+              <th>{{ 'Order' | translate }}</th>
+              <th class="text-end">{{ 'Amount applied' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -65,7 +66,7 @@ import { CustomerPayment } from '../core/models';
               <td class="text-end">{{ a.amountApplied | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="p.allocations.length === 0">
-              <td colspan="2" class="text-muted">Not applied to any specific order.</td>
+              <td colspan="2" class="text-muted">{{ 'Not applied to any specific order.' | translate }}</td>
             </tr>
           </tbody>
         </table>

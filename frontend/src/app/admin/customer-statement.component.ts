@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -44,35 +45,35 @@ interface CustomerStatementRow {
 @Component({
   selector: 'app-customer-statement',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Customer statement</h3>
+      <h3 class="mb-3">{{ 'Customer statement' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="card mb-3" style="padding:1rem;">
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" style="margin:0; min-width:220px;">
-            <label class="form-label">Customer</label>
+            <label class="form-label">{{ 'Customer' | translate }}</label>
             <select class="form-select" [(ngModel)]="customerId">
-              <option [ngValue]="null">Choose a customer…</option>
+              <option [ngValue]="null">{{ 'Choose a customer…' | translate }}</option>
               <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label">From</label>
+            <label class="form-label">{{ 'From' | translate }}</label>
             <app-date-picker [(ngModel)]="filter.from" ></app-date-picker>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label">To</label>
+            <label class="form-label">{{ 'To' | translate }}</label>
             <app-date-picker [(ngModel)]="filter.to" ></app-date-picker>
           </div>
           <button class="btn btn-primary" (click)="run()" [disabled]="loading || !customerId">
-            {{ loading ? 'Running…' : 'Run statement' }}
+            {{ loading ? ('Running…' | translate) : ('Run statement' | translate) }}
           </button>
           <span class="grow"></span>
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting || !customerId">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting || !customerId">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting || !customerId">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting || !customerId">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
 
@@ -80,18 +81,18 @@ interface CustomerStatementRow {
         <table>
           <thead>
             <tr>
-              <th>Invoice</th>
-              <th>Date</th>
-              <th>Register</th>
-              <th>Cashier</th>
-              <th class="text-end">Items</th>
-              <th class="text-end">Subtotal</th>
-              <th class="text-end">Tax</th>
-              <th class="text-end">Grand total</th>
-              <th>Payment</th>
-              <th class="text-end">Credit</th>
-              <th>Due date</th>
-              <th class="text-end">Outstanding</th>
+              <th>{{ 'Invoice' | translate }}</th>
+              <th>{{ 'Date' | translate }}</th>
+              <th>{{ 'Register' | translate }}</th>
+              <th>{{ 'Cashier' | translate }}</th>
+              <th class="text-end">{{ 'Items' | translate }}</th>
+              <th class="text-end">{{ 'Subtotal' | translate }}</th>
+              <th class="text-end">{{ 'Tax' | translate }}</th>
+              <th class="text-end">{{ 'Grand total' | translate }}</th>
+              <th>{{ 'Payment' | translate }}</th>
+              <th class="text-end">{{ 'Credit' | translate }}</th>
+              <th>{{ 'Due date' | translate }}</th>
+              <th class="text-end">{{ 'Outstanding' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -111,13 +112,13 @@ interface CustomerStatementRow {
             </tr>
             <tr *ngIf="rows.length === 0">
               <td colspan="12" class="text-muted">
-                {{ hasRun ? 'No sales for this customer in this range.' : 'Choose a customer and click "Run statement".' }}
+                {{ hasRun ? ('No sales for this customer in this range.' | translate) : ('Choose a customer and click "Run statement".' | translate) }}
               </td>
             </tr>
           </tbody>
           <tfoot *ngIf="rows.length > 0">
             <tr style="font-weight:700;">
-              <td colspan="5" class="text-end">Totals</td>
+              <td colspan="5" class="text-end">{{ 'Totals' | translate }}</td>
               <td class="text-end">{{ totalSubtotal() | number: '1.2-2' }}</td>
               <td class="text-end">{{ totalTax() | number: '1.2-2' }}</td>
               <td class="text-end">{{ totalGrand() | number: '1.2-2' }}</td>

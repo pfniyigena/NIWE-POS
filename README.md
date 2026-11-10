@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.23.0 - French, default set by the chart of accounts
+
+Core screens in French (about 2,200 phrases), a language picker in the top bar and on the sign-in page, and **Business language** in Settings > System settings. Choosing the **Chad** chart makes French the default (while the language is still the untouched default); the Rwanda chart keeps English. Other modules follow. Migration V63; run `npm install` in `frontend`. Details in `RELEASE-NOTES-v1.23.0.md`, how to translate more in `tools/i18n/README.md`.
+
 ### Version 1.22.5 - Print the list of modules as a PDF
 
 Settings > Modules has a **Print PDF** button: the license (holder, number, expiry, installation id), a count by state, and every module with what it does, what it works together with and its status. No migration. Details in `RELEASE-NOTES-v1.22.5.md`.

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -9,24 +10,24 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Staff accounts</h3>
-        <a class="btn btn-primary" routerLink="/admin/staff/new">+ New staff account</a>
+        <h3>{{ 'Staff accounts' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/staff/new">{{ '+ New staff account' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Username</th>
-            <th>Full name</th>
-            <th>Role</th>
-            <th>Custom role</th>
-            <th>Status</th>
-            <th>Extra permissions</th>
-            <th>PIN</th>
+            <th>{{ 'Username' | translate }}</th>
+            <th>{{ 'Full name' | translate }}</th>
+            <th>{{ 'Role' | translate }}</th>
+            <th>{{ 'Custom role' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th>{{ 'Extra permissions' | translate }}</th>
+            <th>{{ 'PIN' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -40,8 +41,8 @@ import { AuthService } from '../core/auth.service';
               <span class="text-muted" *ngIf="!u.customRoleName">—</span>
             </td>
             <td>
-              <span class="badge badge-success" *ngIf="u.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!u.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="u.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!u.active">{{ 'Inactive' | translate }}</span>
             </td>
             <!-- Fourier: "Build a full permissions system" — an Admin already holds every power, so this is only meaningful for a Cashier's individual grants. -->
             <td style="font-size:0.8rem;">
@@ -49,24 +50,22 @@ import { AuthService } from '../core/auth.service';
               <span *ngIf="u.permissions?.length">{{ permissionSummary(u) }}</span>
             </td>
             <td>
-              <span class="badge badge-success" *ngIf="u.hasPin">Set</span>
-              <span class="badge badge-secondary" *ngIf="!u.hasPin">Not set</span>
+              <span class="badge badge-success" *ngIf="u.hasPin">{{ 'Set' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!u.hasPin">{{ 'Not set' | translate }}</span>
             </td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/staff', u.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-secondary" (click)="resetPassword(u)">Reset password</button>
-              <button class="btn btn-sm btn-outline-secondary" (click)="setPin(u)">{{ u.hasPin ? 'Change' : 'Set' }} PIN</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/staff', u.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-secondary" (click)="resetPassword(u)">{{ 'Reset password' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="setPin(u)">{{ '{p0} PIN' | translate: { p0: (u.hasPin ? 'Change' : 'Set') } }}</button>
             </td>
           </tr>
           <tr *ngIf="users.length === 0">
-            <td colspan="8" class="text-muted">No staff accounts yet.</td>
+            <td colspan="8" class="text-muted">{{ 'No staff accounts yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>
       <p class="text-muted mt-3" style="font-size:0.85rem;">
-        A PIN lets a staff member identify themselves at a shared terminal without a full login —
-        see "Switch cashier" in the terminal — so more than one cashier can ring sales on the same
-        till session. PINs must be 4–6 digits and unique among active staff.
+        {{ 'A PIN lets a staff member identify themselves at a shared terminal without a full login — see "Switch cashier" in the terminal — so more than one cashier can ring sales on the same till session. PINs must be 4–6 digits and unique among active staff.' | translate }}
       </p>
     </app-shell>
   `,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,40 +17,39 @@ import { Category, Warehouse } from '../core/models';
 @Component({
   selector: 'app-stock-count-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Start a stock count</h3>
+      <h3 class="mb-3">{{ 'Start a stock count' | translate }}</h3>
       <p class="text-muted mb-3" style="font-size:0.85rem;">
-        The current system quantities are frozen onto a count sheet. Sales and receipts can carry on while you count; on approval only
-        the difference between what you counted and the frozen figure is posted, so anything moved meanwhile is preserved.
+        {{ 'The current system quantities are frozen onto a count sheet. Sales and receipts can carry on while you count; on approval only the difference between what you counted and the frozen figure is posted, so anything moved meanwhile is preserved.' | translate }}
       </p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Warehouse</label>
+        <label class="form-label">{{ 'Warehouse' | translate }}</label>
         <select class="form-select" [(ngModel)]="warehouseId" name="warehouseId">
-          <option [ngValue]="null" disabled>Select a warehouse</option>
+          <option [ngValue]="null" disabled>{{ 'Select a warehouse' | translate }}</option>
           <option *ngFor="let w of warehouses" [ngValue]="w.id">{{ w.name }}{{ w.branchName && warehouses.length > 1 ? ' (' + w.branchName + ')' : '' }}</option>
         </select>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Category (optional)</label>
+        <label class="form-label">{{ 'Category (optional)' | translate }}</label>
         <select class="form-select" [(ngModel)]="categoryId" name="categoryId">
-          <option [ngValue]="null">All categories</option>
+          <option [ngValue]="null">{{ 'All categories' | translate }}</option>
           <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
         </select>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Notes (optional)</label>
+        <label class="form-label">{{ 'Notes (optional)' | translate }}</label>
         <textarea class="form-control" rows="2" [(ngModel)]="notes" name="notes"></textarea>
       </div>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" [disabled]="saving" (click)="start()">Start count</button>
-        <a class="btn btn-link" routerLink="/admin/stock-counts">Cancel</a>
+        <button class="btn btn-primary" type="button" [disabled]="saving" (click)="start()">{{ 'Start count' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/stock-counts">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

@@ -14,6 +14,8 @@ export interface BusinessDetailsPayload {
 }
 
 export interface SystemSettingsPayload {
+  /** v1.23.0: "en" or "fr"; left out keeps the current one. */
+  language?: string;
   currencyCode: string;
   currencySymbol: string;
   timeZone: string;

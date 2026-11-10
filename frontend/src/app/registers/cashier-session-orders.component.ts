@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -15,25 +16,25 @@ import { Order } from '../core/models';
 @Component({
   selector: 'app-cashier-session-orders',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Orders — session #{{ cashierSessionId }}</h3>
+        <h3>{{ 'Orders — session #{p0}' | translate: { p0: (cashierSessionId) } }}</h3>
         <a routerLink="/sessions">&larr; Back to sessions</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Order</th>
-            <th>Register</th>
-            <th>Cashier</th>
-            <th>Status</th>
-            <th>Invoice</th>
-            <th>Created</th>
-            <th>Completed</th>
-            <th class="text-end">Total</th>
+            <th>{{ 'Order' | translate }}</th>
+            <th>{{ 'Register' | translate }}</th>
+            <th>{{ 'Cashier' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th>{{ 'Invoice' | translate }}</th>
+            <th>{{ 'Created' | translate }}</th>
+            <th>{{ 'Completed' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -55,11 +56,11 @@ import { Order } from '../core/models';
             <td>{{ o.completedAt ? (o.completedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</td>
             <td class="text-end">{{ o.total | number: '1.2-2' }}</td>
             <td>
-              <a *ngIf="o.status === 'COMPLETED'" [routerLink]="['/receipt', o.id]">Receipt</a>
+              <a *ngIf="o.status === 'COMPLETED'" [routerLink]="['/receipt', o.id]">{{ 'Receipt' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="orders.length === 0">
-            <td colspan="9" class="text-muted">No orders on this session yet.</td>
+            <td colspan="9" class="text-muted">{{ 'No orders on this session yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

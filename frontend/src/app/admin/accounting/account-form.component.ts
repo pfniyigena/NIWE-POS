@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,48 +11,48 @@ import { AccountType } from '../../core/models';
 @Component({
   selector: 'app-account-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit account' : 'New account' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit account' | translate) : ('New account' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Code</label>
-          <input class="form-control" name="code" [(ngModel)]="code" [disabled]="!!id" placeholder="e.g. 5300" required />
+          <label class="form-label">{{ 'Code' | translate }}</label>
+          <input class="form-control" name="code" [(ngModel)]="code" [disabled]="!!id" [placeholder]="'e.g. 5300' | translate" required />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="id">
-            The code can't be changed once created.
+            {{ 'The code can\\'t be changed once created.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Rent Expense" required />
+          <label class="form-label">{{ 'Name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Rent Expense' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Type</label>
+          <label class="form-label">{{ 'Type' | translate }}</label>
           <select class="form-select" name="type" [(ngModel)]="type" [disabled]="!!id && systemAccount" required>
-            <option value="ASSET">Asset</option>
-            <option value="LIABILITY">Liability</option>
-            <option value="EQUITY">Equity</option>
-            <option value="REVENUE">Revenue</option>
-            <option value="EXPENSE">Expense</option>
+            <option value="ASSET">{{ 'Asset' | translate }}</option>
+            <option value="LIABILITY">{{ 'Liability' | translate }}</option>
+            <option value="EQUITY">{{ 'Equity' | translate }}</option>
+            <option value="REVENUE">{{ 'Revenue' | translate }}</option>
+            <option value="EXPENSE">{{ 'Expense' | translate }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Description (optional)</label>
+          <label class="form-label">{{ 'Description (optional)' | translate }}</label>
           <input class="form-control" name="description" [(ngModel)]="description" />
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" [disabled]="systemAccount" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" [disabled]="systemAccount" /> {{ 'Active' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="systemAccount">
-            This account is posted to automatically by the accounting module and cannot be deactivated.
+            {{ 'This account is posted to automatically by the accounting module and cannot be deactivated.' | translate }}
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/accounting/accounts">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/accounting/accounts">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

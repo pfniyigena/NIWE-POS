@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { NgIf } from '@angular/common';
 import { MaintenanceService } from '../core/maintenance.service';
 
@@ -15,14 +16,14 @@ import { MaintenanceService } from '../core/maintenance.service';
 @Component({
   selector: 'app-maintenance-overlay',
   standalone: true,
-  imports: [NgIf],
+  imports: [TranslatePipe, NgIf],
   template: `
     <div class="maintenance-overlay" *ngIf="maintenance.active()">
       <div class="maintenance-card">
         <div class="maintenance-icon">⏳</div>
-        <h3>System under maintenance</h3>
+        <h3>{{ 'System under maintenance' | translate }}</h3>
         <p>{{ maintenance.message() }}</p>
-        <button class="btn btn-primary" (click)="maintenance.dismiss()">Try again</button>
+        <button class="btn btn-primary" (click)="maintenance.dismiss()">{{ 'Try again' | translate }}</button>
       </div>
     </div>
   `,

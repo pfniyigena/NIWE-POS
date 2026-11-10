@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -14,10 +15,10 @@ import { REPORT_DEFS } from '../../core/report-defs';
 @Component({
   selector: 'app-report-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">POS Reports</h3>
+      <h3 class="mb-3">{{ 'POS Reports' | translate }}</h3>
       <div *ngFor="let section of sections" class="mb-4">
         <h5 class="mb-2">{{ section }}</h5>
         <div class="flex gap-2" style="flex-wrap:wrap;">

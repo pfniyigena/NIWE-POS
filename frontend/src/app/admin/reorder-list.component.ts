@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,31 +19,31 @@ interface Row extends ReorderSuggestion {
 @Component({
   selector: 'app-reorder-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Reorder</h3>
+        <h3>{{ 'Reorder' | translate }}</h3>
         <button class="btn btn-primary" type="button" [disabled]="busy || selectedCount === 0" (click)="createRequisition()">
-          Create requisition ({{ selectedCount }})
+          {{ 'Create requisition ({p0})' | translate: { p0: (selectedCount) } }}
         </button>
       </div>
       <p class="text-muted mb-3" style="font-size:0.85rem;">
-        Products whose sellable stock plus open purchase orders is at or below their reorder level. Set the level on each product's form.
+        {{ 'Products whose sellable stock plus open purchase orders is at or below their reorder level. Set the level on each product\\'s form.' | translate }}
       </p>
       <table>
         <thead>
           <tr>
             <th><input type="checkbox" [checked]="allSelected" (change)="toggleAll($any($event.target).checked)" /></th>
-            <th>SKU</th>
-            <th>Product</th>
-            <th>Category</th>
-            <th class="text-end">On hand</th>
-            <th class="text-end">On order</th>
-            <th class="text-end">Reorder level</th>
-            <th class="text-end">Max</th>
-            <th class="text-end" style="width:120px;">Order qty</th>
+            <th>{{ 'SKU' | translate }}</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th class="text-end">{{ 'On hand' | translate }}</th>
+            <th class="text-end">{{ 'On order' | translate }}</th>
+            <th class="text-end">{{ 'Reorder level' | translate }}</th>
+            <th class="text-end">{{ 'Max' | translate }}</th>
+            <th class="text-end" style="width:120px;">{{ 'Order qty' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,7 +59,7 @@ interface Row extends ReorderSuggestion {
             <td class="text-end"><input class="form-control text-end" type="number" step="any" min="0.0001" [(ngModel)]="r.quantity" [name]="'q' + r.productId" /></td>
           </tr>
           <tr *ngIf="rows.length === 0 && loaded">
-            <td colspan="9" class="text-muted">Nothing needs reordering.</td>
+            <td colspan="9" class="text-muted">{{ 'Nothing needs reordering.' | translate }}</td>
           </tr>
         </tbody>
       </table>

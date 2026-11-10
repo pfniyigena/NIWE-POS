@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -20,66 +21,64 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 @Component({
   selector: 'app-email-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Email settings</h3>
+      <h3 class="mb-3">{{ 'Email settings' | translate }}</h3>
       <p class="text-muted">
-        Configure the SMTP account this system sends email from — password reset links, and
-        quotations/invoices/receipts emailed to customers.
+        {{ 'Configure the SMTP account this system sends email from — password reset links, and quotations/invoices/receipts emailed to customers.' | translate }}
       </p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Email settings saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Email settings saved.' | translate }}</div>
       <form (ngSubmit)="submit()" *ngIf="loaded">
         <div class="form-group">
           <label class="form-label">
             <input type="checkbox" name="smtpEnabled" [(ngModel)]="smtpEnabled" />
-            Enabled
+            {{ 'Enabled' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            While off, no email is sent by this system at all — password reset requests and the
-            "Email" buttons on quotations/invoices/receipts will show an error instead.
+            {{ 'While off, no email is sent by this system at all — password reset requests and the "Email" buttons on quotations/invoices/receipts will show an error instead.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">SMTP host</label>
-          <input class="form-control" name="smtpHost" [(ngModel)]="smtpHost" placeholder="smtp.gmail.com" />
+          <label class="form-label">{{ 'SMTP host' | translate }}</label>
+          <input class="form-control" name="smtpHost" [(ngModel)]="smtpHost" [placeholder]="'smtp.gmail.com' | translate" />
         </div>
         <div class="form-group">
-          <label class="form-label">SMTP port</label>
+          <label class="form-label">{{ 'SMTP port' | translate }}</label>
           <input class="form-control" type="number" name="smtpPort" [(ngModel)]="smtpPort" style="max-width:120px;" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            587 for STARTTLS (most providers), 465 for implicit SSL — see "Use SSL" below.
+            {{ '587 for STARTTLS (most providers), 465 for implicit SSL — see "Use SSL" below.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">SMTP username</label>
+          <label class="form-label">{{ 'SMTP username' | translate }}</label>
           <input class="form-control" name="smtpUsername" [(ngModel)]="smtpUsername" autocomplete="off" />
         </div>
         <div class="form-group">
-          <label class="form-label">SMTP password</label>
+          <label class="form-label">{{ 'SMTP password' | translate }}</label>
           <input class="form-control" type="password" name="smtpPassword" [(ngModel)]="smtpPassword" autocomplete="new-password"
                  [placeholder]="smtpPasswordSet ? 'Saved — leave blank to keep it' : ''" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="smtpPasswordSet">
-            A password is already saved. Leave this blank to keep it, or type a new one to replace it.
+            {{ 'A password is already saved. Leave this blank to keep it, or type a new one to replace it.' | translate }}
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">
             <input type="checkbox" name="smtpUseSsl" [(ngModel)]="smtpUseSsl" />
-            Use SSL (port 465)
+            {{ 'Use SSL (port 465)' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Leave off to use STARTTLS (port 587) instead — check which one your email provider expects.
+            {{ 'Leave off to use STARTTLS (port 587) instead — check which one your email provider expects.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">From email</label>
-          <input class="form-control" type="email" name="smtpFromEmail" [(ngModel)]="smtpFromEmail" placeholder="noreply@yourstore.com" />
+          <label class="form-label">{{ 'From email' | translate }}</label>
+          <input class="form-control" type="email" name="smtpFromEmail" [(ngModel)]="smtpFromEmail" [placeholder]="'noreply@yourstore.com' | translate" />
         </div>
         <div class="form-group">
-          <label class="form-label">From name</label>
-          <input class="form-control" name="smtpFromName" [(ngModel)]="smtpFromName" placeholder="Your Store" />
+          <label class="form-label">{{ 'From name' | translate }}</label>
+          <input class="form-control" name="smtpFromName" [(ngModel)]="smtpFromName" [placeholder]="'Your Store' | translate" />
         </div>
 
         <!-- Fourier: opt-in escape hatch for a real certificate-hostname mismatch that no
@@ -88,13 +87,10 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
         <div class="form-group" style="border:1px solid #a86; border-radius:4px; padding:0.75rem;">
           <label class="form-label">
             <input type="checkbox" name="smtpSkipCertCheck" [(ngModel)]="smtpSkipCertCheck" />
-            Skip certificate check (advanced, less secure)
+            {{ 'Skip certificate check (advanced, less secure)' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Only turn this on if sending fails with a certificate/hostname error you can't fix any
-            other way (e.g. your mail host's certificate doesn't match its own hostname). Mail is
-            still sent encrypted, but the app stops verifying that the certificate actually
-            belongs to your SMTP host — leave this off unless you've hit exactly that error.
+            {{ 'Only turn this on if sending fails with a certificate/hostname error you can\\'t fix any other way (e.g. your mail host\\'s certificate doesn\\'t match its own hostname). Mail is still sent encrypted, but the app stops verifying that the certificate actually belongs to your SMTP host — leave this off unless you\\'ve hit exactly that error.' | translate }}
           </div>
         </div>
 
@@ -103,33 +99,31 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
              alerts only actually send once Enabled is on and this address is filled in (see
              StoreSettings.notificationsEmail's backend javadoc). -->
         <div class="form-group" style="border-top:1px solid var(--border-color, #ddd); padding-top:1rem; margin-top:0.5rem;">
-          <label class="form-label">Business alerts email</label>
-          <input class="form-control" type="email" name="notificationsEmail" [(ngModel)]="notificationsEmail" placeholder="alerts@yourstore.com" />
+          <label class="form-label">{{ 'Business alerts email' | translate }}</label>
+          <input class="form-control" type="email" name="notificationsEmail" [(ngModel)]="notificationsEmail" [placeholder]="'alerts@yourstore.com' | translate" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Where to send business alert emails: a product crossing its low-stock threshold, a
-            purchase requisition awaiting approval, a quotation about to expire, and a customer
-            nearing their credit limit. Leave blank to turn these alerts off.
+            {{ 'Where to send business alert emails: a product crossing its low-stock threshold, a purchase requisition awaiting approval, a quotation about to expire, and a customer nearing their credit limit. Leave blank to turn these alerts off.' | translate }}
           </div>
         </div>
 
         <button class="btn btn-primary" type="submit" [disabled]="saving">
-          {{ saving ? 'Saving…' : 'Save' }}
+          {{ saving ? ('Saving…' | translate) : ('Save' | translate) }}
         </button>
       </form>
 
       <!-- Fourier: "add an Email Test button for easy testing after set up email configurations"
            — sends through whatever is currently saved, so save any edits above first. -->
       <div class="card" style="padding:1rem; margin-top:1.5rem;" *ngIf="loaded">
-        <h4 class="mb-2" style="font-size:1rem;">Send test email</h4>
+        <h4 class="mb-2" style="font-size:1rem;">{{ 'Send test email' | translate }}</h4>
         <p class="text-muted" style="font-size:0.85rem;">
-          Sends a short test message using the currently saved settings — save your changes above first if you just edited them.
+          {{ 'Sends a short test message using the currently saved settings — save your changes above first if you just edited them.' | translate }}
         </p>
         <div class="alert alert-danger" *ngIf="testError">{{ testError }}</div>
-        <div class="alert alert-success" *ngIf="testSent">Test email sent to {{ testEmailedTo }} — check that inbox to confirm it arrived.</div>
+        <div class="alert alert-success" *ngIf="testSent">{{ 'Test email sent to {p0} — check that inbox to confirm it arrived.' | translate: { p0: (testEmailedTo) } }}</div>
         <div class="flex gap-2">
-          <input class="form-control" type="email" name="testEmail" [(ngModel)]="testEmail" placeholder="you@yourstore.com" />
+          <input class="form-control" type="email" name="testEmail" [(ngModel)]="testEmail" [placeholder]="'you@yourstore.com' | translate" />
           <button type="button" class="btn btn-outline-primary" (click)="sendTestEmail()" [disabled]="testing || !testEmail.trim()">
-            {{ testing ? 'Sending…' : 'Send test email' }}
+            {{ testing ? ('Sending…' | translate) : ('Send test email' | translate) }}
           </button>
         </div>
       </div>

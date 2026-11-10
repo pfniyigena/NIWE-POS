@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,29 +16,29 @@ import { AppUser, DeviceStatus } from '../core/models';
 @Component({
   selector: 'app-session-open',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Open session</h3>
+      <h3 class="mb-3">{{ 'Open session' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-danger so-device" *ngIf="device && !device.allowed">{{ device.message }}</div>
       <div class="text-muted so-register" *ngIf="registerName" style="margin-bottom:0.75rem;">{{ registerName }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Assign to</label>
+          <label class="form-label">{{ 'Assign to' | translate }}</label>
           <select class="form-select" name="cashierId" [(ngModel)]="cashierId" required>
-            <option [ngValue]="null" disabled>Select a staff member…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a staff member…' | translate }}</option>
             <option *ngFor="let u of eligibleStaff()" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Opening cash float</label>
+          <label class="form-label">{{ 'Opening cash float' | translate }}</label>
           <input class="form-control so-float" type="number" step="0.01" name="openingFloat" [(ngModel)]="openingFloat" />
-          <div class="text-muted so-float-hint" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="maxFloat !== null">The most this till may open with is {{ maxFloat | number: '1.0-2' }}.</div>
+          <div class="text-muted so-float-hint" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="maxFloat !== null">{{ 'The most this till may open with is {p0}.' | translate: { p0: (maxFloat | number: '1.0-2') } }}</div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-success" type="submit" [disabled]="!cashierId || (device && !device.allowed)">Open till</button>
-          <a class="btn btn-link" routerLink="/registers">Cancel</a>
+          <button class="btn btn-success" type="submit" [disabled]="!cashierId || (device && !device.allowed)">{{ 'Open till' | translate }}</button>
+          <a class="btn btn-link" routerLink="/registers">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

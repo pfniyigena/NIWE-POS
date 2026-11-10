@@ -52,7 +52,9 @@ public record StoreSettingsDto(
         /** "HH:mm" store time — see StoreSettings.stockJobTime. */
         String stockJobTime,
         /** ISO date the stock jobs last ran, or null. */
-        String stockJobLastRun
+        String stockJobLastRun,
+        /** v1.23.0: "en" or "fr", see StoreSettings.language's javadoc. */
+        String language
 ) {
     public static StoreSettingsDto from(StoreSettings s) {
         return new StoreSettingsDto(
@@ -87,7 +89,8 @@ public record StoreSettingsDto(
                 s.isLowStockDigestEnabled(),
                 s.isAutoRequisitionEnabled(),
                 s.getStockJobTime() != null ? s.getStockJobTime() : "06:30",
-                s.getStockJobLastRun() != null ? s.getStockJobLastRun().toString() : null
+                s.getStockJobLastRun() != null ? s.getStockJobLastRun().toString() : null,
+                s.getLanguage() == null ? "en" : s.getLanguage()
         );
     }
 }

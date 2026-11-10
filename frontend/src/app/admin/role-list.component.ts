@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -12,26 +13,24 @@ import { AccessAreaInfo, CustomRole, RoleApiService } from '../core/api/role-api
 @Component({
   selector: 'app-role-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Roles</h3>
-        <a class="btn btn-primary" routerLink="/admin/staff/roles/new">+ New role</a>
+        <h3>{{ 'Roles' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/staff/roles/new">{{ '+ New role' | translate }}</a>
       </div>
       <p class="text-muted" style="font-size:0.85rem;">
-        A role decides which parts of the system a staff member can open. Admins always have full access; users
-        management, settings, backup and audit log stay Admin-only. Approvals (expenses, stock adjustments...) are
-        still granted per person as "Extra permissions" on the staff account.
+        {{ 'A role decides which parts of the system a staff member can open. Admins always have full access; users management, settings, backup and audit log stay Admin-only. Approvals (expenses, stock adjustments...) are still granted per person as "Extra permissions" on the staff account.' | translate }}
       </p>
       <table>
         <thead>
           <tr>
-            <th>Role</th>
-            <th>Access</th>
-            <th>Staff</th>
-            <th>Status</th>
+            <th>{{ 'Role' | translate }}</th>
+            <th>{{ 'Access' | translate }}</th>
+            <th>{{ 'Staff' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -44,16 +43,16 @@ import { AccessAreaInfo, CustomRole, RoleApiService } from '../core/api/role-api
             <td style="font-size:0.85rem;">{{ summary(r) }}</td>
             <td>{{ r.userCount }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="r.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!r.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="r.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!r.active">{{ 'Inactive' | translate }}</span>
             </td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/staff/roles', r.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-danger" (click)="remove(r)" [disabled]="r.userCount > 0" [title]="r.userCount > 0 ? 'Move its staff to another role first' : 'Delete this role'">Delete</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/staff/roles', r.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-danger" (click)="remove(r)" [disabled]="r.userCount > 0" [title]="r.userCount > 0 ? 'Move its staff to another role first' : 'Delete this role'">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="roles.length === 0">
-            <td colspan="5" class="text-muted">No roles yet.</td>
+            <td colspan="5" class="text-muted">{{ 'No roles yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

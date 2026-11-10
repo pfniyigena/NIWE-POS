@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -22,102 +23,102 @@ import { Account, AppUser, CostCenter, Customer, PayeeType, RecurrenceFrequency,
 @Component({
   selector: 'app-recurring-expense-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit recurring expense' : 'New recurring expense' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit recurring expense' | translate) : ('New recurring expense' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Shop rent" required />
+          <label class="form-label">{{ 'Name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Shop rent' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Category</label>
+          <label class="form-label">{{ 'Category' | translate }}</label>
           <select class="form-select" name="accountId" [(ngModel)]="accountId" required>
-            <option [ngValue]="null" disabled>Select an expense account…</option>
+            <option [ngValue]="null" disabled>{{ 'Select an expense account…' | translate }}</option>
             <option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Paid to</label>
+          <label class="form-label">{{ 'Paid to' | translate }}</label>
           <select class="form-select" name="payeeType" [(ngModel)]="payeeType" (ngModelChange)="onPayeeTypeChange()">
-            <option value="VENDOR">Vendor (supplier)</option>
-            <option value="STAFF">Staff</option>
-            <option value="CLIENT">Customer</option>
-            <option value="OTHER">Other / one-off</option>
+            <option value="VENDOR">{{ 'Vendor (supplier)' | translate }}</option>
+            <option value="STAFF">{{ 'Staff' | translate }}</option>
+            <option value="CLIENT">{{ 'Customer' | translate }}</option>
+            <option value="OTHER">{{ 'Other / one-off' | translate }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'VENDOR'">
-          <label class="form-label">Supplier</label>
+          <label class="form-label">{{ 'Supplier' | translate }}</label>
           <select class="form-select" name="payeeSupplier" [(ngModel)]="payeeId" (ngModelChange)="onPayeePicked(suppliers)" required>
-            <option [ngValue]="null" disabled>Select a supplier…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a supplier…' | translate }}</option>
             <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'STAFF'">
-          <label class="form-label">Staff member</label>
+          <label class="form-label">{{ 'Staff member' | translate }}</label>
           <select class="form-select" name="payeeStaff" [(ngModel)]="payeeId" (ngModelChange)="onPayeePicked(staff)" required>
-            <option [ngValue]="null" disabled>Select a staff member…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a staff member…' | translate }}</option>
             <option *ngFor="let u of staff" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'CLIENT'">
-          <label class="form-label">Customer</label>
+          <label class="form-label">{{ 'Customer' | translate }}</label>
           <select class="form-select" name="payeeCustomer" [(ngModel)]="payeeId" (ngModelChange)="onPayeePicked(customers)" required>
-            <option [ngValue]="null" disabled>Select a customer…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a customer…' | translate }}</option>
             <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'OTHER'">
-          <label class="form-label">Payee name</label>
-          <input class="form-control" name="payeeName" [(ngModel)]="payeeName" placeholder="e.g. City Water Authority" required />
+          <label class="form-label">{{ 'Payee name' | translate }}</label>
+          <input class="form-control" name="payeeName" [(ngModel)]="payeeName" [placeholder]="'e.g. City Water Authority' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Amount</label>
+          <label class="form-label">{{ 'Amount' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0.01" name="amount" [(ngModel)]="amount" required />
         </div>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="paid" [(ngModel)]="paid" /> Paid immediately (from Cash)
+            <input type="checkbox" name="paid" [(ngModel)]="paid" /> {{ 'Paid immediately (from Cash)' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="!paid">
-            Left unchecked, each generated expense posts as a bill owed to the payee instead of a cash payment.
+            {{ 'Left unchecked, each generated expense posts as a bill owed to the payee instead of a cash payment.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Cost center (optional)</label>
+          <label class="form-label">{{ 'Cost center (optional)' | translate }}</label>
           <select class="form-select" name="costCenterId" [(ngModel)]="costCenterId">
-            <option [ngValue]="null">None</option>
+            <option [ngValue]="null">{{ 'None' | translate }}</option>
             <option *ngFor="let c of costCenters" [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Memo (optional)</label>
+          <label class="form-label">{{ 'Memo (optional)' | translate }}</label>
           <input class="form-control" name="memo" [(ngModel)]="memo" />
         </div>
         <div class="form-group">
-          <label class="form-label">Frequency</label>
+          <label class="form-label">{{ 'Frequency' | translate }}</label>
           <select class="form-select" name="frequency" [(ngModel)]="frequency">
-            <option value="WEEKLY">Weekly</option>
-            <option value="MONTHLY">Monthly</option>
+            <option value="WEEKLY">{{ 'Weekly' | translate }}</option>
+            <option value="MONTHLY">{{ 'Monthly' | translate }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Next run date</label>
+          <label class="form-label">{{ 'Next run date' | translate }}</label>
           <app-date-picker name="nextRunDate" [(ngModel)]="nextRunDate" required></app-date-picker>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            The daily sweep generates the next expense on or after this date, then advances it by one {{ frequency === 'WEEKLY' ? 'week' : 'month' }}.
+            {{ 'The daily sweep generates the next expense on or after this date, then advances it by one {p0}.' | translate: { p0: (frequency === 'WEEKLY' ? 'week' : 'month') } }}
           </div>
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/accounting/recurring-expenses">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/accounting/recurring-expenses">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -48,30 +49,30 @@ interface DraftLine {
 @Component({
   selector: 'app-purchase-order-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">{{ id ? 'Edit purchase order' : 'New purchase order' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit purchase order' | translate) : ('New purchase order' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-warning" *ngIf="prefilledFromLowStock">
-        Pre-filled with {{ lines.length }} low-stock item{{ lines.length === 1 ? '' : 's' }} — pick a supplier and adjust quantities/costs before saving.
+        {{ 'Pre-filled with {p0} low-stock item{p1} — pick a supplier and adjust quantities/costs before saving.' | translate: { p0: (lines.length), p1: (lines.length === 1 ? '' : 's') } }}
       </div>
 
       <div class="flex gap-2 mb-3">
         <div class="grow">
-          <label class="form-label">Supplier</label>
+          <label class="form-label">{{ 'Supplier' | translate }}</label>
           <div class="flex gap-2">
             <select class="form-select" name="supplierId" [(ngModel)]="supplierId" (ngModelChange)="onSupplierChange()" required [disabled]="showNewSupplier">
-              <option [ngValue]="null" disabled>Select a supplier…</option>
+              <option [ngValue]="null" disabled>{{ 'Select a supplier…' | translate }}</option>
               <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
             </select>
             <button type="button" class="btn btn-outline-secondary" style="white-space:nowrap;" *ngIf="!showNewSupplier" (click)="openNewSupplier()">
-              + New supplier
+              {{ '+ New supplier' | translate }}
             </button>
           </div>
         </div>
         <div class="grow">
-          <label class="form-label">Expected date (optional)</label>
+          <label class="form-label">{{ 'Expected date (optional)' | translate }}</label>
           <app-date-picker name="expectedDate" [(ngModel)]="expectedDate"></app-date-picker>
         </div>
       </div>
@@ -80,12 +81,12 @@ interface DraftLine {
            warehouse. Leave on the primary warehouse to receive centrally (hub) and Stock Transfer
            onwards later; pick a branch to receive straight into it. -->
       <div class="form-group mb-3" *ngIf="warehouses.length > 1">
-        <label class="form-label">Receive into warehouse</label>
+        <label class="form-label">{{ 'Receive into warehouse' | translate }}</label>
         <select class="form-select" name="receivingWarehouseId" [(ngModel)]="receivingWarehouseId">
           <option *ngFor="let w of warehouses" [ngValue]="w.id">{{ w.name }}{{ w.primary ? ' (primary)' : '' }}</option>
         </select>
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-          Received stock lands in this warehouse's Receiving location; move it to a Sales location with a Stock Transfer.
+          {{ 'Received stock lands in this warehouse\\'s Receiving location; move it to a Sales location with a Stock Transfer.' | translate }}
         </div>
       </div>
 
@@ -93,21 +94,21 @@ interface DraftLine {
         <div class="alert alert-danger" *ngIf="newSupplierError">{{ newSupplierError }}</div>
         <div class="flex gap-2 mb-2">
           <div class="grow">
-            <label class="form-label">Name</label>
-            <input class="form-control" name="newSupplierName" [(ngModel)]="newSupplierName" placeholder="Supplier name" />
+            <label class="form-label">{{ 'Name' | translate }}</label>
+            <input class="form-control" name="newSupplierName" [(ngModel)]="newSupplierName" [placeholder]="'Supplier name' | translate" />
           </div>
           <div class="grow">
-            <label class="form-label">Contact person</label>
+            <label class="form-label">{{ 'Contact person' | translate }}</label>
             <input class="form-control" name="newSupplierContact" [(ngModel)]="newSupplierContact" />
           </div>
         </div>
         <div class="flex gap-2 mb-2">
           <div class="grow">
-            <label class="form-label">Phone</label>
+            <label class="form-label">{{ 'Phone' | translate }}</label>
             <input class="form-control" name="newSupplierPhone" [(ngModel)]="newSupplierPhone" />
           </div>
           <div class="grow">
-            <label class="form-label">Email</label>
+            <label class="form-label">{{ 'Email' | translate }}</label>
             <input class="form-control" type="email" name="newSupplierEmail" [(ngModel)]="newSupplierEmail" />
           </div>
         </div>
@@ -117,19 +118,19 @@ interface DraftLine {
                supplier quick-added here still only gets name/contact/phone/email/tax ID, not the
                full form's address/notes — see this component's own class javadoc for why. -->
           <div class="grow">
-            <label class="form-label">Tax ID</label>
+            <label class="form-label">{{ 'Tax ID' | translate }}</label>
             <input class="form-control" name="newSupplierTaxId" [(ngModel)]="newSupplierTaxId" />
           </div>
           <div class="grow"></div>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="btn btn-primary btn-sm" (click)="saveNewSupplier()">Save supplier</button>
-          <button type="button" class="btn btn-link btn-sm" (click)="cancelNewSupplier()">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="saveNewSupplier()">{{ 'Save supplier' | translate }}</button>
+          <button type="button" class="btn btn-link btn-sm" (click)="cancelNewSupplier()">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Notes</label>
+        <label class="form-label">{{ 'Notes' | translate }}</label>
         <textarea class="form-control" name="notes" rows="2" [(ngModel)]="notes"></textarea>
       </div>
 
@@ -139,28 +140,28 @@ interface DraftLine {
            Fourier: "Global discount should be a fixed amount or percentage with percentage as
            the default" — entered either way, percentage selected by default. -->
       <div class="form-group mb-3" *ngIf="discountMode === 'GLOBAL'">
-        <label class="form-label">Discount (whole order)</label>
+        <label class="form-label">{{ 'Discount (whole order)' | translate }}</label>
         <div class="flex gap-2" style="align-items:center;">
           <div class="btn-group" role="group" style="flex-shrink:0;">
-            <button type="button" class="btn btn-sm" [class.btn-primary]="discountType === 'PERCENT'" [class.btn-outline-secondary]="discountType !== 'PERCENT'" (click)="discountType = 'PERCENT'">Percentage</button>
-            <button type="button" class="btn btn-sm" [class.btn-primary]="discountType === 'FIXED_AMOUNT'" [class.btn-outline-secondary]="discountType !== 'FIXED_AMOUNT'" (click)="discountType = 'FIXED_AMOUNT'">Fixed amount</button>
+            <button type="button" class="btn btn-sm" [class.btn-primary]="discountType === 'PERCENT'" [class.btn-outline-secondary]="discountType !== 'PERCENT'" (click)="discountType = 'PERCENT'">{{ 'Percentage' | translate }}</button>
+            <button type="button" class="btn btn-sm" [class.btn-primary]="discountType === 'FIXED_AMOUNT'" [class.btn-outline-secondary]="discountType !== 'FIXED_AMOUNT'" (click)="discountType = 'FIXED_AMOUNT'">{{ 'Fixed amount' | translate }}</button>
           </div>
           <input class="form-control" style="max-width:160px;" type="number" min="0" max="100" step="0.01" *ngIf="discountType === 'PERCENT'" name="headerDiscountPercent" [(ngModel)]="discountPercent" placeholder="%" />
-          <input class="form-control" style="max-width:160px;" type="number" min="0" step="0.01" *ngIf="discountType === 'FIXED_AMOUNT'" name="headerDiscountFixedAmount" [(ngModel)]="discountFixedAmount" placeholder="Amount" />
+          <input class="form-control" style="max-width:160px;" type="number" min="0" step="0.01" *ngIf="discountType === 'FIXED_AMOUNT'" name="headerDiscountFixedAmount" [(ngModel)]="discountFixedAmount" [placeholder]="'Amount' | translate" />
         </div>
       </div>
 
-      <h4 class="mb-2">Line items</h4>
+      <h4 class="mb-2">{{ 'Line items' | translate }}</h4>
       <div class="flex gap-2 mb-2" style="position:relative;">
         <input
           class="form-control"
-          placeholder="Search products by name, SKU or code to add a line"
+          [placeholder]="'Search products by name, SKU or code to add a line' | translate"
           [(ngModel)]="productSearch"
           (input)="onProductSearch()"
         />
         <div class="dropdown-panel" *ngIf="productResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of productResults" (click)="addLine(p)">
-            {{ p.name }} <span class="text-muted">— stock {{ p.stockQuantity }}, cost {{ p.costPrice | number: '1.2-2' }}</span>
+            {{ p.name }} <span class="text-muted">{{ '— stock {p0}, cost {p1}' | translate: { p0: (p.stockQuantity), p1: (p.costPrice | number: '1.2-2') } }}</span>
           </div>
         </div>
       </div>
@@ -168,13 +169,13 @@ interface DraftLine {
       <table class="table-sm mb-3">
         <thead>
           <tr>
-            <th>Product</th>
-            <th class="text-end">Quantity</th>
-            <th class="text-end">Unit cost</th>
-            <th class="text-end" *ngIf="discountMode === 'PER_LINE'">Discount %</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th class="text-end">{{ 'Quantity' | translate }}</th>
+            <th class="text-end">{{ 'Unit cost' | translate }}</th>
+            <th class="text-end" *ngIf="discountMode === 'PER_LINE'">{{ 'Discount %' | translate }}</th>
             <!-- Fourier: "add tax on line ... new purchase form" — display-only, computed from the product's own assigned tax rate (snapshotted at add-line time); no override here. -->
-            <th class="text-end">Tax</th>
-            <th class="text-end">Line total</th>
+            <th class="text-end">{{ 'Tax' | translate }}</th>
+            <th class="text-end">{{ 'Line total' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -192,10 +193,10 @@ interface DraftLine {
             </td>
             <td class="text-end">{{ lineTax(line) | number: '1.2-2' }}</td>
             <td class="text-end">{{ lineTotal(line) | number: '1.2-2' }}</td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">Remove</button></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">{{ 'Remove' | translate }}</button></td>
           </tr>
           <tr *ngIf="lines.length === 0">
-            <td [attr.colspan]="discountMode === 'PER_LINE' ? 7 : 6" class="text-muted">No lines yet — search for a product above to add one.</td>
+            <td [attr.colspan]="discountMode === 'PER_LINE' ? 7 : 6" class="text-muted">{{ 'No lines yet — search for a product above to add one.' | translate }}</td>
           </tr>
         </tbody>
       </table>
@@ -203,26 +204,26 @@ interface DraftLine {
       <!-- Fourier: "add Totals on all those form while recording" — live-computed, same stat-tile convention the detail screen uses after saving. -->
       <div class="stat-grid mb-3" *ngIf="lines.length > 0">
         <div class="stat-tile">
-          <div class="stat-label">Subtotal</div>
+          <div class="stat-label">{{ 'Subtotal' | translate }}</div>
           <div class="stat-value" style="font-size:1.1rem;">{{ subtotalAmount() | number: '1.2-2' }}</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-label">Tax</div>
+          <div class="stat-label">{{ 'Tax' | translate }}</div>
           <div class="stat-value" style="font-size:1.1rem;">{{ taxAmount() | number: '1.2-2' }}</div>
         </div>
         <div class="stat-tile" *ngIf="discountAmount()">
-          <div class="stat-label">Discount</div>
+          <div class="stat-label">{{ 'Discount' | translate }}</div>
           <div class="stat-value" style="font-size:1.1rem;">{{ discountAmount() | number: '1.2-2' }}</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-label">Grand total</div>
+          <div class="stat-label">{{ 'Grand total' | translate }}</div>
           <div class="stat-value" style="font-size:1.1rem;">{{ grandTotal() | number: '1.2-2' }}</div>
         </div>
       </div>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save draft</button>
-        <a class="btn btn-link" routerLink="/admin/purchase-orders">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save draft' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/purchase-orders">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

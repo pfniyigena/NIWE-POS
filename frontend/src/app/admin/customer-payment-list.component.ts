@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -34,30 +35,30 @@ import { CustomerPayment } from '../core/models';
 @Component({
   selector: 'app-customer-payment-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <div>
           <h3 style="margin-bottom:0;">{{ customerName ? 'Payments for ' + customerName : 'Customer payments' }}</h3>
-          <a *ngIf="customerName" class="text-muted" routerLink="/admin/customer-payments" style="font-size:0.85rem;">Show every customer's payments</a>
+          <a *ngIf="customerName" class="text-muted" routerLink="/admin/customer-payments" style="font-size:0.85rem;">{{ 'Show every customer\\'s payments' | translate }}</a>
         </div>
-        <a class="btn btn-link" routerLink="/admin/customers">Back to customers</a>
+        <a class="btn btn-link" routerLink="/admin/customers">{{ 'Back to customers' | translate }}</a>
       </div>
-      <app-list-filter [exportKind]="customerId == null ? 'customer-payments' : ''" statusParam="method" placeholder="Search customer, receipt no., note…" [statuses]="methods" statusAll="All methods" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter [exportKind]="customerId == null ? 'customer-payments' : ''" statusParam="method" [placeholder]="'Search customer, receipt no., note…' | translate" [statuses]="methods" statusAll="All methods" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Type</th>
-            <th>Receipt #</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th class="text-end">Amount</th>
-            <th>Method</th>
-            <th>Recorded by</th>
-            <th>Note</th>
-            <th>Applied to</th>
+            <th>{{ 'Type' | translate }}</th>
+            <th>{{ 'Receipt #' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
+            <th>{{ 'Method' | translate }}</th>
+            <th>{{ 'Recorded by' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
+            <th>{{ 'Applied to' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -65,7 +66,7 @@ import { CustomerPayment } from '../core/models';
           <tr *ngFor="let p of list.rows">
             <td>
               <span class="badge" [class.badge-secondary]="p.source === 'POS_SALE'">
-                {{ p.source === 'POS_SALE' ? 'POS sale' : 'Settlement' }}
+                {{ p.source === 'POS_SALE' ? ('POS sale' | translate) : ('Settlement' | translate) }}
               </span>
             </td>
             <td>{{ p.receiptNumber || '—' }}</td>
@@ -87,11 +88,11 @@ import { CustomerPayment } from '../core/models';
                    a backing CustomerPayment id to look up (see CustomerPayment.id's own javadoc);
                    a POS_SALE row's own detail already lives on its own receipt (reachable via its
                    Applied-to line's order), so nothing to add here for those rows. -->
-              <a *ngIf="p.id" class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/customer-payments', p.id]">View details</a>
+              <a *ngIf="p.id" class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/customer-payments', p.id]">{{ 'View details' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="10" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>{{ customerName ? 'No payments for ' + customerName + ' yet.' : 'No customer payments recorded yet.' }}</ng-template></td>
+            <td colspan="10" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ customerName ? 'No payments for ' + customerName + ' yet.' : 'No customer payments recorded yet.' }}</ng-template></td>
           </tr>
         </tbody>
       </table>

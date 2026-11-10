@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -16,70 +17,67 @@ import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } fr
 @Component({
   selector: 'app-modules',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center gap-3">
-        <h3 class="mb-1">Modules</h3>
-        <app-paper-button label="Print PDF" path="/modules/list-pdf" file="niwe-erp-modules.pdf" cls="btn-outline-primary"></app-paper-button>
+        <h3 class="mb-1">{{ 'Modules' | translate }}</h3>
+        <app-paper-button [label]="'Print PDF' | translate" path="/modules/list-pdf" file="niwe-erp-modules.pdf" cls="btn-outline-primary"></app-paper-button>
       </div>
       <p class="text-muted mb-3">
-        Your license decides which modules you may use; you then activate the ones your business needs. A module that is locked or not activated is hidden from the menu for everyone.
-        <strong>Activation is permanent: once a module is activated it can't be deactivated.</strong>
-        Sales, Purchases and Accounting are core: always active.
-        Products and stock, customers, suppliers, staff and settings are shared by every module and are always available.
+        {{ 'Your license decides which modules you may use; you then activate the ones your business needs. A module that is locked or not activated is hidden from the menu for everyone.' | translate }}
+        <strong>{{ 'Activation is permanent: once a module is activated it can\\'t be deactivated.' | translate }}</strong>
+        {{ 'Sales, Purchases and Accounting are core: always active. Products and stock, customers, suppliers, staff and settings are shared by every module and are always available.' | translate }}
       </p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="alsoOn.length">
-        Also activated, because it works together with the module you just activated: {{ names(keys(alsoOn)) }}.
+        {{ 'Also activated, because it works together with the module you just activated: {p0}.' | translate: { p0: (names(keys(alsoOn))) } }}
       </div>
       <div class="alert alert-success" *ngIf="hotelJustEnabled">
-        Hotel is active. Set it up in this order: first
-        <a routerLink="/admin/hotel/room-types">room types</a> (name and nightly rate), then
-        <a routerLink="/admin/hotel/rooms">rooms</a>, then check the
-        <a routerLink="/admin/hotel/settings">hotel settings</a> (accounting mode, tax, times).
-        The "Charge to room" payment method is now available in the POS and the Restaurant.
+        {{ 'Hotel is active. Set it up in this order: first' | translate }}
+        <a routerLink="/admin/hotel/room-types">{{ 'room types' | translate }}</a> {{ '(name and nightly rate), then' | translate }}
+        <a routerLink="/admin/hotel/rooms">{{ 'rooms' | translate }}</a>{{ ', then check the' | translate }}
+        <a routerLink="/admin/hotel/settings">{{ 'hotel settings' | translate }}</a> {{ '(accounting mode, tax, times). The "Charge to room" payment method is now available in the POS and the Restaurant.' | translate }}
       </div>
 
       <div class="card mb-3" *ngIf="lic">
-        <strong>License</strong>
+        <strong>{{ 'License' | translate }}</strong>
         <div class="alert alert-danger mt-2" *ngIf="!lic.keyConfigured">
-          This build of the application has no license key, so licenses cannot be installed. Ask NIWE for a build that includes it.
+          {{ 'This build of the application has no license key, so licenses cannot be installed. Ask NIWE for a build that includes it.' | translate }}
         </div>
         <div class="alert alert-warning mt-2" *ngIf="lic.devAllModules">
-          The developer switch is on: every module counts as licensed. This must never be used in a deployment.
+          {{ 'The developer switch is on: every module counts as licensed. This must never be used in a deployment.' | translate }}
         </div>
         <div class="alert alert-danger mt-2" *ngIf="lic.problem">{{ lic.problem }}</div>
         <div class="alert alert-danger mt-2" *ngIf="lic.valid && lic.expired">
-          The license expired on {{ lic.expiresAt | date: 'mediumDate' }}. The modules in it are locked until a new license is installed. Your data is untouched.
+          {{ 'The license expired on {p0}. The modules in it are locked until a new license is installed. Your data is untouched.' | translate: { p0: (lic.expiresAt | date: 'mediumDate') } }}
         </div>
         <div class="alert alert-warning mt-2" *ngIf="lic.expiringSoon">
-          The license expires on {{ lic.expiresAt | date: 'mediumDate' }} ({{ lic.daysLeft }} days). Ask NIWE for a renewal in good time.
+          {{ 'The license expires on {p0} ({p1} days). Ask NIWE for a renewal in good time.' | translate: { p0: (lic.expiresAt | date: 'mediumDate'), p1: (lic.daysLeft) } }}
         </div>
         <div class="mt-2" *ngIf="lic.valid">
-          Licensed to <strong>{{ lic.customer }}</strong> — license {{ lic.licenseId }}, number {{ lic.serial }},
-          issued {{ lic.issuedAt | date: 'mediumDate' }},
-          <span *ngIf="lic.expiresAt">expires {{ lic.expiresAt | date: 'mediumDate' }}</span>
-          <span *ngIf="!lic.expiresAt">no expiry date</span>.
+          {{ 'Licensed to' | translate }} <strong>{{ lic.customer }}</strong> {{ '— license {p0}, number {p1}, issued {p2},' | translate: { p0: (lic.licenseId), p1: (lic.serial), p2: (lic.issuedAt | date: 'mediumDate') } }}
+          <span *ngIf="lic.expiresAt">{{ 'expires {p0}' | translate: { p0: (lic.expiresAt | date: 'mediumDate') } }}</span>
+          <span *ngIf="!lic.expiresAt">{{ 'no expiry date' | translate }}</span>.
         </div>
         <div class="mt-2 text-muted" *ngIf="!lic.hasLicense">
-          No license is installed. Only the core modules are available. To get one, send NIWE the installation id below and the modules you bought.
+          {{ 'No license is installed. Only the core modules are available. To get one, send NIWE the installation id below and the modules you bought.' | translate }}
         </div>
         <div class="mt-2">
-          Installation id: <code>{{ lic.installationId }}</code>
-          <button type="button" class="btn btn-link" (click)="copy(lic.installationId)">{{ copied === lic.installationId ? 'Copied' : 'Copy' }}</button>
+          {{ 'Installation id:' | translate }} <code>{{ lic.installationId }}</code>
+          <button type="button" class="btn btn-link" (click)="copy(lic.installationId)">{{ copied === lic.installationId ? ('Copied' | translate) : ('Copy' | translate) }}</button>
         </div>
         <div class="mt-2" *ngIf="lic.keyConfigured">
           <label class="btn btn-primary mb-0" [class.disabled]="installing">
-            {{ installing ? 'Installing…' : 'Upload license file' }}
+            {{ installing ? ('Installing…' | translate) : ('Upload license file' | translate) }}
             <input type="file" accept=".niwelic,.json,.txt" style="display:none" (change)="onFile($event)" [disabled]="installing" />
           </label>
-          <span class="text-success ml-2" *ngIf="installedOk">License installed.</span>
+          <span class="text-success ml-2" *ngIf="installedOk">{{ 'License installed.' | translate }}</span>
         </div>
         <details class="mt-2" *ngIf="lic.history.length">
-          <summary class="text-muted">Installed licenses ({{ lic.history.length }})</summary>
+          <summary class="text-muted">{{ 'Installed licenses ({p0})' | translate: { p0: (lic.history.length) } }}</summary>
           <div style="overflow-x:auto"><table class="table mt-2">
-            <thead><tr><th>Number</th><th>License</th><th>Issued</th><th>Expires</th><th>Modules</th><th>Installed</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Number' | translate }}</th><th>{{ 'License' | translate }}</th><th>{{ 'Issued' | translate }}</th><th>{{ 'Expires' | translate }}</th><th>{{ 'Modules' | translate }}</th><th>{{ 'Installed' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let h of lic.history">
                 <td>{{ h.serial }}</td>
@@ -87,8 +85,8 @@ import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } fr
                 <td>{{ h.issuedAt | date: 'mediumDate' }}</td>
                 <td>{{ h.expiresAt ? (h.expiresAt | date: 'mediumDate') : '—' }}</td>
                 <td>{{ h.modules }}</td>
-                <td>{{ h.installedAt | date: 'medium' }}<span *ngIf="h.installedBy"> by {{ h.installedBy }}</span></td>
-                <td><span class="badge badge-success" *ngIf="h.active">In use</span></td>
+                <td>{{ h.installedAt | date: 'medium' }}<span *ngIf="h.installedBy"> {{ 'by {p0}' | translate: { p0: (h.installedBy) } }}</span></td>
+                <td><span class="badge badge-success" *ngIf="h.active">{{ 'In use' | translate }}</span></td>
               </tr>
             </tbody>
           </table></div>
@@ -99,7 +97,7 @@ import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } fr
         {{ lastRequest.emailNote }}
         <div *ngIf="!lastRequest.emailSent" class="mt-2">
           <pre style="white-space:pre-wrap; margin:0;">{{ lastRequest.text }}</pre>
-          <button type="button" class="btn btn-link" (click)="copy(lastRequest.text)">{{ copied === lastRequest.text ? 'Copied' : 'Copy this text' }}</button>
+          <button type="button" class="btn btn-link" (click)="copy(lastRequest.text)">{{ copied === lastRequest.text ? ('Copied' | translate) : ('Copy this text' | translate) }}</button>
         </div>
       </div>
 
@@ -111,34 +109,34 @@ import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } fr
                   [class.badge-warning]="m.state === 'REQUESTED' || m.state === 'EXPIRED'">{{ label(m) }}</span>
             <div class="text-muted" style="font-size:0.9rem; max-width:560px;">{{ m.description }}</div>
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.requires.length">
-              Works together with {{ names(m.requires) }} — activating {{ m.name }} activates {{ names(m.requires) }} too.
+              {{ 'Works together with {p0} — activating {p1} activates {p2} too.' | translate: { p0: (names(m.requires)), p1: (m.name), p2: (names(m.requires)) } }}
             </div>
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="neededBy(m).length">
-              Needed by {{ names(neededBy(m)) }} — activating that one activates this one too.
+              {{ 'Needed by {p0} — activating that one activates this one too.' | translate: { p0: (names(neededBy(m))) } }}
             </div>
-            <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.state === 'LOCKED'">Not in your license.</div>
-            <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.state === 'EXPIRED'">In a license that has expired.</div>
-            <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.state === 'REQUESTED'">Requested on {{ m.requestedAt | date: 'mediumDate' }}. Waiting for the new license from NIWE.</div>
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.state === 'LOCKED'">{{ 'Not in your license.' | translate }}</div>
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.state === 'EXPIRED'">{{ 'In a license that has expired.' | translate }}</div>
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="m.state === 'REQUESTED'">{{ 'Requested on {p0}. Waiting for the new license from NIWE.' | translate: { p0: (m.requestedAt | date: 'mediumDate') } }}</div>
           </div>
-          <span class="text-muted" style="white-space:nowrap;" *ngIf="m.state === 'CORE'">Core / Always on</span>
-          <span class="text-muted" style="white-space:nowrap;" *ngIf="m.state === 'ACTIVE'">Active — can't be turned off</span>
+          <span class="text-muted" style="white-space:nowrap;" *ngIf="m.state === 'CORE'">{{ 'Core / Always on' | translate }}</span>
+          <span class="text-muted" style="white-space:nowrap;" *ngIf="m.state === 'ACTIVE'">{{ 'Active — can\\'t be turned off' | translate }}</span>
           <button type="button" class="btn btn-primary" style="white-space:nowrap;" *ngIf="m.state === 'AVAILABLE'"
-                  [disabled]="busyKey === m.key" (click)="activate(m)">Activate</button>
+                  [disabled]="busyKey === m.key" (click)="activate(m)">{{ 'Activate' | translate }}</button>
           <button type="button" class="btn btn-secondary" style="white-space:nowrap;" *ngIf="m.state === 'LOCKED' || m.state === 'EXPIRED'"
-                  [disabled]="busyKey === m.key" (click)="openRequest(m)">{{ m.state === 'EXPIRED' ? 'Request renewal' : 'Request' }}</button>
+                  [disabled]="busyKey === m.key" (click)="openRequest(m)">{{ m.state === 'EXPIRED' ? ('Request renewal' | translate) : ('Request' | translate) }}</button>
           <button type="button" class="btn btn-link" style="white-space:nowrap;" *ngIf="m.state === 'REQUESTED'"
-                  [disabled]="busyKey === m.key" (click)="withdraw(m)">Withdraw request</button>
+                  [disabled]="busyKey === m.key" (click)="withdraw(m)">{{ 'Withdraw request' | translate }}</button>
         </div>
         <div class="mt-2" *ngIf="requesting === m.key">
-          <label class="text-muted" style="font-size:0.9rem;">Note for NIWE (optional)</label>
+          <label class="text-muted" style="font-size:0.9rem;">{{ 'Note for NIWE (optional)' | translate }}</label>
           <textarea class="form-control" rows="2" maxlength="500" [(ngModel)]="note" placeholder="Why you need it, how many users, when"></textarea>
           <div class="mt-2">
-            <button type="button" class="btn btn-primary" [disabled]="busyKey === m.key" (click)="sendRequest(m)">Send request</button>
-            <button type="button" class="btn btn-link" (click)="requesting = null">Cancel</button>
+            <button type="button" class="btn btn-primary" [disabled]="busyKey === m.key" (click)="sendRequest(m)">{{ 'Send request' | translate }}</button>
+            <button type="button" class="btn btn-link" (click)="requesting = null">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
       </div>
-      <p class="text-muted" *ngIf="modules.length === 0 && !error">Loading…</p>
+      <p class="text-muted" *ngIf="modules.length === 0 && !error">{{ 'Loading…' | translate }}</p>
     </app-shell>
   `,
 })

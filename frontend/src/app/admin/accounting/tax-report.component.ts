@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -18,39 +19,37 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-tax-report',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Tax report</h3>
+        <h3>{{ 'Tax report' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
       <p class="text-muted mb-3">
-        A general summary of tax collected vs. the tax still payable — not tied to any specific
-        tax authority's official filing format. This same report also serves as the Tax
-        Declaration menu item.
+        {{ 'A general summary of tax collected vs. the tax still payable — not tied to any specific tax authority\\'s official filing format. This same report also serves as the Tax Declaration menu item.' | translate }}
       </p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3">
         <div class="form-group">
-          <label class="form-label">From</label>
+          <label class="form-label">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
         </div>
         <div class="form-group">
-          <label class="form-label">To</label>
+          <label class="form-label">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         </div>
       </div>
       <ng-container *ngIf="report as r">
-        <h4 class="mb-2">Tax collected, by rate</h4>
+        <h4 class="mb-2">{{ 'Tax collected, by rate' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Tax rate</th>
-              <th class="text-end">Collected</th>
+              <th>{{ 'Tax rate' | translate }}</th>
+              <th class="text-end">{{ 'Collected' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -64,10 +63,10 @@ import { downloadBlob } from '../../core/download-file';
                   <table class="table-sm" style="margin:0;">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Invoice</th>
-                        <th>Description</th>
-                        <th class="text-end">Collected</th>
+                        <th>{{ 'Date' | translate }}</th>
+                        <th>{{ 'Invoice' | translate }}</th>
+                        <th>{{ 'Description' | translate }}</th>
+                        <th class="text-end">{{ 'Collected' | translate }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -83,12 +82,12 @@ import { downloadBlob } from '../../core/download-file';
               </tr>
             </ng-container>
             <tr *ngIf="r.collectedByRate.length === 0">
-              <td colspan="2" class="text-muted">No taxed sales in this range.</td>
+              <td colspan="2" class="text-muted">{{ 'No taxed sales in this range.' | translate }}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
-              <th>Total collected</th>
+              <th>{{ 'Total collected' | translate }}</th>
               <th class="text-end">{{ r.totalCollected | number: '1.2-2' }}</th>
             </tr>
           </tfoot>
@@ -96,23 +95,21 @@ import { downloadBlob } from '../../core/download-file';
 
         <div class="stat-tile">
           <div class="stat-label">
-            VAT payable — net movement this period
+            {{ 'VAT payable — net movement this period' | translate }}
             <span class="text-muted" style="cursor:pointer;" *ngIf="r.taxPayableDetails.length" (click)="toggleDetails(r)">{{ isExpanded(r) ? '▾' : '▸' }}</span>
           </div>
           <div class="stat-value" style="font-size:1.2rem;">{{ r.taxPayableNetMovement | number: '1.2-2' }}</div>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            What's still owed (or, if negative, over-collected/refunded) in the VAT/TVA Payable
-            account for this period, from the ledger — this app doesn't model tax paid on
-            purchases, so there's no separate input-tax figure to net against it.
+            {{ 'What\\'s still owed (or, if negative, over-collected/refunded) in the VAT/TVA Payable account for this period, from the ledger — this app doesn\\'t model tax paid on purchases, so there\\'s no separate input-tax figure to net against it.' | translate }}
           </div>
           <table class="table-sm mt-2" *ngIf="isExpanded(r) && r.taxPayableDetails.length">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Entry #</th>
-                <th>Description</th>
-                <th class="text-end">Debit</th>
-                <th class="text-end">Credit</th>
+                <th>{{ 'Date' | translate }}</th>
+                <th>{{ 'Entry #' | translate }}</th>
+                <th>{{ 'Description' | translate }}</th>
+                <th class="text-end">{{ 'Debit' | translate }}</th>
+                <th class="text-end">{{ 'Credit' | translate }}</th>
               </tr>
             </thead>
             <tbody>

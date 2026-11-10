@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -24,32 +25,32 @@ interface LocationOption {
 @Component({
   selector: 'app-stock-adjustment-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">New stock adjustment</h3>
+      <h3 class="mb-3">{{ 'New stock adjustment' | translate }}</h3>
       <p class="text-muted mb-3" style="font-size:0.85rem;">
-        This logs the correction for review — stock and accounting aren't touched until it's confirmed from the Stock adjustments list.
+        {{ 'This logs the correction for review — stock and accounting aren\\'t touched until it\\'s confirmed from the Stock adjustments list.' | translate }}
       </p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3" style="position:relative;">
-        <label class="form-label">Product</label>
+        <label class="form-label">{{ 'Product' | translate }}</label>
         <input
           class="form-control"
-          placeholder="Search by name, SKU or code"
+          [placeholder]="'Search by name, SKU or code' | translate"
           [(ngModel)]="productSearch"
           (input)="onProductSearch()"
           [disabled]="!!selectedProduct"
         />
         <div class="dropdown-panel" *ngIf="productResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of productResults" (click)="selectProduct(p)">
-            {{ p.name }} <span class="text-muted">— current stock {{ p.stockQuantity }}</span>
+            {{ p.name }} <span class="text-muted">{{ '— current stock {p0}' | translate: { p0: (p.stockQuantity) } }}</span>
           </div>
         </div>
         <div class="mt-2" *ngIf="selectedProduct as p">
-          <strong>{{ p.name }}</strong> — current stock: {{ p.stockQuantity }}
-          <button type="button" class="btn btn-sm btn-link" (click)="clearProduct()">Change</button>
+          <strong>{{ p.name }}</strong> {{ '— current stock: {p0}' | translate: { p0: (p.stockQuantity) } }}
+          <button type="button" class="btn btn-sm btn-link" (click)="clearProduct()">{{ 'Change' | translate }}</button>
         </div>
       </div>
 
@@ -57,63 +58,63 @@ interface LocationOption {
            brand-new warehouse comes with just Receiving + Main Stock (2 locations); more than that
            means a second warehouse or an extra location exists. Blank keeps the classic behaviour. -->
       <div class="form-group mb-3" *ngIf="locationOptions.length > 2">
-        <label class="form-label">Location</label>
+        <label class="form-label">{{ 'Location' | translate }}</label>
         <select class="form-select" name="locationId" [(ngModel)]="locationId">
-          <option [ngValue]="null">Default (main warehouse sales stock)</option>
+          <option [ngValue]="null">{{ 'Default (main warehouse sales stock)' | translate }}</option>
           <option *ngFor="let l of locationOptions" [ngValue]="l.id">{{ l.label }}</option>
         </select>
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="locationId !== null && selectedProduct">
-          Stock at this location: {{ currentStock }}.
+          {{ 'Stock at this location: {p0}.' | translate: { p0: (currentStock) } }}
         </div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Quantity change</label>
+        <label class="form-label">{{ 'Quantity change' | translate }}</label>
         <input class="form-control" type="number" step="any" [(ngModel)]="quantityDelta" name="quantityDelta" />
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-          Positive to add stock (e.g. a recount found more than recorded), negative to remove it (e.g. breakage, theft, expiry).
+          {{ 'Positive to add stock (e.g. a recount found more than recorded), negative to remove it (e.g. breakage, theft, expiry).' | translate }}
           <span *ngIf="selectedProduct && quantityDelta">
-            New stock will be {{ currentStock + quantityDelta }}.
+            {{ 'New stock will be {p0}.' | translate: { p0: (currentStock + quantityDelta) } }}
           </span>
         </div>
       </div>
 
       <div class="form-group mb-3" *ngIf="selectedProduct?.trackingMode === 'BATCH' && quantityDelta > 0">
-        <label class="form-label">Batch / lot and expiry (optional)</label>
+        <label class="form-label">{{ 'Batch / lot and expiry (optional)' | translate }}</label>
         <div class="flex gap-2">
-          <input class="form-control" placeholder="Batch / lot no." [(ngModel)]="batchNumber" name="batchNumber" />
+          <input class="form-control" [placeholder]="'Batch / lot no.' | translate" [(ngModel)]="batchNumber" name="batchNumber" />
           <input class="form-control" type="date" [(ngModel)]="expiryDate" name="expiryDate" />
         </div>
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-          Removing batch stock takes the earliest-expiry units first.
+          {{ 'Removing batch stock takes the earliest-expiry units first.' | translate }}
         </div>
       </div>
 
       <div class="form-group mb-3" *ngIf="selectedProduct?.trackingMode === 'SERIAL' && quantityDelta">
-        <label class="form-label">Serial numbers{{ quantityDelta > 0 ? ' being added' : ' being removed (optional — otherwise the oldest are used)' }}</label>
+        <label class="form-label">{{ 'Serial numbers{p0}' | translate: { p0: (quantityDelta > 0 ? ' being added' : ' being removed (optional — otherwise the oldest are used)') } }}</label>
         <textarea class="form-control" rows="3" placeholder="One per line or comma-separated" [(ngModel)]="serialText" name="serialText"></textarea>
-        <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ parseSerials(serialText).length }} entered, {{ quantityDelta > 0 ? quantityDelta : -quantityDelta }} units.</div>
+        <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ '{p0} entered, {p1} units.' | translate: { p0: (parseSerials(serialText).length), p1: (quantityDelta > 0 ? quantityDelta : -quantityDelta) } }}</div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Reason</label>
+        <label class="form-label">{{ 'Reason' | translate }}</label>
         <select class="form-select" [(ngModel)]="reason" name="reason">
-          <option value="DAMAGE">Damage</option>
-          <option value="THEFT">Theft</option>
-          <option value="EXPIRY">Expiry</option>
-          <option value="RECOUNT">Recount</option>
-          <option value="OTHER">Other</option>
+          <option value="DAMAGE">{{ 'Damage' | translate }}</option>
+          <option value="THEFT">{{ 'Theft' | translate }}</option>
+          <option value="EXPIRY">{{ 'Expiry' | translate }}</option>
+          <option value="RECOUNT">{{ 'Recount' | translate }}</option>
+          <option value="OTHER">{{ 'Other' | translate }}</option>
         </select>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Note (optional)</label>
+        <label class="form-label">{{ 'Note (optional)' | translate }}</label>
         <textarea class="form-control" rows="2" [(ngModel)]="note" name="note"></textarea>
       </div>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save adjustment</button>
-        <a class="btn btn-link" routerLink="/admin/stock-adjustments">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save adjustment' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/stock-adjustments">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

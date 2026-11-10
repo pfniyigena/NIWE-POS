@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,37 +12,34 @@ import { AppUser, Warehouse, WarehouseLocation } from '../core/models';
 @Component({
   selector: 'app-register-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit register' : 'New register' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit register' | translate) : ('New register' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
+          <label class="form-label">{{ 'Name' | translate }}</label>
           <input class="form-control" name="name" [(ngModel)]="name" />
         </div>
         <div class="form-group">
-          <label class="form-label">Location</label>
+          <label class="form-label">{{ 'Location' | translate }}</label>
           <input class="form-control" name="location" [(ngModel)]="location" />
         </div>
         <div class="form-group">
-          <label class="form-label">Warehouse</label>
+          <label class="form-label">{{ 'Warehouse' | translate }}</label>
           <select class="form-select" name="warehouseId" [(ngModel)]="warehouseId" (ngModelChange)="onWarehouseChange()">
-            <option [ngValue]="null">Not assigned (uses the primary warehouse)</option>
+            <option [ngValue]="null">{{ 'Not assigned (uses the primary warehouse)' | translate }}</option>
             <option *ngFor="let w of warehouses" [ngValue]="w.id">{{ w.name }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Sales rung at this terminal deduct stock from this warehouse (its default location,
-            unless a specific one is picked below); a return against one of its sales restocks the
-            same spot. Leave unassigned to keep using the primary warehouse, same as before this
-            setting existed.
+            {{ 'Sales rung at this terminal deduct stock from this warehouse (its default location, unless a specific one is picked below); a return against one of its sales restocks the same spot. Leave unassigned to keep using the primary warehouse, same as before this setting existed.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="warehouseId">
-          <label class="form-label">Location</label>
+          <label class="form-label">{{ 'Location' | translate }}</label>
           <select class="form-select" name="defaultLocationId" [(ngModel)]="defaultLocationId">
-            <option [ngValue]="null">Default location for this warehouse</option>
+            <option [ngValue]="null">{{ 'Default location for this warehouse' | translate }}</option>
             <option *ngFor="let loc of locations" [ngValue]="loc.id">{{ loc.name }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
@@ -52,30 +50,29 @@ import { AppUser, Warehouse, WarehouseLocation } from '../core/models';
             location, same as today.
           </div>
         </div>
-        <h5 class="mb-2" style="margin-top:1.25rem;">Till rules</h5>
+        <h5 class="mb-2" style="margin-top:1.25rem;">{{ 'Till rules' | translate }}</h5>
         <div class="form-group">
           <label style="display:flex; gap:0.5rem; align-items:center;">
             <input type="checkbox" class="rg-active" name="active" [(ngModel)]="active" />
-            <span>In use</span>
+            <span>{{ 'In use' | translate }}</span>
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Switch a till off to stop new shifts from being opened on it (for example while it is being repaired).
-            Its past sales and reports stay as they are. A till with an open shift has to be closed first.
+            {{ 'Switch a till off to stop new shifts from being opened on it (for example while it is being repaired). Its past sales and reports stay as they are. A till with an open shift has to be closed first.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Usual opening float</label>
-          <input class="form-control rg-default-float" type="number" step="0.01" min="0" name="defaultFloat" [(ngModel)]="defaultFloat" placeholder="No suggestion" />
-          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Filled in automatically when a shift is opened here.</div>
+          <label class="form-label">{{ 'Usual opening float' | translate }}</label>
+          <input class="form-control rg-default-float" type="number" step="0.01" min="0" name="defaultFloat" [(ngModel)]="defaultFloat" [placeholder]="'No suggestion' | translate" />
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ 'Filled in automatically when a shift is opened here.' | translate }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Highest opening float allowed</label>
-          <input class="form-control rg-max-float" type="number" step="0.01" min="0" name="maxFloat" [(ngModel)]="maxFloat" placeholder="No limit" />
+          <label class="form-label">{{ 'Highest opening float allowed' | translate }}</label>
+          <input class="form-control rg-max-float" type="number" step="0.01" min="0" name="maxFloat" [(ngModel)]="maxFloat" [placeholder]="'No limit' | translate" />
         </div>
         <div class="form-group">
-          <label class="form-label">Who can work this till</label>
+          <label class="form-label">{{ 'Who can work this till' | translate }}</label>
           <div class="text-muted" style="font-size:0.8rem; margin-bottom:0.35rem;">
-            Tick the people who may sell here. Leave all unticked to let anyone who can sell use it. Managers can always work any till.
+            {{ 'Tick the people who may sell here. Leave all unticked to let anyone who can sell use it. Managers can always work any till.' | translate }}
           </div>
           <label *ngFor="let u of staff" style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.2rem;">
             <input type="checkbox" class="rg-cashier" [checked]="allowedIds.includes(u.id)" (change)="toggleCashier(u.id)" [name]="'cashier' + u.id" />
@@ -83,8 +80,8 @@ import { AppUser, Warehouse, WarehouseLocation } from '../core/models';
           </label>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/registers">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/registers">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

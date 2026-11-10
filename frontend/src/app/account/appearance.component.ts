@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ShellComponent } from '../shared/shell.component';
 import { FormsModule } from '@angular/forms';
@@ -9,14 +10,14 @@ import { CUSTOM_ID, THEMES, ThemeService, contrastRatio, customVariables, isHex 
 @Component({
   selector: 'app-appearance',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-2">Appearance</h3>
+      <h3 class="mb-2">{{ 'Appearance' | translate }}</h3>
       <p class="text-muted" style="font-size:0.85rem; margin-bottom:1rem;">
-        Choose the colours you work with. It is saved on the server for your account, so it follows you to any device — other staff keep their own.
+        {{ 'Choose the colours you work with. It is saved on the server for your account, so it follows you to any device — other staff keep their own.' | translate }}
       </p>
-      <div class="theme-section-title">Dark</div>
+      <div class="theme-section-title">{{ 'Dark' | translate }}</div>
       <div class="theme-grid">
         <button type="button" class="theme-card" *ngFor="let t of dark" [class.selected]="theme.current() === t.id" (click)="theme.select(t.id)">
           <span class="theme-swatch" [style.background]="t.swatch[0]">
@@ -26,7 +27,7 @@ import { CUSTOM_ID, THEMES, ThemeService, contrastRatio, customVariables, isHex 
           <span class="theme-check" *ngIf="theme.current() === t.id">✓</span>
         </button>
       </div>
-      <div class="theme-section-title">Light</div>
+      <div class="theme-section-title">{{ 'Light' | translate }}</div>
       <div class="theme-grid">
         <button type="button" class="theme-card" *ngFor="let t of light" [class.selected]="theme.current() === t.id" (click)="theme.select(t.id)">
           <span class="theme-swatch" [style.background]="t.swatch[0]">
@@ -36,49 +37,48 @@ import { CUSTOM_ID, THEMES, ThemeService, contrastRatio, customVariables, isHex 
           <span class="theme-check" *ngIf="theme.current() === t.id">✓</span>
         </button>
       </div>
-      <div class="theme-section-title">Your own colours</div>
+      <div class="theme-section-title">{{ 'Your own colours' | translate }}</div>
       <div class="theme-grid">
         <button type="button" class="theme-card" [class.selected]="theme.current() === customId" (click)="chooseCustom()">
           <span class="theme-swatch" [style.background]="preview.bg">
             <span class="theme-swatch-card" [style.background]="preview.surface"><span class="theme-swatch-bar" [style.background]="theme.custom().accent"></span></span>
           </span>
-          <span class="theme-name">Custom</span>
+          <span class="theme-name">{{ 'Custom' | translate }}</span>
           <span class="theme-check" *ngIf="theme.current() === customId">✓</span>
         </button>
       </div>
       <div class="card" style="padding:1rem; margin-top:0.75rem; max-width:34rem;">
         <div class="text-muted" style="font-size:0.82rem; margin-bottom:0.75rem;">
-          Pick a page background and an accent colour (buttons, links, highlights). Cards, borders and text colours are worked out for you,
-          and a light or dark layout is chosen from your background.
+          {{ 'Pick a page background and an accent colour (buttons, links, highlights). Cards, borders and text colours are worked out for you, and a light or dark layout is chosen from your background.' | translate }}
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <div class="form-group" style="min-width:12rem;">
-            <label class="form-label">Background</label>
+            <label class="form-label">{{ 'Background' | translate }}</label>
             <div class="flex gap-2 align-center">
               <input type="color" [ngModel]="bgPick" (ngModelChange)="onBg($event)" name="bgPick" style="width:2.6rem; height:2.2rem; padding:0; border:none; background:none;" />
-              <input class="form-control" [ngModel]="bgText" (ngModelChange)="onBg($event)" name="bgText" maxlength="7" style="width:7.5rem;" placeholder="#dbeafe" />
+              <input class="form-control" [ngModel]="bgText" (ngModelChange)="onBg($event)" name="bgText" maxlength="7" style="width:7.5rem;" [placeholder]="'#dbeafe' | translate" />
             </div>
           </div>
           <div class="form-group" style="min-width:12rem;">
-            <label class="form-label">Accent</label>
+            <label class="form-label">{{ 'Accent' | translate }}</label>
             <div class="flex gap-2 align-center">
               <input type="color" [ngModel]="accentPick" (ngModelChange)="onAccent($event)" name="accentPick" style="width:2.6rem; height:2.2rem; padding:0; border:none; background:none;" />
-              <input class="form-control" [ngModel]="accentText" (ngModelChange)="onAccent($event)" name="accentText" maxlength="7" style="width:7.5rem;" placeholder="#2563eb" />
+              <input class="form-control" [ngModel]="accentText" (ngModelChange)="onAccent($event)" name="accentText" maxlength="7" style="width:7.5rem;" [placeholder]="'#2563eb' | translate" />
             </div>
           </div>
         </div>
         <div class="alert alert-warning" *ngIf="lowContrast">
-          This accent is hard to read on that background — links and highlights may blend in. Try a darker or lighter accent.
+          {{ 'This accent is hard to read on that background — links and highlights may blend in. Try a darker or lighter accent.' | translate }}
         </div>
-        <div class="alert alert-danger" *ngIf="invalid">Use a 6-digit hex colour such as #2563eb.</div>
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetCustom()">Reset to sky blue</button>
+        <div class="alert alert-danger" *ngIf="invalid">{{ 'Use a 6-digit hex colour such as #2563eb.' | translate }}</div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetCustom()">{{ 'Reset to sky blue' | translate }}</button>
       </div>
       <div class="card" style="padding:1rem; margin-top:1rem; max-width:34rem;" *ngIf="isAdmin">
-        <label class="flex gap-2 align-center"><input type="checkbox" class="ap-website" name="applyToWebsite" [ngModel]="theme.applyToWebsite()" (ngModelChange)="theme.applyToWebsite.set($event)" /> Also use my choice for the public website and sign-in page</label>
-        <div class="text-muted" style="font-size:0.82rem; margin-top:0.35rem;">Visitors who are not signed in see the theme you pick here. Untick it to change only your own look.</div>
+        <label class="flex gap-2 align-center"><input type="checkbox" class="ap-website" name="applyToWebsite" [ngModel]="theme.applyToWebsite()" (ngModelChange)="theme.applyToWebsite.set($event)" /> {{ 'Also use my choice for the public website and sign-in page' | translate }}</label>
+        <div class="text-muted" style="font-size:0.82rem; margin-top:0.35rem;">{{ 'Visitors who are not signed in see the theme you pick here. Untick it to change only your own look.' | translate }}</div>
       </div>
       <p class="text-muted" style="font-size:0.78rem; margin-top:1rem;">
-        Printed receipts, purchase orders and reports always stay white so they print cleanly.
+        {{ 'Printed receipts, purchase orders and reports always stay white so they print cleanly.' | translate }}
       </p>
     </app-shell>
   `,

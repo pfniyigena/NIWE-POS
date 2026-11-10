@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -49,7 +50,7 @@ interface ReturnRow {
 @Component({
   selector: 'app-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -60,88 +61,88 @@ interface ReturnRow {
             <span class="badge" [ngClass]="statusClass(o.status)">{{ o.status.replace('_', ' ') }}</span>
           </div>
           <div class="flex gap-2">
-            <a class="btn btn-outline-primary" *ngIf="o.status === 'DRAFT'" [routerLink]="['/admin/purchase-orders', o.id, 'edit']">Edit</a>
-            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="send()">Send to supplier</button>
-            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'SENT'" (click)="cancel()">Cancel order</button>
+            <a class="btn btn-outline-primary" *ngIf="o.status === 'DRAFT'" [routerLink]="['/admin/purchase-orders', o.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="send()">{{ 'Send to supplier' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'SENT'" (click)="cancel()">{{ 'Cancel order' | translate }}</button>
             <!-- Fourier: "same workflow as Sale order" — only once the order is past DRAFT/CANCELLED (a real commitment exists to bill); mirrors Sale Order's own "Generate invoice". -->
-            <button class="btn btn-outline-primary" *ngIf="!bill && o.status !== 'DRAFT' && o.status !== 'CANCELLED'" [disabled]="generatingBill" (click)="generateBill()">{{ generatingBill ? 'Generating…' : 'Generate bill' }}</button>
-            <a class="btn btn-outline-primary" *ngIf="bill" [routerLink]="['/admin/bills', bill.id]">View bill</a>
+            <button class="btn btn-outline-primary" *ngIf="!bill && o.status !== 'DRAFT' && o.status !== 'CANCELLED'" [disabled]="generatingBill" (click)="generateBill()">{{ generatingBill ? ('Generating…' | translate) : ('Generate bill' | translate) }}</button>
+            <a class="btn btn-outline-primary" *ngIf="bill" [routerLink]="['/admin/bills', bill.id]">{{ 'View bill' | translate }}</a>
             <!-- Task 3: "Print out purchase order" -->
-            <a class="btn btn-outline-secondary" [routerLink]="['/admin/purchase-orders', o.id, 'print']" target="_blank">🖨 Print</a>
-            <app-paper-button *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'" class="paper-grn" label="Goods received note" cls="btn-outline-secondary" [path]="'/purchase-orders/' + o.id + '/goods-received-note'" file="goods-received-note.pdf"></app-paper-button>
+            <a class="btn btn-outline-secondary" [routerLink]="['/admin/purchase-orders', o.id, 'print']" target="_blank">{{ '🖨 Print' | translate }}</a>
+            <app-paper-button *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'" class="paper-grn" [label]="'Goods received note' | translate" cls="btn-outline-secondary" [path]="'/purchase-orders/' + o.id + '/goods-received-note'" file="goods-received-note.pdf"></app-paper-button>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Supplier</div>
+            <div class="stat-label">{{ 'Supplier' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.supplierName }}</div>
           </div>
           <!-- Multi-warehouse phase 2: where received stock lands (its Receiving location). -->
           <div class="stat-tile">
-            <div class="stat-label">Receives into</div>
+            <div class="stat-label">{{ 'Receives into' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.receivingWarehouseName }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.landedCostTotal">
-            <div class="stat-label">Landed cost</div>
+            <div class="stat-label">{{ 'Landed cost' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.landedCostTotal | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Order date</div>
+            <div class="stat-label">{{ 'Order date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.orderDate | date: 'medium' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Expected</div>
+            <div class="stat-label">{{ 'Expected' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.expectedDate ? (o.expectedDate | date: 'mediumDate') : '—' }}</div>
           </div>
           <!-- Fourier: "for purchases, sales, invoices, bills the tax are not being captured" — PurchaseOrder had no total concept at all before this; mirrors the backend's PurchaseOrderDto (SupplierPaymentService.totalCost/netCost/taxCost). -->
           <div class="stat-tile">
-            <div class="stat-label">Subtotal</div>
+            <div class="stat-label">{{ 'Subtotal' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.subtotalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Tax</div>
+            <div class="stat-label">{{ 'Tax' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.taxAmount | number: '1.2-2' }}</div>
           </div>
           <!-- Fourier: "Same for discount (but discount should be activate in the setting or configuration) and it will be per line" — only shown once this document actually has one, same convention as the printed PDF's own addSubtotalBreakdown. -->
           <div class="stat-tile" *ngIf="o.discountAmount">
-            <div class="stat-label">Discount</div>
+            <div class="stat-label">{{ 'Discount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.discountAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total amount</div>
+            <div class="stat-label">{{ 'Total amount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Paid</div>
+            <div class="stat-label">{{ 'Paid' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountPaid | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Outstanding</div>
+            <div class="stat-label">{{ 'Outstanding' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountOutstanding | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.amountReturned > 0">
-            <div class="stat-label">Returned</div>
+            <div class="stat-label">{{ 'Returned' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountReturned | number: '1.2-2' }}</div>
           </div>
           <!-- Task 4: "credit/refund owed back" — only shown once a return has actually left the store overpaid relative to what's now owed; informational, no collect button, see class javadoc. -->
           <div class="stat-tile" *ngIf="o.refundDue > 0">
-            <div class="stat-label">Refund due from supplier</div>
+            <div class="stat-label">{{ 'Refund due from supplier' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.refundDue | number: '1.2-2' }}</div>
           </div>
         </div>
         <p class="text-muted mb-3" *ngIf="o.notes">{{ o.notes }}</p>
 
-        <h4 class="mb-2">Lines</h4>
+        <h4 class="mb-2">{{ 'Lines' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Ordered</th>
-              <th class="text-end">Received</th>
-              <th class="text-end">Unit cost</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Ordered' | translate }}</th>
+              <th class="text-end">{{ 'Received' | translate }}</th>
+              <th class="text-end">{{ 'Unit cost' | translate }}</th>
               <!-- Fourier: "Same for discount ... it will be per line" — only shown once this document actually has a discount on at least one line. -->
-              <th class="text-end" *ngIf="o.discountAmount">Discount</th>
+              <th class="text-end" *ngIf="o.discountAmount">{{ 'Discount' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -156,14 +157,14 @@ interface ReturnRow {
         </table>
 
         <ng-container *ngIf="o.status === 'SENT' || o.status === 'PARTIALLY_RECEIVED'">
-          <h4 class="mb-2">Record a receipt</h4>
+          <h4 class="mb-2">{{ 'Record a receipt' | translate }}</h4>
           <div class="alert alert-danger" *ngIf="receiveError">{{ receiveError }}</div>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Product</th>
-                <th class="text-end">Remaining</th>
-                <th class="text-end">Receiving now</th>
+                <th>{{ 'Product' | translate }}</th>
+                <th class="text-end">{{ 'Remaining' | translate }}</th>
+                <th class="text-end">{{ 'Receiving now' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,12 +172,12 @@ interface ReturnRow {
                 <td>
                   {{ row.productName }}
                   <div *ngIf="row.trackingMode === 'BATCH'" class="flex gap-2" style="margin-top:0.35rem;">
-                    <input class="form-control form-control-sm" style="max-width:160px;" placeholder="Batch / lot no." [(ngModel)]="row.batchNumber" [name]="'batch' + row.lineId" />
-                    <input class="form-control form-control-sm" style="max-width:160px;" type="date" title="Expiry date" [(ngModel)]="row.expiryDate" [name]="'exp' + row.lineId" />
+                    <input class="form-control form-control-sm" style="max-width:160px;" [placeholder]="'Batch / lot no.' | translate" [(ngModel)]="row.batchNumber" [name]="'batch' + row.lineId" />
+                    <input class="form-control form-control-sm" style="max-width:160px;" type="date" [title]="'Expiry date' | translate" [(ngModel)]="row.expiryDate" [name]="'exp' + row.lineId" />
                   </div>
                   <div *ngIf="row.trackingMode === 'SERIAL'" style="margin-top:0.35rem;">
                     <textarea class="form-control form-control-sm" rows="2" style="max-width:320px;" placeholder="Serial numbers — one per line or comma-separated" [(ngModel)]="row.serialText" [name]="'ser' + row.lineId"></textarea>
-                    <div class="text-muted" style="font-size:0.75rem;">{{ serialCount(row) }} of {{ row.quantityReceived }} entered</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ '{p0} of {p1} entered' | translate: { p0: (serialCount(row)), p1: (row.quantityReceived) } }}</div>
                   </div>
                 </td>
                 <td class="text-end">{{ row.remaining }}</td>
@@ -193,37 +194,36 @@ interface ReturnRow {
                 </td>
               </tr>
               <tr *ngIf="receiveRows.length === 0">
-                <td colspan="3" class="text-muted">Every line has already been fully received.</td>
+                <td colspan="3" class="text-muted">{{ 'Every line has already been fully received.' | translate }}</td>
               </tr>
             </tbody>
           </table>
           <div class="mb-3" *ngIf="receiveRows.length > 0" style="max-width:520px;">
-            <label class="form-label">Landed cost for this delivery (optional)</label>
+            <label class="form-label">{{ 'Landed cost for this delivery (optional)' | translate }}</label>
             <div class="flex gap-2">
-              <input class="form-control" type="number" min="0" step="0.01" placeholder="Freight, duty, clearing…" [(ngModel)]="landedCost" name="landedCost" />
-              <input class="form-control" placeholder="Note" [(ngModel)]="landedCostNote" name="landedCostNote" />
+              <input class="form-control" type="number" min="0" step="0.01" [placeholder]="'Freight, duty, clearing…' | translate" [(ngModel)]="landedCost" name="landedCost" />
+              <input class="form-control" [placeholder]="'Note' | translate" [(ngModel)]="landedCostNote" name="landedCostNote" />
             </div>
             <label class="form-label" style="margin-top:0.35rem;" *ngIf="landedCost">
-              <input type="checkbox" [(ngModel)]="landedCostPaid" name="landedCostPaid" /> Already paid (otherwise recorded as owed)
+              <input type="checkbox" [(ngModel)]="landedCostPaid" name="landedCostPaid" /> {{ 'Already paid (otherwise recorded as owed)' | translate }}
             </label>
             <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-              Spread over the delivered products by value and added to their cost and to Inventory in the books. Record freight here
-              rather than as a separate expense, or it would be counted twice.
+              {{ 'Spread over the delivered products by value and added to their cost and to Inventory in the books. Record freight here rather than as a separate expense, or it would be counted twice.' | translate }}
             </div>
           </div>
-          <button class="btn btn-primary" *ngIf="receiveRows.length > 0" (click)="recordReceipt()">Record receipt</button>
+          <button class="btn btn-primary" *ngIf="receiveRows.length > 0" (click)="recordReceipt()">{{ 'Record receipt' | translate }}</button>
         </ng-container>
 
         <!-- Task 4: "Supplier Purchase Return" — only once something has actually been received is there anything to send back. -->
         <ng-container *ngIf="returnRows.length > 0">
-          <h4 class="mb-2">Process a return</h4>
+          <h4 class="mb-2">{{ 'Process a return' | translate }}</h4>
           <div class="alert alert-danger" *ngIf="returnError">{{ returnError }}</div>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Product</th>
-                <th class="text-end">Available to return</th>
-                <th class="text-end">Returning now</th>
+                <th>{{ 'Product' | translate }}</th>
+                <th class="text-end">{{ 'Available to return' | translate }}</th>
+                <th class="text-end">{{ 'Returning now' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -245,21 +245,21 @@ interface ReturnRow {
             </tbody>
           </table>
           <div class="form-group mb-3" style="max-width:400px;">
-            <label>Reason (optional)</label>
+            <label>{{ 'Reason (optional)' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="returnReason" name="returnReason" />
           </div>
-          <button class="btn btn-outline-danger" (click)="processReturn()">Process return</button>
+          <button class="btn btn-outline-danger" (click)="processReturn()">{{ 'Process return' | translate }}</button>
         </ng-container>
 
         <ng-container *ngIf="returns.length > 0">
-          <h4 class="mb-2 mt-3">Return history</h4>
+          <h4 class="mb-2 mt-3">{{ 'Return history' | translate }}</h4>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Return date</th>
-                <th>Return #</th>
-                <th class="text-end">Refund due</th>
-                <th>Reason</th>
+                <th>{{ 'Return date' | translate }}</th>
+                <th>{{ 'Return #' | translate }}</th>
+                <th class="text-end">{{ 'Refund due' | translate }}</th>
+                <th>{{ 'Reason' | translate }}</th>
               </tr>
             </thead>
             <tbody>

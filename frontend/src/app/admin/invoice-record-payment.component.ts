@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -31,65 +32,65 @@ import { Invoice, CustomerPayment, PaymentMethodOption } from '../core/models';
 @Component({
   selector: 'app-invoice-record-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>Record payment{{ inv ? ' — ' + inv.invoiceNumber : '' }}</h3>
-        <a class="btn btn-link" *ngIf="inv" [routerLink]="['/admin/invoices', inv.id]">Back to invoice</a>
+        <h3>{{ 'Record payment{p0}' | translate: { p0: (inv ? ' — ' + inv.invoiceNumber : '') } }}</h3>
+        <a class="btn btn-link" *ngIf="inv" [routerLink]="['/admin/invoices', inv.id]">{{ 'Back to invoice' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="inv as o">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div><strong>Customer:</strong> {{ o.customerName }}</div>
-          <div><strong>Invoice total:</strong> {{ o.totalAmount | number: '1.2-2' }}</div>
-          <div><strong>Paid so far:</strong> {{ o.amountPaid | number: '1.2-2' }}</div>
-          <div><strong>Outstanding:</strong> {{ o.amountOutstanding | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Customer:' | translate }}</strong> {{ o.customerName }}</div>
+          <div><strong>{{ 'Invoice total:' | translate }}</strong> {{ o.totalAmount | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Paid so far:' | translate }}</strong> {{ o.amountPaid | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Outstanding:' | translate }}</strong> {{ o.amountOutstanding | number: '1.2-2' }}</div>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem; max-width:420px;" *ngIf="inv && !receipt && inv.amountOutstanding > 0">
         <div class="form-group">
-          <label class="form-label">Payment amount</label>
+          <label class="form-label">{{ 'Payment amount' | translate }}</label>
           <input class="form-control" type="number" min="0.01" [max]="inv.amountOutstanding" step="0.01" [(ngModel)]="amount" />
-          <div class="text-muted" style="font-size:0.8rem;">Up to the outstanding amount — {{ inv.amountOutstanding | number: '1.2-2' }}.</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Up to the outstanding amount — {p0}.' | translate: { p0: (inv.amountOutstanding | number: '1.2-2') } }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Payment method</label>
+          <label class="form-label">{{ 'Payment method' | translate }}</label>
           <select class="form-select" [(ngModel)]="method">
             <option *ngFor="let m of paymentMethods" [value]="m.code">{{ m.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Note (optional)</label>
+          <label class="form-label">{{ 'Note (optional)' | translate }}</label>
           <input class="form-control" [(ngModel)]="note" />
         </div>
         <button class="btn btn-primary" (click)="submit()" [disabled]="submitting || !canSubmit()">
-          {{ submitting ? 'Recording…' : 'Record payment' }}
+          {{ submitting ? ('Recording…' | translate) : ('Record payment' | translate) }}
         </button>
       </div>
 
       <div class="alert alert-secondary" *ngIf="inv && inv.amountOutstanding <= 0 && !receipt">
-        This invoice has nothing left outstanding.
+        {{ 'This invoice has nothing left outstanding.' | translate }}
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="receipt">
-        <div class="alert alert-success">Payment recorded.</div>
-        <button class="btn btn-outline-secondary" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print receipt' }}</button>
-        <button class="btn btn-link" (click)="startAnother()" *ngIf="inv && inv.amountOutstanding > 0">Record another payment</button>
+        <div class="alert alert-success">{{ 'Payment recorded.' | translate }}</div>
+        <button class="btn btn-outline-secondary" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print receipt' | translate) }}</button>
+        <button class="btn btn-link" (click)="startAnother()" *ngIf="inv && inv.amountOutstanding > 0">{{ 'Record another payment' | translate }}</button>
       </div>
 
-      <h4 class="mt-3 mb-2">Payment history for this invoice</h4>
+      <h4 class="mt-3 mb-2">{{ 'Payment history for this invoice' | translate }}</h4>
       <table>
         <thead>
           <tr>
-            <th>Receipt #</th>
-            <th>Date</th>
-            <th class="text-end">Amount</th>
-            <th>Method</th>
-            <th>Recorded by</th>
-            <th>Note</th>
+            <th>{{ 'Receipt #' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
+            <th>{{ 'Method' | translate }}</th>
+            <th>{{ 'Recorded by' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -102,7 +103,7 @@ import { Invoice, CustomerPayment, PaymentMethodOption } from '../core/models';
             <td>{{ p.note || '—' }}</td>
           </tr>
           <tr *ngIf="history.length === 0">
-            <td colspan="6" class="text-muted">No payments recorded against this invoice yet.</td>
+            <td colspan="6" class="text-muted">{{ 'No payments recorded against this invoice yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

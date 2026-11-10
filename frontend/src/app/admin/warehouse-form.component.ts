@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,58 +12,57 @@ import { Branch, LocationType, WarehouseLocation } from '../core/models';
 @Component({
   selector: 'app-warehouse-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit warehouse' : 'New warehouse' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit warehouse' | translate) : ('New warehouse' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Downtown Branch" required />
+          <label class="form-label">{{ 'Name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Downtown Branch' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Address (optional)</label>
+          <label class="form-label">{{ 'Address (optional)' | translate }}</label>
           <textarea class="form-control" name="address" [(ngModel)]="address" rows="2"></textarea>
         </div>
         <div class="form-group" *ngIf="branches.length > 1">
-          <label class="form-label">Branch</label>
+          <label class="form-label">{{ 'Branch' | translate }}</label>
           <select class="form-control" style="max-width:260px;" name="branchId" [(ngModel)]="branchId">
             <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            The branch this warehouse belongs to. Sales from its registers and purchases received into it are tagged with this branch.
+            {{ 'The branch this warehouse belongs to. Sales from its registers and purchases received into it are tagged with this branch.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Low-stock threshold (optional)</label>
-          <input class="form-control" style="max-width:160px;" type="number" min="0" step="any" name="lowStockThreshold" [(ngModel)]="lowStockThreshold" placeholder="Store default" />
+          <label class="form-label">{{ 'Low-stock threshold (optional)' | translate }}</label>
+          <input class="form-control" style="max-width:160px;" type="number" min="0" step="any" name="lowStockThreshold" [(ngModel)]="lowStockThreshold" [placeholder]="'Store default' | translate" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            A product is flagged low (dashboard, Stock On Hand report) and an alert email is sent when this
-            warehouse's stock of it drops below this number. Leave blank to use the store-wide default.
+            {{ 'A product is flagged low (dashboard, Stock On Hand report) and an alert email is sent when this warehouse\\'s stock of it drops below this number. Leave blank to use the store-wide default.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="!primary">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
         </div>
         <div class="form-group" *ngIf="primary">
           <label class="form-label">
-            <input type="checkbox" checked disabled /> Active
+            <input type="checkbox" checked disabled /> {{ 'Active' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            This is your primary warehouse — it can't be deactivated.
+            {{ 'This is your primary warehouse — it can\\'t be deactivated.' | translate }}
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/warehouses">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/warehouses">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
 
       <div *ngIf="id" class="mt-4">
-        <h4 class="mb-2" style="font-size:1rem;">Locations</h4>
+        <h4 class="mb-2" style="font-size:1rem;">{{ 'Locations' | translate }}</h4>
         <p class="text-muted mb-2" style="font-size:0.85rem;">
           Sub-areas within this warehouse — shelves, bins, a receiving area, and so on. Each one has a
           type that drives real behavior: every purchase/receipt lands on the warehouse's one RECEIVING
@@ -75,9 +75,9 @@ import { Branch, LocationType, WarehouseLocation } from '../core/models';
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Status</th>
+              <th>{{ 'Name' | translate }}</th>
+              <th>{{ 'Type' | translate }}</th>
+              <th>{{ 'Status' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -87,42 +87,42 @@ import { Branch, LocationType, WarehouseLocation } from '../core/models';
               <td>
                 <select class="form-control" style="display:inline-block; width:auto;" [ngModel]="loc.type" name="type-{{ loc.id }}"
                         (ngModelChange)="changeType(loc, $event)" [disabled]="loc.type === 'RECEIVING'">
-                  <option value="RECEIVING" [disabled]="loc.type !== 'RECEIVING'">Receiving</option>
-                  <option value="SALES">Sales</option>
-                  <option value="STORAGE">Storage</option>
-                  <option value="DAMAGED">Damaged</option>
+                  <option value="RECEIVING" [disabled]="loc.type !== 'RECEIVING'">{{ 'Receiving' | translate }}</option>
+                  <option value="SALES">{{ 'Sales' | translate }}</option>
+                  <option value="STORAGE">{{ 'Storage' | translate }}</option>
+                  <option value="DAMAGED">{{ 'Damaged' | translate }}</option>
                 </select>
-                <span class="text-muted" *ngIf="loc.type === 'RECEIVING'" style="font-size:0.8rem;">Can't be retyped</span>
+                <span class="text-muted" *ngIf="loc.type === 'RECEIVING'" style="font-size:0.8rem;">{{ 'Can\\'t be retyped' | translate }}</span>
               </td>
               <td>
-                <span class="badge badge-success" *ngIf="loc.active">Active</span>
-                <span class="badge badge-secondary" *ngIf="!loc.active">Inactive</span>
+                <span class="badge badge-success" *ngIf="loc.active">{{ 'Active' | translate }}</span>
+                <span class="badge badge-secondary" *ngIf="!loc.active">{{ 'Inactive' | translate }}</span>
               </td>
               <td class="flex gap-2 align-center">
-                <button class="btn btn-sm btn-outline-secondary" (click)="toggleActive(loc, false)" *ngIf="loc.active && loc.type !== 'RECEIVING'">Deactivate</button>
-                <button class="btn btn-sm btn-outline-secondary" (click)="toggleActive(loc, true)" *ngIf="!loc.active">Activate</button>
-                <span class="text-muted" style="font-size:0.8rem;" *ngIf="loc.active && loc.type === 'RECEIVING'">Can't be deactivated</span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="toggleActive(loc, false)" *ngIf="loc.active && loc.type !== 'RECEIVING'">{{ 'Deactivate' | translate }}</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="toggleActive(loc, true)" *ngIf="!loc.active">{{ 'Activate' | translate }}</button>
+                <span class="text-muted" style="font-size:0.8rem;" *ngIf="loc.active && loc.type === 'RECEIVING'">{{ 'Can\\'t be deactivated' | translate }}</span>
               </td>
             </tr>
             <tr *ngIf="locations.length === 0">
-              <td colspan="4" class="text-muted">Loading...</td>
+              <td colspan="4" class="text-muted">{{ 'Loading...' | translate }}</td>
             </tr>
           </tbody>
         </table>
         <div class="flex gap-2 mt-2" style="align-items:flex-end;">
           <div class="form-group" style="margin-bottom:0; flex:1;">
-            <label class="form-label">New location name</label>
-            <input class="form-control" [(ngModel)]="newLocationName" name="newLocationName" placeholder="e.g. Shelf A" />
+            <label class="form-label">{{ 'New location name' | translate }}</label>
+            <input class="form-control" [(ngModel)]="newLocationName" name="newLocationName" [placeholder]="'e.g. Shelf A' | translate" />
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Type</label>
+            <label class="form-label">{{ 'Type' | translate }}</label>
             <select class="form-control" [(ngModel)]="newLocationType" name="newLocationType">
-              <option value="SALES">Sales</option>
-              <option value="STORAGE">Storage</option>
-              <option value="DAMAGED">Damaged</option>
+              <option value="SALES">{{ 'Sales' | translate }}</option>
+              <option value="STORAGE">{{ 'Storage' | translate }}</option>
+              <option value="DAMAGED">{{ 'Damaged' | translate }}</option>
             </select>
           </div>
-          <button class="btn btn-outline-primary" type="button" (click)="addLocation()">+ Add location</button>
+          <button class="btn btn-outline-primary" type="button" (click)="addLocation()">{{ '+ Add location' | translate }}</button>
         </div>
       </div>
     </app-shell>

@@ -777,6 +777,8 @@ export interface TaxRateOption {
  */
 export interface StoreSettings {
   id: number;
+  /** v1.23.0: "en" or "fr", the business-wide default language. */
+  language?: string;
   businessName: string | null;
   address: string | null;
   phone: string | null;

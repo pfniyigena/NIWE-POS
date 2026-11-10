@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -14,27 +15,27 @@ import { RecurringExpenseTemplate } from '../../core/models';
 @Component({
   selector: 'app-recurring-expense-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Recurring expenses</h3>
+        <h3>{{ 'Recurring expenses' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses">Back to expenses</a>
-          <a class="btn btn-primary" routerLink="/admin/accounting/recurring-expenses/new">+ New template</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses">{{ 'Back to expenses' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/accounting/recurring-expenses/new">{{ '+ New template' | translate }}</a>
         </div>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Payee</th>
-            <th>Amount</th>
-            <th>Frequency</th>
-            <th>Next run</th>
-            <th>Status</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th>{{ 'Payee' | translate }}</th>
+            <th>{{ 'Amount' | translate }}</th>
+            <th>{{ 'Frequency' | translate }}</th>
+            <th>{{ 'Next run' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -47,19 +48,19 @@ import { RecurringExpenseTemplate } from '../../core/models';
             <td>{{ t.frequency }}</td>
             <td>{{ t.nextRunDate }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="t.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!t.active">Paused</span>
+              <span class="badge badge-success" *ngIf="t.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!t.active">{{ 'Paused' | translate }}</span>
             </td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/accounting/recurring-expenses', t.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-primary" (click)="runNow(t)" [disabled]="!t.active">Run now</button>
-              <button class="btn btn-sm btn-outline-secondary" (click)="toggleActive(t)">{{ t.active ? 'Pause' : 'Resume' }}</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/accounting/recurring-expenses', t.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-primary" (click)="runNow(t)" [disabled]="!t.active">{{ 'Run now' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="toggleActive(t)">{{ t.active ? ('Pause' | translate) : ('Resume' | translate) }}</button>
             </td>
           </tr>
         </tbody>
       </table>
       <p class="text-muted" *ngIf="templates.length === 0">
-        No recurring expense templates yet — add one for a bill that repeats on a schedule, like rent or a subscription.
+        {{ 'No recurring expense templates yet — add one for a bill that repeats on a schedule, like rent or a subscription.' | translate }}
       </p>
     </app-shell>
   `,

@@ -38,6 +38,11 @@ public class SystemSettingsRequest {
     @NotBlank(message = "Discount mode is required")
     private String discountMode;
 
+    /** v1.23.0: optional "en" or "fr"; left out (null) by older clients, which keeps the current language. */
+    private String language;
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
     public String getCurrencyCode() { return currencyCode; }
     public void setCurrencyCode(String currencyCode) { this.currencyCode = currencyCode; }
     public String getCurrencySymbol() { return currencySymbol; }

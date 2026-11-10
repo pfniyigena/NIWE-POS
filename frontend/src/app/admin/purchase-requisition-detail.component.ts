@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -40,7 +41,7 @@ interface ConvertRow {
 @Component({
   selector: 'app-purchase-requisition-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -51,40 +52,40 @@ interface ConvertRow {
             <span class="badge" [ngClass]="statusClass(req.status)">{{ req.status.replace('_', ' ') }}</span>
           </div>
           <div class="flex gap-2">
-            <a class="btn btn-outline-primary" *ngIf="req.status === 'DRAFT'" [routerLink]="['/admin/purchase-requisitions', req.id, 'edit']">Edit</a>
-            <button class="btn btn-primary" *ngIf="req.status === 'DRAFT'" (click)="submit()">Submit for approval</button>
-            <button class="btn btn-primary" *ngIf="req.status === 'PENDING_APPROVAL'" (click)="approve()">Approve</button>
-            <button class="btn btn-outline-danger" *ngIf="req.status === 'PENDING_APPROVAL'" (click)="reject()">Reject</button>
-            <button class="btn btn-outline-danger" *ngIf="req.status === 'DRAFT' || req.status === 'PENDING_APPROVAL'" (click)="cancel()">Cancel</button>
-            <a class="btn btn-outline-primary" *ngIf="req.convertedPurchaseOrderId" [routerLink]="['/admin/purchase-orders', req.convertedPurchaseOrderId]">View purchase order</a>
+            <a class="btn btn-outline-primary" *ngIf="req.status === 'DRAFT'" [routerLink]="['/admin/purchase-requisitions', req.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-primary" *ngIf="req.status === 'DRAFT'" (click)="submit()">{{ 'Submit for approval' | translate }}</button>
+            <button class="btn btn-primary" *ngIf="req.status === 'PENDING_APPROVAL'" (click)="approve()">{{ 'Approve' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="req.status === 'PENDING_APPROVAL'" (click)="reject()">{{ 'Reject' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="req.status === 'DRAFT' || req.status === 'PENDING_APPROVAL'" (click)="cancel()">{{ 'Cancel' | translate }}</button>
+            <a class="btn btn-outline-primary" *ngIf="req.convertedPurchaseOrderId" [routerLink]="['/admin/purchase-orders', req.convertedPurchaseOrderId]">{{ 'View purchase order' | translate }}</a>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Requested by</div>
+            <div class="stat-label">{{ 'Requested by' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ req.requestedByFullName || '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Request date</div>
+            <div class="stat-label">{{ 'Request date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ req.requestDate | date: 'medium' }}</div>
           </div>
           <div class="stat-tile" *ngIf="req.approvedByFullName">
-            <div class="stat-label">Approved by</div>
+            <div class="stat-label">{{ 'Approved by' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ req.approvedByFullName }}</div>
           </div>
         </div>
         <p class="text-muted mb-3" *ngIf="req.notes">{{ req.notes }}</p>
-        <p class="text-muted mb-3" *ngIf="req.rejectionReason">Rejected — {{ req.rejectionReason }}</p>
-        <p class="text-muted mb-3" *ngIf="req.convertedPurchaseOrderNumber">Converted into purchase order {{ req.convertedPurchaseOrderNumber }}.</p>
+        <p class="text-muted mb-3" *ngIf="req.rejectionReason">{{ 'Rejected — {p0}' | translate: { p0: (req.rejectionReason) } }}</p>
+        <p class="text-muted mb-3" *ngIf="req.convertedPurchaseOrderNumber">{{ 'Converted into purchase order {p0}.' | translate: { p0: (req.convertedPurchaseOrderNumber) } }}</p>
 
-        <h4 class="mb-2">Lines</h4>
+        <h4 class="mb-2">{{ 'Lines' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Quantity requested</th>
-              <th>Note</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Quantity requested' | translate }}</th>
+              <th>{{ 'Note' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -97,23 +98,23 @@ interface ConvertRow {
         </table>
 
         <ng-container *ngIf="req.status === 'APPROVED'">
-          <h4 class="mb-2">Convert to purchase order</h4>
+          <h4 class="mb-2">{{ 'Convert to purchase order' | translate }}</h4>
           <div class="alert alert-danger" *ngIf="convertError">{{ convertError }}</div>
           <div class="flex gap-2 mb-2">
             <div class="grow">
-              <label class="form-label">Supplier</label>
+              <label class="form-label">{{ 'Supplier' | translate }}</label>
               <div class="flex gap-2">
                 <select class="form-select" name="supplierId" [(ngModel)]="supplierId" [disabled]="showNewSupplier">
-                  <option [ngValue]="null" disabled>Select a supplier…</option>
+                  <option [ngValue]="null" disabled>{{ 'Select a supplier…' | translate }}</option>
                   <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
                 </select>
                 <button type="button" class="btn btn-outline-secondary" style="white-space:nowrap;" *ngIf="!showNewSupplier" (click)="openNewSupplier()">
-                  + New supplier
+                  {{ '+ New supplier' | translate }}
                 </button>
               </div>
             </div>
             <div class="grow">
-              <label class="form-label">Expected date (optional)</label>
+              <label class="form-label">{{ 'Expected date (optional)' | translate }}</label>
               <app-date-picker name="expectedDate" [(ngModel)]="expectedDate" ></app-date-picker>
             </div>
           </div>
@@ -122,43 +123,43 @@ interface ConvertRow {
             <div class="alert alert-danger" *ngIf="newSupplierError">{{ newSupplierError }}</div>
             <div class="flex gap-2 mb-2">
               <div class="grow">
-                <label class="form-label">Name</label>
-                <input class="form-control" name="newSupplierName" [(ngModel)]="newSupplierName" placeholder="Supplier name" />
+                <label class="form-label">{{ 'Name' | translate }}</label>
+                <input class="form-control" name="newSupplierName" [(ngModel)]="newSupplierName" [placeholder]="'Supplier name' | translate" />
               </div>
               <div class="grow">
-                <label class="form-label">Contact person</label>
+                <label class="form-label">{{ 'Contact person' | translate }}</label>
                 <input class="form-control" name="newSupplierContact" [(ngModel)]="newSupplierContact" />
               </div>
             </div>
             <div class="flex gap-2 mb-2">
               <div class="grow">
-                <label class="form-label">Phone</label>
+                <label class="form-label">{{ 'Phone' | translate }}</label>
                 <input class="form-control" name="newSupplierPhone" [(ngModel)]="newSupplierPhone" />
               </div>
               <div class="grow">
-                <label class="form-label">Email</label>
+                <label class="form-label">{{ 'Email' | translate }}</label>
                 <input class="form-control" type="email" name="newSupplierEmail" [(ngModel)]="newSupplierEmail" />
               </div>
             </div>
             <div class="flex gap-2 mb-2">
               <div class="grow">
-                <label class="form-label">Tax ID</label>
+                <label class="form-label">{{ 'Tax ID' | translate }}</label>
                 <input class="form-control" name="newSupplierTaxId" [(ngModel)]="newSupplierTaxId" />
               </div>
               <div class="grow"></div>
             </div>
             <div class="flex gap-2">
-              <button type="button" class="btn btn-primary btn-sm" (click)="saveNewSupplier()">Save supplier</button>
-              <button type="button" class="btn btn-link btn-sm" (click)="cancelNewSupplier()">Cancel</button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="saveNewSupplier()">{{ 'Save supplier' | translate }}</button>
+              <button type="button" class="btn btn-link btn-sm" (click)="cancelNewSupplier()">{{ 'Cancel' | translate }}</button>
             </div>
           </div>
 
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Product</th>
-                <th class="text-end">Quantity</th>
-                <th class="text-end">Unit cost</th>
+                <th>{{ 'Product' | translate }}</th>
+                <th class="text-end">{{ 'Quantity' | translate }}</th>
+                <th class="text-end">{{ 'Unit cost' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -179,7 +180,7 @@ interface ConvertRow {
               </tr>
             </tbody>
           </table>
-          <button class="btn btn-primary" (click)="convert()">Create purchase order</button>
+          <button class="btn btn-primary" (click)="convert()">{{ 'Create purchase order' | translate }}</button>
         </ng-container>
       </ng-container>
     </app-shell>

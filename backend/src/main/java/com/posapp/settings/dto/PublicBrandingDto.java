@@ -9,8 +9,8 @@ import com.posapp.settings.StoreSettings;
  * carries SMTP host/username/notification-email and other back-office configuration that has no
  * business being reachable without a login.
  */
-public record PublicBrandingDto(String businessName, String logoDataUrl) {
+public record PublicBrandingDto(String businessName, String logoDataUrl, String language) {
     public static PublicBrandingDto from(StoreSettings s) {
-        return new PublicBrandingDto(s.getBusinessName(), s.getLogoDataUrl());
+        return new PublicBrandingDto(s.getBusinessName(), s.getLogoDataUrl(), s.getLanguage() == null ? "en" : s.getLanguage());
     }
 }

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -36,7 +37,7 @@ interface StockMovementRow {
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -44,9 +45,9 @@ interface StockMovementRow {
       <div class="flex justify-between align-center mb-3" *ngIf="product as p">
         <h3 style="margin-bottom:0;">{{ p.name }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" [routerLink]="['/admin/products', p.id, 'edit']">Edit</a>
-          <a class="btn btn-outline-primary" *ngIf="!p.variantParentId" [routerLink]="['/admin/products', p.id, 'variants']">Variants</a>
-          <a class="btn btn-link" routerLink="/admin/products">Back to products</a>
+          <a class="btn btn-outline-primary" [routerLink]="['/admin/products', p.id, 'edit']">{{ 'Edit' | translate }}</a>
+          <a class="btn btn-outline-primary" *ngIf="!p.variantParentId" [routerLink]="['/admin/products', p.id, 'variants']">{{ 'Variants' | translate }}</a>
+          <a class="btn btn-link" routerLink="/admin/products">{{ 'Back to products' | translate }}</a>
         </div>
       </div>
 
@@ -54,30 +55,30 @@ interface StockMovementRow {
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-start;">
           <img *ngIf="p.iconDataUrl" [src]="p.iconDataUrl" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:6px;" />
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div><strong>SKU:</strong> {{ p.sku || '—' }}</div>
-            <div><strong>Barcode:</strong> {{ p.barcode || '—' }}</div>
-            <div *ngIf="p.variantParentId"><strong>Variant of:</strong> <a [routerLink]="['/admin/products', p.variantParentId]">template</a> ({{ p.variantLabel }})</div>
-            <div *ngIf="p.variantAttributes"><strong>Variant options:</strong> {{ p.variantAttributes }}</div>
-            <div><strong>Code:</strong> {{ p.code || '—' }}</div>
+            <div><strong>{{ 'SKU:' | translate }}</strong> {{ p.sku || '—' }}</div>
+            <div><strong>{{ 'Barcode:' | translate }}</strong> {{ p.barcode || '—' }}</div>
+            <div *ngIf="p.variantParentId"><strong>{{ 'Variant of:' | translate }}</strong> <a [routerLink]="['/admin/products', p.variantParentId]">{{ 'template' | translate }}</a> ({{ p.variantLabel }})</div>
+            <div *ngIf="p.variantAttributes"><strong>{{ 'Variant options:' | translate }}</strong> {{ p.variantAttributes }}</div>
+            <div><strong>{{ 'Code:' | translate }}</strong> {{ p.code || '—' }}</div>
             <div>
-              <strong>Category:</strong>
+              <strong>{{ 'Category:' | translate }}</strong>
               <span class="color-swatch" *ngIf="p.categoryColor" [style.background]="p.categoryColor"></span>
               {{ p.categoryName || '—' }}
             </div>
-            <div><strong>Brand:</strong> {{ p.brandName || '—' }}</div>
+            <div><strong>{{ 'Brand:' | translate }}</strong> {{ p.brandName || '—' }}</div>
             <div>
-              <strong>Tax:</strong>
-              <span *ngIf="p.taxRateName">{{ p.taxRateName }} ({{ p.taxRatePercent | number: '1.0-2' }}%<ng-container *ngIf="p.taxRateInclusive">, incl.</ng-container>)</span>
-              <span *ngIf="!p.taxRateName">— exempt —</span>
+              <strong>{{ 'Tax:' | translate }}</strong>
+              <span *ngIf="p.taxRateName">{{ p.taxRateName }} ({{ p.taxRatePercent | number: '1.0-2' }}%<ng-container *ngIf="p.taxRateInclusive">{{ ', incl.' | translate }}</ng-container>)</span>
+              <span *ngIf="!p.taxRateName">{{ '— exempt —' | translate }}</span>
             </div>
-            <div><strong>Price:</strong> {{ p.unitPrice | number: '1.2-2' }}</div>
-            <div><strong>Cost:</strong> {{ p.costPrice | number: '1.2-2' }}</div>
+            <div><strong>{{ 'Price:' | translate }}</strong> {{ p.unitPrice | number: '1.2-2' }}</div>
+            <div><strong>{{ 'Cost:' | translate }}</strong> {{ p.costPrice | number: '1.2-2' }}</div>
             <div>
-              <strong>Current stock:</strong>
+              <strong>{{ 'Current stock:' | translate }}</strong>
               <span *ngIf="p.trackStock">{{ p.stockQuantity }}</span>
-              <span class="text-muted" *ngIf="!p.trackStock" title="Always sellable — stock isn't tracked for this product">Not tracked</span>
+              <span class="text-muted" *ngIf="!p.trackStock" [title]="'Always sellable — stock isn\\'t tracked for this product' | translate">{{ 'Not tracked' | translate }}</span>
             </div>
-            <div><strong>Status:</strong> <span class="badge badge-success" *ngIf="p.active">Active</span><span class="badge badge-secondary" *ngIf="!p.active">Inactive</span></div>
+            <div><strong>{{ 'Status:' | translate }}</strong> <span class="badge badge-success" *ngIf="p.active">{{ 'Active' | translate }}</span><span class="badge badge-secondary" *ngIf="!p.active">{{ 'Inactive' | translate }}</span></div>
           </div>
         </div>
         <div class="text-muted mt-2" *ngIf="p.description">{{ p.description }}</div>
@@ -86,31 +87,31 @@ interface StockMovementRow {
       <!-- Multi-warehouse phase 1: where this product's stock actually sits. Read-only — to move it, use Admin > Stock transfers. -->
       <div class="card mb-3" style="padding:1rem;" *ngIf="stock as st">
         <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap;">
-          <h4 style="margin-bottom:0;">Stock by location</h4>
+          <h4 style="margin-bottom:0;">{{ 'Stock by location' | translate }}</h4>
           <div class="text-muted" style="font-size:0.85rem;">
-            Sellable: <strong>{{ st.sellableTotal }}</strong> &middot; Total on hand: <strong>{{ st.onHandTotal }}</strong>
+            {{ 'Sellable:' | translate }} <strong>{{ st.sellableTotal }}</strong> &middot; Total on hand: <strong>{{ st.onHandTotal }}</strong>
           </div>
         </div>
         <table>
           <thead>
             <tr>
-              <th>Warehouse</th>
-              <th>Location</th>
-              <th>Type</th>
-              <th class="text-end">Quantity</th>
-              <th>Counts as sellable?</th>
+              <th>{{ 'Warehouse' | translate }}</th>
+              <th>{{ 'Location' | translate }}</th>
+              <th>{{ 'Type' | translate }}</th>
+              <th class="text-end">{{ 'Quantity' | translate }}</th>
+              <th>{{ 'Counts as sellable?' | translate }}</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of st.locations">
               <td>{{ row.warehouseName }}</td>
-              <td>{{ row.locationName }} <span class="badge badge-secondary" *ngIf="!row.active">Inactive</span></td>
+              <td>{{ row.locationName }} <span class="badge badge-secondary" *ngIf="!row.active">{{ 'Inactive' | translate }}</span></td>
               <td>{{ row.type || '—' }}</td>
               <td class="text-end">{{ row.quantity }}</td>
-              <td>{{ row.sellable ? 'Yes' : 'No' }}</td>
+              <td>{{ row.sellable ? ('Yes' | translate) : ('No' | translate) }}</td>
             </tr>
             <tr *ngIf="st.locations.length === 0">
-              <td colspan="5" class="text-muted">No locations yet.</td>
+              <td colspan="5" class="text-muted">{{ 'No locations yet.' | translate }}</td>
             </tr>
           </tbody>
         </table>
@@ -118,16 +119,16 @@ interface StockMovementRow {
 
       <!-- Batch / serial tracking: what the stock is made of. Untracked stock (opening balances, returns) is not listed here. -->
       <div class="card mb-3" style="padding:1rem;" *ngIf="product?.trackingMode === 'BATCH'">
-        <h4 class="mb-2">Batches</h4>
+        <h4 class="mb-2">{{ 'Batches' | translate }}</h4>
         <table>
           <thead>
             <tr>
-              <th>Batch</th>
-              <th>Expiry</th>
-              <th class="text-end">Days left</th>
-              <th>Where</th>
-              <th class="text-end">Qty</th>
-              <th>Source</th>
+              <th>{{ 'Batch' | translate }}</th>
+              <th>{{ 'Expiry' | translate }}</th>
+              <th class="text-end">{{ 'Days left' | translate }}</th>
+              <th>{{ 'Where' | translate }}</th>
+              <th class="text-end">{{ 'Qty' | translate }}</th>
+              <th>{{ 'Source' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -140,22 +141,22 @@ interface StockMovementRow {
               <td>{{ b.source || '—' }}</td>
             </tr>
             <tr *ngIf="batches.length === 0">
-              <td colspan="6" class="text-muted">No batches recorded yet — enter a batch when receiving a purchase order or adding stock by adjustment.</td>
+              <td colspan="6" class="text-muted">{{ 'No batches recorded yet — enter a batch when receiving a purchase order or adding stock by adjustment.' | translate }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="product?.trackingMode === 'SERIAL'">
-        <h4 class="mb-2">Serial numbers</h4>
+        <h4 class="mb-2">{{ 'Serial numbers' | translate }}</h4>
         <table>
           <thead>
             <tr>
-              <th>Serial</th>
-              <th>Status</th>
-              <th>Where</th>
-              <th>Received</th>
-              <th>Left stock</th>
+              <th>{{ 'Serial' | translate }}</th>
+              <th>{{ 'Status' | translate }}</th>
+              <th>{{ 'Where' | translate }}</th>
+              <th>{{ 'Received' | translate }}</th>
+              <th>{{ 'Left stock' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -167,14 +168,14 @@ interface StockMovementRow {
               <td>{{ s.soldAt ? ((s.soldAt | date: 'yyyy-MM-dd') + (s.soldRef ? ' · ' + s.soldRef : '')) : '—' }}</td>
             </tr>
             <tr *ngIf="serials.length === 0">
-              <td colspan="5" class="text-muted">No serial numbers recorded yet.</td>
+              <td colspan="5" class="text-muted">{{ 'No serial numbers recorded yet.' | translate }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="flex justify-between align-center mb-2">
-        <h4 style="margin-bottom:0;">Stock movement</h4>
+        <h4 style="margin-bottom:0;">{{ 'Stock movement' | translate }}</h4>
         <a
           class="btn btn-sm btn-outline-secondary"
           *ngIf="product"
@@ -188,28 +189,28 @@ interface StockMovementRow {
       <div class="card mb-3" style="padding:1rem;">
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" style="margin:0;">
-            <label class="form-label">From</label>
+            <label class="form-label">{{ 'From' | translate }}</label>
             <app-date-picker [(ngModel)]="filter.from"></app-date-picker>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label">To</label>
+            <label class="form-label">{{ 'To' | translate }}</label>
             <app-date-picker [(ngModel)]="filter.to"></app-date-picker>
           </div>
           <button class="btn btn-primary" (click)="loadMovements()" [disabled]="loadingMovements">
-            {{ loadingMovements ? 'Loading…' : 'Refresh' }}
+            {{ loadingMovements ? ('Loading…' | translate) : ('Refresh' | translate) }}
           </button>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th class="text-end">Qty change</th>
-              <th class="text-end">Before</th>
-              <th class="text-end">After</th>
-              <th>Reference</th>
-              <th>Note</th>
+              <th>{{ 'Date' | translate }}</th>
+              <th>{{ 'Type' | translate }}</th>
+              <th class="text-end">{{ 'Qty change' | translate }}</th>
+              <th class="text-end">{{ 'Before' | translate }}</th>
+              <th class="text-end">{{ 'After' | translate }}</th>
+              <th>{{ 'Reference' | translate }}</th>
+              <th>{{ 'Note' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -229,10 +230,10 @@ interface StockMovementRow {
               <td class="text-muted">{{ m.note || '—' }}</td>
             </tr>
             <tr *ngIf="!loadingMovements && movements.length === 0">
-              <td colspan="7" class="text-muted">No stock movement for this product in this date range.</td>
+              <td colspan="7" class="text-muted">{{ 'No stock movement for this product in this date range.' | translate }}</td>
             </tr>
             <tr *ngIf="loadingMovements">
-              <td colspan="7" class="text-muted">Loading…</td>
+              <td colspan="7" class="text-muted">{{ 'Loading…' | translate }}</td>
             </tr>
           </tbody>
         </table>

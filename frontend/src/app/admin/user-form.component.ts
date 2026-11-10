@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -18,42 +19,42 @@ interface PermissionOption {
 @Component({
   selector: 'app-user-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit staff account' : 'New staff account' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit staff account' | translate) : ('New staff account' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group" *ngIf="!id">
-          <label class="form-label">Username</label>
+          <label class="form-label">{{ 'Username' | translate }}</label>
           <input class="form-control" name="username" [(ngModel)]="username" required />
         </div>
         <div class="form-group" *ngIf="!id">
-          <label class="form-label">Password</label>
+          <label class="form-label">{{ 'Password' | translate }}</label>
           <input class="form-control" type="password" name="password" [(ngModel)]="password" required minlength="6" />
         </div>
         <div class="form-group">
-          <label class="form-label">Full name</label>
+          <label class="form-label">{{ 'Full name' | translate }}</label>
           <input class="form-control" name="fullName" [(ngModel)]="fullName" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">{{ 'Email' | translate }}</label>
           <input class="form-control" type="email" name="email" [(ngModel)]="email" autocomplete="email" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Optional — needed only so this staff member can use "Forgot password?" on the login screen.
+            {{ 'Optional — needed only so this staff member can use "Forgot password?" on the login screen.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Role</label>
+          <label class="form-label">{{ 'Role' | translate }}</label>
           <select class="form-select" name="role" [(ngModel)]="role">
-            <option value="CASHIER">Cashier</option>
-            <option value="ADMIN">Admin</option>
+            <option value="CASHIER">{{ 'Cashier' | translate }}</option>
+            <option value="ADMIN">{{ 'Admin' | translate }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="role === 'CASHIER'">
-          <label class="form-label">Custom role</label>
+          <label class="form-label">{{ 'Custom role' | translate }}</label>
           <select class="form-select" name="customRoleId" [(ngModel)]="customRoleId">
-            <option [ngValue]="null">None — plain cashier</option>
+            <option [ngValue]="null">{{ 'None — plain cashier' | translate }}</option>
             <option *ngFor="let r of customRoles" [ngValue]="r.id">{{ r.name }}{{ r.active ? '' : ' (inactive)' }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
@@ -63,14 +64,13 @@ interface PermissionOption {
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
         </div>
         <div class="form-group">
-          <label class="form-label">Extra permissions</label>
+          <label class="form-label">{{ 'Extra permissions' | translate }}</label>
           <div class="text-muted mb-2" style="font-size:0.8rem;">
-            An Admin already has every power below — these let a Cashier be granted specific
-            ADMIN-tier actions individually, without making their whole account an Admin.
+            {{ 'An Admin already has every power below — these let a Cashier be granted specific ADMIN-tier actions individually, without making their whole account an Admin.' | translate }}
           </div>
           <div *ngFor="let opt of permissionOptions" class="form-group" style="margin-bottom:0.5rem;">
             <label class="form-label" style="font-weight:normal;">
@@ -81,10 +81,9 @@ interface PermissionOption {
           </div>
         </div>
         <div class="form-group" *ngIf="branches.length > 1 && role === 'CASHIER'">
-          <label class="form-label">Branch access</label>
+          <label class="form-label">{{ 'Branch access' | translate }}</label>
           <div class="text-muted mb-2" style="font-size:0.8rem;">
-            Limit this account to specific branches — it will only see and work those branches' tills, sales and approvals.
-            Leave all unticked for access to every branch. Admins are never limited.
+            {{ 'Limit this account to specific branches — it will only see and work those branches\\' tills, sales and approvals. Leave all unticked for access to every branch. Admins are never limited.' | translate }}
           </div>
           <div *ngFor="let b of branches" style="margin-bottom:0.25rem;">
             <label class="form-label" style="font-weight:normal;">
@@ -94,8 +93,8 @@ interface PermissionOption {
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/staff">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/staff">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../shared/date-picker.component';
@@ -15,52 +16,52 @@ import { AuditLogEntry } from '../core/models';
 @Component({
   selector: 'app-audit-log-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Audit Log</h3>
+        <h3>{{ 'Audit Log' | translate }}</h3>
       </div>
 
       <div class="flex gap-2 mb-3" style="align-items:center; flex-wrap:wrap;">
         <input
           class="form-control"
           style="max-width:280px;"
-          placeholder="Search by user or description"
+          [placeholder]="'Search by user or description' | translate"
           [(ngModel)]="searchTerm"
           (input)="onFilterChange()"
         />
         <select class="form-select" style="max-width:220px;" [(ngModel)]="actionFilter" (ngModelChange)="onFilterChange()">
-          <option [ngValue]="null">All actions</option>
+          <option [ngValue]="null">{{ 'All actions' | translate }}</option>
           <option *ngFor="let a of actions" [ngValue]="a">{{ a }}</option>
         </select>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" style="font-size:0.75rem;">From</label>
+          <label class="form-label" style="font-size:0.75rem;">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="fromDate" (ngModelChange)="onFilterChange()" ></app-date-picker>
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" style="font-size:0.75rem;">To</label>
+          <label class="form-label" style="font-size:0.75rem;">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="toDate" (ngModelChange)="onFilterChange()" ></app-date-picker>
         </div>
         <select class="form-select" style="max-width:140px;" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
-          <option [ngValue]="25">25 / page</option>
-          <option [ngValue]="50">50 / page</option>
-          <option [ngValue]="100">100 / page</option>
-          <option [ngValue]="200">200 / page</option>
+          <option [ngValue]="25">{{ '25 / page' | translate }}</option>
+          <option [ngValue]="50">{{ '50 / page' | translate }}</option>
+          <option [ngValue]="100">{{ '100 / page' | translate }}</option>
+          <option [ngValue]="200">{{ '200 / page' | translate }}</option>
         </select>
         <span class="text-muted" style="font-size:0.85rem;" *ngIf="!loading">
-          {{ totalElements | number }} entr{{ totalElements === 1 ? 'y' : 'ies' }}
+          {{ '{p0} entr{p1}' | translate: { p0: (totalElements | number), p1: (totalElements === 1 ? 'y' : 'ies') } }}
         </span>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>When</th>
-            <th>Who</th>
-            <th>Action</th>
-            <th>What happened</th>
+            <th>{{ 'When' | translate }}</th>
+            <th>{{ 'Who' | translate }}</th>
+            <th>{{ 'Action' | translate }}</th>
+            <th>{{ 'What happened' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -71,17 +72,17 @@ import { AuditLogEntry } from '../core/models';
             <td>{{ e.description }}</td>
           </tr>
           <tr *ngIf="!loading && entries.length === 0">
-            <td colspan="4" class="text-muted">No audit log entries {{ hasFilters() ? 'match your filters' : 'yet' }}.</td>
+            <td colspan="4" class="text-muted">{{ 'No audit log entries {p0}.' | translate: { p0: (hasFilters() ? 'match your filters' : 'yet') } }}</td>
           </tr>
           <tr *ngIf="loading">
-            <td colspan="4" class="text-muted">Loading…</td>
+            <td colspan="4" class="text-muted">{{ 'Loading…' | translate }}</td>
           </tr>
         </tbody>
       </table>
 
       <div class="flex gap-2 mt-3" style="align-items:center;" *ngIf="totalPages > 1">
         <button class="btn btn-sm btn-outline-secondary" [disabled]="page === 0" (click)="goToPage(page - 1)">&laquo; Prev</button>
-        <span class="text-muted" style="font-size:0.85rem;">Page {{ page + 1 }} of {{ totalPages }}</span>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Page {p0} of {p1}' | translate: { p0: (page + 1), p1: (totalPages) } }}</span>
         <button class="btn btn-sm btn-outline-secondary" [disabled]="page >= totalPages - 1" (click)="goToPage(page + 1)">Next &raquo;</button>
       </div>
     </app-shell>

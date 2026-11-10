@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -18,38 +19,38 @@ import { branchNameOf } from '../core/branch-util';
 @Component({
   selector: 'app-recurring-invoice-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Recurring invoice{{ template ? ' — ' + template.name : '' }}</h3>
+        <h3>{{ 'Recurring invoice{p0}' | translate: { p0: (template ? ' — ' + template.name : '') } }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" *ngIf="template" [routerLink]="['/admin/recurring-invoices', template.id, 'edit']">Edit</a>
-          <a class="btn btn-link" routerLink="/admin/recurring-invoices">Back to recurring invoices</a>
+          <a class="btn btn-outline-primary" *ngIf="template" [routerLink]="['/admin/recurring-invoices', template.id, 'edit']">{{ 'Edit' | translate }}</a>
+          <a class="btn btn-link" routerLink="/admin/recurring-invoices">{{ 'Back to recurring invoices' | translate }}</a>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="template as t">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div><strong>Customer:</strong> {{ t.customerName }}</div>
-          <div *ngIf="branches.length > 1"><strong>Branch:</strong> {{ branchName(t.branchId) }}</div>
-          <div><strong>Frequency:</strong> {{ t.frequency }}</div>
-          <div><strong>Est. amount / cycle:</strong> {{ t.estimatedAmount | number: '1.2-2' }}</div>
-          <div><strong>Status:</strong> <span class="badge" [ngClass]="t.active ? 'badge-success' : 'badge-secondary'">{{ t.active ? 'Active' : 'Paused' }}</span></div>
-          <div><strong>Next run:</strong> {{ t.nextRunDate }}</div>
-          <div *ngIf="t.dueInDays"><strong>Due in:</strong> {{ t.dueInDays }} days</div>
-          <div *ngIf="t.lastRunAt"><strong>Last run:</strong> {{ t.lastRunAt | date: 'medium' }}</div>
+          <div><strong>{{ 'Customer:' | translate }}</strong> {{ t.customerName }}</div>
+          <div *ngIf="branches.length > 1"><strong>{{ 'Branch:' | translate }}</strong> {{ branchName(t.branchId) }}</div>
+          <div><strong>{{ 'Frequency:' | translate }}</strong> {{ t.frequency }}</div>
+          <div><strong>{{ 'Est. amount / cycle:' | translate }}</strong> {{ t.estimatedAmount | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Status:' | translate }}</strong> <span class="badge" [ngClass]="t.active ? 'badge-success' : 'badge-secondary'">{{ t.active ? ('Active' | translate) : ('Paused' | translate) }}</span></div>
+          <div><strong>{{ 'Next run:' | translate }}</strong> {{ t.nextRunDate }}</div>
+          <div *ngIf="t.dueInDays"><strong>{{ 'Due in:' | translate }}</strong> {{ '{p0} days' | translate: { p0: (t.dueInDays) } }}</div>
+          <div *ngIf="t.lastRunAt"><strong>{{ 'Last run:' | translate }}</strong> {{ t.lastRunAt | date: 'medium' }}</div>
         </div>
         <div class="text-muted mt-2" *ngIf="t.notes">{{ t.notes }}</div>
 
         <table class="table-sm mt-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Quantity</th>
-              <th class="text-end">Unit price</th>
-              <th class="text-end" *ngIf="hasLineDiscount(t)">Discount %</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Quantity' | translate }}</th>
+              <th class="text-end">{{ 'Unit price' | translate }}</th>
+              <th class="text-end" *ngIf="hasLineDiscount(t)">{{ 'Discount %' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -63,20 +64,20 @@ import { branchNameOf } from '../core/branch-util';
         </table>
 
         <div class="flex gap-2 mt-3">
-          <button class="btn btn-outline-primary" (click)="runNow()" [disabled]="!t.active || busy">{{ busy ? 'Running…' : 'Run now' }}</button>
-          <button class="btn btn-outline-secondary" (click)="pause()" *ngIf="t.active" [disabled]="busy">Pause</button>
-          <button class="btn btn-outline-secondary" (click)="resume()" *ngIf="!t.active" [disabled]="busy">Resume</button>
+          <button class="btn btn-outline-primary" (click)="runNow()" [disabled]="!t.active || busy">{{ busy ? ('Running…' | translate) : ('Run now' | translate) }}</button>
+          <button class="btn btn-outline-secondary" (click)="pause()" *ngIf="t.active" [disabled]="busy">{{ 'Pause' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="resume()" *ngIf="!t.active" [disabled]="busy">{{ 'Resume' | translate }}</button>
         </div>
       </div>
 
-      <h4 class="mt-3 mb-2">Generated invoices</h4>
+      <h4 class="mt-3 mb-2">{{ 'Generated invoices' | translate }}</h4>
       <table>
         <thead>
           <tr>
-            <th>Invoice #</th>
-            <th>Generated on</th>
-            <th>Status</th>
-            <th class="text-end">Total</th>
+            <th>{{ 'Invoice #' | translate }}</th>
+            <th>{{ 'Generated on' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -87,11 +88,11 @@ import { branchNameOf } from '../core/branch-util';
             <td><span class="badge" [ngClass]="inv.status === 'ISSUED' ? 'badge-success' : 'badge-secondary'">{{ inv.status }}</span></td>
             <td class="text-end">{{ inv.totalAmount | number: '1.2-2' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="history.length === 0">
-            <td colspan="5" class="text-muted">No invoices generated for this template yet.</td>
+            <td colspan="5" class="text-muted">{{ 'No invoices generated for this template yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

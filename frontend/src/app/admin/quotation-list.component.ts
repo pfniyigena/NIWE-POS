@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,26 +16,26 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 @Component({
   selector: 'app-quotation-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Quotations</h3>
-        <a class="btn btn-primary" routerLink="/admin/quotations/new">+ New quotation</a>
+        <h3>{{ 'Quotations' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/quotations/new">{{ '+ New quotation' | translate }}</a>
       </div>
-      <app-list-filter exportKind="quotations" placeholder="Search quote no., customer…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportKind="quotations" [placeholder]="'Search quote no., customer…' | translate" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Quote #</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Valid until</th>
-            <th>Status</th>
-            <th *ngIf="branches.length > 1">Branch</th>
-            <th class="text-end">Lines</th>
-            <th class="text-end">Total</th>
+            <th>{{ 'Quote #' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Valid until' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th>
+            <th class="text-end">{{ 'Lines' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -49,11 +50,11 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
             <td class="text-end">{{ q.lines.length }}</td>
             <td class="text-end">{{ q.totalAmount | number: '1.2-2' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/quotations', q.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/quotations', q.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="8" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No quotations yet.</ng-template></td>
+            <td colspan="8" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ 'No quotations yet.' | translate }}</ng-template></td>
           </tr>
         </tbody>
       </table>

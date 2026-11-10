@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CustomerApiService } from '../core/api/customer-api.service';
@@ -12,25 +13,25 @@ import { Customer } from '../core/models';
 @Component({
   selector: 'app-quick-customer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div style="margin-top:0.3rem;">
-      <button type="button" class="btn btn-link btn-sm" style="padding:0;" *ngIf="!open" (click)="open = true">+ New customer</button>
+      <button type="button" class="btn btn-link btn-sm" style="padding:0;" *ngIf="!open" (click)="open = true">{{ '+ New customer' | translate }}</button>
       <div class="card" style="padding:0.9rem; margin-top:0.4rem;" *ngIf="open">
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
-          <div style="flex:2; min-width:12rem;"><label class="form-label">Name</label>
-            <input class="form-control" [ngModelOptions]="{ standalone: true }" [(ngModel)]="name" placeholder="Customer name" (keydown.enter)="$event.preventDefault(); save()" /></div>
-          <div style="flex:1; min-width:9rem;"><label class="form-label">Phone</label>
+          <div style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Name' | translate }}</label>
+            <input class="form-control" [ngModelOptions]="{ standalone: true }" [(ngModel)]="name" [placeholder]="'Customer name' | translate" (keydown.enter)="$event.preventDefault(); save()" /></div>
+          <div style="flex:1; min-width:9rem;"><label class="form-label">{{ 'Phone' | translate }}</label>
             <input class="form-control" [ngModelOptions]="{ standalone: true }" [(ngModel)]="phone" (keydown.enter)="$event.preventDefault(); save()" /></div>
-          <div style="flex:1; min-width:9rem;"><label class="form-label">Email</label>
+          <div style="flex:1; min-width:9rem;"><label class="form-label">{{ 'Email' | translate }}</label>
             <input class="form-control" type="email" [ngModelOptions]="{ standalone: true }" [(ngModel)]="email" (keydown.enter)="$event.preventDefault(); save()" /></div>
-          <div style="flex:1; min-width:8rem;"><label class="form-label">Tax ID</label>
+          <div style="flex:1; min-width:8rem;"><label class="form-label">{{ 'Tax ID' | translate }}</label>
             <input class="form-control" [ngModelOptions]="{ standalone: true }" [(ngModel)]="taxId" (keydown.enter)="$event.preventDefault(); save()" /></div>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving">{{ saving ? 'Saving…' : 'Save customer' }}</button>
-          <button type="button" class="btn btn-link btn-sm" (click)="cancel()">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving">{{ saving ? ('Saving…' | translate) : ('Save customer' | translate) }}</button>
+          <button type="button" class="btn btn-link btn-sm" (click)="cancel()">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
     </div>

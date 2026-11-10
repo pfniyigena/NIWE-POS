@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -27,12 +28,12 @@ import { Product, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-product-labels',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="page">
       <div class="no-print toolbar">
-        <button (click)="print()" [disabled]="products.length === 0">Print</button>
-        <a routerLink="/admin/products">Back to products</a>
+        <button (click)="print()" [disabled]="products.length === 0">{{ 'Print' | translate }}</button>
+        <a routerLink="/admin/products">{{ 'Back to products' | translate }}</a>
       </div>
       <div class="alert" *ngIf="error">{{ error }}</div>
 
@@ -46,11 +47,11 @@ import { Product, StoreSettings } from '../core/models';
           </ng-container>
           <div class="no-barcode no-print" *ngIf="!p.barcode">
             <button [disabled]="generatingFor === p.id" (click)="generateBarcode(p)">
-              {{ generatingFor === p.id ? 'Generating…' : 'Generate barcode' }}
+              {{ generatingFor === p.id ? ('Generating…' | translate) : ('Generate barcode' | translate) }}
             </button>
           </div>
         </div>
-        <p class="text-muted" *ngIf="!loading && products.length === 0">No products to print — nothing matched the selection.</p>
+        <p class="text-muted" *ngIf="!loading && products.length === 0">{{ 'No products to print — nothing matched the selection.' | translate }}</p>
       </div>
     </div>
   `,

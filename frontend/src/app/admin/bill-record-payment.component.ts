@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -26,64 +27,64 @@ import { Bill, SupplierPayment, PaymentMethodOption } from '../core/models';
 @Component({
   selector: 'app-bill-record-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>Record payment{{ bill ? ' — ' + bill.billNumber : '' }}</h3>
-        <a class="btn btn-link" *ngIf="bill" [routerLink]="['/admin/bills', bill.id]">Back to bill</a>
+        <h3>{{ 'Record payment{p0}' | translate: { p0: (bill ? ' — ' + bill.billNumber : '') } }}</h3>
+        <a class="btn btn-link" *ngIf="bill" [routerLink]="['/admin/bills', bill.id]">{{ 'Back to bill' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="bill as b">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div><strong>Supplier:</strong> {{ b.supplierName }}</div>
-          <div><strong>Bill total:</strong> {{ b.totalAmount | number: '1.2-2' }}</div>
-          <div><strong>Paid so far:</strong> {{ b.amountPaid | number: '1.2-2' }}</div>
-          <div><strong>Outstanding:</strong> {{ b.amountOutstanding | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Supplier:' | translate }}</strong> {{ b.supplierName }}</div>
+          <div><strong>{{ 'Bill total:' | translate }}</strong> {{ b.totalAmount | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Paid so far:' | translate }}</strong> {{ b.amountPaid | number: '1.2-2' }}</div>
+          <div><strong>{{ 'Outstanding:' | translate }}</strong> {{ b.amountOutstanding | number: '1.2-2' }}</div>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem; max-width:420px;" *ngIf="bill && !receipt && bill.amountOutstanding > 0">
         <div class="form-group">
-          <label class="form-label">Payment amount</label>
+          <label class="form-label">{{ 'Payment amount' | translate }}</label>
           <input class="form-control" type="number" min="0.01" [max]="bill.amountOutstanding" step="0.01" [(ngModel)]="amount" />
-          <div class="text-muted" style="font-size:0.8rem;">Up to the outstanding amount — {{ bill.amountOutstanding | number: '1.2-2' }}.</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Up to the outstanding amount — {p0}.' | translate: { p0: (bill.amountOutstanding | number: '1.2-2') } }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Payment method</label>
+          <label class="form-label">{{ 'Payment method' | translate }}</label>
           <select class="form-select" [(ngModel)]="method">
             <option *ngFor="let m of paymentMethods" [value]="m.code">{{ m.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Note (optional)</label>
+          <label class="form-label">{{ 'Note (optional)' | translate }}</label>
           <input class="form-control" [(ngModel)]="note" />
         </div>
         <button class="btn btn-primary" (click)="submit()" [disabled]="submitting || !canSubmit()">
-          {{ submitting ? 'Recording…' : 'Record payment' }}
+          {{ submitting ? ('Recording…' | translate) : ('Record payment' | translate) }}
         </button>
       </div>
 
       <div class="alert alert-secondary" *ngIf="bill && bill.amountOutstanding <= 0 && !receipt">
-        This bill has nothing left outstanding.
+        {{ 'This bill has nothing left outstanding.' | translate }}
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="receipt">
-        <div class="alert alert-success">Payment recorded.</div>
-        <button class="btn btn-link" (click)="startAnother()" *ngIf="bill && bill.amountOutstanding > 0">Record another payment</button>
+        <div class="alert alert-success">{{ 'Payment recorded.' | translate }}</div>
+        <button class="btn btn-link" (click)="startAnother()" *ngIf="bill && bill.amountOutstanding > 0">{{ 'Record another payment' | translate }}</button>
       </div>
 
-      <h4 class="mt-3 mb-2">Payment history for this bill</h4>
+      <h4 class="mt-3 mb-2">{{ 'Payment history for this bill' | translate }}</h4>
       <table>
         <thead>
           <tr>
-            <th>Receipt #</th>
-            <th>Date</th>
-            <th class="text-end">Amount</th>
-            <th>Method</th>
-            <th>Recorded by</th>
-            <th>Note</th>
+            <th>{{ 'Receipt #' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
+            <th>{{ 'Method' | translate }}</th>
+            <th>{{ 'Recorded by' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -96,7 +97,7 @@ import { Bill, SupplierPayment, PaymentMethodOption } from '../core/models';
             <td>{{ p.note || '—' }}</td>
           </tr>
           <tr *ngIf="history.length === 0">
-            <td colspan="6" class="text-muted">No payments recorded against this bill yet.</td>
+            <td colspan="6" class="text-muted">{{ 'No payments recorded against this bill yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

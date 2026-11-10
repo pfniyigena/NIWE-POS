@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -16,22 +17,19 @@ import { StockAutomationApiService, StockAutomationResult } from '../core/api/st
 @Component({
   selector: 'app-inventory-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Inventory settings</h3>
+      <h3 class="mb-3">{{ 'Inventory settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Inventory settings saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Inventory settings saved.' | translate }}</div>
       <form (ngSubmit)="submit()" *ngIf="loaded">
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="allowNegativeStock" [(ngModel)]="allowNegativeStock" /> Allow negative stock
+            <input type="checkbox" name="allowNegativeStock" [(ngModel)]="allowNegativeStock" /> {{ 'Allow negative stock' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            When checked (default), a sale can go through even if it takes a product's stock below
-            zero, and a manual stock adjustment can too — today's behavior, unchanged. Uncheck this
-            to block both: checkout will refuse to complete a sale that would oversell a product,
-            and Stock adjustments will refuse a correction that would take one negative.
+            {{ 'When checked (default), a sale can go through even if it takes a product\\'s stock below zero, and a manual stock adjustment can too — today\\'s behavior, unchanged. Uncheck this to block both: checkout will refuse to complete a sale that would oversell a product, and Stock adjustments will refuse a correction that would take one negative.' | translate }}
           </div>
         </div>
         <div class="form-group">
@@ -47,7 +45,7 @@ import { StockAutomationApiService, StockAutomationResult } from '../core/api/st
         </div>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="multiWarehouseEnabled" [(ngModel)]="multiWarehouseEnabled" /> Multi-warehouse
+            <input type="checkbox" name="multiWarehouseEnabled" [(ngModel)]="multiWarehouseEnabled" /> {{ 'Multi-warehouse' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             Unchecked (default): the store stays on one warehouse (its default "Main" one); you can
@@ -60,22 +58,20 @@ import { StockAutomationApiService, StockAutomationResult } from '../core/api/st
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Costing method</label>
+          <label class="form-label">{{ 'Costing method' | translate }}</label>
           <select class="form-select" name="costingMethod" [(ngModel)]="costingMethod">
-            <option value="WEIGHTED_AVERAGE">Weighted average (recommended)</option>
-            <option value="LAST_PURCHASE">Last purchase cost</option>
-            <option value="MANUAL">Manual — never change cost automatically</option>
+            <option value="WEIGHTED_AVERAGE">{{ 'Weighted average (recommended)' | translate }}</option>
+            <option value="LAST_PURCHASE">{{ 'Last purchase cost' | translate }}</option>
+            <option value="MANUAL">{{ 'Manual — never change cost automatically' | translate }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            How a product's cost price follows what you buy. Weighted average blends each delivery into the
-            existing cost by quantity; last purchase cost simply takes the latest delivery's unit cost; manual
-            leaves cost alone (edit it on the product). Landed cost on receiving needs weighted average or last purchase.
+            {{ 'How a product\\'s cost price follows what you buy. Weighted average blends each delivery into the existing cost by quantity; last purchase cost simply takes the latest delivery\\'s unit cost; manual leaves cost alone (edit it on the product). Landed cost on receiving needs weighted average or last purchase.' | translate }}
           </div>
         </div>
-        <h5 class="mt-4 mb-2">Daily stock jobs</h5>
+        <h5 class="mt-4 mb-2">{{ 'Daily stock jobs' | translate }}</h5>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="lowStockDigestEnabled" [(ngModel)]="lowStockDigestEnabled" /> Email a daily low-stock digest
+            <input type="checkbox" name="lowStockDigestEnabled" [(ngModel)]="lowStockDigestEnabled" /> {{ 'Email a daily low-stock digest' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             One email a day to the notifications address (Settings &gt; Email) listing every product below its
@@ -84,42 +80,39 @@ import { StockAutomationApiService, StockAutomationResult } from '../core/api/st
         </div>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="autoRequisitionEnabled" [(ngModel)]="autoRequisitionEnabled" /> Draft purchase requisitions automatically
+            <input type="checkbox" name="autoRequisitionEnabled" [(ngModel)]="autoRequisitionEnabled" /> {{ 'Draft purchase requisitions automatically' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Each day, creates one DRAFT purchase requisition for the products at or below their reorder level
-            (the same suggestions as the Reorder screen). It never submits or approves anything, and skips products
-            already on an open requisition, so an unreviewed draft is not repeated.
+            {{ 'Each day, creates one DRAFT purchase requisition for the products at or below their reorder level (the same suggestions as the Reorder screen). It never submits or approves anything, and skips products already on an open requisition, so an unreviewed draft is not repeated.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="lowStockDigestEnabled || autoRequisitionEnabled">
-          <label class="form-label">Run from (store time)</label>
+          <label class="form-label">{{ 'Run from (store time)' | translate }}</label>
           <input class="form-control" style="max-width:140px;" type="time" name="stockJobTime" [(ngModel)]="stockJobTime" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Runs once a day, from this time. If the server was off then, it runs when it is next up the same day.
-            <span *ngIf="stockJobLastRun"> Last ran on {{ stockJobLastRun }}.</span>
+            {{ 'Runs once a day, from this time. If the server was off then, it runs when it is next up the same day.' | translate }}
+            <span *ngIf="stockJobLastRun"> {{ 'Last ran on {p0}.' | translate: { p0: (stockJobLastRun) } }}</span>
           </div>
           <button class="btn btn-outline-primary btn-sm mt-2" type="button" [disabled]="running || saving" (click)="runNow()">
-            {{ running ? 'Running…' : 'Run now' }}
+            {{ running ? ('Running…' | translate) : ('Run now' | translate) }}
           </button>
-          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Save first if you just changed the switches above — Run now uses the saved settings.</div>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ 'Save first if you just changed the switches above — Run now uses the saved settings.' | translate }}</div>
           <div class="alert alert-info mt-2" *ngIf="runResult">{{ runResult.message }}</div>
         </div>
         <!-- Multi-warehouse phase 4 — which location Restaurant orders and wastage draw stock from.
              Shown only when there is a real choice (or one is already saved, so it can be changed back). -->
         <div class="form-group" *ngIf="locationChoices.length > 2 || restaurantLocationId !== null">
-          <label class="form-label">Restaurant kitchen location</label>
+          <label class="form-label">{{ 'Restaurant kitchen location' | translate }}</label>
           <select class="form-select" name="restaurantLocationId" [(ngModel)]="restaurantLocationId">
-            <option [ngValue]="null">Default (main warehouse sales stock)</option>
+            <option [ngValue]="null">{{ 'Default (main warehouse sales stock)' | translate }}</option>
             <option *ngFor="let l of locationChoices" [ngValue]="l.id">{{ l.label }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Restaurant orders (menu items and recipe ingredients) and wastage take their stock from
-            this location. Leave on the default to keep using the main warehouse's sales stock.
+            {{ 'Restaurant orders (menu items and recipe ingredients) and wastage take their stock from this location. Leave on the default to keep using the main warehouse\\'s sales stock.' | translate }}
           </div>
         </div>
         <button class="btn btn-primary" type="submit" [disabled]="saving">
-          {{ saving ? 'Saving…' : 'Save' }}
+          {{ saving ? ('Saving…' | translate) : ('Save' | translate) }}
         </button>
       </form>
     </app-shell>

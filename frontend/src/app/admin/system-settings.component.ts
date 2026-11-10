@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { LanguageService } from '../core/i18n/language.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -24,34 +26,44 @@ interface CurrencyOption {
 @Component({
   selector: 'app-system-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">System settings</h3>
+      <h3 class="mb-3">{{ 'System settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">System settings saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'System settings saved.' | translate }}</div>
       <form (ngSubmit)="submit()" *ngIf="loaded">
         <div class="form-group">
-          <label class="form-label">Currency</label>
+          <label class="form-label">{{ 'Currency' | translate }}</label>
           <select class="form-select" name="currencyCode" [(ngModel)]="currencyCode" (ngModelChange)="onCurrencyChange($event)">
             <option *ngFor="let c of currencies" [value]="c.code">{{ c.code }} — {{ c.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Currency symbol</label>
+          <label class="form-label">{{ 'Currency symbol' | translate }}</label>
           <input class="form-control" name="currencySymbol" [(ngModel)]="currencySymbol" required style="max-width:120px;" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Filled in from the currency above — override it if you'd rather show a code (e.g. "UGX") instead of a symbol.
+            {{ 'Filled in from the currency above — override it if you\\'d rather show a code (e.g. "UGX") instead of a symbol.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Time zone</label>
+          <label class="form-label">{{ 'Time zone' | translate }}</label>
           <select class="form-select" name="timeZone" [(ngModel)]="timeZone">
             <option *ngFor="let tz of timeZones" [value]="tz">{{ tz }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Date format</label>
+          <label class="form-label">{{ 'Business language' | translate }}</label>
+          <select class="form-select" name="language" [(ngModel)]="language" style="max-width:220px;">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
+            {{ 'The language the screens start in for everyone. Each person can choose their own with the language picker at the top. Choosing the Chad chart of accounts sets French.' | translate }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ 'Date format' | translate }}</label>
           <select class="form-select" name="dateFormat" [(ngModel)]="dateFormat">
             <option *ngFor="let f of dateFormats" [value]="f.value">{{ f.label }}</option>
           </select>
@@ -62,10 +74,10 @@ interface CurrencyOption {
              regardless of who's applying it (see Task 2's separate admin-only restriction on the
              terminal's discount input itself). -->
         <div class="form-group">
-          <label class="form-label">Max discount (%)</label>
+          <label class="form-label">{{ 'Max discount (%)' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0" max="100" name="maxDiscountPercent" [(ngModel)]="maxDiscountPercent" required style="max-width:120px;" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            The highest discount percentage allowed on any single sale line, store-wide.
+            {{ 'The highest discount percentage allowed on any single sale line, store-wide.' | translate }}
           </div>
         </div>
         <!-- Fourier: "Same for discount (but discount should be activate in the setting or
@@ -77,25 +89,25 @@ interface CurrencyOption {
              both at once. Off by default; the max-discount ceiling above still applies once
              either mode is on. -->
         <div class="form-group">
-          <label class="form-label">Discount</label>
+          <label class="form-label">{{ 'Discount' | translate }}</label>
           <div class="form-check">
             <input class="form-check-input" type="radio" id="discountModeNone" name="discountMode" value="NONE" [(ngModel)]="discountMode" />
-            <label class="form-check-label" for="discountModeNone">Off — no discount field on Quotations/Sales Orders/Invoices/Purchase Orders/Bills</label>
+            <label class="form-check-label" for="discountModeNone">{{ 'Off — no discount field on Quotations/Sales Orders/Invoices/Purchase Orders/Bills' | translate }}</label>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="radio" id="discountModePerLine" name="discountMode" value="PER_LINE" [(ngModel)]="discountMode" />
-            <label class="form-check-label" for="discountModePerLine">Per line — each line has its own discount</label>
+            <label class="form-check-label" for="discountModePerLine">{{ 'Per line — each line has its own discount' | translate }}</label>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="radio" id="discountModeGlobal" name="discountMode" value="GLOBAL" [(ngModel)]="discountMode" />
-            <label class="form-check-label" for="discountModeGlobal">Global — one discount for the whole document</label>
+            <label class="form-check-label" for="discountModeGlobal">{{ 'Global — one discount for the whole document' | translate }}</label>
           </div>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Only one mode applies at a time, store-wide. The POS terminal's own discount is separate and always available (subject to role permissions).
+            {{ 'Only one mode applies at a time, store-wide. The POS terminal\\'s own discount is separate and always available (subject to role permissions).' | translate }}
           </div>
         </div>
         <button class="btn btn-primary" type="submit" [disabled]="saving">
-          {{ saving ? 'Saving…' : 'Save' }}
+          {{ saving ? ('Saving…' | translate) : ('Save' | translate) }}
         </button>
       </form>
     </app-shell>
@@ -111,6 +123,7 @@ export class SystemSettingsComponent implements OnInit {
   currencySymbol = '$';
   timeZone = 'UTC';
   dateFormat = 'dd/MM/yyyy';
+  language = 'en';
   /** Task 1: "configure the max discount" — see StoreSettings.maxDiscountPercent's backend javadoc. Matches the entity's own default until the real value loads. */
   maxDiscountPercent = 100;
   /**
@@ -173,7 +186,7 @@ export class SystemSettingsComponent implements OnInit {
     ];
   })();
 
-  constructor(private settingsApi: StoreSettingsApiService) {}
+  constructor(private settingsApi: StoreSettingsApiService, private lang: LanguageService) {}
 
   ngOnInit(): void {
     this.settingsApi.get().subscribe({
@@ -182,6 +195,7 @@ export class SystemSettingsComponent implements OnInit {
         this.currencySymbol = s.currencySymbol;
         this.timeZone = s.timeZone;
         this.dateFormat = s.dateFormat;
+        this.language = s.language ?? 'en';
         this.maxDiscountPercent = s.maxDiscountPercent;
         this.discountMode = s.discountMode;
         this.loaded = true;
@@ -207,6 +221,7 @@ export class SystemSettingsComponent implements OnInit {
         currencySymbol: this.currencySymbol,
         timeZone: this.timeZone,
         dateFormat: this.dateFormat,
+        language: this.language,
         maxDiscountPercent: this.maxDiscountPercent,
         discountMode: this.discountMode,
       })
@@ -214,6 +229,7 @@ export class SystemSettingsComponent implements OnInit {
         next: () => {
           this.saving = false;
           this.saved = true;
+          this.lang.businessLanguageChanged(this.language);
         },
         error: (err) => {
           this.saving = false;

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -18,26 +19,26 @@ import { RecurringInvoiceTemplate } from '../core/models';
 @Component({
   selector: 'app-recurring-invoice-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
         <div>
           <h3 style="margin-bottom:0;">{{ customerName ? 'Recurring invoices for ' + customerName : 'Recurring invoices' }}</h3>
-          <a *ngIf="customerName" class="text-muted" routerLink="/admin/recurring-invoices" style="font-size:0.85rem;">Show every customer's recurring invoices</a>
+          <a *ngIf="customerName" class="text-muted" routerLink="/admin/recurring-invoices" style="font-size:0.85rem;">{{ 'Show every customer\\'s recurring invoices' | translate }}</a>
         </div>
-        <a class="btn btn-primary" routerLink="/admin/recurring-invoices/new">+ New recurring invoice</a>
+        <a class="btn btn-primary" routerLink="/admin/recurring-invoices/new">{{ '+ New recurring invoice' | translate }}</a>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Customer</th>
-            <th>Frequency</th>
-            <th class="text-end">Est. amount</th>
-            <th>Status</th>
-            <th>Next run</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Frequency' | translate }}</th>
+            <th class="text-end">{{ 'Est. amount' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th>{{ 'Next run' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -47,10 +48,10 @@ import { RecurringInvoiceTemplate } from '../core/models';
             <td>{{ t.customerName }}</td>
             <td>{{ t.frequency }}</td>
             <td class="text-end">{{ t.estimatedAmount | number: '1.2-2' }}</td>
-            <td><span class="badge" [ngClass]="t.active ? 'badge-success' : 'badge-secondary'">{{ t.active ? 'Active' : 'Paused' }}</span></td>
+            <td><span class="badge" [ngClass]="t.active ? 'badge-success' : 'badge-secondary'">{{ t.active ? ('Active' | translate) : ('Paused' | translate) }}</span></td>
             <td>{{ t.nextRunDate }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/recurring-invoices', t.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/recurring-invoices', t.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="templates.length === 0">

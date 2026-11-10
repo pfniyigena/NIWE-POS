@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,25 +16,25 @@ import { ModuleApiService } from '../core/api/module-api.service';
 @Component({
   selector: 'app-sales-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Sales settings</h3>
-        <a class="btn btn-link" routerLink="/admin/invoices">Back to invoices</a>
+        <h3>{{ 'Sales settings' | translate }}</h3>
+        <a class="btn btn-link" routerLink="/admin/invoices">{{ 'Back to invoices' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
       <form (ngSubmit)="submit()">
-        <h4 class="mb-1">Features</h4>
+        <h4 class="mb-1">{{ 'Features' | translate }}</h4>
         <div class="text-muted mb-2" style="font-size:0.85rem;">
-          Switch on only what you use. When one is off its menu entry and till parts are hidden and the server refuses to use it; what was already saved (promotions, cards, points) is kept and works again when you switch it back on.
+          {{ 'Switch on only what you use. When one is off its menu entry and till parts are hidden and the server refuses to use it; what was already saved (promotions, cards, points) is kept and works again when you switch it back on.' | translate }}
         </div>
-        <label class="flex gap-2 align-center mb-1"><input type="checkbox" class="sf-promotions" name="promotionsEnabled" [(ngModel)]="promotionsEnabled" /> Promotions (discounts, buy-X-get-Y, coupons)</label>
-        <label class="flex gap-2 align-center mb-1"><input type="checkbox" class="sf-giftcards" name="giftCardsEnabled" [(ngModel)]="giftCardsEnabled" /> Gift cards</label>
-        <label class="flex gap-2 align-center mb-3"><input type="checkbox" class="sf-loyalty" name="loyaltyEnabled" [(ngModel)]="loyaltyEnabled" /> Loyalty points (the earning and spending rules are set on the Loyalty page)</label>
+        <label class="flex gap-2 align-center mb-1"><input type="checkbox" class="sf-promotions" name="promotionsEnabled" [(ngModel)]="promotionsEnabled" /> {{ 'Promotions (discounts, buy-X-get-Y, coupons)' | translate }}</label>
+        <label class="flex gap-2 align-center mb-1"><input type="checkbox" class="sf-giftcards" name="giftCardsEnabled" [(ngModel)]="giftCardsEnabled" /> {{ 'Gift cards' | translate }}</label>
+        <label class="flex gap-2 align-center mb-3"><input type="checkbox" class="sf-loyalty" name="loyaltyEnabled" [(ngModel)]="loyaltyEnabled" /> {{ 'Loyalty points (the earning and spending rules are set on the Loyalty page)' | translate }}</label>
         <div class="form-group">
-          <label class="form-label">Invoice receiver emails</label>
+          <label class="form-label">{{ 'Invoice receiver emails' | translate }}</label>
           <textarea class="form-control" name="emailsText" [(ngModel)]="emailsText" rows="5" placeholder="one address per line"></textarea>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             Every time an invoice is issued, the system tries to email a PDF copy to the customer's
@@ -42,7 +43,7 @@ import { ModuleApiService } from '../core/api/module-api.service';
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="saving">Save</button>
+          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ 'Save' | translate }}</button>
         </div>
       </form>
     </app-shell>

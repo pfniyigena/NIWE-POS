@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -9,26 +10,26 @@ import { StockCount } from '../core/models';
 @Component({
   selector: 'app-stock-count-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Stock counts</h3>
-        <a class="btn btn-primary" routerLink="/admin/stock-counts/new">+ Start a count</a>
+        <h3>{{ 'Stock counts' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/stock-counts/new">{{ '+ Start a count' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Count #</th>
-            <th>Started</th>
-            <th>Warehouse</th>
-            <th>Category</th>
-            <th class="text-end">Lines</th>
-            <th class="text-end">Counted</th>
-            <th class="text-end">Differences</th>
-            <th class="text-end">Variance value</th>
-            <th>Status</th>
+            <th>{{ 'Count #' | translate }}</th>
+            <th>{{ 'Started' | translate }}</th>
+            <th>{{ 'Warehouse' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th class="text-end">{{ 'Lines' | translate }}</th>
+            <th class="text-end">{{ 'Counted' | translate }}</th>
+            <th class="text-end">{{ 'Differences' | translate }}</th>
+            <th class="text-end">{{ 'Variance value' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -41,10 +42,10 @@ import { StockCount } from '../core/models';
             <td class="text-end">{{ c.countedCount }}</td>
             <td class="text-end">{{ c.differenceCount }}</td>
             <td class="text-end" [style.color]="c.varianceValue < 0 ? 'var(--danger-text)' : 'inherit'">{{ c.varianceValue | number: '1.2-2' }}</td>
-            <td>{{ c.status === 'IN_PROGRESS' ? 'In progress' : c.status === 'SUBMITTED' ? 'Awaiting approval' : c.status === 'APPROVED' ? 'Approved' : 'Cancelled' }}</td>
+            <td>{{ c.status === 'IN_PROGRESS' ? 'In progress' : c.status === 'SUBMITTED' ? 'Awaiting approval' : c.status === 'APPROVED' ? ('Approved' | translate) : ('Cancelled' | translate) }}</td>
           </tr>
           <tr *ngIf="counts.length === 0">
-            <td colspan="9" class="text-muted">No stock counts yet.</td>
+            <td colspan="9" class="text-muted">{{ 'No stock counts yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

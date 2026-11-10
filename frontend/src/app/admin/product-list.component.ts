@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -17,31 +18,31 @@ import { Product } from '../core/models';
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Products</h3>
-        <a class="btn btn-primary" routerLink="/admin/products/new">+ New product</a>
+        <h3>{{ 'Products' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/products/new">{{ '+ New product' | translate }}</a>
       </div>
 
       <div class="flex gap-2 mb-3" style="align-items:center;">
         <input
           class="form-control"
           style="max-width:280px;"
-          placeholder="Search by name, SKU, barcode or code"
+          [placeholder]="'Search by name, SKU, barcode or code' | translate"
           [(ngModel)]="searchTerm"
           (input)="onSearchChange()"
         />
         <select class="form-select" style="max-width:140px;" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
-          <option [ngValue]="25">25 / page</option>
-          <option [ngValue]="50">50 / page</option>
-          <option [ngValue]="100">100 / page</option>
-          <option [ngValue]="200">200 / page</option>
+          <option [ngValue]="25">{{ '25 / page' | translate }}</option>
+          <option [ngValue]="50">{{ '50 / page' | translate }}</option>
+          <option [ngValue]="100">{{ '100 / page' | translate }}</option>
+          <option [ngValue]="200">{{ '200 / page' | translate }}</option>
         </select>
         <span class="text-muted" style="font-size:0.85rem;" *ngIf="!loading">
-          {{ totalElements | number }} product{{ totalElements === 1 ? '' : 's' }}
+          {{ '{p0} product{p1}' | translate: { p0: (totalElements | number), p1: (totalElements === 1 ? '' : 's') } }}
         </span>
         <!-- Fourier: "barcode/label generation for products that don't already carry a
              manufacturer barcode" — print labels for any set of products picked on this page at
@@ -54,7 +55,7 @@ import { Product } from '../core/models';
           [queryParams]="{ ids: selectedIdsParam() }"
           target="_blank"
         >
-          Print labels ({{ selectedIds.size }})
+          {{ 'Print labels ({p0})' | translate: { p0: (selectedIds.size) } }}
         </a>
       </div>
 
@@ -63,17 +64,17 @@ import { Product } from '../core/models';
           <tr>
             <th><input type="checkbox" [checked]="allOnPageSelected()" (change)="toggleSelectAll($event)" /></th>
             <th></th>
-            <th>Name</th>
-            <th>SKU</th>
-            <th>Barcode</th>
-            <th>Code</th>
-            <th>Category</th>
-            <th>Brand</th>
-            <th>Tax</th>
-            <th class="text-end">Price</th>
-            <th class="text-end">Cost</th>
-            <th class="text-end">Stock</th>
-            <th>Status</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'SKU' | translate }}</th>
+            <th>{{ 'Barcode' | translate }}</th>
+            <th>{{ 'Code' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th>{{ 'Brand' | translate }}</th>
+            <th>{{ 'Tax' | translate }}</th>
+            <th class="text-end">{{ 'Price' | translate }}</th>
+            <th class="text-end">{{ 'Cost' | translate }}</th>
+            <th class="text-end">{{ 'Stock' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -89,7 +90,7 @@ import { Product } from '../core/models';
               <span *ngIf="p.barcode">
                 {{ p.barcode }}
                 <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/products/labels']" [queryParams]="{ ids: p.id }" target="_blank">
-                  Label
+                  {{ 'Label' | translate }}
                 </a>
               </span>
               <button
@@ -99,7 +100,7 @@ import { Product } from '../core/models';
                 [disabled]="generatingFor === p.id"
                 (click)="generateBarcode(p)"
               >
-                {{ generatingFor === p.id ? 'Generating…' : 'Generate' }}
+                {{ generatingFor === p.id ? ('Generating…' | translate) : ('Generate' | translate) }}
               </button>
             </td>
             <td>{{ p.code }}</td>
@@ -110,38 +111,38 @@ import { Product } from '../core/models';
             <td>{{ p.brandName || '—' }}</td>
             <td>
               <span *ngIf="p.taxRateName">
-                {{ p.taxRateName }} ({{ p.taxRatePercent | number: '1.0-2' }}%<ng-container *ngIf="p.taxRateInclusive">, incl.</ng-container>)
+                {{ p.taxRateName }} ({{ p.taxRatePercent | number: '1.0-2' }}%<ng-container *ngIf="p.taxRateInclusive">{{ ', incl.' | translate }}</ng-container>)
               </span>
-              <span class="text-muted" *ngIf="!p.taxRateName">— exempt —</span>
+              <span class="text-muted" *ngIf="!p.taxRateName">{{ '— exempt —' | translate }}</span>
             </td>
             <td class="text-end">{{ p.unitPrice | number: '1.2-2' }}</td>
             <td class="text-end">{{ p.costPrice | number: '1.2-2' }}</td>
             <td class="text-end">
               <span *ngIf="p.trackStock">{{ p.stockQuantity }}</span>
-              <span class="text-muted" *ngIf="!p.trackStock" title="Always sellable — stock isn't tracked for this product">Not tracked</span>
+              <span class="text-muted" *ngIf="!p.trackStock" [title]="'Always sellable — stock isn\\'t tracked for this product' | translate">{{ 'Not tracked' | translate }}</span>
             </td>
             <td>
-              <span class="badge badge-success" *ngIf="p.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!p.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="p.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!p.active">{{ 'Inactive' | translate }}</span>
             </td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/products', p.id]">View</a>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/products', p.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-danger" *ngIf="p.active" (click)="deactivate(p)">Deactivate</button>
+              <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/products', p.id]">{{ 'View' | translate }}</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/products', p.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-danger" *ngIf="p.active" (click)="deactivate(p)">{{ 'Deactivate' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="!loading && products.length === 0">
-            <td colspan="14" class="text-muted">No products {{ searchTerm ? 'match your search' : 'yet' }}.</td>
+            <td colspan="14" class="text-muted">{{ 'No products {p0}.' | translate: { p0: (searchTerm ? 'match your search' : 'yet') } }}</td>
           </tr>
           <tr *ngIf="loading">
-            <td colspan="14" class="text-muted">Loading…</td>
+            <td colspan="14" class="text-muted">{{ 'Loading…' | translate }}</td>
           </tr>
         </tbody>
       </table>
 
       <div class="flex gap-2 mt-3" style="align-items:center;" *ngIf="totalPages > 1">
         <button class="btn btn-sm btn-outline-secondary" [disabled]="page === 0" (click)="goToPage(page - 1)">&laquo; Prev</button>
-        <span class="text-muted" style="font-size:0.85rem;">Page {{ page + 1 }} of {{ totalPages }}</span>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Page {p0} of {p1}' | translate: { p0: (page + 1), p1: (totalPages) } }}</span>
         <button class="btn btn-sm btn-outline-secondary" [disabled]="page >= totalPages - 1" (click)="goToPage(page + 1)">Next &raquo;</button>
       </div>
     </app-shell>

@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/auth.service';
@@ -13,11 +14,12 @@ import { HotelApiService } from '../core/api/hotel-api.service';
  * The terminal has its own full-screen layout (order tabs replace the topbar), so it doesn't use this.
  */
 import { NiweFooterComponent } from './niwe-footer.component';
+import { LanguageSwitcherComponent } from './language-switcher.component';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [NiweFooterComponent, CommonModule, RouterLink, RouterLinkActive],
+  imports: [TranslatePipe, LanguageSwitcherComponent, NiweFooterComponent, CommonModule, RouterLink, RouterLinkActive],
   template: `
     <div class="topbar">
       <!-- Fourier: "Make Mobile responsive" (admin/back-office shell scope) — hamburger is hidden
@@ -25,11 +27,11 @@ import { NiweFooterComponent } from './niwe-footer.component';
            the off-canvas sidebar via a plain component field rather than SidenavStateService,
            since ShellComponent itself is destroyed/recreated on every navigation (see isOpen()'s
            own javadoc below), so "closed again on the next page" is the right default for free. -->
-      <button type="button" class="hamburger-btn" (click)="mobileNavOpen = !mobileNavOpen" aria-label="Toggle menu">☰</button>
+      <button type="button" class="hamburger-btn" (click)="mobileNavOpen = !mobileNavOpen" [attr.aria-label]="'Toggle menu' | translate">☰</button>
       <!-- Task: "Add Business name and logo in the header of system template (where label POS)" —
            falls back to the plain "POS" brand label until settings load or when nothing's been
            configured, so this never regresses the topbar for stores that haven't set a business name. -->
-      <span class="brand" *ngIf="!businessName">POS</span>
+      <span class="brand" *ngIf="!businessName">{{ 'POS' | translate }}</span>
       <span class="brand" *ngIf="businessName" style="display:flex; align-items:center; gap:8px;">
         <img *ngIf="logoDataUrl" [src]="logoDataUrl" alt="" style="height:24px; max-width:120px; object-fit:contain;" />
         {{ businessName }}
@@ -38,9 +40,10 @@ import { NiweFooterComponent } from './niwe-footer.component';
       <div class="user-info">
         <span class="user-name">{{ auth.currentUser()?.fullName }}</span>
         <!-- Self-service "My Profile" (Task: "Add my profile, change my password") — every logged-in user, not just admins, so it lives in the topbar rather than the admin-only sidebar. -->
-        <a class="btn btn-sm btn-outline-secondary" routerLink="/settings/appearance" routerLinkActive="active" title="Colour theme">🎨 Theme</a>
-        <a class="btn btn-sm btn-outline-secondary" routerLink="/profile" routerLinkActive="active">👤 Profile</a>
-        <button class="btn btn-sm btn-outline-secondary" (click)="logout()">Log out</button>
+        <app-language-switcher></app-language-switcher>
+        <a class="btn btn-sm btn-outline-secondary" routerLink="/settings/appearance" routerLinkActive="active" [title]="'Colour theme' | translate">{{ '🎨 Theme' | translate }}</a>
+        <a class="btn btn-sm btn-outline-secondary" routerLink="/profile" routerLinkActive="active">{{ '👤 Profile' | translate }}</a>
+        <button class="btn btn-sm btn-outline-secondary" (click)="logout()">{{ 'Log out' | translate }}</button>
       </div>
     </div>
     <div class="app-shell">
@@ -61,11 +64,11 @@ import { NiweFooterComponent } from './niwe-footer.component';
           class="sidenav-link sidenav-link-row"
           routerLink="/admin/dashboard"
           routerLinkActive="active"
-          ><span class="sidenav-icon">📊</span><span>Dashboard</span></a
+          ><span class="sidenav-icon">📊</span><span>{{ 'Dashboard' | translate }}</span></a
         >
         <!-- My HR (employee self-service): every signed-in user, shown when the Employees module is on. -->
         <a *ngIf="modules.on('EMPLOYEES')" class="sidenav-link sidenav-link-row" routerLink="/my/hr" routerLinkActive="active"
-          ><span class="sidenav-icon">🧑‍💼</span><span>My HR</span></a
+          ><span class="sidenav-icon">🧑‍💼</span><span>{{ 'My HR' | translate }}</span></a
         >
         <!-- Sidebar groups are now an accordion (Task: "Once one menu is open other should be
              closed") — openGroup holds at most one group name, and toggleGroup() both opens a
@@ -78,7 +81,7 @@ import { NiweFooterComponent } from './niwe-footer.component';
              the icon glyph to match them. -->
         <button type="button" *ngIf="modules.on('POS')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('pos')">
           <span class="sidenav-icon">🛒</span>
-          <span class="sidenav-label">POS</span>
+          <span class="sidenav-label">{{ 'POS' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('pos') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('pos') && modules.on('POS')">
@@ -92,28 +95,28 @@ import { NiweFooterComponent } from './niwe-footer.component';
             ><span class="sidenav-icon">🖥️</span> Registers &amp; Terminal</a
           >
           <!-- Sessions lists individual CashierSessions (not shifts). Open to any user; the backend scopes what comes back — an admin sees every session, a cashier sees only their own. -->
-          <a class="sidenav-link" routerLink="/sessions" routerLinkActive="active"><span class="sidenav-icon">📋</span> Sessions</a>
-          <a class="sidenav-link" routerLink="/returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> Returns</a>
-          <a class="sidenav-link" routerLink="/receipts" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Receipts</a>
+          <a class="sidenav-link" routerLink="/sessions" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Sessions' | translate }}</a>
+          <a class="sidenav-link" routerLink="/returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> {{ 'Returns' | translate }}</a>
+          <a class="sidenav-link" routerLink="/receipts" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Receipts' | translate }}</a>
           <!-- Shifts moved here from the flat Admin list (Task: "Move Shifts menu under POS") — it's the other everyday POS oversight screen, just ADMIN-only within this group. -->
           <a *ngIf="canSee('/admin/shifts')" class="sidenav-link" routerLink="/admin/shifts" routerLinkActive="active"
-            ><span class="sidenav-icon">⏱️</span> Shifts</a
+            ><span class="sidenav-icon">⏱️</span> {{ 'Shifts' | translate }}</a
           >
           <a *ngIf="canSee('/admin/pos-log')" class="sidenav-link" routerLink="/admin/pos-log" routerLinkActive="active"
             ><span class="sidenav-icon">↩️</span> Voids &amp; returns</a
           >
           <a *ngIf="canSee('/admin/cash-movements')" class="sidenav-link" routerLink="/admin/cash-movements" routerLinkActive="active"
-            ><span class="sidenav-icon">💵</span> Cash movements</a
+            ><span class="sidenav-icon">💵</span> {{ 'Cash movements' | translate }}</a
           >
           <a *ngIf="canSee('/admin/pos-settings')" class="sidenav-link" routerLink="/admin/pos-settings" routerLinkActive="active"
-            ><span class="sidenav-icon">⚙️</span> POS settings</a
+            ><span class="sidenav-icon">⚙️</span> {{ 'POS settings' | translate }}</a
           >
           <a *ngIf="canSee('/devices')" class="sidenav-link" routerLink="/devices" routerLinkActive="active"
-            ><span class="sidenav-icon">🖨️</span> Devices</a
+            ><span class="sidenav-icon">🖨️</span> {{ 'Devices' | translate }}</a
           >
           <!-- POS Reports (Task: "Add POS Report..."): a picker of Sales-Transactions/Profit reports, each with its own filters + Excel/PDF export. ADMIN-only, like every other reporting screen. -->
           <a *ngIf="canSee('/admin/reports')" class="sidenav-link" routerLink="/admin/reports" routerLinkActive="active"
-            ><span class="sidenav-icon">📈</span> Reports</a
+            ><span class="sidenav-icon">📈</span> {{ 'Reports' | translate }}</a
           >
         </ng-container>
         <!-- Restaurant group (Fourier: "I want now to add Restaurant management in our ERP"; later
@@ -128,141 +131,141 @@ import { NiweFooterComponent } from './niwe-footer.component';
              other module's own setup/reporting screens. -->
         <button type="button" *ngIf="modules.on('RESTAURANT')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('restaurant')">
           <span class="sidenav-icon">🍽️</span>
-          <span class="sidenav-label">Restaurant</span>
+          <span class="sidenav-label">{{ 'Restaurant' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('restaurant') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('restaurant') && modules.on('RESTAURANT')">
           <!-- Fourier: "There is no screen for Restaurant orders" — every open order (dine-in,
                takeaway, delivery) in one list; the natural landing link for the whole group, so
                it sits above the more specific screens below. -->
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📝</span> Orders</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/tables/floor-plan" routerLinkActive="active"><span class="sidenav-icon">🍽️</span> Floor plan</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/orders/new" routerLinkActive="active"><span class="sidenav-icon">🥡</span> Takeaway/Delivery</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/deliveries" routerLinkActive="active"><span class="sidenav-icon">🛵</span> Deliveries board</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/kitchen" routerLinkActive="active"><span class="sidenav-icon">🍳</span> Kitchen display</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/kitchen/expo" routerLinkActive="active"><span class="sidenav-icon">🛎️</span> Expo</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/reservations" routerLinkActive="active"><span class="sidenav-icon">📅</span> Reservations</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/online-orders" routerLinkActive="active"><span class="sidenav-icon">📲</span> Online orders</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/waitlist" routerLinkActive="active"><span class="sidenav-icon">⏳</span> Waiting list</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/receipts" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Receipts</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/wastage" routerLinkActive="active"><span class="sidenav-icon">🗑️</span> Wastage</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📝</span> {{ 'Orders' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/tables/floor-plan" routerLinkActive="active"><span class="sidenav-icon">🍽️</span> {{ 'Floor plan' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/orders/new" routerLinkActive="active"><span class="sidenav-icon">🥡</span> {{ 'Takeaway/Delivery' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/deliveries" routerLinkActive="active"><span class="sidenav-icon">🛵</span> {{ 'Deliveries board' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/kitchen" routerLinkActive="active"><span class="sidenav-icon">🍳</span> {{ 'Kitchen display' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/kitchen/expo" routerLinkActive="active"><span class="sidenav-icon">🛎️</span> {{ 'Expo' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/reservations" routerLinkActive="active"><span class="sidenav-icon">📅</span> {{ 'Reservations' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/online-orders" routerLinkActive="active"><span class="sidenav-icon">📲</span> {{ 'Online orders' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/waitlist" routerLinkActive="active"><span class="sidenav-icon">⏳</span> {{ 'Waiting list' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/receipts" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Receipts' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/wastage" routerLinkActive="active"><span class="sidenav-icon">🗑️</span> {{ 'Wastage' | translate }}</a>
           <a *ngIf="canSee('/admin/restaurant/voids')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/voids" routerLinkActive="active"><span class="sidenav-icon">🚫</span> Voids &amp; comps</a>
-          <a *ngIf="canSee('/admin/restaurant/analysis')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/analysis" routerLinkActive="active"><span class="sidenav-icon">📈</span> Sales analysis</a>
-          <a *ngIf="canSee('/admin/restaurant/end-of-day')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/end-of-day" routerLinkActive="active"><span class="sidenav-icon">🧾</span> End of day</a>
-          <a *ngIf="canSee('/admin/restaurant/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-          <a *ngIf="canSee('/admin/restaurant/tables')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/tables" routerLinkActive="active"><span class="sidenav-icon">🪑</span> Tables</a>
-          <a *ngIf="canSee('/admin/restaurant/menu')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/menu" routerLinkActive="active"><span class="sidenav-icon">📋</span> Menu</a>
-          <a *ngIf="canSee('/admin/restaurant/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a *ngIf="canSee('/admin/restaurant/analysis')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/analysis" routerLinkActive="active"><span class="sidenav-icon">📈</span> {{ 'Sales analysis' | translate }}</a>
+          <a *ngIf="canSee('/admin/restaurant/end-of-day')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/end-of-day" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'End of day' | translate }}</a>
+          <a *ngIf="canSee('/admin/restaurant/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+          <a *ngIf="canSee('/admin/restaurant/tables')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/tables" routerLinkActive="active"><span class="sidenav-icon">🪑</span> {{ 'Tables' | translate }}</a>
+          <a *ngIf="canSee('/admin/restaurant/menu')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/menu" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Menu' | translate }}</a>
+          <a *ngIf="canSee('/admin/restaurant/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Time Tracking group: optional module (Settings > Modules). "My time" is for every signed-in user; the rest follows the Operations / Billing areas. -->
         <button type="button" *ngIf="modules.on('TIME_TRACKING')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('time')">
           <span class="sidenav-icon">⏱️</span>
-          <span class="sidenav-label">Time Tracking</span>
+          <span class="sidenav-label">{{ 'Time Tracking' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('time') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('time') && modules.on('TIME_TRACKING')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/time" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🕒</span> My time</a>
-          <a *ngIf="canSee('/admin/time/projects')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/projects" routerLinkActive="active"><span class="sidenav-icon">📁</span> Projects</a>
-          <a *ngIf="canSee('/admin/time/approvals')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/approvals" routerLinkActive="active"><span class="sidenav-icon">✅</span> Approvals</a>
-          <a *ngIf="canSee('/admin/time/billing')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/billing" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Bill time</a>
-          <a *ngIf="canSee('/admin/time/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-          <a *ngIf="canSee('/admin/time/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/time" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🕒</span> {{ 'My time' | translate }}</a>
+          <a *ngIf="canSee('/admin/time/projects')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/projects" routerLinkActive="active"><span class="sidenav-icon">📁</span> {{ 'Projects' | translate }}</a>
+          <a *ngIf="canSee('/admin/time/approvals')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/approvals" routerLinkActive="active"><span class="sidenav-icon">✅</span> {{ 'Approvals' | translate }}</a>
+          <a *ngIf="canSee('/admin/time/billing')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/billing" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Bill time' | translate }}</a>
+          <a *ngIf="canSee('/admin/time/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+          <a *ngIf="canSee('/admin/time/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/time/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Work Orders group: optional module (Settings > Modules). "My jobs" is for every signed-in user; the rest follows the Operations area. -->
         <button type="button" *ngIf="modules.on('WORK_ORDERS')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('workorders')">
           <span class="sidenav-icon">🛠️</span>
-          <span class="sidenav-label">Work Orders</span>
+          <span class="sidenav-label">{{ 'Work Orders' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('workorders') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('workorders') && modules.on('WORK_ORDERS')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/work-orders/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> My jobs</a>
-          <a *ngIf="canSee('/admin/work-orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📋</span> Work orders</a>
-          <a *ngIf="canSee('/admin/work-orders/board')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/board" routerLinkActive="active"><span class="sidenav-icon">🗂️</span> Board</a>
-          <a *ngIf="canSee('/admin/work-orders/calendar')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/calendar" routerLinkActive="active"><span class="sidenav-icon">📆</span> Calendar</a>
-          <a *ngIf="canSee('/admin/work-orders/schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/schedules" routerLinkActive="active"><span class="sidenav-icon">🔁</span> Planned maintenance</a>
-          <a *ngIf="canSee('/admin/work-orders/packages')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/packages" routerLinkActive="active"><span class="sidenav-icon">📦</span> Service packages</a>
-          <a *ngIf="canSee('/admin/work-orders/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/work-orders/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> {{ 'My jobs' | translate }}</a>
+          <a *ngIf="canSee('/admin/work-orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📋</span> {{ 'Work orders' | translate }}</a>
+          <a *ngIf="canSee('/admin/work-orders/board')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/board" routerLinkActive="active"><span class="sidenav-icon">🗂️</span> {{ 'Board' | translate }}</a>
+          <a *ngIf="canSee('/admin/work-orders/calendar')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/calendar" routerLinkActive="active"><span class="sidenav-icon">📆</span> {{ 'Calendar' | translate }}</a>
+          <a *ngIf="canSee('/admin/work-orders/schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/schedules" routerLinkActive="active"><span class="sidenav-icon">🔁</span> {{ 'Planned maintenance' | translate }}</a>
+          <a *ngIf="canSee('/admin/work-orders/packages')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/packages" routerLinkActive="active"><span class="sidenav-icon">📦</span> {{ 'Service packages' | translate }}</a>
+          <a *ngIf="canSee('/admin/work-orders/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/work-orders/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
         </ng-container>
         <!-- Booking group: optional module (Settings > Modules). "My appointments" is for every signed-in user; the rest follows the Operations area, settings are admin-only. -->
         <button type="button" *ngIf="modules.on('BOOKING')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('booking')">
           <span class="sidenav-icon">📅</span>
-          <span class="sidenav-label">Booking</span>
+          <span class="sidenav-label">{{ 'Booking' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('booking') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('booking') && modules.on('BOOKING')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/booking/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> My appointments</a>
-          <a *ngIf="canSee('/admin/booking')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🗓️</span> Calendar</a>
-          <a *ngIf="canSee('/admin/booking')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📋</span> Appointments</a>
-          <a *ngIf="canSee('/admin/booking/services')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/services" routerLinkActive="active"><span class="sidenav-icon">💈</span> Services</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/booking/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> {{ 'My appointments' | translate }}</a>
+          <a *ngIf="canSee('/admin/booking')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🗓️</span> {{ 'Calendar' | translate }}</a>
+          <a *ngIf="canSee('/admin/booking')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/appointments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">📋</span> {{ 'Appointments' | translate }}</a>
+          <a *ngIf="canSee('/admin/booking/services')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/services" routerLinkActive="active"><span class="sidenav-icon">💈</span> {{ 'Services' | translate }}</a>
           <a *ngIf="canSee('/admin/booking/resources')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/resources" routerLinkActive="active"><span class="sidenav-icon">🚪</span> Rooms &amp; equipment</a>
-          <a *ngIf="canSee('/admin/booking/schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/schedules" routerLinkActive="active"><span class="sidenav-icon">🕘</span> Working hours</a>
-          <a *ngIf="canSee('/admin/booking/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-          <a *ngIf="canSee('/admin/booking/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a *ngIf="canSee('/admin/booking/schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/schedules" routerLinkActive="active"><span class="sidenav-icon">🕘</span> {{ 'Working hours' | translate }}</a>
+          <a *ngIf="canSee('/admin/booking/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+          <a *ngIf="canSee('/admin/booking/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/booking/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Law Firm group: optional module (Settings > Modules). My work, the conflict check and the contacts are for every signed-in user (the server limits what they see); the rest follows the Operations area, settings are admin-only. -->
         <button type="button" *ngIf="modules.on('LAW_FIRM')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('law')">
           <span class="sidenav-icon">⚖️</span>
-          <span class="sidenav-label">Law Firm</span>
+          <span class="sidenav-label">{{ 'Law Firm' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('law') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('law') && modules.on('LAW_FIRM')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/law/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> My work</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/law/calendar" routerLinkActive="active"><span class="sidenav-icon">📅</span> Calendar</a>
-          <a *ngIf="canSee('/admin/law/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
-          <a *ngIf="canSee('/admin/law/matters')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/matters" routerLinkActive="active"><span class="sidenav-icon">📁</span> Matters</a>
-          <a *ngIf="canSee('/admin/law/clients')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/clients" routerLinkActive="active"><span class="sidenav-icon">🧑‍💼</span> Clients</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/law/mine" routerLinkActive="active"><span class="sidenav-icon">🙋</span> {{ 'My work' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/law/calendar" routerLinkActive="active"><span class="sidenav-icon">📅</span> {{ 'Calendar' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> {{ 'Overview' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/matters')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/matters" routerLinkActive="active"><span class="sidenav-icon">📁</span> {{ 'Matters' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/clients')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/clients" routerLinkActive="active"><span class="sidenav-icon">🧑‍💼</span> {{ 'Clients' | translate }}</a>
           <a *ngIf="canSee('/admin/law/work')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/work" routerLinkActive="active"><span class="sidenav-icon">⏰</span> Deadlines &amp; tasks</a>
-          <a *ngIf="canSee('/admin/law/billing')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/billing" routerLinkActive="active"><span class="sidenav-icon">💰</span> Billing</a>
-          <a *ngIf="canSee('/admin/law/collections')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/collections" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Fee collections</a>
-          <a *ngIf="canSee('/admin/law/trust')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/trust" routerLinkActive="active"><span class="sidenav-icon">🏦</span> Client money</a>
-          <a *ngIf="canSee('/admin/law/templates')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/templates" routerLinkActive="active"><span class="sidenav-icon">📄</span> Templates</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/law/conflicts" routerLinkActive="active"><span class="sidenav-icon">🔎</span> Conflict check</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/law/contacts" routerLinkActive="active"><span class="sidenav-icon">👥</span> Contacts</a>
-          <a *ngIf="canSee('/admin/law/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-          <a *ngIf="canSee('/admin/law/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a *ngIf="canSee('/admin/law/billing')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/billing" routerLinkActive="active"><span class="sidenav-icon">💰</span> {{ 'Billing' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/collections')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/collections" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Fee collections' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/trust')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/trust" routerLinkActive="active"><span class="sidenav-icon">🏦</span> {{ 'Client money' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/templates')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/templates" routerLinkActive="active"><span class="sidenav-icon">📄</span> {{ 'Templates' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/law/conflicts" routerLinkActive="active"><span class="sidenav-icon">🔎</span> {{ 'Conflict check' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/law/contacts" routerLinkActive="active"><span class="sidenav-icon">👥</span> {{ 'Contacts' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+          <a *ngIf="canSee('/admin/law/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/law/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Real Estate group: optional module (Settings > Modules). Everything follows the Operations area; settings are admin-only. -->
         <button type="button" *ngIf="modules.on('REAL_ESTATE') && canSee('/admin/realestate/overview')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('realestate')">
           <span class="sidenav-icon">🏠</span>
-          <span class="sidenav-label">Real Estate</span>
+          <span class="sidenav-label">{{ 'Real Estate' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('realestate') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('realestate') && modules.on('REAL_ESTATE') && canSee('/admin/realestate/overview')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/properties" routerLinkActive="active"><span class="sidenav-icon">🏘️</span> Properties</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/leads" routerLinkActive="active"><span class="sidenav-icon">🙋</span> Leads</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/follow-ups" routerLinkActive="active"><span class="sidenav-icon">📞</span> My follow-ups</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/viewings" routerLinkActive="active"><span class="sidenav-icon">🗓️</span> Viewings</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/deals" routerLinkActive="active"><span class="sidenav-icon">🤝</span> Deals</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/projects" routerLinkActive="active"><span class="sidenav-icon">🏗️</span> Projects</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/unit-sales" routerLinkActive="active"><span class="sidenav-icon">🔑</span> Unit sales</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/collections" routerLinkActive="active"><span class="sidenav-icon">💰</span> Collections</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/commissions" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Commissions</a>
-          <a *ngIf="canSee('/admin/realestate/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-          <a *ngIf="canSee('/admin/realestate/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> {{ 'Overview' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/properties" routerLinkActive="active"><span class="sidenav-icon">🏘️</span> {{ 'Properties' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/leads" routerLinkActive="active"><span class="sidenav-icon">🙋</span> {{ 'Leads' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/follow-ups" routerLinkActive="active"><span class="sidenav-icon">📞</span> {{ 'My follow-ups' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/viewings" routerLinkActive="active"><span class="sidenav-icon">🗓️</span> {{ 'Viewings' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/deals" routerLinkActive="active"><span class="sidenav-icon">🤝</span> {{ 'Deals' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/projects" routerLinkActive="active"><span class="sidenav-icon">🏗️</span> {{ 'Projects' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/unit-sales" routerLinkActive="active"><span class="sidenav-icon">🔑</span> {{ 'Unit sales' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/collections" routerLinkActive="active"><span class="sidenav-icon">💰</span> {{ 'Collections' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/commissions" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Commissions' | translate }}</a>
+          <a *ngIf="canSee('/admin/realestate/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+          <a *ngIf="canSee('/admin/realestate/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/realestate/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Property Management group: optional module (Settings > Modules). Everything follows the Operations area; settings are admin-only. -->
         <button type="button" *ngIf="modules.on('PROPERTY_MANAGEMENT') && canSee('/admin/propertymgmt/overview')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('propertymgmt')">
           <span class="sidenav-icon">🏢</span>
-          <span class="sidenav-label">Property Management</span>
+          <span class="sidenav-label">{{ 'Property Management' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('propertymgmt') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('propertymgmt') && modules.on('PROPERTY_MANAGEMENT') && canSee('/admin/propertymgmt/overview')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/properties" routerLinkActive="active"><span class="sidenav-icon">🏘️</span> Properties</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/units" routerLinkActive="active"><span class="sidenav-icon">🚪</span> Units</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/owners" routerLinkActive="active"><span class="sidenav-icon">👤</span> Owners</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/tenants" routerLinkActive="active"><span class="sidenav-icon">🧑‍🤝‍🧑</span> Tenants</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/leases" routerLinkActive="active"><span class="sidenav-icon">📄</span> Leases</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/rent" routerLinkActive="active"><span class="sidenav-icon">💵</span> Rent</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/arrears" routerLinkActive="active"><span class="sidenav-icon">⏰</span> Arrears</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/deposits" routerLinkActive="active"><span class="sidenav-icon">🔐</span> Deposits</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/charges" routerLinkActive="active"><span class="sidenav-icon">💧</span> Charges</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/maintenance" routerLinkActive="active"><span class="sidenav-icon">🔧</span> Maintenance</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/statements" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Owner statements</a>
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/fee-invoices" routerLinkActive="active"><span class="sidenav-icon">📄</span> Fee invoices</a>
-          <a *ngIf="canSee('/admin/propertymgmt/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-          <a *ngIf="canSee('/admin/propertymgmt/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> {{ 'Overview' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/properties" routerLinkActive="active"><span class="sidenav-icon">🏘️</span> {{ 'Properties' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/units" routerLinkActive="active"><span class="sidenav-icon">🚪</span> {{ 'Units' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/owners" routerLinkActive="active"><span class="sidenav-icon">👤</span> {{ 'Owners' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/tenants" routerLinkActive="active"><span class="sidenav-icon">🧑‍🤝‍🧑</span> {{ 'Tenants' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/leases" routerLinkActive="active"><span class="sidenav-icon">📄</span> {{ 'Leases' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/rent" routerLinkActive="active"><span class="sidenav-icon">💵</span> {{ 'Rent' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/arrears" routerLinkActive="active"><span class="sidenav-icon">⏰</span> {{ 'Arrears' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/deposits" routerLinkActive="active"><span class="sidenav-icon">🔐</span> {{ 'Deposits' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/charges" routerLinkActive="active"><span class="sidenav-icon">💧</span> {{ 'Charges' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/maintenance" routerLinkActive="active"><span class="sidenav-icon">🔧</span> {{ 'Maintenance' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/statements" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Owner statements' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/fee-invoices" routerLinkActive="active"><span class="sidenav-icon">📄</span> {{ 'Fee invoices' | translate }}</a>
+          <a *ngIf="canSee('/admin/propertymgmt/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+          <a *ngIf="canSee('/admin/propertymgmt/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/propertymgmt/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Sales group (Task: "Add Sale order and Customer payment(So that we can have POS & Sales)
              ... Then let have Sale as Menu and Move Customers into Sales (It becomes Submenu)") —
@@ -273,32 +276,32 @@ import { NiweFooterComponent } from './niwe-footer.component';
              orders, Sale order returns, Invoices, Credit notes, Reports) stays ADMIN-only. -->
         <button type="button" class="sidenav-link sidenav-toggle" (click)="toggleGroup('sales')">
           <span class="sidenav-icon">💵</span>
-          <span class="sidenav-label">Sales</span>
+          <span class="sidenav-label">{{ 'Sales' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('sales') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('sales')">
           <!-- Fourier: "Add Quotation ... without touching warehousing" — a non-binding price offer that precedes a sale order, placed just before it. -->
-          <a *ngIf="canSee('/admin/quotations')" class="sidenav-link sidenav-sublink" routerLink="/admin/quotations" routerLinkActive="active"><span class="sidenav-icon">💬</span> Quotations</a>
+          <a *ngIf="canSee('/admin/quotations')" class="sidenav-link sidenav-sublink" routerLink="/admin/quotations" routerLinkActive="active"><span class="sidenav-icon">💬</span> {{ 'Quotations' | translate }}</a>
           <!-- Task: "Add Sale order... So that we can have POS & Sales" — a back-office order taken outside the register, entirely separate from POS checkout. -->
-          <a *ngIf="canSee('/admin/sales-orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales-orders" routerLinkActive="active"><span class="sidenav-icon">📝</span> Sale orders</a>
-          <a *ngIf="canSee('/admin/pricing/price-lists')" class="sidenav-link sidenav-sublink" routerLink="/admin/pricing/price-lists" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> Price lists</a>
-          <a *ngIf="canSee('/admin/pricing/groups')" class="sidenav-link sidenav-sublink" routerLink="/admin/pricing/groups" routerLinkActive="active"><span class="sidenav-icon">👥</span> Customer groups</a>
-          <a *ngIf="canSee('/admin/promotions') && modules.feature('promotions')" class="sidenav-link sidenav-sublink" routerLink="/admin/promotions" routerLinkActive="active"><span class="sidenav-icon">🎁</span> Promotions</a>
-          <a *ngIf="canSee('/admin/gift-cards') && modules.feature('giftCards')" class="sidenav-link sidenav-sublink" routerLink="/admin/gift-cards" routerLinkActive="active"><span class="sidenav-icon">🎫</span> Gift cards</a>
-          <a *ngIf="canSee('/admin/loyalty') && modules.feature('loyalty')" class="sidenav-link sidenav-sublink" routerLink="/admin/loyalty" routerLinkActive="active"><span class="sidenav-icon">⭐</span> Loyalty points</a>
+          <a *ngIf="canSee('/admin/sales-orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales-orders" routerLinkActive="active"><span class="sidenav-icon">📝</span> {{ 'Sale orders' | translate }}</a>
+          <a *ngIf="canSee('/admin/pricing/price-lists')" class="sidenav-link sidenav-sublink" routerLink="/admin/pricing/price-lists" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> {{ 'Price lists' | translate }}</a>
+          <a *ngIf="canSee('/admin/pricing/groups')" class="sidenav-link sidenav-sublink" routerLink="/admin/pricing/groups" routerLinkActive="active"><span class="sidenav-icon">👥</span> {{ 'Customer groups' | translate }}</a>
+          <a *ngIf="canSee('/admin/promotions') && modules.feature('promotions')" class="sidenav-link sidenav-sublink" routerLink="/admin/promotions" routerLinkActive="active"><span class="sidenav-icon">🎁</span> {{ 'Promotions' | translate }}</a>
+          <a *ngIf="canSee('/admin/gift-cards') && modules.feature('giftCards')" class="sidenav-link sidenav-sublink" routerLink="/admin/gift-cards" routerLinkActive="active"><span class="sidenav-icon">🎫</span> {{ 'Gift cards' | translate }}</a>
+          <a *ngIf="canSee('/admin/loyalty') && modules.feature('loyalty')" class="sidenav-link sidenav-sublink" routerLink="/admin/loyalty" routerLinkActive="active"><span class="sidenav-icon">⭐</span> {{ 'Loyalty points' | translate }}</a>
           <!-- Task 3: "Sale Order Return (Cancellation after Confirmation and Payment) Sale Module" — store-wide ledger; processing itself happens from a sale order's own detail page. -->
-          <a *ngIf="canSee('/admin/sales-order-returns')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales-order-returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> Sale order returns</a>
+          <a *ngIf="canSee('/admin/sales-order-returns')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales-order-returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> {{ 'Sale order returns' | translate }}</a>
           <!-- Fourier: "Add Invoice ... without touching warehousing" — formal documents generated from a sale order above; store-wide ledger, same convention as Sale order returns just above. -->
-          <a *ngIf="canSee('/admin/invoices')" class="sidenav-link sidenav-sublink" routerLink="/admin/invoices" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Invoices</a>
+          <a *ngIf="canSee('/admin/invoices')" class="sidenav-link sidenav-sublink" routerLink="/admin/invoices" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Invoices' | translate }}</a>
           <!-- Fourier: "Add Recurring Invoice" — a saved template with real invoice line items that auto-generates a brand-new, already-ISSUED invoice on a schedule, placed right after Invoices. Deliberately its own standalone module, not folded into the Subscriptions group further down (Fourier, via AskUserQuestion). -->
-          <a *ngIf="canSee('/admin/recurring-invoices')" class="sidenav-link sidenav-sublink" routerLink="/admin/recurring-invoices" routerLinkActive="active"><span class="sidenav-icon">🔄</span> Recurring invoices</a>
+          <a *ngIf="canSee('/admin/recurring-invoices')" class="sidenav-link sidenav-sublink" routerLink="/admin/recurring-invoices" routerLinkActive="active"><span class="sidenav-icon">🔄</span> {{ 'Recurring invoices' | translate }}</a>
           <!-- Fourier: "Add credit note Menu (Void) Where we can printout them" — every voided invoice, store-wide, same convention as Invoices just above. -->
-          <a *ngIf="canSee('/admin/credit-notes')" class="sidenav-link sidenav-sublink" routerLink="/admin/credit-notes" routerLinkActive="active"><span class="sidenav-icon">🧮</span> Credit notes</a>
-          <a *ngIf="canSee('/admin/sales/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+          <a *ngIf="canSee('/admin/credit-notes')" class="sidenav-link sidenav-sublink" routerLink="/admin/credit-notes" routerLinkActive="active"><span class="sidenav-icon">🧮</span> {{ 'Credit notes' | translate }}</a>
+          <a *ngIf="canSee('/admin/sales/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
           <!-- Fourier: "Every time invoice is ISSUED send try to send email to customer and to
                configured emails. (Add invoices receiver emails in sales settings)" — same
                "Settings" placement/icon convention as Help Desk's own group. -->
-          <a *ngIf="canSee('/admin/sales/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+          <a *ngIf="canSee('/admin/sales/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/sales/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
         <!-- Customers group (Fourier: "Lets have Customers Menu after Sales Menu and Move
              Customers, Customer Statements, Customer payments and it") — split out of Sales into
@@ -308,14 +311,14 @@ import { NiweFooterComponent } from './niwe-footer.component';
              stay ADMIN-only, same as before. -->
         <button type="button" class="sidenav-link sidenav-toggle" (click)="toggleGroup('customers')">
           <span class="sidenav-icon">👥</span>
-          <span class="sidenav-label">Customers</span>
+          <span class="sidenav-label">{{ 'Customers' | translate }}</span>
           <span class="sidenav-arrow">{{ isOpen('customers') ? '▲' : '▼' }}</span>
         </button>
         <ng-container *ngIf="isOpen('customers')">
-          <a class="sidenav-link sidenav-sublink" routerLink="/admin/customers" routerLinkActive="active"><span class="sidenav-icon">👥</span> Customers</a>
-          <a *ngIf="canSee('/admin/customers/statement')" class="sidenav-link sidenav-sublink" routerLink="/admin/customers/statement" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Customer statement</a>
-          <a *ngIf="canSee('/admin/customer-payments')" class="sidenav-link sidenav-sublink" routerLink="/admin/customer-payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> Customer payments</a>
-          <a *ngIf="canSee('/admin/collections')" class="sidenav-link sidenav-sublink" routerLink="/admin/collections" routerLinkActive="active"><span class="sidenav-icon">⏰</span> Collections</a>
+          <a class="sidenav-link sidenav-sublink" routerLink="/admin/customers" routerLinkActive="active"><span class="sidenav-icon">👥</span> {{ 'Customers' | translate }}</a>
+          <a *ngIf="canSee('/admin/customers/statement')" class="sidenav-link sidenav-sublink" routerLink="/admin/customers/statement" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Customer statement' | translate }}</a>
+          <a *ngIf="canSee('/admin/customer-payments')" class="sidenav-link sidenav-sublink" routerLink="/admin/customer-payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> {{ 'Customer payments' | translate }}</a>
+          <a *ngIf="canSee('/admin/collections')" class="sidenav-link sidenav-sublink" routerLink="/admin/collections" routerLinkActive="active"><span class="sidenav-icon">⏰</span> {{ 'Collections' | translate }}</a>
         </ng-container>
         <!-- Purchases group (Fourier: "Lets have Purchases Menu after Customers menu and move
              Purchases requisitions, Purchases orders, Purchases return under it") — split out of
@@ -324,20 +327,20 @@ import { NiweFooterComponent } from './niwe-footer.component';
         <ng-container *ngIf="showGroup('purchases')">
           <button type="button" class="sidenav-link sidenav-toggle" (click)="toggleGroup('purchases')">
             <span class="sidenav-icon">📝</span>
-            <span class="sidenav-label">Purchases</span>
+            <span class="sidenav-label">{{ 'Purchases' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('purchases') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('purchases')">
             <!-- Fourier: "Add ... the purchase-requisition approval gate ... without touching warehousing" — the internal approval step placed just before Purchase orders below. -->
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/purchase-requisitions" routerLinkActive="active"><span class="sidenav-icon">📋</span> Purchase requisitions</a>
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/purchase-orders" routerLinkActive="active"><span class="sidenav-icon">📝</span> Purchase orders</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/purchase-requisitions" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Purchase requisitions' | translate }}</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/purchase-orders" routerLinkActive="active"><span class="sidenav-icon">📝</span> {{ 'Purchase orders' | translate }}</a>
             <!-- Task 4: "Supplier Purchase Return (Cancellation after Confirmation and Payment) Inventory Module" — store-wide ledger; processing itself happens from a purchase order's own detail page. -->
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/purchase-returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> Purchase returns</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/purchase-returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> {{ 'Purchase returns' | translate }}</a>
             <!-- Fourier: "The Purchase order should flow same workflow as Sale order (with Bills and Refunds equivalent with Invoices and Credit note)" — formal documents generated from a purchase order above; store-wide ledger, same convention as Invoices/Credit notes on the Sales side. -->
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/bills" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Bills</a>
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/refunds" routerLinkActive="active"><span class="sidenav-icon">🧮</span> Refunds</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/bills" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Bills' | translate }}</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/refunds" routerLinkActive="active"><span class="sidenav-icon">🧮</span> {{ 'Refunds' | translate }}</a>
             <!-- Purchases > Reports: purchases by supplier / product / category, bills, returns, supplier payments, payables aging. -->
-            <a *ngIf="canSee('/admin/purchases/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/purchases/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+            <a *ngIf="canSee('/admin/purchases/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/purchases/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
           </ng-container>
         </ng-container>
         <!-- Supplier group (Fourier: "Lets have Supplier Menu after Purchases and move Suppliers,
@@ -347,57 +350,57 @@ import { NiweFooterComponent } from './niwe-footer.component';
         <ng-container *ngIf="showGroup('suppliers')">
           <button type="button" class="sidenav-link sidenav-toggle" (click)="toggleGroup('suppliers')">
             <span class="sidenav-icon">🚚</span>
-            <span class="sidenav-label">Supplier</span>
+            <span class="sidenav-label">{{ 'Supplier' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('suppliers') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('suppliers')">
             <!-- Task: "Inventory depth ... purchase orders and supplier records ... stock-receiving flow ... stock adjustments/write-offs" -->
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/suppliers" routerLinkActive="active"><span class="sidenav-icon">🚚</span> Suppliers</a>
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/supplier-prices" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> Supplier prices</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/suppliers" routerLinkActive="active"><span class="sidenav-icon">🚚</span> {{ 'Suppliers' | translate }}</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/supplier-prices" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> {{ 'Supplier prices' | translate }}</a>
             <!-- Task 5: "Add Supplier Statement" -->
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/suppliers/statement" routerLinkActive="active"><span class="sidenav-icon">🧾</span> Supplier statement</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/suppliers/statement" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Supplier statement' | translate }}</a>
             <!-- Task: "Add Supplier payment" -->
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/supplier-payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> Supplier payments</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/supplier-payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> {{ 'Supplier payments' | translate }}</a>
           </ng-container>
         </ng-container>
         <ng-container *ngIf="auth.isAdmin() || auth.hasAnyArea()">
           <button type="button" *ngIf="showGroup('inventory')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('inventory')">
             <span class="sidenav-icon">📦</span>
-            <span class="sidenav-label">Inventory</span>
+            <span class="sidenav-label">{{ 'Inventory' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('inventory') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('inventory') && showGroup('inventory')">
-            <a *ngIf="canSee('/admin/products')" class="sidenav-link sidenav-sublink" routerLink="/admin/products" routerLinkActive="active"><span class="sidenav-icon">📦</span> Products</a>
-            <a *ngIf="canSee('/admin/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/categories" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> Categories</a>
+            <a *ngIf="canSee('/admin/products')" class="sidenav-link sidenav-sublink" routerLink="/admin/products" routerLinkActive="active"><span class="sidenav-icon">📦</span> {{ 'Products' | translate }}</a>
+            <a *ngIf="canSee('/admin/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/categories" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> {{ 'Categories' | translate }}</a>
             <!-- Fourier: "Add product brands" -->
-            <a *ngIf="canSee('/admin/brands')" class="sidenav-link sidenav-sublink" routerLink="/admin/brands" routerLinkActive="active"><span class="sidenav-icon">🏭</span> Brands</a>
+            <a *ngIf="canSee('/admin/brands')" class="sidenav-link sidenav-sublink" routerLink="/admin/brands" routerLinkActive="active"><span class="sidenav-icon">🏭</span> {{ 'Brands' | translate }}</a>
             <!-- Suppliers/Purchase requisitions/Purchase orders/Purchase returns/Supplier payments
                  moved out into their own Purchases/Supplier top-level groups just above, per
                  Fourier's own later request. -->
-            <a *ngIf="canSee('/admin/stock-adjustments')" class="sidenav-link sidenav-sublink" routerLink="/admin/stock-adjustments" routerLinkActive="active"><span class="sidenav-icon">🔧</span> Stock adjustments</a>
-            <a *ngIf="canSee('/admin/stock-counts')" class="sidenav-link sidenav-sublink" routerLink="/admin/stock-counts" routerLinkActive="active"><span class="sidenav-icon">📋</span> Stock counts</a>
-            <a *ngIf="canSee('/admin/reorder')" class="sidenav-link sidenav-sublink" routerLink="/admin/reorder" routerLinkActive="active"><span class="sidenav-icon">🔁</span> Reorder</a>
+            <a *ngIf="canSee('/admin/stock-adjustments')" class="sidenav-link sidenav-sublink" routerLink="/admin/stock-adjustments" routerLinkActive="active"><span class="sidenav-icon">🔧</span> {{ 'Stock adjustments' | translate }}</a>
+            <a *ngIf="canSee('/admin/stock-counts')" class="sidenav-link sidenav-sublink" routerLink="/admin/stock-counts" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Stock counts' | translate }}</a>
+            <a *ngIf="canSee('/admin/reorder')" class="sidenav-link sidenav-sublink" routerLink="/admin/reorder" routerLinkActive="active"><span class="sidenav-icon">🔁</span> {{ 'Reorder' | translate }}</a>
             <!-- Fourier: "multi-location/multi-warehouse tracking ... start on the foundation
                  phase" — foundation phase only, see WarehouseListComponent's own javadoc: nothing
                  else in the app lets you pick a warehouse yet. -->
             <!-- Fourier: "How business branches can be introduced?" — a branch owns one or more warehouses. -->
-            <a *ngIf="canSee('/admin/branches')" class="sidenav-link sidenav-sublink" routerLink="/admin/branches" routerLinkActive="active"><span class="sidenav-icon">🏢</span> Branches</a>
-            <a *ngIf="canSee('/admin/warehouses')" class="sidenav-link sidenav-sublink" routerLink="/admin/warehouses" routerLinkActive="active"><span class="sidenav-icon">🏬</span> Warehouses</a>
+            <a *ngIf="canSee('/admin/branches')" class="sidenav-link sidenav-sublink" routerLink="/admin/branches" routerLinkActive="active"><span class="sidenav-icon">🏢</span> {{ 'Branches' | translate }}</a>
+            <a *ngIf="canSee('/admin/warehouses')" class="sidenav-link sidenav-sublink" routerLink="/admin/warehouses" routerLinkActive="active"><span class="sidenav-icon">🏬</span> {{ 'Warehouses' | translate }}</a>
             <!-- Fourier: "multi-location/multi-warehouse tracking ... Stock Transfers" — the first
                  thing that actually moves stock between warehouses; a transfer is logged PENDING
                  here and only takes effect once confirmed, same review step as Stock adjustments. -->
-            <a *ngIf="canSee('/admin/stock-transfers')" class="sidenav-link sidenav-sublink" routerLink="/admin/stock-transfers" routerLinkActive="active"><span class="sidenav-icon">🔀</span> Stock transfers</a>
+            <a *ngIf="canSee('/admin/stock-transfers')" class="sidenav-link sidenav-sublink" routerLink="/admin/stock-transfers" routerLinkActive="active"><span class="sidenav-icon">🔀</span> {{ 'Stock transfers' | translate }}</a>
             <!-- Fourier: "Product Packaging & Breakdown / Unit Conversion ... Whiskey Breakdown &
                  Beer Breakdown ... If not activated ignore packaging" — rules are always
                  reachable here; the toggle (Inventory settings below) only gates actually running
                  a breakdown, not these links, same "configuration always visible" treatment the
                  Accounting module gives itself. -->
-            <a *ngIf="canSee('/admin/packaging/rules')" class="sidenav-link sidenav-sublink" routerLink="/admin/packaging/rules" routerLinkActive="active"><span class="sidenav-icon">🍾</span> Packaging rules</a>
-            <a *ngIf="canSee('/admin/packaging/breakdown')" class="sidenav-link sidenav-sublink" routerLink="/admin/packaging/breakdown" routerLinkActive="active"><span class="sidenav-icon">🥃</span> Breakdown stock</a>
+            <a *ngIf="canSee('/admin/packaging/rules')" class="sidenav-link sidenav-sublink" routerLink="/admin/packaging/rules" routerLinkActive="active"><span class="sidenav-icon">🍾</span> {{ 'Packaging rules' | translate }}</a>
+            <a *ngIf="canSee('/admin/packaging/breakdown')" class="sidenav-link sidenav-sublink" routerLink="/admin/packaging/breakdown" routerLinkActive="active"><span class="sidenav-icon">🥃</span> {{ 'Breakdown stock' | translate }}</a>
             <!-- Task 2 (this pass): "Move Inventory Report as submenu to Inventory Menu" — was only reachable via the general Admin > Reports picker before. -->
-            <a *ngIf="canSee('/admin/inventory/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/inventory/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+            <a *ngIf="canSee('/admin/inventory/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/inventory/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
             <!-- Task 2: "Inventory Setting (Example: allow negative stock)" -->
-            <a *ngIf="canSee('/admin/inventory/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/inventory/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Inventory settings</a>
+            <a *ngIf="canSee('/admin/inventory/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/inventory/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Inventory settings' | translate }}</a>
           </ng-container>
           <!-- Manufacturing group (Fourier: "We are now good with POS and Sale Module ... Add
                Manufacturing Module" — scoped via his own list "1.Bill of Materials 2.Production
@@ -405,30 +408,30 @@ import { NiweFooterComponent } from './niwe-footer.component';
                routings etc)"). Same accordion/admin-only treatment as every other group here. -->
           <button type="button" *ngIf="showGroup('manufacturing')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('manufacturing')">
             <span class="sidenav-icon">🏭</span>
-            <span class="sidenav-label">Manufacturing</span>
+            <span class="sidenav-label">{{ 'Manufacturing' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('manufacturing') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('manufacturing') && showGroup('manufacturing')">
             <a *ngIf="canSee('/admin/manufacturing/boms')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/boms" routerLinkActive="active"
-              ><span class="sidenav-icon">📋</span> Bill of materials</a
+              ><span class="sidenav-icon">📋</span> {{ 'Bill of materials' | translate }}</a
             >
             <a *ngIf="canSee('/admin/manufacturing/production-plans')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/production-plans" routerLinkActive="active"
-              ><span class="sidenav-icon">📈</span> Production plans</a
+              ><span class="sidenav-icon">📈</span> {{ 'Production plans' | translate }}</a
             >
             <a *ngIf="canSee('/admin/manufacturing/orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/orders" routerLinkActive="active"
-              ><span class="sidenav-icon">🛠️</span> Manufacturing orders</a
+              ><span class="sidenav-icon">🛠️</span> {{ 'Manufacturing orders' | translate }}</a
             >
             <a *ngIf="canSee('/admin/manufacturing/workstations')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/workstations" routerLinkActive="active"
-              ><span class="sidenav-icon">⚙️</span> Workstations</a
+              ><span class="sidenav-icon">⚙️</span> {{ 'Workstations' | translate }}</a
             >
             <a *ngIf="canSee('/admin/manufacturing/routings')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/routings" routerLinkActive="active"
-              ><span class="sidenav-icon">🧭</span> Routings</a
+              ><span class="sidenav-icon">🧭</span> {{ 'Routings' | translate }}</a
             >
             <a *ngIf="canSee('/admin/manufacturing/overhead-costs')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/overhead-costs" routerLinkActive="active"
-              ><span class="sidenav-icon">💰</span> Indirect costs</a
+              ><span class="sidenav-icon">💰</span> {{ 'Indirect costs' | translate }}</a
             >
             <a *ngIf="canSee('/admin/manufacturing/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/manufacturing/reports" routerLinkActive="active"
-              ><span class="sidenav-icon">📊</span> Reports</a
+              ><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a
             >
           </ng-container>
           <!-- Subscriptions group (Fourier: "Make subscriptions module as new Menu", then "Let
@@ -439,41 +442,41 @@ import { NiweFooterComponent } from './niwe-footer.component';
                SubscriptionService). -->
           <button type="button" *ngIf="showGroup('subscriptions')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('subscriptions')">
             <span class="sidenav-icon">🔁</span>
-            <span class="sidenav-label">Subscriptions</span>
+            <span class="sidenav-label">{{ 'Subscriptions' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('subscriptions') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('subscriptions') && showGroup('subscriptions')">
-            <a *ngIf="canSee('/admin/subscription-plans')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscription-plans" routerLinkActive="active"><span class="sidenav-icon">📋</span> Subscription plans</a>
-            <a *ngIf="canSee('/admin/subscriptions')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🔁</span> Subscriptions</a>
-            <a *ngIf="canSee('/admin/subscriptions/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/overview" routerLinkActive="active"><span class="sidenav-icon">📊</span> Overview</a>
-            <a *ngIf="canSee('/admin/subscriptions/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/reports" routerLinkActive="active"><span class="sidenav-icon">📑</span> Reports</a>
-            <a *ngIf="canSee('/admin/subscriptions/job-settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/job-settings" routerLinkActive="active"><span class="sidenav-icon">⏰</span> Job settings</a>
+            <a *ngIf="canSee('/admin/subscription-plans')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscription-plans" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Subscription plans' | translate }}</a>
+            <a *ngIf="canSee('/admin/subscriptions')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span class="sidenav-icon">🔁</span> {{ 'Subscriptions' | translate }}</a>
+            <a *ngIf="canSee('/admin/subscriptions/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/overview" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Overview' | translate }}</a>
+            <a *ngIf="canSee('/admin/subscriptions/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/reports" routerLinkActive="active"><span class="sidenav-icon">📑</span> {{ 'Reports' | translate }}</a>
+            <a *ngIf="canSee('/admin/subscriptions/job-settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/subscriptions/job-settings" routerLinkActive="active"><span class="sidenav-icon">⏰</span> {{ 'Job settings' | translate }}</a>
           </ng-container>
           <!-- Hotel group (Fourier: "add hotel management ... integrated with POS, Restaurant, Accounting"). Shown once the
                module is switched on (Settings > Modules, or Hotel > Settings). -->
           <button type="button" *ngIf="hotelApi.enabled() && showGroup('hotel')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('hotel')">
             <span class="sidenav-icon">🏨</span>
-            <span class="sidenav-label">Hotel</span>
+            <span class="sidenav-label">{{ 'Hotel' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('hotel') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('hotel') && hotelApi.enabled() && showGroup('hotel')">
             <ng-container *ngIf="hotelApi.enabled()">
-              <a *ngIf="canSee('/admin/hotel/front-desk')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/front-desk" routerLinkActive="active"><span class="sidenav-icon">🛎️</span> Front desk</a>
-              <a *ngIf="canSee('/admin/hotel/bookings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/bookings" routerLinkActive="active"><span class="sidenav-icon">📖</span> Bookings</a>
-              <a *ngIf="canSee('/admin/hotel/grid')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/grid" routerLinkActive="active"><span class="sidenav-icon">🗓️</span> Reservation chart</a>
-              <a *ngIf="canSee('/admin/hotel/housekeeping')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/housekeeping" routerLinkActive="active"><span class="sidenav-icon">🧹</span> Housekeeping</a>
-              <a *ngIf="canSee('/admin/hotel/maintenance')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/maintenance" routerLinkActive="active"><span class="sidenav-icon">🔧</span> Maintenance</a>
-              <a *ngIf="canSee('/admin/hotel/guests')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/guests" routerLinkActive="active"><span class="sidenav-icon">🧳</span> Guests</a>
-              <a *ngIf="canSee('/admin/hotel/guest-register')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/guest-register" routerLinkActive="active"><span class="sidenav-icon">📒</span> Guest register</a>
-              <a *ngIf="canSee('/admin/hotel/rooms')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/rooms" routerLinkActive="active"><span class="sidenav-icon">🚪</span> Rooms</a>
-              <a *ngIf="canSee('/admin/hotel/room-types')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/room-types" routerLinkActive="active"><span class="sidenav-icon">🛏️</span> Room types</a>
-              <a *ngIf="canSee('/admin/hotel/rates')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/rates" routerLinkActive="active"><span class="sidenav-icon">💲</span> Rates</a>
-              <a *ngIf="canSee('/admin/hotel/companies')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/companies" routerLinkActive="active"><span class="sidenav-icon">🏢</span> Company accounts</a>
-              <a *ngIf="canSee('/admin/hotel/groups')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/groups" routerLinkActive="active"><span class="sidenav-icon">👥</span> Groups</a>
-              <a *ngIf="canSee('/admin/hotel/online')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/online" routerLinkActive="active"><span class="sidenav-icon">🌐</span> Online booking</a>
-              <a *ngIf="canSee('/admin/hotel/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+              <a *ngIf="canSee('/admin/hotel/front-desk')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/front-desk" routerLinkActive="active"><span class="sidenav-icon">🛎️</span> {{ 'Front desk' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/bookings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/bookings" routerLinkActive="active"><span class="sidenav-icon">📖</span> {{ 'Bookings' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/grid')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/grid" routerLinkActive="active"><span class="sidenav-icon">🗓️</span> {{ 'Reservation chart' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/housekeeping')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/housekeeping" routerLinkActive="active"><span class="sidenav-icon">🧹</span> {{ 'Housekeeping' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/maintenance')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/maintenance" routerLinkActive="active"><span class="sidenav-icon">🔧</span> {{ 'Maintenance' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/guests')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/guests" routerLinkActive="active"><span class="sidenav-icon">🧳</span> {{ 'Guests' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/guest-register')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/guest-register" routerLinkActive="active"><span class="sidenav-icon">📒</span> {{ 'Guest register' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/rooms')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/rooms" routerLinkActive="active"><span class="sidenav-icon">🚪</span> {{ 'Rooms' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/room-types')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/room-types" routerLinkActive="active"><span class="sidenav-icon">🛏️</span> {{ 'Room types' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/rates')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/rates" routerLinkActive="active"><span class="sidenav-icon">💲</span> {{ 'Rates' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/companies')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/companies" routerLinkActive="active"><span class="sidenav-icon">🏢</span> {{ 'Company accounts' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/groups')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/groups" routerLinkActive="active"><span class="sidenav-icon">👥</span> {{ 'Groups' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/online')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/online" routerLinkActive="active"><span class="sidenav-icon">🌐</span> {{ 'Online booking' | translate }}</a>
+              <a *ngIf="canSee('/admin/hotel/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
             </ng-container>
-            <a *ngIf="canSee('/admin/hotel/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+            <a *ngIf="canSee('/admin/hotel/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hotel/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
           </ng-container>
           <!-- Help Desk group (Fourier: "Add Help Desk module (with its menu) should manage
                customer and internal support requests from creation through resolution") — same
@@ -484,16 +487,16 @@ import { NiweFooterComponent } from './niwe-footer.component';
                separate public /helpdesk page (see app.routes.ts), not through this admin menu. -->
           <button type="button" *ngIf="showGroup('helpdesk')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('helpdesk')">
             <span class="sidenav-icon">🎫</span>
-            <span class="sidenav-label">Help Desk</span>
+            <span class="sidenav-label">{{ 'Help Desk' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('helpdesk') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('helpdesk') && showGroup('helpdesk')">
-            <a *ngIf="canSee('/admin/helpdesk/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
-            <a *ngIf="canSee('/admin/helpdesk/tickets')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/tickets" routerLinkActive="active"><span class="sidenav-icon">🎫</span> Tickets</a>
-            <a *ngIf="canSee('/admin/helpdesk/canned')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/canned" routerLinkActive="active"><span class="sidenav-icon">💬</span> Saved replies</a>
-            <a *ngIf="canSee('/admin/helpdesk/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/categories" routerLinkActive="active"><span class="sidenav-icon">📋</span> Categories</a>
-            <a *ngIf="canSee('/admin/helpdesk/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
-            <a *ngIf="canSee('/admin/helpdesk/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
+            <a *ngIf="canSee('/admin/helpdesk/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> {{ 'Overview' | translate }}</a>
+            <a *ngIf="canSee('/admin/helpdesk/tickets')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/tickets" routerLinkActive="active"><span class="sidenav-icon">🎫</span> {{ 'Tickets' | translate }}</a>
+            <a *ngIf="canSee('/admin/helpdesk/canned')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/canned" routerLinkActive="active"><span class="sidenav-icon">💬</span> {{ 'Saved replies' | translate }}</a>
+            <a *ngIf="canSee('/admin/helpdesk/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/categories" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Categories' | translate }}</a>
+            <a *ngIf="canSee('/admin/helpdesk/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
+            <a *ngIf="canSee('/admin/helpdesk/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/helpdesk/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
           </ng-container>
           <!-- Expenses group (Fourier: "I prefer to have the Expenses as module separate from
                Accounting (with it own Menu just before Accounting menu)") — split out of the
@@ -502,49 +505,49 @@ import { NiweFooterComponent } from './niwe-footer.component';
                Accounting for now; only Expenses and its Recurring-expenses templates moved. -->
           <button type="button" *ngIf="showGroup('expenses')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('expenses')">
             <span class="sidenav-icon">💸</span>
-            <span class="sidenav-label">Expenses</span>
+            <span class="sidenav-label">{{ 'Expenses' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('expenses') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('expenses') && showGroup('expenses')">
-            <a *ngIf="canSee('/admin/accounting/expenses/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> Overview</a>
+            <a *ngIf="canSee('/admin/accounting/expenses/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/overview" routerLinkActive="active"><span class="sidenav-icon">📈</span> {{ 'Overview' | translate }}</a>
             <a *ngIf="canSee('/admin/accounting/expenses')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-              ><span class="sidenav-icon">💸</span> Expenses</a
+              ><span class="sidenav-icon">💸</span> {{ 'Expenses' | translate }}</a
             >
-            <a *ngIf="canSee('/admin/accounting/expenses/budgets')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/budgets" routerLinkActive="active"><span class="sidenav-icon">🎯</span> Budgets</a>
+            <a *ngIf="canSee('/admin/accounting/expenses/budgets')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/budgets" routerLinkActive="active"><span class="sidenav-icon">🎯</span> {{ 'Budgets' | translate }}</a>
             <a *ngIf="canSee('/admin/accounting/recurring-expenses')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/recurring-expenses" routerLinkActive="active"
-              ><span class="sidenav-icon">🔁</span> Recurring expenses</a
+              ><span class="sidenav-icon">🔁</span> {{ 'Recurring expenses' | translate }}</a
             >
           </ng-container>
           <ng-container *ngIf="isOpen('expenses') && showGroup('expenses')">
-            <a *ngIf="canSee('/admin/accounting/expenses/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> Reports</a>
-            <a *ngIf="canSee('/admin/accounting/expenses/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> Settings</a>
+            <a *ngIf="canSee('/admin/accounting/expenses/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/reports" routerLinkActive="active"><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a>
+            <a *ngIf="canSee('/admin/accounting/expenses/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/expenses/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
           </ng-container>
           <!-- HR modules (Settings > Modules): Employees, Organizational Structure, Attendance & Leaves, Contracts, Payroll — placed just before Assets. -->
           <button type="button" *ngIf="showGroup('employees')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('employees')">
             <span class="sidenav-icon">👥</span>
-            <span class="sidenav-label">Employees</span>
+            <span class="sidenav-label">{{ 'Employees' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('employees') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('employees') && showGroup('employees')">
             <a *ngIf="canSee('/admin/hr/employees')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/employees" routerLinkActive="active"
-              ><span class="sidenav-icon">📋</span> Employees</a
+              ><span class="sidenav-icon">📋</span> {{ 'Employees' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/employees/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/employees/new" routerLinkActive="active"
-              ><span class="sidenav-icon">➕</span> New employee</a
+              ><span class="sidenav-icon">➕</span> {{ 'New employee' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/documents')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/documents" routerLinkActive="active"
-              ><span class="sidenav-icon">🗂️</span> Documents</a
+              ><span class="sidenav-icon">🗂️</span> {{ 'Documents' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/checklists')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/checklists" routerLinkActive="active"
-              ><span class="sidenav-icon">✅</span> Onboarding</a
+              ><span class="sidenav-icon">✅</span> {{ 'Onboarding' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/reports" routerLinkActive="active"
-              ><span class="sidenav-icon">📊</span> HR reports</a
+              ><span class="sidenav-icon">📊</span> {{ 'HR reports' | translate }}</a
             >
           </ng-container>
           <button type="button" *ngIf="showGroup('org')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('org')">
             <span class="sidenav-icon">🧭</span>
-            <span class="sidenav-label">Organization</span>
+            <span class="sidenav-label">{{ 'Organization' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('org') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('org') && showGroup('org')">
@@ -552,7 +555,7 @@ import { NiweFooterComponent } from './niwe-footer.component';
               ><span class="sidenav-icon">🏢</span> Departments & positions</a
             >
             <a *ngIf="canSee('/admin/hr/org/chart')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/org/chart" routerLinkActive="active"
-              ><span class="sidenav-icon">🌳</span> Organization chart</a
+              ><span class="sidenav-icon">🌳</span> {{ 'Organization chart' | translate }}</a
             >
           </ng-container>
           <button type="button" *ngIf="showGroup('attendance')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('attendance')">
@@ -562,42 +565,42 @@ import { NiweFooterComponent } from './niwe-footer.component';
           </button>
           <ng-container *ngIf="isOpen('attendance') && showGroup('attendance')">
             <a *ngIf="canSee('/admin/hr/attendance')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/attendance" routerLinkActive="active"
-              ><span class="sidenav-icon">⏱️</span> Attendance</a
+              ><span class="sidenav-icon">⏱️</span> {{ 'Attendance' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/leaves')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/leaves" routerLinkActive="active"
-              ><span class="sidenav-icon">🏖️</span> Leave</a
+              ><span class="sidenav-icon">🏖️</span> {{ 'Leave' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/leave-calendar')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/leave-calendar" routerLinkActive="active"
-              ><span class="sidenav-icon">🗓️</span> Team calendar</a
+              ><span class="sidenav-icon">🗓️</span> {{ 'Team calendar' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/leave-settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/leave-settings" routerLinkActive="active"
-              ><span class="sidenav-icon">⚙️</span> Settings</a
+              ><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a
             >
           </ng-container>
           <button type="button" *ngIf="showGroup('contracts')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('contracts')">
             <span class="sidenav-icon">📄</span>
-            <span class="sidenav-label">Contracts</span>
+            <span class="sidenav-label">{{ 'Contracts' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('contracts') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('contracts') && showGroup('contracts')">
             <a *ngIf="canSee('/admin/hr/contracts')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/contracts" routerLinkActive="active"
-              ><span class="sidenav-icon">📄</span> Contracts</a
+              ><span class="sidenav-icon">📄</span> {{ 'Contracts' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/contracts/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/contracts/new" routerLinkActive="active"
-              ><span class="sidenav-icon">➕</span> New contract</a
+              ><span class="sidenav-icon">➕</span> {{ 'New contract' | translate }}</a
             >
           </ng-container>
           <button type="button" *ngIf="showGroup('payroll')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('payroll')">
             <span class="sidenav-icon">💰</span>
-            <span class="sidenav-label">Payroll</span>
+            <span class="sidenav-label">{{ 'Payroll' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('payroll') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('payroll') && showGroup('payroll')">
             <a *ngIf="canSee('/admin/hr/payroll/runs')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/runs" routerLinkActive="active"
-              ><span class="sidenav-icon">🧾</span> Payroll runs</a
+              ><span class="sidenav-icon">🧾</span> {{ 'Payroll runs' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/payroll/adjustments')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/adjustments" routerLinkActive="active"
-              ><span class="sidenav-icon">✏️</span> Adjustments</a
+              ><span class="sidenav-icon">✏️</span> {{ 'Adjustments' | translate }}</a
             >
             <a *ngIf="canSee('/admin/hr/payroll/loans')" class="sidenav-link sidenav-sublink" routerLink="/admin/hr/payroll/loans" routerLinkActive="active"
               ><span class="sidenav-icon">💳</span> Advances & loans</a
@@ -612,58 +615,58 @@ import { NiweFooterComponent } from './niwe-footer.component';
           <!-- Installments group: optional module (Settings > Modules), placed just before Assets. -->
           <button type="button" *ngIf="showGroup('installments')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('installments')">
             <span class="sidenav-icon">🗓️</span>
-            <span class="sidenav-label">Installments</span>
+            <span class="sidenav-label">{{ 'Installments' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('installments') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('installments') && showGroup('installments')">
             <a *ngIf="canSee('/admin/installments')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-              ><span class="sidenav-icon">📋</span> Agreements</a
+              ><span class="sidenav-icon">📋</span> {{ 'Agreements' | translate }}</a
             >
             <a *ngIf="canSee('/admin/installments/collections')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments/collections" routerLinkActive="active"
-              ><span class="sidenav-icon">📞</span> Collections</a
+              ><span class="sidenav-icon">📞</span> {{ 'Collections' | translate }}</a
             >
             <a *ngIf="canSee('/admin/installments/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments/new" routerLinkActive="active"
-              ><span class="sidenav-icon">➕</span> New plan</a
+              ><span class="sidenav-icon">➕</span> {{ 'New plan' | translate }}</a
             >
             <a *ngIf="canSee('/admin/installments/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments/reports" routerLinkActive="active"
-              ><span class="sidenav-icon">📊</span> Reports</a
+              ><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a
             >
             <a *ngIf="canSee('/admin/installments/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/installments/settings" routerLinkActive="active"
-              ><span class="sidenav-icon">⚙️</span> Settings</a
+              ><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a
             >
           </ng-container>
           <!-- Assets Management group: optional module (Settings > Modules), placed just before Accounting. -->
           <button type="button" *ngIf="showGroup('assets')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('assets')">
             <span class="sidenav-icon">🏗️</span>
-            <span class="sidenav-label">Assets</span>
+            <span class="sidenav-label">{{ 'Assets' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('assets') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('assets') && showGroup('assets')">
             <a *ngIf="canSee('/admin/assets')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-              ><span class="sidenav-icon">📋</span> Asset register</a
+              ><span class="sidenav-icon">📋</span> {{ 'Asset register' | translate }}</a
             >
             <a *ngIf="canSee('/admin/assets/overview')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/overview" routerLinkActive="active"
-              ><span class="sidenav-icon">📈</span> Overview</a
+              ><span class="sidenav-icon">📈</span> {{ 'Overview' | translate }}</a
             >
             <a *ngIf="canSee('/admin/assets/new')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/new" routerLinkActive="active"
-              ><span class="sidenav-icon">➕</span> New asset</a
+              ><span class="sidenav-icon">➕</span> {{ 'New asset' | translate }}</a
             >
             <a *ngIf="canSee('/admin/assets/from-purchase')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/from-purchase" routerLinkActive="active"
-              ><span class="sidenav-icon">📥</span> From purchases</a
+              ><span class="sidenav-icon">📥</span> {{ 'From purchases' | translate }}</a
             >
             <a *ngIf="canSee('/admin/assets/categories')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/categories" routerLinkActive="active"
-              ><span class="sidenav-icon">🗂️</span> Categories</a
+              ><span class="sidenav-icon">🗂️</span> {{ 'Categories' | translate }}</a
             >
             <a *ngIf="canSee('/admin/assets/verifications')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/verifications" routerLinkActive="active"
-              ><span class="sidenav-icon">✅</span> Verification</a
+              ><span class="sidenav-icon">✅</span> {{ 'Verification' | translate }}</a
             >
             <a *ngIf="canSee('/admin/assets/reports')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/reports" routerLinkActive="active"
-              ><span class="sidenav-icon">📊</span> Reports</a
+              ><span class="sidenav-icon">📊</span> {{ 'Reports' | translate }}</a
             >
           </ng-container>
           <ng-container *ngIf="isOpen('assets') && showGroup('assets')">
             <a *ngIf="canSee('/admin/assets/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/assets/settings" routerLinkActive="active"
-              ><span class="sidenav-icon">⚙️</span> Settings</a
+              ><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a
             >
           </ng-container>
           <!-- Accounting group (Fourier: "We need to add Accounting module. Then all POS, Sale,
@@ -683,24 +686,24 @@ import { NiweFooterComponent } from './niwe-footer.component';
                group just above, per Fourier's own later request. -->
           <button type="button" *ngIf="showGroup('accounting')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('accounting')">
             <span class="sidenav-icon">📒</span>
-            <span class="sidenav-label">Accounting</span>
+            <span class="sidenav-label">{{ 'Accounting' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('accounting') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('accounting') && showGroup('accounting')">
             <a *ngIf="canSee('/admin/accounting/accounts')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/accounts" routerLinkActive="active"
-              ><span class="sidenav-icon">📋</span> Chart of accounts</a
+              ><span class="sidenav-icon">📋</span> {{ 'Chart of accounts' | translate }}</a
             >
             <a *ngIf="canSee('/admin/accounting/cost-centers')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/cost-centers" routerLinkActive="active"
-              ><span class="sidenav-icon">🏷️</span> Cost centers</a
+              ><span class="sidenav-icon">🏷️</span> {{ 'Cost centers' | translate }}</a
             >
             <a *ngIf="canSee('/admin/accounting/journal-entries')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/journal-entries" routerLinkActive="active"
-              ><span class="sidenav-icon">📝</span> Journal entries</a
+              ><span class="sidenav-icon">📝</span> {{ 'Journal entries' | translate }}</a
             >
             <a *ngIf="canSee('/admin/accounting/controls')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/controls" routerLinkActive="active"
-              ><span class="sidenav-icon">🔒</span> Controls</a
+              ><span class="sidenav-icon">🔒</span> {{ 'Controls' | translate }}</a
             >
             <a *ngIf="canSee('/admin/accounting/incomes')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/incomes" routerLinkActive="active"
-              ><span class="sidenav-icon">💰</span> Incomes</a
+              ><span class="sidenav-icon">💰</span> {{ 'Incomes' | translate }}</a
             >
             <!-- Report Menu — single entry point for all 24 accounting reports (Accounting
                  Reports: Tax Report, Tax Declaration, Income Statement, Balance Sheet,
@@ -708,64 +711,64 @@ import { NiweFooterComponent } from './niwe-footer.component';
                  Reports / Expenses Reports / Incomes Reports) — one link to
                  AccountingReportMenuComponent's own grouped picker screen. -->
             <a *ngIf="canSee('/admin/accounting/reports/menu')" class="sidenav-link sidenav-sublink" routerLink="/admin/accounting/reports/menu" routerLinkActive="active"
-              ><span class="sidenav-icon">📚</span> Reports</a
+              ><span class="sidenav-icon">📚</span> {{ 'Reports' | translate }}</a
             >
           </ng-container>
           <!-- Users group (Task: "Move Staff menu to new Menu called Users") — same grouping treatment as Customers just above; "Staff" itself keeps its existing label and route. Fourier: "Move Users and Settings menus after Accounting Menu" — was directly after Inventory; both this and Settings below now sit after Accounting instead, order otherwise unchanged. -->
           <button type="button" *ngIf="showGroup('users')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('users')">
             <span class="sidenav-icon">🧑‍💼</span>
-            <span class="sidenav-label">Users</span>
+            <span class="sidenav-label">{{ 'Users' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('users') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('users') && showGroup('users')">
-            <a *ngIf="canSee('/admin/staff')" class="sidenav-link sidenav-sublink" routerLink="/admin/staff" routerLinkActive="active"><span class="sidenav-icon">🧑‍💼</span> Staff</a>
-            <a class="sidenav-link sidenav-sublink" routerLink="/admin/staff/roles" routerLinkActive="active"><span class="sidenav-icon">🛡️</span> Roles</a>
+            <a *ngIf="canSee('/admin/staff')" class="sidenav-link sidenav-sublink" routerLink="/admin/staff" routerLinkActive="active"><span class="sidenav-icon">🧑‍💼</span> {{ 'Staff' | translate }}</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/admin/staff/roles" routerLinkActive="active"><span class="sidenav-icon">🛡️</span> {{ 'Roles' | translate }}</a>
           </ng-container>
           <!-- Settings groups the "how the store is configured" screens (Task: "Move Payment Methods menu under new menu called Settings" / "Add taxes menu under Settings Menu"). -->
           <button type="button" *ngIf="showGroup('settings')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('settings')">
             <span class="sidenav-icon">⚙️</span>
-            <span class="sidenav-label">Settings</span>
+            <span class="sidenav-label">{{ 'Settings' | translate }}</span>
             <span class="sidenav-arrow">{{ isOpen('settings') ? '▲' : '▼' }}</span>
           </button>
           <ng-container *ngIf="isOpen('settings') && showGroup('settings')">
-            <a class="sidenav-link sidenav-sublink" routerLink="/settings/appearance" routerLinkActive="active"><span class="sidenav-icon">🎨</span> Appearance</a>
-            <a *ngIf="canSee('/admin/settings/modules')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/modules" routerLinkActive="active"><span class="sidenav-icon">🧩</span> Modules</a>
+            <a class="sidenav-link sidenav-sublink" routerLink="/settings/appearance" routerLinkActive="active"><span class="sidenav-icon">🎨</span> {{ 'Appearance' | translate }}</a>
+            <a *ngIf="canSee('/admin/settings/modules')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/modules" routerLinkActive="active"><span class="sidenav-icon">🧩</span> {{ 'Modules' | translate }}</a>
             <a *ngIf="canSee('/admin/payment-methods')" class="sidenav-link sidenav-sublink" routerLink="/admin/payment-methods" routerLinkActive="active"
-              ><span class="sidenav-icon">💳</span> Payment methods</a
+              ><span class="sidenav-icon">💳</span> {{ 'Payment methods' | translate }}</a
             >
             <a *ngIf="canSee('/admin/settings/taxes')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/taxes" routerLinkActive="active"
-              ><span class="sidenav-icon">💰</span> Taxes</a
+              ><span class="sidenav-icon">💰</span> {{ 'Taxes' | translate }}</a
             >
             <!-- Task: "Under Settings menu add Business Details menu" -->
             <a *ngIf="canSee('/admin/settings/business')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/business" routerLinkActive="active"
-              ><span class="sidenav-icon">🏢</span> Business details</a
+              ><span class="sidenav-icon">🏢</span> {{ 'Business details' | translate }}</a
             >
             <!-- Task: "Add System setting like currency, time zone, date format, etc" -->
             <a *ngIf="canSee('/admin/settings/system')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/system" routerLinkActive="active"
-              ><span class="sidenav-icon">🌐</span> System settings</a
+              ><span class="sidenav-icon">🌐</span> {{ 'System settings' | translate }}</a
             >
             <!-- Fourier: "Configure smtp for sending email" -->
             <a *ngIf="canSee('/admin/settings/email')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/email" routerLinkActive="active"
-              ><span class="sidenav-icon">✉️</span> Email settings</a
+              ><span class="sidenav-icon">✉️</span> {{ 'Email settings' | translate }}</a
             >
             <!-- Emailed Excel/PDF reports on a schedule -->
             <a *ngIf="canSee('/admin/settings/report-schedules')" class="sidenav-link sidenav-sublink" routerLink="/admin/settings/report-schedules" routerLinkActive="active"
-              ><span class="sidenav-icon">🗓️</span> Scheduled reports</a
+              ><span class="sidenav-icon">🗓️</span> {{ 'Scheduled reports' | translate }}</a
             >
             <!-- Task: "This will work as a plugin (or apps) to be installed and configured" -->
             <a *ngIf="canSee('/admin/apps')" class="sidenav-link sidenav-sublink" routerLink="/admin/apps" routerLinkActive="active"
-              ><span class="sidenav-icon">🧩</span> Apps</a
+              ><span class="sidenav-icon">🧩</span> {{ 'Apps' | translate }}</a
             >
             <!-- Task: "Implement an audit log of who did what and when" -->
             <a *ngIf="canSee('/admin/audit-log')" class="sidenav-link sidenav-sublink" routerLink="/admin/audit-log" routerLinkActive="active"
-              ><span class="sidenav-icon">🕵️</span> Audit Log</a
+              ><span class="sidenav-icon">🕵️</span> {{ 'Audit Log' | translate }}</a
             >
             <!-- v1.14.0: sign-in log and server log viewer -->
             <a *ngIf="canSee('/admin/login-log')" class="sidenav-link sidenav-sublink" routerLink="/admin/login-log" routerLinkActive="active"
-              ><span class="sidenav-icon">🔑</span> Sign-in log</a
+              ><span class="sidenav-icon">🔑</span> {{ 'Sign-in log' | translate }}</a
             >
             <a *ngIf="canSee('/admin/server-logs')" class="sidenav-link sidenav-sublink" routerLink="/admin/server-logs" routerLinkActive="active"
-              ><span class="sidenav-icon">📜</span> Server logs</a
+              ><span class="sidenav-icon">📜</span> {{ 'Server logs' | translate }}</a
             >
             <!-- Fourier: "no backup/restore or bulk import-export anywhere in the backend" — DB backup/restore, CSV import, and export/year-end archive, all on one screen. -->
             <a *ngIf="canSee('/admin/data')" class="sidenav-link sidenav-sublink" routerLink="/admin/data" routerLinkActive="active"

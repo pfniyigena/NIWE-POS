@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -24,26 +25,26 @@ import { CashierSession } from '../core/models';
 @Component({
   selector: 'app-session-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Sessions</h3>
+        <h3>{{ 'Sessions' | translate }}</h3>
         <select class="form-select" style="width:auto;" [(ngModel)]="statusFilter">
-          <option value="ALL">All sessions</option>
-          <option value="OPEN">Open only</option>
-          <option value="CLOSED">Closed only</option>
+          <option value="ALL">{{ 'All sessions' | translate }}</option>
+          <option value="OPEN">{{ 'Open only' | translate }}</option>
+          <option value="CLOSED">{{ 'Closed only' | translate }}</option>
         </select>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Register / Shift</th>
-            <th>Cashier</th>
-            <th>Joined</th>
-            <th>Ended</th>
-            <th>Status</th>
+            <th>{{ 'Register / Shift' | translate }}</th>
+            <th>{{ 'Cashier' | translate }}</th>
+            <th>{{ 'Joined' | translate }}</th>
+            <th>{{ 'Ended' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -57,15 +58,15 @@ import { CashierSession } from '../core/models';
               <span class="badge" [class.badge-success]="cs.status === 'OPEN'" [class.badge-secondary]="cs.status !== 'OPEN'">{{ cs.status }}</span>
             </td>
             <td class="flex gap-2">
-              <a [routerLink]="['/cashier-sessions', cs.id, 'orders']">Orders</a>
-              <a *ngIf="cs.status === 'OPEN' && cs.registerSessionId" [routerLink]="['/pos', cs.registerSessionId]">Terminal</a>
-              <a *ngIf="cs.status === 'OPEN' && cs.registerSessionId" [routerLink]="['/cash-control', cs.registerSessionId]">Cash</a>
-              <a *ngIf="cs.status !== 'OPEN'" [routerLink]="['/cashier-sessions', cs.id, 'report']">Report</a>
-              <button *ngIf="cs.status === 'OPEN'" class="btn btn-sm btn-outline-danger" (click)="closeSession(cs)">Close</button>
+              <a [routerLink]="['/cashier-sessions', cs.id, 'orders']">{{ 'Orders' | translate }}</a>
+              <a *ngIf="cs.status === 'OPEN' && cs.registerSessionId" [routerLink]="['/pos', cs.registerSessionId]">{{ 'Terminal' | translate }}</a>
+              <a *ngIf="cs.status === 'OPEN' && cs.registerSessionId" [routerLink]="['/cash-control', cs.registerSessionId]">{{ 'Cash' | translate }}</a>
+              <a *ngIf="cs.status !== 'OPEN'" [routerLink]="['/cashier-sessions', cs.id, 'report']">{{ 'Report' | translate }}</a>
+              <button *ngIf="cs.status === 'OPEN'" class="btn btn-sm btn-outline-danger" (click)="closeSession(cs)">{{ 'Close' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="filteredSessions().length === 0">
-            <td colspan="6" class="text-muted">No sessions match this filter.</td>
+            <td colspan="6" class="text-muted">{{ 'No sessions match this filter.' | translate }}</td>
           </tr>
         </tbody>
       </table>

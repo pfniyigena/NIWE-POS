@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,17 +16,17 @@ import { PrintService } from '../core/hardware/print.service';
 @Component({
   selector: 'app-devices',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="page-header">
-      <h1>Devices</h1>
-      <p class="text-muted">Printers and the customer display of <strong>this PC</strong>. They are kept in this browser; set them up on every till.</p>
+      <h1>{{ 'Devices' | translate }}</h1>
+      <p class="text-muted">{{ 'Printers and the customer display of' | translate }} <strong>{{ 'this PC' | translate }}</strong>{{ '. They are kept in this browser; set them up on every till.' | translate }}</p>
     </div>
 
     <div class="alert alert-warning dev-nosupport" *ngIf="!devices.supportsSerial && !devices.supportsUsb">
-      This browser cannot talk to USB or COM devices directly. Open the till in Chrome or Edge to use direct thermal printing and the COM customer display.
-      <span *ngIf="!secure">The browser only allows this on a secure address: https://... or http://localhost (this page is on plain http).</span>
-      The "Windows driver" mode still works in any browser.
+      {{ 'This browser cannot talk to USB or COM devices directly. Open the till in Chrome or Edge to use direct thermal printing and the COM customer display.' | translate }}
+      <span *ngIf="!secure">{{ 'The browser only allows this on a secure address: https://... or http://localhost (this page is on plain http).' | translate }}</span>
+      {{ 'The "Windows driver" mode still works in any browser.' | translate }}
     </div>
     <div class="alert alert-info dev-msg" *ngIf="message">{{ message }}</div>
     <div class="alert alert-danger dev-err" *ngIf="error">{{ error }}</div>
@@ -37,163 +38,163 @@ import { PrintService } from '../core/hardware/print.service';
           <p class="text-muted" style="font-size:0.9rem;">{{ p.hint }}</p>
           <div class="row g-3 align-items-end">
             <div class="col-auto">
-              <label class="form-label">Connection</label>
+              <label class="form-label">{{ 'Connection' | translate }}</label>
               <select class="form-select dev-mode" [attr.data-slot]="p.slot" [(ngModel)]="d[p.slot].mode" [name]="p.slot + 'mode'">
-                <option value="driver">Windows driver (print dialog)</option>
-                <option value="usb">USB, direct ESC/POS</option>
-                <option value="serial">Serial / COM, direct ESC/POS</option>
+                <option value="driver">{{ 'Windows driver (print dialog)' | translate }}</option>
+                <option value="usb">{{ 'USB, direct ESC/POS' | translate }}</option>
+                <option value="serial">{{ 'Serial / COM, direct ESC/POS' | translate }}</option>
               </select>
             </div>
             <ng-container *ngIf="d[p.slot].mode === 'serial'">
               <div class="col-auto">
-                <label class="form-label">Baud rate</label>
+                <label class="form-label">{{ 'Baud rate' | translate }}</label>
                 <select class="form-select dev-baud" [attr.data-slot]="p.slot" [ngModel]="serialBaud(p.slot)" (ngModelChange)="setSerialBaud(p.slot, $event)" [name]="p.slot + 'baud'">
                   <option *ngFor="let b of bauds" [ngValue]="b">{{ b }}</option>
                 </select>
               </div>
               <div class="col-auto">
-                <label class="form-label">Flow control</label>
+                <label class="form-label">{{ 'Flow control' | translate }}</label>
                 <select class="form-select" [ngModel]="serialFlow(p.slot)" (ngModelChange)="setSerialFlow(p.slot, $event)" [name]="p.slot + 'flow'">
-                  <option value="none">None</option>
-                  <option value="hardware">Hardware (RTS/CTS)</option>
+                  <option value="none">{{ 'None' | translate }}</option>
+                  <option value="hardware">{{ 'Hardware (RTS/CTS)' | translate }}</option>
                 </select>
               </div>
             </ng-container>
             <div class="col-auto" *ngIf="d[p.slot].mode !== 'driver'">
               <button type="button" class="btn btn-outline-primary dev-connect" [attr.data-slot]="p.slot" (click)="connect(p.slot)">
-                {{ connected(p.slot) ? 'Choose another device…' : 'Connect device…' }}
+                {{ connected(p.slot) ? ('Choose another device…' | translate) : ('Connect device…' | translate) }}
               </button>
             </div>
             <div class="col-auto" *ngIf="p.kitchen">
-              <label class="form-label">Stations on this printer</label>
-              <input class="form-control dev-stations" [attr.data-slot]="p.slot" [ngModel]="stations(p.slot)" (ngModelChange)="setStations(p.slot, $event)" [name]="p.slot + 'st'" placeholder="Grill, Pizza (empty = all other stations)" style="min-width:260px;" />
+              <label class="form-label">{{ 'Stations on this printer' | translate }}</label>
+              <input class="form-control dev-stations" [attr.data-slot]="p.slot" [ngModel]="stations(p.slot)" (ngModelChange)="setStations(p.slot, $event)" [name]="p.slot + 'st'" [placeholder]="'Grill, Pizza (empty = all other stations)' | translate" style="min-width:260px;" />
             </div>
           </div>
           <p class="mt-2 mb-2 dev-conn-name" [attr.data-slot]="p.slot" *ngIf="d[p.slot].mode !== 'driver'">
-            <span *ngIf="connected(p.slot)">Connected: <strong>{{ connName(p.slot) }}</strong></span>
-            <span *ngIf="!connected(p.slot)" class="text-muted">No device chosen yet.</span>
+            <span *ngIf="connected(p.slot)">{{ 'Connected:' | translate }} <strong>{{ connName(p.slot) }}</strong></span>
+            <span *ngIf="!connected(p.slot)" class="text-muted">{{ 'No device chosen yet.' | translate }}</span>
           </p>
           <div class="text-danger dev-slot-err" *ngIf="devices.lastError[p.slot]">{{ devices.lastError[p.slot] }}</div>
           <div class="d-flex gap-2 mt-2">
-            <button type="button" class="btn btn-outline-secondary dev-test" [attr.data-slot]="p.slot" (click)="test(p.slot)">Print test page</button>
-            <button type="button" class="btn btn-outline-secondary dev-drawer" *ngIf="p.slot === 'receipt'" (click)="drawer()">Open cash drawer</button>
-            <button type="button" class="btn btn-outline-danger dev-forget" [attr.data-slot]="p.slot" *ngIf="connected(p.slot)" (click)="forget(p.slot)">Forget</button>
+            <button type="button" class="btn btn-outline-secondary dev-test" [attr.data-slot]="p.slot" (click)="test(p.slot)">{{ 'Print test page' | translate }}</button>
+            <button type="button" class="btn btn-outline-secondary dev-drawer" *ngIf="p.slot === 'receipt'" (click)="drawer()">{{ 'Open cash drawer' | translate }}</button>
+            <button type="button" class="btn btn-outline-danger dev-forget" [attr.data-slot]="p.slot" *ngIf="connected(p.slot)" (click)="forget(p.slot)">{{ 'Forget' | translate }}</button>
           </div>
         </div>
       </div>
 
       <div class="card mb-3">
         <div class="card-body">
-          <h3 class="card-title">Paper and options</h3>
+          <h3 class="card-title">{{ 'Paper and options' | translate }}</h3>
           <div class="row g-3">
             <div class="col-auto">
-              <label class="form-label">Paper width</label>
+              <label class="form-label">{{ 'Paper width' | translate }}</label>
               <select class="form-select dev-paper" [(ngModel)]="d.paper" name="paper">
-                <option value="auto">As in POS settings</option>
-                <option value="80">80 mm</option>
-                <option value="58">58 mm</option>
+                <option value="auto">{{ 'As in POS settings' | translate }}</option>
+                <option value="80">{{ '80 mm' | translate }}</option>
+                <option value="58">{{ '58 mm' | translate }}</option>
               </select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Characters per line</label>
+              <label class="form-label">{{ 'Characters per line' | translate }}</label>
               <input class="form-control dev-cols" type="number" min="0" max="80" [(ngModel)]="d.cols" name="cols" style="width:110px;" />
-              <small class="text-muted">0 = 48 on 80 mm, 32 on 58 mm</small>
+              <small class="text-muted">{{ '0 = 48 on 80 mm, 32 on 58 mm' | translate }}</small>
             </div>
             <div class="col-auto">
-              <label class="form-label">Code page</label>
+              <label class="form-label">{{ 'Code page' | translate }}</label>
               <select class="form-select dev-codepage" [(ngModel)]="d.codepage" name="codepage">
-                <option value="cp858">PC858 (Latin, accents and €)</option>
-                <option value="cp850">PC850 (Latin)</option>
-                <option value="ascii">Plain ASCII (no accents)</option>
+                <option value="cp858">{{ 'PC858 (Latin, accents and €)' | translate }}</option>
+                <option value="cp850">{{ 'PC850 (Latin)' | translate }}</option>
+                <option value="ascii">{{ 'Plain ASCII (no accents)' | translate }}</option>
               </select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Copies</label>
+              <label class="form-label">{{ 'Copies' | translate }}</label>
               <input class="form-control dev-copies" type="number" min="1" max="5" [(ngModel)]="d.copies" name="copies" style="width:90px;" />
             </div>
             <div class="col-auto">
-              <label class="form-label">Cash drawer pin</label>
+              <label class="form-label">{{ 'Cash drawer pin' | translate }}</label>
               <select class="form-select" [ngModel]="d.drawerPin" (ngModelChange)="d.drawerPin = +$event === 1 ? 1 : 0" name="pin">
-                <option [ngValue]="0">Pin 2 (usual)</option>
-                <option [ngValue]="1">Pin 5</option>
+                <option [ngValue]="0">{{ 'Pin 2 (usual)' | translate }}</option>
+                <option [ngValue]="1">{{ 'Pin 5' | translate }}</option>
               </select>
             </div>
           </div>
           <div class="mt-3">
-            <label class="d-block"><input type="checkbox" class="dev-cut" [(ngModel)]="d.cut" name="cut" /> Cut the paper after each document</label>
-            <label class="d-block"><input type="checkbox" class="dev-drawer-cash" [(ngModel)]="d.drawerOnCash" name="dcash" /> Open the cash drawer when a sale with a cash payment is printed (direct mode)</label>
-            <label class="d-block"><input type="checkbox" class="dev-auto-kitchen" [(ngModel)]="d.autoKitchen" name="ak" /> Print kitchen / bar tickets when items are sent to the kitchen (needs a direct kitchen or bar printer)</label>
+            <label class="d-block"><input type="checkbox" class="dev-cut" [(ngModel)]="d.cut" name="cut" /> {{ 'Cut the paper after each document' | translate }}</label>
+            <label class="d-block"><input type="checkbox" class="dev-drawer-cash" [(ngModel)]="d.drawerOnCash" name="dcash" /> {{ 'Open the cash drawer when a sale with a cash payment is printed (direct mode)' | translate }}</label>
+            <label class="d-block"><input type="checkbox" class="dev-auto-kitchen" [(ngModel)]="d.autoKitchen" name="ak" /> {{ 'Print kitchen / bar tickets when items are sent to the kitchen (needs a direct kitchen or bar printer)' | translate }}</label>
           </div>
         </div>
       </div>
 
       <div class="card mb-3">
         <div class="card-body">
-          <h3 class="card-title">Customer display (COM)</h3>
-          <p class="text-muted" style="font-size:0.9rem;">A two-line pole display on a serial port (RS-232, or a USB-to-COM adapter). It shows each item as it is rung up, the total, the amount paid and a welcome text.</p>
-          <label class="d-block mb-2"><input type="checkbox" class="dev-disp-on" [(ngModel)]="d.display.enabled" name="don" /> Use a customer display on this PC</label>
+          <h3 class="card-title">{{ 'Customer display (COM)' | translate }}</h3>
+          <p class="text-muted" style="font-size:0.9rem;">{{ 'A two-line pole display on a serial port (RS-232, or a USB-to-COM adapter). It shows each item as it is rung up, the total, the amount paid and a welcome text.' | translate }}</p>
+          <label class="d-block mb-2"><input type="checkbox" class="dev-disp-on" [(ngModel)]="d.display.enabled" name="don" /> {{ 'Use a customer display on this PC' | translate }}</label>
           <div class="row g-3 align-items-end">
             <div class="col-auto">
-              <button type="button" class="btn btn-outline-primary dev-disp-connect" (click)="connectDisplay()">{{ d.display.name ? 'Choose another port…' : 'Connect COM port…' }}</button>
+              <button type="button" class="btn btn-outline-primary dev-disp-connect" (click)="connectDisplay()">{{ d.display.name ? ('Choose another port…' | translate) : ('Connect COM port…' | translate) }}</button>
             </div>
             <div class="col-auto">
-              <label class="form-label">Command set</label>
+              <label class="form-label">{{ 'Command set' | translate }}</label>
               <select class="form-select dev-disp-protocol" [(ngModel)]="d.display.protocol" name="dproto">
-                <option value="escpos">ESC/POS (Epson DM-D and compatible)</option>
-                <option value="cd5220">CD5220 (Logic Controls, Aedex)</option>
-                <option value="plain">Plain text</option>
+                <option value="escpos">{{ 'ESC/POS (Epson DM-D and compatible)' | translate }}</option>
+                <option value="cd5220">{{ 'CD5220 (Logic Controls, Aedex)' | translate }}</option>
+                <option value="plain">{{ 'Plain text' | translate }}</option>
               </select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Baud rate</label>
+              <label class="form-label">{{ 'Baud rate' | translate }}</label>
               <select class="form-select dev-disp-baud" [(ngModel)]="d.display.baud" name="dbaud">
                 <option *ngFor="let b of bauds" [ngValue]="b">{{ b }}</option>
               </select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Data bits</label>
+              <label class="form-label">{{ 'Data bits' | translate }}</label>
               <select class="form-select" [(ngModel)]="d.display.dataBits" name="dbits"><option [ngValue]="8">8</option><option [ngValue]="7">7</option></select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Parity</label>
-              <select class="form-select" [(ngModel)]="d.display.parity" name="dpar"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select>
+              <label class="form-label">{{ 'Parity' | translate }}</label>
+              <select class="form-select" [(ngModel)]="d.display.parity" name="dpar"><option value="none">{{ 'None' | translate }}</option><option value="even">{{ 'Even' | translate }}</option><option value="odd">{{ 'Odd' | translate }}</option></select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Stop bits</label>
+              <label class="form-label">{{ 'Stop bits' | translate }}</label>
               <select class="form-select" [(ngModel)]="d.display.stopBits" name="dstop"><option [ngValue]="1">1</option><option [ngValue]="2">2</option></select>
             </div>
             <div class="col-auto">
-              <label class="form-label">Characters per line</label>
+              <label class="form-label">{{ 'Characters per line' | translate }}</label>
               <input class="form-control dev-disp-cols" type="number" min="8" max="40" [(ngModel)]="d.display.cols" name="dcols" style="width:100px;" />
             </div>
           </div>
           <div class="row g-3 mt-1">
-            <div class="col-auto"><label class="form-label">Welcome, line 1</label><input class="form-control dev-disp-w1" [(ngModel)]="d.display.welcome1" name="w1" maxlength="40" /></div>
-            <div class="col-auto"><label class="form-label">Welcome, line 2</label><input class="form-control dev-disp-w2" [(ngModel)]="d.display.welcome2" name="w2" maxlength="40" /></div>
+            <div class="col-auto"><label class="form-label">{{ 'Welcome, line 1' | translate }}</label><input class="form-control dev-disp-w1" [(ngModel)]="d.display.welcome1" name="w1" maxlength="40" /></div>
+            <div class="col-auto"><label class="form-label">{{ 'Welcome, line 2' | translate }}</label><input class="form-control dev-disp-w2" [(ngModel)]="d.display.welcome2" name="w2" maxlength="40" /></div>
           </div>
-          <p class="mt-2 mb-2 dev-disp-name" *ngIf="d.display.name">Port: <strong>{{ d.display.name }}</strong></p>
+          <p class="mt-2 mb-2 dev-disp-name" *ngIf="d.display.name">{{ 'Port:' | translate }} <strong>{{ d.display.name }}</strong></p>
           <div class="text-danger dev-slot-err" *ngIf="devices.lastError['display']">{{ devices.lastError['display'] }}</div>
           <div class="d-flex gap-2 mt-2">
-            <button type="button" class="btn btn-outline-secondary dev-disp-test" (click)="testDisplay()">Send test message</button>
-            <button type="button" class="btn btn-outline-danger dev-disp-forget" *ngIf="d.display.name" (click)="forget('display')">Forget</button>
+            <button type="button" class="btn btn-outline-secondary dev-disp-test" (click)="testDisplay()">{{ 'Send test message' | translate }}</button>
+            <button type="button" class="btn btn-outline-danger dev-disp-forget" *ngIf="d.display.name" (click)="forget('display')">{{ 'Forget' | translate }}</button>
           </div>
         </div>
       </div>
 
       <div class="d-flex gap-2 mb-4">
-        <button type="button" class="btn btn-primary dev-save" (click)="save()">Save</button>
-        <button type="button" class="btn btn-outline-secondary dev-reset" (click)="reset()">Back to defaults</button>
-        <a routerLink="/registers" class="btn btn-link">Back</a>
+        <button type="button" class="btn btn-primary dev-save" (click)="save()">{{ 'Save' | translate }}</button>
+        <button type="button" class="btn btn-outline-secondary dev-reset" (click)="reset()">{{ 'Back to defaults' | translate }}</button>
+        <a routerLink="/registers" class="btn btn-link">{{ 'Back' | translate }}</a>
       </div>
 
       <div class="card mb-4">
         <div class="card-body" style="font-size:0.9rem;">
-          <h3 class="card-title">Notes for Windows</h3>
+          <h3 class="card-title">{{ 'Notes for Windows' | translate }}</h3>
           <ul class="mb-0">
-            <li><strong>Windows driver</strong> works in every browser: install the Epson driver, choose the roll size (80 mm or 58 mm) and tick "Document cut" and "Open drawer" in the driver. Receipts are laid out for the roll with no blank page after them.</li>
-            <li><strong>Serial / COM</strong> sends raw ESC/POS and works with a printer that has an RS-232 port or a virtual COM port (Epson "TM Virtual Port Driver"). Use the baud rate set on the printer (often 9600, 19200 or 115200).</li>
-            <li><strong>USB</strong> needs the printer to use the WinUSB driver (for example with Zadig); with the normal Epson driver Windows keeps the printer and the browser cannot open it. Use the driver or a COM port instead in that case.</li>
-            <li>Chrome / Edge ask once to allow each device; the permission is remembered for this site.</li>
+            <li><strong>{{ 'Windows driver' | translate }}</strong> {{ 'works in every browser: install the Epson driver, choose the roll size (80 mm or 58 mm) and tick "Document cut" and "Open drawer" in the driver. Receipts are laid out for the roll with no blank page after them.' | translate }}</li>
+            <li><strong>{{ 'Serial / COM' | translate }}</strong> {{ 'sends raw ESC/POS and works with a printer that has an RS-232 port or a virtual COM port (Epson "TM Virtual Port Driver"). Use the baud rate set on the printer (often 9600, 19200 or 115200).' | translate }}</li>
+            <li><strong>{{ 'USB' | translate }}</strong> {{ 'needs the printer to use the WinUSB driver (for example with Zadig); with the normal Epson driver Windows keeps the printer and the browser cannot open it. Use the driver or a COM port instead in that case.' | translate }}</li>
+            <li>{{ 'Chrome / Edge ask once to allow each device; the permission is remembered for this site.' | translate }}</li>
           </ul>
         </div>
       </div>

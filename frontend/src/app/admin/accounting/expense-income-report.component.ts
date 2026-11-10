@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -22,24 +23,24 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-expense-income-report',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center mb-3">
         <h3>{{ title }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3">
         <div class="form-group">
-          <label class="form-label">From</label>
+          <label class="form-label">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
         </div>
         <div class="form-group">
-          <label class="form-label">To</label>
+          <label class="form-label">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         </div>
       </div>
@@ -47,8 +48,8 @@ import { downloadBlob } from '../../core/download-file';
         <thead>
           <tr>
             <th>{{ labelHeader }}</th>
-            <th class="text-end">Count</th>
-            <th class="text-end">Amount</th>
+            <th class="text-end">{{ 'Count' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -63,10 +64,10 @@ import { downloadBlob } from '../../core/download-file';
                 <table class="table-sm" style="margin:0;">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Payee</th>
-                      <th>Memo</th>
-                      <th class="text-end">Amount</th>
+                      <th>{{ 'Date' | translate }}</th>
+                      <th>{{ 'Payee' | translate }}</th>
+                      <th>{{ 'Memo' | translate }}</th>
+                      <th class="text-end">{{ 'Amount' | translate }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -82,12 +83,12 @@ import { downloadBlob } from '../../core/download-file';
             </tr>
           </ng-container>
           <tr *ngIf="rows.length === 0">
-            <td colspan="3" class="text-muted">No {{ direction }}s in this date range.</td>
+            <td colspan="3" class="text-muted">{{ 'No {p0}s in this date range.' | translate: { p0: (direction) } }}</td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
-            <th class="text-end">Total</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
             <th class="text-end">{{ totalCount() }}</th>
             <th class="text-end">{{ totalAmount() | number: '1.2-2' }}</th>
           </tr>

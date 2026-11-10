@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -25,28 +26,28 @@ interface DraftLine {
 @Component({
   selector: 'app-purchase-requisition-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">{{ id ? 'Edit purchase requisition' : 'New purchase requisition' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit purchase requisition' | translate) : ('New purchase requisition' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Notes</label>
+        <label class="form-label">{{ 'Notes' | translate }}</label>
         <textarea class="form-control" name="notes" rows="2" [(ngModel)]="notes"></textarea>
       </div>
 
-      <h4 class="mb-2">Line items</h4>
+      <h4 class="mb-2">{{ 'Line items' | translate }}</h4>
       <div class="flex gap-2 mb-2" style="position:relative;">
         <input
           class="form-control"
-          placeholder="Search products by name, SKU or code to add a line"
+          [placeholder]="'Search products by name, SKU or code to add a line' | translate"
           [(ngModel)]="productSearch"
           (input)="onProductSearch()"
         />
         <div class="dropdown-panel" *ngIf="productResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of productResults" (click)="addLine(p)">
-            {{ p.name }} <span class="text-muted">— stock {{ p.stockQuantity }}</span>
+            {{ p.name }} <span class="text-muted">{{ '— stock {p0}' | translate: { p0: (p.stockQuantity) } }}</span>
           </div>
         </div>
       </div>
@@ -54,9 +55,9 @@ interface DraftLine {
       <table class="table-sm mb-3">
         <thead>
           <tr>
-            <th>Product</th>
-            <th class="text-end">Quantity requested</th>
-            <th>Note</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th class="text-end">{{ 'Quantity requested' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -67,19 +68,19 @@ interface DraftLine {
               <input type="number" step="any" class="form-control form-control-sm" style="width:90px; margin-left:auto;" min="0.0001" [(ngModel)]="line.quantityRequested" [name]="'qty' + i" />
             </td>
             <td>
-              <input type="text" class="form-control form-control-sm" placeholder="Optional" [(ngModel)]="line.note" [name]="'note' + i" />
+              <input type="text" class="form-control form-control-sm" [placeholder]="'Optional' | translate" [(ngModel)]="line.note" [name]="'note' + i" />
             </td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">Remove</button></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">{{ 'Remove' | translate }}</button></td>
           </tr>
           <tr *ngIf="lines.length === 0">
-            <td colspan="4" class="text-muted">No lines yet — search for a product above to add one.</td>
+            <td colspan="4" class="text-muted">{{ 'No lines yet — search for a product above to add one.' | translate }}</td>
           </tr>
         </tbody>
       </table>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save draft</button>
-        <a class="btn btn-link" routerLink="/admin/purchase-requisitions">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save draft' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/purchase-requisitions">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

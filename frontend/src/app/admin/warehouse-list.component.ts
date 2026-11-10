@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -16,47 +17,46 @@ import { Warehouse } from '../core/models';
 @Component({
   selector: 'app-warehouse-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3 style="margin-bottom:0;">Warehouses</h3>
-        <a class="btn btn-primary" routerLink="/admin/warehouses/new" *ngIf="multiWarehouseEnabled">+ New warehouse</a>
+        <h3 style="margin-bottom:0;">{{ 'Warehouses' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/warehouses/new" *ngIf="multiWarehouseEnabled">{{ '+ New warehouse' | translate }}</a>
         <span class="text-muted" style="font-size:0.85rem;" *ngIf="!multiWarehouseEnabled">
-          Turn on "Multi-warehouse" in Inventory settings to add another warehouse.
+          {{ 'Turn on "Multi-warehouse" in Inventory settings to add another warehouse.' | translate }}
         </span>
       </div>
       <p class="text-muted" style="font-size:0.85rem;">
-        Every sale, stock adjustment, and purchase receipt moves stock against whichever warehouse
-        is marked "Primary" below, unless a register is assigned a different one.
+        {{ 'Every sale, stock adjustment, and purchase receipt moves stock against whichever warehouse is marked "Primary" below, unless a register is assigned a different one.' | translate }}
       </p>
       <table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Address</th>
-            <th>Status</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Address' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let w of warehouses">
-            <td>{{ w.name }} <span class="text-muted" *ngIf="w.primary" style="font-size:0.8rem;">★ Primary</span></td>
+            <td>{{ w.name }} <span class="text-muted" *ngIf="w.primary" style="font-size:0.8rem;">{{ '★ Primary' | translate }}</span></td>
             <td>{{ w.address || '—' }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="w.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!w.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="w.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!w.active">{{ 'Inactive' | translate }}</span>
             </td>
             <td class="flex gap-2 align-center">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/warehouses', w.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-secondary" (click)="deactivate(w)" *ngIf="w.active && !w.primary">Deactivate</button>
-              <button class="btn btn-sm btn-outline-secondary" (click)="activate(w)" *ngIf="!w.active">Activate</button>
-              <span class="text-muted" style="font-size:0.8rem;" *ngIf="w.primary">Can't be deactivated</span>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/warehouses', w.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-secondary" (click)="deactivate(w)" *ngIf="w.active && !w.primary">{{ 'Deactivate' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="activate(w)" *ngIf="!w.active">{{ 'Activate' | translate }}</button>
+              <span class="text-muted" style="font-size:0.8rem;" *ngIf="w.primary">{{ 'Can\\'t be deactivated' | translate }}</span>
             </td>
           </tr>
           <tr *ngIf="warehouses.length === 0">
-            <td colspan="4" class="text-muted">No warehouses yet.</td>
+            <td colspan="4" class="text-muted">{{ 'No warehouses yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

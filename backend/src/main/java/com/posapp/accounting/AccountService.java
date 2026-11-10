@@ -500,6 +500,18 @@ public class AccountService {
         auditLogService.record("SYSTEM_SETTINGS_UPDATED", "Currency set to " + code + " with the " + country + " chart of accounts", "StoreSettings", settings.getId());
     }
 
+    /**
+     * v1.23.0: the Chad chart means French screens and the Rwanda chart keeps English (Kinyarwanda may follow). Like the currency, applied
+     * when the chart is chosen and only while the language is still the untouched default "en", so a language an admin picked is never
+     * overwritten. It stays editable in Settings > System settings, and each person can pick their own in the browser.
+     */
+    private void applyCountryLanguage(StoreSettings settings, ChartCountry country) {
+        boolean untouched = settings.getLanguage() == null || "en".equalsIgnoreCase(settings.getLanguage());
+        if (!untouched || country != ChartCountry.CHAD) return;
+        settings.setLanguage("fr");
+        auditLogService.record("SYSTEM_SETTINGS_UPDATED", "Language set to French with the " + country + " chart of accounts", "StoreSettings", settings.getId());
+    }
+
     private void seedChart(ChartCountry country) {
         List<ChartRow> chart = chart(country);
         for (ChartRow row : chart) {
@@ -508,6 +520,7 @@ public class AccountService {
         StoreSettings settings = getOrCreateStoreSettings();
         settings.setChartCountry(country);
         applyCountryCurrency(settings, country);
+        applyCountryLanguage(settings, country);
         storeSettingsRepository.save(settings);
         if (country == ChartCountry.RWANDA) {
             ensureRwandaTaxCodes();

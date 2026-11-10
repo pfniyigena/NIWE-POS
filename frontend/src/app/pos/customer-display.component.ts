@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CashierSessionApiService } from '../core/api/cashier-session-api.service';
@@ -43,7 +44,7 @@ import { Order, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-customer-display',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="cd-root">
       <div class="cd-brand" *ngIf="view !== 'error'">
@@ -53,8 +54,8 @@ import { Order, StoreSettings } from '../core/models';
 
       <div class="cd-center" *ngIf="view === 'idle'">
         <img *ngIf="settings?.logoDataUrl" [src]="settings!.logoDataUrl" alt="" class="cd-logo-big" />
-        <h1>Welcome{{ settings?.businessName ? ' to ' + settings?.businessName : '' }}!</h1>
-        <p class="cd-subtitle">We'll show your order here as it's rung up.</p>
+        <h1>{{ 'Welcome{p0}!' | translate: { p0: (settings?.businessName ? ' to ' + settings?.businessName : '') } }}</h1>
+        <p class="cd-subtitle">{{ 'We\\'ll show your order here as it\\'s rung up.' | translate }}</p>
       </div>
 
       <div class="cd-cart" *ngIf="view === 'cart' && order as o">
@@ -66,26 +67,26 @@ import { Order, StoreSettings } from '../core/models';
             </div>
             <div class="cd-line-total">{{ l.lineTotal | number: '1.2-2' }}</div>
           </div>
-          <div class="cd-empty" *ngIf="o.lines.length === 0">Your items will appear here.</div>
+          <div class="cd-empty" *ngIf="o.lines.length === 0">{{ 'Your items will appear here.' | translate }}</div>
         </div>
         <div class="cd-totals">
           <div class="cd-subrow">
-            <span>Subtotal</span>
+            <span>{{ 'Subtotal' | translate }}</span>
             <span>{{ o.subtotal | number: '1.2-2' }}</span>
           </div>
           <div class="cd-subrow">
-            <span>Tax</span>
+            <span>{{ 'Tax' | translate }}</span>
             <span>{{ o.taxTotal | number: '1.2-2' }}</span>
           </div>
           <div class="cd-total-due">
-            <span>Total Due</span>
+            <span>{{ 'Total Due' | translate }}</span>
             <span>{{ o.total | number: '1.2-2' }}</span>
           </div>
         </div>
       </div>
 
       <div class="cd-center" *ngIf="view === 'thankyou' && order as o">
-        <h1>Thank you!</h1>
+        <h1>{{ 'Thank you!' | translate }}</h1>
         <div class="cd-paid">{{ o.total | number: '1.2-2' }}</div>
         <div class="cd-payment-row" *ngFor="let p of o.payments">
           <span>{{ p.method }}</span>
@@ -94,7 +95,7 @@ import { Order, StoreSettings } from '../core/models';
       </div>
 
       <div class="cd-center" *ngIf="view === 'error'">
-        <h1>Display unavailable</h1>
+        <h1>{{ 'Display unavailable' | translate }}</h1>
         <p class="cd-subtitle">{{ errorMessage }}</p>
       </div>
     </div>

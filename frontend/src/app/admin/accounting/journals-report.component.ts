@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -18,36 +19,36 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-journals-report',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Journals report</h3>
+        <h3>{{ 'Journals report' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3">
         <div class="form-group">
-          <label class="form-label">From</label>
+          <label class="form-label">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
         </div>
         <div class="form-group">
-          <label class="form-label">To</label>
+          <label class="form-label">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         </div>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Entry #</th>
-            <th>Date</th>
-            <th>Source</th>
-            <th>Memo</th>
-            <th class="text-end">Total debit</th>
-            <th class="text-end">Total credit</th>
+            <th>{{ 'Entry #' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Source' | translate }}</th>
+            <th>{{ 'Memo' | translate }}</th>
+            <th class="text-end">{{ 'Total debit' | translate }}</th>
+            <th class="text-end">{{ 'Total credit' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -68,11 +69,11 @@ import { downloadBlob } from '../../core/download-file';
                 <table class="table-sm" style="margin:0;">
                   <thead>
                     <tr>
-                      <th>Account</th>
-                      <th>Description</th>
-                      <th>Cost center</th>
-                      <th class="text-end">Debit</th>
-                      <th class="text-end">Credit</th>
+                      <th>{{ 'Account' | translate }}</th>
+                      <th>{{ 'Description' | translate }}</th>
+                      <th>{{ 'Cost center' | translate }}</th>
+                      <th class="text-end">{{ 'Debit' | translate }}</th>
+                      <th class="text-end">{{ 'Credit' | translate }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -89,7 +90,7 @@ import { downloadBlob } from '../../core/download-file';
             </tr>
           </ng-container>
           <tr *ngIf="entries.length === 0">
-            <td colspan="6" class="text-muted">No journal entries in this date range.</td>
+            <td colspan="6" class="text-muted">{{ 'No journal entries in this date range.' | translate }}</td>
           </tr>
         </tbody>
       </table>

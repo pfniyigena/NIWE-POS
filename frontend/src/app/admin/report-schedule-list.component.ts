@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -16,12 +17,12 @@ import { Branch, Category, Warehouse } from '../core/models';
 @Component({
   selector: 'app-report-schedule-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
-      <h3 class="mb-3">Scheduled reports</h3>
+      <h3 class="mb-3">{{ 'Scheduled reports' | translate }}</h3>
       <p class="text-muted" style="max-width:760px;">
         Emails a report as an Excel or PDF attachment on a schedule. Email must be set up under Settings &gt; Email.
         Reports that cover a date range send the period that just ended: yesterday for daily, the previous 7 days
@@ -30,99 +31,99 @@ import { Branch, Category, Warehouse } from '../core/models';
       </p>
 
       <div class="card mb-3" style="padding:0.75rem;">
-        <strong>{{ editingId ? 'Edit schedule' : 'New schedule' }}</strong>
+        <strong>{{ editingId ? ('Edit schedule' | translate) : ('New schedule' | translate) }}</strong>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div style="min-width:200px;">
-            <label class="form-label">Name</label>
-            <input class="form-control" [(ngModel)]="name" name="name" placeholder="e.g. Monday stock valuation" />
+            <label class="form-label">{{ 'Name' | translate }}</label>
+            <input class="form-control" [(ngModel)]="name" name="name" [placeholder]="'e.g. Monday stock valuation' | translate" />
           </div>
           <div style="min-width:260px;">
-            <label class="form-label">Report</label>
+            <label class="form-label">{{ 'Report' | translate }}</label>
             <select class="form-select" [(ngModel)]="reportKey" name="reportKey" (ngModelChange)="onReportChange()">
-              <option [ngValue]="null" disabled>Select</option>
+              <option [ngValue]="null" disabled>{{ 'Select' | translate }}</option>
               <optgroup *ngFor="let g of groups" [label]="g">
                 <option *ngFor="let r of reportsIn(g)" [ngValue]="r.key">{{ r.label }}</option>
               </optgroup>
             </select>
           </div>
           <div>
-            <label class="form-label">Format</label>
+            <label class="form-label">{{ 'Format' | translate }}</label>
             <select class="form-select" [(ngModel)]="format" name="format">
-              <option value="XLSX">Excel (.xlsx)</option>
-              <option value="PDF">PDF</option>
+              <option value="XLSX">{{ 'Excel (.xlsx)' | translate }}</option>
+              <option value="PDF">{{ 'PDF' | translate }}</option>
             </select>
           </div>
           <div>
-            <label class="form-label">Repeat</label>
+            <label class="form-label">{{ 'Repeat' | translate }}</label>
             <select class="form-select" [(ngModel)]="frequency" name="frequency">
-              <option value="DAILY">Daily</option>
-              <option value="WEEKLY">Weekly</option>
-              <option value="MONTHLY">Monthly</option>
+              <option value="DAILY">{{ 'Daily' | translate }}</option>
+              <option value="WEEKLY">{{ 'Weekly' | translate }}</option>
+              <option value="MONTHLY">{{ 'Monthly' | translate }}</option>
             </select>
           </div>
           <div *ngIf="frequency === 'WEEKLY'">
-            <label class="form-label">On</label>
+            <label class="form-label">{{ 'On' | translate }}</label>
             <select class="form-select" [(ngModel)]="dayOfWeek" name="dayOfWeek">
               <option *ngFor="let d of weekdays" [ngValue]="d.value">{{ d.label }}</option>
             </select>
           </div>
           <div *ngIf="frequency === 'MONTHLY'">
-            <label class="form-label">Day of month</label>
+            <label class="form-label">{{ 'Day of month' | translate }}</label>
             <select class="form-select" [(ngModel)]="dayOfMonth" name="dayOfMonth">
               <option *ngFor="let d of monthDays" [ngValue]="d">{{ d }}</option>
             </select>
           </div>
           <div>
-            <label class="form-label">From time</label>
+            <label class="form-label">{{ 'From time' | translate }}</label>
             <input class="form-control" type="time" [(ngModel)]="runTime" name="runTime" />
           </div>
         </div>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div style="min-width:160px;" *ngIf="selected?.categoryFilter">
-            <label class="form-label">Category</label>
+            <label class="form-label">{{ 'Category' | translate }}</label>
             <select class="form-select" [(ngModel)]="categoryId" name="categoryId">
-              <option [ngValue]="null">All</option>
+              <option [ngValue]="null">{{ 'All' | translate }}</option>
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select>
           </div>
           <div style="min-width:160px;" *ngIf="selected?.warehouseFilter">
-            <label class="form-label">Warehouse</label>
+            <label class="form-label">{{ 'Warehouse' | translate }}</label>
             <select class="form-select" [(ngModel)]="warehouseId" name="warehouseId">
-              <option [ngValue]="null">All</option>
+              <option [ngValue]="null">{{ 'All' | translate }}</option>
               <option *ngFor="let w of warehouses" [ngValue]="w.id">{{ w.name }}</option>
             </select>
           </div>
           <div style="min-width:160px;" *ngIf="selected?.branchFilter">
-            <label class="form-label">Branch</label>
+            <label class="form-label">{{ 'Branch' | translate }}</label>
             <select class="form-select" [(ngModel)]="branchId" name="branchId">
-              <option [ngValue]="null">All</option>
+              <option [ngValue]="null">{{ 'All' | translate }}</option>
               <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
             </select>
           </div>
           <div style="width:130px;" *ngIf="selected?.daysFilter">
-            <label class="form-label">Days ({{ selected?.defaultDays }} default)</label>
+            <label class="form-label">{{ 'Days ({p0} default)' | translate: { p0: (selected?.defaultDays) } }}</label>
             <input class="form-control" type="number" min="1" [(ngModel)]="dayWindow" name="dayWindow" />
           </div>
           <div style="min-width:280px; flex:1;">
-            <label class="form-label">Send to (comma-separated; blank = notifications email)</label>
-            <input class="form-control" [(ngModel)]="recipients" name="recipients" placeholder="owner@example.com, manager@example.com" />
+            <label class="form-label">{{ 'Send to (comma-separated; blank = notifications email)' | translate }}</label>
+            <input class="form-control" [(ngModel)]="recipients" name="recipients" [placeholder]="'owner@example.com, manager@example.com' | translate" />
           </div>
           <label class="form-label" style="margin-bottom:0.5rem;">
-            <input type="checkbox" [(ngModel)]="active" name="active" /> Active
+            <input type="checkbox" [(ngModel)]="active" name="active" /> {{ 'Active' | translate }}
           </label>
-          <button class="btn btn-primary" type="button" [disabled]="busy" (click)="save()">{{ editingId ? 'Save' : 'Add schedule' }}</button>
-          <button class="btn btn-link" type="button" *ngIf="editingId" (click)="resetForm()">Cancel</button>
+          <button class="btn btn-primary" type="button" [disabled]="busy" (click)="save()">{{ editingId ? ('Save' | translate) : ('Add schedule' | translate) }}</button>
+          <button class="btn btn-link" type="button" *ngIf="editingId" (click)="resetForm()">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Report</th>
-            <th>When</th>
-            <th>Send to</th>
-            <th>Last run</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Report' | translate }}</th>
+            <th>{{ 'When' | translate }}</th>
+            <th>{{ 'Send to' | translate }}</th>
+            <th>{{ 'Last run' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -130,7 +131,7 @@ import { Branch, Category, Warehouse } from '../core/models';
           <tr *ngFor="let s of schedules">
             <td>
               {{ s.name }}
-              <span class="text-muted" *ngIf="!s.active"> (paused)</span>
+              <span class="text-muted" *ngIf="!s.active"> {{ '(paused)' | translate }}</span>
             </td>
             <td>{{ s.reportLabel }} <span class="text-muted">· {{ s.format }}</span></td>
             <td>{{ describeWhen(s) }}</td>
@@ -141,16 +142,16 @@ import { Branch, Category, Warehouse } from '../core/models';
                 <span class="text-muted"> {{ s.lastRunAt | date: 'medium' }}</span>
                 <div class="text-muted" style="font-size:0.8rem;">{{ s.lastMessage }}</div>
               </span>
-              <span class="text-muted" *ngIf="!s.lastStatus">Never</span>
+              <span class="text-muted" *ngIf="!s.lastStatus">{{ 'Never' | translate }}</span>
             </td>
             <td class="flex gap-2">
-              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="busy" (click)="runNow(s)">Send now</button>
-              <button class="btn btn-sm btn-outline-primary" type="button" (click)="edit(s)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(s)">Delete</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="busy" (click)="runNow(s)">{{ 'Send now' | translate }}</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="edit(s)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(s)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="schedules.length === 0">
-            <td colspan="6" class="text-muted">No scheduled reports yet.</td>
+            <td colspan="6" class="text-muted">{{ 'No scheduled reports yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

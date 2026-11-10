@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { LanguageService } from '../core/i18n/language.service';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
@@ -20,15 +22,13 @@ import { ChartSetupApiService, ChartCountryOption } from '../core/api/chart-setu
 @Component({
   selector: 'app-chart-country-setup',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem;">
       <div class="card" style="width:480px; padding:2rem;">
-        <h3 class="mb-2" style="text-align:center;">Set up your chart of accounts</h3>
+        <h3 class="mb-2" style="text-align:center;">{{ 'Set up your chart of accounts' | translate }}</h3>
         <p class="text-muted mb-3" style="text-align:center;">
-          Choose the country this store operates in. This sets up the starter chart of accounts
-          your business will use — it's a one-time choice that can't be changed from this screen
-          afterward, so pick the right one before continuing.
+          {{ 'Choose the country this store operates in. This sets up the starter chart of accounts your business will use — it\\'s a one-time choice that can\\'t be changed from this screen afterward, so pick the right one before continuing.' | translate }}
         </p>
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
         <div class="flex-col gap-2 mb-3">
@@ -38,10 +38,9 @@ import { ChartSetupApiService, ChartCountryOption } from '../core/api/chart-setu
             [style.border-color]="selected === 'RWANDA' ? 'var(--accent)' : 'transparent'"
             (click)="selected = 'RWANDA'"
           >
-            <strong>Rwanda</strong>
+            <strong>{{ 'Rwanda' | translate }}</strong>
             <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;">
-              This app's own account numbering, extended with Rwanda's statutory accounts — VAT
-              Payable (RRA), PAYE, RSSB contributions, CBHIS.
+              {{ 'This app\\'s own account numbering, extended with Rwanda\\'s statutory accounts — VAT Payable (RRA), PAYE, RSSB contributions, CBHIS.' | translate }}
             </div>
           </div>
           <div
@@ -50,14 +49,14 @@ import { ChartSetupApiService, ChartCountryOption } from '../core/api/chart-setu
             [style.border-color]="selected === 'CHAD' ? 'var(--accent)' : 'transparent'"
             (click)="selected = 'CHAD'"
           >
-            <strong>Chad</strong>
+            <strong>{{ 'Chad' | translate }}</strong>
             <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;">
-              Real SYSCOHADA (OHADA) account codes — TVA facturée, IRPP, CNPS contributions.
+              {{ 'Real SYSCOHADA (OHADA) account codes — TVA facturée, IRPP, CNPS contributions.' | translate }}
             </div>
           </div>
         </div>
         <button class="btn btn-primary btn-block" [disabled]="!selected || saving" (click)="confirm()">
-          {{ saving ? 'Setting up…' : 'Confirm and continue' }}
+          {{ saving ? ('Setting up…' | translate) : ('Confirm and continue' | translate) }}
         </button>
       </div>
     </div>
@@ -68,7 +67,7 @@ export class ChartCountrySetupComponent {
   saving = false;
   error: string | null = null;
 
-  constructor(private chartSetup: ChartSetupApiService, private router: Router, private auth: AuthService, private modules: ModuleApiService) {
+  constructor(private chartSetup: ChartSetupApiService, private router: Router, private auth: AuthService, private modules: ModuleApiService, private lang: LanguageService) {
     // Pre-select whatever app.accounting.chart-country already suggests — a sensible default to
     // land on, not a blank form, same courtesy as every other settings screen in this app. The
     // admin can still pick the other one before confirming.
@@ -94,7 +93,8 @@ export class ChartCountrySetupComponent {
     this.chartSetup.select(this.selected).subscribe({
       next: () => {
         this.saving = false;
-        this.goHome();
+        // The Chad chart sets French as the default language: pick it up now (this reloads the page when it differs), then go home.
+        this.lang.syncBusinessDefault().then(() => this.goHome());
       },
       error: (err) => {
         this.saving = false;

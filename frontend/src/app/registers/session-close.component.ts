@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,72 +14,72 @@ import { CashSummary, Denomination, PosSettings, RegisterSession, SessionReport 
 @Component({
   selector: 'app-session-close',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
       <ng-container *ngIf="session">
-        <h3 class="mb-1">Close session — {{ session.registerName }}</h3>
-        <p class="text-muted">Opened {{ session.openedAt | date: 'yyyy-MM-dd HH:mm' }} by {{ session.cashierName }}</p>
+        <h3 class="mb-1">{{ 'Close session — {p0}' | translate: { p0: (session.registerName) } }}</h3>
+        <p class="text-muted">{{ 'Opened {p0} by {p1}' | translate: { p0: (session.openedAt | date: 'yyyy-MM-dd HH:mm'), p1: (session.cashierName) } }}</p>
 
         <table class="table-sm mb-3" *ngIf="report">
           <tbody>
             <tr>
-              <td>Opening float</td>
+              <td>{{ 'Opening float' | translate }}</td>
               <td class="text-end">{{ session.openingFloat | number: '1.2-2' }}</td>
             </tr>
             <tr>
-              <td>Cash sales</td>
+              <td>{{ 'Cash sales' | translate }}</td>
               <td class="text-end">{{ report.cashIn | number: '1.2-2' }}</td>
             </tr>
             <tr>
-              <td>Cash refunds</td>
+              <td>{{ 'Cash refunds' | translate }}</td>
               <td class="text-end">−{{ report.cashRefundsOut | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="report.paidIn">
-              <td>Paid in</td>
+              <td>{{ 'Paid in' | translate }}</td>
               <td class="text-end">{{ report.paidIn | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="report.paidOut">
-              <td>Paid out</td>
+              <td>{{ 'Paid out' | translate }}</td>
               <td class="text-end">−{{ report.paidOut | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="report.drops">
-              <td>Dropped into the safe</td>
+              <td>{{ 'Dropped into the safe' | translate }}</td>
               <td class="text-end">−{{ report.drops | number: '1.2-2' }}</td>
             </tr>
             <tr style="font-weight:700;">
-              <td>Expected cash in drawer</td>
+              <td>{{ 'Expected cash in drawer' | translate }}</td>
               <td class="text-end sc-expected">{{ report.expectedCash | number: '1.2-2' }}</td>
             </tr>
             <tr>
-              <td>Non-cash sales (card/mobile/bank)</td>
+              <td>{{ 'Non-cash sales (card/mobile/bank)' | translate }}</td>
               <td class="text-end">{{ report.nonCashIn | number: '1.2-2' }}</td>
             </tr>
             <tr>
-              <td>Total sales this session</td>
-              <td class="text-end">{{ report.saleCount }} sale(s), {{ report.grossSales | number: '1.2-2' }}</td>
+              <td>{{ 'Total sales this session' | translate }}</td>
+              <td class="text-end">{{ '{p0} sale(s), {p1}' | translate: { p0: (report.saleCount), p1: (report.grossSales | number: '1.2-2') } }}</td>
             </tr>
           </tbody>
         </table>
-        <p class="text-muted" style="font-size:0.85rem;"><a [routerLink]="['/cash-control', sessionId]">Cash in and out of the drawer</a> — record money paid in or out, or drops into the safe, before counting.</p>
+        <p class="text-muted" style="font-size:0.85rem;"><a [routerLink]="['/cash-control', sessionId]">{{ 'Cash in and out of the drawer' | translate }}</a> {{ '— record money paid in or out, or drops into the safe, before counting.' | translate }}</p>
 
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
             <div class="flex justify-between align-center">
-              <label class="form-label">Count the drawer</label>
-              <button type="button" class="btn btn-sm btn-outline-secondary sc-toggle" (click)="byNotes = !byNotes">{{ byNotes ? 'Type one total instead' : 'Count notes and coins' }}</button>
+              <label class="form-label">{{ 'Count the drawer' | translate }}</label>
+              <button type="button" class="btn btn-sm btn-outline-secondary sc-toggle" (click)="byNotes = !byNotes">{{ byNotes ? ('Type one total instead' | translate) : ('Count notes and coins' | translate) }}</button>
             </div>
             <div *ngIf="byNotes" class="sc-notes">
               <div class="flex gap-2 align-center mb-1" *ngFor="let d of denominations; let i = index">
-                <input class="form-control sc-value" type="number" min="1" style="width:110px;" [(ngModel)]="d.value" [name]="'v' + i" aria-label="Note or coin value" />
+                <input class="form-control sc-value" type="number" min="1" style="width:110px;" [(ngModel)]="d.value" [name]="'v' + i" [attr.aria-label]="'Note or coin value' | translate" />
                 <span>×</span>
-                <input class="form-control sc-count" type="number" min="0" style="width:90px;" [(ngModel)]="d.count" [name]="'c' + i" aria-label="How many" />
+                <input class="form-control sc-count" type="number" min="0" style="width:90px;" [(ngModel)]="d.count" [name]="'c' + i" [attr.aria-label]="'How many' | translate" />
                 <span class="text-muted grow text-end">{{ (d.value || 0) * (d.count || 0) | number: '1.0-2' }}</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="denominations.splice(i, 1)" title="Remove this row">×</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="denominations.splice(i, 1)" [title]="'Remove this row' | translate">×</button>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-secondary mb-2 sc-addrow" (click)="denominations.push({ value: 0, count: 0 })">+ Another value</button>
-              <div class="flex justify-between" style="font-weight:700;"><span>Counted</span><span class="sc-total">{{ notesTotal() | number: '1.2-2' }}</span></div>
+              <button type="button" class="btn btn-sm btn-outline-secondary mb-2 sc-addrow" (click)="denominations.push({ value: 0, count: 0 })">{{ '+ Another value' | translate }}</button>
+              <div class="flex justify-between" style="font-weight:700;"><span>{{ 'Counted' | translate }}</span><span class="sc-total">{{ notesTotal() | number: '1.2-2' }}</span></div>
             </div>
             <input *ngIf="!byNotes" class="form-control sc-counted" type="number" step="0.01" name="countedCash" [(ngModel)]="countedCash" />
           </div>
@@ -86,10 +87,10 @@ import { CashSummary, Denomination, PosSettings, RegisterSession, SessionReport 
             {{ difference() === 0 ? 'The count matches.' : (difference() > 0 ? 'Over by ' : 'Short by ') + (abs(difference()) | number: '1.2-2') }}
           </p>
           <div class="form-group" *ngIf="difference() !== 0">
-            <label class="form-label">Why is the count off?{{ noteNeeded() ? ' (required)' : ' (optional)' }}</label>
-            <input class="form-control sc-note" maxlength="300" name="varianceNote" [(ngModel)]="varianceNote" placeholder="For example: change given wrongly, to be checked" />
+            <label class="form-label">{{ 'Why is the count off?{p0}' | translate: { p0: (noteNeeded() ? ' (required)' : ' (optional)') } }}</label>
+            <input class="form-control sc-note" maxlength="300" name="varianceNote" [(ngModel)]="varianceNote" [placeholder]="'For example: change given wrongly, to be checked' | translate" />
           </div>
-          <button class="btn btn-danger sc-close" type="submit">Close session</button>
+          <button class="btn btn-danger sc-close" type="submit">{{ 'Close session' | translate }}</button>
         </form>
       </ng-container>
     </app-shell>

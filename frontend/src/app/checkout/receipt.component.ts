@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import * as QRCode from 'qrcode';
@@ -22,11 +23,11 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
 @Component({
   selector: 'app-receipt',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" [class.paper-58]="paper === '58'" *ngIf="order as o">
       <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
-      <p class="receipt-copy" *ngIf="copyNumber > 0" style="text-align:center; font-weight:700; border:2px solid #000; padding:2px; margin:0 0 6px;">*** COPY {{ copyNumber }} — not the original ***</p>
+      <p class="receipt-copy" *ngIf="copyNumber > 0" style="text-align:center; font-weight:700; border:2px solid #000; padding:2px; margin:0 0 6px;">{{ '*** COPY {p0} — not the original ***' | translate: { p0: (copyNumber) } }}</p>
       <!-- Fourier's own follow-up: "those two logos ... right at the top of receipt. Better put
            Receipt Label in center" — moved here from the SDC INFORMATION footer (where it first
            landed) to the very top of the printout, revenue-authority logo on the left and EFRIS on
@@ -46,15 +47,15 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"
       >
         <div style="width:25%; text-align:left;">
-          <img *ngIf="authorityLogoDataUrl" [src]="authorityLogoDataUrl" alt="Revenue authority logo" style="max-height:44px; max-width:100%;" />
+          <img *ngIf="authorityLogoDataUrl" [src]="authorityLogoDataUrl" [alt]="'Revenue authority logo' | translate" style="max-height:44px; max-width:100%;" />
         </div>
-        <h3 style="margin:0; text-align:center;">Receipt</h3>
+        <h3 style="margin:0; text-align:center;">{{ 'Receipt' | translate }}</h3>
         <div style="width:25%; text-align:right;">
-          <img *ngIf="printEfrisLogoDataUrl" [src]="printEfrisLogoDataUrl" alt="EFRIS logo" style="max-height:44px; max-width:100%;" />
+          <img *ngIf="printEfrisLogoDataUrl" [src]="printEfrisLogoDataUrl" [alt]="'EFRIS logo' | translate" style="max-height:44px; max-width:100%;" />
         </div>
       </div>
       <ng-template #plainReceiptTitle>
-        <h3 style="text-align:center; margin-bottom:0;">Receipt</h3>
+        <h3 style="text-align:center; margin-bottom:0;">{{ 'Receipt' | translate }}</h3>
       </ng-template>
       <!-- Task: "Add Business details + logo on the header of receipt printout" — settings is null
            until the GET resolves and every field on it is nullable, so this whole block degrades
@@ -68,7 +69,7 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
         <div *ngIf="(branchInfo?.phone || s.phone) || (branchInfo?.email || s.email)" style="font-size:0.8rem; color:#444;">
           <span *ngIf="branchInfo?.phone || s.phone">{{ branchInfo?.phone || s.phone }}</span><span *ngIf="(branchInfo?.phone || s.phone) && (branchInfo?.email || s.email)"> &middot; </span><span *ngIf="branchInfo?.email || s.email">{{ branchInfo?.email || s.email }}</span>
         </div>
-        <div *ngIf="branchInfo?.taxId || s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ branchInfo?.taxId || s.taxId }}</div>
+        <div *ngIf="branchInfo?.taxId || s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (branchInfo?.taxId || s.taxId) } }}</div>
         <div *ngIf="branchInfo?.receiptHeader" style="font-size:0.8rem; color:#444; white-space:pre-line; margin-top:4px;">{{ branchInfo?.receiptHeader }}</div>
         <div *ngIf="cfg?.receiptHeader" class="receipt-header-extra" style="font-size:0.8rem; color:#444; white-space:pre-line; margin-top:4px;">{{ cfg?.receiptHeader }}</div>
       </div>
@@ -76,17 +77,17 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
       <p style="text-align:center; margin:0 0 8px; color:#666; font-size:0.85rem;">
         {{ o.registerName }} &middot; served by {{ o.cashierName }}
       </p>
-      <p style="margin:0 0 8px;">Customer: {{ o.customerName }}</p>
-      <p class="receipt-customer-tin" *ngIf="o.customerTaxId" style="margin:0 0 8px;">Customer tax ID: {{ o.customerTaxId }}</p>
+      <p style="margin:0 0 8px;">{{ 'Customer: {p0}' | translate: { p0: (o.customerName) } }}</p>
+      <p class="receipt-customer-tin" *ngIf="o.customerTaxId" style="margin:0 0 8px;">{{ 'Customer tax ID: {p0}' | translate: { p0: (o.customerTaxId) } }}</p>
       <p class="receipt-voided" *ngIf="o.voidedAt" style="margin:0 0 8px; text-align:center; font-weight:700; border:2px solid #000; padding:4px;">
-        *** VOIDED {{ o.voidedAt | date: 'yyyy-MM-dd HH:mm' }} ***
+        {{ '*** VOIDED {p0} ***' | translate: { p0: (o.voidedAt | date: 'yyyy-MM-dd HH:mm') } }}
         <span style="display:block; font-weight:400; font-size:0.8rem;">{{ o.voidReason }}</span>
       </p>
       <!-- Task: "local queuing of sales that sync once connectivity returns" — this sale was rung
            offline (network was down at the terminal) and only actually created on the server once
            connectivity returned; flagged here rather than silently printing an ordinary receipt. -->
       <p class="no-print" *ngIf="o.offlineQueuedAt" style="margin:0 0 8px; font-size:0.8rem; color:#666;">
-        📴 Rung offline at {{ o.offlineQueuedAt | date: 'medium' }}, synced once back online.
+        {{ '📴 Rung offline at {p0}, synced once back online.' | translate: { p0: (o.offlineQueuedAt | date: 'medium') } }}
       </p>
       <p class="no-print" *ngIf="o.syncNote" style="margin:0 0 8px; font-size:0.8rem; color:#b00;">
         ⚠ {{ o.syncNote }}
@@ -95,9 +96,9 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
            voids the sale, it just means the fiscal fields below stayed empty. Staff-facing only
            (no-print), same as syncNote above. -->
       <div class="no-print" *ngIf="o.efrisError" style="margin:0 0 8px;">
-        <p style="margin:0 0 4px; font-size:0.8rem; color:#b00;">⚠ EFRIS submission failed: {{ o.efrisError }}</p>
+        <p style="margin:0 0 4px; font-size:0.8rem; color:#b00;">{{ '⚠ EFRIS submission failed: {p0}' | translate: { p0: (o.efrisError) } }}</p>
         <button (click)="retryEfris()" [disabled]="retryingEfris" style="padding:4px 10px; cursor:pointer; font-size:0.8rem;">
-          {{ retryingEfris ? 'Retrying…' : 'Retry EFRIS submission' }}
+          {{ retryingEfris ? ('Retrying…' | translate) : ('Retry EFRIS submission' | translate) }}
         </button>
         <span *ngIf="retryError" style="margin-left:8px; font-size:0.8rem; color:#b00;">{{ retryError }}</span>
       </div>
@@ -107,12 +108,12 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
           <tr *ngFor="let l of o.lines">
             <td style="padding:4px 0;">
               {{ l.description }}
-              <div style="color:#666; font-size:0.8rem;">{{ l.quantity }} &times; {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.discountPercent"> (−{{ l.discountPercent }}%)</span><span *ngIf="l.taxInclusive"> (tax incl.)</span></div>
+              <div style="color:#666; font-size:0.8rem;">{{ l.quantity }} &times; {{ l.unitPrice | number: '1.2-2' }}<span *ngIf="l.discountPercent"> (−{{ l.discountPercent }}%)</span><span *ngIf="l.taxInclusive"> {{ '(tax incl.)' | translate }}</span></div>
               <div *ngIf="l.promoNote" class="receipt-promo" style="color:#666; font-size:0.8rem;">{{ l.promoNote }} (−{{ l.promoPercent | number: '1.0-2' }}%)</div>
               <!-- Task: "on the receipt which was returned, I should mark it as returned" — plain text,
                    not color, since this is a monochrome-printable receipt. -->
               <div *ngIf="returnedQuantities[l.id]" style="font-weight:700; font-size:0.8rem;">
-                [RETURNED {{ returnedQuantities[l.id] }} of {{ l.quantity }}]
+                {{ '[RETURNED {p0} of {p1}]' | translate: { p0: (returnedQuantities[l.id]), p1: (l.quantity) } }}
               </div>
             </td>
             <!-- Fourier's own request: "Add tax code after total order_line" — l.taxCode is the
@@ -129,35 +130,35 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr>
-            <td>Subtotal</td>
+            <td>{{ 'Subtotal' | translate }}</td>
             <td style="text-align:right;">{{ o.subtotal | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td>Tax</td>
+            <td>{{ 'Tax' | translate }}</td>
             <td style="text-align:right;">{{ o.taxTotal | number: '1.2-2' }}</td>
           </tr>
           <tr style="font-weight:700;">
-            <td>Total</td>
+            <td>{{ 'Total' | translate }}</td>
             <td style="text-align:right;">{{ o.total | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="o.orderDiscountPercent && o.orderDiscountPercent > 0" class="receipt-order-discount" style="font-size:0.8rem; color:#666;">
-            <td>Includes a discount of {{ o.orderDiscountPercent | number: '1.0-2' }}%<span *ngIf="o.orderDiscountReason"> ({{ o.orderDiscountReason }})</span></td>
+            <td>{{ 'Includes a discount of {p0}%' | translate: { p0: (o.orderDiscountPercent | number: '1.0-2') } }}<span *ngIf="o.orderDiscountReason"> ({{ o.orderDiscountReason }})</span></td>
             <td style="text-align:right;">−{{ o.orderDiscountValue | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="o.promoSavings && o.promoSavings > 0" class="receipt-promo-saved" style="font-size:0.8rem; color:#666;">
-            <td>You saved with promotions</td>
+            <td>{{ 'You saved with promotions' | translate }}</td>
             <td style="text-align:right;">{{ o.promoSavings | number: '1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
       <hr />
-      <p style="margin:0 0 4px; font-weight:600;">Payment</p>
+      <p style="margin:0 0 4px; font-weight:600;">{{ 'Payment' | translate }}</p>
       <div *ngFor="let p of o.payments" style="display:flex; justify-content:space-between; font-size:0.9rem;">
         <span>{{ p.method === 'GIFT_CARD' ? 'Gift card' : p.method === 'LOYALTY' ? 'Loyalty points' : p.method }}<span *ngIf="p.reference" class="receipt-pay-ref" style="color:#666;"> ({{ p.reference }})</span></span>
         <span>{{ p.amount | number: '1.2-2' }}</span>
       </div>
       <div *ngIf="o.loyaltyEarned || o.loyaltyBalance" class="receipt-loyalty" style="font-size:0.8rem; color:#666; margin-top:4px;">
-        <span *ngIf="o.loyaltyEarned">Points earned: {{ o.loyaltyEarned }}. </span><span *ngIf="o.loyaltyBalance != null">Points balance: {{ o.loyaltyBalance }}</span>
+        <span *ngIf="o.loyaltyEarned">{{ 'Points earned: {p0}.' | translate: { p0: (o.loyaltyEarned) } }} </span><span *ngIf="o.loyaltyBalance != null">{{ 'Points balance: {p0}' | translate: { p0: (o.loyaltyBalance) } }}</span>
       </div>
 
       <!-- EFRIS (Rwanda RRA e-invoicing) fiscal receipt data — Fourier's own layout spec, printed
@@ -169,38 +170,38 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
            submitted to EFRIS (sdcId null). -->
       <div *ngIf="o.sdcId" style="margin-top:10px; font-size:0.8rem;">
         <hr />
-        <p style="text-align:center; font-weight:700; margin:0 0 6px;">SDC INFORMATION</p>
+        <p style="text-align:center; font-weight:700; margin:0 0 6px;">{{ 'SDC INFORMATION' | translate }}</p>
         <div *ngIf="o.sdcDate && dateTimeParts(o.sdcDate) as sdcDT" style="display:flex; justify-content:space-between;">
-          <span>SDC DATE:{{ sdcDT.date }}</span>
-          <span>TIME:{{ sdcDT.time }}</span>
+          <span>{{ 'SDC DATE:{p0}' | translate: { p0: (sdcDT.date) } }}</span>
+          <span>{{ 'TIME:{p0}' | translate: { p0: (sdcDT.time) } }}</span>
         </div>
         <div *ngIf="o.sdcReceiptNumber" style="display:flex; justify-content:space-between;">
-          <span>SDC RECEIPT NUMBER:</span>
+          <span>{{ 'SDC RECEIPT NUMBER:' | translate }}</span>
           <span>{{ o.sdcReceiptNumber }}</span>
         </div>
         <div style="display:flex; justify-content:space-between;">
-          <span>SDC ID:</span>
+          <span>{{ 'SDC ID:' | translate }}</span>
           <span>{{ o.sdcId }}</span>
         </div>
         <div *ngIf="o.internalData" style="text-align:center; margin-top:6px;">
-          <div>Internal Data:</div>
+          <div>{{ 'Internal Data:' | translate }}</div>
           <div style="word-break:break-all;">{{ o.internalData }}</div>
         </div>
         <div *ngIf="o.signatureData" style="text-align:center; margin-top:6px;">
-          <div>Receipt Signature:</div>
+          <div>{{ 'Receipt Signature:' | translate }}</div>
           <div style="word-break:break-all;">{{ o.signatureData }}</div>
         </div>
         <hr *ngIf="o.cisNumber || o.cisDate || o.mrcData" />
         <div *ngIf="o.cisNumber" style="display:flex; justify-content:space-between;">
-          <span>CIS RECEIPT NUMBER:</span>
+          <span>{{ 'CIS RECEIPT NUMBER:' | translate }}</span>
           <span>{{ o.cisNumber }}</span>
         </div>
         <div *ngIf="o.cisDate && dateTimeParts(o.cisDate) as cisDT" style="display:flex; justify-content:space-between;">
-          <span>CIS DATE:{{ cisDT.date }}</span>
-          <span>TIME:{{ cisDT.time }}</span>
+          <span>{{ 'CIS DATE:{p0}' | translate: { p0: (cisDT.date) } }}</span>
+          <span>{{ 'TIME:{p0}' | translate: { p0: (cisDT.time) } }}</span>
         </div>
         <div *ngIf="o.mrcData" style="display:flex; justify-content:space-between;">
-          <span>MRC:</span>
+          <span>{{ 'MRC:' | translate }}</span>
           <span>{{ o.mrcData }}</span>
         </div>
         <!-- Fourier's own request: "add QR CODE on the printout of receipt" — encodes the same
@@ -209,12 +210,12 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
              so it simply doesn't render (rather than showing a broken image) if that's still in
              flight or failed. -->
         <div *ngIf="qrCodeDataUrl" style="text-align:center; margin-top:8px;">
-          <img [src]="qrCodeDataUrl" alt="EFRIS QR code" style="width:120px; height:120px;" />
+          <img [src]="qrCodeDataUrl" [alt]="'EFRIS QR code' | translate" style="width:120px; height:120px;" />
         </div>
       </div>
 
       <div *ngIf="cfg?.receiptShowQr && !o.sdcId && invoiceQrDataUrl" class="receipt-qr" style="text-align:center; margin-top:8px;">
-        <img [src]="invoiceQrDataUrl" alt="Receipt QR code" style="width:100px; height:100px;" />
+        <img [src]="invoiceQrDataUrl" [alt]="'Receipt QR code' | translate" style="width:100px; height:100px;" />
         <div style="font-size:0.7rem; color:#666;">{{ o.invoiceNumber }}</div>
       </div>
 
@@ -222,16 +223,16 @@ import { BranchReceiptInfo, EfrisChadLogos, EfrisLogos, Order, PosSettings, Stor
 
       <div class="no-print" *ngIf="emailError || emailSent" style="margin-top:10px;">
         <p *ngIf="emailError" style="color:#b00020; font-size:0.85rem;">{{ emailError }}</p>
-        <p *ngIf="emailSent" style="color:#0a7a0a; font-size:0.85rem;">Receipt emailed to {{ emailedTo }}.</p>
+        <p *ngIf="emailSent" style="color:#0a7a0a; font-size:0.85rem;">{{ 'Receipt emailed to {p0}.' | translate: { p0: (emailedTo) } }}</p>
       </div>
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
+        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
         <!-- Fourier: "sending ... receipts ... to the customer's email" — see OrderService.emailReceipt's javadoc. -->
         <button (click)="emailReceipt()" [disabled]="emailingReceipt" style="flex:1; padding:10px; cursor:pointer;">
-          {{ emailingReceipt ? 'Sending…' : 'Email receipt' }}
+          {{ emailingReceipt ? ('Sending…' | translate) : ('Email receipt' | translate) }}
         </button>
         <a [routerLink]="['/pos', o.sessionId]" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">
-          Back to terminal
+          {{ 'Back to terminal' | translate }}
         </a>
       </div>
     </div>

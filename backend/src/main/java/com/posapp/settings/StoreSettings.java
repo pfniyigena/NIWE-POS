@@ -61,6 +61,13 @@ public class StoreSettings extends BaseEntity {
     private String dateFormat = "dd/MM/yyyy";
 
     /**
+     * v1.23.0: the business-wide default language of the screens, "en" or "fr". Each person can still choose their own in the
+     * browser. Set to "fr" when the Chad chart of accounts is chosen while this is still the untouched default "en".
+     */
+    @Column(nullable = false)
+    private String language = "en";
+
+    /**
      * Task 1: "In the system setting configure the max discount" — a store-wide ceiling on any
      * single order line's {@code OrderLine.discountPercent}, enforced by
      * {@code OrderService.validateDiscount} for both the normal online update-line flow and the

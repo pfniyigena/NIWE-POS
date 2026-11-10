@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PurchaseOrderApiService } from '../core/api/purchase-order-api.service';
@@ -27,7 +28,7 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
 @Component({
   selector: 'app-purchase-order-print',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="po as o">
       <div *ngIf="settings as s" style="text-align:center; margin:8px 0 12px;">
@@ -37,18 +38,18 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
         <div *ngIf="s.phone || s.email" style="font-size:0.8rem; color:#444;">
           <span *ngIf="s.phone">{{ s.phone }}</span><span *ngIf="s.phone && s.email"> &middot; </span><span *ngIf="s.email">{{ s.email }}</span>
         </div>
-        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ s.taxId }}</div>
+        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (s.taxId) } }}</div>
       </div>
-      <h3 style="text-align:center; margin:4px 0 0;">Purchase Order</h3>
+      <h3 style="text-align:center; margin:4px 0 0;">{{ 'Purchase Order' | translate }}</h3>
       <p style="text-align:center; margin:4px 0 12px; color:#666; font-size:0.85rem;">
         {{ o.orderNumber }} &middot; {{ o.status.replace('_', ' ') }} &middot; {{ o.orderDate | date: 'mediumDate' }}
       </p>
 
       <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:10px;">
         <div style="flex:1;">
-          <div style="font-weight:700; font-size:0.8rem; color:#666;">SUPPLIER</div>
+          <div style="font-weight:700; font-size:0.8rem; color:#666;">{{ 'SUPPLIER' | translate }}</div>
           <div>{{ o.supplierName ?? '—' }}</div>
-          <div *ngIf="supplier?.contactName" style="font-size:0.85rem;">Attn: {{ supplier?.contactName }}</div>
+          <div *ngIf="supplier?.contactName" style="font-size:0.85rem;">{{ 'Attn: {p0}' | translate: { p0: (supplier?.contactName) } }}</div>
           <div *ngIf="supplier?.address" style="font-size:0.85rem;">{{ supplier?.address }}</div>
           <div *ngIf="supplier?.phone || supplier?.email" style="font-size:0.85rem;">
             <span *ngIf="supplier?.phone">{{ supplier?.phone }}</span
@@ -57,11 +58,11 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
           </div>
         </div>
         <div style="flex:1; text-align:right;">
-          <div style="font-weight:700; font-size:0.8rem; color:#666;">EXPECTED</div>
+          <div style="font-weight:700; font-size:0.8rem; color:#666;">{{ 'EXPECTED' | translate }}</div>
           <div>{{ o.expectedDate ? (o.expectedDate | date: 'mediumDate') : '—' }}</div>
           <!-- Multi-warehouse: where to deliver — shown only once the store has more than one warehouse, so single-warehouse shops' printouts don't change. -->
           <ng-container *ngIf="deliverTo as w">
-            <div style="font-weight:700; font-size:0.8rem; color:#666; margin-top:8px;">DELIVER TO</div>
+            <div style="font-weight:700; font-size:0.8rem; color:#666; margin-top:8px;">{{ 'DELIVER TO' | translate }}</div>
             <div>{{ w.name }}</div>
             <div *ngIf="w.address" style="font-size:0.85rem;">{{ w.address }}</div>
           </ng-container>
@@ -72,12 +73,12 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
       <table style="width:100%; font-size:0.9rem;">
         <thead>
           <tr style="text-align:left; color:#666; font-size:0.8rem;">
-            <th style="padding:2px 0;">Product</th>
-            <th style="text-align:right; padding:2px 0;">Qty</th>
-            <th style="text-align:right; padding:2px 0;">Unit cost</th>
+            <th style="padding:2px 0;">{{ 'Product' | translate }}</th>
+            <th style="text-align:right; padding:2px 0;">{{ 'Qty' | translate }}</th>
+            <th style="text-align:right; padding:2px 0;">{{ 'Unit cost' | translate }}</th>
             <!-- Fourier: "Same for discount (but discount should be activate in the setting or configuration) and it will be per line" — only shown once this order actually has a discount on at least one line, same convention as every other printed document's own addSubtotalBreakdown. -->
-            <th style="text-align:right; padding:2px 0;" *ngIf="discountAmount()">Discount</th>
-            <th style="text-align:right; padding:2px 0;">Total</th>
+            <th style="text-align:right; padding:2px 0;" *ngIf="discountAmount()">{{ 'Discount' | translate }}</th>
+            <th style="text-align:right; padding:2px 0;">{{ 'Total' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -85,7 +86,7 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
             <td style="padding:4px 0;">
               {{ l.productName }}
               <div *ngIf="l.quantityReceived > 0" style="color:#666; font-size:0.8rem;">
-                Received so far: {{ l.quantityReceived }}
+                {{ 'Received so far: {p0}' | translate: { p0: (l.quantityReceived) } }}
               </div>
             </td>
             <td style="text-align:right; padding:4px 0; vertical-align:top;">{{ l.quantityOrdered }}</td>
@@ -94,7 +95,7 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
             <td style="text-align:right; padding:4px 0; vertical-align:top;">{{ lineTotal(l) | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="o.lines.length === 0">
-            <td [attr.colspan]="discountAmount() ? 5 : 4" class="text-muted">No lines on this order.</td>
+            <td [attr.colspan]="discountAmount() ? 5 : 4" class="text-muted">{{ 'No lines on this order.' | translate }}</td>
           </tr>
         </tbody>
       </table>
@@ -102,37 +103,37 @@ import { PurchaseOrder, StoreSettings, Supplier, Warehouse } from '../core/model
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr>
-            <td>Total quantity ordered</td>
+            <td>{{ 'Total quantity ordered' | translate }}</td>
             <td style="text-align:right;">{{ totalQuantity() }}</td>
           </tr>
           <!-- Fourier: "for purchases, sales, invoices, bills the tax are not being captured" — this view has no backend-rendered PDF (see class javadoc), so the tax breakdown is computed client-side from each line's own taxRatePercent/taxInclusive, mirroring the backend's TaxMath formula. -->
           <tr>
-            <td>Subtotal</td>
+            <td>{{ 'Subtotal' | translate }}</td>
             <td style="text-align:right;">{{ subtotalAmount() | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td>Tax</td>
+            <td>{{ 'Tax' | translate }}</td>
             <td style="text-align:right;">{{ taxAmount() | number: '1.2-2' }}</td>
           </tr>
           <!-- Fourier: "Same for discount ... it will be per line" — same zero-suppressed convention as every other printed document; purely informational, already folded into Subtotal/Grand total above. -->
           <tr *ngIf="discountAmount()">
-            <td>Discount</td>
+            <td>{{ 'Discount' | translate }}</td>
             <td style="text-align:right;">-{{ discountAmount() | number: '1.2-2' }}</td>
           </tr>
           <tr style="font-weight:700;">
-            <td>Grand total</td>
+            <td>{{ 'Grand total' | translate }}</td>
             <td style="text-align:right;">{{ grandTotal() | number: '1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
-      <p *ngIf="o.notes" style="margin:8px 0 0; font-size:0.85rem; color:#444;">Notes: {{ o.notes }}</p>
+      <p *ngIf="o.notes" style="margin:8px 0 0; font-size:0.85rem; color:#444;">{{ 'Notes: {p0}' | translate: { p0: (o.notes) } }}</p>
 
-      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">— End of purchase order —</p>
+      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">{{ '— End of purchase order —' | translate }}</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
+        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
         <a [routerLink]="['/admin/purchase-orders', o.id]" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">
-          Back to purchase order
+          {{ 'Back to purchase order' | translate }}
         </a>
       </div>
     </div>

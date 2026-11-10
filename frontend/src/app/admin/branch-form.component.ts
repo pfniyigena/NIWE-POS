@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,69 +10,69 @@ import { BranchApiService } from '../core/api/branch-api.service';
 @Component({
   selector: 'app-branch-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit branch' : 'New branch' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit branch' | translate) : ('New branch' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="flex gap-2">
           <div class="form-group" style="flex:1;">
-            <label class="form-label">Code</label>
-            <input class="form-control" name="code" [(ngModel)]="code" placeholder="e.g. KLA" required />
+            <label class="form-label">{{ 'Code' | translate }}</label>
+            <input class="form-control" name="code" [(ngModel)]="code" [placeholder]="'e.g. KLA' | translate" required />
           </div>
           <div class="form-group" style="flex:3;">
-            <label class="form-label">Name</label>
-            <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Kampala Road" required />
+            <label class="form-label">{{ 'Name' | translate }}</label>
+            <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Kampala Road' | translate" required />
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Address (optional)</label>
+          <label class="form-label">{{ 'Address (optional)' | translate }}</label>
           <textarea class="form-control" name="address" [(ngModel)]="address" rows="2"></textarea>
         </div>
         <div class="flex gap-2">
           <div class="form-group" style="flex:1;">
-            <label class="form-label">Phone (optional)</label>
+            <label class="form-label">{{ 'Phone (optional)' | translate }}</label>
             <input class="form-control" name="phone" [(ngModel)]="phone" />
           </div>
           <div class="form-group" style="flex:1;">
-            <label class="form-label">Email (optional)</label>
+            <label class="form-label">{{ 'Email (optional)' | translate }}</label>
             <input class="form-control" type="email" name="email" [(ngModel)]="email" />
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Receipt header (optional)</label>
+          <label class="form-label">{{ 'Receipt header (optional)' | translate }}</label>
           <textarea class="form-control" name="receiptHeader" [(ngModel)]="receiptHeader" rows="2"></textarea>
-          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Saved now; printing it on this branch's receipts comes in a later step.</div>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ 'Saved now; printing it on this branch\\'s receipts comes in a later step.' | translate }}</div>
         </div>
         <h4 class="mt-3 mb-2" style="font-size:1rem;">Tax &amp; numbering (optional)</h4>
         <div class="flex gap-2">
           <div class="form-group" style="flex:1;">
-            <label class="form-label">Tax ID / TIN</label>
+            <label class="form-label">{{ 'Tax ID / TIN' | translate }}</label>
             <input class="form-control" name="taxId" [(ngModel)]="taxId" />
           </div>
           <div class="form-group" style="flex:1;">
-            <label class="form-label">EFRIS branch code</label>
+            <label class="form-label">{{ 'EFRIS branch code' | translate }}</label>
             <input class="form-control" name="efrisBranchCode" [(ngModel)]="efrisBranchCode" />
           </div>
           <div class="form-group" style="flex:1;">
-            <label class="form-label">Document prefix</label>
-            <input class="form-control" name="documentPrefix" [(ngModel)]="documentPrefix" placeholder="e.g. KLA-" />
+            <label class="form-label">{{ 'Document prefix' | translate }}</label>
+            <input class="form-control" name="documentPrefix" [(ngModel)]="documentPrefix" [placeholder]="'e.g. KLA-' | translate" />
           </div>
         </div>
         <div class="text-muted mb-3" style="font-size:0.8rem;">
-          Stored for each branch; applying them to document numbers and fiscal submissions comes in a later step.
+          {{ 'Stored for each branch; applying them to document numbers and fiscal submissions comes in a later step.' | translate }}
         </div>
         <div class="form-group" *ngIf="!headquarters">
-          <label class="form-label"><input type="checkbox" name="active" [(ngModel)]="active" /> Active</label>
+          <label class="form-label"><input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}</label>
         </div>
         <div class="form-group" *ngIf="headquarters">
-          <label class="form-label"><input type="checkbox" checked disabled /> Active</label>
-          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">This is your head office — it can't be deactivated.</div>
+          <label class="form-label"><input type="checkbox" checked disabled /> {{ 'Active' | translate }}</label>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ 'This is your head office — it can\\'t be deactivated.' | translate }}</div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/branches">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/branches">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

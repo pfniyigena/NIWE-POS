@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../shared/date-picker.component';
@@ -34,35 +35,35 @@ interface SupplierStatementRow {
 @Component({
   selector: 'app-supplier-statement',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Supplier statement</h3>
+      <h3 class="mb-3">{{ 'Supplier statement' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="card mb-3" style="padding:1rem;">
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" style="margin:0; min-width:220px;">
-            <label class="form-label">Supplier</label>
+            <label class="form-label">{{ 'Supplier' | translate }}</label>
             <select class="form-select" [(ngModel)]="supplierId">
-              <option [ngValue]="null">Choose a supplier…</option>
+              <option [ngValue]="null">{{ 'Choose a supplier…' | translate }}</option>
               <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
             </select>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label">From</label>
+            <label class="form-label">{{ 'From' | translate }}</label>
             <app-date-picker [(ngModel)]="filter.from" ></app-date-picker>
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label">To</label>
+            <label class="form-label">{{ 'To' | translate }}</label>
             <app-date-picker [(ngModel)]="filter.to" ></app-date-picker>
           </div>
           <button class="btn btn-primary" (click)="run()" [disabled]="loading || !supplierId">
-            {{ loading ? 'Running…' : 'Run statement' }}
+            {{ loading ? ('Running…' | translate) : ('Run statement' | translate) }}
           </button>
           <span class="grow"></span>
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting || !supplierId">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting || !supplierId">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting || !supplierId">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting || !supplierId">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
 
@@ -70,14 +71,14 @@ interface SupplierStatementRow {
         <table>
           <thead>
             <tr>
-              <th>Order #</th>
-              <th>Status</th>
-              <th>Order date</th>
-              <th>Expected</th>
-              <th class="text-end">Lines</th>
-              <th class="text-end">Qty ordered</th>
-              <th class="text-end">Qty received</th>
-              <th class="text-end">Total cost</th>
+              <th>{{ 'Order #' | translate }}</th>
+              <th>{{ 'Status' | translate }}</th>
+              <th>{{ 'Order date' | translate }}</th>
+              <th>{{ 'Expected' | translate }}</th>
+              <th class="text-end">{{ 'Lines' | translate }}</th>
+              <th class="text-end">{{ 'Qty ordered' | translate }}</th>
+              <th class="text-end">{{ 'Qty received' | translate }}</th>
+              <th class="text-end">{{ 'Total cost' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -93,13 +94,13 @@ interface SupplierStatementRow {
             </tr>
             <tr *ngIf="rows.length === 0">
               <td colspan="8" class="text-muted">
-                {{ hasRun ? 'No purchase orders for this supplier in this range.' : 'Choose a supplier and click "Run statement".' }}
+                {{ hasRun ? ('No purchase orders for this supplier in this range.' | translate) : ('Choose a supplier and click "Run statement".' | translate) }}
               </td>
             </tr>
           </tbody>
           <tfoot *ngIf="rows.length > 0">
             <tr style="font-weight:700;">
-              <td colspan="5" class="text-end">Totals</td>
+              <td colspan="5" class="text-end">{{ 'Totals' | translate }}</td>
               <td class="text-end">{{ totalQuantityOrdered() }}</td>
               <td class="text-end">{{ totalQuantityReceived() }}</td>
               <td class="text-end">{{ totalCost() | number: '1.2-2' }}</td>

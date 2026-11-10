@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,33 +11,33 @@ import { GroupRow, PricingApiService } from '../core/api/pricing-api.service';
 @Component({
   selector: 'app-customer-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit customer' : 'New customer' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit customer' | translate) : ('New customer' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
+          <label class="form-label">{{ 'Name' | translate }}</label>
           <input class="form-control" name="name" [(ngModel)]="name" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Phone</label>
+          <label class="form-label">{{ 'Phone' | translate }}</label>
           <input class="form-control" name="phone" [(ngModel)]="phone" />
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">{{ 'Email' | translate }}</label>
           <input class="form-control" type="email" name="email" [(ngModel)]="email" />
         </div>
         <div class="form-group">
-          <label class="form-label">Tax ID</label>
+          <label class="form-label">{{ 'Tax ID' | translate }}</label>
           <input class="form-control" name="taxId" [(ngModel)]="taxId" />
         </div>
         <!-- CP-8: the customer group decides which price list this customer buys at. Only someone who manages Sales can change it. -->
         <div class="form-group" *ngIf="isAdmin && groups.length > 0">
-          <label class="form-label">Customer group (price list)</label>
+          <label class="form-label">{{ 'Customer group (price list)' | translate }}</label>
           <select class="form-select cust-group" name="customerGroupId" [(ngModel)]="customerGroupId">
-            <option [ngValue]="null">None (normal prices)</option>
+            <option [ngValue]="null">{{ 'None (normal prices)' | translate }}</option>
             <option *ngFor="let g of groups" [ngValue]="g.id">{{ g.name }}{{ g.priceListName ? ' - ' + g.priceListName : '' }}</option>
           </select>
         </div>
@@ -48,25 +49,25 @@ import { GroupRow, PricingApiService } from '../core/api/pricing-api.service';
              cashier can still see a customer's existing credit status while editing their basic
              details, just can't change it. The backend independently ignores these fields from a
              non-admin request regardless of what a disabled input sends — see CustomerController. -->
-        <h4 class="mb-2">Store credit</h4>
+        <h4 class="mb-2">{{ 'Store credit' | translate }}</h4>
         <div class="form-group">
           <label class="flex align-center gap-2">
             <input type="checkbox" name="creditEnabled" [(ngModel)]="creditEnabled" [disabled]="!isAdmin" />
-            Allow this customer to buy on credit
+            {{ 'Allow this customer to buy on credit' | translate }}
           </label>
-          <div class="text-muted" style="font-size:0.8rem;" *ngIf="!isAdmin">Only an admin can change this.</div>
+          <div class="text-muted" style="font-size:0.8rem;" *ngIf="!isAdmin">{{ 'Only an admin can change this.' | translate }}</div>
         </div>
         <div class="form-group" *ngIf="creditEnabled">
-          <label class="form-label">Credit limit</label>
+          <label class="form-label">{{ 'Credit limit' | translate }}</label>
           <input class="form-control" type="number" min="0" step="0.01" name="creditLimit" [(ngModel)]="creditLimit" [disabled]="!isAdmin" />
         </div>
         <div class="form-group" *ngIf="creditEnabled">
-          <label class="form-label">Default payment term (days)</label>
-          <input class="form-control" type="number" min="0" step="1" name="defaultCreditTermDays" [(ngModel)]="defaultCreditTermDays" placeholder="Optional — leave blank for no default due date" [disabled]="!isAdmin" />
+          <label class="form-label">{{ 'Default payment term (days)' | translate }}</label>
+          <input class="form-control" type="number" min="0" step="1" name="defaultCreditTermDays" [(ngModel)]="defaultCreditTermDays" [placeholder]="'Optional — leave blank for no default due date' | translate" [disabled]="!isAdmin" />
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/customers">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/customers">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

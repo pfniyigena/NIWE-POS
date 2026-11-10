@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -65,33 +66,30 @@ function emptyRecord<T>(value: T): Record<ImportKind, T> {
 @Component({
   selector: 'app-data-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Data</h3>
+      <h3 class="mb-3">{{ 'Data' | translate }}</h3>
 
       <!-- ---- Backup & Restore ---- -->
       <div class="card" style="padding:1rem; margin-bottom:1.5rem;">
         <h4 class="mb-2" style="font-size:1.05rem;">Backup &amp; restore</h4>
         <p class="text-muted" style="font-size:0.85rem;">
-          A full database backup runs automatically every night; you can also trigger one now. Restoring
-          replaces the <strong>entire</strong> current database with the chosen backup. While it runs, the
-          whole system goes into maintenance mode — everyone else (cashiers, other admins) sees a "please
-          wait" screen until it's done. Restart the app afterward for a clean start.
+          {{ 'A full database backup runs automatically every night; you can also trigger one now. Restoring replaces the' | translate }} <strong>{{ 'entire' | translate }}</strong> {{ 'current database with the chosen backup. While it runs, the whole system goes into maintenance mode — everyone else (cashiers, other admins) sees a "please wait" screen until it\\'s done. Restart the app afterward for a clean start.' | translate }}
         </p>
         <div class="alert alert-danger" *ngIf="backupError">{{ backupError }}</div>
         <div class="alert alert-success" *ngIf="backupMessage">{{ backupMessage }}</div>
 
         <button class="btn btn-primary mb-3" (click)="createBackup()" [disabled]="backingUp">
-          {{ backingUp ? 'Backing up…' : 'Backup now' }}
+          {{ backingUp ? ('Backing up…' | translate) : ('Backup now' | translate) }}
         </button>
 
         <table *ngIf="backups.length > 0">
           <thead>
             <tr>
-              <th>File</th>
-              <th>Size</th>
-              <th>Created</th>
+              <th>{{ 'File' | translate }}</th>
+              <th>{{ 'Size' | translate }}</th>
+              <th>{{ 'Created' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -101,35 +99,34 @@ function emptyRecord<T>(value: T): Record<ImportKind, T> {
               <td>{{ formatSize(b.sizeBytes) }}</td>
               <td>{{ b.createdAt | date: 'medium' }}</td>
               <td class="flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" (click)="download(b)">Download</button>
-                <button class="btn btn-sm btn-outline-danger" [disabled]="restoring" (click)="restoreFromStored(b)">Restore</button>
-                <button class="btn btn-sm btn-outline-danger" [disabled]="restoring" (click)="deleteBackup(b)">Delete</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="download(b)">{{ 'Download' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" [disabled]="restoring" (click)="restoreFromStored(b)">{{ 'Restore' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" [disabled]="restoring" (click)="deleteBackup(b)">{{ 'Delete' | translate }}</button>
               </td>
             </tr>
           </tbody>
         </table>
-        <p *ngIf="backups.length === 0 && backupsLoaded" class="text-muted">No backups yet.</p>
+        <p *ngIf="backups.length === 0 && backupsLoaded" class="text-muted">{{ 'No backups yet.' | translate }}</p>
 
         <div class="form-group" style="margin-top:1rem;">
-          <label class="form-label">Restore from an uploaded backup file</label>
+          <label class="form-label">{{ 'Restore from an uploaded backup file' | translate }}</label>
           <div class="flex gap-2">
             <input type="file" accept=".sql" (change)="onRestoreFileSelected($event)" />
             <button class="btn btn-outline-danger" [disabled]="!restoreUploadFile || restoring" (click)="restoreFromUpload()">
-              {{ restoring ? 'Restoring…' : 'Restore' }}
+              {{ restoring ? ('Restoring…' | translate) : ('Restore' | translate) }}
             </button>
           </div>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            For a backup downloaded earlier, or migrated from another machine — not needed for one already listed above.
+            {{ 'For a backup downloaded earlier, or migrated from another machine — not needed for one already listed above.' | translate }}
           </div>
         </div>
       </div>
 
       <!-- ---- Bulk import ---- -->
       <div class="card" style="padding:1rem; margin-bottom:1.5rem;">
-        <h4 class="mb-2" style="font-size:1.05rem;">Bulk import</h4>
+        <h4 class="mb-2" style="font-size:1.05rem;">{{ 'Bulk import' | translate }}</h4>
         <p class="text-muted" style="font-size:0.85rem;">
-          Load data from a CSV file. Press <strong>Check file</strong> first: it shows exactly what would happen and saves nothing.
-          Then press <strong>Import</strong> to do it. A row that cannot be used is skipped and listed with the reason; the rest of the file still imports.
+          {{ 'Load data from a CSV file. Press' | translate }} <strong>{{ 'Check file' | translate }}</strong> {{ 'first: it shows exactly what would happen and saves nothing. Then press' | translate }} <strong>{{ 'Import' | translate }}</strong> {{ 'to do it. A row that cannot be used is skipped and listed with the reason; the rest of the file still imports.' | translate }}
         </p>
 
         <div *ngFor="let group of importGroups" style="margin-top:1rem;">
@@ -140,33 +137,33 @@ function emptyRecord<T>(value: T): Record<ImportKind, T> {
             <label class="form-label">{{ info.label }}</label>
             <div class="text-muted" style="font-size:0.8rem;">{{ info.help }}</div>
             <div class="flex gap-2" style="margin-top:0.25rem;">
-              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="downloadTemplate(info.kind)">Download template</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="downloadTemplate(info.kind)">{{ 'Download template' | translate }}</button>
             </div>
             <label *ngIf="info.kind === 'ledger-balances'" class="imp-equity" style="display:flex; gap:0.4rem; align-items:center; margin-top:0.4rem; font-size:0.85rem;">
-              <input type="checkbox" [(ngModel)]="balanceToEquity" name="balanceToEquity" /> Put any difference in Owner's Equity
+              <input type="checkbox" [(ngModel)]="balanceToEquity" name="balanceToEquity" /> {{ 'Put any difference in Owner\\'s Equity' | translate }}
             </label>
             <div class="flex gap-2" style="margin-top:0.5rem; flex-wrap:wrap;">
               <input type="file" accept=".csv" [id]="'imp-file-' + info.kind" (change)="onImportFileSelected($event, info.kind)" />
               <button class="btn btn-outline-primary imp-check" [disabled]="!importFiles[info.kind] || importing[info.kind]" (click)="check(info.kind)">
-                {{ importing[info.kind] ? 'Working…' : 'Check file' }}
+                {{ importing[info.kind] ? ('Working…' | translate) : ('Check file' | translate) }}
               </button>
             </div>
             <div class="alert alert-danger" *ngIf="importErrors[info.kind]" style="margin-top:0.5rem;">{{ importErrors[info.kind] }}</div>
 
             <div *ngIf="importResults[info.kind] as res" class="imp-result" style="margin-top:0.5rem;">
               <div class="alert alert-info" *ngIf="res.dryRun">
-                <strong>Nothing saved yet.</strong>
-                {{ res.total }} row(s) read: {{ res.imported }} can be imported, {{ res.skipped }} will be skipped.
+                <strong>{{ 'Nothing saved yet.' | translate }}</strong>
+                {{ '{p0} row(s) read: {p1} can be imported, {p2} will be skipped.' | translate: { p0: (res.total), p1: (res.imported), p2: (res.skipped) } }}
               </div>
               <div class="alert alert-success" *ngIf="!res.dryRun">
-                Imported {{ res.imported }}, skipped {{ res.skipped }}.
+                {{ 'Imported {p0}, skipped {p1}.' | translate: { p0: (res.imported), p1: (res.skipped) } }}
               </div>
               <div *ngFor="let note of res.notes" class="text-muted" style="font-size:0.85rem;">{{ note }}</div>
 
               <div *ngIf="res.skippedRows.length > 0" style="margin-top:0.5rem;">
-                <div style="font-weight:600; font-size:0.85rem;">Rows that will be skipped</div>
+                <div style="font-weight:600; font-size:0.85rem;">{{ 'Rows that will be skipped' | translate }}</div>
                 <table>
-                  <thead><tr><th>Row</th><th>Reason</th></tr></thead>
+                  <thead><tr><th>{{ 'Row' | translate }}</th><th>{{ 'Reason' | translate }}</th></tr></thead>
                   <tbody>
                     <tr *ngFor="let r of res.skippedRows">
                       <td [attr.data-label]="'Row'">{{ r.rowNumber }}</td>
@@ -178,11 +175,11 @@ function emptyRecord<T>(value: T): Record<ImportKind, T> {
 
               <div *ngIf="res.dryRun && res.accepted && res.accepted.length > 0" style="margin-top:0.5rem;">
                 <div style="font-weight:600; font-size:0.85rem;">
-                  What will be created
-                  <span class="text-muted" *ngIf="res.imported > res.accepted.length">(first {{ res.accepted.length }} of {{ res.imported }})</span>
+                  {{ 'What will be created' | translate }}
+                  <span class="text-muted" *ngIf="res.imported > res.accepted.length">{{ '(first {p0} of {p1})' | translate: { p0: (res.accepted.length), p1: (res.imported) } }}</span>
                 </div>
                 <table>
-                  <thead><tr><th>Row</th><th>Will be created</th></tr></thead>
+                  <thead><tr><th>{{ 'Row' | translate }}</th><th>{{ 'Will be created' | translate }}</th></tr></thead>
                   <tbody>
                     <tr *ngFor="let r of res.accepted">
                       <td [attr.data-label]="'Row'">{{ r.rowNumber }}</td>
@@ -196,7 +193,7 @@ function emptyRecord<T>(value: T): Record<ImportKind, T> {
                 <button class="btn btn-primary imp-confirm" [disabled]="res.imported === 0 || importing[info.kind]" (click)="confirmImport(info.kind)">
                   {{ importing[info.kind] ? 'Importing…' : 'Import ' + res.imported + ' row(s)' }}
                 </button>
-                <button class="btn btn-outline-secondary" (click)="clearImport(info.kind)">Cancel</button>
+                <button class="btn btn-outline-secondary" (click)="clearImport(info.kind)">{{ 'Cancel' | translate }}</button>
               </div>
             </div>
           </div>
@@ -207,20 +204,18 @@ function emptyRecord<T>(value: T): Record<ImportKind, T> {
       <div class="card" style="padding:1rem;">
         <h4 class="mb-2" style="font-size:1.05rem;">Export &amp; year-end archive</h4>
         <p class="text-muted" style="font-size:0.85rem;">
-          Export the current product/customer lists, or a year-end archive of that year's business activity
-          (sales, purchases, payments, stock adjustments) — a curated snapshot for closing out a financial
-          year, not a full database backup.
+          {{ 'Export the current product/customer lists, or a year-end archive of that year\\'s business activity (sales, purchases, payments, stock adjustments) — a curated snapshot for closing out a financial year, not a full database backup.' | translate }}
         </p>
         <div class="flex gap-2 mb-3">
-          <button class="btn btn-outline-primary" (click)="exportProducts()">Export products</button>
-          <button class="btn btn-outline-primary" (click)="exportCustomers()">Export customers</button>
+          <button class="btn btn-outline-primary" (click)="exportProducts()">{{ 'Export products' | translate }}</button>
+          <button class="btn btn-outline-primary" (click)="exportCustomers()">{{ 'Export customers' | translate }}</button>
         </div>
         <div class="form-group">
-          <label class="form-label">Year-end archive</label>
+          <label class="form-label">{{ 'Year-end archive' | translate }}</label>
           <div class="flex gap-2">
             <input class="form-control" type="number" style="max-width:120px;" [(ngModel)]="archiveYear" />
             <button class="btn btn-outline-primary" [disabled]="archiving" (click)="exportYearEnd()">
-              {{ archiving ? 'Building…' : 'Export archive' }}
+              {{ archiving ? ('Building…' | translate) : ('Export archive' | translate) }}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -19,7 +20,7 @@ interface OptionRow {
 @Component({
   selector: 'app-product-variants',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -27,45 +28,44 @@ interface OptionRow {
       <ng-container *ngIf="template as t">
         <div class="flex justify-between align-center mb-3">
           <div>
-            <h3 style="margin-bottom:0;">Variants of {{ t.name }}</h3>
+            <h3 style="margin-bottom:0;">{{ 'Variants of {p0}' | translate: { p0: (t.name) } }}</h3>
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="t.variantAttributes">{{ t.variantAttributes }}</div>
           </div>
-          <a class="btn btn-link" [routerLink]="['/admin/products', t.id]">Back to product</a>
+          <a class="btn btn-link" [routerLink]="['/admin/products', t.id]">{{ 'Back to product' | translate }}</a>
         </div>
 
         <div class="card mb-3" style="padding:1rem;">
-          <strong>{{ variants.length ? 'Add more variants' : 'Generate variants' }}</strong>
+          <strong>{{ variants.length ? ('Add more variants' | translate) : ('Generate variants' | translate) }}</strong>
           <p class="text-muted" style="font-size:0.85rem; margin:0.25rem 0 0.75rem;">
-            One product is created for every combination, copying this product's price, cost, category, brand and tax. Existing
-            combinations are skipped.<span *ngIf="!variants.length"> This product is kept as the template and made inactive, so it must hold no stock.</span>
+            {{ 'One product is created for every combination, copying this product\\'s price, cost, category, brand and tax. Existing combinations are skipped.' | translate }}<span *ngIf="!variants.length"> {{ 'This product is kept as the template and made inactive, so it must hold no stock.' | translate }}</span>
           </p>
           <div class="flex gap-2 mb-2" *ngFor="let o of options; let i = index" style="align-items:flex-end;">
             <div style="width:180px;">
-              <label class="form-label" *ngIf="i === 0">Option</label>
-              <input class="form-control" placeholder="e.g. Size" [(ngModel)]="o.name" [name]="'on' + i" />
+              <label class="form-label" *ngIf="i === 0">{{ 'Option' | translate }}</label>
+              <input class="form-control" [placeholder]="'e.g. Size' | translate" [(ngModel)]="o.name" [name]="'on' + i" />
             </div>
             <div class="grow">
-              <label class="form-label" *ngIf="i === 0">Values (comma separated)</label>
-              <input class="form-control" placeholder="e.g. S, M, L" [(ngModel)]="o.values" [name]="'ov' + i" />
+              <label class="form-label" *ngIf="i === 0">{{ 'Values (comma separated)' | translate }}</label>
+              <input class="form-control" [placeholder]="'e.g. S, M, L' | translate" [(ngModel)]="o.values" [name]="'ov' + i" />
             </div>
-            <button class="btn btn-link" type="button" *ngIf="options.length > 1" (click)="options.splice(i, 1)">Remove</button>
+            <button class="btn btn-link" type="button" *ngIf="options.length > 1" (click)="options.splice(i, 1)">{{ 'Remove' | translate }}</button>
           </div>
           <div class="flex gap-2 align-center">
-            <button class="btn btn-outline-secondary" type="button" *ngIf="options.length < 3" (click)="options.push({ name: '', values: '' })">+ Add option</button>
-            <span class="text-muted" *ngIf="combinationCount > 0">{{ combinationCount }} combination{{ combinationCount === 1 ? '' : 's' }}</span>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="options.length < 3" (click)="options.push({ name: '', values: '' })">{{ '+ Add option' | translate }}</button>
+            <span class="text-muted" *ngIf="combinationCount > 0">{{ '{p0} combination{p1}' | translate: { p0: (combinationCount), p1: (combinationCount === 1 ? '' : 's') } }}</span>
             <span class="grow"></span>
-            <button class="btn btn-primary" type="button" [disabled]="busy || combinationCount === 0" (click)="generate()">Generate</button>
+            <button class="btn btn-primary" type="button" [disabled]="busy || combinationCount === 0" (click)="generate()">{{ 'Generate' | translate }}</button>
           </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Variant</th>
-              <th>SKU</th>
-              <th>Barcode</th>
-              <th class="text-end">Price</th>
-              <th class="text-end">Stock</th>
+              <th>{{ 'Variant' | translate }}</th>
+              <th>{{ 'SKU' | translate }}</th>
+              <th>{{ 'Barcode' | translate }}</th>
+              <th class="text-end">{{ 'Price' | translate }}</th>
+              <th class="text-end">{{ 'Stock' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -76,10 +76,10 @@ interface OptionRow {
               <td>{{ v.barcode || '—' }}</td>
               <td class="text-end">{{ v.unitPrice | number: '1.2-2' }}</td>
               <td class="text-end">{{ v.stockQuantity }}</td>
-              <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/products', v.id, 'edit']">Edit</a></td>
+              <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/products', v.id, 'edit']">{{ 'Edit' | translate }}</a></td>
             </tr>
             <tr *ngIf="variants.length === 0">
-              <td colspan="6" class="text-muted">No variants yet.</td>
+              <td colspan="6" class="text-muted">{{ 'No variants yet.' | translate }}</td>
             </tr>
           </tbody>
         </table>

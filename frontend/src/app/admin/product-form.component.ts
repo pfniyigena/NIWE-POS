@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,17 +12,17 @@ import { Brand, Category, TaxRateOption } from '../core/models';
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>{{ id ? 'Edit product' : 'New product' }}</h3>
+        <h3>{{ id ? ('Edit product' | translate) : ('New product' | translate) }}</h3>
         <div class="flex gap-2" *ngIf="id">
           <!-- Fourier: "Add view on product where we can show current quantity on that product,
                Stock movement, etc" — the dedicated read-only view screen itself, which embeds this
                same stock movement history (defaulted to the last 30 days) alongside the product's
                current stock/price/etc, rather than only this report link below. -->
-          <a class="btn btn-outline-secondary" [routerLink]="['/admin/products', id]">View product</a>
+          <a class="btn btn-outline-secondary" [routerLink]="['/admin/products', id]">{{ 'View product' | translate }}</a>
           <!-- Fourier: "can we have Stock Movement History for a specific product (and it can be
                viewed on product...)" — jumps into the full Inventory report already filtered to
                this one product and run, for a wider date range or export than the view screen's
@@ -31,22 +32,22 @@ import { Brand, Category, TaxRateOption } from '../core/models';
             routerLink="/admin/reports/stock-movement"
             [queryParams]="{ productId: id, productName: name }"
           >
-            📊 Stock movement history
+            {{ '📊 Stock movement history' | translate }}
           </a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
+          <label class="form-label">{{ 'Name' | translate }}</label>
           <input class="form-control" name="name" [(ngModel)]="name" required />
         </div>
         <div class="form-group">
-          <label class="form-label">SKU</label>
+          <label class="form-label">{{ 'SKU' | translate }}</label>
           <input class="form-control" name="sku" [(ngModel)]="sku" />
         </div>
         <div class="form-group">
-          <label class="form-label">Barcode</label>
+          <label class="form-label">{{ 'Barcode' | translate }}</label>
           <div class="flex gap-2" style="align-items:center;">
             <input class="form-control" name="barcode" [(ngModel)]="barcode" />
             <!-- Fourier: "barcode/label generation for products that don't already carry a
@@ -60,7 +61,7 @@ import { Brand, Category, TaxRateOption } from '../core/models';
               [disabled]="generatingBarcode"
               (click)="generateBarcode()"
             >
-              {{ generatingBarcode ? 'Generating…' : 'Generate' }}
+              {{ generatingBarcode ? ('Generating…' | translate) : ('Generate' | translate) }}
             </button>
             <a
               *ngIf="id && barcode"
@@ -69,51 +70,51 @@ import { Brand, Category, TaxRateOption } from '../core/models';
               [queryParams]="{ ids: id }"
               target="_blank"
             >
-              Print label
+              {{ 'Print label' | translate }}
             </a>
           </div>
           <div class="alert alert-danger" *ngIf="barcodeError" style="margin-top:0.5rem;">{{ barcodeError }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Code</label>
+          <label class="form-label">{{ 'Code' | translate }}</label>
           <input class="form-control" name="code" [(ngModel)]="code" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Optional second identifier — leave blank if you don't use one. If set, it must be unique across products.
+            {{ 'Optional second identifier — leave blank if you don\\'t use one. If set, it must be unique across products.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Icon</label>
+          <label class="form-label">{{ 'Icon' | translate }}</label>
           <div class="flex gap-2" style="align-items:center;">
-            <img *ngIf="iconDataUrl" [src]="iconDataUrl" alt="Product icon" style="max-width:80px; max-height:80px; border:1px solid #444; border-radius:4px; object-fit:cover;" />
-            <span class="text-muted" style="font-size:0.85rem;" *ngIf="!iconDataUrl">No icon uploaded</span>
+            <img *ngIf="iconDataUrl" [src]="iconDataUrl" [alt]="'Product icon' | translate" style="max-width:80px; max-height:80px; border:1px solid #444; border-radius:4px; object-fit:cover;" />
+            <span class="text-muted" style="font-size:0.85rem;" *ngIf="!iconDataUrl">{{ 'No icon uploaded' | translate }}</span>
           </div>
           <input class="form-control" type="file" accept="image/*" (change)="onIconSelected($event)" style="margin-top:0.5rem;" />
           <div class="alert alert-danger" *ngIf="iconError" style="margin-top:0.5rem;">{{ iconError }}</div>
           <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-top:0.5rem;" *ngIf="iconDataUrl" (click)="removeIcon()">
-            Remove icon
+            {{ 'Remove icon' | translate }}
           </button>
         </div>
         <div class="form-group">
-          <label class="form-label">Description</label>
+          <label class="form-label">{{ 'Description' | translate }}</label>
           <textarea class="form-control" name="description" rows="3" [(ngModel)]="description"></textarea>
           <!-- Fourier: "On Invoice Line add product description text (by default it should pick
                the product description)" — this is that default; an invoice line still starts out
                editable, so changing it there never rewrites what's saved here. -->
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Optional — the default description text a new Invoice line for this product starts with.
+            {{ 'Optional — the default description text a new Invoice line for this product starts with.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Category</label>
+          <label class="form-label">{{ 'Category' | translate }}</label>
           <select class="form-select" name="categoryId" [(ngModel)]="categoryId">
-            <option [ngValue]="null">— None —</option>
+            <option [ngValue]="null">{{ '— None —' | translate }}</option>
             <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Brand</label>
+          <label class="form-label">{{ 'Brand' | translate }}</label>
           <select class="form-select" name="brandId" [(ngModel)]="brandId">
-            <option [ngValue]="null">— None —</option>
+            <option [ngValue]="null">{{ '— None —' | translate }}</option>
             <option *ngFor="let b of brands" [ngValue]="b.id">{{ b.name }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="brands.length === 0">
@@ -121,29 +122,28 @@ import { Brand, Category, TaxRateOption } from '../core/models';
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Tax rate</label>
+          <label class="form-label">{{ 'Tax rate' | translate }}</label>
           <select class="form-select" name="taxRateId" [(ngModel)]="taxRateId">
-            <option [ngValue]="null">— None (tax-exempt) —</option>
+            <option [ngValue]="null">{{ '— None (tax-exempt) —' | translate }}</option>
             <option *ngFor="let t of activeTaxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Unit price</label>
+          <label class="form-label">{{ 'Unit price' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0" name="unitPrice" [(ngModel)]="unitPrice" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Cost price</label>
+          <label class="form-label">{{ 'Cost price' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0" name="costPrice" [(ngModel)]="costPrice" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            What this product costs the store — not shown to customers, used only for the admin Profit reports.
+            {{ 'What this product costs the store — not shown to customers, used only for the admin Profit reports.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="efrisInstalled">
-          <label class="form-label">EFRIS commodity code</label>
+          <label class="form-label">{{ 'EFRIS commodity code' | translate }}</label>
           <input class="form-control" name="unspCode" [(ngModel)]="unspCode" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            The UNSPSC-style tariff code EFRIS expects on an invoice line ("unsp_code" for EFRIS Rwanda,
-            "classification_code" for EFRIS Chad). Leave blank if you don't submit to EFRIS.
+            {{ 'The UNSPSC-style tariff code EFRIS expects on an invoice line ("unsp_code" for EFRIS Rwanda, "classification_code" for EFRIS Chad). Leave blank if you don\\'t submit to EFRIS.' | translate }}
           </div>
         </div>
         <!-- Task: "if EFRIS Chad is set then call configured with the shared sample request" — Chad's
@@ -152,10 +152,10 @@ import { Brand, Category, TaxRateOption } from '../core/models';
              above. -->
         <div class="form-group" *ngIf="chadInstalled">
           <label class="form-label">
-            <input type="checkbox" name="service" [(ngModel)]="service" /> This is a service, not a physical good
+            <input type="checkbox" name="service" [(ngModel)]="service" /> {{ 'This is a service, not a physical good' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Feeds EFRIS Chad's item_nature on an invoice line. Leave unchecked for a physical product.
+            {{ 'Feeds EFRIS Chad\\'s item_nature on an invoice line. Leave unchecked for a physical product.' | translate }}
           </div>
         </div>
         <!-- Fourier: "Add track stock attribute on Product" — off makes this product always
@@ -163,48 +163,47 @@ import { Brand, Category, TaxRateOption } from '../core/models';
              (see the backend's Product.trackStock javadoc for exactly where this is checked). -->
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="trackStock" [(ngModel)]="trackStock" /> Track stock for this product
+            <input type="checkbox" name="trackStock" [(ngModel)]="trackStock" /> {{ 'Track stock for this product' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Uncheck for a service or made-to-order item — it can always be sold, and selling it never changes a stock count.
+            {{ 'Uncheck for a service or made-to-order item — it can always be sold, and selling it never changes a stock count.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="trackStock">
-          <label class="form-label">Stock quantity</label>
+          <label class="form-label">{{ 'Stock quantity' | translate }}</label>
           <input class="form-control" type="number" step="any" min="0" name="stockQuantity" [(ngModel)]="stockQuantity" required />
         </div>
         <div class="form-group" *ngIf="trackStock">
-          <label class="form-label">Reorder level (optional)</label>
+          <label class="form-label">{{ 'Reorder level (optional)' | translate }}</label>
           <input class="form-control" type="number" step="any" min="0" name="reorderLevel" [(ngModel)]="reorderLevel" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             When sellable stock plus open purchase orders falls to this level, the product appears on Inventory &gt; Reorder.
           </div>
         </div>
         <div class="form-group" *ngIf="trackStock && reorderLevel !== null && reorderLevel !== undefined">
-          <label class="form-label">Maximum stock level (optional)</label>
+          <label class="form-label">{{ 'Maximum stock level (optional)' | translate }}</label>
           <input class="form-control" type="number" step="any" min="0" name="maxStockLevel" [(ngModel)]="maxStockLevel" />
-          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Suggested order quantity brings stock back up to this level (defaults to twice the reorder level).</div>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ 'Suggested order quantity brings stock back up to this level (defaults to twice the reorder level).' | translate }}</div>
         </div>
         <div class="form-group" *ngIf="trackStock">
-          <label class="form-label">Batch / serial tracking</label>
+          <label class="form-label">{{ 'Batch / serial tracking' | translate }}</label>
           <select class="form-control" name="trackingMode" [(ngModel)]="trackingMode">
-            <option value="NONE">None — plain quantity</option>
-            <option value="BATCH">Batches with expiry date (sold earliest-expiry-first)</option>
-            <option value="SERIAL">Serial numbers (one per unit)</option>
+            <option value="NONE">{{ 'None — plain quantity' | translate }}</option>
+            <option value="BATCH">{{ 'Batches with expiry date (sold earliest-expiry-first)' | translate }}</option>
+            <option value="SERIAL">{{ 'Serial numbers (one per unit)' | translate }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Batch and serial numbers are entered when you receive a purchase order or add stock by adjustment, and follow the stock through transfers and sales.
-            Stock already on hand stays untracked until it is received or adjusted in with its batch or serials.
+            {{ 'Batch and serial numbers are entered when you receive a purchase order or add stock by adjustment, and follow the stock through transfers and sales. Stock already on hand stays untracked until it is received or adjusted in with its batch or serials.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active (visible on terminal)
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active (visible on terminal)' | translate }}
           </label>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/products">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/products">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

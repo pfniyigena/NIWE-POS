@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -13,23 +14,23 @@ import { JournalEntry } from '../../core/models';
 @Component({
   selector: 'app-journal-entry-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Journal entries</h3>
-        <a class="btn btn-primary" routerLink="/admin/accounting/journal-entries/new">+ New manual entry</a>
+        <h3>{{ 'Journal entries' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/accounting/journal-entries/new">{{ '+ New manual entry' | translate }}</a>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Entry #</th>
-            <th>Date</th>
-            <th>Source</th>
-            <th>Memo</th>
-            <th class="text-end">Total debit</th>
-            <th class="text-end">Total credit</th>
+            <th>{{ 'Entry #' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Source' | translate }}</th>
+            <th>{{ 'Memo' | translate }}</th>
+            <th class="text-end">{{ 'Total debit' | translate }}</th>
+            <th class="text-end">{{ 'Total credit' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +46,7 @@ import { JournalEntry } from '../../core/models';
           </tr>
           <tr *ngIf="entries.length === 0">
             <td colspan="6" class="text-muted">
-              No journal entries yet — they'll appear here automatically once a sale, purchase, payment or production run is recorded.
+              {{ 'No journal entries yet — they\\'ll appear here automatically once a sale, purchase, payment or production run is recorded.' | translate }}
             </td>
           </tr>
         </tbody>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -14,47 +15,47 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 @Component({
   selector: 'app-business-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Business details</h3>
+      <h3 class="mb-3">{{ 'Business details' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Business details saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Business details saved.' | translate }}</div>
       <form (ngSubmit)="submit()" *ngIf="loaded">
         <div class="form-group">
-          <label class="form-label">Business name</label>
+          <label class="form-label">{{ 'Business name' | translate }}</label>
           <input class="form-control" name="businessName" [(ngModel)]="businessName" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Address</label>
+          <label class="form-label">{{ 'Address' | translate }}</label>
           <textarea class="form-control" name="address" [(ngModel)]="address" rows="2"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Phone</label>
+          <label class="form-label">{{ 'Phone' | translate }}</label>
           <input class="form-control" name="phone" [(ngModel)]="phone" />
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">{{ 'Email' | translate }}</label>
           <input class="form-control" type="email" name="email" [(ngModel)]="email" />
         </div>
         <div class="form-group">
-          <label class="form-label">Tax ID</label>
+          <label class="form-label">{{ 'Tax ID' | translate }}</label>
           <input class="form-control" name="taxId" [(ngModel)]="taxId" />
         </div>
         <div class="form-group">
-          <label class="form-label">Logo</label>
+          <label class="form-label">{{ 'Logo' | translate }}</label>
           <div class="flex gap-2" style="align-items:center;">
-            <img *ngIf="logoDataUrl" [src]="logoDataUrl" alt="Business logo" style="max-width:120px; max-height:80px; border:1px solid #444; border-radius:4px;" />
-            <span class="text-muted" style="font-size:0.85rem;" *ngIf="!logoDataUrl">No logo uploaded</span>
+            <img *ngIf="logoDataUrl" [src]="logoDataUrl" [alt]="'Business logo' | translate" style="max-width:120px; max-height:80px; border:1px solid #444; border-radius:4px;" />
+            <span class="text-muted" style="font-size:0.85rem;" *ngIf="!logoDataUrl">{{ 'No logo uploaded' | translate }}</span>
           </div>
           <input class="form-control" type="file" accept="image/*" (change)="onLogoSelected($event)" style="margin-top:0.5rem;" />
           <div class="alert alert-danger" *ngIf="logoError" style="margin-top:0.5rem;">{{ logoError }}</div>
           <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-top:0.5rem;" *ngIf="logoDataUrl" (click)="removeLogo()">
-            Remove logo
+            {{ 'Remove logo' | translate }}
           </button>
         </div>
         <button class="btn btn-primary" type="submit" [disabled]="saving || !businessName.trim()">
-          {{ saving ? 'Saving…' : 'Save' }}
+          {{ saving ? ('Saving…' | translate) : ('Save' | translate) }}
         </button>
       </form>
     </app-shell>

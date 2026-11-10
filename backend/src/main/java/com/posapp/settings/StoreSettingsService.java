@@ -151,9 +151,16 @@ public class StoreSettingsService {
         settings.setDateFormat(request.getDateFormat());
         settings.setMaxDiscountPercent(request.getMaxDiscountPercent());
         settings.setDiscountMode(parseDiscountMode(request.getDiscountMode()));
+        if (request.getLanguage() != null && !request.getLanguage().isBlank()) {
+            String language = request.getLanguage().trim().toLowerCase();
+            if (!language.equals("en") && !language.equals("fr")) {
+                throw ApiException.badRequest("Language must be en (English) or fr (French)");
+            }
+            settings.setLanguage(language);
+        }
         StoreSettings saved = repository.save(settings);
         auditLogService.record("SYSTEM_SETTINGS_UPDATED",
-                "Updated system settings (currency " + saved.getCurrencyCode() + ", time zone " + saved.getTimeZone()
+                "Updated system settings (currency " + saved.getCurrencyCode() + ", language " + saved.getLanguage() + ", time zone " + saved.getTimeZone()
                         + ", max discount " + saved.getMaxDiscountPercent() + "%, discount mode "
                         + saved.getDiscountMode() + ")",
                 "StoreSettings", saved.getId());

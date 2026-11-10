@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,22 +16,22 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3 style="margin:0;">Dashboard</h3>
+        <h3 style="margin:0;">{{ 'Dashboard' | translate }}</h3>
         <!-- Branches: narrows today's sales figures only; stock, customers and sessions stay business-wide. Hidden until a second branch exists. -->
-        <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="selectedBranchId" (ngModelChange)="loadSummary()" title="Branch (affects today's sales figures)">
-          <option [ngValue]="null">All branches</option>
+        <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="selectedBranchId" (ngModelChange)="loadSummary()" [title]="'Branch (affects today\\'s sales figures)' | translate">
+          <option [ngValue]="null">{{ 'All branches' | translate }}</option>
           <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
         </select>
       </div>
       <!-- CP-7: what needs doing, how sales compare, who owes, what to pay, what sells. Every number opens the list behind it. -->
       <ng-container *ngIf="overview as o">
         <div class="dash-section" id="dash-attention">
-          <h4 class="dash-h">Needs your attention</h4>
+          <h4 class="dash-h">{{ 'Needs your attention' | translate }}</h4>
           <div class="attn-grid" *ngIf="attentionVisible() > 0">
             <ng-container *ngFor="let a of attentionShown">
               <a class="attn-tile" *ngIf="tileOn(a.key)" [routerLink]="linkFor(a.key)" [attr.data-key]="a.key" [class.attn-hot]="a.key === 'OVERDUE_INVOICES' || a.key === 'OUT_OF_STOCK'">
@@ -40,24 +41,24 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
               </a>
             </ng-container>
           </div>
-          <div class="alert alert-success" id="dash-allclear" *ngIf="attentionVisible() === 0">All clear. Nothing is waiting for you right now.</div>
+          <div class="alert alert-success" id="dash-allclear" *ngIf="attentionVisible() === 0">{{ 'All clear. Nothing is waiting for you right now.' | translate }}</div>
         </div>
 
         <div class="dash-section" id="dash-sales">
-          <h4 class="dash-h">Sales compared with last week</h4>
+          <h4 class="dash-h">{{ 'Sales compared with last week' | translate }}</h4>
           <div class="cmp-grid">
             <div class="cmp-card" id="cmp-today">
-              <div class="stat-label">Today</div>
+              <div class="stat-label">{{ 'Today' | translate }}</div>
               <div class="cmp-value">{{ o.comparison.today | number: '1.2-2' }}</div>
-              <div class="cmp-delta" [ngClass]="todayDelta.cls">{{ todayDelta.text }} <span class="text-muted">than the same day last week ({{ o.comparison.sameDayLastWeek | number: '1.2-2' }})</span></div>
+              <div class="cmp-delta" [ngClass]="todayDelta.cls">{{ todayDelta.text }} <span class="text-muted">{{ 'than the same day last week ({p0})' | translate: { p0: (o.comparison.sameDayLastWeek | number: '1.2-2') } }}</span></div>
             </div>
             <div class="cmp-card" id="cmp-week">
-              <div class="stat-label">Last 7 days</div>
+              <div class="stat-label">{{ 'Last 7 days' | translate }}</div>
               <div class="cmp-value">{{ o.comparison.last7 | number: '1.2-2' }}</div>
-              <div class="cmp-delta" [ngClass]="weekDelta.cls">{{ weekDelta.text }} <span class="text-muted">than the 7 days before ({{ o.comparison.previous7 | number: '1.2-2' }})</span></div>
+              <div class="cmp-delta" [ngClass]="weekDelta.cls">{{ weekDelta.text }} <span class="text-muted">{{ 'than the 7 days before ({p0})' | translate: { p0: (o.comparison.previous7 | number: '1.2-2') } }}</span></div>
             </div>
           </div>
-          <div class="chart-legend text-muted">Till sales <span class="lg lg-pos"></span> and invoices issued <span class="lg lg-inv"></span> per day, last 14 days (opening balances not counted).</div>
+          <div class="chart-legend text-muted">{{ 'Till sales' | translate }} <span class="lg lg-pos"></span> {{ 'and invoices issued' | translate }} <span class="lg lg-inv"></span> {{ 'per day, last 14 days (opening balances not counted).' | translate }}</div>
           <div class="bar-chart" id="dash-chart">
             <div class="bar-col" *ngFor="let b of bars" [attr.title]="b.title">
               <div class="bar-stack">
@@ -72,48 +73,48 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
         <div class="dash-two">
           <div class="dash-section" id="dash-owing">
             <div class="flex justify-between align-center mb-2">
-              <h4 class="dash-h" style="margin:0;">Customers to chase</h4>
-              <a class="btn btn-sm btn-outline-primary" routerLink="/admin/collections">All collections</a>
+              <h4 class="dash-h" style="margin:0;">{{ 'Customers to chase' | translate }}</h4>
+              <a class="btn btn-sm btn-outline-primary" routerLink="/admin/collections">{{ 'All collections' | translate }}</a>
             </div>
-            <div class="text-muted mb-2" *ngIf="o.owing.customersOwing > 0">{{ o.owing.totalOutstanding | number: '1.2-2' }} owed by {{ o.owing.customersOwing }} customer(s), of which {{ o.owing.totalOverdue | number: '1.2-2' }} is overdue.</div>
+            <div class="text-muted mb-2" *ngIf="o.owing.customersOwing > 0">{{ '{p0} owed by {p1} customer(s), of which {p2} is overdue.' | translate: { p0: (o.owing.totalOutstanding | number: '1.2-2'), p1: (o.owing.customersOwing), p2: (o.owing.totalOverdue | number: '1.2-2') } }}</div>
             <table>
-              <thead><tr><th>Customer</th><th class="text-end">Owes</th><th class="text-end">Overdue</th></tr></thead>
+              <thead><tr><th>{{ 'Customer' | translate }}</th><th class="text-end">{{ 'Owes' | translate }}</th><th class="text-end">{{ 'Overdue' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let r of o.owing.top" class="owing-row">
                   <td data-label="Customer"><a [routerLink]="['/admin/customers', r.customerId]">{{ r.name }}</a></td>
                   <td data-label="Owes" class="text-end">{{ r.outstanding | number: '1.2-2' }}</td>
-                  <td data-label="Overdue" class="text-end" [class.text-danger]="r.overdue > 0">{{ r.overdue | number: '1.2-2' }}<span class="text-muted" *ngIf="r.oldestDaysOverdue > 0"> ({{ r.oldestDaysOverdue }}d)</span></td>
+                  <td data-label="Overdue" class="text-end" [class.text-danger]="r.overdue > 0">{{ r.overdue | number: '1.2-2' }}<span class="text-muted" *ngIf="r.oldestDaysOverdue > 0"> {{ '({p0}d)' | translate: { p0: (r.oldestDaysOverdue) } }}</span></td>
                 </tr>
-                <tr *ngIf="o.owing.top.length === 0"><td colspan="3" class="text-muted">Nobody owes you anything.</td></tr>
+                <tr *ngIf="o.owing.top.length === 0"><td colspan="3" class="text-muted">{{ 'Nobody owes you anything.' | translate }}</td></tr>
               </tbody>
             </table>
           </div>
 
           <div class="dash-section" id="dash-bills">
             <div class="flex justify-between align-center mb-2">
-              <h4 class="dash-h" style="margin:0;">Oldest unpaid supplier bills</h4>
-              <a class="btn btn-sm btn-outline-primary" routerLink="/admin/bills">All bills</a>
+              <h4 class="dash-h" style="margin:0;">{{ 'Oldest unpaid supplier bills' | translate }}</h4>
+              <a class="btn btn-sm btn-outline-primary" routerLink="/admin/bills">{{ 'All bills' | translate }}</a>
             </div>
-            <div class="text-muted mb-2" *ngIf="o.bills.unpaidBills > 0">{{ o.bills.totalUnpaid | number: '1.2-2' }} to pay on {{ o.bills.unpaidBills }} bill(s).</div>
+            <div class="text-muted mb-2" *ngIf="o.bills.unpaidBills > 0">{{ '{p0} to pay on {p1} bill(s).' | translate: { p0: (o.bills.totalUnpaid | number: '1.2-2'), p1: (o.bills.unpaidBills) } }}</div>
             <table>
-              <thead><tr><th>Bill</th><th>Supplier</th><th class="text-end">To pay</th><th class="text-end">Age</th></tr></thead>
+              <thead><tr><th>{{ 'Bill' | translate }}</th><th>{{ 'Supplier' | translate }}</th><th class="text-end">{{ 'To pay' | translate }}</th><th class="text-end">{{ 'Age' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let b of o.bills.oldest" class="bill-row">
                   <td data-label="Bill"><a [routerLink]="['/admin/bills', b.billId]">{{ b.billNumber }}</a></td>
                   <td data-label="Supplier">{{ b.supplierName }}</td>
                   <td data-label="To pay" class="text-end">{{ b.outstanding | number: '1.2-2' }}</td>
-                  <td data-label="Age" class="text-end">{{ b.ageDays }}d</td>
+                  <td data-label="Age" class="text-end">{{ '{p0}d' | translate: { p0: (b.ageDays) } }}</td>
                 </tr>
-                <tr *ngIf="o.bills.oldest.length === 0"><td colspan="4" class="text-muted">No unpaid bills.</td></tr>
+                <tr *ngIf="o.bills.oldest.length === 0"><td colspan="4" class="text-muted">{{ 'No unpaid bills.' | translate }}</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <div class="dash-section" id="dash-sellers">
-          <h4 class="dash-h">Top sellers, last {{ o.topSellersDays }} days (till sales)</h4>
+          <h4 class="dash-h">{{ 'Top sellers, last {p0} days (till sales)' | translate: { p0: (o.topSellersDays) } }}</h4>
           <table>
-            <thead><tr><th>Product</th><th>SKU</th><th class="text-end">Sold</th><th class="text-end">Revenue</th></tr></thead>
+            <thead><tr><th>{{ 'Product' | translate }}</th><th>{{ 'SKU' | translate }}</th><th class="text-end">{{ 'Sold' | translate }}</th><th class="text-end">{{ 'Revenue' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let t of o.topSellers" class="seller-row">
                 <td data-label="Product"><a [routerLink]="['/admin/products', t.productId]">{{ t.name }}</a></td>
@@ -121,7 +122,7 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
                 <td data-label="Sold" class="text-end">{{ t.quantity }}</td>
                 <td data-label="Revenue" class="text-end">{{ t.revenue | number: '1.2-2' }}</td>
               </tr>
-              <tr *ngIf="o.topSellers.length === 0"><td colspan="4" class="text-muted">No till sales in this period.</td></tr>
+              <tr *ngIf="o.topSellers.length === 0"><td colspan="4" class="text-muted">{{ 'No till sales in this period.' | translate }}</td></tr>
             </tbody>
           </table>
         </div>
@@ -130,52 +131,52 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
       <ng-container *ngIf="summary as s">
         <div class="stat-grid">
           <div class="stat-tile">
-            <div class="stat-label">Today's sales</div>
+            <div class="stat-label">{{ 'Today\\'s sales' | translate }}</div>
             <div class="stat-value">{{ s.todaySalesCount }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Today's revenue</div>
+            <div class="stat-label">{{ 'Today\\'s revenue' | translate }}</div>
             <div class="stat-value">{{ s.todaySalesTotal | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Open sessions</div>
+            <div class="stat-label">{{ 'Open sessions' | translate }}</div>
             <div class="stat-value">{{ s.openSessionsCount }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Active products</div>
+            <div class="stat-label">{{ 'Active products' | translate }}</div>
             <div class="stat-value">{{ s.totalActiveProducts }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Customers</div>
+            <div class="stat-label">{{ 'Customers' | translate }}</div>
             <div class="stat-value">{{ s.totalCustomers }}</div>
           </div>
           <div class="stat-tile" [class.warn]="s.lowStockProducts.length > 0">
-            <div class="stat-label">Low stock</div>
+            <div class="stat-label">{{ 'Low stock' | translate }}</div>
             <div class="stat-value">{{ s.lowStockProducts.length }}</div>
           </div>
         </div>
 
         <ng-container *ngIf="modules.on('INSTALLMENTS')">
           <div class="flex justify-between align-center mb-2">
-            <h4 style="margin:0;">Installments</h4>
-            <a class="btn btn-sm btn-outline-primary" routerLink="/admin/installments">Open</a>
+            <h4 style="margin:0;">{{ 'Installments' | translate }}</h4>
+            <a class="btn btn-sm btn-outline-primary" routerLink="/admin/installments">{{ 'Open' | translate }}</a>
           </div>
           <app-installment-summary></app-installment-summary>
         </ng-container>
 
         <div class="flex justify-between align-center mb-2">
-          <h4 style="margin:0;">Low-stock products</h4>
+          <h4 style="margin:0;">{{ 'Low-stock products' | translate }}</h4>
           <!-- Task: "the dashboard already flags low stock, but nothing acts on it" — one click drafts a single PO covering every low-stock item. -->
           <a class="btn btn-sm btn-outline-primary" *ngIf="s.lowStockProducts.length > 0" [routerLink]="['/admin/purchase-orders/new']" [queryParams]="{ fromLowStock: 1 }">
-            Create purchase order for all
+            {{ 'Create purchase order for all' | translate }}
           </a>
         </div>
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>SKU</th>
-              <th class="text-end">Stock</th>
+              <th>{{ 'Name' | translate }}</th>
+              <th>{{ 'SKU' | translate }}</th>
+              <th class="text-end">{{ 'Stock' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -185,12 +186,12 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
               <td>{{ p.sku }}</td>
               <td class="text-end" [style.color]="'var(--warning-text)'">{{ p.stockQuantity }}</td>
               <td class="flex gap-2">
-                <a [routerLink]="['/admin/products', p.id, 'edit']">Edit</a>
-                <a [routerLink]="['/admin/purchase-orders/new']" [queryParams]="{ productId: p.id }">Reorder</a>
+                <a [routerLink]="['/admin/products', p.id, 'edit']">{{ 'Edit' | translate }}</a>
+                <a [routerLink]="['/admin/purchase-orders/new']" [queryParams]="{ productId: p.id }">{{ 'Reorder' | translate }}</a>
               </td>
             </tr>
             <tr *ngIf="s.lowStockProducts.length === 0">
-              <td colspan="4" class="text-muted">Nothing low on stock.</td>
+              <td colspan="4" class="text-muted">{{ 'Nothing low on stock.' | translate }}</td>
             </tr>
           </tbody>
         </table>
@@ -199,9 +200,9 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
         <!-- Multi-warehouse phase 1: the table above counts the primary warehouse's sales stock only. Once there's more than one warehouse, this shows low stock inside any one of them. -->
         <ng-container *ngIf="warehouses.length > 1">
           <div class="flex justify-between align-center mb-2 mt-4" style="flex-wrap:wrap; gap:0.5rem;">
-            <h4 style="margin:0;">Low stock by warehouse</h4>
+            <h4 style="margin:0;">{{ 'Low stock by warehouse' | translate }}</h4>
             <select class="form-select" style="width:auto;" [(ngModel)]="selectedWarehouseId" (ngModelChange)="loadWarehouseLowStock()">
-              <option [ngValue]="null">Choose a warehouse…</option>
+              <option [ngValue]="null">{{ 'Choose a warehouse…' | translate }}</option>
               <option *ngFor="let w of warehouses" [ngValue]="w.id">{{ w.name }}</option>
             </select>
           </div>
@@ -209,9 +210,9 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
           <table *ngIf="selectedWarehouseId !== null">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>SKU</th>
-                <th class="text-end">Stock here</th>
+                <th>{{ 'Name' | translate }}</th>
+                <th>{{ 'SKU' | translate }}</th>
+                <th class="text-end">{{ 'Stock here' | translate }}</th>
                 <th></th>
               </tr>
             </thead>
@@ -220,10 +221,10 @@ import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } fr
                 <td>{{ r.productName }}</td>
                 <td>{{ r.sku || '—' }}</td>
                 <td class="text-end" [style.color]="'var(--warning-text)'">{{ r.quantity }}</td>
-                <td><a [routerLink]="['/admin/products', r.productId]">View stock</a></td>
+                <td><a [routerLink]="['/admin/products', r.productId]">{{ 'View stock' | translate }}</a></td>
               </tr>
               <tr *ngIf="warehouseLowStock.length === 0">
-                <td colspan="4" class="text-muted">Nothing low on stock in this warehouse.</td>
+                <td colspan="4" class="text-muted">{{ 'Nothing low on stock in this warehouse.' | translate }}</td>
               </tr>
             </tbody>
           </table>

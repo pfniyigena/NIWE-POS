@@ -1,18 +1,19 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 
 /** Previous / next for a paged list. Shows nothing when everything fits on one page. {@code page} counts from 0. */
 @Component({
   selector: 'app-pager',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="pager" *ngIf="total > 0">
-      <span class="text-muted">{{ from }}–{{ to }} of {{ total }}</span>
+      <span class="text-muted">{{ '{p0}–{p1} of {p2}' | translate: { p0: (from), p1: (to), p2: (total) } }}</span>
       <span class="flex gap-2" *ngIf="total > size">
-        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="page <= 0" (click)="go(page - 1)">‹ Previous</button>
-        <span class="text-muted" style="align-self:center;">Page {{ page + 1 }} of {{ pages }}</span>
-        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="page + 1 >= pages" (click)="go(page + 1)">Next ›</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="page <= 0" (click)="go(page - 1)">{{ '‹ Previous' | translate }}</button>
+        <span class="text-muted" style="align-self:center;">{{ 'Page {p0} of {p1}' | translate: { p0: (page + 1), p1: (pages) } }}</span>
+        <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="page + 1 >= pages" (click)="go(page + 1)">{{ 'Next ›' | translate }}</button>
       </span>
     </div>
   `,

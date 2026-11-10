@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -14,40 +15,40 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center;">
       <div class="card" style="width:340px; padding:2rem;">
-        <h3 class="mb-3" style="text-align:center;">Reset password</h3>
+        <h3 class="mb-3" style="text-align:center;">{{ 'Reset password' | translate }}</h3>
 
         <div *ngIf="!token">
-          <div class="alert alert-danger">This reset link is missing its token — use the link from your email.</div>
+          <div class="alert alert-danger">{{ 'This reset link is missing its token — use the link from your email.' | translate }}</div>
         </div>
 
         <div *ngIf="token && !done">
           <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
           <form (ngSubmit)="submit()">
             <div class="form-group">
-              <label class="form-label">New password</label>
+              <label class="form-label">{{ 'New password' | translate }}</label>
               <input class="form-control" type="password" name="newPassword" [(ngModel)]="newPassword" autocomplete="new-password" required minlength="6" />
             </div>
             <div class="form-group">
-              <label class="form-label">Confirm new password</label>
+              <label class="form-label">{{ 'Confirm new password' | translate }}</label>
               <input class="form-control" type="password" name="confirmPassword" [(ngModel)]="confirmPassword" autocomplete="new-password" required minlength="6" />
             </div>
-            <div class="alert alert-danger" *ngIf="mismatch">Passwords don't match.</div>
+            <div class="alert alert-danger" *ngIf="mismatch">{{ 'Passwords don\\'t match.' | translate }}</div>
             <button class="btn btn-primary btn-block" type="submit" [disabled]="loading || !newPassword || !confirmPassword">
-              {{ loading ? 'Resetting…' : 'Reset password' }}
+              {{ loading ? ('Resetting…' | translate) : ('Reset password' | translate) }}
             </button>
           </form>
         </div>
 
         <div *ngIf="done">
-          <div class="alert alert-success">Your password has been reset. You can now sign in.</div>
+          <div class="alert alert-success">{{ 'Your password has been reset. You can now sign in.' | translate }}</div>
         </div>
 
         <p style="margin-top:1rem; text-align:center;">
-          <a routerLink="/login">Back to login</a>
+          <a routerLink="/login">{{ 'Back to login' | translate }}</a>
         </p>
       </div>
     </div>

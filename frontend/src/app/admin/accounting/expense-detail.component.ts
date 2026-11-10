@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,7 +16,7 @@ import { Expense, ExpenseEvent, ExpenseFile, ExpensePayment, ExpensePaymentAccou
 @Component({
   selector: 'app-expense-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -26,68 +27,68 @@ import { Expense, ExpenseEvent, ExpenseFile, ExpensePayment, ExpensePaymentAccou
             <h3 style="margin-bottom:0.25rem;">{{ e.payeeName }}</h3>
             <span class="text-muted">{{ e.expenseNumber }}</span>
             <span class="badge" [ngClass]="statusClass(e.status)" style="margin-left:0.5rem;">{{ e.status }}</span>
-            <span class="badge badge-danger" *ngIf="e.dueState === 'OVERDUE'" style="margin-left:0.25rem;">Overdue</span>
-            <span class="badge badge-warning" *ngIf="e.dueState === 'DUE_SOON'" style="margin-left:0.25rem;">Due soon</span>
+            <span class="badge badge-danger" *ngIf="e.dueState === 'OVERDUE'" style="margin-left:0.25rem;">{{ 'Overdue' | translate }}</span>
+            <span class="badge badge-warning" *ngIf="e.dueState === 'DUE_SOON'" style="margin-left:0.25rem;">{{ 'Due soon' | translate }}</span>
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <a class="btn btn-outline-primary" *ngIf="e.status === 'PENDING'" [routerLink]="['/admin/accounting/expenses', e.id, 'edit']">Edit</a>
-            <button class="btn btn-primary" *ngIf="e.status === 'PENDING' && canApprove" (click)="approve(false)" [disabled]="busy">Approve</button>
-            <button class="btn btn-outline-primary" *ngIf="e.status === 'PENDING' && canApprove && overBudgetBlocked && auth.isAdmin()" (click)="approve(true)" [disabled]="busy">Approve anyway (over budget)</button>
-            <button class="btn btn-outline-danger" *ngIf="e.status === 'PENDING' && canApprove" (click)="reject()" [disabled]="busy">Reject</button>
-            <button class="btn btn-outline-danger" *ngIf="e.status === 'APPROVED' && !e.settledAt && !(e.amountPaid > 0) && canApprove" (click)="voidIt()" [disabled]="busy">Void</button>
-            <button class="btn btn-outline-danger" *ngIf="e.status === 'PENDING' || e.status === 'REJECTED'" (click)="remove()" [disabled]="busy">Delete</button>
+            <a class="btn btn-outline-primary" *ngIf="e.status === 'PENDING'" [routerLink]="['/admin/accounting/expenses', e.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-primary" *ngIf="e.status === 'PENDING' && canApprove" (click)="approve(false)" [disabled]="busy">{{ 'Approve' | translate }}</button>
+            <button class="btn btn-outline-primary" *ngIf="e.status === 'PENDING' && canApprove && overBudgetBlocked && auth.isAdmin()" (click)="approve(true)" [disabled]="busy">{{ 'Approve anyway (over budget)' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="e.status === 'PENDING' && canApprove" (click)="reject()" [disabled]="busy">{{ 'Reject' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="e.status === 'APPROVED' && !e.settledAt && !(e.amountPaid > 0) && canApprove" (click)="voidIt()" [disabled]="busy">{{ 'Void' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="e.status === 'PENDING' || e.status === 'REJECTED'" (click)="remove()" [disabled]="busy">{{ 'Delete' | translate }}</button>
           </div>
         </div>
 
         <div class="alert alert-warning mb-3" *ngIf="e.budgetWarning">{{ e.budgetWarning }}</div>
 
         <div class="stat-grid mb-3">
-          <div class="stat-tile"><div class="stat-label">Date</div><div class="stat-value" style="font-size:1.1rem;">{{ e.expenseDate }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Category</div><div class="stat-value" style="font-size:1.1rem;">{{ e.accountCode }} — {{ e.accountName }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Date' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.expenseDate }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Category' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.accountCode }} — {{ e.accountName }}</div></div>
           <div class="stat-tile">
-            <div class="stat-label">Total</div>
+            <div class="stat-label">{{ 'Total' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ e.amount | number: '1.2-2' }}</div>
-            <div class="text-muted" style="font-size:0.75rem;" *ngIf="e.taxAmount">VAT {{ e.taxAmount | number: '1.2-2' }} · cost {{ e.netAmount | number: '1.2-2' }}</div>
+            <div class="text-muted" style="font-size:0.75rem;" *ngIf="e.taxAmount">{{ 'VAT {p0} · cost {p1}' | translate: { p0: (e.taxAmount | number: '1.2-2'), p1: (e.netAmount | number: '1.2-2') } }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Payment</div>
+            <div class="stat-label">{{ 'Payment' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ paymentText(e) }}</div>
-            <div class="text-muted" style="font-size:0.75rem;" *ngIf="e.status === 'APPROVED' && !e.paid && !e.settledAt">paid {{ e.amountPaid | number: '1.2-2' }} · owed {{ e.balance | number: '1.2-2' }}</div>
+            <div class="text-muted" style="font-size:0.75rem;" *ngIf="e.status === 'APPROVED' && !e.paid && !e.settledAt">{{ 'paid {p0} · owed {p1}' | translate: { p0: (e.amountPaid | number: '1.2-2'), p1: (e.balance | number: '1.2-2') } }}</div>
           </div>
-          <div class="stat-tile" *ngIf="e.dueDate && !e.paid"><div class="stat-label">Due date</div><div class="stat-value" style="font-size:1.1rem;">{{ e.dueDate }}</div></div>
-          <div class="stat-tile" *ngIf="e.reference"><div class="stat-label">Reference</div><div class="stat-value" style="font-size:1.1rem;">{{ e.reference }}</div></div>
-          <div class="stat-tile" *ngIf="e.costCenterName"><div class="stat-label">Cost center</div><div class="stat-value" style="font-size:1.1rem;">{{ e.costCenterName }}</div></div>
-          <div class="stat-tile" *ngIf="e.createdByName"><div class="stat-label">Entered by</div><div class="stat-value" style="font-size:1.1rem;">{{ e.createdByName }}</div></div>
-          <div class="stat-tile" *ngIf="e.approvedByName"><div class="stat-label">Approved by</div><div class="stat-value" style="font-size:1.1rem;">{{ e.approvedByName }}</div></div>
+          <div class="stat-tile" *ngIf="e.dueDate && !e.paid"><div class="stat-label">{{ 'Due date' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.dueDate }}</div></div>
+          <div class="stat-tile" *ngIf="e.reference"><div class="stat-label">{{ 'Reference' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.reference }}</div></div>
+          <div class="stat-tile" *ngIf="e.costCenterName"><div class="stat-label">{{ 'Cost center' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.costCenterName }}</div></div>
+          <div class="stat-tile" *ngIf="e.createdByName"><div class="stat-label">{{ 'Entered by' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.createdByName }}</div></div>
+          <div class="stat-tile" *ngIf="e.approvedByName"><div class="stat-label">{{ 'Approved by' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ e.approvedByName }}</div></div>
         </div>
 
         <p class="text-muted mb-3" *ngIf="e.memo">{{ e.memo }}</p>
-        <p class="text-muted mb-3" *ngIf="e.recurringTemplateId">Auto-generated by a recurring expense template.</p>
-        <div class="alert alert-danger mb-3" *ngIf="e.status === 'REJECTED' && e.rejectionReason">Rejected{{ e.rejectedByName ? ' by ' + e.rejectedByName : '' }}: {{ e.rejectionReason }}</div>
-        <div class="alert alert-danger mb-3" *ngIf="e.status === 'VOIDED' && e.voidReason">Voided{{ e.voidedByName ? ' by ' + e.voidedByName : '' }}: {{ e.voidReason }}</div>
+        <p class="text-muted mb-3" *ngIf="e.recurringTemplateId">{{ 'Auto-generated by a recurring expense template.' | translate }}</p>
+        <div class="alert alert-danger mb-3" *ngIf="e.status === 'REJECTED' && e.rejectionReason">{{ 'Rejected{p0}: {p1}' | translate: { p0: (e.rejectedByName ? ' by ' + e.rejectedByName : ''), p1: (e.rejectionReason) } }}</div>
+        <div class="alert alert-danger mb-3" *ngIf="e.status === 'VOIDED' && e.voidReason">{{ 'Voided{p0}: {p1}' | translate: { p0: (e.voidedByName ? ' by ' + e.voidedByName : ''), p1: (e.voidReason) } }}</div>
 
         <!-- Paying the bill -->
         <div class="card mb-3" *ngIf="e.status === 'APPROVED' && !e.paid && e.balance > 0 && canManage" style="padding:1rem;">
-          <h4 class="mb-2">Pay this bill</h4>
+          <h4 class="mb-2">{{ 'Pay this bill' | translate }}</h4>
           <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-            <label class="text-muted" style="font-size:0.8rem;">Amount <input class="form-control" style="width:9rem;" type="number" step="0.01" min="0.01" name="payAmount" [(ngModel)]="payAmount" /></label>
-            <label class="text-muted" style="font-size:0.8rem;">Date <input class="form-control" type="date" name="payDate" [(ngModel)]="payDate" /></label>
-            <label class="text-muted" style="font-size:0.8rem;">Paid from
+            <label class="text-muted" style="font-size:0.8rem;">{{ 'Amount' | translate }} <input class="form-control" style="width:9rem;" type="number" step="0.01" min="0.01" name="payAmount" [(ngModel)]="payAmount" /></label>
+            <label class="text-muted" style="font-size:0.8rem;">{{ 'Date' | translate }} <input class="form-control" type="date" name="payDate" [(ngModel)]="payDate" /></label>
+            <label class="text-muted" style="font-size:0.8rem;">{{ 'Paid from' | translate }}
               <select class="form-select" name="payFrom" [(ngModel)]="payFrom">
-                <option [ngValue]="null">Cash</option>
+                <option [ngValue]="null">{{ 'Cash' | translate }}</option>
                 <ng-container *ngFor="let a of paymentAccounts"><option *ngIf="!a.cash" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option></ng-container>
               </select>
             </label>
-            <label class="text-muted" style="font-size:0.8rem;">Note <input class="form-control" name="payNote" [(ngModel)]="payNote" /></label>
-            <button class="btn btn-primary" (click)="pay()" [disabled]="busy">Record payment</button>
+            <label class="text-muted" style="font-size:0.8rem;">{{ 'Note' | translate }} <input class="form-control" name="payNote" [(ngModel)]="payNote" /></label>
+            <button class="btn btn-primary" (click)="pay()" [disabled]="busy">{{ 'Record payment' | translate }}</button>
           </div>
-          <div class="text-muted mt-1" style="font-size:0.8rem;">Owed: {{ e.balance | number: '1.2-2' }}. Paying less than that leaves the rest open.</div>
+          <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'Owed: {p0}. Paying less than that leaves the rest open.' | translate: { p0: (e.balance | number: '1.2-2') } }}</div>
         </div>
 
         <div class="mb-3" *ngIf="payments.length">
-          <h4 class="mb-2">Payments</h4>
+          <h4 class="mb-2">{{ 'Payments' | translate }}</h4>
           <table class="table-sm">
-            <thead><tr><th>Date</th><th class="text-end">Amount</th><th>Paid from</th><th>Note</th><th>By</th></tr></thead>
+            <thead><tr><th>{{ 'Date' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th>{{ 'Paid from' | translate }}</th><th>{{ 'Note' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let p of payments"><td>{{ p.paidOn }}</td><td class="text-end">{{ p.amount | number: '1.2-2' }}</td><td>{{ p.paidFromAccountName }}</td><td>{{ p.note || '—' }}</td><td>{{ p.createdByName || '—' }}</td></tr>
             </tbody>
@@ -96,30 +97,30 @@ import { Expense, ExpenseEvent, ExpenseFile, ExpensePayment, ExpensePaymentAccou
 
         <!-- Files -->
         <div class="mb-3">
-          <h4 class="mb-2">Files</h4>
+          <h4 class="mb-2">{{ 'Files' | translate }}</h4>
           <div class="mb-2" *ngIf="e.receiptDataUrl">
-            <a [href]="e.receiptDataUrl" target="_blank"><img [src]="e.receiptDataUrl" alt="Receipt" style="max-width:160px; border:1px solid var(--border, #444); border-radius:4px;" /></a>
-            <div class="text-muted" style="font-size:0.75rem;">Receipt kept from before</div>
+            <a [href]="e.receiptDataUrl" target="_blank"><img [src]="e.receiptDataUrl" [alt]="'Receipt' | translate" style="max-width:160px; border:1px solid var(--border, #444); border-radius:4px;" /></a>
+            <div class="text-muted" style="font-size:0.75rem;">{{ 'Receipt kept from before' | translate }}</div>
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
             <div *ngFor="let f of files" style="width:8rem;">
               <img *ngIf="f.image && thumbs[f.id]" [src]="thumbs[f.id]" [alt]="f.fileName" style="width:100%; height:5.5rem; object-fit:cover; border-radius:4px;" />
               <div *ngIf="!f.image || !thumbs[f.id]" style="height:5.5rem; display:flex; align-items:center; justify-content:center; font-size:0.75rem; text-align:center; word-break:break-all;">{{ f.fileName }}</div>
               <div style="font-size:0.75rem; word-break:break-all;"><a href="javascript:void(0)" (click)="openFile(f)">{{ f.fileName }}</a></div>
-              <div class="text-muted" style="font-size:0.7rem;">{{ f.sizeBytes / 1024 | number: '1.0-0' }} KB · {{ f.uploadedBy || '' }}</div>
-              <button type="button" class="btn btn-link btn-sm" style="padding:0;" *ngIf="canManage" (click)="removeFile(f)">Remove</button>
+              <div class="text-muted" style="font-size:0.7rem;">{{ '{p0} KB · {p1}' | translate: { p0: (f.sizeBytes / 1024 | number: '1.0-0'), p1: (f.uploadedBy || '') } }}</div>
+              <button type="button" class="btn btn-link btn-sm" style="padding:0;" *ngIf="canManage" (click)="removeFile(f)">{{ 'Remove' | translate }}</button>
             </div>
           </div>
-          <p class="text-muted" *ngIf="files.length === 0 && !e.receiptDataUrl">No files yet.</p>
+          <p class="text-muted" *ngIf="files.length === 0 && !e.receiptDataUrl">{{ 'No files yet.' | translate }}</p>
           <div *ngIf="canManage && e.status !== 'REJECTED' && e.status !== 'VOIDED'" class="mt-2">
             <input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain" (change)="addFiles($event)" />
-            <span class="text-muted" style="font-size:0.8rem;"> Photos, PDF or text, up to 10 MB each.</span>
+            <span class="text-muted" style="font-size:0.8rem;"> {{ 'Photos, PDF or text, up to 10 MB each.' | translate }}</span>
           </div>
         </div>
 
         <!-- History -->
         <div class="mb-3">
-          <h4 class="mb-2">History</h4>
+          <h4 class="mb-2">{{ 'History' | translate }}</h4>
           <table class="table-sm">
             <tbody>
               <tr *ngFor="let ev of events"><td style="white-space:nowrap;">{{ ev.at | date: 'yyyy-MM-dd HH:mm' }}</td><td>{{ ev.kind }}</td><td>{{ ev.detail }}</td><td>{{ ev.by }}</td></tr>

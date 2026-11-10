@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -27,20 +28,20 @@ interface LocationOption {
 @Component({
   selector: 'app-stock-transfer-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">New stock transfer</h3>
+      <h3 class="mb-3">{{ 'New stock transfer' | translate }}</h3>
       <p class="text-muted mb-3" style="font-size:0.85rem;">
-        This logs the transfer for review — stock isn't moved until it's confirmed from the Stock transfers list.
+        {{ 'This logs the transfer for review — stock isn\\'t moved until it\\'s confirmed from the Stock transfers list.' | translate }}
       </p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3" style="position:relative;">
-        <label class="form-label">Product</label>
+        <label class="form-label">{{ 'Product' | translate }}</label>
         <input
           class="form-control"
-          placeholder="Search by name, SKU or code"
+          [placeholder]="'Search by name, SKU or code' | translate"
           [(ngModel)]="productSearch"
           (input)="onProductSearch()"
           [disabled]="!!selectedProduct"
@@ -52,42 +53,42 @@ interface LocationOption {
         </div>
         <div class="mt-2" *ngIf="selectedProduct as p">
           <strong>{{ p.name }}</strong>
-          <button type="button" class="btn btn-sm btn-link" (click)="clearProduct()">Change</button>
+          <button type="button" class="btn btn-sm btn-link" (click)="clearProduct()">{{ 'Change' | translate }}</button>
         </div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">From location</label>
+        <label class="form-label">{{ 'From location' | translate }}</label>
         <select class="form-select" [(ngModel)]="fromLocationId" name="fromLocationId">
-          <option [ngValue]="null" disabled>Select a location</option>
+          <option [ngValue]="null" disabled>{{ 'Select a location' | translate }}</option>
           <option *ngFor="let loc of locationOptions" [ngValue]="loc.id">{{ loc.label }}</option>
         </select>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">To location</label>
+        <label class="form-label">{{ 'To location' | translate }}</label>
         <select class="form-select" [(ngModel)]="toLocationId" name="toLocationId">
-          <option [ngValue]="null" disabled>Select a location</option>
+          <option [ngValue]="null" disabled>{{ 'Select a location' | translate }}</option>
           <option *ngFor="let loc of locationOptions" [ngValue]="loc.id" [disabled]="loc.id === fromLocationId">{{ loc.label }}</option>
         </select>
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-          Can be another location under the same warehouse, or one under a different warehouse.
+          {{ 'Can be another location under the same warehouse, or one under a different warehouse.' | translate }}
         </div>
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Quantity</label>
+        <label class="form-label">{{ 'Quantity' | translate }}</label>
         <input class="form-control" type="number" step="any" min="0.0001" [(ngModel)]="quantity" name="quantity" />
       </div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Note (optional)</label>
+        <label class="form-label">{{ 'Note (optional)' | translate }}</label>
         <textarea class="form-control" rows="2" [(ngModel)]="note" name="note"></textarea>
       </div>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save transfer</button>
-        <a class="btn btn-link" routerLink="/admin/stock-transfers">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save transfer' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/stock-transfers">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

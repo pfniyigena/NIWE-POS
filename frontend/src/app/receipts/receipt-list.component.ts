@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,32 +21,32 @@ import { PagerComponent } from '../shared/pager.component';
 @Component({
   selector: 'app-receipt-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
-      <h3 class="mb-3">Receipts</h3>
-      <app-list-filter exportPath="/orders/completed/export" [exportExtra]="extra" [extraActive]="method !== '' || registerId !== ''" placeholder="Search invoice, customer, cashier, product" [statuses]="kinds" statusAll="All sales" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <h3 class="mb-3">{{ 'Receipts' | translate }}</h3>
+      <app-list-filter exportPath="/orders/completed/export" [exportExtra]="extra" [extraActive]="method !== '' || registerId !== ''" [placeholder]="'Search invoice, customer, cashier, product' | translate" [statuses]="kinds" statusAll="All sales" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
-        <select class="form-select rl-method" style="width:auto;" [(ngModel)]="method" (ngModelChange)="extraChanged()" name="method" title="Payment method">
-          <option value="">Any payment method</option>
+        <select class="form-select rl-method" style="width:auto;" [(ngModel)]="method" (ngModelChange)="extraChanged()" name="method" [title]="'Payment method' | translate">
+          <option value="">{{ 'Any payment method' | translate }}</option>
           <option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option>
         </select>
-        <select class="form-select rl-register" style="width:auto;" [(ngModel)]="registerId" (ngModelChange)="extraChanged()" name="register" title="Register">
-          <option value="">Any register</option>
+        <select class="form-select rl-register" style="width:auto;" [(ngModel)]="registerId" (ngModelChange)="extraChanged()" name="register" [title]="'Register' | translate">
+          <option value="">{{ 'Any register' | translate }}</option>
           <option *ngFor="let r of registers" [value]="r.id">{{ r.name }}</option>
         </select>
-        <span class="text-muted" style="font-size:0.85rem;">Dates filter by the day the sale was completed. With no filter the latest 200 sales show.</span>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Dates filter by the day the sale was completed. With no filter the latest 200 sales show.' | translate }}</span>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Invoice</th>
-            <th>Customer</th>
-            <th>Cashier</th>
-            <th class="text-end">Total</th>
-            <th>Payment</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Invoice' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Cashier' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
+            <th>{{ 'Payment' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -66,23 +67,23 @@ import { PagerComponent } from '../shared/pager.component';
               <span *ngFor="let p of o.payments; let last = last">{{ p.method }}{{ !last ? ' + ' : '' }}</span>
             </td>
             <td class="flex gap-2">
-              <span *ngIf="(o.printCount || 0) > 1" class="text-muted rl-printed" style="font-size:0.8rem;" title="Times the receipt was printed">printed ×{{ o.printCount }}</span>
-              <span *ngIf="o.voidedAt" class="badge badge-secondary rl-voided" [title]="'Voided by ' + (o.voidedBy || '') + ': ' + (o.voidReason || '')">VOIDED</span>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/receipt', o.id]">View / Reprint</a>
-              <button *ngIf="!o.voidedAt" class="btn btn-sm btn-outline-danger rl-void" (click)="startVoid(o)">Void</button>
+              <span *ngIf="(o.printCount || 0) > 1" class="text-muted rl-printed" style="font-size:0.8rem;" [title]="'Times the receipt was printed' | translate">{{ 'printed ×{p0}' | translate: { p0: (o.printCount) } }}</span>
+              <span *ngIf="o.voidedAt" class="badge badge-secondary rl-voided" [title]="'Voided by ' + (o.voidedBy || '') + ': ' + (o.voidReason || '')">{{ 'VOIDED' | translate }}</span>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/receipt', o.id]">{{ 'View / Reprint' | translate }}</a>
+              <button *ngIf="!o.voidedAt" class="btn btn-sm btn-outline-danger rl-void" (click)="startVoid(o)">{{ 'Void' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="voiding && voiding.id === o.id" class="rl-void-row">
             <td colspan="7" style="background:rgba(255,255,255,0.03);">
               <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-                <strong>Void {{ o.invoiceNumber }} ({{ o.total | number: '1.2-2' }})</strong>
-                <span class="text-muted">The whole sale is refunded and stays on record as voided.</span>
+                <strong>{{ 'Void {p0} ({p1})' | translate: { p0: (o.invoiceNumber), p1: (o.total | number: '1.2-2') } }}</strong>
+                <span class="text-muted">{{ 'The whole sale is refunded and stays on record as voided.' | translate }}</span>
               </div>
               <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
-                <input class="form-control rl-void-reason" style="width:280px;" placeholder="Why is it being voided?" [(ngModel)]="voidReason" name="voidReason" maxlength="200" />
-                <input *ngIf="needPin" class="form-control rl-void-pin" style="width:160px;" type="password" placeholder="Manager PIN" [(ngModel)]="voidPin" name="voidPin" autocomplete="off" />
-                <button class="btn btn-danger btn-sm rl-void-confirm" (click)="confirmVoid()" [disabled]="busy || !voidReason.trim()">Void this sale</button>
-                <button class="btn btn-sm btn-outline-secondary" (click)="voiding = null">Cancel</button>
+                <input class="form-control rl-void-reason" style="width:280px;" [placeholder]="'Why is it being voided?' | translate" [(ngModel)]="voidReason" name="voidReason" maxlength="200" />
+                <input *ngIf="needPin" class="form-control rl-void-pin" style="width:160px;" type="password" [placeholder]="'Manager PIN' | translate" [(ngModel)]="voidPin" name="voidPin" autocomplete="off" />
+                <button class="btn btn-danger btn-sm rl-void-confirm" (click)="confirmVoid()" [disabled]="busy || !voidReason.trim()">{{ 'Void this sale' | translate }}</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="voiding = null">{{ 'Cancel' | translate }}</button>
               </div>
               <div class="text-danger mt-2 rl-void-error" *ngIf="voidError">{{ voidError }}</div>
             </td>
@@ -90,7 +91,7 @@ import { PagerComponent } from '../shared/pager.component';
           </ng-container>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || method || registerId ? 'No sales match these filters.' : 'No completed sales yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || method || registerId ? ('No sales match these filters.' | translate) : ('No completed sales yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

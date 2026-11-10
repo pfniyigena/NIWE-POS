@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -18,16 +19,16 @@ import { Account, Branch, Expense } from '../../core/models';
 @Component({
   selector: 'app-expense-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3 style="margin-bottom:0;">Expenses</h3>
+        <h3 style="margin-bottom:0;">{{ 'Expenses' | translate }}</h3>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses/overview">Overview</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses/budgets">Budgets</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/accounting/recurring-expenses">Recurring expenses</a>
-          <a class="btn btn-primary" routerLink="/admin/accounting/expenses/new">+ New expense</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses/overview">{{ 'Overview' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses/budgets">{{ 'Budgets' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/accounting/recurring-expenses">{{ 'Recurring expenses' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/accounting/expenses/new">{{ '+ New expense' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -37,98 +38,98 @@ import { Account, Branch, Expense } from '../../core/models';
         <button type="button" class="btn btn-sm" *ngFor="let v of views" [ngClass]="view === v.key ? 'btn-primary' : 'btn-outline-primary'" (click)="setView(v.key)">{{ v.label }}</button>
       </div>
       <div class="flex gap-2 mb-3 ex-filters" style="flex-wrap:wrap; align-items:flex-end;">
-        <input class="form-control" style="width:14rem;" placeholder="Search payee, memo, number, reference" [(ngModel)]="q" (keyup.enter)="reload()" name="q" />
-        <select class="form-select" style="width:auto;" [(ngModel)]="status" (ngModelChange)="reload()" name="status" title="Status">
-          <option value="">Any status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="VOIDED">Voided</option>
+        <input class="form-control" style="width:14rem;" [placeholder]="'Search payee, memo, number, reference' | translate" [(ngModel)]="q" (keyup.enter)="reload()" name="q" />
+        <select class="form-select" style="width:auto;" [(ngModel)]="status" (ngModelChange)="reload()" name="status" [title]="'Status' | translate">
+          <option value="">{{ 'Any status' | translate }}</option>
+          <option value="PENDING">{{ 'Pending' | translate }}</option>
+          <option value="APPROVED">{{ 'Approved' | translate }}</option>
+          <option value="REJECTED">{{ 'Rejected' | translate }}</option>
+          <option value="VOIDED">{{ 'Voided' | translate }}</option>
         </select>
-        <select class="form-select" style="width:auto; max-width:14rem;" [(ngModel)]="accountId" (ngModelChange)="reload()" name="accountId" title="Category">
-          <option [ngValue]="null">Any category</option>
+        <select class="form-select" style="width:auto; max-width:14rem;" [(ngModel)]="accountId" (ngModelChange)="reload()" name="accountId" [title]="'Category' | translate">
+          <option [ngValue]="null">{{ 'Any category' | translate }}</option>
           <option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
         </select>
-        <label class="text-muted" style="font-size:0.8rem;">From <input class="form-control" type="date" [(ngModel)]="from" (ngModelChange)="reload()" name="from" /></label>
-        <label class="text-muted" style="font-size:0.8rem;">To <input class="form-control" type="date" [(ngModel)]="to" (ngModelChange)="reload()" name="to" /></label>
-        <input class="form-control" style="width:7rem;" type="number" placeholder="Min amount" [(ngModel)]="minAmount" (change)="reload()" name="minAmount" />
-        <input class="form-control" style="width:7rem;" type="number" placeholder="Max amount" [(ngModel)]="maxAmount" (change)="reload()" name="maxAmount" />
-        <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="branchFilter" (ngModelChange)="reload()" name="branch" title="Branch">
-          <option [ngValue]="null">All branches</option>
+        <label class="text-muted" style="font-size:0.8rem;">{{ 'From' | translate }} <input class="form-control" type="date" [(ngModel)]="from" (ngModelChange)="reload()" name="from" /></label>
+        <label class="text-muted" style="font-size:0.8rem;">{{ 'To' | translate }} <input class="form-control" type="date" [(ngModel)]="to" (ngModelChange)="reload()" name="to" /></label>
+        <input class="form-control" style="width:7rem;" type="number" [placeholder]="'Min amount' | translate" [(ngModel)]="minAmount" (change)="reload()" name="minAmount" />
+        <input class="form-control" style="width:7rem;" type="number" [placeholder]="'Max amount' | translate" [(ngModel)]="maxAmount" (change)="reload()" name="maxAmount" />
+        <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="branchFilter" (ngModelChange)="reload()" name="branch" [title]="'Branch' | translate">
+          <option [ngValue]="null">{{ 'All branches' | translate }}</option>
           <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
         </select>
-        <button type="button" class="btn btn-outline-secondary" (click)="reload()">Search</button>
-        <button type="button" class="btn btn-link" (click)="clear()">Clear</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="reload()">{{ 'Search' | translate }}</button>
+        <button type="button" class="btn btn-link" (click)="clear()">{{ 'Clear' | translate }}</button>
         <span style="flex:1;"></span>
-        <button type="button" class="btn btn-outline-primary" (click)="download('xlsx')" [disabled]="busy">Excel</button>
-        <button type="button" class="btn btn-outline-primary" (click)="download('pdf')" [disabled]="busy">PDF</button>
+        <button type="button" class="btn btn-outline-primary" (click)="download('xlsx')" [disabled]="busy">{{ 'Excel' | translate }}</button>
+        <button type="button" class="btn btn-outline-primary" (click)="download('pdf')" [disabled]="busy">{{ 'PDF' | translate }}</button>
       </div>
 
       <div class="flex gap-2 align-center mb-2" *ngIf="canApprove && selectedCount > 0" style="flex-wrap:wrap;">
-        <strong>{{ selectedCount }} selected</strong>
-        <button type="button" class="btn btn-sm btn-primary" (click)="bulk('APPROVE')" [disabled]="busy">Approve selected</button>
-        <button type="button" class="btn btn-sm btn-outline-danger" (click)="bulk('REJECT')" [disabled]="busy">Reject selected</button>
-        <button type="button" class="btn btn-sm btn-link" (click)="selected = {}">Clear selection</button>
+        <strong>{{ '{p0} selected' | translate: { p0: (selectedCount) } }}</strong>
+        <button type="button" class="btn btn-sm btn-primary" (click)="bulk('APPROVE')" [disabled]="busy">{{ 'Approve selected' | translate }}</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" (click)="bulk('REJECT')" [disabled]="busy">{{ 'Reject selected' | translate }}</button>
+        <button type="button" class="btn btn-sm btn-link" (click)="selected = {}">{{ 'Clear selection' | translate }}</button>
       </div>
       <div class="alert alert-warning" *ngIf="skipped.length">
-        <strong>Some were left as they were:</strong>
+        <strong>{{ 'Some were left as they were:' | translate }}</strong>
         <div *ngFor="let s of skipped">{{ s.expenseNumber || ('#' + s.id) }} — {{ s.reason }}</div>
       </div>
 
       <table class="table-sm">
         <thead>
           <tr>
-            <th style="width:2rem;" *ngIf="canApprove"><input type="checkbox" [checked]="allPendingSelected" (change)="toggleAll($event)" title="Select all pending" /></th>
-            <th>Number</th>
-            <th>Date</th>
-            <th>Payee</th>
-            <th>Category</th>
-            <th class="text-end">Amount</th>
-            <th>Payment</th>
-            <th>Due</th>
-            <th>Approval</th>
-            <th *ngIf="branches.length > 1">Branch</th>
+            <th style="width:2rem;" *ngIf="canApprove"><input type="checkbox" [checked]="allPendingSelected" (change)="toggleAll($event)" [title]="'Select all pending' | translate" /></th>
+            <th>{{ 'Number' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Payee' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
+            <th>{{ 'Payment' | translate }}</th>
+            <th>{{ 'Due' | translate }}</th>
+            <th>{{ 'Approval' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let e of expenses" class="clickable-row" [routerLink]="['/admin/accounting/expenses', e.id]">
             <td *ngIf="canApprove" (click)="$event.stopPropagation()"><input type="checkbox" *ngIf="e.status === 'PENDING'" [checked]="!!selected[e.id]" (change)="toggle(e.id, $event)" /></td>
-            <td>{{ e.expenseNumber }} <span title="Files attached" *ngIf="e.attachmentCount">📎{{ e.attachmentCount }}</span></td>
+            <td>{{ e.expenseNumber }} <span [title]="'Files attached' | translate" *ngIf="e.attachmentCount">📎{{ e.attachmentCount }}</span></td>
             <td>{{ e.expenseDate }}</td>
-            <td>{{ e.payeeName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="e.reference">Ref {{ e.reference }}</div></td>
+            <td>{{ e.payeeName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="e.reference">{{ 'Ref {p0}' | translate: { p0: (e.reference) } }}</div></td>
             <td>{{ e.accountName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="e.costCenterName">{{ e.costCenterName }}</div></td>
-            <td class="text-end">{{ e.amount | number: '1.2-2' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="e.taxAmount">incl. VAT {{ e.taxAmount | number: '1.2-2' }}</div></td>
+            <td class="text-end">{{ e.amount | number: '1.2-2' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="e.taxAmount">{{ 'incl. VAT {p0}' | translate: { p0: (e.taxAmount | number: '1.2-2') } }}</div></td>
             <td>
-              <span class="badge badge-success" *ngIf="e.paid">Paid</span>
+              <span class="badge badge-success" *ngIf="e.paid">{{ 'Paid' | translate }}</span>
               <ng-container *ngIf="!e.paid">
-                <span class="badge badge-success" *ngIf="e.settledAt">Settled</span>
+                <span class="badge badge-success" *ngIf="e.settledAt">{{ 'Settled' | translate }}</span>
                 <ng-container *ngIf="!e.settledAt">
-                  <span class="badge badge-warning" *ngIf="!e.amountPaid">Unpaid</span>
-                  <span class="badge badge-warning" *ngIf="e.amountPaid">Part paid</span>
-                  <div class="text-muted" style="font-size:0.75rem;" *ngIf="e.status === 'APPROVED'">owed {{ e.balance | number: '1.2-2' }}</div>
+                  <span class="badge badge-warning" *ngIf="!e.amountPaid">{{ 'Unpaid' | translate }}</span>
+                  <span class="badge badge-warning" *ngIf="e.amountPaid">{{ 'Part paid' | translate }}</span>
+                  <div class="text-muted" style="font-size:0.75rem;" *ngIf="e.status === 'APPROVED'">{{ 'owed {p0}' | translate: { p0: (e.balance | number: '1.2-2') } }}</div>
                 </ng-container>
               </ng-container>
             </td>
             <td>
               <ng-container *ngIf="e.dueDate && e.status === 'APPROVED' && !e.paid && !e.settledAt">
                 {{ e.dueDate }}
-                <span class="badge badge-danger" *ngIf="e.dueState === 'OVERDUE'">Overdue</span>
-                <span class="badge badge-warning" *ngIf="e.dueState === 'DUE_SOON'">Due soon</span>
+                <span class="badge badge-danger" *ngIf="e.dueState === 'OVERDUE'">{{ 'Overdue' | translate }}</span>
+                <span class="badge badge-warning" *ngIf="e.dueState === 'DUE_SOON'">{{ 'Due soon' | translate }}</span>
               </ng-container>
               <span *ngIf="!(e.dueDate && e.status === 'APPROVED' && !e.paid && !e.settledAt)" class="text-muted">—</span>
             </td>
             <td>
-              <span class="badge badge-secondary" *ngIf="e.status === 'PENDING'">Pending</span>
-              <span class="badge badge-success" *ngIf="e.status === 'APPROVED'">Approved</span>
-              <span class="badge badge-danger" *ngIf="e.status === 'REJECTED'">Rejected</span>
-              <span class="badge badge-danger" *ngIf="e.status === 'VOIDED'">Voided</span>
+              <span class="badge badge-secondary" *ngIf="e.status === 'PENDING'">{{ 'Pending' | translate }}</span>
+              <span class="badge badge-success" *ngIf="e.status === 'APPROVED'">{{ 'Approved' | translate }}</span>
+              <span class="badge badge-danger" *ngIf="e.status === 'REJECTED'">{{ 'Rejected' | translate }}</span>
+              <span class="badge badge-danger" *ngIf="e.status === 'VOIDED'">{{ 'Voided' | translate }}</span>
             </td>
             <td *ngIf="branches.length > 1">{{ branchName(e.branchId) }}</td>
           </tr>
-          <tr *ngIf="!expenses.length && !loading"><td [attr.colspan]="canApprove ? 10 : 9" class="text-muted">{{ filtered ? 'Nothing matches these filters.' : 'No expenses recorded yet.' }}</td></tr>
+          <tr *ngIf="!expenses.length && !loading"><td [attr.colspan]="canApprove ? 10 : 9" class="text-muted">{{ filtered ? ('Nothing matches these filters.' | translate) : ('No expenses recorded yet.' | translate) }}</td></tr>
         </tbody>
       </table>
-      <p class="text-muted mt-2" *ngIf="expenses.length">{{ expenses.length }} expense(s) · total {{ total | number: '1.2-2' }}</p>
+      <p class="text-muted mt-2" *ngIf="expenses.length">{{ '{p0} expense(s) · total {p1}' | translate: { p0: (expenses.length), p1: (total | number: '1.2-2') } }}</p>
     </app-shell>
   `,
   styles: [

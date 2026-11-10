@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -27,134 +28,134 @@ import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-expense-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit expense' : 'New expense' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit expense' | translate) : ('New expense' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Date</label>
+          <label class="form-label">{{ 'Date' | translate }}</label>
           <app-date-picker name="expenseDate" [(ngModel)]="expenseDate" required ></app-date-picker>
         </div>
         <div class="form-group">
-          <label class="form-label">Category</label>
+          <label class="form-label">{{ 'Category' | translate }}</label>
           <select class="form-select" name="accountId" [(ngModel)]="accountId" required>
-            <option [ngValue]="null" disabled>Select an expense account…</option>
+            <option [ngValue]="null" disabled>{{ 'Select an expense account…' | translate }}</option>
             <option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="accounts.length === 0">
-            No Expense-type accounts found — add one under Chart of Accounts first.
+            {{ 'No Expense-type accounts found — add one under Chart of Accounts first.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Paid to</label>
+          <label class="form-label">{{ 'Paid to' | translate }}</label>
           <select class="form-select" name="payeeType" [(ngModel)]="payeeType" (ngModelChange)="onPayeeTypeChange()">
-            <option value="VENDOR">Vendor (supplier)</option>
-            <option value="STAFF">Staff</option>
-            <option value="CLIENT">Customer</option>
-            <option value="OTHER">Other / one-off</option>
+            <option value="VENDOR">{{ 'Vendor (supplier)' | translate }}</option>
+            <option value="STAFF">{{ 'Staff' | translate }}</option>
+            <option value="CLIENT">{{ 'Customer' | translate }}</option>
+            <option value="OTHER">{{ 'Other / one-off' | translate }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'VENDOR'">
-          <label class="form-label">Supplier</label>
+          <label class="form-label">{{ 'Supplier' | translate }}</label>
           <select class="form-select" name="payeeSupplier" [(ngModel)]="payeeId" (ngModelChange)="onPayeePicked(suppliers)" required>
-            <option [ngValue]="null" disabled>Select a supplier…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a supplier…' | translate }}</option>
             <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'STAFF'">
-          <label class="form-label">Staff member</label>
+          <label class="form-label">{{ 'Staff member' | translate }}</label>
           <select class="form-select" name="payeeStaff" [(ngModel)]="payeeId" (ngModelChange)="onPayeePicked(staff)" required>
-            <option [ngValue]="null" disabled>Select a staff member…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a staff member…' | translate }}</option>
             <option *ngFor="let u of staff" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'CLIENT'">
-          <label class="form-label">Customer</label>
+          <label class="form-label">{{ 'Customer' | translate }}</label>
           <select class="form-select" name="payeeCustomer" [(ngModel)]="payeeId" (ngModelChange)="onPayeePicked(customers)" required>
-            <option [ngValue]="null" disabled>Select a customer…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a customer…' | translate }}</option>
             <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
           </select>
         </div>
         <div class="form-group" *ngIf="payeeType === 'OTHER'">
-          <label class="form-label">Payee name</label>
-          <input class="form-control" name="payeeName" [(ngModel)]="payeeName" placeholder="e.g. City Water Authority" required />
+          <label class="form-label">{{ 'Payee name' | translate }}</label>
+          <input class="form-control" name="payeeName" [(ngModel)]="payeeName" [placeholder]="'e.g. City Water Authority' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Total amount (including any VAT)</label>
+          <label class="form-label">{{ 'Total amount (including any VAT)' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0.01" name="amount" [(ngModel)]="amount" required />
         </div>
         <div class="form-group">
-          <label class="form-label">VAT included in the total (optional)</label>
+          <label class="form-label">{{ 'VAT included in the total (optional)' | translate }}</label>
           <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
             <input class="form-control" style="width:10rem;" type="number" step="0.01" min="0" name="taxAmount" [(ngModel)]="taxAmount" placeholder="0.00" />
-            <span class="text-muted" style="font-size:0.85rem;">or work it out at</span>
+            <span class="text-muted" style="font-size:0.85rem;">{{ 'or work it out at' | translate }}</span>
             <input class="form-control" style="width:5rem;" type="number" step="0.1" min="0" name="vatRate" [(ngModel)]="vatRate" />
             <span class="text-muted">%</span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="applyRate()">Calculate</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="applyRate()">{{ 'Calculate' | translate }}</button>
           </div>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Only VAT you can claim back. It is kept in its own account, so the category only carries the cost without VAT<span *ngIf="amount && taxAmount"> ({{ (amount || 0) - (taxAmount || 0) | number: '1.2-2' }})</span>.
+            {{ 'Only VAT you can claim back. It is kept in its own account, so the category only carries the cost without VAT' | translate }}<span *ngIf="amount && taxAmount"> ({{ (amount || 0) - (taxAmount || 0) | number: '1.2-2' }})</span>.
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Reference (optional)</label>
-          <input class="form-control" name="reference" [(ngModel)]="reference" maxlength="100" placeholder="Supplier invoice or receipt number" />
+          <label class="form-label">{{ 'Reference (optional)' | translate }}</label>
+          <input class="form-control" name="reference" [(ngModel)]="reference" maxlength="100" [placeholder]="'Supplier invoice or receipt number' | translate" />
         </div>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="paid" [(ngModel)]="paid" /> Paid immediately
+            <input type="checkbox" name="paid" [(ngModel)]="paid" /> {{ 'Paid immediately' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="!paid">
-            Left unchecked, this posts as a bill owed to the payee (Accounts Payable). You can pay it later, in full or in parts.
+            {{ 'Left unchecked, this posts as a bill owed to the payee (Accounts Payable). You can pay it later, in full or in parts.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">{{ paid ? 'Paid from' : 'Usually paid from' }}</label>
+          <label class="form-label">{{ paid ? ('Paid from' | translate) : ('Usually paid from' | translate) }}</label>
           <select class="form-select" name="paidFromAccountId" [(ngModel)]="paidFromAccountId">
-            <option [ngValue]="null">Cash</option>
+            <option [ngValue]="null">{{ 'Cash' | translate }}</option>
             <ng-container *ngFor="let a of paymentAccounts"><option *ngIf="!a.cash" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option></ng-container>
           </select>
         </div>
         <div class="form-group" *ngIf="!paid">
-          <label class="form-label">Due date</label>
+          <label class="form-label">{{ 'Due date' | translate }}</label>
           <input class="form-control" type="date" name="dueDate" [(ngModel)]="dueDate" />
-          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">Left empty, it is set from the expense date using the days in Expenses settings.</div>
+          <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">{{ 'Left empty, it is set from the expense date using the days in Expenses settings.' | translate }}</div>
         </div>
         <div class="form-group" *ngIf="branches.length > 1">
-          <label class="form-label">Branch</label>
+          <label class="form-label">{{ 'Branch' | translate }}</label>
           <select class="form-select" name="branchId" [(ngModel)]="branchId">
             <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Cost center (optional)</label>
+          <label class="form-label">{{ 'Cost center (optional)' | translate }}</label>
           <select class="form-select" name="costCenterId" [(ngModel)]="costCenterId">
-            <option [ngValue]="null">None</option>
+            <option [ngValue]="null">{{ 'None' | translate }}</option>
             <option *ngFor="let c of costCenters" [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Memo (optional)</label>
+          <label class="form-label">{{ 'Memo (optional)' | translate }}</label>
           <input class="form-control" name="memo" [(ngModel)]="memo" />
         </div>
         <div class="form-group" *ngIf="!id">
-          <label class="form-label">Receipts and bills (optional)</label>
+          <label class="form-label">{{ 'Receipts and bills (optional)' | translate }}</label>
           <input type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain" (change)="onFilesSelected($event)" />
-          <div class="text-muted" style="font-size:0.8rem;">Photos, PDF or text files, up to 10 MB each. They are attached when you save.</div>
-          <div *ngFor="let f of pendingFiles; let i = index" style="font-size:0.85rem;">{{ f.name }} <button type="button" class="btn btn-link btn-sm" (click)="pendingFiles.splice(i, 1)">Remove</button></div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Photos, PDF or text files, up to 10 MB each. They are attached when you save.' | translate }}</div>
+          <div *ngFor="let f of pendingFiles; let i = index" style="font-size:0.85rem;">{{ f.name }} <button type="button" class="btn btn-link btn-sm" (click)="pendingFiles.splice(i, 1)">{{ 'Remove' | translate }}</button></div>
           <div class="text-danger" style="font-size:0.8rem;" *ngIf="receiptError">{{ receiptError }}</div>
         </div>
         <div class="form-group" *ngIf="id && receiptDataUrl">
-          <label class="form-label">Receipt kept from before</label>
-          <div><img [src]="receiptDataUrl" alt="Receipt" style="max-width:80px; max-height:80px; border:1px solid #444; border-radius:4px; object-fit:cover;" /></div>
-          <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-top:0.5rem;" (click)="removeReceipt()">Remove receipt</button>
-          <div class="text-muted" style="font-size:0.8rem;">More files can be added on the expense page.</div>
+          <label class="form-label">{{ 'Receipt kept from before' | translate }}</label>
+          <div><img [src]="receiptDataUrl" [alt]="'Receipt' | translate" style="max-width:80px; max-height:80px; border:1px solid #444; border-radius:4px; object-fit:cover;" /></div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-top:0.5rem;" (click)="removeReceipt()">{{ 'Remove receipt' | translate }}</button>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'More files can be added on the expense page.' | translate }}</div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/accounting/expenses">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/accounting/expenses">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

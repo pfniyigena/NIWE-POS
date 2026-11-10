@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, ElementRef, EventEmitter, forwardRef, HostListener, Input, Output } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -35,7 +36,7 @@ const WEEKDAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 @Component({
   selector: 'app-date-picker',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -57,9 +58,9 @@ const WEEKDAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
         <span class="dp-icon">📅</span>
       </div>
 
-      <div class="dp-panel" *ngIf="open" role="dialog" aria-label="Choose a date">
+      <div class="dp-panel" *ngIf="open" role="dialog" [attr.aria-label]="'Choose a date' | translate">
         <div class="dp-header">
-          <button type="button" class="dp-nav" (click)="shiftMonth(-1)" aria-label="Previous month">‹</button>
+          <button type="button" class="dp-nav" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month' | translate">‹</button>
           <div class="dp-header-selects">
             <select class="dp-select" [ngModel]="viewMonth" (ngModelChange)="onMonthSelect($event)">
               <option *ngFor="let m of monthNames; let i = index" [ngValue]="i">{{ m }}</option>
@@ -68,7 +69,7 @@ const WEEKDAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
               <option *ngFor="let y of yearOptions" [ngValue]="y">{{ y }}</option>
             </select>
           </div>
-          <button type="button" class="dp-nav" (click)="shiftMonth(1)" aria-label="Next month">›</button>
+          <button type="button" class="dp-nav" (click)="shiftMonth(1)" [attr.aria-label]="'Next month' | translate">›</button>
         </div>
 
         <div class="dp-weekdays">
@@ -91,8 +92,8 @@ const WEEKDAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
         </div>
 
         <div class="dp-footer">
-          <button type="button" class="dp-link" (click)="goToday()">Today</button>
-          <button type="button" class="dp-link" (click)="clear()">Clear</button>
+          <button type="button" class="dp-link" (click)="goToday()">{{ 'Today' | translate }}</button>
+          <button type="button" class="dp-link" (click)="clear()">{{ 'Clear' | translate }}</button>
         </div>
       </div>
     </div>

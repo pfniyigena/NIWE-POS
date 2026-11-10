@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -33,7 +34,7 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -41,45 +42,45 @@ import { AuthService } from '../core/auth.service';
         <div class="flex justify-between align-center mb-3">
           <div>
             <h3 style="margin-bottom:0.25rem;">{{ c.name }}</h3>
-            <span *ngIf="c.creditEnabled" class="badge badge-success">Credit enabled</span>
-            <span *ngIf="!c.creditEnabled" class="badge badge-secondary">Credit off</span>
+            <span *ngIf="c.creditEnabled" class="badge badge-success">{{ 'Credit enabled' | translate }}</span>
+            <span *ngIf="!c.creditEnabled" class="badge badge-secondary">{{ 'Credit off' | translate }}</span>
           </div>
           <div class="flex gap-2">
-            <a class="btn btn-outline-primary" [routerLink]="['/admin/customers', c.id, 'edit']">Edit</a>
+            <a class="btn btn-outline-primary" [routerLink]="['/admin/customers', c.id, 'edit']">{{ 'Edit' | translate }}</a>
             <a class="btn btn-outline-primary" [routerLink]="['/admin/invoices']" [queryParams]="{ customerId: c.id, customerName: c.name }">
-              Invoices
+              {{ 'Invoices' | translate }}
             </a>
             <a *ngIf="isAdmin" class="btn btn-outline-primary" [routerLink]="['/admin/customer-payments']" [queryParams]="{ customerId: c.id, customerName: c.name }">
-              Payments
+              {{ 'Payments' | translate }}
             </a>
             <a *ngIf="isAdmin" class="btn btn-outline-primary" routerLink="/admin/customers/statement" [queryParams]="{ customerId: c.id, customerName: c.name }">
-              Statement
+              {{ 'Statement' | translate }}
             </a>
             <!-- Record payment is a credit/financial action — stays ADMIN-only even though Edit itself is open to any logged-in user. -->
-            <a *ngIf="c.creditEnabled && isAdmin" class="btn btn-primary" [routerLink]="['/admin/customers', c.id, 'record-payment']">Record payment</a>
-            <a class="btn btn-link" routerLink="/admin/customers">Back to customers</a>
+            <a *ngIf="c.creditEnabled && isAdmin" class="btn btn-primary" [routerLink]="['/admin/customers', c.id, 'record-payment']">{{ 'Record payment' | translate }}</a>
+            <a class="btn btn-link" routerLink="/admin/customers">{{ 'Back to customers' | translate }}</a>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Phone</div>
+            <div class="stat-label">{{ 'Phone' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ c.phone || '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Email</div>
+            <div class="stat-label">{{ 'Email' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ c.email || '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Tax ID</div>
+            <div class="stat-label">{{ 'Tax ID' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ c.taxId || '—' }}</div>
           </div>
           <div class="stat-tile" *ngIf="c.creditEnabled">
-            <div class="stat-label">Credit limit</div>
+            <div class="stat-label">{{ 'Credit limit' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ c.creditLimit | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="c.creditEnabled">
-            <div class="stat-label">Default payment term</div>
+            <div class="stat-label">{{ 'Default payment term' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ c.defaultCreditTermDays ? c.defaultCreditTermDays + ' days' : '—' }}</div>
           </div>
         </div>

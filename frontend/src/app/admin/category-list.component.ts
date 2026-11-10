@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -8,19 +9,19 @@ import { Category } from '../core/models';
 @Component({
   selector: 'app-category-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Categories</h3>
-        <a class="btn btn-primary" routerLink="/admin/categories/new">+ New category</a>
+        <h3>{{ 'Categories' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/categories/new">{{ '+ New category' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Color</th>
-            <th>Name</th>
+            <th>{{ 'Color' | translate }}</th>
+            <th>{{ 'Name' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -29,12 +30,12 @@ import { Category } from '../core/models';
             <td><span class="color-swatch" [style.background]="c.colorHex"></span></td>
             <td>{{ c.name }}</td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/categories', c.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-danger" (click)="remove(c)">Delete</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/categories', c.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-danger" (click)="remove(c)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="categories.length === 0">
-            <td colspan="3" class="text-muted">No categories yet.</td>
+            <td colspan="3" class="text-muted">{{ 'No categories yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

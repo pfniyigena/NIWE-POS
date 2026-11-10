@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -22,25 +23,25 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 @Component({
   selector: 'app-bill-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3 style="margin-bottom:0;">Bills</h3>
+        <h3 style="margin-bottom:0;">{{ 'Bills' | translate }}</h3>
       </div>
-      <app-list-filter exportKind="bills" placeholder="Search bill no., supplier, purchase order…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportKind="bills" [placeholder]="'Search bill no., supplier, purchase order…' | translate" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Bill #</th>
-            <th>Purchase order</th>
-            <th>Supplier</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th *ngIf="branches.length > 1">Branch</th>
-            <th class="text-end">Total</th>
-            <th class="text-end">Outstanding</th>
+            <th>{{ 'Bill #' | translate }}</th>
+            <th>{{ 'Purchase order' | translate }}</th>
+            <th>{{ 'Supplier' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
+            <th class="text-end">{{ 'Outstanding' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -55,11 +56,11 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
             <td class="text-end">{{ b.totalAmount | number: '1.2-2' }}</td>
             <td class="text-end">{{ b.status === 'ISSUED' ? (b.amountOutstanding | number: '1.2-2') : '—' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/bills', b.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/bills', b.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="8" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No bills yet — one is generated once a purchase order is fully received, or manually from that order's own detail page.</ng-template></td>
+            <td colspan="8" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ 'No bills yet — one is generated once a purchase order is fully received, or manually from that order\\'s own detail page.' | translate }}</ng-template></td>
           </tr>
         </tbody>
       </table>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,31 +13,31 @@ import { branchNameOf, effectiveBranchId } from '../../core/branch-util';
 @Component({
   selector: 'app-income-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Incomes</h3>
-        <a class="btn btn-primary" routerLink="/admin/accounting/incomes/new">+ New income</a>
+        <h3>{{ 'Incomes' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/accounting/incomes/new">{{ '+ New income' | translate }}</a>
       </div>
       <div class="flex gap-2 align-center mb-3" *ngIf="branches.length > 1">
-        <select class="form-select" style="width:auto;" [(ngModel)]="branchFilter" title="Branch">
-          <option [ngValue]="null">All branches</option>
+        <select class="form-select" style="width:auto;" [(ngModel)]="branchFilter" [title]="'Branch' | translate">
+          <option [ngValue]="null">{{ 'All branches' | translate }}</option>
           <option *ngFor="let br of branches" [ngValue]="br.id">{{ br.name }}</option>
         </select>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Payer</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th *ngIf="branches.length > 1">Branch</th>
-            <th>Cost center</th>
-            <th>Memo</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Category' | translate }}</th>
+            <th>{{ 'Payer' | translate }}</th>
+            <th>{{ 'Amount' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th>
+            <th>{{ 'Cost center' | translate }}</th>
+            <th>{{ 'Memo' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -46,8 +47,8 @@ import { branchNameOf, effectiveBranchId } from '../../core/branch-util';
             <td>{{ i.payeeName }} <span class="text-muted">({{ i.payeeType }})</span></td>
             <td class="text-end">{{ i.amount | number: '1.2-2' }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="i.received">Received</span>
-              <span class="badge badge-secondary" *ngIf="!i.received">Owed to us</span>
+              <span class="badge badge-success" *ngIf="i.received">{{ 'Received' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!i.received">{{ 'Owed to us' | translate }}</span>
             </td>
             <td *ngIf="branches.length > 1">{{ branchName(i.branchId) }}</td>
             <td>{{ i.costCenterName || '—' }}</td>
@@ -55,7 +56,7 @@ import { branchNameOf, effectiveBranchId } from '../../core/branch-util';
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="incomes.length === 0">No incomes recorded yet.</p>
+      <p class="text-muted" *ngIf="incomes.length === 0">{{ 'No incomes recorded yet.' | translate }}</p>
     </app-shell>
   `,
 })

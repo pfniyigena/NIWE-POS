@@ -1,45 +1,48 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { AuthService } from '../core/auth.service';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
+import { LanguageSwitcherComponent } from '../shared/language-switcher.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, LanguageSwitcherComponent, NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center;">
+      <div style="margin-bottom:0.75rem;"><app-language-switcher></app-language-switcher></div>
       <div class="card" style="width:340px; padding:2rem;">
-        <h3 class="mb-3" style="text-align:center;">POS Login</h3>
+        <h3 class="mb-3" style="text-align:center;">{{ 'POS Login' | translate }}</h3>
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
         <form (ngSubmit)="submit()">
           <div class="form-group">
-            <label class="form-label">Username</label>
+            <label class="form-label">{{ 'Username' | translate }}</label>
             <input class="form-control" name="username" [(ngModel)]="username" autocomplete="username" />
           </div>
           <div class="form-group">
-            <label class="form-label">Password</label>
+            <label class="form-label">{{ 'Password' | translate }}</label>
             <input class="form-control" type="password" name="password" [(ngModel)]="password" autocomplete="current-password" />
           </div>
           <button class="btn btn-primary btn-block" type="submit" [disabled]="loading">
-            {{ loading ? 'Signing in…' : 'Sign in' }}
+            {{ loading ? ('Signing in…' | translate) : ('Sign in' | translate) }}
           </button>
         </form>
         <p style="margin-top:1rem; text-align:center;">
-          <a routerLink="/forgot-password">Forgot password?</a>
+          <a routerLink="/forgot-password">{{ 'Forgot password?' | translate }}</a>
         </p>
         <!-- Fourier: "it is better to have a home page with look nice like a website" — the public
              links that used to live here ("Reserve a table", "Help Desk") moved to the new public
              home page (app.routes.ts's '' route), which is now the app's actual front door; this
              is just the way back to it for anyone who lands on /login directly. -->
         <p style="text-align:center;">
-          <a routerLink="/">&larr; Back to home</a>
+          <a routerLink="/">&larr; {{ 'Back to home' | translate }}</a>
         </p>
         <p class="text-muted mb-1" style="font-size:0.8rem; text-align:center;">
-          Demo logins: admin / admin123 or cashier / cashier123
+          {{ 'Demo logins: admin / admin123 or cashier / cashier123' | translate }}
         </p>
       </div>
     </div>

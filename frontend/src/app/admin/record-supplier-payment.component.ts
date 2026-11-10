@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -32,39 +33,39 @@ interface AllocationRow {
 @Component({
   selector: 'app-record-supplier-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="no-print">
         <div class="flex justify-between align-center mb-3">
-          <h3>Record supplier payment{{ supplier ? ' — ' + supplier.name : '' }}</h3>
-          <a class="btn btn-link" routerLink="/admin/suppliers">Back to suppliers</a>
+          <h3>{{ 'Record supplier payment{p0}' | translate: { p0: (supplier ? ' — ' + supplier.name : '') } }}</h3>
+          <a class="btn btn-link" routerLink="/admin/suppliers">{{ 'Back to suppliers' | translate }}</a>
         </div>
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="!receipt">
           <div class="form-group">
-            <label class="form-label">Payment amount</label>
+            <label class="form-label">{{ 'Payment amount' | translate }}</label>
             <input class="form-control" type="number" min="0.01" step="0.01" [(ngModel)]="amount" (ngModelChange)="suggestOldestFirst()" style="max-width:220px;" />
           </div>
           <div class="form-group">
-            <label class="form-label">Note (optional)</label>
+            <label class="form-label">{{ 'Note (optional)' | translate }}</label>
             <input class="form-control" [(ngModel)]="note" />
           </div>
 
           <table style="margin-top:0.5rem;">
             <thead>
               <tr>
-                <th>Order / Bill #</th>
-                <th>Date</th>
-                <th class="text-end">Total cost</th>
-                <th class="text-end">Outstanding</th>
-                <th class="text-end">Allocate</th>
+                <th>{{ 'Order / Bill #' | translate }}</th>
+                <th>{{ 'Date' | translate }}</th>
+                <th class="text-end">{{ 'Total cost' | translate }}</th>
+                <th class="text-end">{{ 'Outstanding' | translate }}</th>
+                <th class="text-end">{{ 'Allocate' | translate }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let row of allocationRows">
-                <td>{{ row.order.orderNumber || '—' }} <span class="text-muted" *ngIf="row.order.payableType === 'BILL'">(Bill)</span></td>
+                <td>{{ row.order.orderNumber || '—' }} <span class="text-muted" *ngIf="row.order.payableType === 'BILL'">{{ '(Bill)' | translate }}</span></td>
                 <td>{{ row.order.orderDate | date: 'medium' }}</td>
                 <td class="text-end">{{ row.order.totalCost | number: '1.2-2' }}</td>
                 <td class="text-end">{{ row.order.amountOutstanding | number: '1.2-2' }}</td>
@@ -81,42 +82,42 @@ interface AllocationRow {
                 </td>
               </tr>
               <tr *ngIf="allocationRows.length === 0">
-                <td colspan="5" class="text-muted">This supplier has no outstanding purchase orders.</td>
+                <td colspan="5" class="text-muted">{{ 'This supplier has no outstanding purchase orders.' | translate }}</td>
               </tr>
             </tbody>
           </table>
 
           <div class="flex justify-between align-center mt-2" style="flex-wrap:wrap;">
             <button class="btn btn-outline-secondary" type="button" (click)="suggestOldestFirst()" [disabled]="allocationRows.length === 0">
-              Suggest oldest-first
+              {{ 'Suggest oldest-first' | translate }}
             </button>
             <div>
-              Allocated: {{ allocatedTotal() | number: '1.2-2' }} / {{ (amount ?? 0) | number: '1.2-2' }}
-              <span class="badge badge-danger" *ngIf="!allocationBalances()">Must equal the payment amount</span>
+              {{ 'Allocated: {p0} / {p1}' | translate: { p0: (allocatedTotal() | number: '1.2-2'), p1: ((amount ?? 0) | number: '1.2-2') } }}
+              <span class="badge badge-danger" *ngIf="!allocationBalances()">{{ 'Must equal the payment amount' | translate }}</span>
             </div>
           </div>
 
           <button class="btn btn-primary mt-3" (click)="submit()" [disabled]="submitting || !canSubmit()">
-            {{ submitting ? 'Recording…' : 'Record payment' }}
+            {{ submitting ? ('Recording…' | translate) : ('Record payment' | translate) }}
           </button>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="receipt">
-          <div class="alert alert-success">Payment recorded.</div>
-          <button class="btn btn-outline-secondary" (click)="print()">Print receipt</button>
-          <button class="btn btn-link" (click)="startAnother()">Record another payment</button>
+          <div class="alert alert-success">{{ 'Payment recorded.' | translate }}</div>
+          <button class="btn btn-outline-secondary" (click)="print()">{{ 'Print receipt' | translate }}</button>
+          <button class="btn btn-link" (click)="startAnother()">{{ 'Record another payment' | translate }}</button>
         </div>
 
-        <h4 class="mt-3 mb-2">Payment history</h4>
+        <h4 class="mt-3 mb-2">{{ 'Payment history' | translate }}</h4>
         <table>
           <thead>
             <tr>
-              <th>Receipt #</th>
-              <th>Date</th>
-              <th class="text-end">Amount</th>
-              <th>Recorded by</th>
-              <th>Note</th>
-              <th>Applied to</th>
+              <th>{{ 'Receipt #' | translate }}</th>
+              <th>{{ 'Date' | translate }}</th>
+              <th class="text-end">{{ 'Amount' | translate }}</th>
+              <th>{{ 'Recorded by' | translate }}</th>
+              <th>{{ 'Note' | translate }}</th>
+              <th>{{ 'Applied to' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -133,7 +134,7 @@ interface AllocationRow {
               </td>
             </tr>
             <tr *ngIf="history.length === 0">
-              <td colspan="6" class="text-muted">No payments recorded yet.</td>
+              <td colspan="6" class="text-muted">{{ 'No payments recorded yet.' | translate }}</td>
             </tr>
           </tbody>
         </table>
@@ -141,21 +142,21 @@ interface AllocationRow {
 
       <!-- Printable receipt panel — only this block is visible when printing (see @media print below). -->
       <div class="receipt-print" *ngIf="receipt">
-        <h3 style="text-align:center;">Supplier Payment Receipt</h3>
+        <h3 style="text-align:center;">{{ 'Supplier Payment Receipt' | translate }}</h3>
         <p style="text-align:center;">{{ receipt.receiptNumber }}</p>
-        <p>Supplier: {{ receipt.supplierName }}</p>
-        <p>Date: {{ receipt.paidAt | date: 'medium' }}</p>
-        <p>Recorded by: {{ receipt.recordedByName }}</p>
+        <p>{{ 'Supplier: {p0}' | translate: { p0: (receipt.supplierName) } }}</p>
+        <p>{{ 'Date: {p0}' | translate: { p0: (receipt.paidAt | date: 'medium') } }}</p>
+        <p>{{ 'Recorded by: {p0}' | translate: { p0: (receipt.recordedByName) } }}</p>
         <hr />
-        <p style="font-weight:700;">Amount paid: {{ receipt.amount | number: '1.2-2' }}</p>
-        <p style="font-weight:600; margin-top:12px;">Applied to:</p>
+        <p style="font-weight:700;">{{ 'Amount paid: {p0}' | translate: { p0: (receipt.amount | number: '1.2-2') } }}</p>
+        <p style="font-weight:600; margin-top:12px;">{{ 'Applied to:' | translate }}</p>
         <div *ngFor="let a of receipt.allocations" style="display:flex; justify-content:space-between;">
           <span>{{ a.orderNumber || '—' }}</span>
           <span>{{ a.amountApplied | number: '1.2-2' }}</span>
         </div>
         <hr />
-        <p>Remaining balance: {{ receipt.supplierBalanceAfter | number: '1.2-2' }}</p>
-        <p *ngIf="receipt.note">Note: {{ receipt.note }}</p>
+        <p>{{ 'Remaining balance: {p0}' | translate: { p0: (receipt.supplierBalanceAfter | number: '1.2-2') } }}</p>
+        <p *ngIf="receipt.note">{{ 'Note: {p0}' | translate: { p0: (receipt.note) } }}</p>
       </div>
     </app-shell>
   `,

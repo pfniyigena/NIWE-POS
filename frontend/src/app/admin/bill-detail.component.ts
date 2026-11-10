@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -26,7 +27,7 @@ import { branchNameOf } from '../core/branch-util';
 @Component({
   selector: 'app-bill-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -38,87 +39,87 @@ import { branchNameOf } from '../core/branch-util';
           </div>
           <div class="flex gap-2">
             <!-- DRAFT — not yet a real document: issue it, or discard it. -->
-            <button class="btn btn-primary" *ngIf="b.status === 'DRAFT'" (click)="issue()">Issue bill</button>
-            <button class="btn btn-outline-danger" *ngIf="b.status === 'DRAFT'" (click)="deleteDraft()">Delete draft</button>
+            <button class="btn btn-primary" *ngIf="b.status === 'DRAFT'" (click)="issue()">{{ 'Issue bill' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="b.status === 'DRAFT'" (click)="deleteDraft()">{{ 'Delete draft' | translate }}</button>
 
-            <button class="btn btn-outline-primary" *ngIf="b.status !== 'DRAFT'" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
+            <button class="btn btn-outline-primary" *ngIf="b.status !== 'DRAFT'" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
             <a class="btn btn-outline-primary" *ngIf="b.status === 'ISSUED' && b.amountOutstanding > 0" [routerLink]="['/admin/bills', b.id, 'record-payment']">
-              Record payment
+              {{ 'Record payment' | translate }}
             </a>
             <!-- Fourier: "VOID ... Only allowed when there is NO payment" mirrored here — hidden once anything has been paid; a Purchase Return against the order is the path for that case. -->
-            <button class="btn btn-outline-danger" *ngIf="b.status === 'ISSUED' && b.amountPaid <= 0" (click)="showVoidForm = !showVoidForm">Void bill</button>
+            <button class="btn btn-outline-danger" *ngIf="b.status === 'ISSUED' && b.amountPaid <= 0" (click)="showVoidForm = !showVoidForm">{{ 'Void bill' | translate }}</button>
 
-            <a class="btn btn-outline-primary" *ngIf="b.purchaseOrderId" [routerLink]="['/admin/purchase-orders', b.purchaseOrderId]">Back to purchase order</a>
+            <a class="btn btn-outline-primary" *ngIf="b.purchaseOrderId" [routerLink]="['/admin/purchase-orders', b.purchaseOrderId]">{{ 'Back to purchase order' | translate }}</a>
           </div>
         </div>
 
         <div *ngIf="showVoidForm" class="form-group mb-3" style="max-width:400px;">
-          <label>Void reason (optional)</label>
-          <input class="form-control" placeholder="Reason" [(ngModel)]="voidReason" name="voidReason" />
+          <label>{{ 'Void reason (optional)' | translate }}</label>
+          <input class="form-control" [placeholder]="'Reason' | translate" [(ngModel)]="voidReason" name="voidReason" />
           <div class="flex gap-2 mt-2">
-            <button class="btn btn-outline-danger" (click)="confirmVoid()">Confirm void</button>
-            <button class="btn btn-link" (click)="showVoidForm = false">Cancel</button>
+            <button class="btn btn-outline-danger" (click)="confirmVoid()">{{ 'Confirm void' | translate }}</button>
+            <button class="btn btn-link" (click)="showVoidForm = false">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Supplier</div>
+            <div class="stat-label">{{ 'Supplier' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.supplierName ?? '—' }}</div>
           </div>
           <div class="stat-tile" *ngIf="branches.length > 1">
-            <div class="stat-label">Branch</div>
+            <div class="stat-label">{{ 'Branch' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ branchName(b.branchId) }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Purchase order</div>
+            <div class="stat-label">{{ 'Purchase order' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.purchaseOrderNumber ?? '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Bill date</div>
+            <div class="stat-label">{{ 'Bill date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.billDate ? (b.billDate | date: 'medium') : '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Subtotal</div>
+            <div class="stat-label">{{ 'Subtotal' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.subtotalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Tax</div>
+            <div class="stat-label">{{ 'Tax' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.taxAmount | number: '1.2-2' }}</div>
           </div>
           <!-- Fourier: "Same for discount (but discount should be activate in the setting or configuration) and it will be per line" — only shown once this document actually has one, same convention as the printed PDF's own addSubtotalBreakdown. -->
           <div class="stat-tile" *ngIf="b.discountAmount">
-            <div class="stat-label">Discount</div>
+            <div class="stat-label">{{ 'Discount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.discountAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total amount</div>
+            <div class="stat-label">{{ 'Total amount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.totalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="b.status !== 'DRAFT'">
-            <div class="stat-label">Paid</div>
+            <div class="stat-label">{{ 'Paid' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.amountPaid | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="b.status !== 'DRAFT'">
-            <div class="stat-label">Outstanding</div>
+            <div class="stat-label">{{ 'Outstanding' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ b.amountOutstanding | number: '1.2-2' }}</div>
           </div>
         </div>
         <p class="text-muted mb-3" *ngIf="b.notes">{{ b.notes }}</p>
-        <p class="text-muted mb-3" *ngIf="b.voidReason">Voided — {{ b.voidReason }}</p>
+        <p class="text-muted mb-3" *ngIf="b.voidReason">{{ 'Voided — {p0}' | translate: { p0: (b.voidReason) } }}</p>
 
-        <h4 class="mb-2">Lines</h4>
+        <h4 class="mb-2">{{ 'Lines' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Qty</th>
-              <th class="text-end">Unit cost</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Qty' | translate }}</th>
+              <th class="text-end">{{ 'Unit cost' | translate }}</th>
               <!-- Fourier: "Same for discount ... it will be per line" — only shown once this document actually has a discount on at least one line. -->
-              <th class="text-end" *ngIf="b.discountAmount">Discount</th>
+              <th class="text-end" *ngIf="b.discountAmount">{{ 'Discount' | translate }}</th>
               <!-- Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill, Refund)" -->
-              <th class="text-end">Tax</th>
-              <th class="text-end">Total</th>
+              <th class="text-end">{{ 'Tax' | translate }}</th>
+              <th class="text-end">{{ 'Total' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -131,7 +132,7 @@ import { branchNameOf } from '../core/branch-util';
               <td class="text-end">{{ l.lineTotal | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="b.lines.length === 0">
-              <td [attr.colspan]="b.discountAmount ? 6 : 5" class="text-muted">No lines on this bill.</td>
+              <td [attr.colspan]="b.discountAmount ? 6 : 5" class="text-muted">{{ 'No lines on this bill.' | translate }}</td>
             </tr>
           </tbody>
         </table>

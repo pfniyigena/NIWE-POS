@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
@@ -33,7 +34,7 @@ interface PublicLink {
 @Component({
   selector: 'app-public-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="public-home">
       <header class="public-home-hero">
@@ -42,13 +43,13 @@ interface PublicLink {
             <img *ngIf="logoDataUrl" [src]="logoDataUrl" alt="" style="height:48px; width:48px; object-fit:contain; border-radius:0.4rem; background:#fff;" />
             <h1 style="margin:0; font-size:1.8rem;">{{ businessName || 'Welcome' }}</h1>
           </div>
-          <p class="public-home-tagline">{{ links.length ? 'Reservations, support, and more — all in one place.' : 'Welcome.' }}</p>
-          <a class="btn btn-primary" routerLink="/login">Staff Login</a>
+          <p class="public-home-tagline">{{ links.length ? ('Reservations, support, and more — all in one place.' | translate) : ('Welcome.' | translate) }}</p>
+          <a class="btn btn-primary" routerLink="/login">{{ 'Staff Login' | translate }}</a>
         </div>
       </header>
 
       <main class="public-home-main">
-        <h2 class="mb-3" style="text-align:center;" *ngIf="links.length">What would you like to do?</h2>
+        <h2 class="mb-3" style="text-align:center;" *ngIf="links.length">{{ 'What would you like to do?' | translate }}</h2>
         <div class="public-home-grid" *ngIf="links.length">
           <a *ngFor="let link of links" class="card public-home-card" [routerLink]="link.route">
             <div class="public-home-card-icon">{{ link.icon }}</div>

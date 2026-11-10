@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -10,37 +11,37 @@ import { PriceListPayload, PriceListRow, PricingApiService } from '../../core/ap
 @Component({
   selector: 'app-price-lists',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3 style="margin:0;">Price lists</h3>
-        <button class="btn btn-primary pl-new" *ngIf="canManage && !editing" (click)="startNew()">New price list</button>
+        <h3 style="margin:0;">{{ 'Price lists' | translate }}</h3>
+        <button class="btn btn-primary pl-new" *ngIf="canManage && !editing" (click)="startNew()">{{ 'New price list' | translate }}</button>
       </div>
-      <p class="text-muted">A customer in a customer group pays that group's price list instead of the normal price. A list can set a price for individual products (even a lower price for bigger quantities), and move every other product up or down by a percentage.</p>
+      <p class="text-muted">{{ 'A customer in a customer group pays that group\\'s price list instead of the normal price. A list can set a price for individual products (even a lower price for bigger quantities), and move every other product up or down by a percentage.' | translate }}</p>
       <div class="alert alert-danger pl-error" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success pl-done" *ngIf="done">{{ done }}</div>
 
       <div class="card mb-3 pl-form" *ngIf="editing" style="padding:1rem;">
-        <h4>{{ editingId ? 'Edit price list' : 'New price list' }}</h4>
+        <h4>{{ editingId ? ('Edit price list' | translate) : ('New price list' | translate) }}</h4>
         <div class="grid-2">
-          <div class="form-group"><label class="form-label">Name</label><input class="form-control pl-name" name="name" [(ngModel)]="form.name" /></div>
-          <div class="form-group"><label class="form-label">Description (optional)</label><input class="form-control pl-desc" name="description" [(ngModel)]="description" /></div>
-          <div class="form-group"><label class="form-label">Adjust all other products by (%)</label>
+          <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control pl-name" name="name" [(ngModel)]="form.name" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Description (optional)' | translate }}</label><input class="form-control pl-desc" name="description" [(ngModel)]="description" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Adjust all other products by (%)' | translate }}</label>
             <input class="form-control pl-adjust" type="number" step="0.01" name="adjust" [(ngModel)]="form.adjustPercent" />
-            <div class="text-muted" style="font-size:0.8rem;">For products with no price of their own on this list. -10 means 10% below the normal price; 0 means the normal price.</div></div>
-          <div class="form-group"><label class="form-label">Valid from (optional)</label><input class="form-control pl-from" type="date" name="from" [(ngModel)]="validFrom" /></div>
-          <div class="form-group"><label class="form-label">Valid to (optional)</label><input class="form-control pl-to" type="date" name="to" [(ngModel)]="validTo" /></div>
-          <div class="form-group"><label class="flex align-center gap-2" style="margin-top:1.6rem;"><input type="checkbox" class="pl-active" name="active" [(ngModel)]="form.active" /> Switched on</label></div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ 'For products with no price of their own on this list. -10 means 10% below the normal price; 0 means the normal price.' | translate }}</div></div>
+          <div class="form-group"><label class="form-label">{{ 'Valid from (optional)' | translate }}</label><input class="form-control pl-from" type="date" name="from" [(ngModel)]="validFrom" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Valid to (optional)' | translate }}</label><input class="form-control pl-to" type="date" name="to" [(ngModel)]="validTo" /></div>
+          <div class="form-group"><label class="flex align-center gap-2" style="margin-top:1.6rem;"><input type="checkbox" class="pl-active" name="active" [(ngModel)]="form.active" /> {{ 'Switched on' | translate }}</label></div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary pl-save" (click)="save()">Save</button>
-          <button class="btn btn-link pl-cancel" (click)="cancel()">Cancel</button>
+          <button class="btn btn-primary pl-save" (click)="save()">{{ 'Save' | translate }}</button>
+          <button class="btn btn-link pl-cancel" (click)="cancel()">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <table>
-        <thead><tr><th>Name</th><th class="text-end">Other products</th><th>Valid</th><th class="text-end">Prices</th><th class="text-end">Groups</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Name' | translate }}</th><th class="text-end">{{ 'Other products' | translate }}</th><th>{{ 'Valid' | translate }}</th><th class="text-end">{{ 'Prices' | translate }}</th><th class="text-end">{{ 'Groups' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let l of rows" class="pl-row" [attr.data-name]="l.name">
             <td data-label="Name"><a [routerLink]="['/admin/pricing/price-lists', l.id]"><strong>{{ l.name }}</strong></a>
@@ -51,12 +52,12 @@ import { PriceListPayload, PriceListRow, PricingApiService } from '../../core/ap
             <td data-label="Groups" class="text-end">{{ l.groups }}</td>
             <td data-label="Status"><span [ngClass]="l.current ? 'text-success' : 'text-muted'">{{ l.current ? 'In use' : (l.active ? 'Outside its dates' : 'Switched off') }}</span></td>
             <td data-label="" class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/pricing/price-lists', l.id]">Prices</a>
-              <button class="btn btn-sm btn-outline-secondary pl-edit" *ngIf="canManage" (click)="startEdit(l)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger pl-delete" *ngIf="canManage" (click)="remove(l)">Delete</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/pricing/price-lists', l.id]">{{ 'Prices' | translate }}</a>
+              <button class="btn btn-sm btn-outline-secondary pl-edit" *ngIf="canManage" (click)="startEdit(l)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger pl-delete" *ngIf="canManage" (click)="remove(l)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
-          <tr *ngIf="rows.length === 0"><td colspan="7" class="text-muted">No price lists yet.</td></tr>
+          <tr *ngIf="rows.length === 0"><td colspan="7" class="text-muted">{{ 'No price lists yet.' | translate }}</td></tr>
         </tbody>
       </table>
     </app-shell>

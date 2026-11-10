@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -8,48 +9,48 @@ import { SupplierApiService } from '../core/api/supplier-api.service';
 @Component({
   selector: 'app-supplier-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit supplier' : 'New supplier' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit supplier' | translate) : ('New supplier' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
+          <label class="form-label">{{ 'Name' | translate }}</label>
           <input class="form-control" name="name" [(ngModel)]="name" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Contact person</label>
+          <label class="form-label">{{ 'Contact person' | translate }}</label>
           <input class="form-control" name="contactName" [(ngModel)]="contactName" />
         </div>
         <div class="form-group">
-          <label class="form-label">Phone</label>
+          <label class="form-label">{{ 'Phone' | translate }}</label>
           <input class="form-control" name="phone" [(ngModel)]="phone" />
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">{{ 'Email' | translate }}</label>
           <input class="form-control" type="email" name="email" [(ngModel)]="email" />
         </div>
         <div class="form-group">
-          <label class="form-label">Tax ID</label>
-          <input class="form-control" name="taxId" [(ngModel)]="taxId" placeholder="VAT / tax registration number" />
+          <label class="form-label">{{ 'Tax ID' | translate }}</label>
+          <input class="form-control" name="taxId" [(ngModel)]="taxId" [placeholder]="'VAT / tax registration number' | translate" />
         </div>
         <div class="form-group">
-          <label class="form-label">Address</label>
+          <label class="form-label">{{ 'Address' | translate }}</label>
           <textarea class="form-control" name="address" rows="2" [(ngModel)]="address"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Notes</label>
+          <label class="form-label">{{ 'Notes' | translate }}</label>
           <textarea class="form-control" name="notes" rows="2" [(ngModel)]="notes"></textarea>
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active (selectable on a new purchase order)
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active (selectable on a new purchase order)' | translate }}
           </label>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/suppliers">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/suppliers">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

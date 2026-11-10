@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -18,27 +19,27 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-balance-sheet',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Balance sheet</h3>
+        <h3>{{ 'Balance sheet' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="form-group mb-3">
-        <label class="form-label">As of</label>
+        <label class="form-label">{{ 'As of' | translate }}</label>
         <app-date-picker [(ngModel)]="asOf" (ngModelChange)="load()"></app-date-picker>
       </div>
       <ng-container *ngIf="report as r">
         <div class="alert alert-danger mb-3" *ngIf="!r.balanced">
-          Assets do not equal liabilities + equity + current earnings — check the Journal Entries list for a Suspense-account posting (see the backend AccountingService.post's own javadoc on when that happens).
+          {{ 'Assets do not equal liabilities + equity + current earnings — check the Journal Entries list for a Suspense-account posting (see the backend AccountingService.post\\'s own javadoc on when that happens).' | translate }}
         </div>
 
-        <h4 class="mb-2">Assets</h4>
+        <h4 class="mb-2">{{ 'Assets' | translate }}</h4>
         <table class="table-sm mb-3">
           <tbody>
             <ng-container *ngFor="let a of r.assets">
@@ -51,11 +52,11 @@ import { downloadBlob } from '../../core/download-file';
                   <table class="table-sm" style="margin:0;">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Entry #</th>
-                        <th>Description</th>
-                        <th class="text-end">Debit</th>
-                        <th class="text-end">Credit</th>
+                        <th>{{ 'Date' | translate }}</th>
+                        <th>{{ 'Entry #' | translate }}</th>
+                        <th>{{ 'Description' | translate }}</th>
+                        <th class="text-end">{{ 'Debit' | translate }}</th>
+                        <th class="text-end">{{ 'Credit' | translate }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -74,13 +75,13 @@ import { downloadBlob } from '../../core/download-file';
           </tbody>
           <tfoot>
             <tr>
-              <th>Total assets</th>
+              <th>{{ 'Total assets' | translate }}</th>
               <th class="text-end">{{ r.totalAssets | number: '1.2-2' }}</th>
             </tr>
           </tfoot>
         </table>
 
-        <h4 class="mb-2">Liabilities</h4>
+        <h4 class="mb-2">{{ 'Liabilities' | translate }}</h4>
         <table class="table-sm mb-3">
           <tbody>
             <ng-container *ngFor="let a of r.liabilities">
@@ -93,11 +94,11 @@ import { downloadBlob } from '../../core/download-file';
                   <table class="table-sm" style="margin:0;">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Entry #</th>
-                        <th>Description</th>
-                        <th class="text-end">Debit</th>
-                        <th class="text-end">Credit</th>
+                        <th>{{ 'Date' | translate }}</th>
+                        <th>{{ 'Entry #' | translate }}</th>
+                        <th>{{ 'Description' | translate }}</th>
+                        <th class="text-end">{{ 'Debit' | translate }}</th>
+                        <th class="text-end">{{ 'Credit' | translate }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -116,13 +117,13 @@ import { downloadBlob } from '../../core/download-file';
           </tbody>
           <tfoot>
             <tr>
-              <th>Total liabilities</th>
+              <th>{{ 'Total liabilities' | translate }}</th>
               <th class="text-end">{{ r.totalLiabilities | number: '1.2-2' }}</th>
             </tr>
           </tfoot>
         </table>
 
-        <h4 class="mb-2">Equity</h4>
+        <h4 class="mb-2">{{ 'Equity' | translate }}</h4>
         <table class="table-sm mb-3">
           <tbody>
             <ng-container *ngFor="let a of r.equity">
@@ -135,11 +136,11 @@ import { downloadBlob } from '../../core/download-file';
                   <table class="table-sm" style="margin:0;">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Entry #</th>
-                        <th>Description</th>
-                        <th class="text-end">Debit</th>
-                        <th class="text-end">Credit</th>
+                        <th>{{ 'Date' | translate }}</th>
+                        <th>{{ 'Entry #' | translate }}</th>
+                        <th>{{ 'Description' | translate }}</th>
+                        <th class="text-end">{{ 'Debit' | translate }}</th>
+                        <th class="text-end">{{ 'Credit' | translate }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -156,13 +157,13 @@ import { downloadBlob } from '../../core/download-file';
               </tr>
             </ng-container>
             <tr>
-              <td class="text-muted">Current earnings (not yet closed)</td>
+              <td class="text-muted">{{ 'Current earnings (not yet closed)' | translate }}</td>
               <td class="text-end">{{ r.currentEarnings | number: '1.2-2' }}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
-              <th>Total equity</th>
+              <th>{{ 'Total equity' | translate }}</th>
               <th class="text-end">{{ (r.totalEquity + r.currentEarnings) | number: '1.2-2' }}</th>
             </tr>
           </tfoot>

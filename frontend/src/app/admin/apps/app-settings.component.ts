@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -34,7 +35,7 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
 @Component({
   selector: 'app-app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -47,42 +48,39 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
       <div class="card mb-3" style="padding:12px;" *ngIf="app">
         <div class="flex justify-between align-center">
           <div>
-            <span class="badge badge-warning" *ngIf="!app.enabled">Installed — disabled</span>
-            <span class="badge badge-success" *ngIf="app.enabled">Enabled</span>
+            <span class="badge badge-warning" *ngIf="!app.enabled">{{ 'Installed — disabled' | translate }}</span>
+            <span class="badge badge-success" *ngIf="app.enabled">{{ 'Enabled' | translate }}</span>
           </div>
           <button
             class="btn btn-sm btn-outline-secondary"
             (click)="app.enabled ? disable() : enable()"
           >
-            {{ app.enabled ? 'Disable' : 'Enable' }}
+            {{ app.enabled ? ('Disable' | translate) : ('Enable' | translate) }}
           </button>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:12px;" *ngIf="key === 'EFRIS_RW'">
-        <h4 class="mb-1">Terminal EFRIS URLs</h4>
+        <h4 class="mb-1">{{ 'Terminal EFRIS URLs' | translate }}</h4>
         <p class="text-muted mb-2" style="font-size:0.85rem;">
-          Each till talks to its own local EFRIS device — set the URL that terminal should submit
-          fiscal receipts to. Task: "every terminal should be connected to the external EFRIS."
+          {{ 'Each till talks to its own local EFRIS device — set the URL that terminal should submit fiscal receipts to. Task: "every terminal should be connected to the external EFRIS."' | translate }}
         </p>
         <div class="alert alert-danger" *ngIf="terminalsError">{{ terminalsError }}</div>
         <p class="text-muted mb-2" style="font-size:0.8rem;">
-          URL/DB/UID/Password are the JSON-RPC connection details ("db"/"uid"/"password" in EFRIS's own
-          {{ "object.execute" }} call) a real submission sends — required for that terminal to actually
-          submit invoices, not just to store a URL.
+          {{ 'URL/DB/UID/Password are the JSON-RPC connection details ("db"/"uid"/"password" in EFRIS\\'s own {p0} call) a real submission sends — required for that terminal to actually submit invoices, not just to store a URL.' | translate: { p0: ("object.execute") } }}
         </p>
         <div class="table-responsive" style="overflow-x:auto;">
           <table class="table-sm">
             <thead>
               <tr>
-                <th>Terminal</th>
-                <th>Location</th>
-                <th>EFRIS URL</th>
-                <th>DB</th>
-                <th>UID</th>
-                <th>Password</th>
-                <th>RRA Logo</th>
-                <th>EFRIS Logo</th>
+                <th>{{ 'Terminal' | translate }}</th>
+                <th>{{ 'Location' | translate }}</th>
+                <th>{{ 'EFRIS URL' | translate }}</th>
+                <th>{{ 'DB' | translate }}</th>
+                <th>{{ 'UID' | translate }}</th>
+                <th>{{ 'Password' | translate }}</th>
+                <th>{{ 'RRA Logo' | translate }}</th>
+                <th>{{ 'EFRIS Logo' | translate }}</th>
                 <th></th>
               </tr>
             </thead>
@@ -94,12 +92,12 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                   <input
                     class="form-control form-control-sm"
                     [(ngModel)]="t.efrisUrl"
-                    placeholder="e.g. http://192.168.1.50:9090/efris"
+                    [placeholder]="'e.g. http://192.168.1.50:9090/efris' | translate"
                     style="min-width:220px;"
                   />
                 </td>
                 <td>
-                  <input class="form-control form-control-sm" [(ngModel)]="t.efrisDb" placeholder="e.g. RRA_VSDC" style="min-width:110px;" />
+                  <input class="form-control form-control-sm" [(ngModel)]="t.efrisDb" [placeholder]="'e.g. RRA_VSDC' | translate" style="min-width:110px;" />
                 </td>
                 <td>
                   <input class="form-control form-control-sm" type="number" [(ngModel)]="t.efrisUid" style="min-width:80px;" />
@@ -111,11 +109,11 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                      printout" — same data: URL / FileReader pattern as BusinessDetailsComponent's
                      logo upload, just per-terminal instead of store-wide. -->
                 <td>
-                  <img *ngIf="t.rraLogoDataUrl" [src]="t.rraLogoDataUrl" alt="RRA logo" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
+                  <img *ngIf="t.rraLogoDataUrl" [src]="t.rraLogoDataUrl" [alt]="'RRA logo' | translate" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
                   <input class="form-control form-control-sm" type="file" accept="image/*" (change)="onLogoSelected($event, t, 'rraLogoDataUrl')" style="min-width:150px;" />
                 </td>
                 <td>
-                  <img *ngIf="t.efrisLogoDataUrl" [src]="t.efrisLogoDataUrl" alt="EFRIS logo" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
+                  <img *ngIf="t.efrisLogoDataUrl" [src]="t.efrisLogoDataUrl" [alt]="'EFRIS logo' | translate" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
                   <input class="form-control form-control-sm" type="file" accept="image/*" (change)="onLogoSelected($event, t, 'efrisLogoDataUrl')" style="min-width:150px;" />
                 </td>
                 <td>
@@ -125,7 +123,7 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                       (click)="saveTerminalSettings(t)"
                       [disabled]="savingTerminalId === t.registerId || clearingTerminalId === t.registerId"
                     >
-                      {{ savingTerminalId === t.registerId ? 'Saving…' : 'Save' }}
+                      {{ savingTerminalId === t.registerId ? ('Saving…' | translate) : ('Save' | translate) }}
                     </button>
                     <!-- Task: "One Terminal can have only one EFRIS mapped with" — the way an admin
                          unmaps a terminal from EFRIS Rwanda, either to stop using it on that till or
@@ -136,7 +134,7 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                       (click)="clearTerminalSettings(t)"
                       [disabled]="savingTerminalId === t.registerId || clearingTerminalId === t.registerId"
                     >
-                      {{ clearingTerminalId === t.registerId ? 'Clearing…' : 'Clear' }}
+                      {{ clearingTerminalId === t.registerId ? ('Clearing…' | translate) : ('Clear' | translate) }}
                     </button>
                   </div>
                 </td>
@@ -150,27 +148,26 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
       </div>
 
       <div class="card mb-3" style="padding:12px;" *ngIf="key === 'EFRIS_TD'">
-        <h4 class="mb-1">Terminal EFRIS Chad Settings</h4>
+        <h4 class="mb-1">{{ 'Terminal EFRIS Chad Settings' | translate }}</h4>
         <p class="text-muted mb-2" style="font-size:0.85rem;">
-          Each till talks to EFRIS Chad over HTTP(S) with basic authentication — set the connection
-          details that terminal should submit fiscal receipts with.
+          {{ 'Each till talks to EFRIS Chad over HTTP(S) with basic authentication — set the connection details that terminal should submit fiscal receipts with.' | translate }}
         </p>
         <div class="alert alert-danger" *ngIf="chadTerminalsError">{{ chadTerminalsError }}</div>
         <div class="table-responsive" style="overflow-x:auto;">
           <table class="table-sm">
             <thead>
               <tr>
-                <th>Terminal</th>
-                <th>Location</th>
-                <th>URL</th>
-                <th>Basic Auth Username</th>
-                <th>Basic Password</th>
-                <th>SDC Number</th>
-                <th>Branch Code</th>
-                <th>MRC</th>
-                <th>Integration Key</th>
-                <th>CRA Logo</th>
-                <th>EFRIS Logo</th>
+                <th>{{ 'Terminal' | translate }}</th>
+                <th>{{ 'Location' | translate }}</th>
+                <th>{{ 'URL' | translate }}</th>
+                <th>{{ 'Basic Auth Username' | translate }}</th>
+                <th>{{ 'Basic Password' | translate }}</th>
+                <th>{{ 'SDC Number' | translate }}</th>
+                <th>{{ 'Branch Code' | translate }}</th>
+                <th>{{ 'MRC' | translate }}</th>
+                <th>{{ 'Integration Key' | translate }}</th>
+                <th>{{ 'CRA Logo' | translate }}</th>
+                <th>{{ 'EFRIS Logo' | translate }}</th>
                 <th></th>
               </tr>
             </thead>
@@ -182,7 +179,7 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                   <input
                     class="form-control form-control-sm"
                     [(ngModel)]="t.url"
-                    placeholder="e.g. https://192.168.1.50:9090/efris-chad"
+                    [placeholder]="'e.g. https://192.168.1.50:9090/efris-chad' | translate"
                     style="min-width:220px;"
                   />
                 </td>
@@ -193,13 +190,13 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                   <input class="form-control form-control-sm" type="password" [(ngModel)]="t.basicPassword" style="min-width:110px;" />
                 </td>
                 <td>
-                  <input class="form-control form-control-sm" [(ngModel)]="t.sdcNumber" placeholder="e.g. SCV000000001" style="min-width:130px;" />
+                  <input class="form-control form-control-sm" [(ngModel)]="t.sdcNumber" [placeholder]="'e.g. SCV000000001' | translate" style="min-width:130px;" />
                 </td>
                 <td>
-                  <input class="form-control form-control-sm" [(ngModel)]="t.branchCode" placeholder="e.g. 004" style="min-width:90px;" />
+                  <input class="form-control form-control-sm" [(ngModel)]="t.branchCode" [placeholder]="'e.g. 004' | translate" style="min-width:90px;" />
                 </td>
                 <td>
-                  <input class="form-control form-control-sm" [(ngModel)]="t.mrc" placeholder="e.g. CPF00000002" style="min-width:120px;" />
+                  <input class="form-control form-control-sm" [(ngModel)]="t.mrc" [placeholder]="'e.g. CPF00000002' | translate" style="min-width:120px;" />
                 </td>
                 <td>
                   <input class="form-control form-control-sm" [(ngModel)]="t.integrationKey" style="min-width:160px;" />
@@ -208,11 +205,11 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                      setting" — same data: URL / FileReader pattern as the Rwanda table's own two
                      logo columns above. -->
                 <td>
-                  <img *ngIf="t.craLogoDataUrl" [src]="t.craLogoDataUrl" alt="CRA logo" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
+                  <img *ngIf="t.craLogoDataUrl" [src]="t.craLogoDataUrl" [alt]="'CRA logo' | translate" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
                   <input class="form-control form-control-sm" type="file" accept="image/*" (change)="onChadLogoSelected($event, t, 'craLogoDataUrl')" style="min-width:150px;" />
                 </td>
                 <td>
-                  <img *ngIf="t.efrisLogoDataUrl" [src]="t.efrisLogoDataUrl" alt="EFRIS logo" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
+                  <img *ngIf="t.efrisLogoDataUrl" [src]="t.efrisLogoDataUrl" [alt]="'EFRIS logo' | translate" style="max-height:32px; max-width:70px; display:block; margin-bottom:4px;" />
                   <input class="form-control form-control-sm" type="file" accept="image/*" (change)="onChadLogoSelected($event, t, 'efrisLogoDataUrl')" style="min-width:150px;" />
                 </td>
                 <td>
@@ -222,7 +219,7 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                       (click)="saveChadTerminalSettings(t)"
                       [disabled]="savingChadTerminalId === t.registerId || clearingChadTerminalId === t.registerId"
                     >
-                      {{ savingChadTerminalId === t.registerId ? 'Saving…' : 'Save' }}
+                      {{ savingChadTerminalId === t.registerId ? ('Saving…' | translate) : ('Save' | translate) }}
                     </button>
                     <!-- Task: "One Terminal can have only one EFRIS mapped with" — mirrors the
                          Rwanda table's Clear button: unmaps this terminal from EFRIS Chad so it can
@@ -232,7 +229,7 @@ import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models'
                       (click)="clearChadTerminalSettings(t)"
                       [disabled]="savingChadTerminalId === t.registerId || clearingChadTerminalId === t.registerId"
                     >
-                      {{ clearingChadTerminalId === t.registerId ? 'Clearing…' : 'Clear' }}
+                      {{ clearingChadTerminalId === t.registerId ? ('Clearing…' | translate) : ('Clear' | translate) }}
                     </button>
                   </div>
                 </td>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -19,17 +20,17 @@ interface ReturnRow {
 @Component({
   selector: 'app-return-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Process a return</h3>
+      <h3 class="mb-3">{{ 'Process a return' | translate }}</h3>
 
       <div class="flex gap-2 mb-3">
-        <input class="form-control" placeholder="Invoice number, e.g. POS-1234567890" [(ngModel)]="invoiceNumber" />
-        <button class="btn btn-primary" (click)="find()">Find</button>
+        <input class="form-control" [placeholder]="'Invoice number, e.g. POS-1234567890' | translate" [(ngModel)]="invoiceNumber" />
+        <button class="btn btn-primary" (click)="find()">{{ 'Find' | translate }}</button>
       </div>
 
-      <div class="alert alert-warning" *ngIf="notFound">No invoice found matching '{{ notFound }}'</div>
+      <div class="alert alert-warning" *ngIf="notFound">{{ 'No invoice found matching \\'{p0}\\'' | translate: { p0: (notFound) } }}</div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div *ngIf="order as o">
@@ -37,19 +38,19 @@ interface ReturnRow {
 
         <div class="flex gap-2 mb-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" (click)="returnAll()">
-            Return all items
+            {{ 'Return all items' | translate }}
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearAll()">
-            Clear
+            {{ 'Clear' | translate }}
           </button>
         </div>
 
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Sold qty</th>
-              <th>Return qty</th>
+              <th>{{ 'Item' | translate }}</th>
+              <th>{{ 'Sold qty' | translate }}</th>
+              <th>{{ 'Return qty' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -72,25 +73,25 @@ interface ReturnRow {
 
         <div class="flex gap-2 mb-3">
           <div class="grow">
-            <label class="form-label">Refund method</label>
+            <label class="form-label">{{ 'Refund method' | translate }}</label>
             <select class="form-select" [(ngModel)]="refundMethod">
               <option *ngFor="let m of paymentMethods" [value]="m.code">{{ m.name }}</option>
             </select>
           </div>
           <div class="grow">
-            <label class="form-label">Reason</label>
+            <label class="form-label">{{ 'Reason' | translate }}</label>
             <select class="form-select rf-reason" [(ngModel)]="reason" name="reason">
-              <option value="">{{ settings?.returnReasonRequired ? 'Choose a reason…' : 'No reason given' }}</option>
+              <option value="">{{ settings?.returnReasonRequired ? ('Choose a reason…' | translate) : ('No reason given' | translate) }}</option>
               <option *ngFor="let r of reasons" [value]="r">{{ r }}</option>
             </select>
           </div>
           <div class="grow" *ngIf="needPin">
-            <label class="form-label">Manager's PIN</label>
-            <input class="form-control rf-pin" type="password" [(ngModel)]="approverPin" name="approverPin" autocomplete="off" placeholder="A manager types their PIN to approve" />
+            <label class="form-label">{{ 'Manager\\'s PIN' | translate }}</label>
+            <input class="form-control rf-pin" type="password" [(ngModel)]="approverPin" name="approverPin" autocomplete="off" [placeholder]="'A manager types their PIN to approve' | translate" />
           </div>
         </div>
-        <p class="text-muted" *ngIf="settings && settings.returnWindowDays > 0">Returns after {{ settings.returnWindowDays }} days need a manager's approval.</p>
-        <button class="btn btn-danger" (click)="submit()">Process return</button>
+        <p class="text-muted" *ngIf="settings && settings.returnWindowDays > 0">{{ 'Returns after {p0} days need a manager\\'s approval.' | translate: { p0: (settings.returnWindowDays) } }}</p>
+        <button class="btn btn-danger" (click)="submit()">{{ 'Process return' | translate }}</button>
       </div>
     </app-shell>
   `,

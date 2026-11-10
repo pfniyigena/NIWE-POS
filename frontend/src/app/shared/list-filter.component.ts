@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,28 +18,28 @@ export interface FilterOption { value: string; label: string; }
 @Component({
   selector: 'app-list-filter',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="list-filter flex gap-2 align-center mb-3" style="flex-wrap:wrap;">
-      <input class="form-control lf-q" type="search" *ngIf="showSearch" style="max-width:260px;" [placeholder]="placeholder" [(ngModel)]="f.q" (ngModelChange)="typed()" aria-label="Search" />
-      <select class="form-select lf-status" style="width:auto;" *ngIf="statuses.length" [(ngModel)]="f.status" (ngModelChange)="now()" title="Status">
+      <input class="form-control lf-q" type="search" *ngIf="showSearch" style="max-width:260px;" [placeholder]="placeholder" [(ngModel)]="f.q" (ngModelChange)="typed()" [attr.aria-label]="'Search' | translate" />
+      <select class="form-select lf-status" style="width:auto;" *ngIf="statuses.length" [(ngModel)]="f.status" (ngModelChange)="now()" [title]="'Status' | translate">
         <option value="">{{ statusAll }}</option>
         <option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
       </select>
       <ng-container *ngIf="dates">
-        <label class="text-muted lf-date" style="font-size:0.85rem;">From <input class="form-control lf-from" type="date" style="width:auto;display:inline-block;" [(ngModel)]="f.from" (ngModelChange)="now()" /></label>
-        <label class="text-muted lf-date" style="font-size:0.85rem;">To <input class="form-control lf-to" type="date" style="width:auto;display:inline-block;" [(ngModel)]="f.to" (ngModelChange)="now()" /></label>
+        <label class="text-muted lf-date" style="font-size:0.85rem;">{{ 'From' | translate }} <input class="form-control lf-from" type="date" style="width:auto;display:inline-block;" [(ngModel)]="f.from" (ngModelChange)="now()" /></label>
+        <label class="text-muted lf-date" style="font-size:0.85rem;">{{ 'To' | translate }} <input class="form-control lf-to" type="date" style="width:auto;display:inline-block;" [(ngModel)]="f.to" (ngModelChange)="now()" /></label>
       </ng-container>
-      <select class="form-select lf-branch" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="f.branchId" (ngModelChange)="now()" title="Branch">
-        <option [ngValue]="null">All branches</option>
+      <select class="form-select lf-branch" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="f.branchId" (ngModelChange)="now()" [title]="'Branch' | translate">
+        <option [ngValue]="null">{{ 'All branches' | translate }}</option>
         <option *ngFor="let br of branches" [ngValue]="br.id">{{ br.name }}</option>
       </select>
-      <button class="btn btn-sm btn-outline-secondary lf-clear" type="button" *ngIf="active" (click)="clear()">Clear filters</button>
+      <button class="btn btn-sm btn-outline-secondary lf-clear" type="button" *ngIf="active" (click)="clear()">{{ 'Clear filters' | translate }}</button>
       <span class="lf-export flex gap-2 align-center" *ngIf="exportKind || exportPath" style="margin-left:auto;">
-        <span class="text-muted" style="font-size:0.85rem;">Export{{ active ? ' (filtered)' : '' }}</span>
-        <button class="btn btn-sm btn-outline-secondary lf-x-xlsx" type="button" [disabled]="exporting" (click)="download('xlsx')">Excel</button>
-        <button class="btn btn-sm btn-outline-secondary lf-x-pdf" type="button" [disabled]="exporting" (click)="download('pdf')">PDF</button>
-        <button class="btn btn-sm btn-outline-secondary lf-x-csv" type="button" [disabled]="exporting" (click)="download('csv')">CSV</button>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Export{p0}' | translate: { p0: (active ? ' (filtered)' : '') } }}</span>
+        <button class="btn btn-sm btn-outline-secondary lf-x-xlsx" type="button" [disabled]="exporting" (click)="download('xlsx')">{{ 'Excel' | translate }}</button>
+        <button class="btn btn-sm btn-outline-secondary lf-x-pdf" type="button" [disabled]="exporting" (click)="download('pdf')">{{ 'PDF' | translate }}</button>
+        <button class="btn btn-sm btn-outline-secondary lf-x-csv" type="button" [disabled]="exporting" (click)="download('csv')">{{ 'CSV' | translate }}</button>
       </span>
       <span class="text-danger lf-export-error" *ngIf="exportError" style="font-size:0.85rem;">{{ exportError }}</span>
     </div>

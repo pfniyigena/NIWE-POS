@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -9,22 +10,22 @@ import { PurchaseRequisition } from '../core/models';
 @Component({
   selector: 'app-purchase-requisition-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Purchase requisitions</h3>
-        <a class="btn btn-primary" routerLink="/admin/purchase-requisitions/new">+ New requisition</a>
+        <h3>{{ 'Purchase requisitions' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/purchase-requisitions/new">{{ '+ New requisition' | translate }}</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Requisition #</th>
-            <th>Requested by</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th class="text-end">Lines</th>
+            <th>{{ 'Requisition #' | translate }}</th>
+            <th>{{ 'Requested by' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th class="text-end">{{ 'Lines' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -36,11 +37,11 @@ import { PurchaseRequisition } from '../core/models';
             <td><span class="badge" [ngClass]="statusClass(r.status)">{{ statusLabel(r.status) }}</span></td>
             <td class="text-end">{{ r.lines.length }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/purchase-requisitions', r.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/purchase-requisitions', r.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="requisitions.length === 0">
-            <td colspan="6" class="text-muted">No purchase requisitions yet.</td>
+            <td colspan="6" class="text-muted">{{ 'No purchase requisitions yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

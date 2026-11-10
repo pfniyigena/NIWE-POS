@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -11,33 +12,33 @@ import { Account, LedgerLine } from '../../core/models';
 @Component({
   selector: 'app-account-ledger',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
         <h3 style="margin-bottom:0;">{{ account ? account.code + ' — ' + account.name : 'Ledger' }}</h3>
-        <a class="btn btn-link" routerLink="/admin/accounting/accounts">Back to chart of accounts</a>
+        <a class="btn btn-link" routerLink="/admin/accounting/accounts">{{ 'Back to chart of accounts' | translate }}</a>
       </div>
       <div class="flex gap-2 mb-3">
         <div class="form-group">
-          <label class="form-label">From</label>
+          <label class="form-label">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
         </div>
         <div class="form-group">
-          <label class="form-label">To</label>
+          <label class="form-label">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         </div>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Entry</th>
-            <th>Memo / description</th>
-            <th class="text-end">Debit</th>
-            <th class="text-end">Credit</th>
-            <th class="text-end">Balance</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Entry' | translate }}</th>
+            <th>{{ 'Memo / description' | translate }}</th>
+            <th class="text-end">{{ 'Debit' | translate }}</th>
+            <th class="text-end">{{ 'Credit' | translate }}</th>
+            <th class="text-end">{{ 'Balance' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -50,7 +51,7 @@ import { Account, LedgerLine } from '../../core/models';
             <td class="text-end">{{ line.runningBalance | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="lines.length === 0">
-            <td colspan="6" class="text-muted">No activity in this date range.</td>
+            <td colspan="6" class="text-muted">{{ 'No activity in this date range.' | translate }}</td>
           </tr>
         </tbody>
       </table>

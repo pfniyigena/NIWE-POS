@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -14,13 +15,13 @@ import { Account, AccountType } from '../../core/models';
 @Component({
   selector: 'app-account-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Chart of accounts</h3>
-        <a class="btn btn-primary" routerLink="/admin/accounting/accounts/new">+ New account</a>
+        <h3>{{ 'Chart of accounts' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/accounting/accounts/new">{{ '+ New account' | translate }}</a>
       </div>
       <ng-container *ngFor="let group of groupOrder">
         <ng-container *ngIf="grouped[group]?.length">
@@ -28,10 +29,10 @@ import { Account, AccountType } from '../../core/models';
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Status</th>
+                <th>{{ 'Code' | translate }}</th>
+                <th>{{ 'Name' | translate }}</th>
+                <th>{{ 'Description' | translate }}</th>
+                <th>{{ 'Status' | translate }}</th>
                 <th></th>
               </tr>
             </thead>
@@ -40,16 +41,16 @@ import { Account, AccountType } from '../../core/models';
                 <td>{{ a.code }}</td>
                 <td>
                   {{ a.name }}
-                  <span class="badge badge-secondary" *ngIf="a.systemAccount" style="margin-left:0.5rem;" title="Posted to automatically — cannot be deactivated">system</span>
+                  <span class="badge badge-secondary" *ngIf="a.systemAccount" style="margin-left:0.5rem;" [title]="'Posted to automatically — cannot be deactivated' | translate">{{ 'system' | translate }}</span>
                 </td>
                 <td class="text-muted">{{ a.description || '—' }}</td>
                 <td>
-                  <span class="badge badge-success" *ngIf="a.active">Active</span>
-                  <span class="badge badge-secondary" *ngIf="!a.active">Inactive</span>
+                  <span class="badge badge-success" *ngIf="a.active">{{ 'Active' | translate }}</span>
+                  <span class="badge badge-secondary" *ngIf="!a.active">{{ 'Inactive' | translate }}</span>
                 </td>
                 <td class="flex gap-2">
-                  <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/accounting/accounts', a.id, 'ledger']">Ledger</a>
-                  <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/accounting/accounts', a.id, 'edit']">Edit</a>
+                  <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/accounting/accounts', a.id, 'ledger']">{{ 'Ledger' | translate }}</a>
+                  <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/accounting/accounts', a.id, 'edit']">{{ 'Edit' | translate }}</a>
                 </td>
               </tr>
             </tbody>

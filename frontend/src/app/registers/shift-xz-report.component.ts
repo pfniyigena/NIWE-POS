@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -20,7 +21,7 @@ import { ShiftReport, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-shift-xz-report',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="r as r">
       <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
@@ -28,96 +29,96 @@ import { ShiftReport, StoreSettings } from '../core/models';
         <img *ngIf="s.logoDataUrl" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
         <div *ngIf="s.businessName" style="font-weight:700; font-size:1.1rem;">{{ s.businessName }}</div>
         <div *ngIf="s.address" style="font-size:0.8rem; color:#444;">{{ s.address }}</div>
-        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ s.taxId }}</div>
+        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (s.taxId) } }}</div>
       </div>
-      <h3 class="xz-title" style="text-align:center; margin-bottom:0;">{{ r.type }}-Report<span *ngIf="r.type === 'Z' && r.zNumber"> no. {{ r.zNumber }}</span></h3>
-      <p *ngIf="r.copyNumber > 0" class="xz-copy" style="text-align:center; font-weight:700; margin:2px 0;">*** COPY {{ r.copyNumber }} ***</p>
-      <p *ngIf="r.type === 'X'" style="text-align:center; margin:2px 0; font-size:0.8rem; color:#666;">Shift still open — nothing has been closed or cleared</p>
+      <h3 class="xz-title" style="text-align:center; margin-bottom:0;">{{ '{p0}-Report' | translate: { p0: (r.type) } }}<span *ngIf="r.type === 'Z' && r.zNumber"> {{ 'no. {p0}' | translate: { p0: (r.zNumber) } }}</span></h3>
+      <p *ngIf="r.copyNumber > 0" class="xz-copy" style="text-align:center; font-weight:700; margin:2px 0;">{{ '*** COPY {p0} ***' | translate: { p0: (r.copyNumber) } }}</p>
+      <p *ngIf="r.type === 'X'" style="text-align:center; margin:2px 0; font-size:0.8rem; color:#666;">{{ 'Shift still open — nothing has been closed or cleared' | translate }}</p>
       <p style="text-align:center; margin:4px 0 0; color:#666; font-size:0.85rem;">{{ r.registerName }} · {{ r.cashierName }}</p>
       <p style="text-align:center; margin:0 0 6px; color:#666; font-size:0.8rem;">
         {{ r.openedAt | date: 'yyyy-MM-dd HH:mm' }} &rarr; {{ r.closedAt ? (r.closedAt | date: 'yyyy-MM-dd HH:mm') : 'now' }}<br />
-        Printed {{ r.generatedAt | date: 'yyyy-MM-dd HH:mm' }}
+        {{ 'Printed {p0}' | translate: { p0: (r.generatedAt | date: 'yyyy-MM-dd HH:mm') } }}
       </p>
 
       <hr />
-      <p class="h">Sales</p>
-      <div class="row"><span>Number of sales</span><span class="xz-count">{{ r.sales.count }}</span></div>
-      <div class="row"><span>Items sold</span><span>{{ r.sales.items }}</span></div>
-      <div class="row"><span>Sales at shelf price</span><span>{{ r.sales.shelfValue | number: '1.2-2' }}</span></div>
-      <div class="row"><span>Discounts and promotions</span><span class="xz-discounts">&minus;{{ r.sales.discounts | number: '1.2-2' }}</span></div>
-      <div class="row"><span>Net sales (before tax)</span><span>{{ r.sales.netSales | number: '1.2-2' }}</span></div>
-      <div class="row"><span>Tax</span><span>{{ r.sales.tax | number: '1.2-2' }}</span></div>
-      <div class="row b"><span>Total sales</span><span class="xz-total">{{ r.sales.totalSales | number: '1.2-2' }}</span></div>
-      <div class="row"><span>Average sale</span><span>{{ r.sales.averageSale | number: '1.2-2' }}</span></div>
+      <p class="h">{{ 'Sales' | translate }}</p>
+      <div class="row"><span>{{ 'Number of sales' | translate }}</span><span class="xz-count">{{ r.sales.count }}</span></div>
+      <div class="row"><span>{{ 'Items sold' | translate }}</span><span>{{ r.sales.items }}</span></div>
+      <div class="row"><span>{{ 'Sales at shelf price' | translate }}</span><span>{{ r.sales.shelfValue | number: '1.2-2' }}</span></div>
+      <div class="row"><span>{{ 'Discounts and promotions' | translate }}</span><span class="xz-discounts">&minus;{{ r.sales.discounts | number: '1.2-2' }}</span></div>
+      <div class="row"><span>{{ 'Net sales (before tax)' | translate }}</span><span>{{ r.sales.netSales | number: '1.2-2' }}</span></div>
+      <div class="row"><span>{{ 'Tax' | translate }}</span><span>{{ r.sales.tax | number: '1.2-2' }}</span></div>
+      <div class="row b"><span>{{ 'Total sales' | translate }}</span><span class="xz-total">{{ r.sales.totalSales | number: '1.2-2' }}</span></div>
+      <div class="row"><span>{{ 'Average sale' | translate }}</span><span>{{ r.sales.averageSale | number: '1.2-2' }}</span></div>
 
       <ng-container *ngIf="r.payments.length">
         <hr />
-        <p class="h">Paid by</p>
+        <p class="h">{{ 'Paid by' | translate }}</p>
         <div class="row xz-pay" *ngFor="let p of r.payments"><span>{{ p.name }} ({{ p.count }})</span><span>{{ p.amount | number: '1.2-2' }}</span></div>
       </ng-container>
 
       <ng-container *ngIf="r.taxes.length">
         <hr />
-        <p class="h">Tax</p>
-        <div class="row" *ngFor="let t of r.taxes"><span>{{ t.code }}<span *ngIf="t.ratePercent != null"> {{ t.ratePercent }}%</span> on {{ t.net | number: '1.2-2' }}</span><span>{{ t.tax | number: '1.2-2' }}</span></div>
+        <p class="h">{{ 'Tax' | translate }}</p>
+        <div class="row" *ngFor="let t of r.taxes"><span>{{ t.code }}<span *ngIf="t.ratePercent != null"> {{ t.ratePercent }}%</span> {{ 'on {p0}' | translate: { p0: (t.net | number: '1.2-2') } }}</span><span>{{ t.tax | number: '1.2-2' }}</span></div>
       </ng-container>
 
       <hr />
-      <p class="h">Refunds</p>
-      <div class="row"><span>Returns made</span><span class="xz-refunds">{{ r.refunds.count }}</span></div>
+      <p class="h">{{ 'Refunds' | translate }}</p>
+      <div class="row"><span>{{ 'Returns made' | translate }}</span><span class="xz-refunds">{{ r.refunds.count }}</span></div>
       <div class="row" *ngFor="let p of r.refunds.byMethod"><span>&nbsp;&nbsp;{{ p.name }} ({{ p.count }})</span><span>&minus;{{ p.amount | number: '1.2-2' }}</span></div>
-      <div class="row b" *ngIf="r.refunds.count"><span>Total refunded</span><span>&minus;{{ r.refunds.total | number: '1.2-2' }}</span></div>
+      <div class="row b" *ngIf="r.refunds.count"><span>{{ 'Total refunded' | translate }}</span><span>&minus;{{ r.refunds.total | number: '1.2-2' }}</span></div>
 
       <hr />
-      <p class="h">Cash drawer</p>
-      <div class="row"><span>Opening float</span><span>{{ r.drawer.openingFloat | number: '1.2-2' }}</span></div>
-      <div class="row"><span>Cash sales</span><span>{{ r.drawer.cashSales | number: '1.2-2' }}</span></div>
-      <div class="row"><span>Cash refunds</span><span>&minus;{{ r.drawer.cashRefunds | number: '1.2-2' }}</span></div>
-      <div class="row" *ngIf="r.drawer.paidIn"><span>Paid in</span><span>{{ r.drawer.paidIn | number: '1.2-2' }}</span></div>
-      <div class="row" *ngIf="r.drawer.paidOut"><span>Paid out</span><span>&minus;{{ r.drawer.paidOut | number: '1.2-2' }}</span></div>
-      <div class="row" *ngIf="r.drawer.drops"><span>Dropped into the safe</span><span>&minus;{{ r.drawer.drops | number: '1.2-2' }}</span></div>
-      <div class="row b"><span>Expected cash</span><span class="xz-expected">{{ r.drawer.expectedCash | number: '1.2-2' }}</span></div>
+      <p class="h">{{ 'Cash drawer' | translate }}</p>
+      <div class="row"><span>{{ 'Opening float' | translate }}</span><span>{{ r.drawer.openingFloat | number: '1.2-2' }}</span></div>
+      <div class="row"><span>{{ 'Cash sales' | translate }}</span><span>{{ r.drawer.cashSales | number: '1.2-2' }}</span></div>
+      <div class="row"><span>{{ 'Cash refunds' | translate }}</span><span>&minus;{{ r.drawer.cashRefunds | number: '1.2-2' }}</span></div>
+      <div class="row" *ngIf="r.drawer.paidIn"><span>{{ 'Paid in' | translate }}</span><span>{{ r.drawer.paidIn | number: '1.2-2' }}</span></div>
+      <div class="row" *ngIf="r.drawer.paidOut"><span>{{ 'Paid out' | translate }}</span><span>&minus;{{ r.drawer.paidOut | number: '1.2-2' }}</span></div>
+      <div class="row" *ngIf="r.drawer.drops"><span>{{ 'Dropped into the safe' | translate }}</span><span>&minus;{{ r.drawer.drops | number: '1.2-2' }}</span></div>
+      <div class="row b"><span>{{ 'Expected cash' | translate }}</span><span class="xz-expected">{{ r.drawer.expectedCash | number: '1.2-2' }}</span></div>
       <ng-container *ngIf="r.drawer.countedCash != null">
-        <div class="row"><span>Counted cash</span><span class="xz-counted">{{ r.drawer.countedCash | number: '1.2-2' }}</span></div>
-        <div class="row b"><span>Difference</span><span class="xz-variance">{{ r.drawer.variance | number: '1.2-2' }}</span></div>
-        <p *ngIf="r.drawer.varianceNote" style="font-size:0.85rem; margin:4px 0 0;">Note: {{ r.drawer.varianceNote }}</p>
+        <div class="row"><span>{{ 'Counted cash' | translate }}</span><span class="xz-counted">{{ r.drawer.countedCash | number: '1.2-2' }}</span></div>
+        <div class="row b"><span>{{ 'Difference' | translate }}</span><span class="xz-variance">{{ r.drawer.variance | number: '1.2-2' }}</span></div>
+        <p *ngIf="r.drawer.varianceNote" style="font-size:0.85rem; margin:4px 0 0;">{{ 'Note: {p0}' | translate: { p0: (r.drawer.varianceNote) } }}</p>
       </ng-container>
       <ng-container *ngIf="moves().length">
-        <p class="h" style="margin-top:8px;">Cash in and out</p>
+        <p class="h" style="margin-top:8px;">{{ 'Cash in and out' | translate }}</p>
         <div class="row" *ngFor="let m of moves()"><span>{{ m.createdAt | date: 'HH:mm' }} {{ kind(m.kind) }} — {{ m.reason }}{{ m.note ? ' (' + m.note + ')' : '' }}</span><span>{{ m.kind === 'PAID_IN' ? '' : '−' }}{{ m.amount | number: '1.2-2' }}</span></div>
       </ng-container>
 
       <hr />
-      <p class="h">Watch points</p>
-      <div class="row"><span>Sales with a discount</span><span>{{ r.controls.discountedSales }}</span></div>
-      <div class="row"><span>Carts dropped with items</span><span class="xz-abandoned">{{ r.controls.abandonedCarts }}<span *ngIf="r.controls.abandonedCarts"> ({{ r.controls.abandonedValue | number: '1.2-2' }})</span></span></div>
-      <div class="row" *ngIf="r.controls.offlineSales"><span>Sales rung offline</span><span>{{ r.controls.offlineSales }}</span></div>
-      <div class="row" *ngIf="r.controls.creditSales"><span>Sold on credit</span><span>{{ r.controls.creditSales | number: '1.2-2' }}</span></div>
-      <div class="row" *ngIf="r.controls.roomCharges"><span>Charged to rooms</span><span>{{ r.controls.roomCharges | number: '1.2-2' }}</span></div>
-      <div class="row" *ngIf="r.controls.giftCardsSold"><span>Gift cards sold</span><span>{{ r.controls.giftCardsSold | number: '1.2-2' }}</span></div>
-      <div class="row" *ngIf="r.controls.voidedCashMovements"><span>Cash entries voided</span><span>{{ r.controls.voidedCashMovements }}</span></div>
+      <p class="h">{{ 'Watch points' | translate }}</p>
+      <div class="row"><span>{{ 'Sales with a discount' | translate }}</span><span>{{ r.controls.discountedSales }}</span></div>
+      <div class="row"><span>{{ 'Carts dropped with items' | translate }}</span><span class="xz-abandoned">{{ r.controls.abandonedCarts }}<span *ngIf="r.controls.abandonedCarts"> ({{ r.controls.abandonedValue | number: '1.2-2' }})</span></span></div>
+      <div class="row" *ngIf="r.controls.offlineSales"><span>{{ 'Sales rung offline' | translate }}</span><span>{{ r.controls.offlineSales }}</span></div>
+      <div class="row" *ngIf="r.controls.creditSales"><span>{{ 'Sold on credit' | translate }}</span><span>{{ r.controls.creditSales | number: '1.2-2' }}</span></div>
+      <div class="row" *ngIf="r.controls.roomCharges"><span>{{ 'Charged to rooms' | translate }}</span><span>{{ r.controls.roomCharges | number: '1.2-2' }}</span></div>
+      <div class="row" *ngIf="r.controls.giftCardsSold"><span>{{ 'Gift cards sold' | translate }}</span><span>{{ r.controls.giftCardsSold | number: '1.2-2' }}</span></div>
+      <div class="row" *ngIf="r.controls.voidedCashMovements"><span>{{ 'Cash entries voided' | translate }}</span><span>{{ r.controls.voidedCashMovements }}</span></div>
 
       <ng-container *ngIf="r.cashiers.length">
         <hr />
-        <p class="h">By cashier</p>
+        <p class="h">{{ 'By cashier' | translate }}</p>
         <div class="row" *ngFor="let c of r.cashiers"><span>{{ c.name }} ({{ c.sales }})</span><span>{{ c.total | number: '1.2-2' }}</span></div>
       </ng-container>
 
-      <p *ngIf="r.closedBy" style="font-size:0.8rem; color:#666; margin:10px 0 0;">Closed by {{ r.closedBy }}</p>
-      <p style="text-align:center; margin-top:16px; color:#666; font-size:0.85rem;">— End of {{ r.type }}-Report —</p>
+      <p *ngIf="r.closedBy" style="font-size:0.8rem; color:#666; margin:10px 0 0;">{{ 'Closed by {p0}' | translate: { p0: (r.closedBy) } }}</p>
+      <p style="text-align:center; margin-top:16px; color:#666; font-size:0.85rem;">{{ '— End of {p0}-Report —' | translate: { p0: (r.type) } }}</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap;">
-        <button class="xz-print" (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
-        <a [routerLink]="back()" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">Back</a>
+        <button class="xz-print" (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
+        <a [routerLink]="back()" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">{{ 'Back' | translate }}</a>
       </div>
       <div class="no-print" *ngIf="canExport" style="display:flex; gap:8px; margin-top:8px; font-size:0.85rem;">
-        <span style="align-self:center;">Download:</span>
-        <button class="xz-x-xlsx" (click)="download('xlsx')">Excel</button>
-        <button class="xz-x-pdf" (click)="download('pdf')">PDF</button>
-        <button class="xz-x-csv" (click)="download('csv')">CSV</button>
+        <span style="align-self:center;">{{ 'Download:' | translate }}</span>
+        <button class="xz-x-xlsx" (click)="download('xlsx')">{{ 'Excel' | translate }}</button>
+        <button class="xz-x-pdf" (click)="download('pdf')">{{ 'PDF' | translate }}</button>
+        <button class="xz-x-csv" (click)="download('csv')">{{ 'CSV' | translate }}</button>
       </div>
     </div>
-    <div class="receipt" *ngIf="!r && error"><p style="color:#b91c1c;">{{ error }}</p><a [routerLink]="['/admin/shifts']">Back to Shifts</a></div>
+    <div class="receipt" *ngIf="!r && error"><p style="color:#b91c1c;">{{ error }}</p><a [routerLink]="['/admin/shifts']">{{ 'Back to Shifts' | translate }}</a></div>
   `,
   styles: [
     `

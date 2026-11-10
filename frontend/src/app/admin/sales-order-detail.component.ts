@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -62,7 +63,7 @@ interface ReturnRow {
 @Component({
   selector: 'app-sales-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -73,90 +74,90 @@ interface ReturnRow {
             <span class="badge" [ngClass]="statusClass(o.status)">{{ o.status.replace('_', ' ') }}</span>
           </div>
           <div class="flex gap-2">
-            <a class="btn btn-outline-primary" *ngIf="o.status === 'DRAFT'" [routerLink]="['/admin/sales-orders', o.id, 'edit']">Edit</a>
-            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="confirm()">Confirm</button>
-            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'CONFIRMED'" (click)="cancel()">Cancel order</button>
+            <a class="btn btn-outline-primary" *ngIf="o.status === 'DRAFT'" [routerLink]="['/admin/sales-orders', o.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="confirm()">{{ 'Confirm' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'CONFIRMED'" (click)="cancel()">{{ 'Cancel order' | translate }}</button>
             <!-- Fourier: "add print (PDF with A4)". -->
-            <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
-            <app-paper-button *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'" class="paper-delivery" label="Delivery note" [path]="'/sales-orders/' + o.id + '/delivery-note'" file="delivery-note.pdf"></app-paper-button>
+            <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
+            <app-paper-button *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'" class="paper-delivery" [label]="'Delivery note' | translate" [path]="'/sales-orders/' + o.id + '/delivery-note'" file="delivery-note.pdf"></app-paper-button>
             <!-- Fourier: "Add Invoice ... without touching warehousing" — only once the order is past DRAFT (a real commitment exists to invoice); never shown for CANCELLED. -->
-            <button class="btn btn-outline-primary" *ngIf="!invoice && o.status !== 'DRAFT' && o.status !== 'CANCELLED'" (click)="generateInvoice()">Generate invoice</button>
+            <button class="btn btn-outline-primary" *ngIf="!invoice && o.status !== 'DRAFT' && o.status !== 'CANCELLED'" (click)="generateInvoice()">{{ 'Generate invoice' | translate }}</button>
             <!-- Fourier: "Instead of Record payment on Sale Order ... create invoice related to the Sale Order and record payment on invoice" — this screen never records a payment itself anymore; "View invoice" is the way to the screen that does. -->
-            <a class="btn btn-outline-primary" *ngIf="invoice" [routerLink]="['/admin/invoices', invoice.id]">View invoice</a>
+            <a class="btn btn-outline-primary" *ngIf="invoice" [routerLink]="['/admin/invoices', invoice.id]">{{ 'View invoice' | translate }}</a>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Customer</div>
+            <div class="stat-label">{{ 'Customer' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.customerName }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Order date</div>
+            <div class="stat-label">{{ 'Order date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.orderDate | date: 'medium' }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.fulfilledFrom?.length">
-            <div class="stat-label">Fulfilled from</div>
+            <div class="stat-label">{{ 'Fulfilled from' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.fulfilledFrom.join(', ') }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Expected</div>
+            <div class="stat-label">{{ 'Expected' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.expectedDate ? (o.expectedDate | date: 'mediumDate') : '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Due date</div>
+            <div class="stat-label">{{ 'Due date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.dueDate || '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Subtotal</div>
+            <div class="stat-label">{{ 'Subtotal' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.subtotalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Tax</div>
+            <div class="stat-label">{{ 'Tax' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.taxAmount | number: '1.2-2' }}</div>
           </div>
           <!-- Fourier: "Same for discount (but discount should be activate in the setting or configuration) and it will be per line" — only shown once this document actually has one, same convention as the printed PDF's own addSubtotalBreakdown. -->
           <div class="stat-tile" *ngIf="o.discountAmount">
-            <div class="stat-label">Discount</div>
+            <div class="stat-label">{{ 'Discount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.discountAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total amount</div>
+            <div class="stat-label">{{ 'Total amount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Paid</div>
+            <div class="stat-label">{{ 'Paid' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountPaid | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Outstanding</div>
+            <div class="stat-label">{{ 'Outstanding' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountOutstanding | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.amountReturned > 0">
-            <div class="stat-label">Returned</div>
+            <div class="stat-label">{{ 'Returned' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.amountReturned | number: '1.2-2' }}</div>
           </div>
           <!-- Task 3: "credit/refund owed back" — only shown once a return has actually left the customer overpaid; informational, no payout button, see class javadoc. -->
           <div class="stat-tile" *ngIf="o.refundDue > 0">
-            <div class="stat-label">Refund due to customer</div>
+            <div class="stat-label">{{ 'Refund due to customer' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.refundDue | number: '1.2-2' }}</div>
           </div>
         </div>
         <p class="text-muted mb-3" *ngIf="o.notes">{{ o.notes }}</p>
 
-        <h4 class="mb-2">Lines</h4>
+        <h4 class="mb-2">{{ 'Lines' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Ordered</th>
-              <th class="text-end">Fulfilled</th>
-              <th class="text-end">Unit price</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Ordered' | translate }}</th>
+              <th class="text-end">{{ 'Fulfilled' | translate }}</th>
+              <th class="text-end">{{ 'Unit price' | translate }}</th>
               <!-- Fourier: "Same for discount ... it will be per line" — only shown once this document actually has a discount on at least one line. -->
-              <th class="text-end" *ngIf="o.discountAmount">Discount</th>
+              <th class="text-end" *ngIf="o.discountAmount">{{ 'Discount' | translate }}</th>
               <!-- Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill, Refund)" -->
-              <th class="text-end">Tax</th>
-              <th class="text-end">Line total</th>
+              <th class="text-end">{{ 'Tax' | translate }}</th>
+              <th class="text-end">{{ 'Line total' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -173,25 +174,25 @@ interface ReturnRow {
         </table>
 
         <ng-container *ngIf="o.status === 'CONFIRMED' || o.status === 'PARTIALLY_FULFILLED'">
-          <h4 class="mb-2">Fulfill order</h4>
+          <h4 class="mb-2">{{ 'Fulfill order' | translate }}</h4>
           <div class="alert alert-danger" *ngIf="fulfillError">{{ fulfillError }}</div>
           <!-- Multi-warehouse phase 3 — required once the store's multi-warehouse setting is on (no
                Main-warehouse sales, same as the POS); optional extra choice otherwise, shown only
                when there is actually somewhere else to fulfil from. -->
           <div class="form-group mb-3" style="max-width:400px;" *ngIf="multiWarehouseEnabled || fulfilOptions.length > 1">
-            <label class="form-label">Fulfil from</label>
+            <label class="form-label">{{ 'Fulfil from' | translate }}</label>
             <select class="form-select" name="fulfilLocationId" [(ngModel)]="fulfilLocationId">
-              <option *ngIf="!multiWarehouseEnabled" [ngValue]="null">Default (main warehouse)</option>
-              <option *ngIf="multiWarehouseEnabled" [ngValue]="null" disabled>Select a location…</option>
+              <option *ngIf="!multiWarehouseEnabled" [ngValue]="null">{{ 'Default (main warehouse)' | translate }}</option>
+              <option *ngIf="multiWarehouseEnabled" [ngValue]="null" disabled>{{ 'Select a location…' | translate }}</option>
               <option *ngFor="let l of fulfilOptions" [ngValue]="l.id">{{ l.label }}</option>
             </select>
           </div>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Product</th>
-                <th class="text-end">Remaining</th>
-                <th class="text-end">Fulfilling now</th>
+                <th>{{ 'Product' | translate }}</th>
+                <th class="text-end">{{ 'Remaining' | translate }}</th>
+                <th class="text-end">{{ 'Fulfilling now' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -200,7 +201,7 @@ interface ReturnRow {
                   {{ row.productName }}
                   <div *ngIf="row.trackingMode === 'SERIAL'" style="margin-top:0.35rem;">
                     <textarea class="form-control form-control-sm" rows="2" style="max-width:320px;" placeholder="Serial numbers delivered (optional — otherwise the oldest in stock)" [(ngModel)]="row.serialText" [name]="'fser' + row.lineId"></textarea>
-                    <div class="text-muted" style="font-size:0.75rem;">{{ parseSerials(row.serialText).length }} of {{ row.quantityFulfilled }} entered</div>
+                    <div class="text-muted" style="font-size:0.75rem;">{{ '{p0} of {p1} entered' | translate: { p0: (parseSerials(row.serialText).length), p1: (row.quantityFulfilled) } }}</div>
                   </div>
                 </td>
                 <td class="text-end">{{ row.remaining }}</td>
@@ -217,23 +218,23 @@ interface ReturnRow {
                 </td>
               </tr>
               <tr *ngIf="fulfillRows.length === 0">
-                <td colspan="3" class="text-muted">Every line has already been fully fulfilled.</td>
+                <td colspan="3" class="text-muted">{{ 'Every line has already been fully fulfilled.' | translate }}</td>
               </tr>
             </tbody>
           </table>
-          <button class="btn btn-primary" *ngIf="fulfillRows.length > 0" (click)="recordFulfillment()">Record fulfillment</button>
+          <button class="btn btn-primary" *ngIf="fulfillRows.length > 0" (click)="recordFulfillment()">{{ 'Record fulfillment' | translate }}</button>
         </ng-container>
 
         <!-- Task 3: "Sale Order Return" — only once something has actually been fulfilled is there anything physical to bring back. -->
         <ng-container *ngIf="returnRows.length > 0">
-          <h4 class="mb-2">Process a return</h4>
+          <h4 class="mb-2">{{ 'Process a return' | translate }}</h4>
           <div class="alert alert-danger" *ngIf="returnError">{{ returnError }}</div>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Product</th>
-                <th class="text-end">Available to return</th>
-                <th class="text-end">Returning now</th>
+                <th>{{ 'Product' | translate }}</th>
+                <th class="text-end">{{ 'Available to return' | translate }}</th>
+                <th class="text-end">{{ 'Returning now' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -255,29 +256,29 @@ interface ReturnRow {
             </tbody>
           </table>
           <div class="form-group mb-3" style="max-width:400px;" *ngIf="returnOptions.length > 2">
-            <label class="form-label">Return stock to</label>
+            <label class="form-label">{{ 'Return stock to' | translate }}</label>
             <select class="form-select" name="returnLocationId" [(ngModel)]="returnLocationId">
-              <option [ngValue]="null">Where it was fulfilled from</option>
+              <option [ngValue]="null">{{ 'Where it was fulfilled from' | translate }}</option>
               <option *ngFor="let l of returnOptions" [ngValue]="l.id">{{ l.label }}</option>
             </select>
           </div>
           <div class="form-group mb-3" style="max-width:400px;">
-            <label>Reason (optional)</label>
+            <label>{{ 'Reason (optional)' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="returnReason" name="returnReason" />
           </div>
-          <button class="btn btn-outline-danger" (click)="processReturn()">Process return</button>
+          <button class="btn btn-outline-danger" (click)="processReturn()">{{ 'Process return' | translate }}</button>
         </ng-container>
 
         <ng-container *ngIf="returns.length > 0">
-          <h4 class="mb-2 mt-3">Return history</h4>
+          <h4 class="mb-2 mt-3">{{ 'Return history' | translate }}</h4>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Return date</th>
-                <th>Return #</th>
-                <th class="text-end">Refund due</th>
-                <th>Stock returned to</th>
-                <th>Reason</th>
+                <th>{{ 'Return date' | translate }}</th>
+                <th>{{ 'Return #' | translate }}</th>
+                <th class="text-end">{{ 'Refund due' | translate }}</th>
+                <th>{{ 'Stock returned to' | translate }}</th>
+                <th>{{ 'Reason' | translate }}</th>
               </tr>
             </thead>
             <tbody>

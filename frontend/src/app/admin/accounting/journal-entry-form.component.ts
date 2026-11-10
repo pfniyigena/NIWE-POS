@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -29,30 +30,30 @@ interface DraftLine {
 @Component({
   selector: 'app-journal-entry-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">New manual journal entry</h3>
+      <h3 class="mb-3">{{ 'New manual journal entry' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3">
         <div class="form-group">
-          <label class="form-label">Date</label>
+          <label class="form-label">{{ 'Date' | translate }}</label>
           <app-date-picker name="entryDate" [(ngModel)]="entryDate" ></app-date-picker>
         </div>
         <div class="form-group grow">
-          <label class="form-label">Memo</label>
-          <input class="form-control" name="memo" [(ngModel)]="memo" placeholder="e.g. Owner contribution, March rent" />
+          <label class="form-label">{{ 'Memo' | translate }}</label>
+          <input class="form-control" name="memo" [(ngModel)]="memo" [placeholder]="'e.g. Owner contribution, March rent' | translate" />
         </div>
       </div>
 
       <table class="table-sm mb-2">
         <thead>
           <tr>
-            <th>Account</th>
-            <th>Description</th>
-            <th>Cost center</th>
-            <th class="text-end">Debit</th>
-            <th class="text-end">Credit</th>
+            <th>{{ 'Account' | translate }}</th>
+            <th>{{ 'Description' | translate }}</th>
+            <th>{{ 'Cost center' | translate }}</th>
+            <th class="text-end">{{ 'Debit' | translate }}</th>
+            <th class="text-end">{{ 'Credit' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -60,14 +61,14 @@ interface DraftLine {
           <tr *ngFor="let line of lines; let i = index">
             <td>
               <select class="form-select" [name]="'account' + i" [(ngModel)]="line.accountId">
-                <option [ngValue]="null">— Select —</option>
+                <option [ngValue]="null">{{ '— Select —' | translate }}</option>
                 <option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
               </select>
             </td>
             <td><input class="form-control" [name]="'desc' + i" [(ngModel)]="line.description" /></td>
             <td>
               <select class="form-select" [name]="'costCenter' + i" [(ngModel)]="line.costCenterId">
-                <option [ngValue]="null">None</option>
+                <option [ngValue]="null">{{ 'None' | translate }}</option>
                 <option *ngFor="let c of costCenters" [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option>
               </select>
             </td>
@@ -95,26 +96,26 @@ interface DraftLine {
                 (ngModelChange)="line.debit = 0"
               />
             </td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">Remove</button></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">{{ 'Remove' | translate }}</button></td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
-            <th colspan="3" class="text-end">Total</th>
+            <th colspan="3" class="text-end">{{ 'Total' | translate }}</th>
             <th class="text-end">{{ totalDebit() | number: '1.2-2' }}</th>
             <th class="text-end">{{ totalCredit() | number: '1.2-2' }}</th>
             <th></th>
           </tr>
         </tfoot>
       </table>
-      <button type="button" class="btn btn-sm btn-outline-secondary mb-3" (click)="addLine()">+ Add line</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary mb-3" (click)="addLine()">{{ '+ Add line' | translate }}</button>
       <div class="text-muted mb-3" *ngIf="totalDebit() !== totalCredit()">
-        Debits and credits must add up to the same total before this entry can be saved (currently {{ totalDebit() | number: '1.2-2' }} vs {{ totalCredit() | number: '1.2-2' }}).
+        {{ 'Debits and credits must add up to the same total before this entry can be saved (currently {p0} vs {p1}).' | translate: { p0: (totalDebit() | number: '1.2-2'), p1: (totalCredit() | number: '1.2-2') } }}
       </div>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save</button>
-        <a class="btn btn-link" routerLink="/admin/accounting/journal-entries">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/accounting/journal-entries">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

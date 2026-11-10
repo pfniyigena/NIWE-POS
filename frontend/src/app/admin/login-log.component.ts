@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../shared/date-picker.component';
@@ -12,78 +13,78 @@ import { LoginEvent, LoginLogApiService, LoginLogSummary } from '../core/api/log
 @Component({
   selector: 'app-login-log',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Sign-in log</h3>
-        <button class="btn btn-sm btn-outline-secondary" (click)="reload()">Refresh</button>
+        <h3>{{ 'Sign-in log' | translate }}</h3>
+        <button class="btn btn-sm btn-outline-secondary" (click)="reload()">{{ 'Refresh' | translate }}</button>
       </div>
 
       <div class="flex gap-3 mb-3" style="flex-wrap:wrap;" *ngIf="summary">
         <div class="card" style="padding:0.75rem 1.25rem;" data-testid="tile-ok">
-          <div class="text-muted" style="font-size:0.8rem;">Signed in, last 24 hours</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Signed in, last 24 hours' | translate }}</div>
           <div style="font-size:1.5rem; font-weight:600;">{{ summary.okLast24h | number }}</div>
         </div>
         <div class="card" style="padding:0.75rem 1.25rem;" data-testid="tile-failed">
-          <div class="text-muted" style="font-size:0.8rem;">Failed attempts, last 24 hours</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Failed attempts, last 24 hours' | translate }}</div>
           <div style="font-size:1.5rem; font-weight:600;" [style.color]="summary.failedLast24h > 0 ? '#b91c1c' : 'inherit'">{{ summary.failedLast24h | number }}</div>
         </div>
         <div class="card" style="padding:0.75rem 1.25rem;" data-testid="tile-addresses">
-          <div class="text-muted" style="font-size:0.8rem;">Addresses with failures</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Addresses with failures' | translate }}</div>
           <div style="font-size:1.5rem; font-weight:600;">{{ summary.failingAddressesLast24h | number }}</div>
         </div>
       </div>
 
       <div class="flex gap-2 mb-3" style="align-items:center; flex-wrap:wrap;">
-        <input class="form-control" style="max-width:260px;" placeholder="Search by user name" [(ngModel)]="searchTerm" (input)="onFilterChange()" />
+        <input class="form-control" style="max-width:260px;" [placeholder]="'Search by user name' | translate" [(ngModel)]="searchTerm" (input)="onFilterChange()" />
         <select class="form-select" style="max-width:180px;" [(ngModel)]="outcome" (ngModelChange)="onFilterChange()">
-          <option value="">All attempts</option>
-          <option value="OK">Signed in</option>
-          <option value="FAILED">Failed</option>
+          <option value="">{{ 'All attempts' | translate }}</option>
+          <option value="OK">{{ 'Signed in' | translate }}</option>
+          <option value="FAILED">{{ 'Failed' | translate }}</option>
         </select>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" style="font-size:0.75rem;">From</label>
+          <label class="form-label" style="font-size:0.75rem;">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="fromDate" (ngModelChange)="onFilterChange()"></app-date-picker>
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" style="font-size:0.75rem;">To</label>
+          <label class="form-label" style="font-size:0.75rem;">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="toDate" (ngModelChange)="onFilterChange()"></app-date-picker>
         </div>
         <select class="form-select" style="max-width:140px;" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
-          <option [ngValue]="25">25 / page</option>
-          <option [ngValue]="50">50 / page</option>
-          <option [ngValue]="100">100 / page</option>
+          <option [ngValue]="25">{{ '25 / page' | translate }}</option>
+          <option [ngValue]="50">{{ '50 / page' | translate }}</option>
+          <option [ngValue]="100">{{ '100 / page' | translate }}</option>
         </select>
-        <span class="text-muted" style="font-size:0.85rem;" *ngIf="!loading">{{ totalElements | number }} attempt{{ totalElements === 1 ? '' : 's' }}</span>
+        <span class="text-muted" style="font-size:0.85rem;" *ngIf="!loading">{{ '{p0} attempt{p1}' | translate: { p0: (totalElements | number), p1: (totalElements === 1 ? '' : 's') } }}</span>
       </div>
 
       <table>
         <thead>
-          <tr><th>When</th><th>User name</th><th>Result</th><th>Why</th><th>Address</th><th>Device</th></tr>
+          <tr><th>{{ 'When' | translate }}</th><th>{{ 'User name' | translate }}</th><th>{{ 'Result' | translate }}</th><th>{{ 'Why' | translate }}</th><th>{{ 'Address' | translate }}</th><th>{{ 'Device' | translate }}</th></tr>
         </thead>
         <tbody>
           <tr *ngFor="let e of events">
             <td style="white-space:nowrap;">{{ e.at | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
             <td>{{ e.username }}</td>
             <td>
-              <span class="badge" [ngClass]="e.success ? 'badge-success' : 'badge-danger'">{{ e.success ? 'Signed in' : 'Failed' }}</span>
+              <span class="badge" [ngClass]="e.success ? 'badge-success' : 'badge-danger'">{{ e.success ? ('Signed in' | translate) : ('Failed' | translate) }}</span>
             </td>
             <td>{{ e.reason }}</td>
             <td>{{ e.ip }}</td>
             <td [title]="e.userAgent || ''" style="font-family:monospace; font-size:0.8rem;">{{ shortDevice(e.deviceId) }}</td>
           </tr>
           <tr *ngIf="!loading && events.length === 0">
-            <td colspan="6" class="text-muted">No sign-in attempts {{ hasFilters() ? 'match your filters' : 'yet' }}.</td>
+            <td colspan="6" class="text-muted">{{ 'No sign-in attempts {p0}.' | translate: { p0: (hasFilters() ? 'match your filters' : 'yet') } }}</td>
           </tr>
-          <tr *ngIf="loading"><td colspan="6" class="text-muted">Loading…</td></tr>
+          <tr *ngIf="loading"><td colspan="6" class="text-muted">{{ 'Loading…' | translate }}</td></tr>
         </tbody>
       </table>
 
       <div class="flex gap-2 mt-3" style="align-items:center;" *ngIf="totalPages > 1">
         <button class="btn btn-sm btn-outline-secondary" [disabled]="page === 0" (click)="goToPage(page - 1)">&laquo; Prev</button>
-        <span class="text-muted" style="font-size:0.85rem;">Page {{ page + 1 }} of {{ totalPages }}</span>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Page {p0} of {p1}' | translate: { p0: (page + 1), p1: (totalPages) } }}</span>
         <button class="btn btn-sm btn-outline-secondary" [disabled]="page >= totalPages - 1" (click)="goToPage(page + 1)">Next &raquo;</button>
       </div>
     </app-shell>

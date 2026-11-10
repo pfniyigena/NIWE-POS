@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,20 +14,20 @@ import { Account, CostCenter, ExpenseBudget, ExpenseBudgetStatus } from '../../c
 @Component({
   selector: 'app-expense-budgets',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3 style="margin-bottom:0;">Expense budgets</h3>
+        <h3 style="margin-bottom:0;">{{ 'Expense budgets' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses/overview">Overview</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses">All expenses</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses/overview">{{ 'Overview' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/accounting/expenses">{{ 'All expenses' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
-        <label class="text-muted">Year <input class="form-control" style="width:6rem; display:inline-block;" type="number" name="year" [(ngModel)]="year" (change)="load()" /></label>
-        <label class="text-muted">Month
+        <label class="text-muted">{{ 'Year' | translate }} <input class="form-control" style="width:6rem; display:inline-block;" type="number" name="year" [(ngModel)]="year" (change)="load()" /></label>
+        <label class="text-muted">{{ 'Month' | translate }}
           <select class="form-select" style="width:auto; display:inline-block;" name="month" [(ngModel)]="month" (ngModelChange)="load()">
             <option *ngFor="let m of months; let i = index" [ngValue]="i + 1">{{ m }}</option>
           </select>
@@ -34,11 +35,11 @@ import { Account, CostCenter, ExpenseBudget, ExpenseBudgetStatus } from '../../c
       </div>
 
       <table class="table-sm mb-3">
-        <thead><tr><th>Budget for</th><th>Type</th><th class="text-end">Monthly budget</th><th class="text-end">Spent</th><th class="text-end">Waiting for approval</th><th class="text-end">Left</th><th style="width:12rem;">Used</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Budget for' | translate }}</th><th>{{ 'Type' | translate }}</th><th class="text-end">{{ 'Monthly budget' | translate }}</th><th class="text-end">{{ 'Spent' | translate }}</th><th class="text-end">{{ 'Waiting for approval' | translate }}</th><th class="text-end">{{ 'Left' | translate }}</th><th style="width:12rem;">{{ 'Used' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let r of rows">
             <td>{{ r.label }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="note(r)">{{ note(r) }}</div></td>
-            <td>{{ r.kind === 'CATEGORY' ? 'Category' : 'Cost center' }}</td>
+            <td>{{ r.kind === 'CATEGORY' ? ('Category' | translate) : ('Cost center' | translate) }}</td>
             <td class="text-end">
               <ng-container *ngIf="editId !== r.budgetId">{{ r.budget | number: '1.0-0' }}</ng-container>
               <input *ngIf="editId === r.budgetId" class="form-control" style="width:8rem; margin-left:auto;" type="number" min="1" name="editAmount" [(ngModel)]="editAmount" />
@@ -52,33 +53,33 @@ import { Account, CostCenter, ExpenseBudget, ExpenseBudgetStatus } from '../../c
             </td>
             <td style="white-space:nowrap;">
               <ng-container *ngIf="canManage">
-                <button class="btn btn-sm btn-outline-primary" *ngIf="editId !== r.budgetId" (click)="startEdit(r)">Change</button>
-                <button class="btn btn-sm btn-primary" *ngIf="editId === r.budgetId" (click)="saveEdit(r)">Save</button>
-                <button class="btn btn-sm btn-link" *ngIf="editId === r.budgetId" (click)="editId = null">Cancel</button>
-                <button class="btn btn-sm btn-outline-danger" *ngIf="editId !== r.budgetId" (click)="remove(r)">Remove</button>
+                <button class="btn btn-sm btn-outline-primary" *ngIf="editId !== r.budgetId" (click)="startEdit(r)">{{ 'Change' | translate }}</button>
+                <button class="btn btn-sm btn-primary" *ngIf="editId === r.budgetId" (click)="saveEdit(r)">{{ 'Save' | translate }}</button>
+                <button class="btn btn-sm btn-link" *ngIf="editId === r.budgetId" (click)="editId = null">{{ 'Cancel' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" *ngIf="editId !== r.budgetId" (click)="remove(r)">{{ 'Remove' | translate }}</button>
               </ng-container>
             </td>
           </tr>
-          <tr *ngIf="!rows.length"><td colspan="8" class="text-muted">No budgets for {{ year }} yet.</td></tr>
+          <tr *ngIf="!rows.length"><td colspan="8" class="text-muted">{{ 'No budgets for {p0} yet.' | translate: { p0: (year) } }}</td></tr>
         </tbody>
       </table>
-      <p class="text-muted" style="font-size:0.85rem;">Spent counts approved expenses dated in the month, without recoverable VAT. Waiting for approval is not counted yet. Turn on "block approval when over budget" in Expenses settings to enforce it.</p>
+      <p class="text-muted" style="font-size:0.85rem;">{{ 'Spent counts approved expenses dated in the month, without recoverable VAT. Waiting for approval is not counted yet. Turn on "block approval when over budget" in Expenses settings to enforce it.' | translate }}</p>
 
       <div class="card" style="padding:1rem; max-width:44rem;" *ngIf="canManage">
-        <h4 class="mb-2">Add a budget for {{ year }}</h4>
+        <h4 class="mb-2">{{ 'Add a budget for {p0}' | translate: { p0: (year) } }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-          <label class="text-muted" style="font-size:0.8rem;">For
-            <select class="form-select" name="kind" [(ngModel)]="newKind"><option value="CATEGORY">An expense category</option><option value="COST_CENTER">A cost center</option></select>
+          <label class="text-muted" style="font-size:0.8rem;">{{ 'For' | translate }}
+            <select class="form-select" name="kind" [(ngModel)]="newKind"><option value="CATEGORY">{{ 'An expense category' | translate }}</option><option value="COST_CENTER">{{ 'A cost center' | translate }}</option></select>
           </label>
-          <label class="text-muted" style="font-size:0.8rem;" *ngIf="newKind === 'CATEGORY'">Category
-            <select class="form-select" name="newAccount" [(ngModel)]="newAccountId"><option [ngValue]="null" disabled>Choose…</option><option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option></select>
+          <label class="text-muted" style="font-size:0.8rem;" *ngIf="newKind === 'CATEGORY'">{{ 'Category' | translate }}
+            <select class="form-select" name="newAccount" [(ngModel)]="newAccountId"><option [ngValue]="null" disabled>{{ 'Choose…' | translate }}</option><option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option></select>
           </label>
-          <label class="text-muted" style="font-size:0.8rem;" *ngIf="newKind === 'COST_CENTER'">Cost center
-            <select class="form-select" name="newCc" [(ngModel)]="newCostCenterId"><option [ngValue]="null" disabled>Choose…</option><option *ngFor="let c of costCenters" [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option></select>
+          <label class="text-muted" style="font-size:0.8rem;" *ngIf="newKind === 'COST_CENTER'">{{ 'Cost center' | translate }}
+            <select class="form-select" name="newCc" [(ngModel)]="newCostCenterId"><option [ngValue]="null" disabled>{{ 'Choose…' | translate }}</option><option *ngFor="let c of costCenters" [ngValue]="c.id">{{ c.code }} — {{ c.name }}</option></select>
           </label>
-          <label class="text-muted" style="font-size:0.8rem;">Monthly budget <input class="form-control" style="width:9rem;" type="number" min="1" name="newAmount" [(ngModel)]="newAmount" /></label>
-          <label class="text-muted" style="font-size:0.8rem;">Note <input class="form-control" name="newNote" [(ngModel)]="newNote" /></label>
-          <button class="btn btn-primary" (click)="add()">Add budget</button>
+          <label class="text-muted" style="font-size:0.8rem;">{{ 'Monthly budget' | translate }} <input class="form-control" style="width:9rem;" type="number" min="1" name="newAmount" [(ngModel)]="newAmount" /></label>
+          <label class="text-muted" style="font-size:0.8rem;">{{ 'Note' | translate }} <input class="form-control" name="newNote" [(ngModel)]="newNote" /></label>
+          <button class="btn btn-primary" (click)="add()">{{ 'Add budget' | translate }}</button>
         </div>
       </div>
     </app-shell>

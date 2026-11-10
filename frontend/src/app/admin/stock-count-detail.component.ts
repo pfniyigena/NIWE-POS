@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -20,7 +21,7 @@ import { q4 } from '../core/qty';
 @Component({
   selector: 'app-stock-count-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PaperButtonComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -29,8 +30,8 @@ import { q4 } from '../core/qty';
           <div>
             <h3>{{ c.countNumber }}</h3>
             <div class="text-muted" style="font-size:0.85rem;">
-              {{ c.warehouseName }} · {{ c.categoryName || 'All categories' }} · started {{ c.createdAt | date: 'medium' }}
-              <span *ngIf="c.approvedAt"> · approved {{ c.approvedAt | date: 'medium' }}{{ c.approvedBy ? ' by ' + c.approvedBy : '' }}</span>
+              {{ '{p0} · {p1} · started {p2}' | translate: { p0: (c.warehouseName), p1: (c.categoryName || 'All categories'), p2: (c.createdAt | date: 'medium') } }}
+              <span *ngIf="c.approvedAt"> {{ '· approved {p0}{p1}' | translate: { p0: (c.approvedAt | date: 'medium'), p1: (c.approvedBy ? ' by ' + c.approvedBy : '') } }}</span>
             </div>
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="c.notes">{{ c.notes }}</div>
           </div>
@@ -40,33 +41,33 @@ import { q4 } from '../core/qty';
         </div>
 
         <div class="flex gap-4 mb-3" style="flex-wrap:wrap;">
-          <div class="stat-card"><div class="stat-label">Lines</div><div class="stat-value" style="font-size:1.1rem;">{{ c.lineCount }}</div></div>
-          <div class="stat-card"><div class="stat-label">Counted</div><div class="stat-value" style="font-size:1.1rem;">{{ c.countedCount }}</div></div>
-          <div class="stat-card"><div class="stat-label">Differences</div><div class="stat-value" style="font-size:1.1rem;">{{ c.differenceCount }}</div></div>
-          <div class="stat-card"><div class="stat-label">Variance value</div><div class="stat-value" style="font-size:1.1rem;">{{ c.varianceValue | number: '1.2-2' }}</div></div>
+          <div class="stat-card"><div class="stat-label">{{ 'Lines' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ c.lineCount }}</div></div>
+          <div class="stat-card"><div class="stat-label">{{ 'Counted' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ c.countedCount }}</div></div>
+          <div class="stat-card"><div class="stat-label">{{ 'Differences' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ c.differenceCount }}</div></div>
+          <div class="stat-card"><div class="stat-label">{{ 'Variance value' | translate }}</div><div class="stat-value" style="font-size:1.1rem;">{{ c.varianceValue | number: '1.2-2' }}</div></div>
         </div>
 
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
-          <button class="btn btn-outline-primary" type="button" (click)="print()">Print sheet</button>
+          <button class="btn btn-outline-primary" type="button" (click)="print()">{{ 'Print sheet' | translate }}</button>
           <app-paper-button *ngIf="c.status !== 'CANCELLED'" class="paper-count" [label]="c.status === 'IN_PROGRESS' ? 'Count sheet (PDF, blind)' : 'Result sheet (PDF)'" [path]="'/stock-counts/' + c.id + '/sheet'" file="stock-count.pdf"></app-paper-button>
-          <app-paper-button *ngIf="c.status === 'IN_PROGRESS'" class="paper-count-system" label="Count sheet (PDF, with expected qty)" [path]="'/stock-counts/' + c.id + '/sheet?showSystem=true'" file="stock-count.pdf"></app-paper-button>
+          <app-paper-button *ngIf="c.status === 'IN_PROGRESS'" class="paper-count-system" [label]="'Count sheet (PDF, with expected qty)' | translate" [path]="'/stock-counts/' + c.id + '/sheet?showSystem=true'" file="stock-count.pdf"></app-paper-button>
           <ng-container *ngIf="c.status === 'IN_PROGRESS'">
-            <button class="btn btn-outline-primary" type="button" [disabled]="busy" (click)="save()">Save counts</button>
-            <button class="btn btn-primary" type="button" [disabled]="busy" (click)="submit()">Submit for approval</button>
-            <button class="btn btn-outline-danger" type="button" [disabled]="busy" (click)="cancel()">Cancel count</button>
+            <button class="btn btn-outline-primary" type="button" [disabled]="busy" (click)="save()">{{ 'Save counts' | translate }}</button>
+            <button class="btn btn-primary" type="button" [disabled]="busy" (click)="submit()">{{ 'Submit for approval' | translate }}</button>
+            <button class="btn btn-outline-danger" type="button" [disabled]="busy" (click)="cancel()">{{ 'Cancel count' | translate }}</button>
           </ng-container>
           <ng-container *ngIf="c.status === 'SUBMITTED'">
             <button class="btn btn-primary" type="button" *ngIf="canApprove" [disabled]="busy" (click)="approve()">Approve &amp; post differences</button>
-            <button class="btn btn-outline-primary" type="button" [disabled]="busy" (click)="reopen()">Reopen for counting</button>
-            <button class="btn btn-outline-danger" type="button" [disabled]="busy" (click)="cancel()">Cancel count</button>
+            <button class="btn btn-outline-primary" type="button" [disabled]="busy" (click)="reopen()">{{ 'Reopen for counting' | translate }}</button>
+            <button class="btn btn-outline-danger" type="button" [disabled]="busy" (click)="cancel()">{{ 'Cancel count' | translate }}</button>
           </ng-container>
-          <a class="btn btn-link" routerLink="/admin/stock-counts">Back</a>
+          <a class="btn btn-link" routerLink="/admin/stock-counts">{{ 'Back' | translate }}</a>
         </div>
 
         <div class="form-group mb-3" style="position:relative; max-width:520px;" *ngIf="c.status === 'IN_PROGRESS'">
-          <label class="form-label">Add a product to the sheet</label>
+          <label class="form-label">{{ 'Add a product to the sheet' | translate }}</label>
           <div class="flex gap-2">
-            <input class="form-control" placeholder="Search by name, SKU or code" [(ngModel)]="productSearch" (input)="onProductSearch()" />
+            <input class="form-control" [placeholder]="'Search by name, SKU or code' | translate" [(ngModel)]="productSearch" (input)="onProductSearch()" />
             <select class="form-select" [(ngModel)]="addLocationId" name="addLocationId" style="max-width:200px;">
               <option *ngFor="let l of locations" [ngValue]="l.id">{{ l.name }}</option>
             </select>
@@ -79,13 +80,13 @@ import { q4 } from '../core/qty';
         <table>
           <thead>
             <tr>
-              <th>SKU</th>
-              <th>Product</th>
-              <th>Location</th>
-              <th class="text-end">System qty</th>
-              <th class="text-end" style="width:130px;">Counted</th>
-              <th class="text-end">Variance</th>
-              <th class="text-end">Value</th>
+              <th>{{ 'SKU' | translate }}</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th>{{ 'Location' | translate }}</th>
+              <th class="text-end">{{ 'System qty' | translate }}</th>
+              <th class="text-end" style="width:130px;">{{ 'Counted' | translate }}</th>
+              <th class="text-end">{{ 'Variance' | translate }}</th>
+              <th class="text-end">{{ 'Value' | translate }}</th>
               <th *ngIf="c.status === 'IN_PROGRESS'"></th>
             </tr>
           </thead>
@@ -104,7 +105,7 @@ import { q4 } from '../core/qty';
                 {{ variance(l) === null ? '' : (variance(l)! > 0 ? '+' : '') + variance(l) }}
               </td>
               <td class="text-end">{{ variance(l) !== null && l.unitCost !== null ? (variance(l)! * l.unitCost! | number: '1.2-2') : '' }}</td>
-              <td *ngIf="c.status === 'IN_PROGRESS'"><button class="btn btn-sm btn-link" type="button" (click)="removeLine(l)">Remove</button></td>
+              <td *ngIf="c.status === 'IN_PROGRESS'"><button class="btn btn-sm btn-link" type="button" (click)="removeLine(l)">{{ 'Remove' | translate }}</button></td>
             </tr>
           </tbody>
         </table>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -24,7 +25,7 @@ import { branchNameOf } from '../core/branch-util';
 @Component({
   selector: 'app-quotation-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -35,75 +36,75 @@ import { branchNameOf } from '../core/branch-util';
             <span class="badge" [ngClass]="statusClass(quote.status)">{{ quote.status.replace('_', ' ') }}</span>
           </div>
           <div class="flex gap-2">
-            <a class="btn btn-outline-primary" *ngIf="quote.status === 'DRAFT'" [routerLink]="['/admin/quotations', quote.id, 'edit']">Edit</a>
-            <button class="btn btn-primary" *ngIf="quote.status === 'DRAFT'" (click)="send()">Send to customer</button>
-            <button class="btn btn-primary" *ngIf="quote.status === 'SENT'" (click)="accept()">Mark accepted</button>
-            <button class="btn btn-outline-secondary" *ngIf="quote.status === 'SENT'" (click)="markExpired()">Mark expired</button>
-            <button class="btn btn-outline-danger" *ngIf="quote.status === 'DRAFT' || quote.status === 'SENT'" (click)="reject()">Reject</button>
-            <button class="btn btn-primary" *ngIf="quote.status === 'ACCEPTED'" (click)="convert()">Convert to sale order</button>
-            <a class="btn btn-outline-primary" *ngIf="quote.convertedSalesOrderId" [routerLink]="['/admin/sales-orders', quote.convertedSalesOrderId]">View sale order</a>
+            <a class="btn btn-outline-primary" *ngIf="quote.status === 'DRAFT'" [routerLink]="['/admin/quotations', quote.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-primary" *ngIf="quote.status === 'DRAFT'" (click)="send()">{{ 'Send to customer' | translate }}</button>
+            <button class="btn btn-primary" *ngIf="quote.status === 'SENT'" (click)="accept()">{{ 'Mark accepted' | translate }}</button>
+            <button class="btn btn-outline-secondary" *ngIf="quote.status === 'SENT'" (click)="markExpired()">{{ 'Mark expired' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="quote.status === 'DRAFT' || quote.status === 'SENT'" (click)="reject()">{{ 'Reject' | translate }}</button>
+            <button class="btn btn-primary" *ngIf="quote.status === 'ACCEPTED'" (click)="convert()">{{ 'Convert to sale order' | translate }}</button>
+            <a class="btn btn-outline-primary" *ngIf="quote.convertedSalesOrderId" [routerLink]="['/admin/sales-orders', quote.convertedSalesOrderId]">{{ 'View sale order' | translate }}</a>
             <!-- Fourier: "sending ... quotations ... to the customer's email" — available at any status; see QuotationService.emailToCustomer's javadoc. -->
             <button class="btn btn-outline-primary" (click)="emailToCustomer()" [disabled]="emailing">
-              {{ emailing ? 'Sending…' : 'Email' }}
+              {{ emailing ? ('Sending…' | translate) : ('Email' | translate) }}
             </button>
             <!-- Fourier: "Add print A4 on Quotation and Label it as proforma" — available at any status, same as Email above. -->
-            <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
+            <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
           </div>
         </div>
-        <div class="alert alert-success mb-3" *ngIf="emailSent">Quotation emailed to {{ emailedTo }}.</div>
+        <div class="alert alert-success mb-3" *ngIf="emailSent">{{ 'Quotation emailed to {p0}.' | translate: { p0: (emailedTo) } }}</div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Customer</div>
+            <div class="stat-label">{{ 'Customer' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.customerName }}</div>
           </div>
           <div class="stat-tile" *ngIf="branches.length > 1">
-            <div class="stat-label">Branch</div>
+            <div class="stat-label">{{ 'Branch' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ branchName(quote.branchId) }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Quote date</div>
+            <div class="stat-label">{{ 'Quote date' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.quoteDate | date: 'medium' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Valid until</div>
+            <div class="stat-label">{{ 'Valid until' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.validUntil || '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Subtotal</div>
+            <div class="stat-label">{{ 'Subtotal' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.subtotalAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Tax</div>
+            <div class="stat-label">{{ 'Tax' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.taxAmount | number: '1.2-2' }}</div>
           </div>
           <!-- Fourier: "Same for discount (but discount should be activate in the setting or configuration) and it will be per line" — only shown once this document actually has one, same convention as the printed PDF's own addSubtotalBreakdown. -->
           <div class="stat-tile" *ngIf="quote.discountAmount">
-            <div class="stat-label">Discount</div>
+            <div class="stat-label">{{ 'Discount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.discountAmount | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total amount</div>
+            <div class="stat-label">{{ 'Total amount' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ quote.totalAmount | number: '1.2-2' }}</div>
           </div>
         </div>
         <p class="text-muted mb-3" *ngIf="quote.notes">{{ quote.notes }}</p>
         <p class="text-muted mb-3" *ngIf="quote.convertedSalesOrderNumber">
-          Converted into sale order {{ quote.convertedSalesOrderNumber }}.
+          {{ 'Converted into sale order {p0}.' | translate: { p0: (quote.convertedSalesOrderNumber) } }}
         </p>
 
-        <h4 class="mb-2">Lines</h4>
+        <h4 class="mb-2">{{ 'Lines' | translate }}</h4>
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="text-end">Quantity</th>
-              <th class="text-end">Unit price</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th class="text-end">{{ 'Quantity' | translate }}</th>
+              <th class="text-end">{{ 'Unit price' | translate }}</th>
               <!-- Fourier: "Same for discount ... it will be per line" — only shown once this document actually has a discount on at least one line. -->
-              <th class="text-end" *ngIf="quote.discountAmount">Discount</th>
+              <th class="text-end" *ngIf="quote.discountAmount">{{ 'Discount' | translate }}</th>
               <!-- Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill, Refund)" -->
-              <th class="text-end">Tax</th>
-              <th class="text-end">Line total</th>
+              <th class="text-end">{{ 'Tax' | translate }}</th>
+              <th class="text-end">{{ 'Line total' | translate }}</th>
             </tr>
           </thead>
           <tbody>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -19,23 +20,23 @@ import { openPdfForPrint } from '../core/download-file';
 @Component({
   selector: 'app-credit-note-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3 style="margin-bottom:0;">Credit notes</h3>
+        <h3 style="margin-bottom:0;">{{ 'Credit notes' | translate }}</h3>
       </div>
-      <app-list-filter exportKind="credit-notes" placeholder="Search credit note no., invoice, customer…" [statuses]="[]" statusAll="All statuses" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportKind="credit-notes" [placeholder]="'Search credit note no., invoice, customer…' | translate" [statuses]="[]" statusAll="All statuses" [dates]="true" [branches]="[]" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Credit note #</th>
-            <th>Invoice #</th>
-            <th>Customer</th>
-            <th>Voided</th>
-            <th>Reason</th>
-            <th class="text-end">Amount</th>
+            <th>{{ 'Credit note #' | translate }}</th>
+            <th>{{ 'Invoice #' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Voided' | translate }}</th>
+            <th>{{ 'Reason' | translate }}</th>
+            <th class="text-end">{{ 'Amount' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -48,12 +49,12 @@ import { openPdfForPrint } from '../core/download-file';
             <td>{{ inv.voidReason || '—' }}</td>
             <td class="text-end">{{ inv.totalAmount | number: '1.2-2' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">View invoice</a>
-              <button class="btn btn-sm btn-outline-secondary" (click)="print(inv)" [disabled]="printingId === inv.id">Print</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">{{ 'View invoice' | translate }}</a>
+              <button class="btn btn-sm btn-outline-secondary" (click)="print(inv)" [disabled]="printingId === inv.id">{{ 'Print' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="7" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No credit notes yet — voiding an invoice issues one automatically.</ng-template></td>
+            <td colspan="7" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ 'No credit notes yet — voiding an invoice issues one automatically.' | translate }}</ng-template></td>
           </tr>
         </tbody>
       </table>

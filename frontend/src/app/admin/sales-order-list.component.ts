@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,28 +16,28 @@ import { Branch, SalesOrder } from '../core/models';
 @Component({
   selector: 'app-sales-order-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Sale orders</h3>
+        <h3>{{ 'Sale orders' | translate }}</h3>
         <div class="flex gap-2 align-center">
-          <a class="btn btn-primary" routerLink="/admin/sales-orders/new">+ New sale order</a>
+          <a class="btn btn-primary" routerLink="/admin/sales-orders/new">{{ '+ New sale order' | translate }}</a>
         </div>
       </div>
-      <app-list-filter exportKind="sales-orders" placeholder="Search order no., customer…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportKind="sales-orders" [placeholder]="'Search order no., customer…' | translate" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Order #</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th *ngIf="branches.length > 1">Branch</th>
-            <th class="text-end">Lines</th>
-            <th class="text-end">Total</th>
-            <th class="text-end">Outstanding</th>
+            <th>{{ 'Order #' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th>
+            <th class="text-end">{{ 'Lines' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
+            <th class="text-end">{{ 'Outstanding' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -51,11 +52,11 @@ import { Branch, SalesOrder } from '../core/models';
             <td class="text-end">{{ so.totalAmount | number: '1.2-2' }}</td>
             <td class="text-end">{{ so.amountOutstanding | number: '1.2-2' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/sales-orders', so.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/sales-orders', so.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>No sale orders yet.</ng-template></td>
+            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ 'No sale orders yet.' | translate }}</ng-template></td>
           </tr>
         </tbody>
       </table>

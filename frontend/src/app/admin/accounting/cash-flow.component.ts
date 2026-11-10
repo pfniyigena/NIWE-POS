@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -16,34 +17,34 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-cash-flow',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Cash flow report</h3>
+        <h3>{{ 'Cash flow report' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">Export Excel</button>
-          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">Export PDF</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('xlsx')" [disabled]="exporting">{{ 'Export Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary" (click)="exportAs('pdf')" [disabled]="exporting">{{ 'Export PDF' | translate }}</button>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3">
         <div class="form-group">
-          <label class="form-label">From</label>
+          <label class="form-label">{{ 'From' | translate }}</label>
           <app-date-picker [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
         </div>
         <div class="form-group">
-          <label class="form-label">To</label>
+          <label class="form-label">{{ 'To' | translate }}</label>
           <app-date-picker [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         </div>
       </div>
       <ng-container *ngIf="report as r">
         <div class="stat-tile mb-3">
-          <div class="stat-label">Opening cash</div>
+          <div class="stat-label">{{ 'Opening cash' | translate }}</div>
           <div class="stat-value" style="font-size:1.1rem;">{{ r.openingCash | number: '1.2-2' }}</div>
         </div>
 
-        <h4 class="mb-2">Operating activities</h4>
+        <h4 class="mb-2">{{ 'Operating activities' | translate }}</h4>
         <table class="table-sm mb-3">
           <tbody>
             <tr *ngFor="let l of r.operating">
@@ -52,21 +53,21 @@ import { downloadBlob } from '../../core/download-file';
               <td class="text-end">{{ l.amount | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="r.operating.length === 0">
-              <td colspan="3" class="text-muted">No operating cash movements in this range.</td>
+              <td colspan="3" class="text-muted">{{ 'No operating cash movements in this range.' | translate }}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
-              <th colspan="2">Net cash from operating activities</th>
+              <th colspan="2">{{ 'Net cash from operating activities' | translate }}</th>
               <th class="text-end">{{ r.netOperating | number: '1.2-2' }}</th>
             </tr>
           </tfoot>
         </table>
 
-        <h4 class="mb-2">Investing activities</h4>
-        <p class="text-muted mb-3">Not modeled in this app — always zero.</p>
+        <h4 class="mb-2">{{ 'Investing activities' | translate }}</h4>
+        <p class="text-muted mb-3">{{ 'Not modeled in this app — always zero.' | translate }}</p>
 
-        <h4 class="mb-2">Financing activities</h4>
+        <h4 class="mb-2">{{ 'Financing activities' | translate }}</h4>
         <table class="table-sm mb-3">
           <tbody>
             <tr *ngFor="let l of r.financing">
@@ -75,23 +76,23 @@ import { downloadBlob } from '../../core/download-file';
               <td class="text-end">{{ l.amount | number: '1.2-2' }}</td>
             </tr>
             <tr *ngIf="r.financing.length === 0">
-              <td colspan="3" class="text-muted">No financing cash movements in this range.</td>
+              <td colspan="3" class="text-muted">{{ 'No financing cash movements in this range.' | translate }}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
-              <th colspan="2">Net cash from financing activities</th>
+              <th colspan="2">{{ 'Net cash from financing activities' | translate }}</th>
               <th class="text-end">{{ r.netFinancing | number: '1.2-2' }}</th>
             </tr>
           </tfoot>
         </table>
 
         <div class="stat-tile mb-3">
-          <div class="stat-label">Net change in cash</div>
+          <div class="stat-label">{{ 'Net change in cash' | translate }}</div>
           <div class="stat-value" style="font-size:1.1rem;">{{ r.netChangeInCash | number: '1.2-2' }}</div>
         </div>
         <div class="stat-tile">
-          <div class="stat-label">Closing cash</div>
+          <div class="stat-label">{{ 'Closing cash' | translate }}</div>
           <div class="stat-value" style="font-size:1.3rem;">{{ r.closingCash | number: '1.2-2' }}</div>
         </div>
       </ng-container>

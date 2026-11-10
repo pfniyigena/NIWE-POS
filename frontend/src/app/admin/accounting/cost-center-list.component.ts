@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -14,20 +15,20 @@ import { CostCenter } from '../../core/models';
 @Component({
   selector: 'app-cost-center-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Cost centers</h3>
-        <a class="btn btn-primary" routerLink="/admin/accounting/cost-centers/new">+ New cost center</a>
+        <h3>{{ 'Cost centers' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/accounting/cost-centers/new">{{ '+ New cost center' | translate }}</a>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Status</th>
+            <th>{{ 'Code' | translate }}</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -36,17 +37,17 @@ import { CostCenter } from '../../core/models';
             <td>{{ c.code }}</td>
             <td>{{ c.name }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="c.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!c.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="c.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!c.active">{{ 'Inactive' | translate }}</span>
             </td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/accounting/cost-centers', c.id, 'edit']">Edit</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/accounting/cost-centers', c.id, 'edit']">{{ 'Edit' | translate }}</a>
             </td>
           </tr>
         </tbody>
       </table>
       <p class="text-muted" *ngIf="costCenters.length === 0">
-        No cost centers yet — add one to start tagging journal entries, expenses and incomes by department, branch or project.
+        {{ 'No cost centers yet — add one to start tagging journal entries, expenses and incomes by department, branch or project.' | translate }}
       </p>
     </app-shell>
   `,

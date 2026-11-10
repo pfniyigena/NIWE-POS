@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -35,7 +36,7 @@ interface PaymentRow {
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, DatePickerComponent],
   template: `
     <!-- Fourier: "Checkout need to be also mobile responsive" — the outer padding and the card's
          own fixed width used to be inline styles; moved into checkout-shell/checkout-card so the
@@ -44,14 +45,14 @@ interface PaymentRow {
          the base (non-media) rules carry the exact same 2rem/720px/1.5rem values as before. -->
     <div class="flex-col align-center checkout-shell">
       <div class="card checkout-card" *ngIf="order as o">
-        <h3 class="mb-1">Checkout</h3>
+        <h3 class="mb-1">{{ 'Checkout' | translate }}</h3>
         <p class="text-muted">{{ o.id }}</p>
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
         <div class="flex gap-3" style="align-items:flex-start; flex-wrap:wrap;">
           <!-- Task: "Payment mode on left side, totals on right side" -->
           <div style="flex:1 1 60%; min-width:280px;">
-            <h6 class="mb-2">Payment (tap a method to enter an amount — split across several if needed)</h6>
+            <h6 class="mb-2">{{ 'Payment (tap a method to enter an amount — split across several if needed)' | translate }}</h6>
             <!-- Task: "Replace Payment method label before input with the payment method button
                  (each payment method should be on the same line with its input)" — one row per
                  method, always rendered; the button both toggles selection and replaces the old
@@ -77,7 +78,7 @@ interface PaymentRow {
                 step="0.01"
                 min="0"
                 [max]="maxAmountFor(row)"
-                placeholder="Amount"
+                [placeholder]="'Amount' | translate"
                 [ngModel]="row.amount"
                 (ngModelChange)="onAmountChange(row, $event)"
                 [disabled]="!row.selected"
@@ -85,58 +86,58 @@ interface PaymentRow {
               />
             </div>
             <div class="mb-3 gc-box" *ngIf="features.feature('giftCards')" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;">
-              <h6 class="mb-2">Gift card</h6>
+              <h6 class="mb-2">{{ 'Gift card' | translate }}</h6>
               <div class="flex gap-2 mb-2" style="align-items:center; flex-wrap:wrap;">
-                <input class="form-control gc-code" style="max-width:240px;" placeholder="Gift card code" name="gcCode" [(ngModel)]="gcCode" (keyup.enter)="checkCard()" />
-                <button type="button" class="btn btn-outline-secondary gc-check" (click)="checkCard()">Check balance</button>
+                <input class="form-control gc-code" style="max-width:240px;" [placeholder]="'Gift card code' | translate" name="gcCode" [(ngModel)]="gcCode" (keyup.enter)="checkCard()" />
+                <button type="button" class="btn btn-outline-secondary gc-check" (click)="checkCard()">{{ 'Check balance' | translate }}</button>
               </div>
               <div class="alert alert-danger gc-error" *ngIf="gcError">{{ gcError }}</div>
               <div class="flex gap-2 mb-2 gc-found" style="align-items:center; flex-wrap:wrap;" *ngIf="gcFound">
-                <span>Balance <strong class="gc-balance">{{ gcFound.balance | number: '1.2-2' }}</strong><span *ngIf="gcFound.expiresOn" class="text-muted"> · expires {{ gcFound.expiresOn }}</span></span>
+                <span>{{ 'Balance' | translate }} <strong class="gc-balance">{{ gcFound.balance | number: '1.2-2' }}</strong><span *ngIf="gcFound.expiresOn" class="text-muted"> {{ '· expires {p0}' | translate: { p0: (gcFound.expiresOn) } }}</span></span>
                 <input class="form-control gc-amount" style="max-width:140px;" type="number" step="0.01" min="0" name="gcAmount" [(ngModel)]="gcAmount" />
-                <button type="button" class="btn btn-primary gc-add" (click)="addCard()">Use on this sale</button>
+                <button type="button" class="btn btn-primary gc-add" (click)="addCard()">{{ 'Use on this sale' | translate }}</button>
               </div>
               <div class="flex gap-2 mb-1 gc-applied" style="align-items:center;" *ngFor="let g of giftCards">
                 <span>{{ g.maskedCode }}: <strong>{{ g.amount | number: '1.2-2' }}</strong></span>
-                <button type="button" class="btn btn-sm btn-outline-danger gc-remove" (click)="removeCard(g)">Remove</button>
+                <button type="button" class="btn btn-sm btn-outline-danger gc-remove" (click)="removeCard(g)">{{ 'Remove' | translate }}</button>
               </div>
             </div>
             <div class="mb-3 lp-box" style="border-top:1px solid var(--border, #ddd); padding-top:0.75rem;" *ngIf="loyalty && loyalty.enabled && features.feature('loyalty')">
-              <h6 class="mb-2">Loyalty points</h6>
+              <h6 class="mb-2">{{ 'Loyalty points' | translate }}</h6>
               <p class="mb-2" style="font-size:0.9rem;">
-                <strong class="lp-balance">{{ loyalty.points }}</strong> points (worth {{ loyalty.value | number: '1.2-2' }}).
-                <span class="text-muted" *ngIf="maxPoints() > 0 || pointsApplied > 0">Up to <span class="lp-max">{{ maxPoints() }}</span> can be used on this sale<span *ngIf="loyalty.minRedeemPoints"> (at least {{ loyalty.minRedeemPoints }})</span>.</span>
+                <strong class="lp-balance">{{ loyalty.points }}</strong> {{ 'points (worth {p0}).' | translate: { p0: (loyalty.value | number: '1.2-2') } }}
+                <span class="text-muted" *ngIf="maxPoints() > 0 || pointsApplied > 0">{{ 'Up to' | translate }} <span class="lp-max">{{ maxPoints() }}</span> {{ 'can be used on this sale' | translate }}<span *ngIf="loyalty.minRedeemPoints"> {{ '(at least {p0})' | translate: { p0: (loyalty.minRedeemPoints) } }}</span>.</span>
               </p>
-              <p class="text-muted lp-none" style="font-size:0.85rem;" *ngIf="pointsApplied === 0 && maxPoints() === 0">Points cannot pay for any of this sale (too small, or below the least that can be used).</p>
+              <p class="text-muted lp-none" style="font-size:0.85rem;" *ngIf="pointsApplied === 0 && maxPoints() === 0">{{ 'Points cannot pay for any of this sale (too small, or below the least that can be used).' | translate }}</p>
               <div class="flex gap-2 mb-2" style="align-items:center; flex-wrap:wrap;" *ngIf="pointsApplied === 0 && maxPoints() > 0">
-                <input class="form-control lp-points" style="max-width:140px;" type="number" step="1" min="0" name="pointsToUse" placeholder="Points" [(ngModel)]="pointsToUse" />
-                <button type="button" class="btn btn-primary lp-use" (click)="usePoints()">Use points</button>
+                <input class="form-control lp-points" style="max-width:140px;" type="number" step="1" min="0" name="pointsToUse" [placeholder]="'Points' | translate" [(ngModel)]="pointsToUse" />
+                <button type="button" class="btn btn-primary lp-use" (click)="usePoints()">{{ 'Use points' | translate }}</button>
               </div>
               <div class="flex gap-2 mb-1 lp-applied" style="align-items:center;" *ngIf="pointsApplied > 0">
-                <span><strong>{{ pointsApplied }}</strong> points = <strong>{{ pointsValue | number: '1.2-2' }}</strong></span>
-                <button type="button" class="btn btn-sm btn-outline-danger lp-remove" (click)="removePoints()">Remove</button>
+                <span><strong>{{ pointsApplied }}</strong> {{ 'points =' | translate }} <strong>{{ pointsValue | number: '1.2-2' }}</strong></span>
+                <button type="button" class="btn btn-sm btn-outline-danger lp-remove" (click)="removePoints()">{{ 'Remove' | translate }}</button>
               </div>
               <div class="alert alert-danger lp-error" *ngIf="lpError">{{ lpError }}</div>
             </div>
             <p class="text-muted" style="font-size:0.85rem;" *ngIf="creditRowSelected() && !order?.customerId">
-              Select a customer on this sale before paying with store credit.
+              {{ 'Select a customer on this sale before paying with store credit.' | translate }}
             </p>
             <p class="text-muted" style="font-size:0.85rem;" *ngIf="creditRowSelected() && creditSummary && !creditSummary.creditEnabled">
               This customer is not enabled for credit — see Admin &gt; Customers.
             </p>
             <p class="text-muted" style="font-size:0.85rem;" *ngIf="creditRowSelected() && creditSummary?.creditEnabled">
-              Available credit: {{ creditSummary?.availableCredit | number: '1.2-2' }}
+              {{ 'Available credit: {p0}' | translate: { p0: (creditSummary?.availableCredit | number: '1.2-2') } }}
             </p>
             <div class="form-group mb-2" *ngIf="roomRowSelected()">
-              <label class="form-label">Charge to which room?</label>
+              <label class="form-label">{{ 'Charge to which room?' | translate }}</label>
               <select class="form-control" name="roomBooking" [(ngModel)]="roomBookingId">
-                <option [ngValue]="null">Choose the guest…</option>
-                <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">Room {{ g.roomNumber }} — {{ g.guestName }}</option>
+                <option [ngValue]="null">{{ 'Choose the guest…' | translate }}</option>
+                <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">{{ 'Room {p0} — {p1}' | translate: { p0: (g.roomNumber), p1: (g.guestName) } }}</option>
               </select>
-              <div class="text-muted" style="font-size:0.8rem;" *ngIf="inHouse.length === 0">No guest is checked in right now.</div>
+              <div class="text-muted" style="font-size:0.8rem;" *ngIf="inHouse.length === 0">{{ 'No guest is checked in right now.' | translate }}</div>
             </div>
             <div class="form-group mb-2" *ngIf="creditRowSelected() && creditSummary?.creditEnabled">
-              <label class="form-label">Due date (optional — defaults to this customer's own payment term, if any)</label>
+              <label class="form-label">{{ 'Due date (optional — defaults to this customer\\'s own payment term, if any)' | translate }}</label>
               <app-date-picker [(ngModel)]="dueDate" ></app-date-picker>
             </div>
           </div>
@@ -145,31 +146,31 @@ interface PaymentRow {
             <table class="table-sm mb-3">
               <tbody>
                 <tr>
-                  <td>Subtotal</td>
+                  <td>{{ 'Subtotal' | translate }}</td>
                   <td class="text-end">{{ o.subtotal | number: '1.2-2' }}</td>
                 </tr>
                 <tr>
-                  <td>Tax</td>
+                  <td>{{ 'Tax' | translate }}</td>
                   <td class="text-end">{{ o.taxTotal | number: '1.2-2' }}</td>
                 </tr>
                 <tr *ngIf="o.promoSavings && o.promoSavings > 0" class="checkout-promo-saved" style="color:var(--success, #1a7f37);">
-                  <td>Saved with promotions</td>
+                  <td>{{ 'Saved with promotions' | translate }}</td>
                   <td class="text-end">{{ o.promoSavings | number: '1.2-2' }}</td>
                 </tr>
                 <tr style="font-weight:700; font-size:1.1rem;">
-                  <td>Total due</td>
+                  <td>{{ 'Total due' | translate }}</td>
                   <td class="text-end">{{ o.total | number: '1.2-2' }}</td>
                 </tr>
               </tbody>
             </table>
 
             <p class="text-muted" style="font-size:0.85rem;" *ngIf="!o.customerId">
-              This sale has no customer — go back to the cart and select or add one before checking out.
+              {{ 'This sale has no customer — go back to the cart and select or add one before checking out.' | translate }}
             </p>
             <button class="btn btn-success btn-block mb-2" (click)="submit()" [disabled]="submitting || !o.customerId">
-              {{ submitting ? 'Processing…' : 'Complete sale' }}
+              {{ submitting ? ('Processing…' | translate) : ('Complete sale' | translate) }}
             </button>
-            <a class="btn btn-link btn-block" [routerLink]="['/pos', o.sessionId]">Back to cart</a>
+            <a class="btn btn-link btn-block" [routerLink]="['/pos', o.sessionId]">{{ 'Back to cart' | translate }}</a>
           </div>
         </div>
       </div>

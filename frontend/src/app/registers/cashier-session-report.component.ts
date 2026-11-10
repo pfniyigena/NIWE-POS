@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CashierSessionApiService } from '../core/api/cashier-session-api.service';
@@ -29,7 +30,7 @@ import { CashierSessionZReport, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-cashier-session-report',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="report as r">
       <div *ngIf="settings as s" style="text-align:center; margin:0 0 12px;">
@@ -39,9 +40,9 @@ import { CashierSessionZReport, StoreSettings } from '../core/models';
         <div *ngIf="s.phone || s.email" style="font-size:0.8rem; color:#444;">
           <span *ngIf="s.phone">{{ s.phone }}</span><span *ngIf="s.phone && s.email"> &middot; </span><span *ngIf="s.email">{{ s.email }}</span>
         </div>
-        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ s.taxId }}</div>
+        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (s.taxId) } }}</div>
       </div>
-      <h3 style="text-align:center; margin-bottom:0;">Cashier Session Report</h3>
+      <h3 style="text-align:center; margin-bottom:0;">{{ 'Cashier Session Report' | translate }}</h3>
       <p style="text-align:center; margin:4px 0 4px; color:#666; font-size:0.85rem;">
         {{ r.registerName }}<span *ngIf="r.shiftStatus"> &middot; shift {{ r.shiftStatus | lowercase }}</span>
       </p>
@@ -53,34 +54,34 @@ import { CashierSessionZReport, StoreSettings } from '../core/models';
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr>
-            <td style="padding:3px 0;">Sales count</td>
+            <td style="padding:3px 0;">{{ 'Sales count' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.saleCount }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Gross sales</td>
+            <td style="padding:3px 0;">{{ 'Gross sales' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.grossSales | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Tax collected</td>
+            <td style="padding:3px 0;">{{ 'Tax collected' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.taxCollected | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Cash sales</td>
+            <td style="padding:3px 0;">{{ 'Cash sales' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.cashIn | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Non-cash sales</td>
+            <td style="padding:3px 0;">{{ 'Non-cash sales' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.nonCashIn | number: '1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
 
-      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">— End of report —</p>
+      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">{{ '— End of report —' | translate }}</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
+        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
         <a routerLink="/sessions" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">
-          Back to sessions
+          {{ 'Back to sessions' | translate }}
         </a>
       </div>
     </div>

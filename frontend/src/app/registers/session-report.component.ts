@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RegisterApiService } from '../core/api/register-api.service';
@@ -33,7 +34,7 @@ import { CashMovement, SessionReport, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-session-report',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="report as r">
       <div *ngIf="settings as s" style="text-align:center; margin:0 0 12px;">
@@ -43,53 +44,53 @@ import { CashMovement, SessionReport, StoreSettings } from '../core/models';
         <div *ngIf="s.phone || s.email" style="font-size:0.8rem; color:#444;">
           <span *ngIf="s.phone">{{ s.phone }}</span><span *ngIf="s.phone && s.email"> &middot; </span><span *ngIf="s.email">{{ s.email }}</span>
         </div>
-        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ s.taxId }}</div>
+        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (s.taxId) } }}</div>
       </div>
-      <h3 style="text-align:center; margin-bottom:0;">Z-Report</h3>
+      <h3 style="text-align:center; margin-bottom:0;">{{ 'Z-Report' | translate }}</h3>
       <p style="text-align:center; margin:4px 0 4px; color:#666; font-size:0.85rem;">
         {{ r.session.registerName }}
       </p>
       <p style="text-align:center; margin:0 0 8px; color:#666; font-size:0.85rem;">
         {{ r.session.openedAt | date: 'yyyy-MM-dd HH:mm' }} &rarr; {{ r.session.closedAt | date: 'yyyy-MM-dd HH:mm' }}<br />
-        Cashier: {{ r.session.cashierName }}
+        {{ 'Cashier: {p0}' | translate: { p0: (r.session.cashierName) } }}
       </p>
       <hr />
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr>
-            <td style="padding:3px 0;">Sales count</td>
+            <td style="padding:3px 0;">{{ 'Sales count' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.saleCount }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Gross sales</td>
+            <td style="padding:3px 0;">{{ 'Gross sales' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.grossSales | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Tax collected</td>
+            <td style="padding:3px 0;">{{ 'Tax collected' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.taxCollected | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Cash sales</td>
+            <td style="padding:3px 0;">{{ 'Cash sales' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.cashIn | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Non-cash sales</td>
+            <td style="padding:3px 0;">{{ 'Non-cash sales' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.nonCashIn | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Cash refunds</td>
+            <td style="padding:3px 0;">{{ 'Cash refunds' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">&minus;{{ r.cashRefundsOut | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="r.paidIn">
-            <td style="padding:3px 0;">Paid in</td>
+            <td style="padding:3px 0;">{{ 'Paid in' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.paidIn | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="r.paidOut">
-            <td style="padding:3px 0;">Paid out</td>
+            <td style="padding:3px 0;">{{ 'Paid out' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">&minus;{{ r.paidOut | number: '1.2-2' }}</td>
           </tr>
           <tr *ngIf="r.drops">
-            <td style="padding:3px 0;">Dropped into the safe</td>
+            <td style="padding:3px 0;">{{ 'Dropped into the safe' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">&minus;{{ r.drops | number: '1.2-2' }}</td>
           </tr>
         </tbody>
@@ -101,7 +102,7 @@ import { CashMovement, SessionReport, StoreSettings } from '../core/models';
            (or an admin's "assign") brought a teammate onto the same till during the shift. -->
       <ng-container *ngIf="r.cashierSessions && r.cashierSessions.length">
         <hr />
-        <p style="text-align:center; font-weight:700; margin:0 0 6px; font-size:0.9rem;">By cashier</p>
+        <p style="text-align:center; font-weight:700; margin:0 0 6px; font-size:0.9rem;">{{ 'By cashier' | translate }}</p>
         <div *ngFor="let cs of r.cashierSessions" style="margin-bottom:8px; font-size:0.85rem;">
           <div style="display:flex; justify-content:space-between; font-weight:700;">
             <span>{{ cs.cashierName }}</span>
@@ -111,7 +112,7 @@ import { CashMovement, SessionReport, StoreSettings } from '../core/models';
             {{ cs.startedAt | date: 'yyyy-MM-dd HH:mm' }} &rarr; {{ cs.endedAt ? (cs.endedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}
           </div>
           <div style="display:flex; justify-content:space-between;">
-            <span>{{ cs.saleCount }} sale(s)</span>
+            <span>{{ '{p0} sale(s)' | translate: { p0: (cs.saleCount) } }}</span>
             <span>{{ cs.grossSales | number: '1.2-2' }}</span>
           </div>
         </div>
@@ -121,41 +122,41 @@ import { CashMovement, SessionReport, StoreSettings } from '../core/models';
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr>
-            <td style="padding:3px 0;">Opening float</td>
+            <td style="padding:3px 0;">{{ 'Opening float' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.session.openingFloat | number: '1.2-2' }}</td>
           </tr>
           <tr style="font-weight:700;">
-            <td style="padding:3px 0;">Expected cash</td>
+            <td style="padding:3px 0;">{{ 'Expected cash' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.expectedCash | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td style="padding:3px 0;">Counted cash</td>
+            <td style="padding:3px 0;">{{ 'Counted cash' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.session.countedCash | number: '1.2-2' }}</td>
           </tr>
           <tr style="font-weight:700;">
-            <td style="padding:3px 0;">Variance</td>
+            <td style="padding:3px 0;">{{ 'Variance' | translate }}</td>
             <td style="text-align:right; padding:3px 0;">{{ r.session.cashVariance | number: '1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
 
-      <p *ngIf="r.session.varianceNote" style="font-size:0.85rem; margin:6px 0 0;">Note: {{ r.session.varianceNote }}</p>
+      <p *ngIf="r.session.varianceNote" style="font-size:0.85rem; margin:6px 0 0;">{{ 'Note: {p0}' | translate: { p0: (r.session.varianceNote) } }}</p>
       <ng-container *ngIf="movements(r).length">
         <hr />
-        <p style="text-align:center; font-weight:700; margin:0 0 6px; font-size:0.9rem;">Cash in and out</p>
+        <p style="text-align:center; font-weight:700; margin:0 0 6px; font-size:0.9rem;">{{ 'Cash in and out' | translate }}</p>
         <div *ngFor="let m of movements(r)" style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:3px;">
           <span>{{ m.createdAt | date: 'HH:mm' }} {{ kindLabel(m.kind) }} — {{ m.reason }}{{ m.note ? ' (' + m.note + ')' : '' }}</span>
           <span>{{ m.kind === 'PAID_IN' ? '' : '−' }}{{ m.amount | number: '1.2-2' }}</span>
         </div>
       </ng-container>
-      <p *ngIf="r.session.closedBy" style="font-size:0.8rem; color:#666; margin:8px 0 0;">Closed by {{ r.session.closedBy }}</p>
+      <p *ngIf="r.session.closedBy" style="font-size:0.8rem; color:#666; margin:8px 0 0;">{{ 'Closed by {p0}' | translate: { p0: (r.session.closedBy) } }}</p>
 
-      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">— End of Z-Report —</p>
+      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">{{ '— End of Z-Report —' | translate }}</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
+        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
         <a routerLink="/admin/shifts" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">
-          Back to Shifts
+          {{ 'Back to Shifts' | translate }}
         </a>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -21,10 +22,10 @@ import { ModuleApiService } from '../../core/api/module-api.service';
 @Component({
   selector: 'app-accounting-report-menu',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Reports</h3>
+      <h3 class="mb-3">{{ 'Reports' | translate }}</h3>
       <div *ngFor="let section of visibleSections()" class="mb-4">
         <h5 class="mb-2">{{ section.title }}</h5>
         <div class="flex gap-2" style="flex-wrap:wrap;">

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,28 +12,28 @@ type Level = 'NONE' | 'VIEW' | 'MANAGE';
 @Component({
   selector: 'app-role-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit role' : 'New role' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit role' | translate) : ('New role' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Role name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" required maxlength="100" placeholder="e.g. Manager, Accountant, Store keeper" />
+          <label class="form-label">{{ 'Role name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" required maxlength="100" [placeholder]="'e.g. Manager, Accountant, Store keeper' | translate" />
         </div>
         <div class="form-group">
-          <label class="form-label">Description</label>
+          <label class="form-label">{{ 'Description' | translate }}</label>
           <input class="form-control" name="description" [(ngModel)]="description" maxlength="500" />
         </div>
         <div class="form-group" *ngIf="id">
-          <label class="form-label"><input type="checkbox" name="active" [(ngModel)]="active" /> Active</label>
-          <div class="text-muted" style="font-size:0.8rem;">An inactive role gives its staff no extra access until it is switched back on.</div>
+          <label class="form-label"><input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}</label>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'An inactive role gives its staff no extra access until it is switched back on.' | translate }}</div>
         </div>
 
-        <label class="form-label">What this role can do</label>
+        <label class="form-label">{{ 'What this role can do' | translate }}</label>
         <div class="text-muted mb-2" style="font-size:0.8rem;">
-          <strong>View</strong> opens the screens and lists read-only. <strong>Manage</strong> also lets them create and change things.
+          <strong>{{ 'View' | translate }}</strong> {{ 'opens the screens and lists read-only.' | translate }} <strong>{{ 'Manage' | translate }}</strong> {{ 'also lets them create and change things.' | translate }}
         </div>
         <div *ngFor="let a of areas" class="form-group" style="margin-bottom:0.9rem;">
           <div class="flex justify-between align-center" style="gap:1rem;">
@@ -41,16 +42,16 @@ type Level = 'NONE' | 'VIEW' | 'MANAGE';
               <div class="text-muted" style="font-size:0.78rem;">{{ a.description }}</div>
             </div>
             <select class="form-select" style="width:auto; min-width:8rem;" [name]="'area-' + a.code" [ngModel]="levels[a.code]" (ngModelChange)="levels[a.code] = $event">
-              <option value="NONE">No access</option>
-              <option value="VIEW">View only</option>
-              <option value="MANAGE" *ngIf="!a.viewOnly">Manage</option>
+              <option value="NONE">{{ 'No access' | translate }}</option>
+              <option value="VIEW">{{ 'View only' | translate }}</option>
+              <option value="MANAGE" *ngIf="!a.viewOnly">{{ 'Manage' | translate }}</option>
             </select>
           </div>
         </div>
 
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/staff/roles">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/staff/roles">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

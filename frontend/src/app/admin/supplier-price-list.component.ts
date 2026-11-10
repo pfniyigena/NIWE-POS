@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -14,65 +15,65 @@ import { Product, Supplier, SupplierPrice } from '../core/models';
 @Component({
   selector: 'app-supplier-price-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Supplier prices</h3>
+        <h3>{{ 'Supplier prices' | translate }}</h3>
         <select class="form-select" style="max-width:260px;" [(ngModel)]="filterSupplierId" (ngModelChange)="load()" name="filterSupplier">
-          <option [ngValue]="null">All suppliers</option>
+          <option [ngValue]="null">{{ 'All suppliers' | translate }}</option>
           <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
         </select>
       </div>
 
       <div class="card mb-3" style="padding:0.75rem;">
-        <strong>{{ editingId ? 'Edit price' : 'Add a price' }}</strong>
+        <strong>{{ editingId ? ('Edit price' | translate) : ('Add a price' | translate) }}</strong>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div style="min-width:200px;">
-            <label class="form-label">Supplier</label>
+            <label class="form-label">{{ 'Supplier' | translate }}</label>
             <select class="form-select" [(ngModel)]="supplierId" name="supplierId" [disabled]="!!editingId">
-              <option [ngValue]="null" disabled>Select</option>
+              <option [ngValue]="null" disabled>{{ 'Select' | translate }}</option>
               <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
             </select>
           </div>
           <div style="min-width:240px; position:relative;">
-            <label class="form-label">Product</label>
-            <input class="form-control" placeholder="Search name, SKU or code" [(ngModel)]="productSearch" name="productSearch" (input)="onProductSearch()" [disabled]="!!editingId" />
+            <label class="form-label">{{ 'Product' | translate }}</label>
+            <input class="form-control" [placeholder]="'Search name, SKU or code' | translate" [(ngModel)]="productSearch" name="productSearch" (input)="onProductSearch()" [disabled]="!!editingId" />
             <div class="dropdown-panel" *ngIf="productResults.length > 0">
               <div class="dropdown-item" *ngFor="let p of productResults" (click)="selectProduct(p)">{{ p.name }}</div>
             </div>
           </div>
           <div style="width:130px;">
-            <label class="form-label">Unit cost</label>
+            <label class="form-label">{{ 'Unit cost' | translate }}</label>
             <input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="unitCost" name="unitCost" />
           </div>
           <div>
-            <label class="form-label">Valid from</label>
+            <label class="form-label">{{ 'Valid from' | translate }}</label>
             <input class="form-control" type="date" [(ngModel)]="validFrom" name="validFrom" />
           </div>
           <div>
-            <label class="form-label">Valid to</label>
+            <label class="form-label">{{ 'Valid to' | translate }}</label>
             <input class="form-control" type="date" [(ngModel)]="validTo" name="validTo" />
           </div>
           <div style="min-width:160px;">
-            <label class="form-label">Note</label>
+            <label class="form-label">{{ 'Note' | translate }}</label>
             <input class="form-control" [(ngModel)]="note" name="note" />
           </div>
-          <button class="btn btn-primary" type="button" [disabled]="busy" (click)="save()">{{ editingId ? 'Save' : 'Add' }}</button>
-          <button class="btn btn-link" type="button" *ngIf="editingId" (click)="resetForm()">Cancel</button>
+          <button class="btn btn-primary" type="button" [disabled]="busy" (click)="save()">{{ editingId ? ('Save' | translate) : ('Add' | translate) }}</button>
+          <button class="btn btn-link" type="button" *ngIf="editingId" (click)="resetForm()">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Supplier</th>
-            <th>Product</th>
-            <th class="text-end">Unit cost</th>
-            <th>Valid from</th>
-            <th>Valid to</th>
-            <th>Note</th>
+            <th>{{ 'Supplier' | translate }}</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th class="text-end">{{ 'Unit cost' | translate }}</th>
+            <th>{{ 'Valid from' | translate }}</th>
+            <th>{{ 'Valid to' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -85,12 +86,12 @@ import { Product, Supplier, SupplierPrice } from '../core/models';
             <td>{{ p.validTo || '—' }}</td>
             <td>{{ p.note }}</td>
             <td class="flex gap-2">
-              <button class="btn btn-sm btn-outline-primary" type="button" (click)="edit(p)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(p)">Delete</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="edit(p)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(p)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="prices.length === 0">
-            <td colspan="7" class="text-muted">No supplier prices yet.</td>
+            <td colspan="7" class="text-muted">{{ 'No supplier prices yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>

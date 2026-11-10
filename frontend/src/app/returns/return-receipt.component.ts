@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import * as QRCode from 'qrcode';
@@ -30,7 +31,7 @@ import { EfrisChadLogos, EfrisLogos, SalesReturn } from '../core/models';
 @Component({
   selector: 'app-return-receipt',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="salesReturn as r">
       <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
@@ -39,28 +40,28 @@ import { EfrisChadLogos, EfrisLogos, SalesReturn } from '../core/models';
         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"
       >
         <div style="width:25%; text-align:left;">
-          <img *ngIf="authorityLogoDataUrl" [src]="authorityLogoDataUrl" alt="Revenue authority logo" style="max-height:44px; max-width:100%;" />
+          <img *ngIf="authorityLogoDataUrl" [src]="authorityLogoDataUrl" [alt]="'Revenue authority logo' | translate" style="max-height:44px; max-width:100%;" />
         </div>
-        <h3 style="margin:0; text-align:center;">Return Receipt</h3>
+        <h3 style="margin:0; text-align:center;">{{ 'Return Receipt' | translate }}</h3>
         <div style="width:25%; text-align:right;">
-          <img *ngIf="printEfrisLogoDataUrl" [src]="printEfrisLogoDataUrl" alt="EFRIS logo" style="max-height:44px; max-width:100%;" />
+          <img *ngIf="printEfrisLogoDataUrl" [src]="printEfrisLogoDataUrl" [alt]="'EFRIS logo' | translate" style="max-height:44px; max-width:100%;" />
         </div>
       </div>
       <ng-template #plainReceiptTitle>
-        <h3 style="text-align:center; margin-bottom:0;">Return Receipt</h3>
+        <h3 style="text-align:center; margin-bottom:0;">{{ 'Return Receipt' | translate }}</h3>
       </ng-template>
       <p style="text-align:center; margin:4px 0 12px; color:#666; font-size:0.85rem;">
         {{ r.returnDate | date: 'yyyy-MM-dd HH:mm' }}
       </p>
-      <p style="margin:0 0 4px;">Original invoice: {{ r.invoiceNumber }}</p>
-      <p style="margin:0 0 4px;">Customer: {{ r.customerName }}</p>
+      <p style="margin:0 0 4px;">{{ 'Original invoice: {p0}' | translate: { p0: (r.invoiceNumber) } }}</p>
+      <p style="margin:0 0 4px;">{{ 'Customer: {p0}' | translate: { p0: (r.customerName) } }}</p>
       <!-- "Return still completes, flagged for review" — same policy as the sale receipt's own
            efrisError banner: a failed EFRIS submission never blocks or undoes a return, it just
            means the fiscal fields below stayed empty. Staff-facing only (no-print). -->
       <div class="no-print" *ngIf="r.efrisError" style="margin:0 0 8px;">
-        <p style="margin:0 0 4px; font-size:0.8rem; color:#b00;">⚠ EFRIS submission failed: {{ r.efrisError }}</p>
+        <p style="margin:0 0 4px; font-size:0.8rem; color:#b00;">{{ '⚠ EFRIS submission failed: {p0}' | translate: { p0: (r.efrisError) } }}</p>
         <button (click)="retryEfris()" [disabled]="retryingEfris" style="padding:4px 10px; cursor:pointer; font-size:0.8rem;">
-          {{ retryingEfris ? 'Retrying…' : 'Retry EFRIS submission' }}
+          {{ retryingEfris ? ('Retrying…' | translate) : ('Retry EFRIS submission' | translate) }}
         </button>
         <span *ngIf="retryError" style="margin-left:8px; font-size:0.8rem; color:#b00;">{{ retryError }}</span>
       </div>
@@ -70,14 +71,14 @@ import { EfrisChadLogos, EfrisLogos, SalesReturn } from '../core/models';
           <tr *ngFor="let l of r.lines">
             <td style="padding:4px 0;">
               {{ l.description }}
-              <div style="color:#666; font-size:0.8rem;">Qty returned: {{ l.quantity }}</div>
+              <div style="color:#666; font-size:0.8rem;">{{ 'Qty returned: {p0}' | translate: { p0: (l.quantity) } }}</div>
             </td>
             <td style="text-align:right; padding:4px 0; vertical-align:top;">
               {{ l.refundAmount != null ? '−' + (l.refundAmount | number: '1.2-2') : '—' }}
             </td>
           </tr>
           <tr *ngIf="r.lines.length === 0">
-            <td colspan="2" class="text-muted">No line detail recorded for this return.</td>
+            <td colspan="2" class="text-muted">{{ 'No line detail recorded for this return.' | translate }}</td>
           </tr>
         </tbody>
       </table>
@@ -85,67 +86,67 @@ import { EfrisChadLogos, EfrisLogos, SalesReturn } from '../core/models';
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr style="font-weight:700;">
-            <td>Refund total</td>
+            <td>{{ 'Refund total' | translate }}</td>
             <td style="text-align:right;">−{{ r.refundTotal | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td>Refund method</td>
+            <td>{{ 'Refund method' | translate }}</td>
             <td style="text-align:right;">{{ r.refundMethod }}</td>
           </tr>
         </tbody>
       </table>
-      <p *ngIf="r.reason" style="margin:8px 0 0; font-size:0.85rem; color:#444;">Reason: {{ r.reason }}</p>
+      <p *ngIf="r.reason" style="margin:8px 0 0; font-size:0.85rem; color:#444;">{{ 'Reason: {p0}' | translate: { p0: (r.reason) } }}</p>
 
       <!-- EFRIS (Rwanda RRA e-invoicing) fiscal receipt data — same layout as the sale receipt's
            own SDC INFORMATION block; simply doesn't render for a return never submitted to EFRIS
            (r.sdcId null). -->
       <div *ngIf="r.sdcId" style="margin-top:10px; font-size:0.8rem;">
         <hr />
-        <p style="text-align:center; font-weight:700; margin:0 0 6px;">SDC INFORMATION</p>
+        <p style="text-align:center; font-weight:700; margin:0 0 6px;">{{ 'SDC INFORMATION' | translate }}</p>
         <div *ngIf="r.sdcDate && dateTimeParts(r.sdcDate) as sdcDT" style="display:flex; justify-content:space-between;">
-          <span>SDC DATE:{{ sdcDT.date }}</span>
-          <span>TIME:{{ sdcDT.time }}</span>
+          <span>{{ 'SDC DATE:{p0}' | translate: { p0: (sdcDT.date) } }}</span>
+          <span>{{ 'TIME:{p0}' | translate: { p0: (sdcDT.time) } }}</span>
         </div>
         <div *ngIf="r.sdcReceiptNumber" style="display:flex; justify-content:space-between;">
-          <span>SDC RECEIPT NUMBER:</span>
+          <span>{{ 'SDC RECEIPT NUMBER:' | translate }}</span>
           <span>{{ r.sdcReceiptNumber }}</span>
         </div>
         <div style="display:flex; justify-content:space-between;">
-          <span>SDC ID:</span>
+          <span>{{ 'SDC ID:' | translate }}</span>
           <span>{{ r.sdcId }}</span>
         </div>
         <div *ngIf="r.internalData" style="text-align:center; margin-top:6px;">
-          <div>Internal Data:</div>
+          <div>{{ 'Internal Data:' | translate }}</div>
           <div style="word-break:break-all;">{{ r.internalData }}</div>
         </div>
         <div *ngIf="r.signatureData" style="text-align:center; margin-top:6px;">
-          <div>Receipt Signature:</div>
+          <div>{{ 'Receipt Signature:' | translate }}</div>
           <div style="word-break:break-all;">{{ r.signatureData }}</div>
         </div>
         <hr *ngIf="r.cisNumber || r.cisDate || r.mrcData" />
         <div *ngIf="r.cisNumber" style="display:flex; justify-content:space-between;">
-          <span>CIS RECEIPT NUMBER:</span>
+          <span>{{ 'CIS RECEIPT NUMBER:' | translate }}</span>
           <span>{{ r.cisNumber }}</span>
         </div>
         <div *ngIf="r.cisDate && dateTimeParts(r.cisDate) as cisDT" style="display:flex; justify-content:space-between;">
-          <span>CIS DATE:{{ cisDT.date }}</span>
-          <span>TIME:{{ cisDT.time }}</span>
+          <span>{{ 'CIS DATE:{p0}' | translate: { p0: (cisDT.date) } }}</span>
+          <span>{{ 'TIME:{p0}' | translate: { p0: (cisDT.time) } }}</span>
         </div>
         <div *ngIf="r.mrcData" style="display:flex; justify-content:space-between;">
-          <span>MRC:</span>
+          <span>{{ 'MRC:' | translate }}</span>
           <span>{{ r.mrcData }}</span>
         </div>
         <div *ngIf="qrCodeDataUrl" style="text-align:center; margin-top:8px;">
-          <img [src]="qrCodeDataUrl" alt="EFRIS QR code" style="width:120px; height:120px;" />
+          <img [src]="qrCodeDataUrl" [alt]="'EFRIS QR code' | translate" style="width:120px; height:120px;" />
         </div>
       </div>
 
-      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">— Returned —</p>
+      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">{{ '— Returned —' | translate }}</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
+        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
         <a routerLink="/returns" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">
-          Back to returns
+          {{ 'Back to returns' | translate }}
         </a>
       </div>
     </div>

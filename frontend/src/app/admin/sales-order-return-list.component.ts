@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -14,21 +15,21 @@ import { SalesOrderReturn } from '../core/models';
 @Component({
   selector: 'app-sales-order-return-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Sale order returns</h3>
+        <h3>{{ 'Sale order returns' | translate }}</h3>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Return date</th>
-            <th>Return #</th>
-            <th>Sale order</th>
-            <th>Customer</th>
-            <th class="text-end">Refund due</th>
-            <th>Reason</th>
+            <th>{{ 'Return date' | translate }}</th>
+            <th>{{ 'Return #' | translate }}</th>
+            <th>{{ 'Sale order' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th class="text-end">{{ 'Refund due' | translate }}</th>
+            <th>{{ 'Reason' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -41,11 +42,11 @@ import { SalesOrderReturn } from '../core/models';
             <td class="text-end">{{ r.refundTotal | number: '1.2-2' }}</td>
             <td>{{ r.reason }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" *ngIf="r.salesOrderId" [routerLink]="['/admin/sales-orders', r.salesOrderId]">View order</a>
+              <a class="btn btn-sm btn-outline-primary" *ngIf="r.salesOrderId" [routerLink]="['/admin/sales-orders', r.salesOrderId]">{{ 'View order' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="returns.length === 0">
-            <td colspan="7" class="text-muted">No sale order returns processed yet.</td>
+            <td colspan="7" class="text-muted">{{ 'No sale order returns processed yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>
