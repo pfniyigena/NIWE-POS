@@ -1,4 +1,4 @@
-# Translating screens (v1.23.0)
+# Translating screens (v1.24.0)
 
 The English text written in an Angular template is the translation key: `{{ 'Save' | translate }}`. English needs no file; a text with no French shows English.
 
