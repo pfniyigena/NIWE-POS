@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -8,28 +9,28 @@ import { HrApiService, OrgChart } from '../../core/api/hr-api.service';
 @Component({
   selector: 'app-org-chart',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Organization chart</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/hr/org/setup">Departments and positions</a>
+        <h3>{{ 'Organization chart' | translate }}</h3>
+        <a class="btn btn-outline-primary" routerLink="/admin/hr/org/setup">{{ 'Departments and positions' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-start;" *ngIf="chart">
         <div class="card" style="padding:1rem; flex:1; min-width:20rem;">
-          <strong class="mb-2">Departments</strong>
+          <strong class="mb-2">{{ 'Departments' | translate }}</strong>
           <ul class="org-tree">
             <ng-container *ngTemplateOutlet="deptTpl; context: { nodes: chart.departments }"></ng-container>
           </ul>
-          <p class="text-muted" *ngIf="!chart.departments.length">No departments yet.</p>
+          <p class="text-muted" *ngIf="!chart.departments.length">{{ 'No departments yet.' | translate }}</p>
         </div>
         <div class="card" style="padding:1rem; flex:1; min-width:20rem;">
-          <strong class="mb-2">Reporting lines</strong>
+          <strong class="mb-2">{{ 'Reporting lines' | translate }}</strong>
           <ul class="org-tree">
             <ng-container *ngTemplateOutlet="personTpl; context: { nodes: chart.people }"></ng-container>
           </ul>
-          <p class="text-muted" *ngIf="!chart.people.length">No employees yet.</p>
+          <p class="text-muted" *ngIf="!chart.people.length">{{ 'No employees yet.' | translate }}</p>
         </div>
       </div>
 

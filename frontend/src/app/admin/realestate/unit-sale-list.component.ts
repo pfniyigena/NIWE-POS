@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,35 +13,35 @@ import { ProjectRow, RealEstateApiService, UNIT_SALE_STAGE_LABEL, UnitSaleRow, U
 @Component({
   selector: 'app-unit-sale-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Unit sales</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/realestate/projects">Projects</a>
+        <h3>{{ 'Unit sales' | translate }}</h3>
+        <a class="btn btn-outline-secondary" routerLink="/admin/realestate/projects">{{ 'Projects' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="pj" [(ngModel)]="projectId" (ngModelChange)="load()">
-          <option [ngValue]="null">All projects</option><option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">{{ 'All projects' | translate }}</option><option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="stage" (ngModelChange)="load()">
-          <option value="">All stages</option><option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
+          <option value="">{{ 'All stages' | translate }}</option><option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
         </select>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="oo" [(ngModel)]="openOnly" (ngModelChange)="load()" /> Open only</label>
-        <input class="form-control" style="width:15rem;" placeholder="Search sale, buyer, unit" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="oo" [(ngModel)]="openOnly" (ngModelChange)="load()" /> {{ 'Open only' | translate }}</label>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search sale, buyer, unit' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-re-export kind="unit-sales" [filters]="{ q: q.trim(), stage: stage, projectId: projectId, openOnly: openOnly }"></app-re-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Sale</th><th>Unit</th><th>Buyer</th><th>Stage</th><th class="text-end">List price</th><th class="text-end">Agreed price</th><th class="text-end">Paid</th><th class="text-end">Still owed</th><th>Agent</th><th>Date</th></tr></thead>
+        <thead><tr><th>{{ 'Sale' | translate }}</th><th>{{ 'Unit' | translate }}</th><th>{{ 'Buyer' | translate }}</th><th>{{ 'Stage' | translate }}</th><th class="text-end">{{ 'List price' | translate }}</th><th class="text-end">{{ 'Agreed price' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Still owed' | translate }}</th><th>{{ 'Agent' | translate }}</th><th>{{ 'Date' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let s of list">
             <td data-label="Sale"><a [routerLink]="['/admin/realestate/unit-sales', s.id]"><strong>{{ s.code }}</strong></a></td>
             <td data-label="Unit"><a [routerLink]="['/admin/realestate/units', s.unitId]">{{ s.unitNo }}</a><div class="text-muted" style="font-size:0.8rem;">{{ s.projectName }}</div></td>
             <td data-label="Buyer">{{ s.buyerName }}</td>
             <td data-label="Stage"><span class="badge" [class.badge-success]="s.stage === 'COMPLETED'" [class.badge-danger]="s.stage === 'CANCELLED'" [class.badge-warning]="s.stage === 'RESERVED' || s.stage === 'SOLD'">{{ stageName(s.stage) }}</span>
-              <span class="badge badge-danger" *ngIf="s.overdue" style="margin-left:0.3rem;">Late</span></td>
+              <span class="badge badge-danger" *ngIf="s.overdue" style="margin-left:0.3rem;">{{ 'Late' | translate }}</span></td>
             <td class="text-end" data-label="List price">{{ s.listPrice | number: '1.0-0' }}</td>
             <td class="text-end" data-label="Agreed price">{{ s.agreedPrice | number: '1.0-0' }}</td>
             <td class="text-end" data-label="Paid">{{ s.stage === 'RESERVED' || s.stage === 'CANCELLED' ? '—' : (s.paid | number: '1.0-0') }}</td>
@@ -51,7 +52,7 @@ import { ProjectRow, RealEstateApiService, UNIT_SALE_STAGE_LABEL, UnitSaleRow, U
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No unit sales match. Reserve a unit from its page in a project.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No unit sales match. Reserve a unit from its page in a project.' | translate }}</p>
     </app-shell>
   `,
 })

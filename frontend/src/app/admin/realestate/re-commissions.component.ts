@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -16,14 +17,14 @@ const iso = (d: Date): string => new Date(d.getTime() - d.getTimezoneOffset() * 
 @Component({
   selector: 'app-re-commissions',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ReExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ReExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Commissions</h3>
+        <h3>{{ 'Commissions' | translate }}</h3>
         <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
           <button class="btn btn-primary post-due" type="button" *ngIf="canManage && board" (click)="postDue()" [disabled]="busy || !board.sharesToPost || !board.expensesModuleOn || !board.accountSet"
-                  [title]="postHint()">Post earned commission to Expenses{{ board.sharesToPost ? ' (' + board.sharesToPost + ')' : '' }}</button>
+                  [title]="postHint()">{{ 'Post earned commission to Expenses{p0}' | translate: { p0: (board.sharesToPost ? ' (' + board.sharesToPost + ')' : '') } }}</button>
           <app-re-export kind="commissions" [filters]="{ from: from, to: to, payee: payee, openOnly: openOnly }"></app-re-export>
         </div>
       </div>
@@ -34,54 +35,54 @@ const iso = (d: Date): string => new Date(d.getTime() - d.getTimezoneOffset() * 
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select cm-period" style="width:auto;" name="pr" [(ngModel)]="period" (ngModelChange)="setPeriod()">
-          <option value="all">All sales</option><option value="month">Sold this month</option><option value="last">Sold last month</option><option value="year">Sold this year</option><option value="custom">Choose dates…</option>
+          <option value="all">{{ 'All sales' | translate }}</option><option value="month">{{ 'Sold this month' | translate }}</option><option value="last">{{ 'Sold last month' | translate }}</option><option value="year">{{ 'Sold this year' | translate }}</option><option value="custom">{{ 'Choose dates…' | translate }}</option>
         </select>
         <ng-container *ngIf="period === 'custom'">
           <input class="form-control cm-from" style="width:auto;" type="date" name="fr" [(ngModel)]="from" (ngModelChange)="load()" />
           <input class="form-control cm-to" style="width:auto;" type="date" name="tt" [(ngModel)]="to" (ngModelChange)="load()" />
         </ng-container>
         <select class="form-select cm-payee" style="width:auto;" name="py" [(ngModel)]="payee" (ngModelChange)="load()">
-          <option [ngValue]="null">Everyone</option><option *ngFor="let o of options" [ngValue]="o.key">{{ o.name }}</option>
+          <option [ngValue]="null">{{ 'Everyone' | translate }}</option><option *ngFor="let o of options" [ngValue]="o.key">{{ o.name }}</option>
         </select>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input class="cm-open" type="checkbox" name="op" [(ngModel)]="openOnly" (ngModelChange)="load()" /> Only people still owed</label>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input class="cm-open" type="checkbox" name="op" [(ngModel)]="openOnly" (ngModelChange)="load()" /> {{ 'Only people still owed' | translate }}</label>
       </div>
       <div class="text-muted mb-3" style="font-size:0.85rem;" *ngIf="board && canManage && (!board.expensesModuleOn || !board.accountSet)">
-        {{ !board.expensesModuleOn ? 'The Expenses module is off, so commission cannot be posted to the accounts yet.' : 'Choose the expense account for commission in the' }}
-        <a *ngIf="board.expensesModuleOn" routerLink="/admin/realestate/settings">Real Estate settings</a><span *ngIf="board.expensesModuleOn"> before posting.</span>
+        {{ !board.expensesModuleOn ? ('The Expenses module is off, so commission cannot be posted to the accounts yet.' | translate) : ('Choose the expense account for commission in the' | translate) }}
+        <a *ngIf="board.expensesModuleOn" routerLink="/admin/realestate/settings">{{ 'Real Estate settings' | translate }}</a><span *ngIf="board.expensesModuleOn"> {{ 'before posting.' | translate }}</span>
       </div>
 
-      <div *ngIf="!board && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!board && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
       <div class="card" style="padding:1rem;" *ngIf="board && !board.payees.length">
-        <strong>No commission to show.</strong>
-        <div class="text-muted">Share a deal's commission between the people who earned it (on the deal's page). Shares appear here, and become payable when the sale is complete.</div>
+        <strong>{{ 'No commission to show.' | translate }}</strong>
+        <div class="text-muted">{{ 'Share a deal\\'s commission between the people who earned it (on the deal\\'s page). Shares appear here, and become payable when the sale is complete.' | translate }}</div>
       </div>
 
       <div *ngIf="board && board.payees.length" class="mb-3" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem, 1fr)); gap:0.6rem;">
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">Earned</div><div style="font-size:1.3rem; font-weight:600;">{{ board.earned | number: '1.0-0' }}</div></div>
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">Paid out</div><div style="font-size:1.3rem; font-weight:600; color:#0f766e;">{{ board.paid | number: '1.0-0' }}</div></div>
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">Still to pay</div><div style="font-size:1.3rem; font-weight:600; color:#b45309;">{{ board.owed | number: '1.0-0' }}</div></div>
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">Not earned yet</div><div style="font-size:1.3rem; font-weight:600;">{{ board.planned | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">sale not complete</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Earned' | translate }}</div><div style="font-size:1.3rem; font-weight:600;">{{ board.earned | number: '1.0-0' }}</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Paid out' | translate }}</div><div style="font-size:1.3rem; font-weight:600; color:#0f766e;">{{ board.paid | number: '1.0-0' }}</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Still to pay' | translate }}</div><div style="font-size:1.3rem; font-weight:600; color:#b45309;">{{ board.owed | number: '1.0-0' }}</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Not earned yet' | translate }}</div><div style="font-size:1.3rem; font-weight:600;">{{ board.planned | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ 'sale not complete' | translate }}</div></div>
       </div>
 
       <div *ngFor="let p of board?.payees; trackBy: byKey" class="card mb-3 payee" style="padding:1rem;">
         <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
           <div>
-            <h4>{{ p.payeeName }} <span class="badge badge-secondary" style="font-size:0.75rem;">{{ p.payeeKind === 'STAFF' ? 'Staff' : 'External' }}</span></h4>
+            <h4>{{ p.payeeName }} <span class="badge badge-secondary" style="font-size:0.75rem;">{{ p.payeeKind === 'STAFF' ? ('Staff' | translate) : ('External' | translate) }}</span></h4>
             <div class="text-muted" style="font-size:0.9rem;">
-              Earned {{ p.earned | number: '1.0-0' }} · paid {{ p.paid | number: '1.0-0' }} · <strong [style.color]="p.owed ? '#b45309' : ''">still to pay {{ p.owed | number: '1.0-0' }}</strong>
-              <span *ngIf="p.toPost"> · {{ p.toPost | number: '1.0-0' }} to post</span><span *ngIf="p.awaitingApproval"> · {{ p.awaitingApproval | number: '1.0-0' }} awaiting approval</span>
-              <span *ngIf="p.toPay"> · {{ p.toPay | number: '1.0-0' }} approved, to pay</span><span *ngIf="p.planned"> · {{ p.planned | number: '1.0-0' }} not earned yet</span>
-              <span *ngIf="p.rejected" style="color:#b91c1c;"> · {{ p.rejected | number: '1.0-0' }} rejected</span>
+              {{ 'Earned {p0} · paid {p1} ·' | translate: { p0: (p.earned | number: '1.0-0'), p1: (p.paid | number: '1.0-0') } }} <strong [style.color]="p.owed ? '#b45309' : ''">{{ 'still to pay {p0}' | translate: { p0: (p.owed | number: '1.0-0') } }}</strong>
+              <span *ngIf="p.toPost"> {{ '· {p0} to post' | translate: { p0: (p.toPost | number: '1.0-0') } }}</span><span *ngIf="p.awaitingApproval"> {{ '· {p0} awaiting approval' | translate: { p0: (p.awaitingApproval | number: '1.0-0') } }}</span>
+              <span *ngIf="p.toPay"> {{ '· {p0} approved, to pay' | translate: { p0: (p.toPay | number: '1.0-0') } }}</span><span *ngIf="p.planned"> {{ '· {p0} not earned yet' | translate: { p0: (p.planned | number: '1.0-0') } }}</span>
+              <span *ngIf="p.rejected" style="color:#b91c1c;"> {{ '· {p0} rejected' | translate: { p0: (p.rejected | number: '1.0-0') } }}</span>
             </div>
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <button class="btn btn-sm btn-outline-secondary cm-statement" type="button" (click)="statement(p)" [disabled]="busy">Statement</button>
+            <button class="btn btn-sm btn-outline-secondary cm-statement" type="button" (click)="statement(p)" [disabled]="busy">{{ 'Statement' | translate }}</button>
             <button class="btn btn-sm btn-outline-secondary cm-email" type="button" *ngIf="canManage" (click)="email(p)" [disabled]="busy || !board!.mailConfigured || p.payeeKind !== 'STAFF' || !p.hasEmail"
-                    [title]="emailHint(p)">E-mail statement</button>
+                    [title]="emailHint(p)">{{ 'E-mail statement' | translate }}</button>
           </div>
         </div>
         <table class="stack table-sm">
-          <thead><tr><th>Deal</th><th>Property</th><th>Completed</th><th class="text-end">Sale price</th><th>Role</th><th class="text-end">Commission</th><th>Status</th></tr></thead>
+          <thead><tr><th>{{ 'Deal' | translate }}</th><th>{{ 'Property' | translate }}</th><th>{{ 'Completed' | translate }}</th><th class="text-end">{{ 'Sale price' | translate }}</th><th>{{ 'Role' | translate }}</th><th class="text-end">{{ 'Commission' | translate }}</th><th>{{ 'Status' | translate }}</th></tr></thead>
           <tbody><tr *ngFor="let l of p.lines; trackBy: byLine">
             <td data-label="Deal"><a [routerLink]="['/admin/realestate/deals', l.dealId]">{{ l.dealCode }}</a></td>
             <td data-label="Property">{{ l.propertyCode }} {{ l.propertyTitle }}</td>

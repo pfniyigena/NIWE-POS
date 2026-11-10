@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PmStatementApiService, STATEMENT_STATUS_LABEL, StatementRow, statementBadge } from '../../core/api/pm-statement-api.service';
@@ -7,18 +8,18 @@ import { PmStatementApiService, STATEMENT_STATUS_LABEL, StatementRow, statementB
 @Component({
   selector: 'app-statements-panel',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="card" style="padding:1rem; margin-top:0.75rem;">
       <div class="flex justify-between align-center mb-2">
-        <h4>Statements</h4>
+        <h4>{{ 'Statements' | translate }}</h4>
         <div class="flex gap-2">
-          <a class="btn btn-sm btn-outline-primary" *ngIf="canManage" routerLink="/admin/propertymgmt/statements" [queryParams]="{ ownerId: ownerId, make: 1 }">+ Statement</a>
-          <a class="btn btn-sm btn-outline-secondary" routerLink="/admin/propertymgmt/statements" [queryParams]="{ ownerId: ownerId }">All</a>
+          <a class="btn btn-sm btn-outline-primary" *ngIf="canManage" routerLink="/admin/propertymgmt/statements" [queryParams]="{ ownerId: ownerId, make: 1 }">{{ '+ Statement' | translate }}</a>
+          <a class="btn btn-sm btn-outline-secondary" routerLink="/admin/propertymgmt/statements" [queryParams]="{ ownerId: ownerId }">{{ 'All' | translate }}</a>
         </div>
       </div>
       <table class="stack table-sm" *ngIf="rows.length; else none">
-        <thead><tr><th>Statement</th><th>Period</th><th>Status</th><th class="text-end">Rent</th><th class="text-end">Net to owner</th></tr></thead>
+        <thead><tr><th>{{ 'Statement' | translate }}</th><th>{{ 'Period' | translate }}</th><th>{{ 'Status' | translate }}</th><th class="text-end">{{ 'Rent' | translate }}</th><th class="text-end">{{ 'Net to owner' | translate }}</th></tr></thead>
         <tbody><tr *ngFor="let s of rows">
           <td data-label="Statement"><a [routerLink]="['/admin/propertymgmt/statements', s.id]"><strong>{{ s.code }}</strong></a></td>
           <td style="white-space:nowrap;" data-label="Period">{{ s.periodFrom | date: 'd MMM y' }} – {{ s.periodTo | date: 'd MMM y' }}</td>
@@ -27,7 +28,7 @@ import { PmStatementApiService, STATEMENT_STATUS_LABEL, StatementRow, statementB
           <td class="text-end" [style.color]="s.netPayable < 0 ? '#b91c1c' : ''" data-label="Net to owner"><strong>{{ s.netPayable | number: '1.0-0' }}</strong></td>
         </tr></tbody>
       </table>
-      <ng-template #none><div class="text-muted">{{ loaded ? 'No statements yet.' : 'Loading…' }}</div></ng-template>
+      <ng-template #none><div class="text-muted">{{ loaded ? ('No statements yet.' | translate) : ('Loading…' | translate) }}</div></ng-template>
     </div>
   `,
 })

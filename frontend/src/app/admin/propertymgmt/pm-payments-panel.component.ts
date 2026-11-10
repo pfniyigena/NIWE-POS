@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentRow, PmAccountApiService } from '../../core/api/pm-account-api.service';
@@ -8,14 +9,14 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-pm-payments-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="card" style="padding:1rem; margin-top:0.75rem;">
-      <h4 class="mb-2">Payments received</h4>
+      <h4 class="mb-2">{{ 'Payments received' | translate }}</h4>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="note">{{ note }}</div>
       <table class="stack table-sm" *ngIf="rows.length; else none">
-        <thead><tr><th>Date</th><th>Receipt</th><th>Paid by</th><th>For</th><th class="text-end">Amount</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Receipt' | translate }}</th><th>{{ 'Paid by' | translate }}</th><th>{{ 'For' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th></th></tr></thead>
         <tbody><tr *ngFor="let p of rows">
           <td style="white-space:nowrap;" data-label="Date">{{ p.paidDate | date: 'd MMM y' }}</td>
           <td data-label="Receipt">{{ p.receiptNumber }}</td>
@@ -23,23 +24,23 @@ import { downloadBlob } from '../../core/download-file';
           <td data-label="For"><div>{{ p.leaseCode }}<span *ngIf="p.unit"> · {{ p.unit }}</span><div class="text-muted" style="font-size:0.75rem;">{{ p.invoices.join(', ') }}</div></div></td>
           <td class="text-end" data-label="Amount"><strong>{{ p.amount | number: '1.0-0' }}</strong></td>
           <td style="white-space:nowrap; text-align:right;" data-label="">
-            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="download(p)" [disabled]="busy">Receipt</button>
-            <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="canManage" (click)="open(p)" [disabled]="busy" style="margin-left:0.3rem;">E-mail</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="download(p)" [disabled]="busy">{{ 'Receipt' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="canManage" (click)="open(p)" [disabled]="busy" style="margin-left:0.3rem;">{{ 'E-mail' | translate }}</button>
           </td>
         </tr></tbody>
       </table>
-      <ng-template #none><div class="text-muted">{{ loaded ? 'No payments received yet.' : 'Loading…' }}</div></ng-template>
+      <ng-template #none><div class="text-muted">{{ loaded ? ('No payments received yet.' | translate) : ('Loading…' | translate) }}</div></ng-template>
 
       <form *ngIf="sending" class="mt-2" style="border-top:1px solid var(--border); padding-top:0.75rem;" (ngSubmit)="send()">
-        <div class="mb-2"><strong>E-mail receipt {{ sending.receiptNumber }}</strong></div>
+        <div class="mb-2"><strong>{{ 'E-mail receipt {p0}' | translate: { p0: (sending.receiptNumber) } }}</strong></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">To</label>
-            <input class="form-control" type="email" name="to" [(ngModel)]="address" placeholder="Leave empty to use the tenant's address" /></div>
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Message (optional)</label>
+          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'To' | translate }}</label>
+            <input class="form-control" type="email" name="to" [(ngModel)]="address" [placeholder]="'Leave empty to use the tenant\\'s address' | translate" /></div>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Message (optional)' | translate }}</label>
             <input class="form-control" name="msg" [(ngModel)]="message" maxlength="1000" /></div>
         </div>
-        <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy">{{ busy ? 'Sending…' : 'Send receipt' }}</button>
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="sending = null" style="margin-left:0.4rem;">Cancel</button>
+        <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy">{{ busy ? ('Sending…' | translate) : ('Send receipt' | translate) }}</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="sending = null" style="margin-left:0.4rem;">{{ 'Cancel' | translate }}</button>
       </form>
     </div>
   `,

@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -13,139 +14,139 @@ import { LawApiService, MatterTrust, TRUST_TYPE_LABEL, TrustTx } from '../../cor
 @Component({
   selector: 'app-law-matter-trust',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, DatePickerComponent],
   template: `
     <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success" *ngIf="info">{{ info }}</div>
-    <div *ngIf="!t && !error" class="text-muted">Loading…</div>
+    <div *ngIf="!t && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
 
     <ng-container *ngIf="t">
       <div class="card" style="padding:1rem;" *ngIf="!t.enabled">
-        <strong>The client money (trust) account is switched off.</strong>
+        <strong>{{ 'The client money (trust) account is switched off.' | translate }}</strong>
         <div class="text-muted">An admin can switch it on in Law Firm &gt; Settings. Until then no client money can be recorded here.</div>
       </div>
 
       <ng-container *ngIf="t.enabled">
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
-          <div class="card" style="padding:0.6rem 0.9rem; min-width:10rem;"><div class="text-muted" style="font-size:0.8rem;">Held for {{ t.clientName }}</div><strong style="font-size:1.2rem;">{{ t.balance | number: '1.0-2' }}</strong>
-            <div class="text-muted" style="font-size:0.75rem;">in the trust account, not the firm's money</div></div>
-          <div class="card" style="padding:0.6rem 0.9rem; min-width:10rem;" *ngIf="t.pending > 0"><div class="text-muted" style="font-size:0.8rem;">Waiting to be paid out</div><strong>{{ t.pending | number: '1.0-2' }}</strong>
-            <div class="text-muted" style="font-size:0.75rem;">available now {{ t.available | number: '1.0-2' }}</div></div>
-          <div class="card" style="padding:0.6rem 0.9rem; min-width:10rem;" *ngIf="t.bankName || t.accountNumber"><div class="text-muted" style="font-size:0.8rem;">Trust account</div><strong>{{ t.bankName }}</strong>
+          <div class="card" style="padding:0.6rem 0.9rem; min-width:10rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Held for {p0}' | translate: { p0: (t.clientName) } }}</div><strong style="font-size:1.2rem;">{{ t.balance | number: '1.0-2' }}</strong>
+            <div class="text-muted" style="font-size:0.75rem;">{{ 'in the trust account, not the firm\\'s money' | translate }}</div></div>
+          <div class="card" style="padding:0.6rem 0.9rem; min-width:10rem;" *ngIf="t.pending > 0"><div class="text-muted" style="font-size:0.8rem;">{{ 'Waiting to be paid out' | translate }}</div><strong>{{ t.pending | number: '1.0-2' }}</strong>
+            <div class="text-muted" style="font-size:0.75rem;">{{ 'available now {p0}' | translate: { p0: (t.available | number: '1.0-2') } }}</div></div>
+          <div class="card" style="padding:0.6rem 0.9rem; min-width:10rem;" *ngIf="t.bankName || t.accountNumber"><div class="text-muted" style="font-size:0.8rem;">{{ 'Trust account' | translate }}</div><strong>{{ t.bankName }}</strong>
             <div class="text-muted" style="font-size:0.75rem;">{{ t.accountNumber }}</div></div>
         </div>
 
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap;" *ngIf="t.canRecord">
-          <button class="btn" [class.btn-primary]="mode === 'deposit'" [class.btn-outline-primary]="mode !== 'deposit'" *ngIf="t.canDeposit" (click)="open('deposit')">Receive money</button>
-          <button class="btn" [class.btn-primary]="mode === 'payout'" [class.btn-outline-primary]="mode !== 'payout'" (click)="open('payout')">Pay out…</button>
-          <button class="btn" [class.btn-primary]="mode === 'fee'" [class.btn-outline-primary]="mode !== 'fee'" (click)="open('fee')" [disabled]="!t.invoices.length" [title]="t.invoices.length ? '' : 'No issued invoice from this matter is waiting to be paid'">Pay an invoice from trust…</button>
+          <button class="btn" [class.btn-primary]="mode === 'deposit'" [class.btn-outline-primary]="mode !== 'deposit'" *ngIf="t.canDeposit" (click)="open('deposit')">{{ 'Receive money' | translate }}</button>
+          <button class="btn" [class.btn-primary]="mode === 'payout'" [class.btn-outline-primary]="mode !== 'payout'" (click)="open('payout')">{{ 'Pay out…' | translate }}</button>
+          <button class="btn" [class.btn-primary]="mode === 'fee'" [class.btn-outline-primary]="mode !== 'fee'" (click)="open('fee')" [disabled]="!t.invoices.length" [title]="t.invoices.length ? '' : 'No issued invoice from this matter is waiting to be paid'">{{ 'Pay an invoice from trust…' | translate }}</button>
         </div>
 
         <!-- receive -->
         <form class="card mb-3" style="padding:1rem;" *ngIf="mode === 'deposit'" (ngSubmit)="deposit()">
-          <h4 class="mb-2">Receive client money</h4>
+          <h4 class="mb-2">{{ 'Receive client money' | translate }}</h4>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">Amount</label><input class="form-control" type="number" min="0" step="0.01" name="da" [(ngModel)]="dep.amount" /></div>
-            <div class="form-group" style="min-width:9rem;"><label class="form-label">Date received</label><app-date-picker name="dd" [(ngModel)]="dep.date"></app-date-picker></div>
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">How paid</label>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="da" [(ngModel)]="dep.amount" /></div>
+            <div class="form-group" style="min-width:9rem;"><label class="form-label">{{ 'Date received' | translate }}</label><app-date-picker name="dd" [(ngModel)]="dep.date"></app-date-picker></div>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'How paid' | translate }}</label>
               <select class="form-select" name="dm" [(ngModel)]="dep.method"><option *ngFor="let m of methods" [value]="m">{{ m }}</option></select></div>
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">Reference <span class="text-muted">(cheque / transfer no.)</span></label><input class="form-control" name="dr" [(ngModel)]="dep.reference" /></div>
-            <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">Paid in by</label><input class="form-control" name="dp" [(ngModel)]="dep.payerName" /></div>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Reference' | translate }} <span class="text-muted">{{ '(cheque / transfer no.)' | translate }}</span></label><input class="form-control" name="dr" [(ngModel)]="dep.reference" /></div>
+            <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Paid in by' | translate }}</label><input class="form-control" name="dp" [(ngModel)]="dep.payerName" /></div>
           </div>
-          <div class="form-group mb-2"><label class="form-label">What it is for</label><input class="form-control" name="du" [(ngModel)]="dep.purpose" /></div>
-          <div class="text-muted mb-2" style="font-size:0.85rem;">Only money that belongs to the client goes here. Never put the firm's own money or its fees in the trust account.</div>
-          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Record the deposit</button><button class="btn btn-outline-secondary" type="button" (click)="mode = null">Cancel</button></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'What it is for' | translate }}</label><input class="form-control" name="du" [(ngModel)]="dep.purpose" /></div>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Only money that belongs to the client goes here. Never put the firm\\'s own money or its fees in the trust account.' | translate }}</div>
+          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Record the deposit' | translate }}</button><button class="btn btn-outline-secondary" type="button" (click)="mode = null">{{ 'Cancel' | translate }}</button></div>
         </form>
 
         <!-- payout -->
         <form class="card mb-3" style="padding:1rem;" *ngIf="mode === 'payout'" (ngSubmit)="payout()">
-          <h4 class="mb-2">Pay out client money</h4>
+          <h4 class="mb-2">{{ 'Pay out client money' | translate }}</h4>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">Amount <span class="text-muted">(up to {{ t.available | number: '1.0-2' }})</span></label><input class="form-control" type="number" min="0" step="0.01" name="pa" [(ngModel)]="pay.amount" /></div>
-            <div class="form-group" style="min-width:9rem;"><label class="form-label">Date</label><app-date-picker name="pd" [(ngModel)]="pay.date"></app-date-picker></div>
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">How paid</label>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Amount' | translate }} <span class="text-muted">{{ '(up to {p0})' | translate: { p0: (t.available | number: '1.0-2') } }}</span></label><input class="form-control" type="number" min="0" step="0.01" name="pa" [(ngModel)]="pay.amount" /></div>
+            <div class="form-group" style="min-width:9rem;"><label class="form-label">{{ 'Date' | translate }}</label><app-date-picker name="pd" [(ngModel)]="pay.date"></app-date-picker></div>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'How paid' | translate }}</label>
               <select class="form-select" name="pm" [(ngModel)]="pay.method"><option *ngFor="let m of methods" [value]="m">{{ m }}</option></select></div>
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">Reference</label><input class="form-control" name="pr" [(ngModel)]="pay.reference" /></div>
-            <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">Paid to</label><input class="form-control" name="pp" [(ngModel)]="pay.payeeName" /></div>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Reference' | translate }}</label><input class="form-control" name="pr" [(ngModel)]="pay.reference" /></div>
+            <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Paid to' | translate }}</label><input class="form-control" name="pp" [(ngModel)]="pay.payeeName" /></div>
           </div>
-          <div class="form-group mb-2"><label class="form-label">What it is for</label><input class="form-control" name="pu" [(ngModel)]="pay.purpose" /></div>
-          <div class="text-muted mb-2" style="font-size:0.85rem;">The money only leaves the trust account after another person (the matter's lead lawyer or an admin) approves it. You cannot pay out more than the client has.</div>
-          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Ask for approval</button><button class="btn btn-outline-secondary" type="button" (click)="mode = null">Cancel</button></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'What it is for' | translate }}</label><input class="form-control" name="pu" [(ngModel)]="pay.purpose" /></div>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'The money only leaves the trust account after another person (the matter\\'s lead lawyer or an admin) approves it. You cannot pay out more than the client has.' | translate }}</div>
+          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Ask for approval' | translate }}</button><button class="btn btn-outline-secondary" type="button" (click)="mode = null">{{ 'Cancel' | translate }}</button></div>
         </form>
 
         <!-- fee transfer -->
         <form class="card mb-3" style="padding:1rem;" *ngIf="mode === 'fee'" (ngSubmit)="fee()">
-          <h4 class="mb-2">Pay an invoice from the client's money</h4>
+          <h4 class="mb-2">{{ 'Pay an invoice from the client\\'s money' | translate }}</h4>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <div class="form-group" style="min-width:16rem;"><label class="form-label">Invoice</label>
+            <div class="form-group" style="min-width:16rem;"><label class="form-label">{{ 'Invoice' | translate }}</label>
               <select class="form-select" name="fi" [(ngModel)]="ft.invoiceId" (ngModelChange)="pickInvoice()">
-                <option [ngValue]="null">Choose an invoice…</option>
-                <option *ngFor="let i of t.invoices" [ngValue]="i.invoiceId">{{ i.invoiceNumber }} — owes {{ i.outstanding | number: '1.0-2' }}<span *ngIf="i.waiting"> ({{ i.waiting | number: '1.0-2' }} waiting)</span></option>
+                <option [ngValue]="null">{{ 'Choose an invoice…' | translate }}</option>
+                <option *ngFor="let i of t.invoices" [ngValue]="i.invoiceId">{{ '{p0} — owes {p1}' | translate: { p0: (i.invoiceNumber), p1: (i.outstanding | number: '1.0-2') } }}<span *ngIf="i.waiting"> {{ '({p0} waiting)' | translate: { p0: (i.waiting | number: '1.0-2') } }}</span></option>
               </select></div>
-            <div class="form-group" style="min-width:10rem;"><label class="form-label">Amount</label><input class="form-control" type="number" min="0" step="0.01" name="fa" [(ngModel)]="ft.amount" /></div>
+            <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="fa" [(ngModel)]="ft.amount" /></div>
           </div>
-          <div class="text-muted mb-2" style="font-size:0.85rem;">The invoice is marked paid and the client's balance goes down when another person (the matter's lead lawyer or an admin) approves. It cannot be more than the invoice still owes or than the client has.</div>
-          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy || !ft.invoiceId">Ask for approval</button><button class="btn btn-outline-secondary" type="button" (click)="mode = null">Cancel</button></div>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'The invoice is marked paid and the client\\'s balance goes down when another person (the matter\\'s lead lawyer or an admin) approves. It cannot be more than the invoice still owes or than the client has.' | translate }}</div>
+          <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy || !ft.invoiceId">{{ 'Ask for approval' | translate }}</button><button class="btn btn-outline-secondary" type="button" (click)="mode = null">{{ 'Cancel' | translate }}</button></div>
         </form>
 
         <!-- decide -->
         <div class="card mb-3" style="padding:1rem; border-left:4px solid #e67e22;" *ngIf="deciding">
-          <h4 class="mb-2">{{ deciding.kind === 'approve' ? 'Approve' : deciding.kind === 'reject' ? 'Reject' : 'Take the deposit back' }} {{ deciding.tx.number }}</h4>
-          <div class="mb-2">{{ typeLabel(deciding.tx) }} of <strong>{{ deciding.tx.amount | number: '1.0-2' }}</strong><span *ngIf="deciding.tx.partyName"> — {{ deciding.tx.partyName }}</span><span *ngIf="deciding.tx.invoiceNumber"> — invoice {{ deciding.tx.invoiceNumber }}</span>, asked by {{ deciding.tx.requestedByName }}.</div>
-          <div class="form-group mb-2"><label class="form-label">{{ deciding.kind === 'approve' ? 'Note (optional)' : deciding.kind === 'reject' ? 'Why are you rejecting it?' : 'Why is it being taken back? (for example: the cheque bounced)' }}</label>
+          <h4 class="mb-2">{{ deciding.kind === 'approve' ? ('Approve' | translate) : deciding.kind === 'reject' ? ('Reject' | translate) : ('Take the deposit back' | translate) }} {{ deciding.tx.number }}</h4>
+          <div class="mb-2">{{ '{p0} of' | translate: { p0: (typeLabel(deciding.tx)) } }} <strong>{{ deciding.tx.amount | number: '1.0-2' }}</strong><span *ngIf="deciding.tx.partyName"> — {{ deciding.tx.partyName }}</span><span *ngIf="deciding.tx.invoiceNumber"> {{ '— invoice {p0}' | translate: { p0: (deciding.tx.invoiceNumber) } }}</span>{{ ', asked by {p0}.' | translate: { p0: (deciding.tx.requestedByName) } }}</div>
+          <div class="form-group mb-2"><label class="form-label">{{ deciding.kind === 'approve' ? 'Note (optional)' : deciding.kind === 'reject' ? ('Why are you rejecting it?' | translate) : ('Why is it being taken back? (for example: the cheque bounced)' | translate) }}</label>
             <input class="form-control" name="dn" [(ngModel)]="decisionNote" /></div>
           <div class="flex gap-2">
-            <button class="btn btn-primary" (click)="decide()" [disabled]="busy || (deciding.kind !== 'approve' && !decisionNote.trim())">{{ deciding.kind === 'approve' ? 'Approve and pay' : deciding.kind === 'reject' ? 'Reject' : 'Take it back' }}</button>
-            <button class="btn btn-outline-secondary" (click)="deciding = null">Cancel</button>
+            <button class="btn btn-primary" (click)="decide()" [disabled]="busy || (deciding.kind !== 'approve' && !decisionNote.trim())">{{ deciding.kind === 'approve' ? 'Approve and pay' : deciding.kind === 'reject' ? ('Reject' | translate) : ('Take it back' | translate) }}</button>
+            <button class="btn btn-outline-secondary" (click)="deciding = null">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
 
         <!-- statement -->
         <div class="card mb-3" style="padding:0.8rem 1rem;" *ngIf="t.transactions.length">
           <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-            <strong>Client statement</strong>
-            <span class="text-muted">from</span><app-date-picker name="sf" [(ngModel)]="stFrom"></app-date-picker>
-            <span class="text-muted">to</span><app-date-picker name="st" [(ngModel)]="stTo"></app-date-picker>
-            <button class="btn btn-outline-secondary tr-statement" type="button" (click)="statement()" [disabled]="busy">Print statement</button>
-            <button class="btn btn-outline-primary tr-statement-mail" type="button" *ngIf="t.canRecord" (click)="emailStatement()" [disabled]="busy">E-mail to the client</button>
+            <strong>{{ 'Client statement' | translate }}</strong>
+            <span class="text-muted">{{ 'from' | translate }}</span><app-date-picker name="sf" [(ngModel)]="stFrom"></app-date-picker>
+            <span class="text-muted">{{ 'to' | translate }}</span><app-date-picker name="st" [(ngModel)]="stTo"></app-date-picker>
+            <button class="btn btn-outline-secondary tr-statement" type="button" (click)="statement()" [disabled]="busy">{{ 'Print statement' | translate }}</button>
+            <button class="btn btn-outline-primary tr-statement-mail" type="button" *ngIf="t.canRecord" (click)="emailStatement()" [disabled]="busy">{{ 'E-mail to the client' | translate }}</button>
           </div>
-          <div class="text-muted" style="font-size:0.8rem;">Leave the dates empty for the whole history up to today.</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Leave the dates empty for the whole history up to today.' | translate }}</div>
         </div>
 
         <!-- ledger -->
         <div class="card" style="padding:1rem; overflow-x:auto;">
           <table class="stack table-sm">
-            <thead><tr><th>Date</th><th>No.</th><th>What</th><th>Details</th><th class="text-end">In</th><th class="text-end">Out</th><th class="text-end">Balance</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'No.' | translate }}</th><th>{{ 'What' | translate }}</th><th>{{ 'Details' | translate }}</th><th class="text-end">{{ 'In' | translate }}</th><th class="text-end">{{ 'Out' | translate }}</th><th class="text-end">{{ 'Balance' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let x of t.transactions" [style.opacity]="x.status === 'REJECTED' || x.status === 'CANCELLED' ? 0.55 : 1">
                 <td data-label="Date">{{ x.txDate | date: 'd MMM y' }}</td>
                 <td data-label="No.">{{ x.number }}</td>
                 <td data-label="What">{{ typeLabel(x) }}
-                  <span class="badge" *ngIf="x.status === 'PENDING'" style="background:#e67e22; color:#fff;">waiting for approval</span>
-                  <span class="badge" *ngIf="x.status === 'REJECTED'" style="background:#c0392b; color:#fff;">rejected</span>
-                  <span class="badge" *ngIf="x.status === 'CANCELLED'" style="background:#7f8c8d; color:#fff;">cancelled</span>
-                  <span class="badge" *ngIf="x.reversed" style="background:#7f8c8d; color:#fff;">taken back</span></td>
+                  <span class="badge" *ngIf="x.status === 'PENDING'" style="background:#e67e22; color:#fff;">{{ 'waiting for approval' | translate }}</span>
+                  <span class="badge" *ngIf="x.status === 'REJECTED'" style="background:#c0392b; color:#fff;">{{ 'rejected' | translate }}</span>
+                  <span class="badge" *ngIf="x.status === 'CANCELLED'" style="background:#7f8c8d; color:#fff;">{{ 'cancelled' | translate }}</span>
+                  <span class="badge" *ngIf="x.reversed" style="background:#7f8c8d; color:#fff;">{{ 'taken back' | translate }}</span></td>
                 <td data-label="Details">
                   <div *ngIf="x.partyName">{{ x.partyName }}<span class="text-muted" *ngIf="x.method"> · {{ x.method }}</span><span class="text-muted" *ngIf="x.reference"> · {{ x.reference }}</span></div>
-                  <div *ngIf="x.invoiceNumber">Invoice {{ x.invoiceNumber }}</div>
+                  <div *ngIf="x.invoiceNumber">{{ 'Invoice {p0}' | translate: { p0: (x.invoiceNumber) } }}</div>
                   <div class="text-muted" style="font-size:0.8rem;" *ngIf="x.purpose">{{ x.purpose }}</div>
-                  <div class="text-muted" style="font-size:0.8rem;">by {{ x.requestedByName }}<span *ngIf="x.decidedByName && x.type !== 'DEPOSIT_REVERSAL'"> · {{ x.status === 'POSTED' ? 'approved' : x.status === 'REJECTED' ? 'rejected' : 'cancelled' }} by {{ x.decidedByName }}</span><span *ngIf="x.decisionNote"> — {{ x.decisionNote }}</span></div>
+                  <div class="text-muted" style="font-size:0.8rem;">{{ 'by {p0}' | translate: { p0: (x.requestedByName) } }}<span *ngIf="x.decidedByName && x.type !== 'DEPOSIT_REVERSAL'"> {{ '· {p0} by {p1}' | translate: { p0: (x.status === 'POSTED' ? 'approved' : x.status === 'REJECTED' ? 'rejected' : 'cancelled'), p1: (x.decidedByName) } }}</span><span *ngIf="x.decisionNote"> — {{ x.decisionNote }}</span></div>
                 </td>
                 <td class="text-end" data-label="In">{{ x.type === 'DEPOSIT' && x.status === 'POSTED' ? (x.amount | number: '1.0-2') : '' }}</td>
                 <td class="text-end" data-label="Out">{{ x.type !== 'DEPOSIT' && x.status === 'POSTED' ? (x.amount | number: '1.0-2') : '' }}<span *ngIf="x.status === 'PENDING'" class="text-muted">({{ x.amount | number: '1.0-2' }})</span></td>
                 <td class="text-end" data-label="Balance"><strong>{{ x.balanceAfter != null ? (x.balanceAfter | number: '1.0-2') : '' }}</strong></td>
                 <td style="white-space:nowrap;">
-                  <button class="btn btn-sm btn-outline-secondary tr-receipt" *ngIf="x.status === 'POSTED' && !x.reversed" (click)="receipt(x)">{{ x.type === 'DEPOSIT' ? 'Receipt' : 'Voucher' }}</button>
-                  <button class="btn btn-sm btn-primary" *ngIf="x.canApprove" (click)="ask(x, 'approve')">Approve</button>
-                  <button class="btn btn-sm btn-outline-danger" *ngIf="x.status === 'PENDING' && x.canCancel && !x.canApprove" (click)="cancel(x)">Cancel</button>
-                  <button class="btn btn-sm btn-outline-danger" *ngIf="x.canApprove" (click)="ask(x, 'reject')">Reject</button>
-                  <button class="btn btn-sm btn-outline-secondary" *ngIf="x.canReverse" (click)="ask(x, 'reverse')">Take back</button>
+                  <button class="btn btn-sm btn-outline-secondary tr-receipt" *ngIf="x.status === 'POSTED' && !x.reversed" (click)="receipt(x)">{{ x.type === 'DEPOSIT' ? ('Receipt' | translate) : ('Voucher' | translate) }}</button>
+                  <button class="btn btn-sm btn-primary" *ngIf="x.canApprove" (click)="ask(x, 'approve')">{{ 'Approve' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger" *ngIf="x.status === 'PENDING' && x.canCancel && !x.canApprove" (click)="cancel(x)">{{ 'Cancel' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger" *ngIf="x.canApprove" (click)="ask(x, 'reject')">{{ 'Reject' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" *ngIf="x.canReverse" (click)="ask(x, 'reverse')">{{ 'Take back' | translate }}</button>
                 </td>
               </tr>
-              <tr *ngIf="!t.transactions.length"><td colspan="8" class="text-muted">No client money has been recorded for this matter.</td></tr>
+              <tr *ngIf="!t.transactions.length"><td colspan="8" class="text-muted">{{ 'No client money has been recorded for this matter.' | translate }}</td></tr>
             </tbody>
           </table>
-          <div class="text-muted mt-2" style="font-size:0.8rem;">Entries are never edited or deleted. A mistake is corrected with a "take back" entry that stays on the record. Check the bar's or the firm's own rules for client money with your accountant.</div>
+          <div class="text-muted mt-2" style="font-size:0.8rem;">{{ 'Entries are never edited or deleted. A mistake is corrected with a "take back" entry that stays on the record. Check the bar\\'s or the firm\\'s own rules for client money with your accountant.' | translate }}</div>
         </div>
       </ng-container>
     </ng-container>

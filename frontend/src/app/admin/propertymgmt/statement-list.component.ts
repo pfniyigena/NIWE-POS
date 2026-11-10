@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,15 +16,15 @@ const ymd = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${
 @Component({
   selector: 'app-statement-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Owner statements</h3>
+        <h3>{{ 'Owner statements' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" type="button" *ngIf="canManage" (click)="mailing = !mailing; making = false">{{ mailing ? 'Close' : 'E-mail agreed statements' }}</button>
-          <button class="btn btn-primary" type="button" *ngIf="canManage" (click)="making = !making; mailing = false">{{ making ? 'Close' : '+ Make statements' }}</button>
-          <a class="btn btn-outline-secondary" routerLink="/admin/propertymgmt/reports">Reports</a>
+          <button class="btn btn-outline-secondary" type="button" *ngIf="canManage" (click)="mailing = !mailing; making = false">{{ mailing ? ('Close' | translate) : ('E-mail agreed statements' | translate) }}</button>
+          <button class="btn btn-primary" type="button" *ngIf="canManage" (click)="making = !making; mailing = false">{{ making ? ('Close' | translate) : ('+ Make statements' | translate) }}</button>
+          <a class="btn btn-outline-secondary" routerLink="/admin/propertymgmt/reports">{{ 'Reports' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -33,33 +34,33 @@ const ymd = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${
       <div class="alert alert-warning" *ngIf="sentRun && sentRun.notes.length"><div *ngFor="let n of sentRun.notes">{{ n }}</div></div>
 
       <div class="card mb-3" style="padding:1rem; max-width:50rem;" *ngIf="mailing">
-        <h4 class="mb-2">E-mail agreed statements to the owners</h4>
-        <div class="text-muted mb-2" style="font-size:0.9rem;">Sends the PDF of every agreed statement that has not been e-mailed yet to its owner's e-mail address. Owners with no address are skipped and listed afterwards. Drafts are never sent.</div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="mp" [(ngModel)]="mailPaid" /> Also the ones that are already paid</label>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="mr" [(ngModel)]="mailAgain" /> Send again those that were already e-mailed</label>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ms" [(ngModel)]="mailShown" /> Only the {{ list.length }} statement{{ list.length === 1 ? '' : 's' }} shown in the list below</label>
-        <div class="flex gap-2"><button class="btn btn-primary" type="button" (click)="emailAll()" [disabled]="busy">{{ busy ? 'Sending…' : 'Send now' }}</button><button class="btn btn-outline-secondary" type="button" (click)="mailing = false">Cancel</button></div>
+        <h4 class="mb-2">{{ 'E-mail agreed statements to the owners' | translate }}</h4>
+        <div class="text-muted mb-2" style="font-size:0.9rem;">{{ 'Sends the PDF of every agreed statement that has not been e-mailed yet to its owner\\'s e-mail address. Owners with no address are skipped and listed afterwards. Drafts are never sent.' | translate }}</div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="mp" [(ngModel)]="mailPaid" /> {{ 'Also the ones that are already paid' | translate }}</label>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="mr" [(ngModel)]="mailAgain" /> {{ 'Send again those that were already e-mailed' | translate }}</label>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ms" [(ngModel)]="mailShown" /> {{ 'Only the {p0} statement{p1} shown in the list below' | translate: { p0: (list.length), p1: (list.length === 1 ? '' : 's') } }}</label>
+        <div class="flex gap-2"><button class="btn btn-primary" type="button" (click)="emailAll()" [disabled]="busy">{{ busy ? ('Sending…' | translate) : ('Send now' | translate) }}</button><button class="btn btn-outline-secondary" type="button" (click)="mailing = false">{{ 'Cancel' | translate }}</button></div>
       </div>
 
       <div class="card mb-3" style="padding:1rem; max-width:50rem;" *ngIf="making">
-        <h4 class="mb-2">Make statements</h4>
-        <div class="text-muted mb-2" style="font-size:0.9rem;">A statement adds up the rent paid in the period on the owner's properties, takes off the management fee and the repairs the owner pays for, and shows what you owe the owner. It starts as a draft.</div>
+        <h4 class="mb-2">{{ 'Make statements' | translate }}</h4>
+        <div class="text-muted mb-2" style="font-size:0.9rem;">{{ 'A statement adds up the rent paid in the period on the owner\\'s properties, takes off the management fee and the repairs the owner pays for, and shows what you owe the owner. It starts as a draft.' | translate }}</div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">From</label><input class="form-control" type="date" name="pf" [(ngModel)]="from" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">To</label><input class="form-control" type="date" name="pt" [(ngModel)]="to" [max]="todayStr" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">Owner</label>
-            <select class="form-select" name="mo" [(ngModel)]="makeOwner"><option [ngValue]="null">Every owner</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}</option></select></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'From' | translate }}</label><input class="form-control" type="date" name="pf" [(ngModel)]="from" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'To' | translate }}</label><input class="form-control" type="date" name="pt" [(ngModel)]="to" [max]="todayStr" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Owner' | translate }}</label>
+            <select class="form-select" name="mo" [(ngModel)]="makeOwner"><option [ngValue]="null">{{ 'Every owner' | translate }}</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}</option></select></div>
         </div>
-        <div class="flex gap-2"><button class="btn btn-primary" type="button" (click)="make()" [disabled]="busy">{{ makeOwner ? 'Make the statement' : 'Make for every owner' }}</button>
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="lastMonth()">Last month</button><button class="btn btn-sm btn-outline-secondary" type="button" (click)="thisMonth()">This month so far</button></div>
+        <div class="flex gap-2"><button class="btn btn-primary" type="button" (click)="make()" [disabled]="busy">{{ makeOwner ? ('Make the statement' | translate) : ('Make for every owner' | translate) }}</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="lastMonth()">{{ 'Last month' | translate }}</button><button class="btn btn-sm btn-outline-secondary" type="button" (click)="thisMonth()">{{ 'This month so far' | translate }}</button></div>
       </div>
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <button *ngFor="let t of tabs" type="button" class="btn btn-sm" [ngClass]="tab === t.value ? 'btn-primary' : 'btn-outline-secondary'" (click)="pick(t.value)">{{ t.label }}</button>
-        <select class="form-select" style="width:auto;" name="fo" [(ngModel)]="ownerId" (ngModelChange)="load()"><option [ngValue]="null">Any owner</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}</option></select>
+        <select class="form-select" style="width:auto;" name="fo" [(ngModel)]="ownerId" (ngModelChange)="load()"><option [ngValue]="null">{{ 'Any owner' | translate }}</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}</option></select>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Statement</th><th>Owner</th><th>Period</th><th>Status</th><th class="text-end">Rent collected</th><th class="text-end">Fee</th><th class="text-end">Repairs</th><th class="text-end">Adjust.</th><th class="text-end">Net to owner</th><th>Paid</th></tr></thead>
+        <thead><tr><th>{{ 'Statement' | translate }}</th><th>{{ 'Owner' | translate }}</th><th>{{ 'Period' | translate }}</th><th>{{ 'Status' | translate }}</th><th class="text-end">{{ 'Rent collected' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th><th class="text-end">{{ 'Repairs' | translate }}</th><th class="text-end">{{ 'Adjust.' | translate }}</th><th class="text-end">{{ 'Net to owner' | translate }}</th><th>{{ 'Paid' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let s of pageRows()">
             <td data-label="Statement"><a [routerLink]="['/admin/propertymgmt/statements', s.id]"><strong>{{ s.code }}</strong></a></td>
@@ -74,13 +75,13 @@ const ymd = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${
             <td style="white-space:nowrap;" data-label="Paid">{{ s.paidDate ? (s.paidDate | date: 'd MMM y') : '' }}</td>
           </tr>
         </tbody>
-        <tfoot *ngIf="list.length"><tr><td colspan="4" class="text-end"><strong>{{ list.length }} statement{{ list.length === 1 ? '' : 's' }}</strong></td>
+        <tfoot *ngIf="list.length"><tr><td colspan="4" class="text-end"><strong>{{ '{p0} statement{p1}' | translate: { p0: (list.length), p1: (list.length === 1 ? '' : 's') } }}</strong></td>
           <td class="text-end" data-label="Rent collected"><strong>{{ sum('rentCollected') | number: '1.0-0' }}</strong></td><td class="text-end" data-label="Fee"><strong>{{ sum('managementFee') | number: '1.0-0' }}</strong></td>
           <td class="text-end" data-label="Repairs"><strong>{{ sum('repairs') | number: '1.0-0' }}</strong></td><td class="text-end" data-label="Adjust."><strong>{{ sum('adjustments') | number: '1.0-0' }}</strong></td>
           <td class="text-end" data-label="Net to owner"><strong>{{ sum('netPayable') | number: '1.0-0' }}</strong></td><td data-label="Paid"></td></tr></tfoot>
       </table>
       <app-pager [page]="page" [size]="size" [total]="list.length" (pageChange)="page = $event"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">Nothing here.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'Nothing here.' | translate }}</p>
     </app-shell>
   `,
 })

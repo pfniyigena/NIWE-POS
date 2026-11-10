@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -12,67 +13,67 @@ const txt = (v: string | null | undefined): string | null => { const t = (v ?? '
 @Component({
   selector: 'app-property-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>{{ id ? 'Edit property' : 'Add property' }}</h3>
-        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/realestate/properties', id] : ['/admin/realestate/properties']">Cancel</a>
+        <h3>{{ id ? ('Edit property' | translate) : ('Add property' | translate) }}</h3>
+        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/realestate/properties', id] : ['/admin/realestate/properties']">{{ 'Cancel' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form class="card" style="padding:1rem; max-width:50rem;" (ngSubmit)="save()">
-        <h4 class="mb-2">The listing</h4>
-        <div class="form-group mb-2"><label class="form-label">Title *</label><input class="form-control" name="title" [(ngModel)]="f.title" maxlength="200" placeholder="e.g. 3-bedroom house with garden" /></div>
+        <h4 class="mb-2">{{ 'The listing' | translate }}</h4>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Title *' | translate }}</label><input class="form-control" name="title" [(ngModel)]="f.title" maxlength="200" [placeholder]="'e.g. 3-bedroom house with garden' | translate" /></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Type *</label>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Type *' | translate }}</label>
             <select class="form-select" name="type" [(ngModel)]="f.type"><option *ngFor="let t of types" [value]="t.value">{{ t.label }}</option></select></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Offered for *</label>
-            <select class="form-select" name="purpose" [(ngModel)]="f.purpose"><option value="SALE">Sale</option><option value="RENT">Rent</option><option value="BOTH">Sale or rent</option></select></div>
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Agent</label>
-            <select class="form-select" name="agent" [(ngModel)]="f.agentUserId"><option [ngValue]="null">Me</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Offered for *' | translate }}</label>
+            <select class="form-select" name="purpose" [(ngModel)]="f.purpose"><option value="SALE">{{ 'Sale' | translate }}</option><option value="RENT">{{ 'Rent' | translate }}</option><option value="BOTH">{{ 'Sale or rent' | translate }}</option></select></div>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Agent' | translate }}</label>
+            <select class="form-select" name="agent" [(ngModel)]="f.agentUserId"><option [ngValue]="null">{{ 'Me' | translate }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:14rem;" *ngIf="f.purpose !== 'RENT'"><label class="form-label">Sale price</label><input class="form-control" type="number" min="0" name="sale" [(ngModel)]="f.salePrice" /></div>
-          <div class="form-group mb-2" style="min-width:14rem;" *ngIf="f.purpose !== 'SALE'"><label class="form-label">Rent per month</label><input class="form-control" type="number" min="0" name="rent" [(ngModel)]="f.rentPrice" /></div>
+          <div class="form-group mb-2" style="min-width:14rem;" *ngIf="f.purpose !== 'RENT'"><label class="form-label">{{ 'Sale price' | translate }}</label><input class="form-control" type="number" min="0" name="sale" [(ngModel)]="f.salePrice" /></div>
+          <div class="form-group mb-2" style="min-width:14rem;" *ngIf="f.purpose !== 'SALE'"><label class="form-label">{{ 'Rent per month' | translate }}</label><input class="form-control" type="number" min="0" name="rent" [(ngModel)]="f.rentPrice" /></div>
         </div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="neg" [(ngModel)]="f.negotiable" /> The price is negotiable</label>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="feat" [(ngModel)]="f.featured" /> Feature this property (shown first)</label>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="pub" [(ngModel)]="f.publicListing" /> Show on the public website</label>
-        <div class="text-muted mb-3" style="font-size:0.85rem;">Visitors see it only while it is Available and the website is switched on in the settings. They never see the owner, the street address or the map position.</div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="neg" [(ngModel)]="f.negotiable" /> {{ 'The price is negotiable' | translate }}</label>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="feat" [(ngModel)]="f.featured" /> {{ 'Feature this property (shown first)' | translate }}</label>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="pub" [(ngModel)]="f.publicListing" /> {{ 'Show on the public website' | translate }}</label>
+        <div class="text-muted mb-3" style="font-size:0.85rem;">{{ 'Visitors see it only while it is Available and the website is switched on in the settings. They never see the owner, the street address or the map position.' | translate }}</div>
 
-        <h4 class="mb-2">Where it is</h4>
+        <h4 class="mb-2">{{ 'Where it is' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Area</label>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Area' | translate }}</label>
             <input class="form-control" name="area" [(ngModel)]="f.area" list="re-areas" maxlength="120" />
             <datalist id="re-areas"><option *ngFor="let a of areas" [value]="a"></option></datalist></div>
-          <div class="form-group mb-2" style="flex:2; min-width:16rem;"><label class="form-label">Address or directions</label><input class="form-control" name="addr" [(ngModel)]="f.address" maxlength="300" /></div>
+          <div class="form-group mb-2" style="flex:2; min-width:16rem;"><label class="form-label">{{ 'Address or directions' | translate }}</label><input class="form-control" name="addr" [(ngModel)]="f.address" maxlength="300" /></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Title / plot reference</label><input class="form-control" name="tref" [(ngModel)]="f.titleReference" maxlength="120" placeholder="e.g. Block 12 Plot 345" /></div>
-          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">Latitude</label><input class="form-control" type="number" step="any" name="lat" [(ngModel)]="f.latitude" /></div>
-          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">Longitude</label><input class="form-control" type="number" step="any" name="lng" [(ngModel)]="f.longitude" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Title / plot reference' | translate }}</label><input class="form-control" name="tref" [(ngModel)]="f.titleReference" maxlength="120" [placeholder]="'e.g. Block 12 Plot 345' | translate" /></div>
+          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">{{ 'Latitude' | translate }}</label><input class="form-control" type="number" step="any" name="lat" [(ngModel)]="f.latitude" /></div>
+          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">{{ 'Longitude' | translate }}</label><input class="form-control" type="number" step="any" name="lng" [(ngModel)]="f.longitude" /></div>
         </div>
 
-        <h4 class="mb-2 mt-2">The building</h4>
+        <h4 class="mb-2 mt-2">{{ 'The building' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="width:7rem;"><label class="form-label">Bedrooms</label><input class="form-control" type="number" min="0" name="bed" [(ngModel)]="f.bedrooms" /></div>
-          <div class="form-group mb-2" style="width:7rem;"><label class="form-label">Bathrooms</label><input class="form-control" type="number" min="0" name="bath" [(ngModel)]="f.bathrooms" /></div>
-          <div class="form-group mb-2" style="width:7rem;"><label class="form-label">Parking</label><input class="form-control" type="number" min="0" name="park" [(ngModel)]="f.parkingSpaces" /></div>
-          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">Built area m²</label><input class="form-control" type="number" min="0" name="size" [(ngModel)]="f.sizeSqm" /></div>
-          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">Plot m²</label><input class="form-control" type="number" min="0" name="plot" [(ngModel)]="f.plotSqm" /></div>
-          <div class="form-group mb-2" style="width:8rem;"><label class="form-label">Year built</label><input class="form-control" type="number" min="1800" max="2100" name="year" [(ngModel)]="f.yearBuilt" /></div>
+          <div class="form-group mb-2" style="width:7rem;"><label class="form-label">{{ 'Bedrooms' | translate }}</label><input class="form-control" type="number" min="0" name="bed" [(ngModel)]="f.bedrooms" /></div>
+          <div class="form-group mb-2" style="width:7rem;"><label class="form-label">{{ 'Bathrooms' | translate }}</label><input class="form-control" type="number" min="0" name="bath" [(ngModel)]="f.bathrooms" /></div>
+          <div class="form-group mb-2" style="width:7rem;"><label class="form-label">{{ 'Parking' | translate }}</label><input class="form-control" type="number" min="0" name="park" [(ngModel)]="f.parkingSpaces" /></div>
+          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">{{ 'Built area m²' | translate }}</label><input class="form-control" type="number" min="0" name="size" [(ngModel)]="f.sizeSqm" /></div>
+          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">{{ 'Plot m²' | translate }}</label><input class="form-control" type="number" min="0" name="plot" [(ngModel)]="f.plotSqm" /></div>
+          <div class="form-group mb-2" style="width:8rem;"><label class="form-label">{{ 'Year built' | translate }}</label><input class="form-control" type="number" min="1800" max="2100" name="year" [(ngModel)]="f.yearBuilt" /></div>
         </div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="furn" [(ngModel)]="f.furnished" /> Furnished</label>
-        <div class="form-group mb-2"><label class="form-label">Features <span class="text-muted">(separate with commas)</span></label><input class="form-control" name="feat2" [(ngModel)]="f.features" maxlength="1000" placeholder="Garden, Borehole, Security wall, Solar water heating" /></div>
-        <div class="form-group mb-3"><label class="form-label">Description</label><textarea class="form-control" rows="5" name="desc" [(ngModel)]="f.description" maxlength="4000"></textarea></div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="furn" [(ngModel)]="f.furnished" /> {{ 'Furnished' | translate }}</label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Features' | translate }} <span class="text-muted">{{ '(separate with commas)' | translate }}</span></label><input class="form-control" name="feat2" [(ngModel)]="f.features" maxlength="1000" [placeholder]="'Garden, Borehole, Security wall, Solar water heating' | translate" /></div>
+        <div class="form-group mb-3"><label class="form-label">{{ 'Description' | translate }}</label><textarea class="form-control" rows="5" name="desc" [(ngModel)]="f.description" maxlength="4000"></textarea></div>
 
-        <h4 class="mb-2">The owner <span class="text-muted" style="font-size:0.85rem;">(only staff see this)</span></h4>
+        <h4 class="mb-2">{{ 'The owner' | translate }} <span class="text-muted" style="font-size:0.85rem;">{{ '(only staff see this)' | translate }}</span></h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Name</label><input class="form-control" name="on" [(ngModel)]="f.ownerName" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">Phone</label><input class="form-control" name="op" [(ngModel)]="f.ownerPhone" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">E-mail</label><input class="form-control" type="email" name="oe" [(ngModel)]="f.ownerEmail" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="on" [(ngModel)]="f.ownerName" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="op" [(ngModel)]="f.ownerPhone" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'E-mail' | translate }}</label><input class="form-control" type="email" name="oe" [(ngModel)]="f.ownerEmail" /></div>
         </div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? 'Save changes' : 'Save and add photos' }}</button></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? ('Save changes' | translate) : ('Save and add photos' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

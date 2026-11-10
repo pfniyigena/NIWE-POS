@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,56 +14,56 @@ const txt = (v: string | null | undefined): string | null => { const t = (v ?? '
 @Component({
   selector: 'app-deal-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
         <h3>{{ id ? 'Change deal ' + (deal?.code ?? '') : 'Record an offer' }}</h3>
-        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/realestate/deals', id] : ['/admin/realestate/deals']">Cancel</a>
+        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/realestate/deals', id] : ['/admin/realestate/deals']">{{ 'Cancel' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form class="card" style="padding:1rem; max-width:46rem;" (ngSubmit)="save()">
-        <h4 class="mb-2">The property</h4>
+        <h4 class="mb-2">{{ 'The property' | translate }}</h4>
         <div class="form-group mb-3" *ngIf="!id">
-          <label class="form-label">Property for sale *</label>
+          <label class="form-label">{{ 'Property for sale *' | translate }}</label>
           <select class="form-select" name="prop" [(ngModel)]="f.propertyId" (ngModelChange)="propertyPicked()">
-            <option [ngValue]="null">— choose —</option>
+            <option [ngValue]="null">{{ '— choose —' | translate }}</option>
             <option *ngFor="let p of properties" [ngValue]="p.id">{{ p.code }} · {{ p.title }}{{ p.area ? ' · ' + p.area : '' }}{{ p.status === 'RESERVED' ? ' (reserved)' : '' }}</option>
           </select>
-          <div class="text-muted" style="font-size:0.85rem;" *ngIf="picked()">Asking {{ picked()!.salePrice != null ? (picked()!.salePrice | number: '1.0-0') : '—' }}. A property that is already reserved can still take back-up offers.</div>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="picked()">{{ 'Asking {p0}. A property that is already reserved can still take back-up offers.' | translate: { p0: (picked()!.salePrice != null ? (picked()!.salePrice | number: '1.0-0') : '—') } }}</div>
         </div>
         <div class="mb-3" *ngIf="id && deal"><a [routerLink]="['/admin/realestate/properties', deal.propertyId]">{{ deal.propertyCode }} · {{ deal.propertyTitle }}</a></div>
 
-        <h4 class="mb-2">The buyer</h4>
+        <h4 class="mb-2">{{ 'The buyer' | translate }}</h4>
         <div class="form-group mb-2" *ngIf="!id">
-          <label class="form-label">From a lead <span class="text-muted">(optional: fills in the details below)</span></label>
+          <label class="form-label">{{ 'From a lead' | translate }} <span class="text-muted">{{ '(optional: fills in the details below)' | translate }}</span></label>
           <select class="form-select" name="lead" [(ngModel)]="f.leadId" (ngModelChange)="leadPicked()">
-            <option [ngValue]="null">— a new buyer —</option>
+            <option [ngValue]="null">{{ '— a new buyer —' | translate }}</option>
             <option *ngFor="let l of leads" [ngValue]="l.id">{{ l.name }}{{ l.phone ? ' · ' + l.phone : '' }}</option>
           </select>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Name *</label><input class="form-control" name="bn" [(ngModel)]="f.buyerName" maxlength="200" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">Phone</label><input class="form-control" name="bp" [(ngModel)]="f.buyerPhone" maxlength="40" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">E-mail</label><input class="form-control" type="email" name="be" [(ngModel)]="f.buyerEmail" /></div>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Name *' | translate }}</label><input class="form-control" name="bn" [(ngModel)]="f.buyerName" maxlength="200" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="bp" [(ngModel)]="f.buyerPhone" maxlength="40" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'E-mail' | translate }}</label><input class="form-control" type="email" name="be" [(ngModel)]="f.buyerEmail" /></div>
         </div>
 
-        <h4 class="mb-2 mt-2">The offer</h4>
+        <h4 class="mb-2 mt-2">{{ 'The offer' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:13rem;" *ngIf="!id || deal?.stage === 'OFFER'"><label class="form-label">Amount offered *</label><input class="form-control" type="number" min="0" name="oa" [(ngModel)]="f.offerAmount" /></div>
-          <div class="form-group mb-2" style="min-width:13rem;" *ngIf="id && deal?.stage !== 'OFFER'"><label class="form-label">Agreed price</label><input class="form-control" type="number" min="0" name="ap" [(ngModel)]="f.agreedPrice" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Offer date</label><input class="form-control" type="date" name="od" [(ngModel)]="f.offerDate" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Offer valid until</label><input class="form-control" type="date" name="ov" [(ngModel)]="f.offerValidUntil" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Expected completion</label><input class="form-control" type="date" name="ec" [(ngModel)]="f.expectedCompletion" /></div>
+          <div class="form-group mb-2" style="min-width:13rem;" *ngIf="!id || deal?.stage === 'OFFER'"><label class="form-label">{{ 'Amount offered *' | translate }}</label><input class="form-control" type="number" min="0" name="oa" [(ngModel)]="f.offerAmount" /></div>
+          <div class="form-group mb-2" style="min-width:13rem;" *ngIf="id && deal?.stage !== 'OFFER'"><label class="form-label">{{ 'Agreed price' | translate }}</label><input class="form-control" type="number" min="0" name="ap" [(ngModel)]="f.agreedPrice" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Offer date' | translate }}</label><input class="form-control" type="date" name="od" [(ngModel)]="f.offerDate" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Offer valid until' | translate }}</label><input class="form-control" type="date" name="ov" [(ngModel)]="f.offerValidUntil" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Expected completion' | translate }}</label><input class="form-control" type="date" name="ec" [(ngModel)]="f.expectedCompletion" /></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Agent</label>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Agent' | translate }}</label>
             <select class="form-select" name="agent" [(ngModel)]="f.agentUserId"><option [ngValue]="null">{{ id ? 'Unchanged' : "The property's agent" }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select></div>
-          <div class="form-group mb-2" style="width:11rem;"><label class="form-label">Commission %</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="cp" [(ngModel)]="f.commissionPercent" placeholder="usual" /></div>
-          <div class="form-group mb-2" style="width:13rem;" *ngIf="id"><label class="form-label">or a fixed commission</label><input class="form-control" type="number" min="0" name="cf" [(ngModel)]="f.commissionFixed" placeholder="none" /></div>
+          <div class="form-group mb-2" style="width:11rem;"><label class="form-label">{{ 'Commission %' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="cp" [(ngModel)]="f.commissionPercent" [placeholder]="'usual' | translate" /></div>
+          <div class="form-group mb-2" style="width:13rem;" *ngIf="id"><label class="form-label">{{ 'or a fixed commission' | translate }}</label><input class="form-control" type="number" min="0" name="cf" [(ngModel)]="f.commissionFixed" [placeholder]="'none' | translate" /></div>
         </div>
-        <div class="form-group mb-3"><label class="form-label">Notes</label><textarea class="form-control" rows="3" name="nt" [(ngModel)]="f.notes" maxlength="2000"></textarea></div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? 'Save changes' : 'Save offer' }}</button></div>
+        <div class="form-group mb-3"><label class="form-label">{{ 'Notes' | translate }}</label><textarea class="form-control" rows="3" name="nt" [(ngModel)]="f.notes" maxlength="2000"></textarea></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? ('Save changes' | translate) : ('Save offer' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,85 +10,84 @@ import { HrApiService, HrSettings, PayrollRule, PayrollRulePayload, TaxBand } fr
 @Component({
   selector: 'app-payroll-rules',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Payroll rules</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/hr/payroll/runs">Payroll runs</a>
+        <h3>{{ 'Payroll rules' | translate }}</h3>
+        <a class="btn btn-outline-primary" routerLink="/admin/hr/payroll/runs">{{ 'Payroll runs' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="saved">{{ saved }}</div>
       <div class="alert alert-warning">
-        The ready-made {{ settings?.payrollCountry === 'CHAD' ? 'Chad' : 'Rwanda' }} figures are a starting point, not legal advice. Confirm every rate, ceiling and tax band with your accountant
-        ({{ settings?.payrollCountry === 'CHAD' ? 'DGI and CNPS' : 'RRA and RSSB' }}) before running a real payroll — the law changes.
+        {{ 'The ready-made {p0} figures are a starting point, not legal advice. Confirm every rate, ceiling and tax band with your accountant ({p1}) before running a real payroll — the law changes.' | translate: { p0: (settings?.payrollCountry === 'CHAD' ? 'Chad' : 'Rwanda'), p1: (settings?.payrollCountry === 'CHAD' ? 'DGI and CNPS' : 'RRA and RSSB') } }}
       </div>
       <div class="alert alert-warning" *ngIf="!bands.length">
-        No income-tax bands are set, so income tax (PAYE) will be 0 for everyone. Enter the bands below{{ settings?.payrollCountry === 'CHAD' ? ' (the Chad income-tax bands are not pre-filled)' : '' }}.
+        {{ 'No income-tax bands are set, so income tax (PAYE) will be 0 for everyone. Enter the bands below{p0}.' | translate: { p0: (settings?.payrollCountry === 'CHAD' ? ' (the Chad income-tax bands are not pre-filled)' : '') } }}
       </div>
 
-      <h4 class="mb-2">Income tax bands</h4>
+      <h4 class="mb-2">{{ 'Income tax bands' | translate }}</h4>
       <div class="card mb-3" style="padding:1rem;">
         <div class="flex gap-3 align-center mb-2" style="flex-wrap:wrap;">
-          <label>The amounts below are
+          <label>{{ 'The amounts below are' | translate }}
             <select class="form-select" style="width:auto; display:inline-block;" name="mode" [ngModel]="settings?.taxBandsAnnual ? 'Y' : 'M'" (ngModelChange)="setMode($event === 'Y')">
-              <option value="M">per month</option><option value="Y">per year</option>
+              <option value="M">{{ 'per month' | translate }}</option><option value="Y">{{ 'per year' | translate }}</option>
             </select>
           </label>
-          <span class="text-muted" style="font-size:0.85rem;">Each band taxes the part of the taxable pay that falls inside it.</span>
+          <span class="text-muted" style="font-size:0.85rem;">{{ 'Each band taxes the part of the taxable pay that falls inside it.' | translate }}</span>
         </div>
         <table class="table-sm">
-          <thead><tr><th>From</th><th>To (empty = no limit)</th><th>Rate %</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'From' | translate }}</th><th>{{ 'To (empty = no limit)' | translate }}</th><th>{{ 'Rate %' | translate }}</th><th></th></tr></thead>
           <tbody><tr *ngFor="let b of bands; let i = index">
             <td><input class="form-control" type="number" min="0" style="width:10rem;" [name]="'bf' + i" [(ngModel)]="b.fromAmount" /></td>
             <td><input class="form-control" type="number" min="0" style="width:10rem;" [name]="'bt' + i" [(ngModel)]="b.toAmount" /></td>
             <td><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:6rem;" [name]="'br' + i" [(ngModel)]="b.ratePercent" /></td>
-            <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="bands.splice(i, 1)">Remove</button></td>
+            <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="bands.splice(i, 1)">{{ 'Remove' | translate }}</button></td>
           </tr></tbody>
         </table>
         <div class="flex gap-2 mt-2">
-          <button class="btn btn-sm btn-outline-primary" type="button" (click)="addBand()">+ Add band</button>
-          <button class="btn btn-sm btn-primary" type="button" (click)="saveBands()">Save bands</button>
+          <button class="btn btn-sm btn-outline-primary" type="button" (click)="addBand()">{{ '+ Add band' | translate }}</button>
+          <button class="btn btn-sm btn-primary" type="button" (click)="saveBands()">{{ 'Save bands' | translate }}</button>
         </div>
       </div>
 
       <div class="flex justify-between align-center mb-2">
-        <h4>Contributions</h4>
-        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="loadDefaults()">Add missing ready-made rules</button>
+        <h4>{{ 'Contributions' | translate }}</h4>
+        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="loadDefaults()">{{ 'Add missing ready-made rules' | translate }}</button>
       </div>
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="saveRule()">
-        <strong class="mb-2">{{ ruleId ? 'Edit rule' : 'New rule' }}</strong>
+        <strong class="mb-2">{{ ruleId ? ('Edit rule' | translate) : ('New rule' | translate) }}</strong>
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group"><label class="form-label">Name</label><input class="form-control" name="rn" [(ngModel)]="rule.name" required /></div>
-          <div class="form-group"><label class="form-label">Paid by</label>
+          <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="rn" [(ngModel)]="rule.name" required /></div>
+          <div class="form-group"><label class="form-label">{{ 'Paid by' | translate }}</label>
             <select class="form-select" name="rk" [(ngModel)]="rule.kind" (ngModelChange)="onKind()">
-              <option value="EMPLOYEE_DEDUCTION">Employee (deducted from pay)</option><option value="EMPLOYER_CONTRIBUTION">Employer (extra cost)</option>
+              <option value="EMPLOYEE_DEDUCTION">{{ 'Employee (deducted from pay)' | translate }}</option><option value="EMPLOYER_CONTRIBUTION">{{ 'Employer (extra cost)' | translate }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Rate %</label><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:6rem;" name="rr" [(ngModel)]="rule.ratePercent" required /></div>
-          <div class="form-group"><label class="form-label">Of</label>
+          <div class="form-group"><label class="form-label">{{ 'Rate %' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:6rem;" name="rr" [(ngModel)]="rule.ratePercent" required /></div>
+          <div class="form-group"><label class="form-label">{{ 'Of' | translate }}</label>
             <select class="form-select" name="rb" [(ngModel)]="rule.base">
-              <option value="GROSS">Gross pay</option><option value="BASIC">Basic salary</option><option value="NET">Net pay</option>
+              <option value="GROSS">{{ 'Gross pay' | translate }}</option><option value="BASIC">{{ 'Basic salary' | translate }}</option><option value="NET">{{ 'Net pay' | translate }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Monthly cap</label><input class="form-control" type="number" min="0" style="width:9rem;" name="rc" [(ngModel)]="rule.capAmount" placeholder="None" /></div>
-          <div class="form-group"><label class="form-label">Owed to</label>
+          <div class="form-group"><label class="form-label">{{ 'Monthly cap' | translate }}</label><input class="form-control" type="number" min="0" style="width:9rem;" name="rc" [(ngModel)]="rule.capAmount" [placeholder]="'None' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Owed to' | translate }}</label>
             <select class="form-select" name="rt" [(ngModel)]="rule.target">
-              <option value="SOCIAL_SECURITY">Social security</option><option value="OTHER">Health / other</option>
+              <option value="SOCIAL_SECURITY">{{ 'Social security' | translate }}</option><option value="OTHER">{{ 'Health / other' | translate }}</option>
             </select></div>
-          <div class="form-group" *ngIf="rule.kind === 'EMPLOYEE_DEDUCTION' && rule.base !== 'NET'"><label class="form-label"><input type="checkbox" name="rd" [(ngModel)]="rule.deductibleFromTax" /> Reduces taxable pay</label></div>
-          <div class="form-group"><label class="form-label"><input type="checkbox" name="ra" [(ngModel)]="rule.active" /> Active</label></div>
-          <div class="flex gap-2"><button class="btn btn-primary" type="submit">{{ ruleId ? 'Save' : 'Add' }}</button><button class="btn btn-link" type="button" *ngIf="ruleId" (click)="resetRule()">Cancel</button></div>
+          <div class="form-group" *ngIf="rule.kind === 'EMPLOYEE_DEDUCTION' && rule.base !== 'NET'"><label class="form-label"><input type="checkbox" name="rd" [(ngModel)]="rule.deductibleFromTax" /> {{ 'Reduces taxable pay' | translate }}</label></div>
+          <div class="form-group"><label class="form-label"><input type="checkbox" name="ra" [(ngModel)]="rule.active" /> {{ 'Active' | translate }}</label></div>
+          <div class="flex gap-2"><button class="btn btn-primary" type="submit">{{ ruleId ? ('Save' | translate) : ('Add' | translate) }}</button><button class="btn btn-link" type="button" *ngIf="ruleId" (click)="resetRule()">{{ 'Cancel' | translate }}</button></div>
         </div>
       </form>
       <table class="table-sm">
-        <thead><tr><th>Rule</th><th>Paid by</th><th>Rate</th><th>Of</th><th>Cap</th><th>Owed to</th><th>Reduces tax</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Rule' | translate }}</th><th>{{ 'Paid by' | translate }}</th><th>{{ 'Rate' | translate }}</th><th>{{ 'Of' | translate }}</th><th>{{ 'Cap' | translate }}</th><th>{{ 'Owed to' | translate }}</th><th>{{ 'Reduces tax' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
         <tbody><tr *ngFor="let r of rules">
-          <td>{{ r.name }}</td><td>{{ r.kind === 'EMPLOYEE_DEDUCTION' ? 'Employee' : 'Employer' }}</td><td>{{ r.ratePercent }}%</td>
-          <td>{{ r.base === 'GROSS' ? 'Gross' : r.base === 'BASIC' ? 'Basic' : 'Net' }}</td><td>{{ r.capAmount ? (r.capAmount | number: '1.0-2') : '—' }}</td>
-          <td>{{ r.target === 'SOCIAL_SECURITY' ? 'Social security' : 'Health / other' }}</td><td>{{ r.deductibleFromTax ? 'Yes' : 'No' }}</td>
-          <td><span class="badge" [class.badge-success]="r.active" [class.badge-secondary]="!r.active">{{ r.active ? 'Active' : 'Off' }}</span></td>
+          <td>{{ r.name }}</td><td>{{ r.kind === 'EMPLOYEE_DEDUCTION' ? ('Employee' | translate) : ('Employer' | translate) }}</td><td>{{ r.ratePercent }}%</td>
+          <td>{{ r.base === 'GROSS' ? 'Gross' : r.base === 'BASIC' ? ('Basic' | translate) : ('Net' | translate) }}</td><td>{{ r.capAmount ? (r.capAmount | number: '1.0-2') : '—' }}</td>
+          <td>{{ r.target === 'SOCIAL_SECURITY' ? ('Social security' | translate) : ('Health / other' | translate) }}</td><td>{{ r.deductibleFromTax ? ('Yes' | translate) : ('No' | translate) }}</td>
+          <td><span class="badge" [class.badge-success]="r.active" [class.badge-secondary]="!r.active">{{ r.active ? ('Active' | translate) : ('Off' | translate) }}</span></td>
           <td class="flex gap-1">
-            <button class="btn btn-sm btn-outline-primary" type="button" (click)="editRule(r)">Edit</button>
-            <button class="btn btn-sm btn-outline-danger" type="button" (click)="delRule(r)">Delete</button>
+            <button class="btn btn-sm btn-outline-primary" type="button" (click)="editRule(r)">{{ 'Edit' | translate }}</button>
+            <button class="btn btn-sm btn-outline-danger" type="button" (click)="delRule(r)">{{ 'Delete' | translate }}</button>
           </td>
         </tr></tbody>
       </table>

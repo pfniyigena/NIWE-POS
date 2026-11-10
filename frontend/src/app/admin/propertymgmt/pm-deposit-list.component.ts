@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -12,31 +13,31 @@ import { PropertyMgmtApiService, PropertyRow } from '../../core/api/propertymgmt
 @Component({
   selector: 'app-pm-deposit-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Security deposits</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/reports/pm-deposits">Report</a>
+        <h3>{{ 'Security deposits' | translate }}</h3>
+        <a class="btn btn-outline-secondary" routerLink="/admin/reports/pm-deposits">{{ 'Report' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-3 mb-3" style="flex-wrap:wrap;" *ngIf="totals">
-        <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">Held now</div><div class="kpi">{{ totals.held | number: '1.0-0' }}</div><div class="text-muted kpi-sub">on {{ totals.heldCount }} lease{{ totals.heldCount === 1 ? '' : 's' }}</div></div>
-        <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">To refund</div><div class="kpi" [style.color]="totals.refundDueCount ? '#b91c1c' : ''">{{ totals.refundDue | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ totals.refundDueCount }} ended lease{{ totals.refundDueCount === 1 ? '' : 's' }}</div></div>
-        <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">Still to collect</div><div class="kpi" [style.color]="totals.toCollect ? '#b45309' : ''">{{ totals.toCollect | number: '1.0-0' }}</div><div class="text-muted kpi-sub">on leases not yet paid up</div></div>
+        <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">{{ 'Held now' | translate }}</div><div class="kpi">{{ totals.held | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ 'on {p0} lease{p1}' | translate: { p0: (totals.heldCount), p1: (totals.heldCount === 1 ? '' : 's') } }}</div></div>
+        <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">{{ 'To refund' | translate }}</div><div class="kpi" [style.color]="totals.refundDueCount ? '#b91c1c' : ''">{{ totals.refundDue | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ '{p0} ended lease{p1}' | translate: { p0: (totals.refundDueCount), p1: (totals.refundDueCount === 1 ? '' : 's') } }}</div></div>
+        <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">{{ 'Still to collect' | translate }}</div><div class="kpi" [style.color]="totals.toCollect ? '#b45309' : ''">{{ totals.toCollect | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ 'on leases not yet paid up' | translate }}</div></div>
       </div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="state" (ngModelChange)="load()">
-          <option value="">Any state</option><option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
+          <option value="">{{ 'Any state' | translate }}</option><option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="pr" [(ngModel)]="propertyId" (ngModelChange)="load()">
-          <option [ngValue]="null">Any property</option><option *ngFor="let p of properties" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">{{ 'Any property' | translate }}</option><option *ngFor="let p of properties" [ngValue]="p.id">{{ p.name }}</option>
         </select>
-        <input class="form-control" style="width:15rem;" placeholder="Search lease, tenant, property, unit" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search lease, tenant, property, unit' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Lease</th><th>Unit</th><th>Tenant</th><th class="text-end">Agreed</th><th class="text-end">Paid in</th><th class="text-end">Kept</th><th class="text-end">Refunded</th><th class="text-end">Held</th><th>State</th></tr></thead>
+        <thead><tr><th>{{ 'Lease' | translate }}</th><th>{{ 'Unit' | translate }}</th><th>{{ 'Tenant' | translate }}</th><th class="text-end">{{ 'Agreed' | translate }}</th><th class="text-end">{{ 'Paid in' | translate }}</th><th class="text-end">{{ 'Kept' | translate }}</th><th class="text-end">{{ 'Refunded' | translate }}</th><th class="text-end">{{ 'Held' | translate }}</th><th>{{ 'State' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let r of list">
             <td data-label="Lease"><a [routerLink]="['/admin/propertymgmt/leases', r.leaseId]"><strong>{{ r.leaseCode }}</strong></a></td>
@@ -52,7 +53,7 @@ import { PropertyMgmtApiService, PropertyRow } from '../../core/api/propertymgmt
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No deposits match.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No deposits match.' | translate }}</p>
     </app-shell>
   `,
 })

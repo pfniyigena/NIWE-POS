@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PmAccountApiService, TenantAccount } from '../../core/api/pm-account-api.service';
@@ -8,40 +9,40 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-tenant-account',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="card" style="padding:1rem; margin-top:0.75rem;">
-      <h4 class="mb-2">Account statement</h4>
+      <h4 class="mb-2">{{ 'Account statement' | translate }}</h4>
       <div class="flex gap-2 align-center mb-2" style="flex-wrap:wrap;">
-        <label class="text-muted">From</label><input class="form-control" style="width:10.5rem;" type="date" name="af" [(ngModel)]="from" />
-        <label class="text-muted">To</label><input class="form-control" style="width:10.5rem;" type="date" name="at" [(ngModel)]="to" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()" [disabled]="busy">Show</button>
-        <button class="btn btn-outline-secondary" type="button" (click)="pdf()" [disabled]="busy || !a">PDF</button>
-        <button class="btn btn-outline-secondary" type="button" *ngIf="canManage" (click)="sending = !sending" [disabled]="busy || !a">E-mail</button>
+        <label class="text-muted">{{ 'From' | translate }}</label><input class="form-control" style="width:10.5rem;" type="date" name="af" [(ngModel)]="from" />
+        <label class="text-muted">{{ 'To' | translate }}</label><input class="form-control" style="width:10.5rem;" type="date" name="at" [(ngModel)]="to" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()" [disabled]="busy">{{ 'Show' | translate }}</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="pdf()" [disabled]="busy || !a">{{ 'PDF' | translate }}</button>
+        <button class="btn btn-outline-secondary" type="button" *ngIf="canManage" (click)="sending = !sending" [disabled]="busy || !a">{{ 'E-mail' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="note">{{ note }}</div>
 
       <form *ngIf="sending" class="mb-2" style="border:1px solid var(--border); border-radius:0.5rem; padding:0.75rem;" (ngSubmit)="send()">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">To</label>
+          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'To' | translate }}</label>
             <input class="form-control" type="email" name="sto" [(ngModel)]="address" [placeholder]="email ? 'Leave empty to use ' + email : 'Type the tenant e-mail address'" /></div>
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Message (optional)</label>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Message (optional)' | translate }}</label>
             <input class="form-control" name="smsg" [(ngModel)]="message" maxlength="1000" /></div>
         </div>
-        <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy">{{ busy ? 'Sending…' : 'Send statement' }}</button>
+        <button class="btn btn-primary btn-sm" type="submit" [disabled]="busy">{{ busy ? ('Sending…' | translate) : ('Send statement' | translate) }}</button>
       </form>
 
       <ng-container *ngIf="a">
         <div class="flex gap-3 mb-2" style="flex-wrap:wrap;">
-          <div><div class="text-muted" style="font-size:0.8rem;">Brought forward</div><strong>{{ a.opening | number: '1.0-0' }}</strong></div>
-          <div><div class="text-muted" style="font-size:0.8rem;">Charged</div><strong>{{ a.charged | number: '1.0-0' }}</strong></div>
-          <div><div class="text-muted" style="font-size:0.8rem;">Paid</div><strong>{{ a.paid | number: '1.0-0' }}</strong></div>
-          <div><div class="text-muted" style="font-size:0.8rem;">Balance owed</div><strong [style.color]="a.closing > 0 ? '#b91c1c' : ''">{{ a.closing | number: '1.0-0' }}</strong></div>
-          <div *ngIf="a.overdue"><div class="text-muted" style="font-size:0.8rem;">Overdue today</div><strong style="color:#b91c1c;">{{ a.overdue | number: '1.0-0' }}</strong></div>
+          <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Brought forward' | translate }}</div><strong>{{ a.opening | number: '1.0-0' }}</strong></div>
+          <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Charged' | translate }}</div><strong>{{ a.charged | number: '1.0-0' }}</strong></div>
+          <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Paid' | translate }}</div><strong>{{ a.paid | number: '1.0-0' }}</strong></div>
+          <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Balance owed' | translate }}</div><strong [style.color]="a.closing > 0 ? '#b91c1c' : ''">{{ a.closing | number: '1.0-0' }}</strong></div>
+          <div *ngIf="a.overdue"><div class="text-muted" style="font-size:0.8rem;">{{ 'Overdue today' | translate }}</div><strong style="color:#b91c1c;">{{ a.overdue | number: '1.0-0' }}</strong></div>
         </div>
         <table class="stack table-sm" *ngIf="a.lines.length; else none">
-          <thead><tr><th>Date</th><th>What</th><th>Reference</th><th class="text-end">Charged</th><th class="text-end">Paid</th><th class="text-end">Balance</th></tr></thead>
+          <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'What' | translate }}</th><th>{{ 'Reference' | translate }}</th><th class="text-end">{{ 'Charged' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Balance' | translate }}</th></tr></thead>
           <tbody><tr *ngFor="let l of a.lines">
             <td style="white-space:nowrap;" data-label="Date">{{ l.date | date: 'd MMM y' }}</td>
             <td data-label="What">{{ l.description }}</td>
@@ -51,7 +52,7 @@ import { downloadBlob } from '../../core/download-file';
             <td class="text-end" data-label="Balance"><strong>{{ l.balance | number: '1.0-0' }}</strong></td>
           </tr></tbody>
         </table>
-        <ng-template #none><div class="text-muted">Nothing was charged or paid in this period.</div></ng-template>
+        <ng-template #none><div class="text-muted">{{ 'Nothing was charged or paid in this period.' | translate }}</div></ng-template>
       </ng-container>
     </div>
   `,

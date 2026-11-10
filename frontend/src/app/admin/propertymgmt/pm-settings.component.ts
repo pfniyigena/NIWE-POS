@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -10,43 +11,43 @@ import { PmReminderSettingsComponent } from './pm-reminder-settings.component';
 @Component({
   selector: 'app-pm-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, PmReminderSettingsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, PmReminderSettingsComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Property Management settings</h3>
+      <h3 class="mb-3">{{ 'Property Management settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
       <form class="card" style="padding:1rem; max-width:40rem;" (ngSubmit)="save()">
-        <div class="form-group mb-2"><label class="form-label">Areas you work in <span class="text-muted">(one per line)</span></label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Areas you work in' | translate }} <span class="text-muted">{{ '(one per line)' | translate }}</span></label>
           <textarea class="form-control" rows="6" name="areas" [(ngModel)]="areas" placeholder="Kololo&#10;Nakasero&#10;Ntinda"></textarea>
-          <div class="text-muted" style="font-size:0.85rem;">They appear as suggestions when you add a property.</div></div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'They appear as suggestions when you add a property.' | translate }}</div></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2"><label class="form-label">A lease is "ending soon" for the last (days)</label><input class="form-control" style="max-width:9rem;" type="number" min="1" max="365" name="ew" [(ngModel)]="expiryWarningDays" /></div>
-          <div class="form-group mb-2"><label class="form-label">Rent usually falls due on day</label><input class="form-control" style="max-width:9rem;" type="number" min="1" max="28" name="dd" [(ngModel)]="defaultDueDay" /></div>
-          <div class="form-group mb-2"><label class="form-label">Usual management fee (%)</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="100" step="0.01" name="df" [(ngModel)]="defaultFee" placeholder="none" />
-            <div class="text-muted" style="font-size:0.85rem;">Used when neither the property nor its owner sets one.</div></div>
-          <div class="form-group mb-2"><label class="form-label">VAT on the management fee (%)</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="100" step="0.01" name="fv" [(ngModel)]="feeVat" placeholder="none" />
-            <div class="text-muted" style="font-size:0.85rem;">Charged on top of the fee and taken from the owner. Leave empty if you do not charge VAT. A draft statement shows a warning when this changes, and rebuilding it applies the new rate.</div></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'A lease is "ending soon" for the last (days)' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="1" max="365" name="ew" [(ngModel)]="expiryWarningDays" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Rent usually falls due on day' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="1" max="28" name="dd" [(ngModel)]="defaultDueDay" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Usual management fee (%)' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="100" step="0.01" name="df" [(ngModel)]="defaultFee" [placeholder]="'none' | translate" />
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Used when neither the property nor its owner sets one.' | translate }}</div></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'VAT on the management fee (%)' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="100" step="0.01" name="fv" [(ngModel)]="feeVat" [placeholder]="'none' | translate" />
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Charged on top of the fee and taken from the owner. Leave empty if you do not charge VAT. A draft statement shows a warning when this changes, and rebuilding it applies the new rate.' | translate }}</div></div>
         </div>
-        <h4 class="mb-2 mt-2">Rent invoicing</h4>
+        <h4 class="mb-2 mt-2">{{ 'Rent invoicing' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2"><label class="form-label">Invoice rent this many days before it falls due</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="60" name="ia" [(ngModel)]="invoiceAheadDays" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Invoice rent this many days before it falls due' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="60" name="ia" [(ngModel)]="invoiceAheadDays" /></div>
         </div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ai" [(ngModel)]="autoInvoice" /> Invoice rent automatically every morning</label>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">When this is off, press <em>Invoice the rent that is ready</em> on the Rent page. Either way each invoice goes to the tenant as a customer and is paid in Invoices as usual.</div>
-        <h4 class="mb-2 mt-3">Owner statements every month</h4>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="as" [(ngModel)]="autoStatements" /> Make last month's statements automatically</label>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ai" [(ngModel)]="autoInvoice" /> {{ 'Invoice rent automatically every morning' | translate }}</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'When this is off, press' | translate }} <em>{{ 'Invoice the rent that is ready' | translate }}</em> {{ 'on the Rent page. Either way each invoice goes to the tenant as a customer and is paid in Invoices as usual.' | translate }}</div>
+        <h4 class="mb-2 mt-3">{{ 'Owner statements every month' | translate }}</h4>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="as" [(ngModel)]="autoStatements" /> {{ 'Make last month\\'s statements automatically' | translate }}</label>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2"><label class="form-label">From this day of the month</label><input class="form-control" style="max-width:9rem;" type="number" min="1" max="28" name="ad" [(ngModel)]="autoStatementsDay" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'From this day of the month' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="1" max="28" name="ad" [(ngModel)]="autoStatementsDay" /></div>
         </div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="asd" [(ngModel)]="autoSendStatements" [disabled]="!autoStatements" /> Also agree them and e-mail the owners</label>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Every morning the system checks whether it is time. It makes a draft statement for every owner who had rent or repairs last month. With the second box on, a statement is agreed (and booked to the accounts) and e-mailed only when it has no warning and the owner would be paid something; every other statement stays a draft for you to look at. {{ through ? 'Last made for the month ending ' + through + '.' : 'Not made yet.' }}</div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="asd" [(ngModel)]="autoSendStatements" [disabled]="!autoStatements" /> {{ 'Also agree them and e-mail the owners' | translate }}</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Every morning the system checks whether it is time. It makes a draft statement for every owner who had rent or repairs last month. With the second box on, a statement is agreed (and booked to the accounts) and e-mailed only when it has no warning and the owner would be paid something; every other statement stays a draft for you to look at. {p0}' | translate: { p0: (through ? 'Last made for the month ending ' + through + '.' : 'Not made yet.') } }}</div>
         <div class="mb-3">
-          <button class="btn btn-outline-secondary" type="button" (click)="runNow()" [disabled]="running || saving">{{ running ? 'Working…' : 'Make the statements for last month now' }}</button>
-          <span class="text-muted" style="font-size:0.85rem;"> Uses the switches above as saved, so save first.</span>
+          <button class="btn btn-outline-secondary" type="button" (click)="runNow()" [disabled]="running || saving">{{ running ? ('Working…' | translate) : ('Make the statements for last month now' | translate) }}</button>
+          <span class="text-muted" style="font-size:0.85rem;"> {{ 'Uses the switches above as saved, so save first.' | translate }}</span>
         </div>
         <div class="alert alert-success" *ngIf="ranResult">{{ ranResult.message }}<div *ngFor="let n of ranResult.notes" style="font-size:0.9rem;">{{ n }}</div></div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save settings' }}</button></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? ('Saving…' | translate) : ('Save settings' | translate) }}</button></div>
       </form>
       <app-pm-reminder-settings></app-pm-reminder-settings>
     </app-shell>

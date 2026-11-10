@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -12,28 +13,28 @@ import { LEASE_STATE_LABEL, LeaseRow, LeaseState, PropertyMgmtApiService, Proper
 @Component({
   selector: 'app-lease-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, PmExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, PmExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Leases</h3>
-        <a class="btn btn-primary" routerLink="/admin/propertymgmt/leases/new">+ Lease</a>
+        <h3>{{ 'Leases' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/propertymgmt/leases/new">{{ '+ Lease' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="state" (ngModelChange)="load()">
-          <option value="">Any state</option><option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
+          <option value="">{{ 'Any state' | translate }}</option><option *ngFor="let s of states" [value]="s.value">{{ s.label }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="pr" [(ngModel)]="propertyId" (ngModelChange)="load()">
-          <option [ngValue]="null">Any property</option><option *ngFor="let p of properties" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">{{ 'Any property' | translate }}</option><option *ngFor="let p of properties" [ngValue]="p.id">{{ p.name }}</option>
         </select>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ex" [(ngModel)]="expiringOnly" (ngModelChange)="load()" /> Ending soon or past the end date</label>
-        <input class="form-control" style="width:15rem;" placeholder="Search lease, tenant, property, unit" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ex" [(ngModel)]="expiringOnly" (ngModelChange)="load()" /> {{ 'Ending soon or past the end date' | translate }}</label>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search lease, tenant, property, unit' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-pm-export kind="leases" [filters]="{ q: q.trim(), state: state, propertyId: propertyId, expiringOnly: expiringOnly }"></app-pm-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Lease</th><th>Unit</th><th>Tenant</th><th>From</th><th>To</th><th class="text-end">Rent</th><th>Pays</th><th>State</th></tr></thead>
+        <thead><tr><th>{{ 'Lease' | translate }}</th><th>{{ 'Unit' | translate }}</th><th>{{ 'Tenant' | translate }}</th><th>{{ 'From' | translate }}</th><th>{{ 'To' | translate }}</th><th class="text-end">{{ 'Rent' | translate }}</th><th>{{ 'Pays' | translate }}</th><th>{{ 'State' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let l of list">
             <td data-label="Lease"><a [routerLink]="['/admin/propertymgmt/leases', l.id]"><strong>{{ l.code }}</strong></a></td>
@@ -47,7 +48,7 @@ import { LEASE_STATE_LABEL, LeaseRow, LeaseState, PropertyMgmtApiService, Proper
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No leases match.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No leases match.' | translate }}</p>
     </app-shell>
   `,
 })

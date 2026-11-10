@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,16 +14,16 @@ import { PROPERTY_TYPES, typeLabel } from '../core/api/realestate-api.service';
 @Component({
   selector: 'app-public-listings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="pl-page">
       <header class="pl-hero">
         <div class="pl-inner">
           <div class="flex align-center gap-2 mb-2">
             <img *ngIf="logoDataUrl" [src]="logoDataUrl" alt="" style="height:44px; width:44px; object-fit:contain; border-radius:0.4rem; background:#fff;" />
-            <a routerLink="/" class="pl-brand">{{ businessName || 'Properties' }}</a>
+            <a routerLink="/" class="pl-brand">{{ businessName || ('Properties' | translate) }}</a>
           </div>
-          <h1 class="pl-title">{{ info?.title || 'Properties for sale and rent' }}</h1>
+          <h1 class="pl-title">{{ info?.title || ('Properties for sale and rent' | translate) }}</h1>
           <p class="pl-intro" *ngIf="info?.intro">{{ info?.intro }}</p>
           <div class="pl-contact" *ngIf="info?.phone || info?.email">
             <span *ngIf="info?.phone">📞 {{ info?.phone }}</span><span *ngIf="info?.email"> · ✉️ {{ info?.email }}</span>
@@ -33,14 +34,14 @@ import { PROPERTY_TYPES, typeLabel } from '../core/api/realestate-api.service';
       <main class="pl-inner pl-main">
         <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
         <form class="pl-filters" (ngSubmit)="search()">
-          <select class="form-select" name="pu" [(ngModel)]="purpose" (ngModelChange)="search()"><option value="">Buy or rent</option><option value="SALE">Buy</option><option value="RENT">Rent</option></select>
-          <select class="form-select" name="ty" [(ngModel)]="type" (ngModelChange)="search()"><option value="">Any type</option><option *ngFor="let t of types" [value]="t.value">{{ t.label }}</option></select>
-          <select class="form-select" name="ar" [(ngModel)]="area" (ngModelChange)="search()"><option value="">Any area</option><option *ngFor="let a of info?.areas" [value]="a">{{ a }}</option></select>
-          <select class="form-select" name="bd" [(ngModel)]="bedrooms" (ngModelChange)="search()"><option [ngValue]="null">Any bedrooms</option><option *ngFor="let n of [1,2,3,4,5]" [ngValue]="n">{{ n }}+ bedrooms</option></select>
-          <input class="form-control" type="number" min="0" name="mn" placeholder="Min price" [(ngModel)]="minPrice" (change)="search()" />
-          <input class="form-control" type="number" min="0" name="mx" placeholder="Max price" [(ngModel)]="maxPrice" (change)="search()" />
-          <input class="form-control" name="q" placeholder="Search" [(ngModel)]="q" />
-          <button class="btn btn-primary" type="submit">Search</button>
+          <select class="form-select" name="pu" [(ngModel)]="purpose" (ngModelChange)="search()"><option value="">{{ 'Buy or rent' | translate }}</option><option value="SALE">{{ 'Buy' | translate }}</option><option value="RENT">{{ 'Rent' | translate }}</option></select>
+          <select class="form-select" name="ty" [(ngModel)]="type" (ngModelChange)="search()"><option value="">{{ 'Any type' | translate }}</option><option *ngFor="let t of types" [value]="t.value">{{ t.label }}</option></select>
+          <select class="form-select" name="ar" [(ngModel)]="area" (ngModelChange)="search()"><option value="">{{ 'Any area' | translate }}</option><option *ngFor="let a of info?.areas" [value]="a">{{ a }}</option></select>
+          <select class="form-select" name="bd" [(ngModel)]="bedrooms" (ngModelChange)="search()"><option [ngValue]="null">{{ 'Any bedrooms' | translate }}</option><option *ngFor="let n of [1,2,3,4,5]" [ngValue]="n">{{ '{p0}+ bedrooms' | translate: { p0: (n) } }}</option></select>
+          <input class="form-control" type="number" min="0" name="mn" [placeholder]="'Min price' | translate" [(ngModel)]="minPrice" (change)="search()" />
+          <input class="form-control" type="number" min="0" name="mx" [placeholder]="'Max price' | translate" [(ngModel)]="maxPrice" (change)="search()" />
+          <input class="form-control" name="q" [placeholder]="'Search' | translate" [(ngModel)]="q" />
+          <button class="btn btn-primary" type="submit">{{ 'Search' | translate }}</button>
         </form>
 
         <div class="text-muted mb-2" *ngIf="page">{{ page.total }} {{ page.total === 1 ? 'property' : 'properties' }}</div>
@@ -49,8 +50,8 @@ import { PROPERTY_TYPES, typeLabel } from '../core/api/realestate-api.service';
             <div class="pl-photo">
               <img *ngIf="c.coverPhotoId" [src]="photo(c)" [alt]="c.title" loading="lazy" />
               <div *ngIf="!c.coverPhotoId" class="pl-nophoto">🏠</div>
-              <span class="pl-tag" *ngIf="c.featured">Featured</span>
-              <span class="pl-tag pl-tag-right">{{ c.purpose === 'RENT' ? 'To rent' : c.purpose === 'SALE' ? 'For sale' : 'Sale or rent' }}</span>
+              <span class="pl-tag" *ngIf="c.featured">{{ 'Featured' | translate }}</span>
+              <span class="pl-tag pl-tag-right">{{ c.purpose === 'RENT' ? 'To rent' : c.purpose === 'SALE' ? ('For sale' | translate) : ('Sale or rent' | translate) }}</span>
             </div>
             <div class="pl-body">
               <div class="pl-price">{{ priceText(c) }}</div>
@@ -59,17 +60,17 @@ import { PROPERTY_TYPES, typeLabel } from '../core/api/realestate-api.service';
               <div class="pl-facts">
                 <span *ngIf="c.bedrooms != null">🛏 {{ c.bedrooms }}</span>
                 <span *ngIf="c.bathrooms != null">🛁 {{ c.bathrooms }}</span>
-                <span *ngIf="c.sizeSqm != null">📐 {{ c.sizeSqm | number: '1.0-0' }} m²</span>
+                <span *ngIf="c.sizeSqm != null">{{ '📐 {p0} m²' | translate: { p0: (c.sizeSqm | number: '1.0-0') } }}</span>
               </div>
             </div>
           </a>
         </div>
-        <p class="text-muted" *ngIf="page && !cards.length" style="text-align:center; padding:2rem 0;">No properties match. Try fewer filters.</p>
+        <p class="text-muted" *ngIf="page && !cards.length" style="text-align:center; padding:2rem 0;">{{ 'No properties match. Try fewer filters.' | translate }}</p>
 
         <div class="flex gap-2 mt-3" style="justify-content:center;" *ngIf="page && page.total > page.size">
-          <button class="btn btn-outline-secondary" type="button" [disabled]="page.page === 0" (click)="go(page.page - 1)">← Previous</button>
-          <span class="text-muted" style="align-self:center;">Page {{ page.page + 1 }} of {{ pages() }}</span>
-          <button class="btn btn-outline-secondary" type="button" [disabled]="page.page + 1 >= pages()" (click)="go(page.page + 1)">Next →</button>
+          <button class="btn btn-outline-secondary" type="button" [disabled]="page.page === 0" (click)="go(page.page - 1)">{{ '← Previous' | translate }}</button>
+          <span class="text-muted" style="align-self:center;">{{ 'Page {p0} of {p1}' | translate: { p0: (page.page + 1), p1: (pages()) } }}</span>
+          <button class="btn btn-outline-secondary" type="button" [disabled]="page.page + 1 >= pages()" (click)="go(page.page + 1)">{{ 'Next →' | translate }}</button>
         </div>
       </main>
       <footer class="pl-foot text-muted">&copy; {{ year }} {{ businessName }} · &copy; 2026 NIWE GROUP</footer>

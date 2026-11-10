@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,66 +16,66 @@ interface Row { ownerId: number | null; percent: number | null; }
 @Component({
   selector: 'app-pm-ownership-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="card pm-ownership" style="padding:1rem; margin-top:0.75rem;" *ngIf="v">
       <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
-        <h4>Owners</h4>
-        <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="v.canManage && !editing" (click)="open()">Change owners</button>
+        <h4>{{ 'Owners' | translate }}</h4>
+        <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="v.canManage && !editing" (click)="open()">{{ 'Change owners' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-warning" *ngIf="v.rebuild.length">Draft statements {{ v.rebuild.join(', ') }} have lines for this property that the change affects. Open each one and press Rebuild so it uses the new shares.</div>
+      <div class="alert alert-warning" *ngIf="v.rebuild.length">{{ 'Draft statements {p0} have lines for this property that the change affects. Open each one and press Rebuild so it uses the new shares.' | translate: { p0: (v.rebuild.join(', ')) } }}</div>
 
       <table class="stack table-sm" *ngIf="current() as cur">
-        <thead><tr><th>Owner</th><th class="text-end">Share</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Owner' | translate }}</th><th class="text-end">{{ 'Share' | translate }}</th><th></th></tr></thead>
         <tbody><tr *ngFor="let s of cur.shares">
           <td data-label="Owner"><a [routerLink]="['/admin/propertymgmt/owners', s.ownerId]">{{ s.ownerName }}</a></td>
           <td data-label="Share" class="text-end">{{ s.percent | number: '1.0-2' }}%</td>
-          <td data-label=""><span class="badge badge-secondary" *ngIf="s.lead && cur.shares.length > 1" title="The owner the agency deals with. Cents left over when a payment is shared go to this owner.">Main owner</span></td>
+          <td data-label=""><span class="badge badge-secondary" *ngIf="s.lead && cur.shares.length > 1" [title]="'The owner the agency deals with. Cents left over when a payment is shared go to this owner.' | translate">{{ 'Main owner' | translate }}</span></td>
         </tr></tbody>
       </table>
       <div class="text-muted" style="font-size:0.85rem;" *ngIf="current() as cur">
-        <ng-container *ngIf="cur.shares.length > 1">Rent, the management fee and repairs the owners pay for are shared by these percentages. Each owner gets their own statement and their own fee invoice.</ng-container>
-        <ng-container *ngIf="cur.shares.length === 1">One owner has all of this property. Use Change owners to add a co-owner.</ng-container>
+        <ng-container *ngIf="cur.shares.length > 1">{{ 'Rent, the management fee and repairs the owners pay for are shared by these percentages. Each owner gets their own statement and their own fee invoice.' | translate }}</ng-container>
+        <ng-container *ngIf="cur.shares.length === 1">{{ 'One owner has all of this property. Use Change owners to add a co-owner.' | translate }}</ng-container>
       </div>
 
       <form *ngIf="editing" (ngSubmit)="save()" class="mt-3" style="padding:0.75rem; border:1px solid rgba(127,127,127,0.3); border-radius:6px;">
-        <h5 class="mb-2">Change the owners</h5>
-        <div class="form-group mb-2" style="max-width:14rem;"><label class="form-label">From</label>
+        <h5 class="mb-2">{{ 'Change the owners' | translate }}</h5>
+        <div class="form-group mb-2" style="max-width:14rem;"><label class="form-label">{{ 'From' | translate }}</label>
           <input class="form-control" type="date" name="ownFrom" [(ngModel)]="from" [max]="today" />
-          <div class="text-muted" style="font-size:0.8rem;">Rent paid on or after this day is shared by the new percentages. Empty means from the beginning, which is only possible while no agreed statement covers the property. To record a change (a part sold, an heir) give the day it happened.</div></div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Rent paid on or after this day is shared by the new percentages. Empty means from the beginning, which is only possible while no agreed statement covers the property. To record a change (a part sold, an heir) give the day it happened.' | translate }}</div></div>
         <div class="flex gap-2 align-center mb-2" style="flex-wrap:wrap;" *ngFor="let r of rows; let i = index">
           <select class="form-select own-owner" style="min-width:14rem; flex:1;" [name]="'ownerSel' + i" [(ngModel)]="r.ownerId">
-            <option [ngValue]="null">— choose the owner —</option>
+            <option [ngValue]="null">{{ '— choose the owner —' | translate }}</option>
             <option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}{{ o.active ? '' : ' (inactive)' }}</option>
           </select>
           <input class="form-control own-pct" style="width:7rem;" type="number" min="0" max="100" step="0.01" [name]="'ownerPct' + i" [(ngModel)]="r.percent" placeholder="%" />
-          <label style="display:flex; gap:0.25rem; align-items:center; white-space:nowrap;"><input class="own-lead" type="radio" name="ownLead" [value]="i" [(ngModel)]="leadIndex" /> Main owner</label>
-          <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="rows.length > 1" (click)="removeRow(i)">Remove</button>
+          <label style="display:flex; gap:0.25rem; align-items:center; white-space:nowrap;"><input class="own-lead" type="radio" name="ownLead" [value]="i" [(ngModel)]="leadIndex" /> {{ 'Main owner' | translate }}</label>
+          <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="rows.length > 1" (click)="removeRow(i)">{{ 'Remove' | translate }}</button>
         </div>
         <div class="flex gap-2 align-center mb-2" style="flex-wrap:wrap;">
-          <button class="btn btn-sm btn-outline-primary" type="button" (click)="addRow()">+ Add an owner</button>
-          <span class="own-total" [style.color]="total() === 100 ? 'inherit' : '#c0392b'">Total {{ total() | number: '1.0-2' }}% <span *ngIf="total() !== 100">(must be 100%)</span></span>
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="splitEvenly()">Share equally</button>
+          <button class="btn btn-sm btn-outline-primary" type="button" (click)="addRow()">{{ '+ Add an owner' | translate }}</button>
+          <span class="own-total" [style.color]="total() === 100 ? 'inherit' : '#c0392b'">{{ 'Total {p0}%' | translate: { p0: (total() | number: '1.0-2') } }} <span *ngIf="total() !== 100">{{ '(must be 100%)' | translate }}</span></span>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="splitEvenly()">{{ 'Share equally' | translate }}</button>
         </div>
-        <div class="text-muted mb-2" style="font-size:0.8rem;">The main owner is the one the agency deals with; cents left over when a payment is shared go to them. Not in the list? <a routerLink="/admin/propertymgmt/owners">Add the owner first</a>.</div>
-        <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy || total() !== 100">Save</button><button class="btn btn-outline-secondary" type="button" (click)="editing = false">Cancel</button></div>
+        <div class="text-muted mb-2" style="font-size:0.8rem;">{{ 'The main owner is the one the agency deals with; cents left over when a payment is shared go to them. Not in the list?' | translate }} <a routerLink="/admin/propertymgmt/owners">{{ 'Add the owner first' | translate }}</a>.</div>
+        <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy || total() !== 100">{{ 'Save' | translate }}</button><button class="btn btn-outline-secondary" type="button" (click)="editing = false">{{ 'Cancel' | translate }}</button></div>
       </form>
 
       <div class="mt-3" *ngIf="v.splits.length > 1">
-        <h5 class="mb-1">History</h5>
+        <h5 class="mb-1">{{ 'History' | translate }}</h5>
         <table class="stack table-sm">
-          <thead><tr><th>From</th><th>Owners</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'From' | translate }}</th><th>{{ 'Owners' | translate }}</th><th></th></tr></thead>
           <tbody><tr *ngFor="let sp of v.splits">
-            <td data-label="From">{{ sp.validFrom ? (sp.validFrom | date: 'd MMM y') : 'The beginning' }}<span class="badge badge-secondary" *ngIf="sp.current" style="margin-left:0.3rem;">Now</span></td>
+            <td data-label="From">{{ sp.validFrom ? (sp.validFrom | date: 'd MMM y') : 'The beginning' }}<span class="badge badge-secondary" *ngIf="sp.current" style="margin-left:0.3rem;">{{ 'Now' | translate }}</span></td>
             <td data-label="Owners">{{ label(sp) }}</td>
             <td data-label="" class="text-end">
-              <span class="text-muted" *ngIf="sp.locked" [title]="sp.lockedReason">Locked</span>
-              <button class="btn btn-sm btn-outline-danger own-remove" type="button" *ngIf="v.canManage && sp.canRemove" (click)="remove(sp)" [disabled]="busy">Remove</button>
+              <span class="text-muted" *ngIf="sp.locked" [title]="sp.lockedReason">{{ 'Locked' | translate }}</span>
+              <button class="btn btn-sm btn-outline-danger own-remove" type="button" *ngIf="v.canManage && sp.canRemove" (click)="remove(sp)" [disabled]="busy">{{ 'Remove' | translate }}</button>
             </td>
           </tr></tbody>
         </table>
-        <div class="text-muted" style="font-size:0.8rem;" *ngIf="v.lockedThrough">A split that an agreed statement already covers (up to {{ v.lockedThrough | date: 'd MMM y' }}) is locked.</div>
+        <div class="text-muted" style="font-size:0.8rem;" *ngIf="v.lockedThrough">{{ 'A split that an agreed statement already covers (up to {p0}) is locked.' | translate: { p0: (v.lockedThrough | date: 'd MMM y') } }}</div>
       </div>
     </div>
   `,

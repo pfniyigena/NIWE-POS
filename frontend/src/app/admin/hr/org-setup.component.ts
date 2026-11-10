@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,88 +10,88 @@ import { Department, DepartmentPayload, Employee, HrApiService, Position, Positi
 @Component({
   selector: 'app-org-setup',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Departments and positions</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/hr/org/chart">Organization chart</a>
+        <h3>{{ 'Departments and positions' | translate }}</h3>
+        <a class="btn btn-outline-primary" routerLink="/admin/hr/org/chart">{{ 'Organization chart' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-start;">
         <div style="flex:1; min-width:24rem;">
-          <h4 class="mb-2">Departments</h4>
+          <h4 class="mb-2">{{ 'Departments' | translate }}</h4>
           <form class="card mb-3" style="padding:1rem;" (ngSubmit)="saveDept()">
-            <strong class="mb-2">{{ deptId ? 'Edit department' : 'New department' }}</strong>
+            <strong class="mb-2">{{ deptId ? ('Edit department' | translate) : ('New department' | translate) }}</strong>
             <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-              <div class="form-group"><label class="form-label">Name</label><input class="form-control" name="dn" [(ngModel)]="dept.name" required /></div>
-              <div class="form-group"><label class="form-label">Code</label><input class="form-control" style="width:6rem;" name="dc" [(ngModel)]="dept.code" /></div>
-              <div class="form-group"><label class="form-label">Part of</label>
+              <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="dn" [(ngModel)]="dept.name" required /></div>
+              <div class="form-group"><label class="form-label">{{ 'Code' | translate }}</label><input class="form-control" style="width:6rem;" name="dc" [(ngModel)]="dept.code" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Part of' | translate }}</label>
                 <select class="form-select" name="dp" [(ngModel)]="dept.parentId">
-                  <option [ngValue]="null">— (top level)</option>
+                  <option [ngValue]="null">{{ '— (top level)' | translate }}</option>
                   <option *ngFor="let d of departments" [ngValue]="d.id" [disabled]="d.id === deptId">{{ d.name }}</option>
                 </select></div>
-              <div class="form-group"><label class="form-label">Manager</label>
+              <div class="form-group"><label class="form-label">{{ 'Manager' | translate }}</label>
                 <select class="form-select" name="dm" [(ngModel)]="dept.managerId">
                   <option [ngValue]="null">—</option>
                   <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.fullName }}</option>
                 </select></div>
-              <div class="form-group" *ngIf="deptId"><label class="form-label"><input type="checkbox" name="da" [(ngModel)]="dept.active" /> Active</label></div>
+              <div class="form-group" *ngIf="deptId"><label class="form-label"><input type="checkbox" name="da" [(ngModel)]="dept.active" /> {{ 'Active' | translate }}</label></div>
               <div class="flex gap-2">
-                <button class="btn btn-primary" type="submit">Save</button>
-                <button class="btn btn-link" type="button" *ngIf="deptId" (click)="resetDept()">Cancel</button>
+                <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+                <button class="btn btn-link" type="button" *ngIf="deptId" (click)="resetDept()">{{ 'Cancel' | translate }}</button>
               </div>
             </div>
           </form>
           <table class="table-sm">
-            <thead><tr><th>Name</th><th>Part of</th><th>Manager</th><th>People</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Part of' | translate }}</th><th>{{ 'Manager' | translate }}</th><th>{{ 'People' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
             <tbody><tr *ngFor="let d of departments">
               <td>{{ d.name }}<span class="text-muted" *ngIf="d.code"> ({{ d.code }})</span></td>
               <td>{{ d.parentName || '—' }}</td><td>{{ d.managerName || '—' }}</td><td>{{ d.employeeCount }}</td>
-              <td><span class="badge" [class.badge-success]="d.active" [class.badge-secondary]="!d.active">{{ d.active ? 'Active' : 'Inactive' }}</span></td>
+              <td><span class="badge" [class.badge-success]="d.active" [class.badge-secondary]="!d.active">{{ d.active ? ('Active' | translate) : ('Inactive' | translate) }}</span></td>
               <td class="flex gap-1">
-                <button class="btn btn-sm btn-outline-primary" type="button" (click)="editDept(d)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger" type="button" (click)="delDept(d)">Delete</button>
+                <button class="btn btn-sm btn-outline-primary" type="button" (click)="editDept(d)">{{ 'Edit' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" (click)="delDept(d)">{{ 'Delete' | translate }}</button>
               </td>
             </tr></tbody>
           </table>
-          <p class="text-muted" *ngIf="!departments.length">No departments yet — for example Sales, Finance, Operations.</p>
+          <p class="text-muted" *ngIf="!departments.length">{{ 'No departments yet — for example Sales, Finance, Operations.' | translate }}</p>
         </div>
 
         <div style="flex:1; min-width:24rem;">
-          <h4 class="mb-2">Positions</h4>
+          <h4 class="mb-2">{{ 'Positions' | translate }}</h4>
           <form class="card mb-3" style="padding:1rem;" (ngSubmit)="savePos()">
-            <strong class="mb-2">{{ posId ? 'Edit position' : 'New position' }}</strong>
+            <strong class="mb-2">{{ posId ? ('Edit position' | translate) : ('New position' | translate) }}</strong>
             <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-              <div class="form-group"><label class="form-label">Title</label><input class="form-control" name="pt" [(ngModel)]="pos.title" required /></div>
-              <div class="form-group"><label class="form-label">Department</label>
+              <div class="form-group"><label class="form-label">{{ 'Title' | translate }}</label><input class="form-control" name="pt" [(ngModel)]="pos.title" required /></div>
+              <div class="form-group"><label class="form-label">{{ 'Department' | translate }}</label>
                 <select class="form-select" name="pd" [(ngModel)]="pos.departmentId">
                   <option [ngValue]="null">—</option>
                   <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
                 </select></div>
-              <div class="form-group"><label class="form-label">Planned headcount</label><input class="form-control" type="number" min="0" style="width:7rem;" name="ph" [(ngModel)]="pos.plannedHeadcount" /></div>
-              <div class="form-group" *ngIf="posId"><label class="form-label"><input type="checkbox" name="pa" [(ngModel)]="pos.active" /> Active</label></div>
+              <div class="form-group"><label class="form-label">{{ 'Planned headcount' | translate }}</label><input class="form-control" type="number" min="0" style="width:7rem;" name="ph" [(ngModel)]="pos.plannedHeadcount" /></div>
+              <div class="form-group" *ngIf="posId"><label class="form-label"><input type="checkbox" name="pa" [(ngModel)]="pos.active" /> {{ 'Active' | translate }}</label></div>
               <div class="flex gap-2">
-                <button class="btn btn-primary" type="submit">Save</button>
-                <button class="btn btn-link" type="button" *ngIf="posId" (click)="resetPos()">Cancel</button>
+                <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+                <button class="btn btn-link" type="button" *ngIf="posId" (click)="resetPos()">{{ 'Cancel' | translate }}</button>
               </div>
             </div>
-            <div class="form-group"><label class="form-label">Description</label><input class="form-control" name="pdesc" [(ngModel)]="pos.description" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Description' | translate }}</label><input class="form-control" name="pdesc" [(ngModel)]="pos.description" /></div>
           </form>
           <table class="table-sm">
-            <thead><tr><th>Title</th><th>Department</th><th>Filled / planned</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Title' | translate }}</th><th>{{ 'Department' | translate }}</th><th>{{ 'Filled / planned' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
             <tbody><tr *ngFor="let p of positions">
               <td>{{ p.title }}</td><td>{{ p.departmentName || '—' }}</td>
               <td>{{ p.filled }}{{ p.plannedHeadcount ? ' / ' + p.plannedHeadcount : '' }}</td>
-              <td><span class="badge" [class.badge-success]="p.active" [class.badge-secondary]="!p.active">{{ p.active ? 'Active' : 'Inactive' }}</span></td>
+              <td><span class="badge" [class.badge-success]="p.active" [class.badge-secondary]="!p.active">{{ p.active ? ('Active' | translate) : ('Inactive' | translate) }}</span></td>
               <td class="flex gap-1">
-                <button class="btn btn-sm btn-outline-primary" type="button" (click)="editPos(p)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger" type="button" (click)="delPos(p)">Delete</button>
+                <button class="btn btn-sm btn-outline-primary" type="button" (click)="editPos(p)">{{ 'Edit' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" (click)="delPos(p)">{{ 'Delete' | translate }}</button>
               </td>
             </tr></tbody>
           </table>
-          <p class="text-muted" *ngIf="!positions.length">No positions yet — for example Cashier, Accountant, Store manager.</p>
+          <p class="text-muted" *ngIf="!positions.length">{{ 'No positions yet — for example Cashier, Accountant, Store manager.' | translate }}</p>
         </div>
       </div>
     </app-shell>

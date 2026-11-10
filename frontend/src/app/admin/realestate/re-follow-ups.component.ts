@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -12,37 +13,37 @@ interface Section { key: string; title: string; hint: string; color: string; row
 @Component({
   selector: 'app-re-follow-ups',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
         <h3>{{ title() }}</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/realestate/leads">All leads</a>
+        <a class="btn btn-outline-secondary" routerLink="/admin/realestate/leads">{{ 'All leads' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="who" [(ngModel)]="who" (ngModelChange)="load()">
-          <option value="me">My leads</option><option value="all">Everyone</option>
+          <option value="me">{{ 'My leads' | translate }}</option><option value="all">{{ 'Everyone' | translate }}</option>
           <option *ngFor="let a of agents" [value]="'' + a.id">{{ a.name }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="days" [(ngModel)]="days" (ngModelChange)="load()">
-          <option [ngValue]="7">Coming up: next 7 days</option><option [ngValue]="14">Coming up: next 14 days</option><option [ngValue]="30">Coming up: next 30 days</option>
+          <option [ngValue]="7">{{ 'Coming up: next 7 days' | translate }}</option><option [ngValue]="14">{{ 'Coming up: next 14 days' | translate }}</option><option [ngValue]="30">{{ 'Coming up: next 30 days' | translate }}</option>
         </select>
-        <span class="text-muted" style="font-size:0.85rem;" *ngIf="board && !board.mailEnabled">The morning e-mail is off. An admin can switch it on in the Real Estate settings.</span>
-        <span class="text-muted" style="font-size:0.85rem;" *ngIf="board && board.mailEnabled">Each agent gets these lists by e-mail every morning.</span>
+        <span class="text-muted" style="font-size:0.85rem;" *ngIf="board && !board.mailEnabled">{{ 'The morning e-mail is off. An admin can switch it on in the Real Estate settings.' | translate }}</span>
+        <span class="text-muted" style="font-size:0.85rem;" *ngIf="board && board.mailEnabled">{{ 'Each agent gets these lists by e-mail every morning.' | translate }}</span>
       </div>
 
-      <div *ngIf="!board && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!board && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
       <div class="card" style="padding:1rem;" *ngIf="board && !count()">
-        <strong>Nothing is waiting.</strong>
-        <div class="text-muted">No calls are late or due today, and no lead has gone quiet{{ board.all || board.agentId ? '' : ' on your list' }}.</div>
+        <strong>{{ 'Nothing is waiting.' | translate }}</strong>
+        <div class="text-muted">{{ 'No calls are late or due today, and no lead has gone quiet{p0}.' | translate: { p0: (board.all || board.agentId ? '' : ' on your list') } }}</div>
       </div>
 
       <div *ngFor="let sec of secs; trackBy: bySection" class="mb-3">
         <h4 class="mb-1" [style.color]="sec.color">{{ sec.title }} <span class="text-muted" style="font-weight:400;">({{ sec.rows.length }})</span></h4>
         <div class="text-muted mb-1" style="font-size:0.85rem;">{{ sec.hint }}</div>
         <table class="stack table-sm">
-          <thead><tr><th>Lead</th><th>Phone</th><th>Looking to</th><th>Property</th><th>Agent</th><th>Last contact</th><th>Next call</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Lead' | translate }}</th><th>{{ 'Phone' | translate }}</th><th>{{ 'Looking to' | translate }}</th><th>{{ 'Property' | translate }}</th><th>{{ 'Agent' | translate }}</th><th>{{ 'Last contact' | translate }}</th><th>{{ 'Next call' | translate }}</th><th></th></tr></thead>
           <tbody>
             <ng-container *ngFor="let l of sec.rows; trackBy: byId">
               <tr>
@@ -51,13 +52,13 @@ interface Section { key: string; title: string; hint: string; color: string; row
                 <td data-label="Phone"><a *ngIf="l.phone" [href]="'tel:' + l.phone">{{ l.phone }}</a><span *ngIf="!l.phone">{{ l.email || '—' }}</span></td>
                 <td data-label="Looking to">{{ interestName(l.interest) }}<span class="text-muted" *ngIf="l.preferredArea"> · {{ l.preferredArea }}</span></td>
                 <td data-label="Property"><a *ngIf="l.propertyId" [routerLink]="['/admin/realestate/properties', l.propertyId]">{{ l.propertyCode }}</a><span *ngIf="!l.propertyId">—</span></td>
-                <td data-label="Agent">{{ l.assignedName || 'Nobody' }}</td>
+                <td data-label="Agent">{{ l.assignedName || ('Nobody' | translate) }}</td>
                 <td data-label="Last contact">{{ (l.lastContactAt || l.createdAt) | date: 'd MMM' }} <span class="text-muted">({{ daysAgo(l.lastContactAt || l.createdAt) }})</span></td>
                 <td data-label="Next call" [style.color]="l.followUpOverdue ? '#b91c1c' : ''">{{ l.nextFollowUp ? (l.nextFollowUp | date: 'EEE d MMM') : 'not set' }}<span *ngIf="l.followUpOverdue"> ({{ lateBy(l) }})</span></td>
                 <td data-label="" style="white-space:nowrap; text-align:right;">
                   <ng-container *ngIf="canManage">
-                    <button class="btn btn-sm btn-primary" type="button" (click)="start(l, 'call')">Log call</button>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="start(l, 'move')">Move</button>
+                    <button class="btn btn-sm btn-primary" type="button" (click)="start(l, 'call')">{{ 'Log call' | translate }}</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="start(l, 'move')">{{ 'Move' | translate }}</button>
                   </ng-container>
                 </td>
               </tr>
@@ -65,19 +66,19 @@ interface Section { key: string; title: string; hint: string; color: string; row
                 <td colspan="8" data-label="">
                   <div class="alert alert-danger" *ngIf="formError">{{ formError }}</div>
                   <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end; width:100%;">
-                    <div class="form-group" *ngIf="open.mode === 'call'" style="min-width:9rem;"><label class="form-label">How</label>
-                      <select class="form-select fu-kind" name="fk" [(ngModel)]="kind"><option value="CALL">Phone call</option><option value="WHATSAPP">WhatsApp</option><option value="EMAIL">E-mail</option><option value="MEETING">Meeting</option></select></div>
-                    <div class="form-group" *ngIf="open.mode === 'call'" style="flex:2; min-width:14rem;"><label class="form-label">What was said <span class="text-muted">(optional)</span></label>
-                      <input class="form-control fu-text" name="ft" [(ngModel)]="text" maxlength="2000" placeholder="e.g. Wants a second viewing on Saturday" /></div>
-                    <div class="form-group" style="min-width:11rem;"><label class="form-label">Next call</label>
+                    <div class="form-group" *ngIf="open.mode === 'call'" style="min-width:9rem;"><label class="form-label">{{ 'How' | translate }}</label>
+                      <select class="form-select fu-kind" name="fk" [(ngModel)]="kind"><option value="CALL">{{ 'Phone call' | translate }}</option><option value="WHATSAPP">{{ 'WhatsApp' | translate }}</option><option value="EMAIL">{{ 'E-mail' | translate }}</option><option value="MEETING">{{ 'Meeting' | translate }}</option></select></div>
+                    <div class="form-group" *ngIf="open.mode === 'call'" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'What was said' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
+                      <input class="form-control fu-text" name="ft" [(ngModel)]="text" maxlength="2000" [placeholder]="'e.g. Wants a second viewing on Saturday' | translate" /></div>
+                    <div class="form-group" style="min-width:11rem;"><label class="form-label">{{ 'Next call' | translate }}</label>
                       <input class="form-control fu-date" type="date" name="fd" [(ngModel)]="next" [min]="todayIso()" [disabled]="none" /></div>
                     <div class="form-group" style="display:flex; gap:0.3rem; flex-wrap:wrap;">
                       <button class="btn btn-sm btn-outline-secondary fu-chip" type="button" *ngFor="let c of chips" (click)="pick(c.days)">{{ c.label }}</button>
                     </div>
-                    <label style="display:flex; gap:0.4rem; align-items:center;" class="form-group"><input class="fu-none" type="checkbox" name="fn" [(ngModel)]="none" /> No further call needed</label>
+                    <label style="display:flex; gap:0.4rem; align-items:center;" class="form-group"><input class="fu-none" type="checkbox" name="fn" [(ngModel)]="none" /> {{ 'No further call needed' | translate }}</label>
                     <div class="form-group" style="display:flex; gap:0.3rem;">
-                      <button class="btn btn-sm btn-primary fu-save" type="button" (click)="save(l)" [disabled]="busy">{{ open.mode === 'call' ? 'Save call' : 'Move' }}</button>
-                      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="open = null">Cancel</button>
+                      <button class="btn btn-sm btn-primary fu-save" type="button" (click)="save(l)" [disabled]="busy">{{ open.mode === 'call' ? ('Save call' | translate) : ('Move' | translate) }}</button>
+                      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="open = null">{{ 'Cancel' | translate }}</button>
                     </div>
                   </div>
                 </td>

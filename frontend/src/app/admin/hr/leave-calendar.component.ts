@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +21,7 @@ interface CalendarRowView {
 @Component({
   selector: 'app-leave-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   styles: [`
     .cal-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--border, #3a4156); border-radius: 6px; }
     table.cal { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 0.8rem; }
@@ -36,38 +37,38 @@ interface CalendarRowView {
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Team leave calendar</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/hr/leaves">Back to leave</a>
+        <h3>{{ 'Team leave calendar' | translate }}</h3>
+        <a class="btn btn-outline-primary" routerLink="/admin/hr/leaves">{{ 'Back to leave' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-2 align-center" style="flex-wrap:wrap;">
-        <button class="btn btn-sm btn-outline-primary cal-prev" type="button" (click)="move(-1)">‹ Previous</button>
+        <button class="btn btn-sm btn-outline-primary cal-prev" type="button" (click)="move(-1)">{{ '‹ Previous' | translate }}</button>
         <strong class="cal-title" style="min-width:9rem; text-align:center;">{{ title }}</strong>
-        <button class="btn btn-sm btn-outline-primary cal-next" type="button" (click)="move(1)">Next ›</button>
-        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="today()">This month</button>
+        <button class="btn btn-sm btn-outline-primary cal-next" type="button" (click)="move(1)">{{ 'Next ›' | translate }}</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="today()">{{ 'This month' | translate }}</button>
         <select class="form-select cal-dept" style="width:auto;" name="cd" [(ngModel)]="departmentId" (ngModelChange)="load()">
-          <option [ngValue]="null">All departments</option>
+          <option [ngValue]="null">{{ 'All departments' | translate }}</option>
           <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
         </select>
         <select class="form-select cal-branch" style="width:auto;" name="cb" [(ngModel)]="branchId" (ngModelChange)="load()" *ngIf="branches.length > 1">
-          <option [ngValue]="null">All branches</option>
+          <option [ngValue]="null">{{ 'All branches' | translate }}</option>
           <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
         </select>
       </div>
       <div class="legend mb-2">
-        <span><span class="chip" style="background:#2e9e5b;"></span>Approved</span>
-        <span><span class="chip" style="background:#f2b53a;"></span>Waiting for a decision</span>
-        <span><span class="chip" style="background:rgba(120,120,120,0.3);"></span>Weekend / day off</span>
-        <span><span class="chip" style="background:rgba(120,90,200,0.35);"></span>Public holiday</span>
-        <span>½ = half day</span>
+        <span><span class="chip" style="background:#2e9e5b;"></span>{{ 'Approved' | translate }}</span>
+        <span><span class="chip" style="background:#f2b53a;"></span>{{ 'Waiting for a decision' | translate }}</span>
+        <span><span class="chip" style="background:rgba(120,120,120,0.3);"></span>{{ 'Weekend / day off' | translate }}</span>
+        <span><span class="chip" style="background:rgba(120,90,200,0.35);"></span>{{ 'Public holiday' | translate }}</span>
+        <span>{{ '½ = half day' | translate }}</span>
       </div>
       <div class="cal-wrap" *ngIf="calendar">
         <table class="cal no-stack">
           <thead>
             <tr>
-              <th class="name">Employee</th>
+              <th class="name">{{ 'Employee' | translate }}</th>
               <th *ngFor="let d of calendar.days" [class.off]="d.weekend" [class.hol]="!!d.holiday" [attr.title]="d.holiday || ''">{{ dayNumber(d) }}</th>
-              <th>Days</th>
+              <th>{{ 'Days' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -82,8 +83,8 @@ interface CalendarRowView {
           </tbody>
         </table>
       </div>
-      <p class="text-muted" *ngIf="calendar && rows.length === 0">Nobody has approved or waiting leave in this month.</p>
-      <p class="text-muted">Shows approved leave and requests still waiting for a decision. Rejected and cancelled requests are not shown.</p>
+      <p class="text-muted" *ngIf="calendar && rows.length === 0">{{ 'Nobody has approved or waiting leave in this month.' | translate }}</p>
+      <p class="text-muted">{{ 'Shows approved leave and requests still waiting for a decision. Rejected and cancelled requests are not shown.' | translate }}</p>
     </app-shell>
   `,
 })

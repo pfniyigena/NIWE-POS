@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,36 +15,36 @@ import { INTEREST_LABEL, LEAD_STATUS_LABEL, LeadRow, Option, RealEstateApiServic
 @Component({
   selector: 'app-lead-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent, ReImportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent, ReImportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Leads</h3>
+        <h3>{{ 'Leads' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary imp-open" type="button" *ngIf="canManage" (click)="importOpen = !importOpen">Import</button>
-          <a class="btn btn-primary" routerLink="/admin/realestate/leads/new">+ Add lead</a>
+          <button class="btn btn-outline-secondary imp-open" type="button" *ngIf="canManage" (click)="importOpen = !importOpen">{{ 'Import' | translate }}</button>
+          <a class="btn btn-primary" routerLink="/admin/realestate/leads/new">{{ '+ Add lead' | translate }}</a>
         </div>
       </div>
       <app-re-import kind="leads" *ngIf="importOpen" (imported)="load()" (closed)="importOpen = false"></app-re-import>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
-          <option value="">All stages</option><option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+          <option value="">{{ 'All stages' | translate }}</option><option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="in" [(ngModel)]="interest" (ngModelChange)="load()">
-          <option value="">Buy or rent</option><option value="BUY">Buying</option><option value="RENT">Renting</option>
+          <option value="">{{ 'Buy or rent' | translate }}</option><option value="BUY">{{ 'Buying' | translate }}</option><option value="RENT">{{ 'Renting' | translate }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="as" [(ngModel)]="assignedId" (ngModelChange)="load()">
-          <option [ngValue]="null">Any agent</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
+          <option [ngValue]="null">{{ 'Any agent' | translate }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
         </select>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="oo" [(ngModel)]="openOnly" (ngModelChange)="load()" /> Open only</label>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="do" [(ngModel)]="dueOnly" (ngModelChange)="load()" /> Follow-up overdue</label>
-        <input class="form-control" style="width:15rem;" placeholder="Search name, phone, e-mail" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="oo" [(ngModel)]="openOnly" (ngModelChange)="load()" /> {{ 'Open only' | translate }}</label>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="do" [(ngModel)]="dueOnly" (ngModelChange)="load()" /> {{ 'Follow-up overdue' | translate }}</label>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search name, phone, e-mail' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-re-export kind="leads" [filters]="{ q: q.trim(), status: status, interest: interest, assignedId: assignedId, openOnly: openOnly, dueOnly: dueOnly }"></app-re-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Name</th><th>Looking to</th><th>Budget</th><th>Area</th><th>Property</th><th>Stage</th><th>Agent</th><th>Next follow-up</th><th>Last contact</th><th class="text-end">Viewings</th></tr></thead>
+        <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Looking to' | translate }}</th><th>{{ 'Budget' | translate }}</th><th>{{ 'Area' | translate }}</th><th>{{ 'Property' | translate }}</th><th>{{ 'Stage' | translate }}</th><th>{{ 'Agent' | translate }}</th><th>{{ 'Next follow-up' | translate }}</th><th>{{ 'Last contact' | translate }}</th><th class="text-end">{{ 'Viewings' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let l of list">
             <td data-label="Name"><a [routerLink]="['/admin/realestate/leads', l.id]"><strong>{{ l.name }}</strong></a><div class="text-muted" style="font-size:0.8rem;">{{ l.phone || l.email || '—' }} · {{ source(l.source) }}</div></td>
@@ -52,16 +53,16 @@ import { INTEREST_LABEL, LEAD_STATUS_LABEL, LeadRow, Option, RealEstateApiServic
             <td data-label="Area">{{ l.preferredArea || '—' }}</td>
             <td data-label="Property"><a *ngIf="l.propertyId" [routerLink]="['/admin/realestate/properties', l.propertyId]">{{ l.propertyCode }}</a><span *ngIf="!l.propertyId">—</span></td>
             <td data-label="Stage"><span class="badge" [class.badge-success]="l.status === 'WON'" [class.badge-danger]="l.status === 'LOST'" [class.badge-warning]="l.status === 'NEGOTIATING' || l.status === 'VIEWING'" [class.badge-secondary]="l.status === 'NEW' || l.status === 'CONTACTED'">{{ statusName(l.status) }}</span>
-              <span class="badge badge-warning" *ngIf="l.stale" style="margin-left:0.3rem;" title="Nothing has happened for a while">Quiet</span></td>
+              <span class="badge badge-warning" *ngIf="l.stale" style="margin-left:0.3rem;" [title]="'Nothing has happened for a while' | translate">{{ 'Quiet' | translate }}</span></td>
             <td data-label="Agent">{{ l.assignedName || '—' }}</td>
-            <td [style.color]="l.followUpOverdue ? '#b91c1c' : ''" data-label="Next follow-up">{{ l.nextFollowUp ? (l.nextFollowUp | date: 'd MMM y') : '—' }}<span *ngIf="l.followUpOverdue"> (overdue)</span></td>
+            <td [style.color]="l.followUpOverdue ? '#b91c1c' : ''" data-label="Next follow-up">{{ l.nextFollowUp ? (l.nextFollowUp | date: 'd MMM y') : '—' }}<span *ngIf="l.followUpOverdue"> {{ '(overdue)' | translate }}</span></td>
             <td data-label="Last contact">{{ l.lastContactAt ? (l.lastContactAt | date: 'd MMM') : '—' }}</td>
             <td class="text-end" data-label="Viewings">{{ l.viewings }}</td>
           </tr>
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No leads match.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No leads match.' | translate }}</p>
     </app-shell>
   `,
 })

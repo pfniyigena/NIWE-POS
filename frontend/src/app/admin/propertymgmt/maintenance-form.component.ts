@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,51 +17,51 @@ const today = (): string => new Date().toISOString().slice(0, 10);
 @Component({
   selector: 'app-maintenance-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
         <h3>{{ id ? 'Change request ' + (m?.request?.code ?? '') : 'New maintenance request' }}</h3>
-        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/propertymgmt/maintenance', id] : ['/admin/propertymgmt/maintenance']">Cancel</a>
+        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/propertymgmt/maintenance', id] : ['/admin/propertymgmt/maintenance']">{{ 'Cancel' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form class="card" style="padding:1rem; max-width:46rem;" (ngSubmit)="save()">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">Unit *</label>
+          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">{{ 'Unit *' | translate }}</label>
             <select class="form-select" name="u" [(ngModel)]="f.unitId" [disabled]="!!id">
-              <option [ngValue]="null">— choose —</option>
+              <option [ngValue]="null">{{ '— choose —' | translate }}</option>
               <option *ngFor="let u of units" [ngValue]="u.id">{{ u.propertyName }} · {{ u.unitNo }}{{ u.tenantName ? ' (' + u.tenantName + ')' : '' }}</option>
             </select></div>
-          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">Tenant</label>
+          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">{{ 'Tenant' | translate }}</label>
             <select class="form-select" name="t" [(ngModel)]="f.tenantId">
-              <option [ngValue]="null">{{ id ? 'None' : 'The tenant now in the unit, if any' }}</option>
+              <option [ngValue]="null">{{ id ? ('None' | translate) : ('The tenant now in the unit, if any' | translate) }}</option>
               <option *ngFor="let t of tenants" [ngValue]="t.id">{{ t.name }}{{ t.phone ? ' · ' + t.phone : '' }}</option>
             </select>
-            <div class="text-muted" style="font-size:0.85rem;" *ngIf="!id && unitTenant()">Will be recorded against {{ unitTenant() }}.</div></div>
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="!id && unitTenant()">{{ 'Will be recorded against {p0}.' | translate: { p0: (unitTenant()) } }}</div></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">What needs doing *</label><input class="form-control" name="ti" [(ngModel)]="f.title" maxlength="200" placeholder="e.g. Leaking kitchen tap" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'What needs doing *' | translate }}</label><input class="form-control" name="ti" [(ngModel)]="f.title" maxlength="200" [placeholder]="'e.g. Leaking kitchen tap' | translate" /></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Kind of job</label>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Kind of job' | translate }}</label>
             <select class="form-select" name="c" [(ngModel)]="f.category"><option *ngFor="let c of categories" [ngValue]="c.value">{{ c.label }}</option></select></div>
-          <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">Priority</label>
+          <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">{{ 'Priority' | translate }}</label>
             <select class="form-select" name="p" [(ngModel)]="f.priority"><option *ngFor="let p of priorities" [ngValue]="p.value">{{ p.label }}</option></select></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Reported on</label><input class="form-control" type="date" name="rd" [(ngModel)]="f.reportedDate" [max]="todayStr" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Reported by</label><input class="form-control" name="rb" [(ngModel)]="f.reportedBy" maxlength="200" placeholder="the tenant, a caretaker…" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Reported on' | translate }}</label><input class="form-control" type="date" name="rd" [(ngModel)]="f.reportedDate" [max]="todayStr" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Reported by' | translate }}</label><input class="form-control" name="rb" [(ngModel)]="f.reportedBy" maxlength="200" [placeholder]="'the tenant, a caretaker…' | translate" /></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Details</label><textarea class="form-control" rows="3" name="d" [(ngModel)]="f.description" maxlength="4000"></textarea></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Details' | translate }}</label><textarea class="form-control" rows="3" name="d" [(ngModel)]="f.description" maxlength="4000"></textarea></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Planned for</label><input class="form-control" type="date" name="sd" [(ngModel)]="f.scheduledDate" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Due by</label><input class="form-control" type="date" name="dd" [(ngModel)]="f.dueDate" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Contractor</label><input class="form-control" name="cn" [(ngModel)]="f.contractorName" maxlength="200" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Contractor phone</label><input class="form-control" name="cp" [(ngModel)]="f.contractorPhone" maxlength="40" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Planned for' | translate }}</label><input class="form-control" type="date" name="sd" [(ngModel)]="f.scheduledDate" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Due by' | translate }}</label><input class="form-control" type="date" name="dd" [(ngModel)]="f.dueDate" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Contractor' | translate }}</label><input class="form-control" name="cn" [(ngModel)]="f.contractorName" maxlength="200" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Contractor phone' | translate }}</label><input class="form-control" name="cp" [(ngModel)]="f.contractorPhone" maxlength="40" /></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Estimated cost</label><input class="form-control" type="number" min="0" step="0.01" name="ec" [(ngModel)]="f.estimatedCost" [placeholder]="id ? '0 clears' : ''" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;" *ngIf="id"><label class="form-label">Actual cost</label><input class="form-control" type="number" min="0" step="0.01" name="ac" [(ngModel)]="f.actualCost" placeholder="0 clears" /></div>
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Who pays</label>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Estimated cost' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="ec" [(ngModel)]="f.estimatedCost" [placeholder]="id ? '0 clears' : ''" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;" *ngIf="id"><label class="form-label">{{ 'Actual cost' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="ac" [(ngModel)]="f.actualCost" [placeholder]="'0 clears' | translate" /></div>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Who pays' | translate }}</label>
             <select class="form-select" name="cb" [(ngModel)]="f.costBearer"><option *ngFor="let b of bearers" [ngValue]="b.value">{{ b.label }}</option></select></div>
         </div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? 'Save changes' : 'Log the request' }}</button></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? ('Save changes' | translate) : ('Log the request' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

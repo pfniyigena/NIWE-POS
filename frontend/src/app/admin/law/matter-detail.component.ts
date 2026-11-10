@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -28,54 +29,54 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
 @Component({
   selector: 'app-law-matter-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, QuickCustomerComponent, MatterBillingComponent, MatterTrustComponent, MatterPapersComponent, MatterDocumentsComponent, MatterPortalComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, QuickCustomerComponent, MatterBillingComponent, MatterTrustComponent, MatterPapersComponent, MatterDocumentsComponent, MatterPortalComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>{{ isNew ? 'Open a matter' : matter?.number || 'Matter' }}<span *ngIf="matter && !isNew" style="font-weight:400;"> · {{ matter.title }}</span></h3>
-        <a class="btn btn-outline-secondary" [routerLink]="canSeeList ? '/admin/law/matters' : '/law/mine'">Back</a>
+        <h3>{{ isNew ? ('Open a matter' | translate) : matter?.number || ('Matter' | translate) }}<span *ngIf="matter && !isNew" style="font-weight:400;"> · {{ matter.title }}</span></h3>
+        <a class="btn btn-outline-secondary" [routerLink]="canSeeList ? '/admin/law/matters' : '/law/mine'">{{ 'Back' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="info">{{ info }}</div>
 
       <!-- open / edit form -->
       <form class="card mb-3" style="padding:1rem; max-width:52rem;" *ngIf="isNew || editing" (ngSubmit)="saveMatter()">
-        <div class="form-group mb-2"><label class="form-label">Title</label><input class="form-control" name="ti" [(ngModel)]="f.title" required placeholder="e.g. Mukamana v. Habimana — land dispute" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Title' | translate }}</label><input class="form-control" name="ti" [(ngModel)]="f.title" required [placeholder]="'e.g. Mukamana v. Habimana — land dispute' | translate" /></div>
         <div class="form-group mb-2" *ngIf="isNew">
-          <label class="form-label">Client</label>
+          <label class="form-label">{{ 'Client' | translate }}</label>
           <select class="form-select" name="cl" [(ngModel)]="f.clientCustomerId" required>
-            <option [ngValue]="null">Choose a client…</option>
+            <option [ngValue]="null">{{ 'Choose a client…' | translate }}</option>
             <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}<span *ngIf="c.phone"> · {{ c.phone }}</span></option>
           </select>
           <app-quick-customer (created)="onCustomerCreated($event)"></app-quick-customer>
-          <div class="text-muted" style="font-size:0.8rem;">Run the conflict check on the next screen before you start work.</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Run the conflict check on the next screen before you start work.' | translate }}</div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Lead lawyer</label>
-            <select class="form-select" name="ld" [(ngModel)]="f.leadUserId"><option [ngValue]="null">Me</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.name }}</option></select></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Practice area</label>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Lead lawyer' | translate }}</label>
+            <select class="form-select" name="ld" [(ngModel)]="f.leadUserId"><option [ngValue]="null">{{ 'Me' | translate }}</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.name }}</option></select></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Practice area' | translate }}</label>
             <select class="form-select" name="pa" [(ngModel)]="f.practiceArea"><option [ngValue]="null">—</option><option *ngFor="let p of areas" [ngValue]="p">{{ p }}</option></select></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Jurisdiction</label>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Jurisdiction' | translate }}</label>
             <select class="form-select" name="ju" [(ngModel)]="f.jurisdiction"><option [ngValue]="null">—</option><option *ngFor="let p of jurisdictions" [ngValue]="p">{{ p }}</option></select></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Court or forum</label><input class="form-control" name="co" [(ngModel)]="courtOrForum" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">Court case number</label><input class="form-control" name="cn" [(ngModel)]="courtCaseNumber" /></div>
-          <div class="form-group mb-2"><label class="form-label">Opened</label><app-date-picker name="od" [(ngModel)]="openedDate"></app-date-picker></div>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Court or forum' | translate }}</label><input class="form-control" name="co" [(ngModel)]="courtOrForum" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Court case number' | translate }}</label><input class="form-control" name="cn" [(ngModel)]="courtCaseNumber" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Opened' | translate }}</label><app-date-picker name="od" [(ngModel)]="openedDate"></app-date-picker></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">How it is billed</label>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'How it is billed' | translate }}</label>
             <select class="form-select" name="bt" [(ngModel)]="f.billingType">
               <option *ngFor="let b of billingTypes" [value]="b.key">{{ b.label }}</option>
             </select></div>
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Fee agreement <span class="text-muted">(rate, fixed fee, retainer, percentage)</span></label>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Fee agreement' | translate }} <span class="text-muted">{{ '(rate, fixed fee, retainer, percentage)' | translate }}</span></label>
             <input class="form-control" name="bn" [(ngModel)]="billingNote" /></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Description</label><textarea class="form-control" rows="3" name="de" [(ngModel)]="description"></textarea></div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-3"><input type="checkbox" name="rs" [(ngModel)]="f.restricted" /> Restricted — only the team and admins can open this matter</label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Description' | translate }}</label><textarea class="form-control" rows="3" name="de" [(ngModel)]="description"></textarea></div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-3"><input type="checkbox" name="rs" [(ngModel)]="f.restricted" /> {{ 'Restricted — only the team and admins can open this matter' | translate }}</label>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : isNew ? 'Open matter' : 'Save' }}</button>
-          <button class="btn btn-outline-secondary" type="button" *ngIf="editing" (click)="editing = false">Cancel</button>
+          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : isNew ? ('Open matter' | translate) : ('Save' | translate) }}</button>
+          <button class="btn btn-outline-secondary" type="button" *ngIf="editing" (click)="editing = false">{{ 'Cancel' | translate }}</button>
         </div>
       </form>
 
@@ -86,35 +87,35 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
             <div>
               <div>
                 <span class="badge" [class.badge-success]="matter.status === 'OPEN'" [class.badge-warning]="matter.status === 'ON_HOLD'" [class.badge-secondary]="matter.status === 'CLOSED'">{{ statusLabel(matter.status) }}</span>
-                <span class="badge badge-secondary" *ngIf="matter.restricted" style="margin-left:0.3rem;">Restricted</span>
-                <span class="badge" style="margin-left:0.3rem;" [class.badge-success]="matter.conflictCleared" [class.badge-danger]="!matter.conflictCleared">{{ matter.conflictCleared ? 'Conflicts cleared' : 'Conflicts not cleared' }}</span>
+                <span class="badge badge-secondary" *ngIf="matter.restricted" style="margin-left:0.3rem;">{{ 'Restricted' | translate }}</span>
+                <span class="badge" style="margin-left:0.3rem;" [class.badge-success]="matter.conflictCleared" [class.badge-danger]="!matter.conflictCleared">{{ matter.conflictCleared ? ('Conflicts cleared' | translate) : ('Conflicts not cleared' | translate) }}</span>
               </div>
-              <div class="mt-2">Client: <a [routerLink]="['/admin/customers', matter.clientId]" *ngIf="canSeeList">{{ matter.clientName }}</a><strong *ngIf="!canSeeList">{{ matter.clientName }}</strong>
+              <div class="mt-2">{{ 'Client:' | translate }} <a [routerLink]="['/admin/customers', matter.clientId]" *ngIf="canSeeList">{{ matter.clientName }}</a><strong *ngIf="!canSeeList">{{ matter.clientName }}</strong>
                 <span class="text-muted" *ngIf="matter.clientPhone"> · {{ matter.clientPhone }}</span><span class="text-muted" *ngIf="matter.clientEmail"> · {{ matter.clientEmail }}</span></div>
-              <div>Lead lawyer: <strong>{{ matter.leadName || '—' }}</strong></div>
-              <div *ngIf="matter.practiceArea">Practice area: {{ matter.practiceArea }}<span *ngIf="matter.jurisdiction"> · {{ matter.jurisdiction }}</span></div>
-              <div *ngIf="matter.courtOrForum || matter.courtCaseNumber">Court: {{ matter.courtOrForum || '—' }}<span *ngIf="matter.courtCaseNumber"> · case no. {{ matter.courtCaseNumber }}</span></div>
-              <div>Billing: {{ billing(matter.billingType) }}<span class="text-muted" *ngIf="matter.billingNote"> — {{ matter.billingNote }}</span></div>
-              <div class="text-muted" style="font-size:0.85rem;">Opened {{ matter.openedDate }}<span *ngIf="matter.createdByName"> by {{ matter.createdByName }}</span><span *ngIf="matter.closedDate"> · closed {{ matter.closedDate }}</span></div>
-              <div *ngIf="matter.outcome" class="mt-1"><strong>Outcome:</strong> {{ matter.outcome }}</div>
+              <div>{{ 'Lead lawyer:' | translate }} <strong>{{ matter.leadName || '—' }}</strong></div>
+              <div *ngIf="matter.practiceArea">{{ 'Practice area: {p0}' | translate: { p0: (matter.practiceArea) } }}<span *ngIf="matter.jurisdiction"> · {{ matter.jurisdiction }}</span></div>
+              <div *ngIf="matter.courtOrForum || matter.courtCaseNumber">{{ 'Court: {p0}' | translate: { p0: (matter.courtOrForum || '—') } }}<span *ngIf="matter.courtCaseNumber"> {{ '· case no. {p0}' | translate: { p0: (matter.courtCaseNumber) } }}</span></div>
+              <div>{{ 'Billing: {p0}' | translate: { p0: (billing(matter.billingType)) } }}<span class="text-muted" *ngIf="matter.billingNote"> — {{ matter.billingNote }}</span></div>
+              <div class="text-muted" style="font-size:0.85rem;">{{ 'Opened {p0}' | translate: { p0: (matter.openedDate) } }}<span *ngIf="matter.createdByName"> {{ 'by {p0}' | translate: { p0: (matter.createdByName) } }}</span><span *ngIf="matter.closedDate"> {{ '· closed {p0}' | translate: { p0: (matter.closedDate) } }}</span></div>
+              <div *ngIf="matter.outcome" class="mt-1"><strong>{{ 'Outcome:' | translate }}</strong> {{ matter.outcome }}</div>
               <p class="mt-2" style="white-space:pre-line;" *ngIf="matter.description">{{ matter.description }}</p>
             </div>
             <div class="flex-col gap-2" style="min-width:12rem;" *ngIf="matter.canLead">
-              <button class="btn btn-outline-secondary" (click)="startEdit()">Edit details</button>
-              <button class="btn btn-outline-secondary" *ngIf="matter.status === 'OPEN'" (click)="setStatus('ON_HOLD')" [disabled]="busy">Put on hold</button>
-              <button class="btn btn-outline-secondary" *ngIf="matter.status === 'ON_HOLD'" (click)="setStatus('OPEN')" [disabled]="busy">Resume</button>
-              <button class="btn btn-outline-secondary" *ngIf="matter.status === 'CLOSED'" (click)="setStatus('OPEN')" [disabled]="busy">Reopen</button>
-              <button class="btn btn-outline-danger" *ngIf="matter.status !== 'CLOSED'" (click)="closeOpen = !closeOpen">Close matter</button>
-              <button class="btn btn-sm btn-outline-danger" *ngIf="canSeeList && !matter.deadlines.length && !matter.tasks.length && !matter.notes.length" (click)="remove()">Delete</button>
+              <button class="btn btn-outline-secondary" (click)="startEdit()">{{ 'Edit details' | translate }}</button>
+              <button class="btn btn-outline-secondary" *ngIf="matter.status === 'OPEN'" (click)="setStatus('ON_HOLD')" [disabled]="busy">{{ 'Put on hold' | translate }}</button>
+              <button class="btn btn-outline-secondary" *ngIf="matter.status === 'ON_HOLD'" (click)="setStatus('OPEN')" [disabled]="busy">{{ 'Resume' | translate }}</button>
+              <button class="btn btn-outline-secondary" *ngIf="matter.status === 'CLOSED'" (click)="setStatus('OPEN')" [disabled]="busy">{{ 'Reopen' | translate }}</button>
+              <button class="btn btn-outline-danger" *ngIf="matter.status !== 'CLOSED'" (click)="closeOpen = !closeOpen">{{ 'Close matter' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" *ngIf="canSeeList && !matter.deadlines.length && !matter.tasks.length && !matter.notes.length" (click)="remove()">{{ 'Delete' | translate }}</button>
             </div>
           </div>
           <div class="mt-3" *ngIf="closeOpen">
-            <label class="form-label">Outcome <span class="text-muted">(how it ended)</span></label>
+            <label class="form-label">{{ 'Outcome' | translate }} <span class="text-muted">{{ '(how it ended)' | translate }}</span></label>
             <textarea class="form-control" rows="2" name="oc" [(ngModel)]="outcome"></textarea>
             <div class="mt-2 flex gap-2">
-              <button class="btn btn-danger" (click)="close(false)" [disabled]="busy">Close matter</button>
-              <button class="btn btn-danger" *ngIf="needForce" (click)="close(true)" [disabled]="busy">Close it anyway</button>
-              <button class="btn btn-outline-secondary" (click)="closeOpen = false">Cancel</button>
+              <button class="btn btn-danger" (click)="close(false)" [disabled]="busy">{{ 'Close matter' | translate }}</button>
+              <button class="btn btn-danger" *ngIf="needForce" (click)="close(true)" [disabled]="busy">{{ 'Close it anyway' | translate }}</button>
+              <button class="btn btn-outline-secondary" (click)="closeOpen = false">{{ 'Cancel' | translate }}</button>
             </div>
           </div>
         </div>
@@ -127,38 +128,38 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
         <!-- deadlines -->
         <div class="card" style="padding:1rem;" *ngIf="tab === 'deadlines'">
           <table class="stack table-sm" *ngIf="matter.deadlines.length">
-            <thead><tr><th>Date</th><th>What</th><th>Type</th><th>Assigned to</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'What' | translate }}</th><th>{{ 'Type' | translate }}</th><th>{{ 'Assigned to' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let d of matter.deadlines" [style.opacity]="d.status === 'OPEN' ? 1 : 0.6">
                 <td [style.color]="d.overdue ? '#c0392b' : ''" data-label="Date"><strong>{{ d.dueDate }}</strong><span *ngIf="d.dueTime"> {{ d.dueTime }}</span>
-                  <span *ngIf="d.overdue"> (overdue)</span><span class="text-muted" *ngIf="d.status === 'OPEN' && !d.overdue" style="font-size:0.8rem;"> · {{ d.daysLeft === 0 ? 'today' : d.daysLeft + ' d' }}</span></td>
+                  <span *ngIf="d.overdue"> {{ '(overdue)' | translate }}</span><span class="text-muted" *ngIf="d.status === 'OPEN' && !d.overdue" style="font-size:0.8rem;"> · {{ d.daysLeft === 0 ? 'today' : d.daysLeft + ' d' }}</span></td>
                 <td data-label="What">{{ d.title }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="d.notes">{{ d.notes }}</div></td>
                 <td data-label="Type">{{ deadlineType(d.type) }}</td><td data-label="Assigned to">{{ d.assignedToName || '—' }}</td>
                 <td data-label="Status"><span class="badge" [class.badge-success]="d.status === 'DONE'" [class.badge-secondary]="d.status !== 'DONE'">{{ d.status.charAt(0) + d.status.slice(1).toLowerCase() }}</span>
                   <span class="text-muted" style="font-size:0.75rem;" *ngIf="d.completedByName"> {{ d.completedByName }}</span></td>
                 <td *ngIf="matter.canWork">
-                  <button class="btn btn-sm btn-outline-success" *ngIf="d.status === 'OPEN'" (click)="deadlineDone(d.id)">Done</button>
-                  <button class="btn btn-sm btn-outline-secondary" *ngIf="d.status !== 'OPEN'" (click)="deadlineReopen(d.id)">Reopen</button>
-                  <button class="btn btn-sm btn-outline-secondary" style="margin-left:0.3rem;" (click)="editDeadline(d)">Edit</button>
-                  <button class="btn btn-sm btn-outline-danger" style="margin-left:0.3rem;" (click)="deleteDeadline(d.id)">Delete</button>
+                  <button class="btn btn-sm btn-outline-success" *ngIf="d.status === 'OPEN'" (click)="deadlineDone(d.id)">{{ 'Done' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" *ngIf="d.status !== 'OPEN'" (click)="deadlineReopen(d.id)">{{ 'Reopen' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" style="margin-left:0.3rem;" (click)="editDeadline(d)">{{ 'Edit' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger" style="margin-left:0.3rem;" (click)="deleteDeadline(d.id)">{{ 'Delete' | translate }}</button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <p class="text-muted" *ngIf="!matter.deadlines.length">No deadlines yet. Add court dates, filing dates and limitation dates so nothing is missed.</p>
+          <p class="text-muted" *ngIf="!matter.deadlines.length">{{ 'No deadlines yet. Add court dates, filing dates and limitation dates so nothing is missed.' | translate }}</p>
           <form *ngIf="matter.canWork" class="mt-3" (ngSubmit)="saveDeadline()" style="border-top:1px solid var(--border, #d0d7de); padding-top:0.8rem;">
-            <strong>{{ dlEditing ? 'Edit deadline' : 'Add a deadline' }}</strong>
+            <strong>{{ dlEditing ? ('Edit deadline' | translate) : ('Add a deadline' | translate) }}</strong>
             <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:end;">
-              <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">What</label><input class="form-control" name="dt" [(ngModel)]="dl.title" required /></div>
-              <div class="form-group"><label class="form-label">Type</label>
+              <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'What' | translate }}</label><input class="form-control" name="dt" [(ngModel)]="dl.title" required /></div>
+              <div class="form-group"><label class="form-label">{{ 'Type' | translate }}</label>
                 <select class="form-select" name="dty" [(ngModel)]="dl.type"><option *ngFor="let t of deadlineTypes" [value]="t.key">{{ t.label }}</option></select></div>
-              <div class="form-group"><label class="form-label">Date</label><app-date-picker name="dd" [(ngModel)]="dl.dueDate" required></app-date-picker></div>
-              <div class="form-group"><label class="form-label">Time</label><input class="form-control" type="time" name="dtm" [(ngModel)]="dl.dueTime" /></div>
-              <div class="form-group"><label class="form-label">Assigned to</label>
-                <select class="form-select" name="da" [(ngModel)]="dl.assignedToUserId"><option [ngValue]="null">Lead lawyer</option><option *ngFor="let t of matter.team" [ngValue]="t.userId">{{ t.userName }}</option></select></div>
-              <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">Notes</label><input class="form-control" name="dn" [(ngModel)]="dl.notes" /></div>
-              <button class="btn btn-primary" type="submit" [disabled]="busy">{{ dlEditing ? 'Save' : 'Add' }}</button>
-              <button class="btn btn-outline-secondary" type="button" *ngIf="dlEditing" (click)="resetDeadline()">Cancel</button>
+              <div class="form-group"><label class="form-label">{{ 'Date' | translate }}</label><app-date-picker name="dd" [(ngModel)]="dl.dueDate" required></app-date-picker></div>
+              <div class="form-group"><label class="form-label">{{ 'Time' | translate }}</label><input class="form-control" type="time" name="dtm" [(ngModel)]="dl.dueTime" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Assigned to' | translate }}</label>
+                <select class="form-select" name="da" [(ngModel)]="dl.assignedToUserId"><option [ngValue]="null">{{ 'Lead lawyer' | translate }}</option><option *ngFor="let t of matter.team" [ngValue]="t.userId">{{ t.userName }}</option></select></div>
+              <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control" name="dn" [(ngModel)]="dl.notes" /></div>
+              <button class="btn btn-primary" type="submit" [disabled]="busy">{{ dlEditing ? ('Save' | translate) : ('Add' | translate) }}</button>
+              <button class="btn btn-outline-secondary" type="button" *ngIf="dlEditing" (click)="resetDeadline()">{{ 'Cancel' | translate }}</button>
             </div>
           </form>
         </div>
@@ -166,35 +167,35 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
         <!-- tasks -->
         <div class="card" style="padding:1rem;" *ngIf="tab === 'tasks'">
           <table class="stack table-sm" *ngIf="matter.tasks.length">
-            <thead><tr><th style="width:2rem;"></th><th>Task</th><th>Due</th><th>Assigned to</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th style="width:2rem;"></th><th>{{ 'Task' | translate }}</th><th>{{ 'Due' | translate }}</th><th>{{ 'Assigned to' | translate }}</th><th>{{ 'Priority' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let t of matter.tasks" [style.opacity]="t.status === 'DONE' ? 0.6 : 1">
                 <td><input type="checkbox" [checked]="t.status === 'DONE'" [disabled]="!matter.canWork" (change)="toggleTask(t.id, t.status)" /></td>
                 <td [style.textDecoration]="t.status === 'DONE' ? 'line-through' : ''" data-label="Task">{{ t.title }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="t.description">{{ t.description }}</div></td>
-                <td [style.color]="t.overdue ? '#c0392b' : ''" data-label="Due">{{ t.dueDate || '—' }}<span *ngIf="t.overdue"> (late)</span></td>
+                <td [style.color]="t.overdue ? '#c0392b' : ''" data-label="Due">{{ t.dueDate || '—' }}<span *ngIf="t.overdue"> {{ '(late)' | translate }}</span></td>
                 <td data-label="Assigned to">{{ t.assignedToName || '—' }}</td><td data-label="Priority">{{ t.priority.charAt(0) + t.priority.slice(1).toLowerCase() }}</td>
-                <td data-label="Status">{{ t.status === 'IN_PROGRESS' ? 'In progress' : t.status === 'DONE' ? 'Done' : 'To do' }}</td>
+                <td data-label="Status">{{ t.status === 'IN_PROGRESS' ? 'In progress' : t.status === 'DONE' ? ('Done' | translate) : ('To do' | translate) }}</td>
                 <td *ngIf="matter.canWork">
-                  <button class="btn btn-sm btn-outline-secondary" *ngIf="t.status === 'TODO'" (click)="startTask(t.id)">Start</button>
-                  <button class="btn btn-sm btn-outline-secondary" style="margin-left:0.3rem;" (click)="editTask(t)">Edit</button>
-                  <button class="btn btn-sm btn-outline-danger" style="margin-left:0.3rem;" (click)="deleteTask(t.id)">Delete</button>
+                  <button class="btn btn-sm btn-outline-secondary" *ngIf="t.status === 'TODO'" (click)="startTask(t.id)">{{ 'Start' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" style="margin-left:0.3rem;" (click)="editTask(t)">{{ 'Edit' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger" style="margin-left:0.3rem;" (click)="deleteTask(t.id)">{{ 'Delete' | translate }}</button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <p class="text-muted" *ngIf="!matter.tasks.length">No tasks yet.</p>
+          <p class="text-muted" *ngIf="!matter.tasks.length">{{ 'No tasks yet.' | translate }}</p>
           <form *ngIf="matter.canWork" class="mt-3" (ngSubmit)="saveTask()" style="border-top:1px solid var(--border, #d0d7de); padding-top:0.8rem;">
-            <strong>{{ tkEditing ? 'Edit task' : 'Add a task' }}</strong>
+            <strong>{{ tkEditing ? ('Edit task' | translate) : ('Add a task' | translate) }}</strong>
             <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:end;">
-              <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">Task</label><input class="form-control" name="tt" [(ngModel)]="tk.title" required /></div>
-              <div class="form-group"><label class="form-label">Due</label><app-date-picker name="td" [(ngModel)]="tk.dueDate"></app-date-picker></div>
-              <div class="form-group"><label class="form-label">Assigned to</label>
-                <select class="form-select" name="ta" [(ngModel)]="tk.assignedToUserId"><option [ngValue]="null">Nobody yet</option><option *ngFor="let t of matter.team" [ngValue]="t.userId">{{ t.userName }}</option></select></div>
-              <div class="form-group"><label class="form-label">Priority</label>
-                <select class="form-select" name="tp" [(ngModel)]="tk.priority"><option value="LOW">Low</option><option value="NORMAL">Normal</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></select></div>
-              <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">Details</label><input class="form-control" name="tn" [(ngModel)]="tk.description" /></div>
-              <button class="btn btn-primary" type="submit" [disabled]="busy">{{ tkEditing ? 'Save' : 'Add' }}</button>
-              <button class="btn btn-outline-secondary" type="button" *ngIf="tkEditing" (click)="resetTask()">Cancel</button>
+              <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Task' | translate }}</label><input class="form-control" name="tt" [(ngModel)]="tk.title" required /></div>
+              <div class="form-group"><label class="form-label">{{ 'Due' | translate }}</label><app-date-picker name="td" [(ngModel)]="tk.dueDate"></app-date-picker></div>
+              <div class="form-group"><label class="form-label">{{ 'Assigned to' | translate }}</label>
+                <select class="form-select" name="ta" [(ngModel)]="tk.assignedToUserId"><option [ngValue]="null">{{ 'Nobody yet' | translate }}</option><option *ngFor="let t of matter.team" [ngValue]="t.userId">{{ t.userName }}</option></select></div>
+              <div class="form-group"><label class="form-label">{{ 'Priority' | translate }}</label>
+                <select class="form-select" name="tp" [(ngModel)]="tk.priority"><option value="LOW">{{ 'Low' | translate }}</option><option value="NORMAL">{{ 'Normal' | translate }}</option><option value="HIGH">{{ 'High' | translate }}</option><option value="URGENT">{{ 'Urgent' | translate }}</option></select></div>
+              <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Details' | translate }}</label><input class="form-control" name="tn" [(ngModel)]="tk.description" /></div>
+              <button class="btn btn-primary" type="submit" [disabled]="busy">{{ tkEditing ? ('Save' | translate) : ('Add' | translate) }}</button>
+              <button class="btn btn-outline-secondary" type="button" *ngIf="tkEditing" (click)="resetTask()">{{ 'Cancel' | translate }}</button>
             </div>
           </form>
         </div>
@@ -202,37 +203,37 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
         <!-- parties -->
         <div class="card" style="padding:1rem;" *ngIf="tab === 'parties'">
           <table class="stack table-sm" *ngIf="matter.parties.length">
-            <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>E-mail</th><th>ID</th><th>Note</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Role' | translate }}</th><th>{{ 'Phone' | translate }}</th><th>{{ 'E-mail' | translate }}</th><th>{{ 'ID' | translate }}</th><th>{{ 'Note' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let p of matter.parties">
                 <td data-label="Name">{{ p.name }}</td><td data-label="Role">{{ partyRole(p.role) }}</td><td data-label="Phone">{{ p.phone || '—' }}</td><td data-label="E-mail">{{ p.email || '—' }}</td><td data-label="ID">{{ p.idNumber || '—' }}</td><td data-label="Note">{{ p.note || '' }}</td>
-                <td *ngIf="matter.canWork"><button class="btn btn-sm btn-outline-danger" (click)="removeParty(p.id)">Remove</button></td>
+                <td *ngIf="matter.canWork"><button class="btn btn-sm btn-outline-danger" (click)="removeParty(p.id)">{{ 'Remove' | translate }}</button></td>
               </tr>
             </tbody>
           </table>
-          <p class="text-muted" *ngIf="!matter.parties.length">No opposing parties, lawyers or witnesses recorded. Add them so the conflict check can see them.</p>
+          <p class="text-muted" *ngIf="!matter.parties.length">{{ 'No opposing parties, lawyers or witnesses recorded. Add them so the conflict check can see them.' | translate }}</p>
           <div *ngIf="matter.canWork" class="mt-3" style="border-top:1px solid var(--border, #d0d7de); padding-top:0.8rem;">
-            <strong>Add a party</strong>
+            <strong>{{ 'Add a party' | translate }}</strong>
             <form class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:end;" (ngSubmit)="addParty()">
-              <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">Person or organisation</label>
+              <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Person or organisation' | translate }}</label>
                 <select class="form-select" name="pc" [(ngModel)]="pty.contactId" required>
-                  <option [ngValue]="null">Choose…</option>
+                  <option [ngValue]="null">{{ 'Choose…' | translate }}</option>
                   <option *ngFor="let c of contacts" [ngValue]="c.id">{{ c.name }}<span *ngIf="c.phone"> · {{ c.phone }}</span></option>
                 </select></div>
-              <div class="form-group"><label class="form-label">Role</label>
+              <div class="form-group"><label class="form-label">{{ 'Role' | translate }}</label>
                 <select class="form-select" name="pr" [(ngModel)]="pty.role"><option *ngFor="let r of partyRoles" [value]="r.key">{{ r.label }}</option></select></div>
-              <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">Note</label><input class="form-control" name="pn" [(ngModel)]="pty.note" /></div>
-              <button class="btn btn-primary" type="submit" [disabled]="busy">Add</button>
-              <button class="btn btn-outline-secondary" type="button" (click)="newContactOpen = !newContactOpen">+ New contact</button>
+              <div class="form-group" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Note' | translate }}</label><input class="form-control" name="pn" [(ngModel)]="pty.note" /></div>
+              <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Add' | translate }}</button>
+              <button class="btn btn-outline-secondary" type="button" (click)="newContactOpen = !newContactOpen">{{ '+ New contact' | translate }}</button>
             </form>
             <form class="card mt-2" style="padding:0.8rem;" *ngIf="newContactOpen" (ngSubmit)="createContact()">
               <div class="flex gap-2" style="flex-wrap:wrap; align-items:end;">
-                <div class="form-group" style="flex:2; min-width:12rem;"><label class="form-label">Name</label><input class="form-control" name="cn1" [(ngModel)]="nc.name" required /></div>
-                <div class="form-group"><label class="form-label">Kind</label>
-                  <select class="form-select" name="ct1" [(ngModel)]="nc.type"><option value="PERSON">Person</option><option value="COMPANY">Company</option><option value="GOVERNMENT">Government / court</option></select></div>
-                <div class="form-group"><label class="form-label">Phone</label><input class="form-control" name="cp1" [(ngModel)]="nc.phone" /></div>
-                <div class="form-group"><label class="form-label">ID / registration no.</label><input class="form-control" name="ci1" [(ngModel)]="nc.idNumber" /></div>
-                <button class="btn btn-primary" type="submit">Save contact</button>
+                <div class="form-group" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="cn1" [(ngModel)]="nc.name" required /></div>
+                <div class="form-group"><label class="form-label">{{ 'Kind' | translate }}</label>
+                  <select class="form-select" name="ct1" [(ngModel)]="nc.type"><option value="PERSON">{{ 'Person' | translate }}</option><option value="COMPANY">{{ 'Company' | translate }}</option><option value="GOVERNMENT">{{ 'Government / court' | translate }}</option></select></div>
+                <div class="form-group"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="cp1" [(ngModel)]="nc.phone" /></div>
+                <div class="form-group"><label class="form-label">{{ 'ID / registration no.' | translate }}</label><input class="form-control" name="ci1" [(ngModel)]="nc.idNumber" /></div>
+                <button class="btn btn-primary" type="submit">{{ 'Save contact' | translate }}</button>
               </div>
             </form>
           </div>
@@ -241,20 +242,20 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
         <!-- team -->
         <div class="card" style="padding:1rem;" *ngIf="tab === 'team'">
           <table class="stack table-sm" *ngIf="!teamEditing">
-            <thead><tr><th>Person</th><th>Role</th></tr></thead>
+            <thead><tr><th>{{ 'Person' | translate }}</th><th>{{ 'Role' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let t of matter.team"><td data-label="Person">{{ t.userName }}</td><td data-label="Role">{{ teamRole(t.role) }}</td></tr></tbody>
           </table>
-          <button class="btn btn-outline-secondary mt-2" *ngIf="matter.canLead && !teamEditing" (click)="startTeamEdit()">Change team</button>
+          <button class="btn btn-outline-secondary mt-2" *ngIf="matter.canLead && !teamEditing" (click)="startTeamEdit()">{{ 'Change team' | translate }}</button>
           <ng-container *ngIf="teamEditing">
             <div class="flex gap-2 mb-2" *ngFor="let m of teamEdit; let i = index" style="align-items:center;">
               <select class="form-select" style="width:16rem;" [name]="'tu' + i" [(ngModel)]="m.userId"><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.name }}</option></select>
               <select class="form-select" style="width:12rem;" [name]="'tr' + i" [(ngModel)]="m.role"><option *ngFor="let r of teamRoles" [value]="r.key">{{ r.label }}</option></select>
-              <button class="btn btn-sm btn-outline-danger" type="button" (click)="teamEdit.splice(i, 1)">Remove</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" (click)="teamEdit.splice(i, 1)">{{ 'Remove' | translate }}</button>
             </div>
             <div class="flex gap-2">
-              <button class="btn btn-outline-secondary" type="button" (click)="addMember()">+ Add person</button>
-              <button class="btn btn-primary" type="button" (click)="saveTeam()" [disabled]="busy">Save team</button>
-              <button class="btn btn-outline-secondary" type="button" (click)="teamEditing = false">Cancel</button>
+              <button class="btn btn-outline-secondary" type="button" (click)="addMember()">{{ '+ Add person' | translate }}</button>
+              <button class="btn btn-primary" type="button" (click)="saveTeam()" [disabled]="busy">{{ 'Save team' | translate }}</button>
+              <button class="btn btn-outline-secondary" type="button" (click)="teamEditing = false">{{ 'Cancel' | translate }}</button>
             </div>
           </ng-container>
         </div>
@@ -263,18 +264,18 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
         <div class="card" style="padding:1rem;" *ngIf="tab === 'diary'">
           <form *ngIf="matter.canWork" (ngSubmit)="addNote()" class="mb-3">
             <div class="flex gap-2" style="flex-wrap:wrap; align-items:end;">
-              <div class="form-group"><label class="form-label">Kind</label>
+              <div class="form-group"><label class="form-label">{{ 'Kind' | translate }}</label>
                 <select class="form-select" name="nk" [(ngModel)]="nt.kind"><option *ngFor="let k of noteKinds" [value]="k.key">{{ k.label }}</option></select></div>
-              <div class="form-group" style="flex:1; min-width:16rem;"><label class="form-label">Entry</label><textarea class="form-control" rows="2" name="nx" [(ngModel)]="nt.text" required></textarea></div>
-              <button class="btn btn-primary" type="submit" [disabled]="busy">Add to diary</button>
+              <div class="form-group" style="flex:1; min-width:16rem;"><label class="form-label">{{ 'Entry' | translate }}</label><textarea class="form-control" rows="2" name="nx" [(ngModel)]="nt.text" required></textarea></div>
+              <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Add to diary' | translate }}</button>
             </div>
           </form>
           <div *ngFor="let n of matter.notes" class="mb-2" style="border-left:3px solid var(--border, #d0d7de); padding-left:0.7rem;">
             <div class="text-muted" style="font-size:0.8rem;"><span class="badge badge-secondary">{{ noteKind(n.kind) }}</span> {{ n.createdAt | date: 'd MMM y, HH:mm' }} · {{ n.createdByName }}
-              <a href="javascript:void(0)" *ngIf="n.canDelete" (click)="deleteNote(n.id)" style="margin-left:0.5rem; color:#c0392b;">delete</a></div>
+              <a href="javascript:void(0)" *ngIf="n.canDelete" (click)="deleteNote(n.id)" style="margin-left:0.5rem; color:#c0392b;">{{ 'delete' | translate }}</a></div>
             <div style="white-space:pre-line;">{{ n.text }}</div>
           </div>
-          <p class="text-muted" *ngIf="!matter.notes.length">The diary is empty.</p>
+          <p class="text-muted" *ngIf="!matter.notes.length">{{ 'The diary is empty.' | translate }}</p>
         </div>
 
         <!-- conflicts -->
@@ -299,23 +300,23 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
         </div>
 
         <div class="card" style="padding:1rem;" *ngIf="tab === 'conflicts'">
-          <div *ngIf="matter.conflictCleared" class="alert alert-success">Cleared by {{ matter.conflictClearedBy }} on {{ matter.conflictClearedAt | date: 'd MMM y, HH:mm' }}.
+          <div *ngIf="matter.conflictCleared" class="alert alert-success">{{ 'Cleared by {p0} on {p1}.' | translate: { p0: (matter.conflictClearedBy), p1: (matter.conflictClearedAt | date: 'd MMM y, HH:mm') } }}
             <span *ngIf="matter.conflictNote"><br>{{ matter.conflictNote }}</span></div>
-          <div *ngIf="!matter.conflictCleared" class="alert alert-warning">Conflicts have not been cleared on this matter. Run the check, then clear it. Adding a party clears it again until re-checked.</div>
-          <button class="btn btn-primary" (click)="runCheck()" [disabled]="busy || !matter.canWork">{{ checking ? 'Checking…' : 'Run conflict check' }}</button>
+          <div *ngIf="!matter.conflictCleared" class="alert alert-warning">{{ 'Conflicts have not been cleared on this matter. Run the check, then clear it. Adding a party clears it again until re-checked.' | translate }}</div>
+          <button class="btn btn-primary" (click)="runCheck()" [disabled]="busy || !matter.canWork">{{ checking ? ('Checking…' | translate) : ('Run conflict check' | translate) }}</button>
 
           <ng-container *ngIf="check">
-            <p class="mt-3" *ngIf="!check.hits"><strong>No overlaps found</strong> for the client or the {{ matter.parties.length }} recorded part{{ matter.parties.length === 1 ? 'y' : 'ies' }}.</p>
+            <p class="mt-3" *ngIf="!check.hits"><strong>{{ 'No overlaps found' | translate }}</strong> {{ 'for the client or the {p0} recorded part{p1}.' | translate: { p0: (matter.parties.length), p1: (matter.parties.length === 1 ? 'y' : 'ies') } }}</p>
             <ng-container *ngFor="let s of check.subjects">
               <div *ngFor="let h of s.hits" class="card mt-2" style="padding:0.9rem;" [style.borderLeft]="h.severity === 'HIGH' ? '4px solid #c0392b' : '4px solid #e6a700'">
                 <div class="flex justify-between" style="flex-wrap:wrap; gap:0.5rem;">
-                  <div><strong>{{ s.label }}</strong> <span class="text-muted">({{ subjectRole(s.role) }})</span> matches <strong>{{ h.name }}</strong>
-                    <span class="text-muted" style="font-size:0.85rem;"> on {{ h.reasons.join(', ') }}</span></div>
-                  <span class="badge" [class.badge-danger]="h.severity === 'HIGH'" [class.badge-warning]="h.severity !== 'HIGH'">{{ h.severity === 'HIGH' ? 'Opposite sides' : 'Review' }}</span>
+                  <div><strong>{{ s.label }}</strong> <span class="text-muted">({{ subjectRole(s.role) }})</span> {{ 'matches' | translate }} <strong>{{ h.name }}</strong>
+                    <span class="text-muted" style="font-size:0.85rem;"> {{ 'on {p0}' | translate: { p0: (h.reasons.join(', ')) } }}</span></div>
+                  <span class="badge" [class.badge-danger]="h.severity === 'HIGH'" [class.badge-warning]="h.severity !== 'HIGH'">{{ h.severity === 'HIGH' ? ('Opposite sides' | translate) : ('Review' | translate) }}</span>
                 </div>
                 <ul style="margin:0.4rem 0 0 1rem;">
                   <li *ngFor="let r of h.matters">
-                    <span *ngIf="!r.hidden"><a [routerLink]="['/law/matters', r.id]">{{ r.number }}</a> {{ r.title }}</span><span *ngIf="r.hidden" class="text-muted">A restricted matter</span>
+                    <span *ngIf="!r.hidden"><a [routerLink]="['/law/matters', r.id]">{{ r.number }}</a> {{ r.title }}</span><span *ngIf="r.hidden" class="text-muted">{{ 'A restricted matter' | translate }}</span>
                     — {{ r.role === 'CLIENT' ? 'Client' : partyRole(r.role) }} <span class="text-muted">({{ r.status.toLowerCase().replace('_', ' ') }})</span>
                   </li>
                 </ul>
@@ -324,9 +325,9 @@ type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 
           </ng-container>
 
           <div class="mt-3" *ngIf="matter.canLead && !matter.conflictCleared">
-            <label class="form-label">Note <span class="text-muted">(required when overlaps were found: why they do not stop the firm acting)</span></label>
+            <label class="form-label">{{ 'Note' | translate }} <span class="text-muted">{{ '(required when overlaps were found: why they do not stop the firm acting)' | translate }}</span></label>
             <textarea class="form-control" rows="2" name="cc" [(ngModel)]="clearNote"></textarea>
-            <button class="btn btn-success mt-2" (click)="clear()" [disabled]="busy">Clear conflicts</button>
+            <button class="btn btn-success mt-2" (click)="clear()" [disabled]="busy">{{ 'Clear conflicts' | translate }}</button>
           </div>
         </div>
       </ng-container>

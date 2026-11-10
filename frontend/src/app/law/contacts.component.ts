@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -11,46 +12,46 @@ import { Contact, ContactPayload, ContactType, LawApiService } from '../core/api
 @Component({
   selector: 'app-law-contacts',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, PagerComponent, LawExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, PagerComponent, LawExportComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Contacts</h3>
+      <h3 class="mb-3">{{ 'Contacts' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="save()">
-        <strong>{{ editing ? 'Edit contact' : 'Add a contact' }}</strong>
+        <strong>{{ editing ? ('Edit contact' | translate) : ('Add a contact' | translate) }}</strong>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:end;">
-          <div class="form-group"><label class="form-label">Name</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
-          <div class="form-group"><label class="form-label">Kind</label>
-            <select class="form-select" name="t" [(ngModel)]="f.type"><option value="PERSON">Person</option><option value="COMPANY">Company</option><option value="GOVERNMENT">Government / court</option></select></div>
-          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" name="p" [(ngModel)]="phone" /></div>
-          <div class="form-group"><label class="form-label">E-mail</label><input class="form-control" type="email" name="e" [(ngModel)]="email" /></div>
-          <div class="form-group"><label class="form-label">ID / registration no.</label><input class="form-control" name="i" [(ngModel)]="idNumber" /></div>
-          <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">Address</label><input class="form-control" name="a" [(ngModel)]="address" /></div>
-          <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">Notes</label><input class="form-control" name="no" [(ngModel)]="notes" /></div>
-          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ editing ? 'Save' : 'Add' }}</button>
-          <button class="btn btn-outline-secondary" type="button" *ngIf="editing" (click)="reset()">Cancel</button>
+          <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
+          <div class="form-group"><label class="form-label">{{ 'Kind' | translate }}</label>
+            <select class="form-select" name="t" [(ngModel)]="f.type"><option value="PERSON">{{ 'Person' | translate }}</option><option value="COMPANY">{{ 'Company' | translate }}</option><option value="GOVERNMENT">{{ 'Government / court' | translate }}</option></select></div>
+          <div class="form-group"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="p" [(ngModel)]="phone" /></div>
+          <div class="form-group"><label class="form-label">{{ 'E-mail' | translate }}</label><input class="form-control" type="email" name="e" [(ngModel)]="email" /></div>
+          <div class="form-group"><label class="form-label">{{ 'ID / registration no.' | translate }}</label><input class="form-control" name="i" [(ngModel)]="idNumber" /></div>
+          <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Address' | translate }}</label><input class="form-control" name="a" [(ngModel)]="address" /></div>
+          <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control" name="no" [(ngModel)]="notes" /></div>
+          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ editing ? ('Save' | translate) : ('Add' | translate) }}</button>
+          <button class="btn btn-outline-secondary" type="button" *ngIf="editing" (click)="reset()">{{ 'Cancel' | translate }}</button>
         </div>
       </form>
 
       <div class="flex gap-2 mb-3">
-        <input class="form-control" style="width:20rem;" placeholder="Search name, phone, e-mail, ID" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <input class="form-control" style="width:20rem;" [placeholder]="'Search name, phone, e-mail, ID' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-law-export kind="contacts" [filters]="{ q: q.trim() }"></app-law-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Name</th><th>Kind</th><th>Phone</th><th>E-mail</th><th>ID</th><th>Notes</th><th class="text-end">Matters</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Kind' | translate }}</th><th>{{ 'Phone' | translate }}</th><th>{{ 'E-mail' | translate }}</th><th>{{ 'ID' | translate }}</th><th>{{ 'Notes' | translate }}</th><th class="text-end">{{ 'Matters' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let c of list">
             <td data-label="Name">{{ c.name }}</td><td data-label="Kind">{{ kind(c.type) }}</td><td data-label="Phone">{{ c.phone || '—' }}</td><td data-label="E-mail">{{ c.email || '—' }}</td><td data-label="ID">{{ c.idNumber || '—' }}</td><td data-label="Notes">{{ c.notes || '' }}</td>
             <td class="text-end" data-label="Matters">{{ c.matters }}</td>
-            <td><button class="btn btn-sm btn-outline-secondary" (click)="edit(c)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" style="margin-left:0.3rem;" *ngIf="!c.matters" (click)="remove(c)">Delete</button></td>
+            <td><button class="btn btn-sm btn-outline-secondary" (click)="edit(c)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" style="margin-left:0.3rem;" *ngIf="!c.matters" (click)="remove(c)">{{ 'Delete' | translate }}</button></td>
           </tr>
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length">No contacts yet.</p>
+      <p class="text-muted" *ngIf="!list.length">{{ 'No contacts yet.' | translate }}</p>
     </app-shell>
   `,
 })

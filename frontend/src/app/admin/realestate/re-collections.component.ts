@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,11 +14,11 @@ interface Section { key: 'overdue' | 'dueSoon' | 'unscheduled'; title: string; h
 @Component({
   selector: 'app-re-collections',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ReExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ReExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Collections</h3>
+        <h3>{{ 'Collections' | translate }}</h3>
         <app-re-export kind="collections" [filters]="{ projectId: projectId, agentId: agentId, days: days }"></app-re-export>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -25,37 +26,37 @@ interface Section { key: 'overdue' | 'dueSoon' | 'unscheduled'; title: string; h
       <div class="alert alert-info" *ngIf="notice">{{ notice }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="pj" [(ngModel)]="projectId" (ngModelChange)="load()">
-          <option [ngValue]="null">All projects</option><option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">{{ 'All projects' | translate }}</option><option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="ag" [(ngModel)]="agentId" (ngModelChange)="load()">
-          <option [ngValue]="null">All agents</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
+          <option [ngValue]="null">{{ 'All agents' | translate }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="dy" [(ngModel)]="days" (ngModelChange)="load()">
-          <option [ngValue]="7">Due soon: next 7 days</option><option [ngValue]="14">Due soon: next 14 days</option><option [ngValue]="30">Due soon: next 30 days</option><option [ngValue]="90">Due soon: next 90 days</option>
+          <option [ngValue]="7">{{ 'Due soon: next 7 days' | translate }}</option><option [ngValue]="14">{{ 'Due soon: next 14 days' | translate }}</option><option [ngValue]="30">{{ 'Due soon: next 30 days' | translate }}</option><option [ngValue]="90">{{ 'Due soon: next 90 days' | translate }}</option>
         </select>
       </div>
       <div class="text-muted mb-3" style="font-size:0.85rem;" *ngIf="board && !board.installmentsModuleOn">
-        Buyers are not reminded automatically because the Instalments module is off. You can still remind a buyer by hand from this page.
+        {{ 'Buyers are not reminded automatically because the Instalments module is off. You can still remind a buyer by hand from this page.' | translate }}
       </div>
-      <div class="text-muted mb-3" style="font-size:0.85rem;" *ngIf="board && !board.mailConfigured">E-mail is not set up, so the Remind and E-mail buttons are switched off. An admin can set it up in Settings.</div>
+      <div class="text-muted mb-3" style="font-size:0.85rem;" *ngIf="board && !board.mailConfigured">{{ 'E-mail is not set up, so the Remind and E-mail buttons are switched off. An admin can set it up in Settings.' | translate }}</div>
 
-      <div *ngIf="!board && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!board && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
       <div class="card" style="padding:1rem;" *ngIf="board && !count()">
-        <strong>Nobody owes anything right now.</strong>
-        <div class="text-muted">No buyer is late, no instalment falls due in the next {{ board.soonDays }} days, and every sold unit has a payment schedule or is paid.</div>
+        <strong>{{ 'Nobody owes anything right now.' | translate }}</strong>
+        <div class="text-muted">{{ 'No buyer is late, no instalment falls due in the next {p0} days, and every sold unit has a payment schedule or is paid.' | translate: { p0: (board.soonDays) } }}</div>
       </div>
 
       <div *ngIf="board && count()" class="mb-3" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem, 1fr)); gap:0.6rem;">
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">Late</div><div style="font-size:1.3rem; font-weight:600; color:#b91c1c;">{{ board.overdueTotal | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ board.overdue.length }} buyer{{ board.overdue.length === 1 ? '' : 's' }}</div></div>
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">Due in {{ board.soonDays }} days</div><div style="font-size:1.3rem; font-weight:600;">{{ board.dueSoonTotal | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ board.dueSoon.length }} buyer{{ board.dueSoon.length === 1 ? '' : 's' }}</div></div>
-        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">No schedule</div><div style="font-size:1.3rem; font-weight:600; color:#b45309;">{{ board.unscheduledTotal | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ board.unscheduled.length }} buyer{{ board.unscheduled.length === 1 ? '' : 's' }}</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Late' | translate }}</div><div style="font-size:1.3rem; font-weight:600; color:#b91c1c;">{{ board.overdueTotal | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ '{p0} buyer{p1}' | translate: { p0: (board.overdue.length), p1: (board.overdue.length === 1 ? '' : 's') } }}</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Due in {p0} days' | translate: { p0: (board.soonDays) } }}</div><div style="font-size:1.3rem; font-weight:600;">{{ board.dueSoonTotal | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ '{p0} buyer{p1}' | translate: { p0: (board.dueSoon.length), p1: (board.dueSoon.length === 1 ? '' : 's') } }}</div></div>
+        <div class="card" style="padding:0.7rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'No schedule' | translate }}</div><div style="font-size:1.3rem; font-weight:600; color:#b45309;">{{ board.unscheduledTotal | number: '1.0-0' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ '{p0} buyer{p1}' | translate: { p0: (board.unscheduled.length), p1: (board.unscheduled.length === 1 ? '' : 's') } }}</div></div>
       </div>
 
       <div *ngFor="let sec of secs; trackBy: bySection" class="mb-3">
         <h4 class="mb-1" [style.color]="sec.color">{{ sec.title }} <span class="text-muted" style="font-weight:400;">({{ sec.rows.length }})</span></h4>
         <div class="text-muted mb-1" style="font-size:0.85rem;">{{ sec.hint }}</div>
         <table class="stack table-sm">
-          <thead><tr><th>Buyer</th><th>Unit</th><th>Agent</th><th class="text-end">Owed</th><th class="text-end" *ngIf="sec.key === 'overdue'">Late</th><th *ngIf="sec.key !== 'unscheduled'">Next due</th><th>Last contact</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Buyer' | translate }}</th><th>{{ 'Unit' | translate }}</th><th>{{ 'Agent' | translate }}</th><th class="text-end">{{ 'Owed' | translate }}</th><th class="text-end" *ngIf="sec.key === 'overdue'">{{ 'Late' | translate }}</th><th *ngIf="sec.key !== 'unscheduled'">{{ 'Next due' | translate }}</th><th>{{ 'Last contact' | translate }}</th><th></th></tr></thead>
           <tbody>
             <ng-container *ngFor="let r of sec.rows; trackBy: byId">
               <tr>
@@ -63,19 +64,19 @@ interface Section { key: 'overdue' | 'dueSoon' | 'unscheduled'; title: string; h
                   <div><a *ngIf="r.buyerPhone" [href]="'tel:' + r.buyerPhone" style="font-size:0.85rem;">{{ r.buyerPhone }}</a><span class="text-muted" style="font-size:0.85rem;" *ngIf="!r.buyerPhone">{{ r.buyerEmail || '' }}</span></div></td>
                 <td data-label="Unit">{{ r.unitNo }}<div class="text-muted" style="font-size:0.8rem;">{{ r.projectName }}</div></td>
                 <td data-label="Agent">{{ r.agentName || '—' }}</td>
-                <td class="text-end" data-label="Owed">{{ r.outstanding | number: '1.0-0' }}<div class="text-muted" style="font-size:0.8rem;">of {{ r.agreedPrice | number: '1.0-0' }}</div></td>
-                <td class="text-end" data-label="Late" *ngIf="sec.key === 'overdue'" style="color:#b91c1c;">{{ r.overdueAmount | number: '1.0-0' }}<div style="font-size:0.8rem;">{{ r.overdueInstallments }} instalment{{ r.overdueInstallments === 1 ? '' : 's' }}, oldest {{ r.oldestDaysOverdue }} d</div></td>
+                <td class="text-end" data-label="Owed">{{ r.outstanding | number: '1.0-0' }}<div class="text-muted" style="font-size:0.8rem;">{{ 'of {p0}' | translate: { p0: (r.agreedPrice | number: '1.0-0') } }}</div></td>
+                <td class="text-end" data-label="Late" *ngIf="sec.key === 'overdue'" style="color:#b91c1c;">{{ r.overdueAmount | number: '1.0-0' }}<div style="font-size:0.8rem;">{{ '{p0} instalment{p1}, oldest {p2} d' | translate: { p0: (r.overdueInstallments), p1: (r.overdueInstallments === 1 ? '' : 's'), p2: (r.oldestDaysOverdue) } }}</div></td>
                 <td data-label="Next due" *ngIf="sec.key !== 'unscheduled'">{{ r.nextDueDate ? (r.nextDueDate | date: 'EEE d MMM') : '—' }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="r.nextDueAmount">{{ r.nextDueAmount | number: '1.0-0' }}</div></td>
                 <td data-label="Last contact">
                   <span *ngIf="r.lastNoteAt">{{ r.lastNoteAt | date: 'd MMM' }} · {{ kindName(r.lastNoteKind) }}<div class="text-muted" style="font-size:0.8rem;">{{ r.lastNoteText }}</div></span>
-                  <span class="text-muted" *ngIf="!r.lastNoteAt">Nobody yet</span>
+                  <span class="text-muted" *ngIf="!r.lastNoteAt">{{ 'Nobody yet' | translate }}</span>
                   <div *ngIf="r.promiseDate" style="font-size:0.8rem;" [style.color]="r.promiseBroken ? '#b91c1c' : '#0f766e'">{{ r.promiseBroken ? 'Promise broken: was ' : 'Promised ' }}{{ r.promiseDate | date: 'd MMM' }}</div>
                 </td>
                 <td data-label="" style="text-align:right;">
                   <div style="display:flex; gap:0.25rem; flex-wrap:wrap; justify-content:flex-end;" *ngIf="canManage">
-                    <button class="btn btn-sm btn-primary log-btn" type="button" (click)="start(r)">Log call</button>
-                    <button class="btn btn-sm btn-outline-secondary remind-btn" type="button" *ngIf="r.basis === 'PLAN'" (click)="remind(r)" [disabled]="busy || !board!.mailConfigured || !r.buyerEmail" [title]="!r.buyerEmail ? 'No e-mail address for this buyer' : ''">Remind</button>
-                    <button class="btn btn-sm btn-outline-secondary statement-btn" type="button" (click)="statement(r)" [disabled]="busy || !board!.mailConfigured || !r.buyerEmail" [title]="!r.buyerEmail ? 'No e-mail address for this buyer' : ''">E-mail statement</button>
+                    <button class="btn btn-sm btn-primary log-btn" type="button" (click)="start(r)">{{ 'Log call' | translate }}</button>
+                    <button class="btn btn-sm btn-outline-secondary remind-btn" type="button" *ngIf="r.basis === 'PLAN'" (click)="remind(r)" [disabled]="busy || !board!.mailConfigured || !r.buyerEmail" [title]="!r.buyerEmail ? 'No e-mail address for this buyer' : ''">{{ 'Remind' | translate }}</button>
+                    <button class="btn btn-sm btn-outline-secondary statement-btn" type="button" (click)="statement(r)" [disabled]="busy || !board!.mailConfigured || !r.buyerEmail" [title]="!r.buyerEmail ? 'No e-mail address for this buyer' : ''">{{ 'E-mail statement' | translate }}</button>
                   </div>
                 </td>
               </tr>
@@ -83,15 +84,15 @@ interface Section { key: 'overdue' | 'dueSoon' | 'unscheduled'; title: string; h
                 <td [attr.colspan]="sec.key === 'overdue' ? 8 : 7" data-label="">
                   <div class="alert alert-danger" *ngIf="formError">{{ formError }}</div>
                   <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end; width:100%;">
-                    <div class="form-group" style="min-width:10rem;"><label class="form-label">What</label>
-                      <select class="form-select cn-kind" name="ck" [(ngModel)]="kind"><option value="CALL">Called the buyer</option><option value="PROMISE">Buyer promised to pay</option><option value="NOTE">Other note</option></select></div>
-                    <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">What was said</label>
-                      <input class="form-control cn-text" name="ct" [(ngModel)]="text" maxlength="2000" placeholder="e.g. Cheque comes on Friday" /></div>
-                    <div class="form-group" *ngIf="kind === 'PROMISE'" style="min-width:11rem;"><label class="form-label">Promised date</label>
+                    <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'What' | translate }}</label>
+                      <select class="form-select cn-kind" name="ck" [(ngModel)]="kind"><option value="CALL">{{ 'Called the buyer' | translate }}</option><option value="PROMISE">{{ 'Buyer promised to pay' | translate }}</option><option value="NOTE">{{ 'Other note' | translate }}</option></select></div>
+                    <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'What was said' | translate }}</label>
+                      <input class="form-control cn-text" name="ct" [(ngModel)]="text" maxlength="2000" [placeholder]="'e.g. Cheque comes on Friday' | translate" /></div>
+                    <div class="form-group" *ngIf="kind === 'PROMISE'" style="min-width:11rem;"><label class="form-label">{{ 'Promised date' | translate }}</label>
                       <input class="form-control cn-date" type="date" name="cd" [(ngModel)]="promise" [min]="board!.today" /></div>
                     <div class="form-group" style="display:flex; gap:0.3rem;">
-                      <button class="btn btn-sm btn-primary cn-save" type="button" (click)="save(r)" [disabled]="busy">Save</button>
-                      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="open = null">Cancel</button>
+                      <button class="btn btn-sm btn-primary cn-save" type="button" (click)="save(r)" [disabled]="busy">{{ 'Save' | translate }}</button>
+                      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="open = null">{{ 'Cancel' | translate }}</button>
                     </div>
                   </div>
                 </td>

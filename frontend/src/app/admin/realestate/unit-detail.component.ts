@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,93 +17,93 @@ const txt = (v: string | null | undefined): string | null => { const t = (v ?? '
 @Component({
   selector: 'app-unit-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ReDocumentsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ReDocumentsComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div *ngIf="!u && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!u && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
       <ng-container *ngIf="u">
         <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
           <div>
             <a [routerLink]="['/admin/realestate/projects', u.projectId]" style="font-size:0.85rem;">← {{ u.projectName }}</a>
-            <h3>Unit {{ u.unitNo }}
+            <h3>{{ 'Unit {p0}' | translate: { p0: (u.unitNo) } }}
               <span class="badge" [class.badge-success]="u.status === 'AVAILABLE'" [class.badge-warning]="u.status === 'RESERVED'" [class.badge-danger]="u.status === 'SOLD'" [class.badge-secondary]="u.status === 'WITHHELD'" style="font-size:0.8rem; vertical-align:middle;">{{ statusName(u.status) }}</span></h3>
           </div>
           <div class="flex gap-2" *ngIf="canManage" style="flex-wrap:wrap;">
-            <button class="btn btn-outline-secondary" type="button" (click)="editing = !editing; fill()">Edit</button>
-            <button class="btn btn-outline-danger" type="button" *ngIf="!u.sales.length" (click)="remove()">Delete</button>
+            <button class="btn btn-outline-secondary" type="button" (click)="editing = !editing; fill()">{{ 'Edit' | translate }}</button>
+            <button class="btn btn-outline-danger" type="button" *ngIf="!u.sales.length" (click)="remove()">{{ 'Delete' | translate }}</button>
           </div>
         </div>
         <div class="alert alert-danger" *ngIf="actionError">{{ actionError }}</div>
         <div class="alert alert-info" *ngIf="notice">{{ notice }}</div>
 
         <div class="card mb-3" style="padding:1rem; max-width:52rem;" *ngIf="editing">
-          <h4 class="mb-2">Change this unit</h4>
+          <h4 class="mb-2">{{ 'Change this unit' | translate }}</h4>
           <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-            <div><label class="form-label">Unit no.</label><input class="form-control" style="width:8rem;" name="e1" [(ngModel)]="f.unitNo" maxlength="40" /></div>
-            <div><label class="form-label">Block / phase</label><input class="form-control" style="width:10rem;" name="e2" [(ngModel)]="f.block" maxlength="80" /></div>
-            <div><label class="form-label">Type</label><select class="form-select" name="e3" [(ngModel)]="f.kind"><option *ngFor="let k of kinds" [value]="k.value">{{ k.label }}</option></select></div>
-            <div><label class="form-label">Floor</label><input class="form-control" style="width:5rem;" type="number" name="e4" [(ngModel)]="f.floor" /></div>
-            <div><label class="form-label">Beds</label><input class="form-control" style="width:5rem;" type="number" min="0" name="e5" [(ngModel)]="f.bedrooms" /></div>
-            <div><label class="form-label">Baths</label><input class="form-control" style="width:5rem;" type="number" min="0" name="e6" [(ngModel)]="f.bathrooms" /></div>
-            <div><label class="form-label">Size (m²)</label><input class="form-control" style="width:7rem;" type="number" min="0" step="0.01" name="e7" [(ngModel)]="f.sizeSqm" /></div>
+            <div><label class="form-label">{{ 'Unit no.' | translate }}</label><input class="form-control" style="width:8rem;" name="e1" [(ngModel)]="f.unitNo" maxlength="40" /></div>
+            <div><label class="form-label">{{ 'Block / phase' | translate }}</label><input class="form-control" style="width:10rem;" name="e2" [(ngModel)]="f.block" maxlength="80" /></div>
+            <div><label class="form-label">{{ 'Type' | translate }}</label><select class="form-select" name="e3" [(ngModel)]="f.kind"><option *ngFor="let k of kinds" [value]="k.value">{{ k.label }}</option></select></div>
+            <div><label class="form-label">{{ 'Floor' | translate }}</label><input class="form-control" style="width:5rem;" type="number" name="e4" [(ngModel)]="f.floor" /></div>
+            <div><label class="form-label">{{ 'Beds' | translate }}</label><input class="form-control" style="width:5rem;" type="number" min="0" name="e5" [(ngModel)]="f.bedrooms" /></div>
+            <div><label class="form-label">{{ 'Baths' | translate }}</label><input class="form-control" style="width:5rem;" type="number" min="0" name="e6" [(ngModel)]="f.bathrooms" /></div>
+            <div><label class="form-label">{{ 'Size (m²)' | translate }}</label><input class="form-control" style="width:7rem;" type="number" min="0" step="0.01" name="e7" [(ngModel)]="f.sizeSqm" /></div>
           </div>
           <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
-            <div><label class="form-label">List price</label><input class="form-control" style="width:12rem;" type="number" min="0" name="e8" [(ngModel)]="f.listPrice" [disabled]="u.priceLocked" /></div>
-            <div *ngIf="!u.priceLocked"><label class="form-label">Why the price changes</label><input class="form-control" style="width:16rem;" name="e9" [(ngModel)]="f.reason" maxlength="200" /></div>
-            <div *ngIf="!u.priceLocked"><label class="form-label">Status</label>
-              <select class="form-select" name="e10" [(ngModel)]="f.status"><option value="AVAILABLE">Available</option><option value="WITHHELD">Withheld (not for sale)</option></select></div>
+            <div><label class="form-label">{{ 'List price' | translate }}</label><input class="form-control" style="width:12rem;" type="number" min="0" name="e8" [(ngModel)]="f.listPrice" [disabled]="u.priceLocked" /></div>
+            <div *ngIf="!u.priceLocked"><label class="form-label">{{ 'Why the price changes' | translate }}</label><input class="form-control" style="width:16rem;" name="e9" [(ngModel)]="f.reason" maxlength="200" /></div>
+            <div *ngIf="!u.priceLocked"><label class="form-label">{{ 'Status' | translate }}</label>
+              <select class="form-select" name="e10" [(ngModel)]="f.status"><option value="AVAILABLE">{{ 'Available' | translate }}</option><option value="WITHHELD">{{ 'Withheld (not for sale)' | translate }}</option></select></div>
           </div>
-          <div class="text-muted mt-1" style="font-size:0.85rem;" *ngIf="u.priceLocked">The price of a reserved or sold unit is set by its sale.</div>
-          <div class="form-group mt-2"><label class="form-label">Notes</label><textarea class="form-control" rows="2" name="e11" [(ngModel)]="f.notes" maxlength="1000"></textarea></div>
-          <div class="mt-2"><button class="btn btn-primary" type="button" (click)="save()" [disabled]="busy">Save changes</button></div>
+          <div class="text-muted mt-1" style="font-size:0.85rem;" *ngIf="u.priceLocked">{{ 'The price of a reserved or sold unit is set by its sale.' | translate }}</div>
+          <div class="form-group mt-2"><label class="form-label">{{ 'Notes' | translate }}</label><textarea class="form-control" rows="2" name="e11" [(ngModel)]="f.notes" maxlength="1000"></textarea></div>
+          <div class="mt-2"><button class="btn btn-primary" type="button" (click)="save()" [disabled]="busy">{{ 'Save changes' | translate }}</button></div>
         </div>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(22rem, 1fr)); gap:0.75rem;" class="mb-3">
           <div class="card" style="padding:1rem;">
-            <h4 class="mb-2">The unit</h4>
+            <h4 class="mb-2">{{ 'The unit' | translate }}</h4>
             <table class="table-sm"><tbody>
-              <tr><td class="text-muted" style="width:9rem;">Project</td><td><a [routerLink]="['/admin/realestate/projects', u.projectId]">{{ u.projectName }}</a> <span class="text-muted">{{ u.projectCode }}</span></td></tr>
-              <tr><td class="text-muted">Block / phase</td><td>{{ u.block || '—' }}</td></tr>
-              <tr><td class="text-muted">Type</td><td>{{ kindName(u.kind) }}</td></tr>
-              <tr><td class="text-muted">Floor</td><td>{{ u.floor ?? '—' }}</td></tr>
-              <tr><td class="text-muted">Bedrooms / baths</td><td>{{ u.bedrooms ?? '—' }} / {{ u.bathrooms ?? '—' }}</td></tr>
-              <tr><td class="text-muted">Size</td><td>{{ u.sizeSqm != null ? (u.sizeSqm | number: '1.0-2') + ' m²' : '—' }}</td></tr>
-              <tr><td class="text-muted"><strong>List price</strong></td><td><strong>{{ u.listPrice | number: '1.0-0' }}</strong><span class="text-muted" *ngIf="u.pricePerSqm != null"> · {{ u.pricePerSqm | number: '1.0-0' }} per m²</span></td></tr>
-              <tr *ngIf="u.notes"><td class="text-muted">Notes</td><td style="white-space:pre-wrap;">{{ u.notes }}</td></tr>
+              <tr><td class="text-muted" style="width:9rem;">{{ 'Project' | translate }}</td><td><a [routerLink]="['/admin/realestate/projects', u.projectId]">{{ u.projectName }}</a> <span class="text-muted">{{ u.projectCode }}</span></td></tr>
+              <tr><td class="text-muted">{{ 'Block / phase' | translate }}</td><td>{{ u.block || '—' }}</td></tr>
+              <tr><td class="text-muted">{{ 'Type' | translate }}</td><td>{{ kindName(u.kind) }}</td></tr>
+              <tr><td class="text-muted">{{ 'Floor' | translate }}</td><td>{{ u.floor ?? '—' }}</td></tr>
+              <tr><td class="text-muted">{{ 'Bedrooms / baths' | translate }}</td><td>{{ u.bedrooms ?? '—' }} / {{ u.bathrooms ?? '—' }}</td></tr>
+              <tr><td class="text-muted">{{ 'Size' | translate }}</td><td>{{ u.sizeSqm != null ? (u.sizeSqm | number: '1.0-2') + ' m²' : '—' }}</td></tr>
+              <tr><td class="text-muted"><strong>{{ 'List price' | translate }}</strong></td><td><strong>{{ u.listPrice | number: '1.0-0' }}</strong><span class="text-muted" *ngIf="u.pricePerSqm != null"> {{ '· {p0} per m²' | translate: { p0: (u.pricePerSqm | number: '1.0-0') } }}</span></td></tr>
+              <tr *ngIf="u.notes"><td class="text-muted">{{ 'Notes' | translate }}</td><td style="white-space:pre-wrap;">{{ u.notes }}</td></tr>
             </tbody></table>
           </div>
           <div class="card" style="padding:1rem;" *ngIf="canManage && u.status === 'AVAILABLE'">
-            <h4 class="mb-2">Reserve this unit</h4>
+            <h4 class="mb-2">{{ 'Reserve this unit' | translate }}</h4>
             <div class="form-group mb-2">
-              <label class="form-label">From a lead <span class="text-muted">(optional)</span></label>
+              <label class="form-label">{{ 'From a lead' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
               <select class="form-select" name="rl" [(ngModel)]="r.leadId" (ngModelChange)="leadPicked()">
-                <option [ngValue]="null">— a new buyer —</option>
+                <option [ngValue]="null">{{ '— a new buyer —' | translate }}</option>
                 <option *ngFor="let l of leads" [ngValue]="l.id">{{ l.name }}{{ l.phone ? ' · ' + l.phone : '' }}</option>
               </select>
             </div>
             <div class="flex gap-2" style="flex-wrap:wrap;">
-              <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">Buyer's name *</label><input class="form-control" name="rn" [(ngModel)]="r.buyerName" maxlength="200" /></div>
-              <div class="form-group mb-2" style="flex:1; min-width:9rem;"><label class="form-label">Phone</label><input class="form-control" name="rp" [(ngModel)]="r.buyerPhone" maxlength="40" /></div>
-              <div class="form-group mb-2" style="flex:1; min-width:11rem;"><label class="form-label">E-mail</label><input class="form-control" type="email" name="re" [(ngModel)]="r.buyerEmail" /></div>
+              <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Buyer\\'s name *' | translate }}</label><input class="form-control" name="rn" [(ngModel)]="r.buyerName" maxlength="200" /></div>
+              <div class="form-group mb-2" style="flex:1; min-width:9rem;"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="rp" [(ngModel)]="r.buyerPhone" maxlength="40" /></div>
+              <div class="form-group mb-2" style="flex:1; min-width:11rem;"><label class="form-label">{{ 'E-mail' | translate }}</label><input class="form-control" type="email" name="re" [(ngModel)]="r.buyerEmail" /></div>
             </div>
             <div class="flex gap-2" style="flex-wrap:wrap;">
-              <div class="form-group mb-2"><label class="form-label">Agreed price</label><input class="form-control" style="width:12rem;" type="number" min="0" name="ra" [(ngModel)]="r.agreedPrice" /></div>
-              <div class="form-group mb-2"><label class="form-label">Held until</label><input class="form-control" type="date" name="rx" [(ngModel)]="r.reservationExpiry" /></div>
-              <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Agent</label>
-                <select class="form-select" name="rg" [(ngModel)]="r.agentUserId"><option [ngValue]="null">Me</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select></div>
+              <div class="form-group mb-2"><label class="form-label">{{ 'Agreed price' | translate }}</label><input class="form-control" style="width:12rem;" type="number" min="0" name="ra" [(ngModel)]="r.agreedPrice" /></div>
+              <div class="form-group mb-2"><label class="form-label">{{ 'Held until' | translate }}</label><input class="form-control" type="date" name="rx" [(ngModel)]="r.reservationExpiry" /></div>
+              <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Agent' | translate }}</label>
+                <select class="form-select" name="rg" [(ngModel)]="r.agentUserId"><option [ngValue]="null">{{ 'Me' | translate }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select></div>
             </div>
-            <div class="form-group mb-2"><label class="form-label">Notes</label><input class="form-control" name="rt" [(ngModel)]="r.notes" maxlength="2000" /></div>
-            <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="r.agreedPrice != null && r.agreedPrice < u.listPrice">Discount of {{ u.listPrice - r.agreedPrice | number: '1.0-0' }} off the list price.</div>
-            <button class="btn btn-primary" type="button" (click)="reserve()" [disabled]="busy">Reserve for this buyer</button>
-            <div class="text-muted mt-1" style="font-size:0.85rem;">The project must be <em>Selling</em>. The agreement, invoice and payment plan come next, on the sale.</div>
+            <div class="form-group mb-2"><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control" name="rt" [(ngModel)]="r.notes" maxlength="2000" /></div>
+            <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="r.agreedPrice != null && r.agreedPrice < u.listPrice">{{ 'Discount of {p0} off the list price.' | translate: { p0: (u.listPrice - r.agreedPrice | number: '1.0-0') } }}</div>
+            <button class="btn btn-primary" type="button" (click)="reserve()" [disabled]="busy">{{ 'Reserve for this buyer' | translate }}</button>
+            <div class="text-muted mt-1" style="font-size:0.85rem;">{{ 'The project must be' | translate }} <em>{{ 'Selling' | translate }}</em>{{ '. The agreement, invoice and payment plan come next, on the sale.' | translate }}</div>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;">
-          <h4 class="mb-2">Sales of this unit</h4>
+          <h4 class="mb-2">{{ 'Sales of this unit' | translate }}</h4>
           <table class="stack table-sm" *ngIf="u.sales.length">
-            <thead><tr><th>Sale</th><th>Buyer</th><th>Stage</th><th class="text-end">Agreed price</th><th class="text-end">Paid</th><th class="text-end">Still owed</th><th>Reserved</th></tr></thead>
+            <thead><tr><th>{{ 'Sale' | translate }}</th><th>{{ 'Buyer' | translate }}</th><th>{{ 'Stage' | translate }}</th><th class="text-end">{{ 'Agreed price' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Still owed' | translate }}</th><th>{{ 'Reserved' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let s of u.sales">
               <td data-label="Sale"><a [routerLink]="['/admin/realestate/unit-sales', s.id]"><strong>{{ s.code }}</strong></a></td>
               <td data-label="Buyer">{{ s.buyerName }}</td>
@@ -111,13 +112,13 @@ const txt = (v: string | null | undefined): string | null => { const t = (v ?? '
               <td data-label="Reserved">{{ s.reservedOn ? (s.reservedOn | date: 'd MMM y') : '—' }}</td>
             </tr></tbody>
           </table>
-          <p class="text-muted" *ngIf="!u.sales.length">Not sold or reserved yet.</p>
+          <p class="text-muted" *ngIf="!u.sales.length">{{ 'Not sold or reserved yet.' | translate }}</p>
         </div>
 
         <div class="card mb-3" style="padding:1rem;">
-          <h4 class="mb-2">Price history</h4>
+          <h4 class="mb-2">{{ 'Price history' | translate }}</h4>
           <table class="stack table-sm">
-            <thead><tr><th>When</th><th class="text-end">From</th><th class="text-end">To</th><th>Why</th><th>By</th></tr></thead>
+            <thead><tr><th>{{ 'When' | translate }}</th><th class="text-end">{{ 'From' | translate }}</th><th class="text-end">{{ 'To' | translate }}</th><th>{{ 'Why' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let c of u.priceHistory">
               <td data-label="When">{{ c.at | date: 'd MMM y, HH:mm' }}</td><td class="text-end" data-label="From">{{ c.oldPrice != null ? (c.oldPrice | number: '1.0-0') : '—' }}</td><td class="text-end" data-label="To">{{ c.newPrice | number: '1.0-0' }}</td>
               <td data-label="Why">{{ c.reason || '—' }}</td><td data-label="By">{{ c.changedByName || '—' }}</td>

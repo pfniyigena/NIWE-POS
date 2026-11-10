@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,28 +15,28 @@ import { addDays, today } from '../../core/time-util';
 @Component({
   selector: 'app-law-work-all',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PagerComponent, LawExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PagerComponent, LawExportComponent],
   template: `
     <app-shell [wide]="true">
       <h3 class="mb-3">Deadlines &amp; tasks</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
-        <span>Deadlines from</span><app-date-picker name="f" [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
-        <span>to</span><app-date-picker name="t" [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
+        <span>{{ 'Deadlines from' | translate }}</span><app-date-picker name="f" [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
+        <span>{{ 'to' | translate }}</span><app-date-picker name="t" [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         <select class="form-select" style="width:auto;" name="a" [(ngModel)]="assigneeId" (ngModelChange)="load()">
-          <option [ngValue]="null">Everyone</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.name }}</option>
+          <option [ngValue]="null">{{ 'Everyone' | translate }}</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.name }}</option>
         </select>
-        <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="d" [(ngModel)]="includeDone" (ngModelChange)="load()" /> Show finished</label>
+        <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="d" [(ngModel)]="includeDone" (ngModelChange)="load()" /> {{ 'Show finished' | translate }}</label>
       </div>
 
       <div class="card mb-3" style="padding:1rem;">
-        <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.4rem;"><strong>Deadlines</strong>
+        <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.4rem;"><strong>{{ 'Deadlines' | translate }}</strong>
           <app-law-export kind="deadlines" [filters]="{ assigneeId: assigneeId, from: from, to: to, includeDone: includeDone }"></app-law-export></div>
         <table class="stack table-sm mt-2" *ngIf="deadlines.length">
-          <thead><tr><th>Date</th><th>What</th><th>Type</th><th>Matter</th><th>Assigned to</th><th>Status</th></tr></thead>
+          <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'What' | translate }}</th><th>{{ 'Type' | translate }}</th><th>{{ 'Matter' | translate }}</th><th>{{ 'Assigned to' | translate }}</th><th>{{ 'Status' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let d of deadlines">
-              <td [style.color]="d.overdue ? '#c0392b' : ''" data-label="Date"><strong>{{ d.dueDate }}</strong><span *ngIf="d.dueTime"> {{ d.dueTime }}</span><span *ngIf="d.overdue"> (overdue)</span></td>
+              <td [style.color]="d.overdue ? '#c0392b' : ''" data-label="Date"><strong>{{ d.dueDate }}</strong><span *ngIf="d.dueTime"> {{ d.dueTime }}</span><span *ngIf="d.overdue"> {{ '(overdue)' | translate }}</span></td>
               <td data-label="What">{{ d.title }}</td><td data-label="Type">{{ typeLabel(d.type) }}</td>
               <td data-label="Matter"><a [routerLink]="['/law/matters', d.matterId]">{{ d.matterNumber }}</a> <span class="text-muted">{{ d.matterTitle }}</span></td>
               <td data-label="Assigned to">{{ d.assignedToName || '—' }}</td>
@@ -44,25 +45,25 @@ import { addDays, today } from '../../core/time-util';
           </tbody>
         </table>
         <app-pager [page]="deadlinePage" [size]="size" [total]="deadlineTotal" (pageChange)="goDeadlines($event)"></app-pager>
-        <p class="text-muted mt-2" *ngIf="!deadlines.length">No deadlines in this period.</p>
+        <p class="text-muted mt-2" *ngIf="!deadlines.length">{{ 'No deadlines in this period.' | translate }}</p>
       </div>
 
       <div class="card" style="padding:1rem;">
-        <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.4rem;"><strong>Tasks</strong>
+        <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.4rem;"><strong>{{ 'Tasks' | translate }}</strong>
           <app-law-export kind="tasks" [filters]="{ assigneeId: assigneeId, includeDone: includeDone }"></app-law-export></div>
         <table class="stack table-sm mt-2" *ngIf="tasks.length">
-          <thead><tr><th>Due</th><th>Task</th><th>Priority</th><th>Matter</th><th>Assigned to</th><th>Status</th></tr></thead>
+          <thead><tr><th>{{ 'Due' | translate }}</th><th>{{ 'Task' | translate }}</th><th>{{ 'Priority' | translate }}</th><th>{{ 'Matter' | translate }}</th><th>{{ 'Assigned to' | translate }}</th><th>{{ 'Status' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let t of tasks">
-              <td [style.color]="t.overdue ? '#c0392b' : ''" data-label="Due">{{ t.dueDate || '—' }}<span *ngIf="t.overdue"> (late)</span></td>
+              <td [style.color]="t.overdue ? '#c0392b' : ''" data-label="Due">{{ t.dueDate || '—' }}<span *ngIf="t.overdue"> {{ '(late)' | translate }}</span></td>
               <td data-label="Task">{{ t.title }}</td><td data-label="Priority">{{ t.priority.charAt(0) + t.priority.slice(1).toLowerCase() }}</td>
               <td data-label="Matter"><a [routerLink]="['/law/matters', t.matterId]">{{ t.matterNumber }}</a> <span class="text-muted">{{ t.matterTitle }}</span></td>
-              <td data-label="Assigned to">{{ t.assignedToName || '—' }}</td><td data-label="Status">{{ t.status === 'IN_PROGRESS' ? 'In progress' : t.status === 'DONE' ? 'Done' : 'To do' }}</td>
+              <td data-label="Assigned to">{{ t.assignedToName || '—' }}</td><td data-label="Status">{{ t.status === 'IN_PROGRESS' ? 'In progress' : t.status === 'DONE' ? ('Done' | translate) : ('To do' | translate) }}</td>
             </tr>
           </tbody>
         </table>
         <app-pager [page]="taskPage" [size]="size" [total]="taskTotal" (pageChange)="goTasks($event)"></app-pager>
-        <p class="text-muted mt-2" *ngIf="!tasks.length">No tasks.</p>
+        <p class="text-muted mt-2" *ngIf="!tasks.length">{{ 'No tasks.' | translate }}</p>
       </div>
     </app-shell>
   `,

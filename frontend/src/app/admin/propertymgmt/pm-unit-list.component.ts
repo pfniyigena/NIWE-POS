@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -11,30 +12,30 @@ import { OCCUPANCY_LABEL, Occupancy, PM_UNIT_KINDS, PropertyMgmtApiService, Prop
 @Component({
   selector: 'app-pm-unit-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Units</h3>
+      <h3 class="mb-3">{{ 'Units' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="pr" [(ngModel)]="propertyId" (ngModelChange)="load()">
-          <option [ngValue]="null">Any property</option><option *ngFor="let p of properties" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">{{ 'Any property' | translate }}</option><option *ngFor="let p of properties" [ngValue]="p.id">{{ p.name }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="oc" [(ngModel)]="occupancy" (ngModelChange)="load()">
-          <option value="">Any status</option><option *ngFor="let o of statuses" [value]="o.value">{{ o.label }}</option>
+          <option value="">{{ 'Any status' | translate }}</option><option *ngFor="let o of statuses" [value]="o.value">{{ o.label }}</option>
         </select>
-        <input class="form-control" style="width:15rem;" placeholder="Search unit, property, tenant" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search unit, property, tenant' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Property</th><th>Unit</th><th>Type</th><th class="text-end">Asking rent</th><th>Status</th><th>Tenant</th><th class="text-end">Rent</th><th>Lease ends</th></tr></thead>
+        <thead><tr><th>{{ 'Property' | translate }}</th><th>{{ 'Unit' | translate }}</th><th>{{ 'Type' | translate }}</th><th class="text-end">{{ 'Asking rent' | translate }}</th><th>{{ 'Status' | translate }}</th><th>{{ 'Tenant' | translate }}</th><th class="text-end">{{ 'Rent' | translate }}</th><th>{{ 'Lease ends' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let u of list">
             <td data-label="Property"><a [routerLink]="['/admin/propertymgmt/properties', u.propertyId]">{{ u.propertyName }}</a></td>
             <td data-label="Unit"><a [routerLink]="['/admin/propertymgmt/units', u.id]"><strong>{{ u.unitNo }}</strong></a></td>
             <td data-label="Type">{{ kind(u.kind) }}</td>
             <td class="text-end" data-label="Asking rent">{{ u.marketRent != null ? (u.marketRent | number: '1.0-0') : '—' }}</td>
-            <td data-label="Status"><span class="badge" [ngClass]="badge(u.occupancy)">{{ occ(u.occupancy) }}</span><div class="text-muted" style="font-size:0.75rem;" *ngIf="u.occupancy === 'VACANT' && u.vacantSince">since {{ u.vacantSince | date: 'd MMM y' }}</div></td>
+            <td data-label="Status"><span class="badge" [ngClass]="badge(u.occupancy)">{{ occ(u.occupancy) }}</span><div class="text-muted" style="font-size:0.75rem;" *ngIf="u.occupancy === 'VACANT' && u.vacantSince">{{ 'since {p0}' | translate: { p0: (u.vacantSince | date: 'd MMM y') } }}</div></td>
             <td data-label="Tenant"><a *ngIf="u.tenantId" [routerLink]="['/admin/propertymgmt/tenants', u.tenantId]">{{ u.tenantName }}</a><span *ngIf="!u.tenantId" class="text-muted">—</span></td>
             <td class="text-end" data-label="Rent">{{ u.rent != null ? (u.rent | number: '1.0-0') : '—' }}</td>
             <td data-label="Lease ends">{{ u.leaseEnd ? (u.leaseEnd | date: 'd MMM y') : '—' }}</td>
@@ -42,7 +43,7 @@ import { OCCUPANCY_LABEL, Occupancy, PM_UNIT_KINDS, PropertyMgmtApiService, Prop
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No units match.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No units match.' | translate }}</p>
     </app-shell>
   `,
 })

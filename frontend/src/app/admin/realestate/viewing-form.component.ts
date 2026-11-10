@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LeadRow, Option, PropertyRow, RealEstateApiService, ViewingDto } from '../../core/api/realestate-api.service';
@@ -10,49 +11,49 @@ import { LeadRow, Option, PropertyRow, RealEstateApiService, ViewingDto } from '
 @Component({
   selector: 'app-viewing-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="card mb-3" style="padding:1rem;">
-      <h4 class="mb-2">{{ existing ? 'Move viewing' : 'Book a viewing' }}</h4>
+      <h4 class="mb-2">{{ existing ? ('Move viewing' | translate) : ('Book a viewing' | translate) }}</h4>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-warning" *ngIf="clash">
         {{ clash }}
-        <div class="mt-2"><button class="btn btn-sm btn-outline-secondary" type="button" (click)="save(true)" [disabled]="saving">Keep both</button></div>
+        <div class="mt-2"><button class="btn btn-sm btn-outline-secondary" type="button" (click)="save(true)" [disabled]="saving">{{ 'Keep both' | translate }}</button></div>
       </div>
       <div class="flex gap-2" style="flex-wrap:wrap;">
         <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="!existing">
-          <label class="form-label">Property</label>
+          <label class="form-label">{{ 'Property' | translate }}</label>
           <select class="form-select" name="vp" [(ngModel)]="propertyId" [disabled]="!!fixedPropertyId">
-            <option [ngValue]="null">Choose…</option>
+            <option [ngValue]="null">{{ 'Choose…' | translate }}</option>
             <option *ngFor="let p of properties" [ngValue]="p.id">{{ p.code }} · {{ p.title }}</option>
           </select>
         </div>
         <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="!existing">
-          <label class="form-label">Who is viewing</label>
+          <label class="form-label">{{ 'Who is viewing' | translate }}</label>
           <select class="form-select" name="vl" [(ngModel)]="leadId" [disabled]="!!fixedLeadId">
-            <option [ngValue]="null">Choose…</option>
+            <option [ngValue]="null">{{ 'Choose…' | translate }}</option>
             <option *ngFor="let l of leads" [ngValue]="l.id">{{ l.name }}<ng-container *ngIf="l.phone"> · {{ l.phone }}</ng-container></option>
           </select>
         </div>
         <div class="form-group" style="min-width:12rem;">
-          <label class="form-label">Date and time</label>
+          <label class="form-label">{{ 'Date and time' | translate }}</label>
           <input class="form-control" type="datetime-local" name="vs" [(ngModel)]="start" />
         </div>
         <div class="form-group" style="min-width:10rem;">
-          <label class="form-label">Ends <span class="text-muted">(optional)</span></label>
+          <label class="form-label">{{ 'Ends' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
           <input class="form-control" type="datetime-local" name="ve" [(ngModel)]="end" />
         </div>
         <div class="form-group" style="min-width:12rem;">
-          <label class="form-label">Agent</label>
+          <label class="form-label">{{ 'Agent' | translate }}</label>
           <select class="form-select" name="va" [(ngModel)]="agentId">
-            <option [ngValue]="null">The property's agent</option>
+            <option [ngValue]="null">{{ 'The property\\'s agent' | translate }}</option>
             <option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
           </select>
         </div>
       </div>
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="save(false)" [disabled]="saving">{{ saving ? 'Saving…' : existing ? 'Move' : 'Book viewing' }}</button>
-        <button class="btn btn-outline-secondary" type="button" (click)="closed.emit()">Cancel</button>
+        <button class="btn btn-primary" type="button" (click)="save(false)" [disabled]="saving">{{ saving ? 'Saving…' : existing ? ('Move' | translate) : ('Book viewing' | translate) }}</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="closed.emit()">{{ 'Cancel' | translate }}</button>
       </div>
     </div>
   `,

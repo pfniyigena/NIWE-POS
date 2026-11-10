@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,36 +12,36 @@ const txt = (v: string | null | undefined): string => (v ?? '').trim();
 @Component({
   selector: 'app-pm-property-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
         <h3>{{ id ? 'Change ' + (property?.name ?? 'property') : 'Add a property' }}</h3>
-        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/propertymgmt/properties', id] : ['/admin/propertymgmt/properties']">Cancel</a>
+        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/propertymgmt/properties', id] : ['/admin/propertymgmt/properties']">{{ 'Cancel' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form class="card" style="padding:1rem; max-width:46rem;" (ngSubmit)="save()">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Name *</label><input class="form-control" name="n" [(ngModel)]="f.name" maxlength="200" placeholder="e.g. Kololo Heights" /></div>
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Type</label>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Name *' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" maxlength="200" [placeholder]="'e.g. Kololo Heights' | translate" /></div>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Type' | translate }}</label>
             <select class="form-select" name="k" [(ngModel)]="f.kind"><option *ngFor="let k of kinds" [ngValue]="k.value">{{ k.label }}</option></select></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Owner *</label>
-          <select class="form-select" name="ow" [(ngModel)]="f.ownerId" [disabled]="!!id"><option [ngValue]="null">— choose —</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}{{ o.active ? '' : ' (inactive)' }}</option></select>
-          <div class="text-muted" style="font-size:0.85rem;" *ngIf="!id">Not in the list? <a routerLink="/admin/propertymgmt/owners">Add the owner first</a>. Co-owners are added on the property page after you save.</div>
-          <div class="text-muted" style="font-size:0.85rem;" *ngIf="id">Owners and their shares are changed on the property page, in the Owners panel.</div></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Owner *' | translate }}</label>
+          <select class="form-select" name="ow" [(ngModel)]="f.ownerId" [disabled]="!!id"><option [ngValue]="null">{{ '— choose —' | translate }}</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}{{ o.active ? '' : ' (inactive)' }}</option></select>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="!id">{{ 'Not in the list?' | translate }} <a routerLink="/admin/propertymgmt/owners">{{ 'Add the owner first' | translate }}</a>{{ '. Co-owners are added on the property page after you save.' | translate }}</div>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="id">{{ 'Owners and their shares are changed on the property page, in the Owners panel.' | translate }}</div></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Area</label><input class="form-control" name="a" [(ngModel)]="f.area" list="areas" maxlength="120" />
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Area' | translate }}</label><input class="form-control" name="a" [(ngModel)]="f.area" list="areas" maxlength="120" />
             <datalist id="areas"><option *ngFor="let a of areas" [value]="a"></option></datalist></div>
-          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">Address</label><input class="form-control" name="ad" [(ngModel)]="f.address" maxlength="500" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Address' | translate }}</label><input class="form-control" name="ad" [(ngModel)]="f.address" maxlength="500" /></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Title / plot reference</label><input class="form-control" name="t" [(ngModel)]="f.titleReference" maxlength="120" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Managed since</label><input class="form-control" type="date" name="m" [(ngModel)]="f.managedFrom" /></div>
-          <div class="form-group mb-2" style="width:12rem;"><label class="form-label">Management fee %</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="fee" [(ngModel)]="f.fee" placeholder="the owner's / usual" /></div>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Title / plot reference' | translate }}</label><input class="form-control" name="t" [(ngModel)]="f.titleReference" maxlength="120" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Managed since' | translate }}</label><input class="form-control" type="date" name="m" [(ngModel)]="f.managedFrom" /></div>
+          <div class="form-group mb-2" style="width:12rem;"><label class="form-label">{{ 'Management fee %' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="fee" [(ngModel)]="f.fee" [placeholder]="'the owner\\'s / usual' | translate" /></div>
         </div>
-        <div class="form-group mb-3"><label class="form-label">Notes</label><textarea class="form-control" rows="3" name="nt" [(ngModel)]="f.notes" maxlength="2000"></textarea></div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? 'Save changes' : 'Save property' }}</button></div>
+        <div class="form-group mb-3"><label class="form-label">{{ 'Notes' | translate }}</label><textarea class="form-control" rows="3" name="nt" [(ngModel)]="f.notes" maxlength="2000"></textarea></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? ('Save changes' | translate) : ('Save property' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

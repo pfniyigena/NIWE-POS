@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -23,7 +24,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 @Component({
   selector: 'app-law-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   styles: [`
     .cal-grid { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:1px; background:#d6d9de; border:1px solid #d6d9de; }
     .cal-head { background:#f3f4f6; padding:0.3rem; text-align:center; font-size:0.8rem; font-weight:600; }
@@ -50,9 +51,9 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
   template: `
     <app-shell [wide]="true">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;" class="mb-2">
-        <h3 class="mb-0">Calendar</h3>
+        <h3 class="mb-0">{{ 'Calendar' | translate }}</h3>
         <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="download()" [disabled]="busyIcs">Download for Outlook / phone (.ics)</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="download()" [disabled]="busyIcs">{{ 'Download for Outlook / phone (.ics)' | translate }}</button>
           <span style="color:#b91c1c; font-size:0.8rem;" *ngIf="icsError">{{ icsError }}</span>
         </div>
       </div>
@@ -61,20 +62,20 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
       <div class="card mb-3" style="padding:0.75rem;">
         <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
           <div style="display:flex; gap:0.3rem; align-items:center;">
-            <button class="btn btn-sm btn-outline-secondary cal-prev" type="button" (click)="step(-1)" aria-label="Earlier">‹</button>
-            <button class="btn btn-sm btn-outline-secondary cal-today" type="button" (click)="goToday()">Today</button>
-            <button class="btn btn-sm btn-outline-secondary cal-next" type="button" (click)="step(1)" aria-label="Later">›</button>
+            <button class="btn btn-sm btn-outline-secondary cal-prev" type="button" (click)="step(-1)" [attr.aria-label]="'Earlier' | translate">‹</button>
+            <button class="btn btn-sm btn-outline-secondary cal-today" type="button" (click)="goToday()">{{ 'Today' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary cal-next" type="button" (click)="step(1)" [attr.aria-label]="'Later' | translate">›</button>
           </div>
           <strong class="cal-title" style="min-width:10rem;">{{ title }}</strong>
           <div style="display:flex; gap:0.3rem;">
-            <button class="btn btn-sm cal-view-month" [class.btn-primary]="view === 'month'" [class.btn-outline-secondary]="view !== 'month'" type="button" (click)="setView('month')">Month</button>
-            <button class="btn btn-sm cal-view-week" [class.btn-primary]="view === 'week'" [class.btn-outline-secondary]="view !== 'week'" type="button" (click)="setView('week')">Week</button>
+            <button class="btn btn-sm cal-view-month" [class.btn-primary]="view === 'month'" [class.btn-outline-secondary]="view !== 'month'" type="button" (click)="setView('month')">{{ 'Month' | translate }}</button>
+            <button class="btn btn-sm cal-view-week" [class.btn-primary]="view === 'week'" [class.btn-outline-secondary]="view !== 'week'" type="button" (click)="setView('week')">{{ 'Week' | translate }}</button>
           </div>
           <select class="form-select cal-who" style="width:auto;" *ngIf="canSeeAll" [ngModel]="mine ? 'mine' : 'all'" (ngModelChange)="setWho($event)" name="who">
-            <option value="mine">Mine</option><option value="all">Everyone</option>
+            <option value="mine">{{ 'Mine' | translate }}</option><option value="all">{{ 'Everyone' | translate }}</option>
           </select>
-          <label style="display:flex; gap:0.3rem; align-items:center; margin:0;"><input type="checkbox" class="cal-tasks" [ngModel]="tasks" (ngModelChange)="tasks = $event; load()" name="tasks" /> Tasks</label>
-          <label style="display:flex; gap:0.3rem; align-items:center; margin:0;"><input type="checkbox" class="cal-done" [ngModel]="includeDone" (ngModelChange)="includeDone = $event; load()" name="done" /> Finished</label>
+          <label style="display:flex; gap:0.3rem; align-items:center; margin:0;"><input type="checkbox" class="cal-tasks" [ngModel]="tasks" (ngModelChange)="tasks = $event; load()" name="tasks" /> {{ 'Tasks' | translate }}</label>
+          <label style="display:flex; gap:0.3rem; align-items:center; margin:0;"><input type="checkbox" class="cal-done" [ngModel]="includeDone" (ngModelChange)="includeDone = $event; load()" name="done" /> {{ 'Finished' | translate }}</label>
         </div>
       </div>
 
@@ -85,7 +86,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
             <div *ngFor="let c of r" class="cal-cell" [class.out]="!c.inMonth" [class.today]="c.today" [class.sel]="selected && selected.date === c.date" (click)="select(c)" [attr.data-date]="c.date">
               <span class="cal-day">{{ c.day }}</span>
               <span *ngFor="let e of c.shown" class="cal-chip" [ngClass]="cls(e)" [class.done]="e.done" [title]="e.title">{{ label(e) }}</span>
-              <span class="text-muted cal-chip" *ngIf="c.more > 0">+{{ c.more }} more</span>
+              <span class="text-muted cal-chip" *ngIf="c.more > 0">{{ '+{p0} more' | translate: { p0: (c.more) } }}</span>
               <span class="cal-count" *ngIf="c.entries.length" [style.color]="c.entries.length ? '#991b1b' : ''">● {{ c.entries.length }}</span>
             </div>
           </ng-container>
@@ -96,22 +97,22 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
         <div *ngFor="let c of weekDays" class="week-day" [class.today]="c.today" [attr.data-date]="c.date">
           <strong>{{ dayName(c.date) }}</strong>
           <ng-container *ngTemplateOutlet="entryList; context: { $implicit: c.entries }"></ng-container>
-          <div class="text-muted" style="font-size:0.85rem;" *ngIf="!c.entries.length">Nothing.</div>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="!c.entries.length">{{ 'Nothing.' | translate }}</div>
         </div>
       </ng-container>
 
       <div class="card mt-3 cal-day-panel" style="padding:0.75rem;" *ngIf="view === 'month' && selected">
         <strong>{{ dayName(selected.date) }}</strong>
         <ng-container *ngTemplateOutlet="entryList; context: { $implicit: selected.entries }"></ng-container>
-        <div class="text-muted" style="font-size:0.85rem;" *ngIf="!selected.entries.length">Nothing on this day.</div>
+        <div class="text-muted" style="font-size:0.85rem;" *ngIf="!selected.entries.length">{{ 'Nothing on this day.' | translate }}</div>
       </div>
 
       <div class="mt-2 text-muted" style="font-size:0.8rem;">
-        <span class="cal-chip k-limit" style="display:inline-block;">Limitation date</span>
-        <span class="cal-chip k-court" style="display:inline-block;">Court date / hearing</span>
-        <span class="cal-chip k-filing" style="display:inline-block;">Filing</span>
-        <span class="cal-chip k-meeting" style="display:inline-block;">Meeting</span>
-        <span class="cal-chip k-task" style="display:inline-block;">Task</span>
+        <span class="cal-chip k-limit" style="display:inline-block;">{{ 'Limitation date' | translate }}</span>
+        <span class="cal-chip k-court" style="display:inline-block;">{{ 'Court date / hearing' | translate }}</span>
+        <span class="cal-chip k-filing" style="display:inline-block;">{{ 'Filing' | translate }}</span>
+        <span class="cal-chip k-meeting" style="display:inline-block;">{{ 'Meeting' | translate }}</span>
+        <span class="cal-chip k-task" style="display:inline-block;">{{ 'Task' | translate }}</span>
       </div>
 
       <ng-template #entryList let-list>
@@ -121,7 +122,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
           <a [routerLink]="['/law/matters', e.matterId]">{{ e.matterNumber }}</a>
           <span class="text-muted">{{ e.matterTitle }}</span>
           <span class="text-muted" *ngIf="e.assignedToName">· {{ e.assignedToName }}</span>
-          <span class="badge badge-danger" *ngIf="e.overdue">Overdue</span>
+          <span class="badge badge-danger" *ngIf="e.overdue">{{ 'Overdue' | translate }}</span>
         </div>
       </ng-template>
     </app-shell>

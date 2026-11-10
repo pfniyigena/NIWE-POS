@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,65 +10,65 @@ import { PropertyMgmtApiService, RENT_STATUS_LABEL, RentChargeRow, RentSchedule,
 @Component({
   selector: 'app-rent-schedule',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
-      <h4>Rent</h4>
-      <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="s?.canManage && readyCount()" (click)="invoiceReady()" [disabled]="busy">Invoice the rent that is ready ({{ readyCount() }})</button>
+      <h4>{{ 'Rent' | translate }}</h4>
+      <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="s?.canManage && readyCount()" (click)="invoiceReady()" [disabled]="busy">{{ 'Invoice the rent that is ready ({p0})' | translate: { p0: (readyCount()) } }}</button>
     </div>
     <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success" *ngIf="note">{{ note }}</div>
     <ng-container *ngIf="s">
-      <div class="alert alert-warning" *ngIf="s.afterLeaving">{{ s.afterLeaving }} rent invoice{{ s.afterLeaving === 1 ? ' was' : 's were' }} made for a period after the tenant left. Void {{ s.afterLeaving === 1 ? 'it' : 'them' }} in Invoices if it should not be charged.</div>
+      <div class="alert alert-warning" *ngIf="s.afterLeaving">{{ '{p0} rent invoice{p1} made for a period after the tenant left. Void {p2} in Invoices if it should not be charged.' | translate: { p0: (s.afterLeaving), p1: (s.afterLeaving === 1 ? ' was' : 's were'), p2: (s.afterLeaving === 1 ? 'it' : 'them') } }}</div>
       <div class="flex gap-3 mb-2" style="flex-wrap:wrap;" *ngIf="s.charges.length">
-        <div><div class="text-muted" style="font-size:0.8rem;">Invoiced</div><strong>{{ s.billed | number: '1.0-0' }}</strong></div>
-        <div><div class="text-muted" style="font-size:0.8rem;">Paid</div><strong>{{ s.paid | number: '1.0-0' }}</strong></div>
-        <div><div class="text-muted" style="font-size:0.8rem;">Owed</div><strong>{{ s.outstanding | number: '1.0-0' }}</strong></div>
-        <div><div class="text-muted" style="font-size:0.8rem;">Overdue</div><strong [style.color]="s.overdue ? '#b91c1c' : ''">{{ s.overdue | number: '1.0-0' }}</strong></div>
-        <div><div class="text-muted" style="font-size:0.8rem;">Not yet invoiced</div><strong>{{ s.notYetInvoiced | number: '1.0-0' }}</strong></div>
+        <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Invoiced' | translate }}</div><strong>{{ s.billed | number: '1.0-0' }}</strong></div>
+        <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Paid' | translate }}</div><strong>{{ s.paid | number: '1.0-0' }}</strong></div>
+        <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Owed' | translate }}</div><strong>{{ s.outstanding | number: '1.0-0' }}</strong></div>
+        <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Overdue' | translate }}</div><strong [style.color]="s.overdue ? '#b91c1c' : ''">{{ s.overdue | number: '1.0-0' }}</strong></div>
+        <div><div class="text-muted" style="font-size:0.8rem;">{{ 'Not yet invoiced' | translate }}</div><strong>{{ s.notYetInvoiced | number: '1.0-0' }}</strong></div>
       </div>
       <table class="stack table-sm" *ngIf="s.charges.length">
-        <thead><tr><th>Period</th><th>Due</th><th class="text-end">Rent</th><th>Status</th><th>Invoice</th><th class="text-end">Paid</th><th class="text-end">Owed</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Period' | translate }}</th><th>{{ 'Due' | translate }}</th><th class="text-end">{{ 'Rent' | translate }}</th><th>{{ 'Status' | translate }}</th><th>{{ 'Invoice' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Owed' | translate }}</th><th></th></tr></thead>
         <tbody>
           <ng-container *ngFor="let c of s.charges">
             <tr>
-              <td style="white-space:nowrap;" data-label="Period">{{ c.periodStart | date: 'd MMM y' }} – {{ c.periodEnd | date: 'd MMM y' }}<span class="text-muted" style="font-size:0.75rem;" *ngIf="c.prorated"> · part period</span></td>
+              <td style="white-space:nowrap;" data-label="Period">{{ c.periodStart | date: 'd MMM y' }} – {{ c.periodEnd | date: 'd MMM y' }}<span class="text-muted" style="font-size:0.75rem;" *ngIf="c.prorated"> {{ '· part period' | translate }}</span></td>
               <td style="white-space:nowrap;" data-label="Due">{{ c.dueDate | date: 'd MMM y' }}</td>
-              <td class="text-end" data-label="Rent">{{ c.amount | number: '1.0-0' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="c.extras">+ {{ c.extras | number: '1.0-0' }} charges</div></td>
+              <td class="text-end" data-label="Rent">{{ c.amount | number: '1.0-0' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="c.extras">{{ '+ {p0} charges' | translate: { p0: (c.extras | number: '1.0-0') } }}</div></td>
               <td data-label="Status"><span class="badge" style="white-space:nowrap;" [ngClass]="badge(c.status)">{{ label(c.status) }}</span>
-                <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.status === 'OVERDUE'">{{ c.daysOverdue }} day{{ c.daysOverdue === 1 ? '' : 's' }} late</div>
+                <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.status === 'OVERDUE'">{{ '{p0} day{p1} late' | translate: { p0: (c.daysOverdue), p1: (c.daysOverdue === 1 ? '' : 's') } }}</div>
                 <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.status === 'WAIVED'">{{ c.waivedReason }}</div>
-                <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.reminders">Reminded {{ c.reminders }}x, last {{ c.lastReminderOn | date: 'd MMM' }}</div>
-                <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.lateFee">Late fee {{ c.lateFee | number: '1.0-0' }} ({{ c.lateFeeInvoice }})</div></td>
+                <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.reminders">{{ 'Reminded {p0}x, last {p1}' | translate: { p0: (c.reminders), p1: (c.lastReminderOn | date: 'd MMM') } }}</div>
+                <div class="text-muted" style="font-size:0.75rem;" *ngIf="c.lateFee">{{ 'Late fee {p0} ({p1})' | translate: { p0: (c.lateFee | number: '1.0-0'), p1: (c.lateFeeInvoice) } }}</div></td>
               <td data-label="Invoice"><a *ngIf="c.invoiceId" [routerLink]="['/admin/invoices', c.invoiceId]">{{ c.invoiceNumber }}</a></td>
               <td class="text-end" data-label="Paid">{{ c.paid != null ? (c.paid | number: '1.0-0') : '' }}</td>
               <td class="text-end" data-label="Owed">{{ c.outstanding != null ? (c.outstanding | number: '1.0-0') : '' }}</td>
               <td style="white-space:nowrap; text-align:right;" data-label="">
                 <ng-container *ngIf="s.canManage">
-                  <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="c.status === 'NOT_INVOICED'" (click)="invoiceOne(c)" [disabled]="busy">Invoice</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.status === 'NOT_INVOICED'" style="margin-left:0.2rem;" (click)="startWaive(c)">Waive</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.status === 'WAIVED'" (click)="restore(c)" [disabled]="busy">Restore</button>
+                  <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="c.status === 'NOT_INVOICED'" (click)="invoiceOne(c)" [disabled]="busy">{{ 'Invoice' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.status === 'NOT_INVOICED'" style="margin-left:0.2rem;" (click)="startWaive(c)">{{ 'Waive' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.status === 'WAIVED'" (click)="restore(c)" [disabled]="busy">{{ 'Restore' | translate }}</button>
                 </ng-container>
-                <a class="btn btn-sm btn-outline-secondary" *ngIf="c.invoiceId && c.outstanding" style="margin-left:0.2rem;" [routerLink]="['/admin/invoices', c.invoiceId, 'record-payment']">Record payment</a>
+                <a class="btn btn-sm btn-outline-secondary" *ngIf="c.invoiceId && c.outstanding" style="margin-left:0.2rem;" [routerLink]="['/admin/invoices', c.invoiceId, 'record-payment']">{{ 'Record payment' | translate }}</a>
                 <ng-container *ngIf="s.canManage">
-                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.invoiceId && c.outstanding" style="margin-left:0.2rem;" (click)="remind(c)" [disabled]="busy">Remind</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.status === 'OVERDUE' && !c.lateFee" style="margin-left:0.2rem;" (click)="chargeFee(c)" [disabled]="busy">Late fee</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.invoiceId && c.outstanding" style="margin-left:0.2rem;" (click)="remind(c)" [disabled]="busy">{{ 'Remind' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="c.status === 'OVERDUE' && !c.lateFee" style="margin-left:0.2rem;" (click)="chargeFee(c)" [disabled]="busy">{{ 'Late fee' | translate }}</button>
                 </ng-container>
               </td>
             </tr>
             <tr *ngIf="waiving?.id === c.id">
               <td colspan="8">
                 <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-                  <input class="form-control" style="max-width:26rem;" name="wr" [(ngModel)]="reason" placeholder="Why is this rent waived?" maxlength="500" />
-                  <button class="btn btn-sm btn-primary" type="button" (click)="waive()" [disabled]="busy">Waive</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="waiving = null">Cancel</button>
+                  <input class="form-control" style="max-width:26rem;" name="wr" [(ngModel)]="reason" [placeholder]="'Why is this rent waived?' | translate" maxlength="500" />
+                  <button class="btn btn-sm btn-primary" type="button" (click)="waive()" [disabled]="busy">{{ 'Waive' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="waiving = null">{{ 'Cancel' | translate }}</button>
                 </div>
               </td>
             </tr>
           </ng-container>
         </tbody>
       </table>
-      <div class="text-muted" *ngIf="!s.charges.length">Rent is laid out when the lease is signed.</div>
+      <div class="text-muted" *ngIf="!s.charges.length">{{ 'Rent is laid out when the lease is signed.' | translate }}</div>
     </ng-container>
   `,
 })

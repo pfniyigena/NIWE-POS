@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,38 +13,38 @@ import { DEAL_STAGE_LABEL, DealRow, DealStage, Option, RealEstateApiService } fr
 @Component({
   selector: 'app-deal-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Deals</h3>
-        <a class="btn btn-primary" routerLink="/admin/realestate/deals/new">+ Record an offer</a>
+        <h3>{{ 'Deals' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/realestate/deals/new">{{ '+ Record an offer' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="stage" (ngModelChange)="load()">
-          <option value="">All stages</option><option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
+          <option value="">{{ 'All stages' | translate }}</option><option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="ag" [(ngModel)]="agentId" (ngModelChange)="load()">
-          <option [ngValue]="null">Any agent</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
+          <option [ngValue]="null">{{ 'Any agent' | translate }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option>
         </select>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="oo" [(ngModel)]="openOnly" (ngModelChange)="load()" /> Open only</label>
-        <input class="form-control" style="width:15rem;" placeholder="Search deal, buyer, property" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="oo" [(ngModel)]="openOnly" (ngModelChange)="load()" /> {{ 'Open only' | translate }}</label>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search deal, buyer, property' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-re-export kind="deals" [filters]="{ q: q.trim(), stage: stage, agentId: agentId, openOnly: openOnly }"></app-re-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Deal</th><th>Property</th><th>Buyer</th><th>Stage</th><th class="text-end">Asking</th><th class="text-end">Offer / agreed</th><th class="text-end">Paid</th><th class="text-end">Commission</th><th>Agent</th><th>Next date</th></tr></thead>
+        <thead><tr><th>{{ 'Deal' | translate }}</th><th>{{ 'Property' | translate }}</th><th>{{ 'Buyer' | translate }}</th><th>{{ 'Stage' | translate }}</th><th class="text-end">{{ 'Asking' | translate }}</th><th class="text-end">{{ 'Offer / agreed' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Commission' | translate }}</th><th>{{ 'Agent' | translate }}</th><th>{{ 'Next date' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let d of list">
             <td data-label="Deal"><a [routerLink]="['/admin/realestate/deals', d.id]"><strong>{{ d.code }}</strong></a></td>
             <td data-label="Property"><a [routerLink]="['/admin/realestate/properties', d.propertyId]">{{ d.propertyCode }}</a><div class="text-muted" style="font-size:0.8rem;">{{ d.propertyTitle }}</div></td>
             <td data-label="Buyer">{{ d.buyerName }}</td>
             <td data-label="Stage"><span class="badge" [class.badge-success]="d.stage === 'COMPLETED'" [class.badge-danger]="d.stage === 'CANCELLED'" [class.badge-warning]="d.stage === 'RESERVED' || d.stage === 'AGREEMENT'" [class.badge-secondary]="d.stage === 'OFFER'">{{ stageName(d.stage) }}</span>
-              <span class="badge badge-danger" *ngIf="d.overdue" style="margin-left:0.3rem;">Late</span></td>
+              <span class="badge badge-danger" *ngIf="d.overdue" style="margin-left:0.3rem;">{{ 'Late' | translate }}</span></td>
             <td class="text-end" data-label="Asking">{{ d.listPrice != null ? (d.listPrice | number: '1.0-0') : '—' }}</td>
             <td class="text-end" data-label="Offer / agreed">{{ (d.agreedPrice ?? d.offerAmount) | number: '1.0-0' }}</td>
-            <td class="text-end" data-label="Paid">{{ d.agreedPrice != null ? (d.paid | number: '1.0-0') : '—' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="d.outstanding != null && d.stage !== 'COMPLETED' && d.stage !== 'CANCELLED'">{{ d.outstanding | number: '1.0-0' }} to come</div></td>
+            <td class="text-end" data-label="Paid">{{ d.agreedPrice != null ? (d.paid | number: '1.0-0') : '—' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="d.outstanding != null && d.stage !== 'COMPLETED' && d.stage !== 'CANCELLED'">{{ '{p0} to come' | translate: { p0: (d.outstanding | number: '1.0-0') } }}</div></td>
             <td class="text-end" data-label="Commission">{{ d.commissionTotal ? (d.commissionTotal | number: '1.0-0') : '—' }}</td>
             <td data-label="Agent">{{ d.agentName || '—' }}</td>
             <td style="white-space:nowrap;" data-label="Next date">{{ nextDate(d) }}</td>
@@ -51,7 +52,7 @@ import { DEAL_STAGE_LABEL, DealRow, DealStage, Option, RealEstateApiService } fr
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No deals match.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No deals match.' | translate }}</p>
     </app-shell>
   `,
 })

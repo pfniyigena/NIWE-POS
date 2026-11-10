@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -10,14 +11,14 @@ import { REPORT_DEFS, ReportDef } from '../../core/report-defs';
 @Component({
   selector: 'app-hr-report-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">HR Reports</h3>
+      <h3 class="mb-3">{{ 'HR Reports' | translate }}</h3>
       <div class="flex gap-2" style="flex-wrap:wrap;">
         <a *ngFor="let r of reports" class="btn btn-outline-primary" [routerLink]="['/admin/reports', r.key]">{{ r.title }}</a>
       </div>
-      <p class="text-muted" *ngIf="!reports.length">No reports available.</p>
+      <p class="text-muted" *ngIf="!reports.length">{{ 'No reports available.' | translate }}</p>
     </app-shell>
   `,
 })

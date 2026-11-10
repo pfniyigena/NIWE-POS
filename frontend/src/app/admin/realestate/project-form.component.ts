@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,30 +10,30 @@ import { PROJECT_STATUS_LABEL, ProjectDto, ProjectPayload, ProjectStatus, RealEs
 @Component({
   selector: 'app-project-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
         <h3>{{ id ? 'Change ' + (project?.name ?? 'project') : 'New project' }}</h3>
-        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/realestate/projects', id] : ['/admin/realestate/projects']">Cancel</a>
+        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/realestate/projects', id] : ['/admin/realestate/projects']">{{ 'Cancel' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form class="card" style="padding:1rem; max-width:46rem;" (ngSubmit)="save()">
-        <div class="form-group mb-2"><label class="form-label">Name *</label><input class="form-control" name="nm" [(ngModel)]="f.name" maxlength="200" placeholder="e.g. Sunrise Estate" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Name *' | translate }}</label><input class="form-control" name="nm" [(ngModel)]="f.name" maxlength="200" [placeholder]="'e.g. Sunrise Estate' | translate" /></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Area</label><input class="form-control" name="ar" [(ngModel)]="f.area" maxlength="120" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Developer</label><input class="form-control" name="dv" [(ngModel)]="f.developerName" maxlength="200" placeholder="Who is building it" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Area' | translate }}</label><input class="form-control" name="ar" [(ngModel)]="f.area" maxlength="120" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Developer' | translate }}</label><input class="form-control" name="dv" [(ngModel)]="f.developerName" maxlength="200" [placeholder]="'Who is building it' | translate" /></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Address / location</label><input class="form-control" name="ad" [(ngModel)]="f.address" maxlength="255" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Address / location' | translate }}</label><input class="form-control" name="ad" [(ngModel)]="f.address" maxlength="255" /></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Status</label>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Status' | translate }}</label>
             <select class="form-select" name="stt" [(ngModel)]="f.status"><option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option></select></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Launch</label><input class="form-control" type="date" name="ld" [(ngModel)]="f.launchDate" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Handover</label><input class="form-control" type="date" name="hd" [(ngModel)]="f.handoverDate" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Launch' | translate }}</label><input class="form-control" type="date" name="ld" [(ngModel)]="f.launchDate" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Handover' | translate }}</label><input class="form-control" type="date" name="hd" [(ngModel)]="f.handoverDate" /></div>
         </div>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Units can be reserved only while the project is <strong>Selling</strong>. Planning is for setting up units and prices first.</div>
-        <div class="form-group mb-3"><label class="form-label">Description</label><textarea class="form-control" rows="3" name="ds" [(ngModel)]="f.description" maxlength="2000"></textarea></div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? 'Save changes' : 'Create project' }}</button></div>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Units can be reserved only while the project is' | translate }} <strong>{{ 'Selling' | translate }}</strong>{{ '. Planning is for setting up units and prices first.' | translate }}</div>
+        <div class="form-group mb-3"><label class="form-label">{{ 'Description' | translate }}</label><textarea class="form-control" rows="3" name="ds" [(ngModel)]="f.description" maxlength="2000"></textarea></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? ('Save changes' | translate) : ('Create project' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

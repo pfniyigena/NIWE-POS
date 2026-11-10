@@ -1,4 +1,5 @@
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,48 +15,48 @@ import { LoyaltyApiService, LoyaltyCustomerDetail, LoyaltyCustomerRow, LoyaltySe
 @Component({
   selector: 'app-loyalty',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3>Loyalty points</h3>
-      <p class="text-muted">A named customer earns points on every sale (the walk-in customer does not). Points can then pay part of a later sale at the till. Points are a cost to the shop only when they are spent.</p>
+      <h3>{{ 'Loyalty points' | translate }}</h3>
+      <p class="text-muted">{{ 'A named customer earns points on every sale (the walk-in customer does not). Points can then pay part of a later sale at the till. Points are a cost to the shop only when they are spent.' | translate }}</p>
       <div class="alert alert-danger lp-error" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success lp-done" *ngIf="done">{{ done }}</div>
 
       <div class="card mb-3 lp-settings" *ngIf="s" style="padding:1rem;">
-        <h4>The rules</h4>
+        <h4>{{ 'The rules' | translate }}</h4>
         <div class="lp-switch-note mb-2" style="font-size:0.9rem;">
-          Loyalty points are <strong>{{ s.enabled ? 'switched on' : 'switched off' }}</strong>. Switch them on or off in <a routerLink="/admin/sales/settings">Sales &gt; Settings</a>.
+          {{ 'Loyalty points are' | translate }} <strong>{{ s.enabled ? ('switched on' | translate) : ('switched off' | translate) }}</strong>{{ '. Switch them on or off in' | translate }} <a routerLink="/admin/sales/settings">Sales &gt; Settings</a>.
         </div>
         <div class="grid-2">
-          <div class="form-group"><label class="form-label">A customer earns points for every (amount spent)</label><input class="form-control lp-spend" type="number" min="0" step="0.01" name="spend" [(ngModel)]="s.spendAmount" [disabled]="!canManage" /></div>
-          <div class="form-group"><label class="form-label">…and gets this many points</label><input class="form-control lp-earned" type="number" min="1" step="1" name="earned" [(ngModel)]="s.pointsEarned" [disabled]="!canManage" /></div>
-          <div class="form-group"><label class="form-label">One point is worth (when spent)</label><input class="form-control lp-value" type="number" min="0" step="0.01" name="value" [(ngModel)]="s.pointValue" [disabled]="!canManage" /></div>
-          <div class="form-group"><label class="form-label">Fewest points that can be spent at once</label><input class="form-control lp-min" type="number" min="0" step="1" name="min" [(ngModel)]="s.minRedeemPoints" [disabled]="!canManage" /></div>
-          <div class="form-group"><label class="form-label">Points can pay at most this % of one sale</label><input class="form-control lp-max" type="number" min="0" max="100" step="1" name="max" [(ngModel)]="s.maxRedeemPercent" [disabled]="!canManage" /></div>
+          <div class="form-group"><label class="form-label">{{ 'A customer earns points for every (amount spent)' | translate }}</label><input class="form-control lp-spend" type="number" min="0" step="0.01" name="spend" [(ngModel)]="s.spendAmount" [disabled]="!canManage" /></div>
+          <div class="form-group"><label class="form-label">{{ '…and gets this many points' | translate }}</label><input class="form-control lp-earned" type="number" min="1" step="1" name="earned" [(ngModel)]="s.pointsEarned" [disabled]="!canManage" /></div>
+          <div class="form-group"><label class="form-label">{{ 'One point is worth (when spent)' | translate }}</label><input class="form-control lp-value" type="number" min="0" step="0.01" name="value" [(ngModel)]="s.pointValue" [disabled]="!canManage" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Fewest points that can be spent at once' | translate }}</label><input class="form-control lp-min" type="number" min="0" step="1" name="min" [(ngModel)]="s.minRedeemPoints" [disabled]="!canManage" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Points can pay at most this % of one sale' | translate }}</label><input class="form-control lp-max" type="number" min="0" max="100" step="1" name="max" [(ngModel)]="s.maxRedeemPercent" [disabled]="!canManage" /></div>
         </div>
-        <p class="text-muted" style="font-size:0.85rem;">Example: a customer who spends {{ s.spendAmount | number: '1.0-2' }} gets {{ s.pointsEarned }} point(s); 100 points are worth {{ 100 * s.pointValue | number: '1.0-2' }}.</p>
-        <button class="btn btn-primary lp-save" *ngIf="canManage" (click)="save()">Save the rules</button>
+        <p class="text-muted" style="font-size:0.85rem;">{{ 'Example: a customer who spends {p0} gets {p1} point(s); 100 points are worth {p2}.' | translate: { p0: (s.spendAmount | number: '1.0-2'), p1: (s.pointsEarned), p2: (100 * s.pointValue | number: '1.0-2') } }}</p>
+        <button class="btn btn-primary lp-save" *ngIf="canManage" (click)="save()">{{ 'Save the rules' | translate }}</button>
       </div>
 
       <div class="grid-2 mb-3 lp-summary" *ngIf="summary">
-        <div class="card" style="padding:0.75rem;"><div class="text-muted">Points customers hold</div>
+        <div class="card" style="padding:0.75rem;"><div class="text-muted">{{ 'Points customers hold' | translate }}</div>
           <div style="font-size:1.4rem; font-weight:700;" class="lp-outstanding">{{ summary.outstandingPoints | number }}</div>
-          <div class="text-muted" style="font-size:0.85rem;">worth {{ summary.outstandingValue | number: '1.2-2' }} if all were spent · {{ summary.customers }} customer(s)</div></div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'worth {p0} if all were spent · {p1} customer(s)' | translate: { p0: (summary.outstandingValue | number: '1.2-2'), p1: (summary.customers) } }}</div></div>
       </div>
 
       <div class="card mb-3 lp-detail" *ngIf="detail" style="padding:1rem;">
         <div class="flex justify-between align-center">
-          <h4 style="margin:0;">{{ detail.name }} — {{ detail.points }} points (worth {{ detail.value | number: '1.2-2' }})</h4>
-          <button class="btn btn-link lp-detail-close" (click)="detail = null">Close</button>
+          <h4 style="margin:0;">{{ '{p0} — {p1} points (worth {p2})' | translate: { p0: (detail.name), p1: (detail.points), p2: (detail.value | number: '1.2-2') } }}</h4>
+          <button class="btn btn-link lp-detail-close" (click)="detail = null">{{ 'Close' | translate }}</button>
         </div>
         <div class="flex gap-2 mt-2 mb-2" style="flex-wrap:wrap; align-items:end;" *ngIf="canManage">
-          <div class="form-group" style="margin:0;"><label class="form-label">Add or take away points (use a minus to take away)</label><input class="form-control lp-adjust-points" type="number" step="1" name="adjPoints" [(ngModel)]="adjPoints" style="max-width:200px;" /></div>
-          <div class="form-group" style="margin:0;"><label class="form-label">Reason</label><input class="form-control lp-adjust-note" name="adjNote" [(ngModel)]="adjNote" style="min-width:260px;" /></div>
-          <button class="btn btn-outline-primary lp-adjust" (click)="adjust()">Change balance</button>
+          <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Add or take away points (use a minus to take away)' | translate }}</label><input class="form-control lp-adjust-points" type="number" step="1" name="adjPoints" [(ngModel)]="adjPoints" style="max-width:200px;" /></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Reason' | translate }}</label><input class="form-control lp-adjust-note" name="adjNote" [(ngModel)]="adjNote" style="min-width:260px;" /></div>
+          <button class="btn btn-outline-primary lp-adjust" (click)="adjust()">{{ 'Change balance' | translate }}</button>
         </div>
         <table>
-          <thead><tr><th>When</th><th>What</th><th class="text-end">Points</th><th class="text-end">Balance after</th><th>Sale</th><th>Note</th></tr></thead>
+          <thead><tr><th>{{ 'When' | translate }}</th><th>{{ 'What' | translate }}</th><th class="text-end">{{ 'Points' | translate }}</th><th class="text-end">{{ 'Balance after' | translate }}</th><th>{{ 'Sale' | translate }}</th><th>{{ 'Note' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let t of detail.history" class="lp-txn">
               <td data-label="When">{{ t.at | date: 'medium' }}</td>
@@ -71,13 +72,13 @@ import { LoyaltyApiService, LoyaltyCustomerDetail, LoyaltyCustomerRow, LoyaltySe
 
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
         <select class="form-control lp-pick" style="max-width:320px;" name="lpPick" [(ngModel)]="pickId" (ngModelChange)="openPicked()" *ngIf="canManage">
-          <option [ngValue]="null">Open any customer (to give points)…</option>
+          <option [ngValue]="null">{{ 'Open any customer (to give points)…' | translate }}</option>
           <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
         </select>
-        <input class="form-control lp-search" style="max-width:260px;" placeholder="Search name or phone" name="lpSearch" [(ngModel)]="q" (ngModelChange)="reload()" />
+        <input class="form-control lp-search" style="max-width:260px;" [placeholder]="'Search name or phone' | translate" name="lpSearch" [(ngModel)]="q" (ngModelChange)="reload()" />
       </div>
       <table>
-        <thead><tr><th>Customer</th><th>Phone</th><th class="text-end">Points</th><th class="text-end">Worth</th><th>Last activity</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Customer' | translate }}</th><th>{{ 'Phone' | translate }}</th><th class="text-end">{{ 'Points' | translate }}</th><th class="text-end">{{ 'Worth' | translate }}</th><th>{{ 'Last activity' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let c of rows" class="lp-row" [attr.data-name]="c.name">
             <td data-label="Customer"><strong>{{ c.name }}</strong></td>
@@ -85,9 +86,9 @@ import { LoyaltyApiService, LoyaltyCustomerDetail, LoyaltyCustomerRow, LoyaltySe
             <td data-label="Points" class="text-end lp-points">{{ c.points }}</td>
             <td data-label="Worth" class="text-end">{{ c.value | number: '1.2-2' }}</td>
             <td data-label="Last activity">{{ c.lastActivity | date: 'medium' }}</td>
-            <td data-label=""><button class="btn btn-sm btn-outline-primary lp-open" (click)="open(c.customerId)">History</button></td>
+            <td data-label=""><button class="btn btn-sm btn-outline-primary lp-open" (click)="open(c.customerId)">{{ 'History' | translate }}</button></td>
           </tr>
-          <tr *ngIf="rows.length === 0"><td colspan="6" class="text-muted">No customer has points yet.</td></tr>
+          <tr *ngIf="rows.length === 0"><td colspan="6" class="text-muted">{{ 'No customer has points yet.' | translate }}</td></tr>
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goTo($event)"></app-pager>

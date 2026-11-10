@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,27 +14,27 @@ import { PROJECT_STATUS_LABEL, ProjectRow, ProjectStatus, RealEstateApiService }
 @Component({
   selector: 'app-project-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ReExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Projects</h3>
+        <h3>{{ 'Projects' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/realestate/unit-sales">Unit sales</a>
-          <a class="btn btn-primary" *ngIf="canManage" routerLink="/admin/realestate/projects/new">+ New project</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/realestate/unit-sales">{{ 'Unit sales' | translate }}</a>
+          <a class="btn btn-primary" *ngIf="canManage" routerLink="/admin/realestate/projects/new">{{ '+ New project' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
-          <option value="">All projects</option><option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
+          <option value="">{{ 'All projects' | translate }}</option><option *ngFor="let s of statuses" [value]="s.value">{{ s.label }}</option>
         </select>
-        <input class="form-control" style="width:15rem;" placeholder="Search project, area, developer" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search project, area, developer' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-re-export kind="projects" [filters]="{ q: q.trim(), status: status }"></app-re-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Project</th><th>Area</th><th>Developer</th><th>Status</th><th class="text-end">Units</th><th class="text-end">Available</th><th class="text-end">Reserved</th><th class="text-end">Sold</th><th class="text-end">Stock value</th><th class="text-end">Sold value</th><th>Handover</th></tr></thead>
+        <thead><tr><th>{{ 'Project' | translate }}</th><th>{{ 'Area' | translate }}</th><th>{{ 'Developer' | translate }}</th><th>{{ 'Status' | translate }}</th><th class="text-end">{{ 'Units' | translate }}</th><th class="text-end">{{ 'Available' | translate }}</th><th class="text-end">{{ 'Reserved' | translate }}</th><th class="text-end">{{ 'Sold' | translate }}</th><th class="text-end">{{ 'Stock value' | translate }}</th><th class="text-end">{{ 'Sold value' | translate }}</th><th>{{ 'Handover' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let p of list">
             <td data-label="Project"><a [routerLink]="['/admin/realestate/projects', p.id]"><strong>{{ p.name }}</strong></a><div class="text-muted" style="font-size:0.8rem;">{{ p.code }}</div></td>
@@ -51,7 +52,7 @@ import { PROJECT_STATUS_LABEL, ProjectRow, ProjectStatus, RealEstateApiService }
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No projects yet. A project is a development such as an estate of plots or an apartment block; you add its units and sell them one by one.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No projects yet. A project is a development such as an estate of plots or an apartment block; you add its units and sell them one by one.' | translate }}</p>
     </app-shell>
   `,
 })

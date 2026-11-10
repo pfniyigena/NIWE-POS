@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FeeInvoice, FEE_INVOICE_STATUS_LABEL, PmFeeInvoiceApiService, feeInvoiceBadge } from '../../core/api/pm-fee-invoice-api.service';
 
@@ -6,31 +7,31 @@ import { FeeInvoice, FEE_INVOICE_STATUS_LABEL, PmFeeInvoiceApiService, feeInvoic
 @Component({
   selector: 'app-pm-fee-invoice-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="card mb-3" style="padding:1rem;" *ngIf="loaded && (inv || (fee > 0 && canManage))">
       <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
-        <h4>Invoice for the management fee</h4>
+        <h4>{{ 'Invoice for the management fee' | translate }}</h4>
         <div class="flex gap-2" *ngIf="inv">
-          <button class="btn btn-outline-secondary" type="button" (click)="download()" [disabled]="busy">Download PDF</button>
+          <button class="btn btn-outline-secondary" type="button" (click)="download()" [disabled]="busy">{{ 'Download PDF' | translate }}</button>
         </div>
-        <button class="btn btn-outline-primary" type="button" *ngIf="!inv && canManage" (click)="issue()" [disabled]="busy">Make the invoice</button>
+        <button class="btn btn-outline-primary" type="button" *ngIf="!inv && canManage" (click)="issue()" [disabled]="busy">{{ 'Make the invoice' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <ng-container *ngIf="inv">
         <table class="table-sm"><tbody>
-          <tr><td class="text-muted" style="width:9rem;">Invoice</td><td><strong>{{ inv.invoice.number }}</strong>
+          <tr><td class="text-muted" style="width:9rem;">{{ 'Invoice' | translate }}</td><td><strong>{{ inv.invoice.number }}</strong>
             <span class="badge" [ngClass]="badge(inv.invoice.status)" style="margin-left:0.4rem;">{{ statusName(inv.invoice.status) }}</span>
-            <span class="text-muted" style="margin-left:0.4rem;">{{ inv.taxInvoice ? 'Tax invoice' : 'Invoice (no VAT)' }}</span></td></tr>
-          <tr><td class="text-muted">Dated</td><td>{{ inv.invoice.issueDate | date: 'd MMM y' }}{{ inv.issuedByName ? ' · ' + inv.issuedByName : '' }}</td></tr>
-          <tr><td class="text-muted">Fee</td><td>{{ inv.invoice.netAmount | number: '1.2-2' }}</td></tr>
-          <tr *ngIf="inv.invoice.vatAmount > 0"><td class="text-muted">VAT {{ inv.invoice.vatPercent | number: '1.0-2' }}%</td><td>{{ inv.invoice.vatAmount | number: '1.2-2' }}</td></tr>
-          <tr><td class="text-muted">Total</td><td><strong>{{ inv.invoice.totalAmount | number: '1.2-2' }}</strong></td></tr>
-          <tr *ngIf="inv.voidReason"><td class="text-muted">Voided</td><td>{{ inv.voidReason }}</td></tr>
+            <span class="text-muted" style="margin-left:0.4rem;">{{ inv.taxInvoice ? ('Tax invoice' | translate) : ('Invoice (no VAT)' | translate) }}</span></td></tr>
+          <tr><td class="text-muted">{{ 'Dated' | translate }}</td><td>{{ inv.invoice.issueDate | date: 'd MMM y' }}{{ inv.issuedByName ? ' · ' + inv.issuedByName : '' }}</td></tr>
+          <tr><td class="text-muted">{{ 'Fee' | translate }}</td><td>{{ inv.invoice.netAmount | number: '1.2-2' }}</td></tr>
+          <tr *ngIf="inv.invoice.vatAmount > 0"><td class="text-muted">{{ 'VAT {p0}%' | translate: { p0: (inv.invoice.vatPercent | number: '1.0-2') } }}</td><td>{{ inv.invoice.vatAmount | number: '1.2-2' }}</td></tr>
+          <tr><td class="text-muted">{{ 'Total' | translate }}</td><td><strong>{{ inv.invoice.totalAmount | number: '1.2-2' }}</strong></td></tr>
+          <tr *ngIf="inv.voidReason"><td class="text-muted">{{ 'Voided' | translate }}</td><td>{{ inv.voidReason }}</td></tr>
         </tbody></table>
-        <div class="text-muted mt-2" style="font-size:0.8rem;">{{ inv.invoice.status === 'VOID' ? 'This invoice was replaced or withdrawn. A new one is made when the statement is agreed again.' : 'The fee is already booked by the statement, so this invoice is a document only. It is settled by keeping the fee out of the rent collected, and it goes to the owner with the statement e-mail.' }}</div>
+        <div class="text-muted mt-2" style="font-size:0.8rem;">{{ inv.invoice.status === 'VOID' ? ('This invoice was replaced or withdrawn. A new one is made when the statement is agreed again.' | translate) : ('The fee is already booked by the statement, so this invoice is a document only. It is settled by keeping the fee out of the rent collected, and it goes to the owner with the statement e-mail.' | translate) }}</div>
       </ng-container>
-      <div class="text-muted" *ngIf="!inv">This statement has no invoice yet.</div>
+      <div class="text-muted" *ngIf="!inv">{{ 'This statement has no invoice yet.' | translate }}</div>
     </div>
   `,
 })

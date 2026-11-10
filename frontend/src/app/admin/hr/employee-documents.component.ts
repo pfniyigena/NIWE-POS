@@ -1,4 +1,5 @@
 import { Component, ElementRef, Input, OnChanges, ViewChild } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -9,56 +10,56 @@ import { DOC_CATEGORIES, DocCategory, EmployeeDocument, HrApiService, docCategor
 @Component({
   selector: 'app-employee-documents',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, DatePickerComponent],
   template: `
     <div class="card mb-3 emp-docs" style="padding:1rem;">
       <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
-        <strong>Documents</strong>
-        <button class="btn btn-sm btn-outline-primary doc-add" type="button" *ngIf="canManage" (click)="showForm = !showForm">{{ showForm ? 'Close' : '+ Add document' }}</button>
+        <strong>{{ 'Documents' | translate }}</strong>
+        <button class="btn btn-sm btn-outline-primary doc-add" type="button" *ngIf="canManage" (click)="showForm = !showForm">{{ showForm ? ('Close' | translate) : ('+ Add document' | translate) }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form *ngIf="showForm" class="mb-3 doc-form" (ngSubmit)="upload()" style="border:1px solid var(--border, #ddd); border-radius:6px; padding:0.75rem;">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="min-width:14rem;"><label class="form-label">File</label>
+          <div class="form-group" style="min-width:14rem;"><label class="form-label">{{ 'File' | translate }}</label>
             <input #pick class="form-control doc-file" type="file" (change)="chosen(pick.files)" />
           </div>
-          <div class="form-group" style="min-width:12rem;"><label class="form-label">Name</label><input class="form-control doc-name" name="dn" [(ngModel)]="form.name" placeholder="Same as the file" /></div>
-          <div class="form-group"><label class="form-label">Kind</label>
+          <div class="form-group" style="min-width:12rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control doc-name" name="dn" [(ngModel)]="form.name" [placeholder]="'Same as the file' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Kind' | translate }}</label>
             <select class="form-control doc-cat" name="dc" [(ngModel)]="form.category"><option *ngFor="let c of categories" [ngValue]="c.value">{{ c.label }}</option></select>
           </div>
-          <div class="form-group"><label class="form-label">Expires (optional)</label><app-date-picker name="de" [(ngModel)]="form.expiryDate"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'Expires (optional)' | translate }}</label><app-date-picker name="de" [(ngModel)]="form.expiryDate"></app-date-picker></div>
         </div>
-        <div class="form-group"><label class="form-label">Note (optional)</label><input class="form-control doc-desc" name="dd" [(ngModel)]="form.description" /></div>
-        <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-2"><input class="doc-share" type="checkbox" name="ds" [(ngModel)]="form.shared" /> Show it to the employee in My HR</label>
-        <button class="btn btn-primary doc-save" type="submit" [disabled]="busy || !file">Upload</button>
+        <div class="form-group"><label class="form-label">{{ 'Note (optional)' | translate }}</label><input class="form-control doc-desc" name="dd" [(ngModel)]="form.description" /></div>
+        <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-2"><input class="doc-share" type="checkbox" name="ds" [(ngModel)]="form.shared" /> {{ 'Show it to the employee in My HR' | translate }}</label>
+        <button class="btn btn-primary doc-save" type="submit" [disabled]="busy || !file">{{ 'Upload' | translate }}</button>
       </form>
 
       <table class="stack table-sm doc-table" *ngIf="docs.length">
-        <thead><tr><th>Name</th><th>Kind</th><th>Expires</th><th>Shared</th><th>Added</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Kind' | translate }}</th><th>{{ 'Expires' | translate }}</th><th>{{ 'Shared' | translate }}</th><th>{{ 'Added' | translate }}</th><th></th></tr></thead>
         <tbody><tr *ngFor="let d of docs; trackBy: byId">
           <td data-label="Name">{{ d.name }}<div class="text-muted" style="font-size:0.8rem;">{{ d.fileName }} · {{ size(d.sizeBytes) }}<span *ngIf="d.description"> · {{ d.description }}</span></div></td>
           <td data-label="Kind">{{ label(d.category) }}</td>
           <td data-label="Expires">
             <span *ngIf="!d.expiryDate" class="text-muted">—</span>
             <span *ngIf="d.expiryDate">{{ d.expiryDate }}
-              <span class="badge badge-danger" *ngIf="d.expiryState === 'EXPIRED'">Expired</span>
-              <span class="badge badge-warning" *ngIf="d.expiryState === 'SOON'">{{ d.daysToExpiry }} days left</span>
+              <span class="badge badge-danger" *ngIf="d.expiryState === 'EXPIRED'">{{ 'Expired' | translate }}</span>
+              <span class="badge badge-warning" *ngIf="d.expiryState === 'SOON'">{{ '{p0} days left' | translate: { p0: (d.daysToExpiry) } }}</span>
             </span>
           </td>
-          <td data-label="Shared">{{ d.sharedWithEmployee ? 'Yes' : 'No' }}</td>
+          <td data-label="Shared">{{ d.sharedWithEmployee ? ('Yes' | translate) : ('No' | translate) }}</td>
           <td data-label="Added">{{ d.createdAt | date: 'yyyy-MM-dd' }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="d.uploadedByName">{{ d.uploadedByName }}</div></td>
           <td data-label="" class="no-wrap">
-            <button class="btn btn-sm btn-outline-secondary doc-open" type="button" (click)="open(d)">Open</button>
-            <button class="btn btn-sm btn-outline-secondary doc-download" type="button" (click)="download(d)">Download</button>
+            <button class="btn btn-sm btn-outline-secondary doc-open" type="button" (click)="open(d)">{{ 'Open' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary doc-download" type="button" (click)="download(d)">{{ 'Download' | translate }}</button>
             <ng-container *ngIf="canManage">
-              <button class="btn btn-sm btn-outline-secondary doc-share-toggle" type="button" (click)="toggleShared(d)">{{ d.sharedWithEmployee ? 'Hide from employee' : 'Share' }}</button>
-              <button class="btn btn-sm btn-outline-danger doc-delete" type="button" (click)="remove(d)">Delete</button>
+              <button class="btn btn-sm btn-outline-secondary doc-share-toggle" type="button" (click)="toggleShared(d)">{{ d.sharedWithEmployee ? ('Hide from employee' | translate) : ('Share' | translate) }}</button>
+              <button class="btn btn-sm btn-outline-danger doc-delete" type="button" (click)="remove(d)">{{ 'Delete' | translate }}</button>
             </ng-container>
           </td>
         </tr></tbody>
       </table>
-      <p class="text-muted" *ngIf="loaded && !docs.length">No documents yet.</p>
+      <p class="text-muted" *ngIf="loaded && !docs.length">{{ 'No documents yet.' | translate }}</p>
     </div>
   `,
 })

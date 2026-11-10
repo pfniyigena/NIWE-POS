@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LawApiService, PaperChecks, PaperKind, PaperRequest } from '../../core/api/law-api.service';
@@ -8,61 +9,61 @@ import { showPdf } from '../../core/open-pdf';
 @Component({
   selector: 'app-law-matter-papers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success pp-info" *ngIf="info">{{ info }}</div>
     <ng-container *ngIf="c">
       <!-- cover sheet -->
       <div class="card mb-3 pp-cover" style="padding:1rem;">
-        <strong>File cover sheet</strong>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">One page for the front of the paper file: the client, the matter, the team, the other people on it, the open deadlines and room to write where the file is kept.</div>
+        <strong>{{ 'File cover sheet' | translate }}</strong>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'One page for the front of the paper file: the client, the matter, the team, the other people on it, the open deadlines and room to write where the file is kept.' | translate }}</div>
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button class="btn btn-outline-secondary pp-print" type="button" (click)="print('cover')" [disabled]="busy">Print</button>
-          <button class="btn btn-outline-secondary pp-save" type="button" *ngIf="c.canWork" (click)="save('cover')" [disabled]="busy">Keep in documents</button>
+          <button class="btn btn-outline-secondary pp-print" type="button" (click)="print('cover')" [disabled]="busy">{{ 'Print' | translate }}</button>
+          <button class="btn btn-outline-secondary pp-save" type="button" *ngIf="c.canWork" (click)="save('cover')" [disabled]="busy">{{ 'Keep in documents' | translate }}</button>
         </div>
       </div>
 
       <!-- engagement letter -->
       <div class="card mb-3 pp-engagement" style="padding:1rem;">
-        <strong>Engagement and fee letter</strong>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Tells the client what you will do, who will do it and how you charge. The fees come from the fee terms on the Billing tab.</div>
-        <div class="alert alert-warning" *ngIf="!c.feeTermsSet">No fee terms are set on this matter yet. Fill them in on the Billing tab first, or the letter will not say what you charge.</div>
+        <strong>{{ 'Engagement and fee letter' | translate }}</strong>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Tells the client what you will do, who will do it and how you charge. The fees come from the fee terms on the Billing tab.' | translate }}</div>
+        <div class="alert alert-warning" *ngIf="!c.feeTermsSet">{{ 'No fee terms are set on this matter yet. Fill them in on the Billing tab first, or the letter will not say what you charge.' | translate }}</div>
         <ng-container *ngIf="c.canWork">
-          <div class="form-group mb-2"><label class="form-label">What you will do <span class="text-muted">(leave empty to use the matter description)</span></label>
+          <div class="form-group mb-2"><label class="form-label">{{ 'What you will do' | translate }} <span class="text-muted">{{ '(leave empty to use the matter description)' | translate }}</span></label>
             <textarea class="form-control pp-scope" rows="3" name="scope" [(ngModel)]="scope"></textarea></div>
-          <div class="form-group mb-2"><label class="form-label">Other terms <span class="text-muted">(optional)</span></label>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Other terms' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
             <textarea class="form-control pp-terms" rows="2" name="terms" [(ngModel)]="terms"></textarea></div>
-          <div class="form-group mb-2" style="max-width:14rem;"><label class="form-label">Date on the letter</label><input class="form-control pp-edate" type="date" name="edate" [(ngModel)]="engDate" /></div>
+          <div class="form-group mb-2" style="max-width:14rem;"><label class="form-label">{{ 'Date on the letter' | translate }}</label><input class="form-control pp-edate" type="date" name="edate" [(ngModel)]="engDate" /></div>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-            <button class="btn btn-outline-secondary pp-print" type="button" (click)="print('engagement')" [disabled]="busy">Print</button>
-            <button class="btn btn-outline-secondary pp-save" type="button" (click)="save('engagement')" [disabled]="busy">Keep in documents</button>
-            <button class="btn btn-outline-primary pp-mail" type="button" (click)="mail('engagement')" [disabled]="busy || !canMail">E-mail to the client</button>
+            <button class="btn btn-outline-secondary pp-print" type="button" (click)="print('engagement')" [disabled]="busy">{{ 'Print' | translate }}</button>
+            <button class="btn btn-outline-secondary pp-save" type="button" (click)="save('engagement')" [disabled]="busy">{{ 'Keep in documents' | translate }}</button>
+            <button class="btn btn-outline-primary pp-mail" type="button" (click)="mail('engagement')" [disabled]="busy || !canMail">{{ 'E-mail to the client' | translate }}</button>
             <span class="text-muted" style="font-size:0.8rem;" *ngIf="!canMail">{{ mailWhy }}</span>
           </div>
         </ng-container>
-        <div class="text-muted" *ngIf="!c.canWork">Only the matter's team can make this letter.</div>
+        <div class="text-muted" *ngIf="!c.canWork">{{ 'Only the matter\\'s team can make this letter.' | translate }}</div>
       </div>
 
       <!-- closing letter -->
       <div class="card mb-3 pp-closing" style="padding:1rem;">
-        <strong>Closing letter</strong>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Tells the client the matter is finished, with the final invoices, anything unpaid and whether you hold their money. Close the matter first.</div>
-        <div class="alert alert-warning" *ngIf="!c.closed">This matter is still open. Close it first, then make the closing letter.</div>
+        <strong>{{ 'Closing letter' | translate }}</strong>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Tells the client the matter is finished, with the final invoices, anything unpaid and whether you hold their money. Close the matter first.' | translate }}</div>
+        <div class="alert alert-warning" *ngIf="!c.closed">{{ 'This matter is still open. Close it first, then make the closing letter.' | translate }}</div>
         <ng-container *ngIf="c.closed && warnings.length">
           <div class="alert alert-warning">
-            <strong>Look at these first:</strong>
+            <strong>{{ 'Look at these first:' | translate }}</strong>
             <ul class="mb-0"><li *ngFor="let w of warnings">{{ w }}</li></ul>
           </div>
         </ng-container>
         <ng-container *ngIf="c.canWork && c.closed">
-          <div class="form-group mb-2"><label class="form-label">A few words to the client <span class="text-muted">(optional)</span></label>
+          <div class="form-group mb-2"><label class="form-label">{{ 'A few words to the client' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
             <textarea class="form-control pp-notes" rows="2" name="notes" [(ngModel)]="notes"></textarea></div>
-          <div class="form-group mb-2" style="max-width:14rem;"><label class="form-label">Date on the letter</label><input class="form-control pp-cdate" type="date" name="cdate" [(ngModel)]="closeDate" /></div>
+          <div class="form-group mb-2" style="max-width:14rem;"><label class="form-label">{{ 'Date on the letter' | translate }}</label><input class="form-control pp-cdate" type="date" name="cdate" [(ngModel)]="closeDate" /></div>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
-            <button class="btn btn-outline-secondary pp-print" type="button" (click)="print('closing')" [disabled]="busy">Print</button>
-            <button class="btn btn-outline-secondary pp-save" type="button" (click)="save('closing')" [disabled]="busy">Keep in documents</button>
-            <button class="btn btn-outline-primary pp-mail" type="button" (click)="mail('closing')" [disabled]="busy || !canMail">E-mail to the client</button>
+            <button class="btn btn-outline-secondary pp-print" type="button" (click)="print('closing')" [disabled]="busy">{{ 'Print' | translate }}</button>
+            <button class="btn btn-outline-secondary pp-save" type="button" (click)="save('closing')" [disabled]="busy">{{ 'Keep in documents' | translate }}</button>
+            <button class="btn btn-outline-primary pp-mail" type="button" (click)="mail('closing')" [disabled]="busy || !canMail">{{ 'E-mail to the client' | translate }}</button>
             <span class="text-muted" style="font-size:0.8rem;" *ngIf="!canMail">{{ mailWhy }}</span>
           </div>
         </ng-container>

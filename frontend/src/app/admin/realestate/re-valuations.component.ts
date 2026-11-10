@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VALUATION_METHODS, VALUATION_PURPOSES, ValuationDto, ValuationMethod, ValuationPurpose, RealEstateApiService } from '../../core/api/realestate-api.service';
@@ -10,57 +11,57 @@ const num = (v: unknown): number | null => (v === '' || v === null || v === unde
 @Component({
   selector: 'app-re-valuations',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReDocumentsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ReDocumentsComponent],
   template: `
     <div class="flex justify-between align-center mb-2">
-      <h4>Valuations</h4>
-      <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="canManage && !formOpen" (click)="openForm(null)">+ Record a valuation</button>
+      <h4>{{ 'Valuations' | translate }}</h4>
+      <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="canManage && !formOpen" (click)="openForm(null)">{{ '+ Record a valuation' | translate }}</button>
     </div>
     <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
     <form *ngIf="formOpen" (ngSubmit)="save()" class="mb-3" style="padding:0.75rem; border:1px solid rgba(127,127,127,0.3); border-radius:6px;">
-      <strong>{{ editId ? 'Change the valuation' : 'New valuation' }}</strong>
+      <strong>{{ editId ? ('Change the valuation' | translate) : ('New valuation' | translate) }}</strong>
       <div class="flex gap-2 mt-1" style="flex-wrap:wrap;">
-        <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">Valuation date *</label><input class="form-control" type="date" name="vd" [(ngModel)]="f.valuationDate" /></div>
-        <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">Valuer *</label><input class="form-control" name="vn" [(ngModel)]="f.valuerName" maxlength="200" /></div>
-        <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">Firm</label><input class="form-control" name="vf" [(ngModel)]="f.valuerFirm" maxlength="200" /></div>
+        <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">{{ 'Valuation date *' | translate }}</label><input class="form-control" type="date" name="vd" [(ngModel)]="f.valuationDate" /></div>
+        <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Valuer *' | translate }}</label><input class="form-control" name="vn" [(ngModel)]="f.valuerName" maxlength="200" /></div>
+        <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Firm' | translate }}</label><input class="form-control" name="vf" [(ngModel)]="f.valuerFirm" maxlength="200" /></div>
       </div>
       <div class="flex gap-2" style="flex-wrap:wrap;">
-        <div class="form-group mb-2" style="min-width:9rem;"><label class="form-label">Purpose</label>
+        <div class="form-group mb-2" style="min-width:9rem;"><label class="form-label">{{ 'Purpose' | translate }}</label>
           <select class="form-select" name="vp" [(ngModel)]="f.purpose"><option *ngFor="let x of purposes" [ngValue]="x.value">{{ x.label }}</option></select></div>
-        <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Method</label>
+        <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Method' | translate }}</label>
           <select class="form-select" name="vm" [(ngModel)]="f.method"><option *ngFor="let x of methods" [ngValue]="x.value">{{ x.label }}</option></select></div>
-        <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Market value *</label><input class="form-control" type="number" min="0" name="mv" [(ngModel)]="f.marketValue" /></div>
-        <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Forced-sale value</label><input class="form-control" type="number" min="0" name="fv" [(ngModel)]="f.forcedSaleValue" [placeholder]="editId ? '0 to clear' : ''" /></div>
-        <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Monthly rent</label><input class="form-control" type="number" min="0" name="mr" [(ngModel)]="f.monthlyRent" [placeholder]="editId ? '0 to clear' : ''" /></div>
-        <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">Valid until</label><input class="form-control" type="date" name="vu" [(ngModel)]="f.validUntil" /></div>
+        <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Market value *' | translate }}</label><input class="form-control" type="number" min="0" name="mv" [(ngModel)]="f.marketValue" /></div>
+        <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Forced-sale value' | translate }}</label><input class="form-control" type="number" min="0" name="fv" [(ngModel)]="f.forcedSaleValue" [placeholder]="editId ? '0 to clear' : ''" /></div>
+        <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Monthly rent' | translate }}</label><input class="form-control" type="number" min="0" name="mr" [(ngModel)]="f.monthlyRent" [placeholder]="editId ? '0 to clear' : ''" /></div>
+        <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">{{ 'Valid until' | translate }}</label><input class="form-control" type="date" name="vu" [(ngModel)]="f.validUntil" /></div>
       </div>
-      <div class="form-group mb-2"><label class="form-label">Notes</label><textarea class="form-control" rows="2" name="vt" [(ngModel)]="f.notes" maxlength="2000"></textarea></div>
+      <div class="form-group mb-2"><label class="form-label">{{ 'Notes' | translate }}</label><textarea class="form-control" rows="2" name="vt" [(ngModel)]="f.notes" maxlength="2000"></textarea></div>
       <div class="flex gap-2">
-        <button class="btn btn-sm btn-primary" type="submit" [disabled]="busy">{{ busy ? 'Saving…' : 'Save' }}</button>
-        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="formOpen = false">Cancel</button>
+        <button class="btn btn-sm btn-primary" type="submit" [disabled]="busy">{{ busy ? ('Saving…' | translate) : ('Save' | translate) }}</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="formOpen = false">{{ 'Cancel' | translate }}</button>
       </div>
     </form>
 
     <table class="table-sm" *ngIf="list.length">
-      <thead><tr><th>Date</th><th>Valuer</th><th>Purpose</th><th class="text-end">Market value</th><th class="text-end">Forced sale</th><th class="text-end">Rent / month</th><th>Valid until</th><th></th></tr></thead>
+      <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Valuer' | translate }}</th><th>{{ 'Purpose' | translate }}</th><th class="text-end">{{ 'Market value' | translate }}</th><th class="text-end">{{ 'Forced sale' | translate }}</th><th class="text-end">{{ 'Rent / month' | translate }}</th><th>{{ 'Valid until' | translate }}</th><th></th></tr></thead>
       <tbody>
         <ng-container *ngFor="let v of list">
           <tr>
             <td style="white-space:nowrap;">{{ v.valuationDate | date: 'd MMM y' }}
-              <span class="badge badge-success" *ngIf="v.current" style="margin-left:0.3rem;">Current</span>
-              <span class="badge badge-danger" *ngIf="v.expired" style="margin-left:0.3rem;">Expired</span></td>
+              <span class="badge badge-success" *ngIf="v.current" style="margin-left:0.3rem;">{{ 'Current' | translate }}</span>
+              <span class="badge badge-danger" *ngIf="v.expired" style="margin-left:0.3rem;">{{ 'Expired' | translate }}</span></td>
             <td>{{ v.valuerName }}<div class="text-muted" style="font-size:0.8rem;">{{ v.valuerFirm || '' }}{{ v.valuerFirm ? ' · ' : '' }}{{ methodName(v.method) }}</div></td>
             <td>{{ purposeName(v.purpose) }}</td>
             <td class="text-end">{{ v.marketValue | number: '1.0-0' }}
-              <div class="text-muted" style="font-size:0.75rem;" *ngIf="v.vsAskingPercent != null">{{ v.vsAskingPercent > 0 ? '+' : '' }}{{ v.vsAskingPercent | number: '1.0-1' }}% vs asking</div></td>
+              <div class="text-muted" style="font-size:0.75rem;" *ngIf="v.vsAskingPercent != null">{{ '{p0}{p1}% vs asking' | translate: { p0: (v.vsAskingPercent > 0 ? '+' : ''), p1: (v.vsAskingPercent | number: '1.0-1') } }}</div></td>
             <td class="text-end">{{ v.forcedSaleValue != null ? (v.forcedSaleValue | number: '1.0-0') : '—' }}</td>
             <td class="text-end">{{ v.monthlyRent != null ? (v.monthlyRent | number: '1.0-0') : '—' }}</td>
             <td style="white-space:nowrap;">{{ v.validUntil ? (v.validUntil | date: 'd MMM y') : '—' }}</td>
             <td style="white-space:nowrap; text-align:right;">
-              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleDocs(v)">Report{{ v.documents ? ' (' + v.documents + ')' : '' }}</button>
-              <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="openForm(v)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="remove(v)">Delete</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleDocs(v)">{{ 'Report{p0}' | translate: { p0: (v.documents ? ' (' + v.documents + ')' : '') } }}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="openForm(v)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="remove(v)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="v.notes"><td colspan="8" class="text-muted" style="font-size:0.85rem; border-top:0;">{{ v.notes }}</td></tr>
@@ -70,7 +71,7 @@ const num = (v: unknown): number | null => (v === '' || v === null || v === unde
         </ng-container>
       </tbody>
     </table>
-    <div class="text-muted" *ngIf="!list.length && loaded">No valuations yet.</div>
+    <div class="text-muted" *ngIf="!list.length && loaded">{{ 'No valuations yet.' | translate }}</div>
   `,
 })
 export class ReValuationsComponent implements OnChanges {

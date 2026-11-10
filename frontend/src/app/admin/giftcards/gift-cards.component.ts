@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -14,85 +15,85 @@ import { Customer, PaymentMethodOption } from '../../core/models';
 @Component({
   selector: 'app-gift-cards',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3 style="margin:0;">Gift cards</h3>
+        <h3 style="margin:0;">{{ 'Gift cards' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary gc-release" *ngIf="canManage && summary && summary.expiredWithBalance > 0" (click)="release()">Release expired balances</button>
-          <button class="btn btn-primary gc-new" *ngIf="canManage && !selling" (click)="startSell()">Sell a gift card</button>
+          <button class="btn btn-outline-secondary gc-release" *ngIf="canManage && summary && summary.expiredWithBalance > 0" (click)="release()">{{ 'Release expired balances' | translate }}</button>
+          <button class="btn btn-primary gc-new" *ngIf="canManage && !selling" (click)="startSell()">{{ 'Sell a gift card' | translate }}</button>
         </div>
       </div>
-      <p class="text-muted">Money paid for a gift card is not sales yet: the shop owes it back as goods. It becomes sales when the card is spent at the till. A card can also be sold from the till itself.</p>
+      <p class="text-muted">{{ 'Money paid for a gift card is not sales yet: the shop owes it back as goods. It becomes sales when the card is spent at the till. A card can also be sold from the till itself.' | translate }}</p>
       <div class="alert alert-danger gc-error" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success gc-done" *ngIf="done">{{ done }}</div>
 
       <div class="grid-2 mb-3 gc-summary" *ngIf="summary">
-        <div class="card" style="padding:0.75rem;"><div class="text-muted">Owed on gift cards</div><div style="font-size:1.4rem; font-weight:700;" class="gc-liability">{{ summary.liability | number: '1.2-2' }}</div>
-          <div class="text-muted" style="font-size:0.85rem;">{{ summary.withBalance }} card(s) with money left, {{ summary.cards }} in all<span *ngIf="summary.blocked">, {{ summary.blocked }} blocked</span></div></div>
-        <div class="card" style="padding:0.75rem;" *ngIf="summary.expiredWithBalance > 0"><div class="text-muted">Expired, not yet released</div><div style="font-size:1.4rem; font-weight:700;" class="gc-expired-balance">{{ summary.expiredBalance | number: '1.2-2' }}</div>
-          <div class="text-muted" style="font-size:0.85rem;">{{ summary.expiredWithBalance }} card(s). Releasing moves this from what you owe into income.</div></div>
+        <div class="card" style="padding:0.75rem;"><div class="text-muted">{{ 'Owed on gift cards' | translate }}</div><div style="font-size:1.4rem; font-weight:700;" class="gc-liability">{{ summary.liability | number: '1.2-2' }}</div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ '{p0} card(s) with money left, {p1} in all' | translate: { p0: (summary.withBalance), p1: (summary.cards) } }}<span *ngIf="summary.blocked">{{ ', {p0} blocked' | translate: { p0: (summary.blocked) } }}</span></div></div>
+        <div class="card" style="padding:0.75rem;" *ngIf="summary.expiredWithBalance > 0"><div class="text-muted">{{ 'Expired, not yet released' | translate }}</div><div style="font-size:1.4rem; font-weight:700;" class="gc-expired-balance">{{ summary.expiredBalance | number: '1.2-2' }}</div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ '{p0} card(s). Releasing moves this from what you owe into income.' | translate: { p0: (summary.expiredWithBalance) } }}</div></div>
       </div>
 
       <div class="card mb-3 gc-sell-form" *ngIf="selling" style="padding:1rem;">
-        <h4>Sell a gift card</h4>
+        <h4>{{ 'Sell a gift card' | translate }}</h4>
         <div class="grid-2">
-          <div class="form-group"><label class="form-label">Amount</label><input class="form-control gc-sell-amount" type="number" min="0" step="0.01" name="sellAmount" [(ngModel)]="sell.amount" /></div>
-          <div class="form-group"><label class="form-label">Paid by</label>
+          <div class="form-group"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control gc-sell-amount" type="number" min="0" step="0.01" name="sellAmount" [(ngModel)]="sell.amount" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Paid by' | translate }}</label>
             <select class="form-control gc-sell-method" name="sellMethod" [(ngModel)]="sell.paymentMethod">
-              <option value="">Choose…</option>
+              <option value="">{{ 'Choose…' | translate }}</option>
               <option *ngFor="let m of payableMethods" [value]="m.code">{{ m.name }}</option>
-              <option value="COMPLIMENTARY">Given free (no payment)</option>
+              <option value="COMPLIMENTARY">{{ 'Given free (no payment)' | translate }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Bought by (optional)</label>
+          <div class="form-group"><label class="form-label">{{ 'Bought by (optional)' | translate }}</label>
             <select class="form-control gc-sell-customer" name="sellCustomer" [(ngModel)]="sell.customerId">
-              <option [ngValue]="null">No customer</option>
+              <option [ngValue]="null">{{ 'No customer' | translate }}</option>
               <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">For (optional)</label><input class="form-control gc-sell-recipient" name="sellRecipient" [(ngModel)]="sell.recipientName" /></div>
-          <div class="form-group"><label class="form-label">Expires on (optional)</label><input class="form-control gc-sell-expiry" type="date" name="sellExpiry" [(ngModel)]="sell.expiresOn" /></div>
-          <div class="form-group"><label class="form-label">Card code (optional — made for you if left empty)</label><input class="form-control gc-sell-code" name="sellCode" [(ngModel)]="sell.code" /></div>
+          <div class="form-group"><label class="form-label">{{ 'For (optional)' | translate }}</label><input class="form-control gc-sell-recipient" name="sellRecipient" [(ngModel)]="sell.recipientName" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Expires on (optional)' | translate }}</label><input class="form-control gc-sell-expiry" type="date" name="sellExpiry" [(ngModel)]="sell.expiresOn" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Card code (optional — made for you if left empty)' | translate }}</label><input class="form-control gc-sell-code" name="sellCode" [(ngModel)]="sell.code" /></div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary gc-sell-save" (click)="doSell()">Sell card</button>
-          <button class="btn btn-link gc-sell-cancel" (click)="selling = false">Cancel</button>
+          <button class="btn btn-primary gc-sell-save" (click)="doSell()">{{ 'Sell card' | translate }}</button>
+          <button class="btn btn-link gc-sell-cancel" (click)="selling = false">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <div class="card mb-3 gc-topup-form" *ngIf="topUpCard" style="padding:1rem;">
-        <h4>Add money to {{ topUpCard.code }}</h4>
+        <h4>{{ 'Add money to {p0}' | translate: { p0: (topUpCard.code) } }}</h4>
         <div class="grid-2">
-          <div class="form-group"><label class="form-label">Amount</label><input class="form-control gc-topup-amount" type="number" min="0" step="0.01" name="topAmount" [(ngModel)]="topUp.amount" /></div>
-          <div class="form-group"><label class="form-label">Paid by</label>
+          <div class="form-group"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control gc-topup-amount" type="number" min="0" step="0.01" name="topAmount" [(ngModel)]="topUp.amount" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Paid by' | translate }}</label>
             <select class="form-control gc-topup-method" name="topMethod" [(ngModel)]="topUp.paymentMethod">
-              <option value="">Choose…</option>
+              <option value="">{{ 'Choose…' | translate }}</option>
               <option *ngFor="let m of payableMethods" [value]="m.code">{{ m.name }}</option>
-              <option value="COMPLIMENTARY">Given free (no payment)</option>
+              <option value="COMPLIMENTARY">{{ 'Given free (no payment)' | translate }}</option>
             </select></div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary gc-topup-save" (click)="doTopUp()">Add money</button>
-          <button class="btn btn-link gc-topup-cancel" (click)="topUpCard = null">Cancel</button>
+          <button class="btn btn-primary gc-topup-save" (click)="doTopUp()">{{ 'Add money' | translate }}</button>
+          <button class="btn btn-link gc-topup-cancel" (click)="topUpCard = null">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <div class="card mb-3 gc-expiry-form" *ngIf="expiryCard" style="padding:1rem;">
-        <h4>Expiry of {{ expiryCard.code }}</h4>
-        <div class="form-group"><label class="form-label">Expires on (empty = never)</label><input class="form-control gc-expiry-date" type="date" name="expiryDate" [(ngModel)]="expiryDate" style="max-width:220px;" /></div>
+        <h4>{{ 'Expiry of {p0}' | translate: { p0: (expiryCard.code) } }}</h4>
+        <div class="form-group"><label class="form-label">{{ 'Expires on (empty = never)' | translate }}</label><input class="form-control gc-expiry-date" type="date" name="expiryDate" [(ngModel)]="expiryDate" style="max-width:220px;" /></div>
         <div class="flex gap-2">
-          <button class="btn btn-primary gc-expiry-save" (click)="doExpiry()">Save</button>
-          <button class="btn btn-link gc-expiry-cancel" (click)="expiryCard = null">Cancel</button>
+          <button class="btn btn-primary gc-expiry-save" (click)="doExpiry()">{{ 'Save' | translate }}</button>
+          <button class="btn btn-link gc-expiry-cancel" (click)="expiryCard = null">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <div class="card mb-3 gc-history" *ngIf="detail" style="padding:1rem;">
         <div class="flex justify-between align-center">
-          <h4 style="margin:0;">{{ detail.card.code }} — {{ detail.card.balance | number: '1.2-2' }} left of {{ detail.card.initialAmount | number: '1.2-2' }}</h4>
-          <button class="btn btn-link gc-history-close" (click)="detail = null">Close</button>
+          <h4 style="margin:0;">{{ '{p0} — {p1} left of {p2}' | translate: { p0: (detail.card.code), p1: (detail.card.balance | number: '1.2-2'), p2: (detail.card.initialAmount | number: '1.2-2') } }}</h4>
+          <button class="btn btn-link gc-history-close" (click)="detail = null">{{ 'Close' | translate }}</button>
         </div>
         <table class="mt-2">
-          <thead><tr><th>When</th><th>What</th><th class="text-end">Amount</th><th class="text-end">Balance after</th><th>Sale</th><th>Note</th></tr></thead>
+          <thead><tr><th>{{ 'When' | translate }}</th><th>{{ 'What' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th class="text-end">{{ 'Balance after' | translate }}</th><th>{{ 'Sale' | translate }}</th><th>{{ 'Note' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let t of detail.history" class="gc-txn">
               <td data-label="When">{{ t.at | date: 'medium' }}</td>
@@ -107,35 +108,35 @@ import { Customer, PaymentMethodOption } from '../../core/models';
       </div>
 
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
-        <input class="form-control gc-search" style="max-width:260px;" placeholder="Search code, name or customer" name="gcSearch" [(ngModel)]="q" (ngModelChange)="reload()" />
+        <input class="form-control gc-search" style="max-width:260px;" [placeholder]="'Search code, name or customer' | translate" name="gcSearch" [(ngModel)]="q" (ngModelChange)="reload()" />
         <select class="form-control gc-filter" style="max-width:220px;" name="gcFilter" [(ngModel)]="filter" (ngModelChange)="reload()">
-          <option value="ALL">All cards</option>
-          <option value="USABLE">Can be spent now</option>
-          <option value="WITH_BALANCE">Money left</option>
-          <option value="EMPTY">Empty</option>
-          <option value="BLOCKED">Blocked</option>
-          <option value="EXPIRED">Expired</option>
+          <option value="ALL">{{ 'All cards' | translate }}</option>
+          <option value="USABLE">{{ 'Can be spent now' | translate }}</option>
+          <option value="WITH_BALANCE">{{ 'Money left' | translate }}</option>
+          <option value="EMPTY">{{ 'Empty' | translate }}</option>
+          <option value="BLOCKED">{{ 'Blocked' | translate }}</option>
+          <option value="EXPIRED">{{ 'Expired' | translate }}</option>
         </select>
       </div>
       <table>
-        <thead><tr><th>Code</th><th>For</th><th class="text-end">Sold for</th><th class="text-end">Left</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Code' | translate }}</th><th>{{ 'For' | translate }}</th><th class="text-end">{{ 'Sold for' | translate }}</th><th class="text-end">{{ 'Left' | translate }}</th><th>{{ 'Expires' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let c of rows" class="gc-row" [attr.data-code]="c.code">
             <td data-label="Code"><strong>{{ c.code }}</strong></td>
             <td data-label="For">{{ c.recipientName || c.customerName || '' }}</td>
             <td data-label="Sold for" class="text-end">{{ c.initialAmount | number: '1.2-2' }}</td>
             <td data-label="Left" class="text-end gc-left">{{ c.balance | number: '1.2-2' }}</td>
-            <td data-label="Expires">{{ c.expiresOn || 'Never' }}</td>
-            <td data-label="Status"><span [ngClass]="c.usable ? 'text-success' : 'text-muted'" class="gc-status">{{ c.status === 'BLOCKED' ? 'Blocked' : (c.expired ? 'Expired' : (c.balance > 0 ? 'Active' : 'Used up')) }}</span></td>
+            <td data-label="Expires">{{ c.expiresOn || ('Never' | translate) }}</td>
+            <td data-label="Status"><span [ngClass]="c.usable ? 'text-success' : 'text-muted'" class="gc-status">{{ c.status === 'BLOCKED' ? ('Blocked' | translate) : (c.expired ? ('Expired' | translate) : (c.balance > 0 ? ('Active' | translate) : ('Used up' | translate))) }}</span></td>
             <td data-label="" class="flex gap-2" style="flex-wrap:wrap;">
-              <button class="btn btn-sm btn-outline-primary gc-history-btn" (click)="openHistory(c)">History</button>
-              <button class="btn btn-sm btn-outline-secondary gc-topup-btn" *ngIf="canManage" (click)="startTopUp(c)">Add money</button>
-              <button class="btn btn-sm btn-outline-secondary gc-expiry-btn" *ngIf="canManage" (click)="startExpiry(c)">Expiry</button>
-              <button class="btn btn-sm btn-outline-danger gc-block-btn" *ngIf="canManage && c.status === 'ACTIVE'" (click)="setBlocked(c, true)">Block</button>
-              <button class="btn btn-sm btn-outline-secondary gc-unblock-btn" *ngIf="canManage && c.status === 'BLOCKED'" (click)="setBlocked(c, false)">Unblock</button>
+              <button class="btn btn-sm btn-outline-primary gc-history-btn" (click)="openHistory(c)">{{ 'History' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary gc-topup-btn" *ngIf="canManage" (click)="startTopUp(c)">{{ 'Add money' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary gc-expiry-btn" *ngIf="canManage" (click)="startExpiry(c)">{{ 'Expiry' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger gc-block-btn" *ngIf="canManage && c.status === 'ACTIVE'" (click)="setBlocked(c, true)">{{ 'Block' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary gc-unblock-btn" *ngIf="canManage && c.status === 'BLOCKED'" (click)="setBlocked(c, false)">{{ 'Unblock' | translate }}</button>
             </td>
           </tr>
-          <tr *ngIf="rows.length === 0"><td colspan="7" class="text-muted">No gift cards.</td></tr>
+          <tr *ngIf="rows.length === 0"><td colspan="7" class="text-muted">{{ 'No gift cards.' | translate }}</td></tr>
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goTo($event)"></app-pager>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -10,91 +11,91 @@ import { Account } from '../../core/models';
 @Component({
   selector: 'app-re-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Real Estate settings</h3>
+      <h3 class="mb-3">{{ 'Real Estate settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
       <form class="card" style="padding:1rem; max-width:40rem;" (ngSubmit)="save()">
-        <div class="form-group mb-2"><label class="form-label">Areas you work in <span class="text-muted">(one per line)</span></label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Areas you work in' | translate }} <span class="text-muted">{{ '(one per line)' | translate }}</span></label>
           <textarea class="form-control" rows="8" name="areas" [(ngModel)]="areas" placeholder="Kololo&#10;Nakasero&#10;Ntinda"></textarea>
-          <div class="text-muted" style="font-size:0.85rem;">They appear as suggestions on properties and leads, and in the filters.</div></div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'They appear as suggestions on properties and leads, and in the filters.' | translate }}</div></div>
         <div class="flex gap-2">
-          <div class="form-group mb-2"><label class="form-label">A viewing lasts (minutes)</label><input class="form-control" type="number" min="5" max="480" name="vm" [(ngModel)]="viewingMinutes" /></div>
-          <div class="form-group mb-2"><label class="form-label">A lead is "quiet" after (days)</label><input class="form-control" type="number" min="1" max="365" name="sl" [(ngModel)]="staleLeadDays" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'A viewing lasts (minutes)' | translate }}</label><input class="form-control" type="number" min="5" max="480" name="vm" [(ngModel)]="viewingMinutes" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'A lead is "quiet" after (days)' | translate }}</label><input class="form-control" type="number" min="1" max="365" name="sl" [(ngModel)]="staleLeadDays" /></div>
         </div>
-        <h4 class="mb-1 mt-2">Lead follow-ups</h4>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="fe" [(ngModel)]="followUpEmail" /> E-mail each agent every morning (about 06:30)</label>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Each agent gets one e-mail with the calls that are late or due today and the leads that have gone quiet. Agents need an e-mail address on their user account. They see the same lists, with buttons to log a call, under <strong>My follow-ups</strong>.</div>
+        <h4 class="mb-1 mt-2">{{ 'Lead follow-ups' | translate }}</h4>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="fe" [(ngModel)]="followUpEmail" /> {{ 'E-mail each agent every morning (about 06:30)' | translate }}</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Each agent gets one e-mail with the calls that are late or due today and the leads that have gone quiet. Agents need an e-mail address on their user account. They see the same lists, with buttons to log a call, under' | translate }} <strong>{{ 'My follow-ups' | translate }}</strong>.</div>
         <div class="alert alert-warning mb-2" *ngIf="!mailConfigured">E-mail is not set up yet, so nothing can be sent. Set up SMTP in Settings &gt; Email first.</div>
-        <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="lastRun">Last run: {{ lastRun | date: 'd MMM y' }} — {{ lastSummary }}</div>
+        <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="lastRun">{{ 'Last run: {p0} — {p1}' | translate: { p0: (lastRun | date: 'd MMM y'), p1: (lastSummary) } }}</div>
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
-          <button class="btn btn-sm btn-outline-secondary fu-preview" type="button" (click)="digest(true)" [disabled]="digestBusy">Preview who would get an e-mail</button>
-          <button class="btn btn-sm btn-outline-secondary fu-send" type="button" (click)="digest(false)" [disabled]="digestBusy || !mailConfigured">Send it now</button>
+          <button class="btn btn-sm btn-outline-secondary fu-preview" type="button" (click)="digest(true)" [disabled]="digestBusy">{{ 'Preview who would get an e-mail' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary fu-send" type="button" (click)="digest(false)" [disabled]="digestBusy || !mailConfigured">{{ 'Send it now' | translate }}</button>
         </div>
         <div class="alert alert-danger" *ngIf="digestError">{{ digestError }}</div>
         <div *ngIf="digestResult" class="mb-3">
           <div class="mb-1"><strong>{{ digestResult.summary }}</strong></div>
           <table class="stack table-sm" *ngIf="digestResult.details.length">
-            <thead><tr><th>Agent</th><th>E-mail</th><th class="text-end">Late</th><th class="text-end">Today</th><th class="text-end">Quiet</th><th>Result</th></tr></thead>
+            <thead><tr><th>{{ 'Agent' | translate }}</th><th>{{ 'E-mail' | translate }}</th><th class="text-end">{{ 'Late' | translate }}</th><th class="text-end">{{ 'Today' | translate }}</th><th class="text-end">{{ 'Quiet' | translate }}</th><th>{{ 'Result' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let d of digestResult.details">
               <td data-label="Agent">{{ d.name }}</td><td data-label="E-mail">{{ d.email || 'none on file' }}</td>
               <td class="text-end" data-label="Late">{{ d.overdue }}</td><td class="text-end" data-label="Today">{{ d.today }}</td><td class="text-end" data-label="Quiet">{{ d.quiet }}</td>
               <td data-label="Result">{{ statusName(d.status) }}</td></tr></tbody>
           </table>
         </div>
-        <h4 class="mb-1 mt-2">Viewing reminders</h4>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="vre" [(ngModel)]="reminderOn" /> E-mail a reminder before each viewing</label>
+        <h4 class="mb-1 mt-2">{{ 'Viewing reminders' | translate }}</h4>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="vre" [(ngModel)]="reminderOn" /> {{ 'E-mail a reminder before each viewing' | translate }}</label>
         <div class="flex gap-2 mb-1" style="align-items:center; flex-wrap:wrap;" *ngIf="reminderOn">
-          <label class="form-label" style="margin:0;">Send it</label><input class="form-control" style="width:6rem;" type="number" min="1" max="72" name="vrh" [(ngModel)]="reminderHours" /><span>hours before the viewing</span>
+          <label class="form-label" style="margin:0;">{{ 'Send it' | translate }}</label><input class="form-control" style="width:6rem;" type="number" min="1" max="72" name="vrh" [(ngModel)]="reminderHours" /><span>{{ 'hours before the viewing' | translate }}</span>
         </div>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">The person viewing gets the property, address, time and who will meet them, with your website phone and e-mail (above) to cancel on. The agent gets one e-mail listing the viewings coming up. A reminder is sent once; moving a viewing sends a fresh one. You can also send one by hand from the Viewings screen.</div>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'The person viewing gets the property, address, time and who will meet them, with your website phone and e-mail (above) to cancel on. The agent gets one e-mail listing the viewings coming up. A reminder is sent once; moving a viewing sends a fresh one. You can also send one by hand from the Viewings screen.' | translate }}</div>
         <div class="alert alert-warning mb-2" *ngIf="reminderOn && !mailConfigured">E-mail is not set up yet, so nothing can be sent. Set up SMTP in Settings &gt; Email first.</div>
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
-          <button class="btn btn-sm btn-outline-secondary vr-preview" type="button" (click)="reminders(true)" [disabled]="reminderBusy">Preview what would be sent</button>
-          <button class="btn btn-sm btn-outline-secondary vr-send" type="button" (click)="reminders(false)" [disabled]="reminderBusy || !mailConfigured">Send due reminders now</button>
+          <button class="btn btn-sm btn-outline-secondary vr-preview" type="button" (click)="reminders(true)" [disabled]="reminderBusy">{{ 'Preview what would be sent' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary vr-send" type="button" (click)="reminders(false)" [disabled]="reminderBusy || !mailConfigured">{{ 'Send due reminders now' | translate }}</button>
         </div>
         <div class="alert alert-danger" *ngIf="reminderError">{{ reminderError }}</div>
         <div *ngIf="reminderResult" class="mb-3">
           <div class="mb-1"><strong>{{ reminderResult.summary }}</strong></div>
           <table class="stack table-sm" *ngIf="reminderResult.lines.length">
-            <thead><tr><th>Viewing</th><th>When</th><th>Client</th><th>Client e-mail</th><th>Agent</th></tr></thead>
+            <thead><tr><th>{{ 'Viewing' | translate }}</th><th>{{ 'When' | translate }}</th><th>{{ 'Client' | translate }}</th><th>{{ 'Client e-mail' | translate }}</th><th>{{ 'Agent' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let l of reminderResult.lines">
               <td data-label="Viewing">{{ l.propertyCode }} {{ l.propertyTitle }}</td><td data-label="When">{{ l.startAt | date: 'EEE d MMM, HH:mm' }}</td>
               <td data-label="Client">{{ l.leadName }}</td><td data-label="Client e-mail">{{ l.client ? statusName(l.client) : '—' }}</td>
               <td data-label="Agent">{{ l.agentName }}{{ l.agent ? ': ' + statusName(l.agent) : '' }}</td></tr></tbody>
           </table>
         </div>
-        <h4 class="mb-1 mt-2">Printed documents</h4>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">The offer letter, reservation letter and sale agreement are printed from the deal or the unit sale. Write your own terms below, one line per clause, or leave a box empty to use the standard wording. Have your lawyer check the wording you use.</div>
-        <label class="form-label" for="ot">Offer letter terms</label>
+        <h4 class="mb-1 mt-2">{{ 'Printed documents' | translate }}</h4>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'The offer letter, reservation letter and sale agreement are printed from the deal or the unit sale. Write your own terms below, one line per clause, or leave a box empty to use the standard wording. Have your lawyer check the wording you use.' | translate }}</div>
+        <label class="form-label" for="ot">{{ 'Offer letter terms' | translate }}</label>
         <textarea id="ot" class="form-control mb-1" name="ot" rows="4" maxlength="3000" [(ngModel)]="offerTerms" placeholder="Empty = standard wording"></textarea>
-        <label class="form-label" for="rt">Reservation letter terms</label>
+        <label class="form-label" for="rt">{{ 'Reservation letter terms' | translate }}</label>
         <textarea id="rt" class="form-control mb-1" name="rt" rows="4" maxlength="3000" [(ngModel)]="reservationTerms" placeholder="Empty = standard wording"></textarea>
-        <label class="form-label" for="at">Sale agreement terms</label>
+        <label class="form-label" for="at">{{ 'Sale agreement terms' | translate }}</label>
         <textarea id="at" class="form-control mb-2" name="at" rows="5" maxlength="3000" [(ngModel)]="agreementTerms" placeholder="Empty = standard wording"></textarea>
-        <h4 class="mb-1 mt-2">Sales and commission</h4>
+        <h4 class="mb-1 mt-2">{{ 'Sales and commission' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2"><label class="form-label">Usual commission on a sale (%)</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="100" step="0.01" name="dc" [(ngModel)]="commissionPercent" />
-            <div class="text-muted" style="font-size:0.85rem;">New deals start with this; change it on a deal when it differs. 0 means none.</div></div>
-          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">Expense account for commission paid out</label>
-            <select class="form-select" name="ca" [(ngModel)]="commissionAccountId"><option [ngValue]="null">— choose when posting —</option><option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} · {{ a.name }}</option></select>
-            <div class="text-muted" style="font-size:0.85rem;">Commission shares are posted to the accounts as expenses (they need the Expenses module).</div></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Usual commission on a sale (%)' | translate }}</label><input class="form-control" style="max-width:9rem;" type="number" min="0" max="100" step="0.01" name="dc" [(ngModel)]="commissionPercent" />
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'New deals start with this; change it on a deal when it differs. 0 means none.' | translate }}</div></div>
+          <div class="form-group mb-2" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Expense account for commission paid out' | translate }}</label>
+            <select class="form-select" name="ca" [(ngModel)]="commissionAccountId"><option [ngValue]="null">{{ '— choose when posting —' | translate }}</option><option *ngFor="let a of accounts" [ngValue]="a.id">{{ a.code }} · {{ a.name }}</option></select>
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Commission shares are posted to the accounts as expenses (they need the Expenses module).' | translate }}</div></div>
         </div>
-        <h4 class="mb-1 mt-2">Public website</h4>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="we" [(ngModel)]="websiteEnabled" /> Open the public listings website</label>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Anyone can then see the properties you tick "Show on the public website" (and that are Available) at <strong>/listings</strong> on this site, and send an enquiry that becomes a lead. Switch it off to close the whole site at once.</div>
+        <h4 class="mb-1 mt-2">{{ 'Public website' | translate }}</h4>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="we" [(ngModel)]="websiteEnabled" /> {{ 'Open the public listings website' | translate }}</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Anyone can then see the properties you tick "Show on the public website" (and that are Available) at' | translate }} <strong>{{ '/listings' | translate }}</strong> {{ 'on this site, and send an enquiry that becomes a lead. Switch it off to close the whole site at once.' | translate }}</div>
         <ng-container *ngIf="websiteEnabled">
-          <div class="form-group mb-2"><label class="form-label">Heading</label><input class="form-control" name="wt" [(ngModel)]="websiteTitle" maxlength="120" placeholder="e.g. Homes and land for sale and rent" /></div>
-          <div class="form-group mb-2"><label class="form-label">Introduction</label><textarea class="form-control" rows="3" name="wi" [(ngModel)]="websiteIntro" maxlength="1000"></textarea></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Heading' | translate }}</label><input class="form-control" name="wt" [(ngModel)]="websiteTitle" maxlength="120" [placeholder]="'e.g. Homes and land for sale and rent' | translate" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Introduction' | translate }}</label><textarea class="form-control" rows="3" name="wi" [(ngModel)]="websiteIntro" maxlength="1000"></textarea></div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">Phone shown to visitors</label><input class="form-control" name="wp" [(ngModel)]="websitePhone" maxlength="60" /></div>
-            <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">E-mail shown to visitors</label><input class="form-control" type="email" name="wm" [(ngModel)]="websiteEmail" /></div>
+            <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Phone shown to visitors' | translate }}</label><input class="form-control" name="wp" [(ngModel)]="websitePhone" maxlength="60" /></div>
+            <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'E-mail shown to visitors' | translate }}</label><input class="form-control" type="email" name="wm" [(ngModel)]="websiteEmail" /></div>
           </div>
-          <div class="form-group mb-3"><label class="form-label">Most enquiries one phone number or e-mail may send in a day</label><input class="form-control" style="max-width:8rem;" type="number" min="1" max="50" name="wl" [(ngModel)]="enquiriesPerDay" /></div>
+          <div class="form-group mb-3"><label class="form-label">{{ 'Most enquiries one phone number or e-mail may send in a day' | translate }}</label><input class="form-control" style="max-width:8rem;" type="number" min="1" max="50" name="wl" [(ngModel)]="enquiriesPerDay" /></div>
         </ng-container>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save settings' }}</button></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? ('Saving…' | translate) : ('Save settings' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

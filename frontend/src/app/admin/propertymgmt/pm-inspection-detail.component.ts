@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,70 +14,70 @@ interface RoomGroup { room: string; items: InspectionItem[]; }
 @Component({
   selector: 'app-pm-inspection-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PmDocumentsPanelComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PmDocumentsPanelComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div *ngIf="!ins && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!ins && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
       <ng-container *ngIf="ins">
         <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
           <div>
-            <a [routerLink]="['/admin/propertymgmt/leases', ins.leaseId]" style="font-size:0.85rem;">← Lease {{ ins.leaseCode }}</a>
-            <h3>{{ kindName(ins.kind) }} inspection {{ ins.code }}
-              <span class="badge" [ngClass]="ins.status === 'SIGNED_OFF' ? 'badge-success' : 'badge-warning'" style="font-size:0.8rem; vertical-align:middle;">{{ ins.status === 'SIGNED_OFF' ? 'Signed off' : 'In progress' }}</span></h3>
-            <div class="text-muted">{{ ins.propertyName }} · unit {{ ins.unitNo }} · <a [routerLink]="['/admin/propertymgmt/tenants', ins.tenantId]">{{ ins.tenantName }}</a></div>
+            <a [routerLink]="['/admin/propertymgmt/leases', ins.leaseId]" style="font-size:0.85rem;">{{ '← Lease {p0}' | translate: { p0: (ins.leaseCode) } }}</a>
+            <h3>{{ '{p0} inspection {p1}' | translate: { p0: (kindName(ins.kind)), p1: (ins.code) } }}
+              <span class="badge" [ngClass]="ins.status === 'SIGNED_OFF' ? 'badge-success' : 'badge-warning'" style="font-size:0.8rem; vertical-align:middle;">{{ ins.status === 'SIGNED_OFF' ? ('Signed off' | translate) : ('In progress' | translate) }}</span></h3>
+            <div class="text-muted">{{ '{p0} · unit {p1} ·' | translate: { p0: (ins.propertyName), p1: (ins.unitNo) } }} <a [routerLink]="['/admin/propertymgmt/tenants', ins.tenantId]">{{ ins.tenantName }}</a></div>
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <button class="btn btn-outline-secondary" type="button" (click)="print('pdf')">Print (PDF)</button>
-            <button class="btn btn-outline-secondary" type="button" (click)="print('xlsx')">Excel</button>
-            <button class="btn btn-outline-secondary" type="button" *ngIf="ins.canManage && ins.status === 'SIGNED_OFF'" [disabled]="busy" (click)="reopen()">Reopen</button>
-            <button class="btn btn-outline-danger" type="button" *ngIf="ins.canManage && ins.status === 'DRAFT'" [disabled]="busy" (click)="remove()">Delete</button>
+            <button class="btn btn-outline-secondary" type="button" (click)="print('pdf')">{{ 'Print (PDF)' | translate }}</button>
+            <button class="btn btn-outline-secondary" type="button" (click)="print('xlsx')">{{ 'Excel' | translate }}</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="ins.canManage && ins.status === 'SIGNED_OFF'" [disabled]="busy" (click)="reopen()">{{ 'Reopen' | translate }}</button>
+            <button class="btn btn-outline-danger" type="button" *ngIf="ins.canManage && ins.status === 'DRAFT'" [disabled]="busy" (click)="remove()">{{ 'Delete' | translate }}</button>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;">
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">Date</label>
+            <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">{{ 'Date' | translate }}</label>
               <input class="form-control" type="date" name="dt" [(ngModel)]="h.date" [max]="today" [disabled]="!editable" /></div>
-            <div class="form-group mb-2" style="flex:1; min-width:11rem;"><label class="form-label">Inspector</label><input class="form-control" name="in" [(ngModel)]="h.inspectorName" maxlength="200" [disabled]="!editable" /></div>
-            <div class="form-group mb-2" style="min-width:9rem;"><label class="form-label">Electricity meter</label><input class="form-control" name="el" [(ngModel)]="h.electricityReading" maxlength="40" [disabled]="!editable" /></div>
-            <div class="form-group mb-2" style="min-width:9rem;"><label class="form-label">Water meter</label><input class="form-control" name="wa" [(ngModel)]="h.waterReading" maxlength="40" [disabled]="!editable" /></div>
-            <div class="form-group mb-2" style="min-width:7rem;"><label class="form-label">Keys handed</label><input class="form-control" type="number" min="0" max="99" name="ky" [(ngModel)]="h.keysHanded" [disabled]="!editable" /></div>
+            <div class="form-group mb-2" style="flex:1; min-width:11rem;"><label class="form-label">{{ 'Inspector' | translate }}</label><input class="form-control" name="in" [(ngModel)]="h.inspectorName" maxlength="200" [disabled]="!editable" /></div>
+            <div class="form-group mb-2" style="min-width:9rem;"><label class="form-label">{{ 'Electricity meter' | translate }}</label><input class="form-control" name="el" [(ngModel)]="h.electricityReading" maxlength="40" [disabled]="!editable" /></div>
+            <div class="form-group mb-2" style="min-width:9rem;"><label class="form-label">{{ 'Water meter' | translate }}</label><input class="form-control" name="wa" [(ngModel)]="h.waterReading" maxlength="40" [disabled]="!editable" /></div>
+            <div class="form-group mb-2" style="min-width:7rem;"><label class="form-label">{{ 'Keys handed' | translate }}</label><input class="form-control" type="number" min="0" max="99" name="ky" [(ngModel)]="h.keysHanded" [disabled]="!editable" /></div>
           </div>
-          <div class="form-group mb-2"><label class="form-label">Notes</label><textarea class="form-control" rows="2" name="nt" [(ngModel)]="h.notes" maxlength="2000" [disabled]="!editable"></textarea></div>
-          <div *ngIf="editable"><button class="btn btn-sm btn-outline-primary" type="button" [disabled]="busy" (click)="saveHeader()">Save these details</button></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Notes' | translate }}</label><textarea class="form-control" rows="2" name="nt" [(ngModel)]="h.notes" maxlength="2000" [disabled]="!editable"></textarea></div>
+          <div *ngIf="editable"><button class="btn btn-sm btn-outline-primary" type="button" [disabled]="busy" (click)="saveHeader()">{{ 'Save these details' | translate }}</button></div>
           <div class="text-muted" style="font-size:0.85rem;" *ngIf="ins.status === 'SIGNED_OFF'">
-            Signed off on {{ ins.signedOffOn | date: 'd MMM y' }} by {{ ins.signedOffByName }}.
-            <span *ngIf="ins.tenantAcknowledged">Acknowledged for the tenant by {{ ins.tenantSignedName }}.</span>
-            <span *ngIf="!ins.tenantAcknowledged">Not acknowledged by the tenant.</span>
+            {{ 'Signed off on {p0} by {p1}.' | translate: { p0: (ins.signedOffOn | date: 'd MMM y'), p1: (ins.signedOffByName) } }}
+            <span *ngIf="ins.tenantAcknowledged">{{ 'Acknowledged for the tenant by {p0}.' | translate: { p0: (ins.tenantSignedName) } }}</span>
+            <span *ngIf="!ins.tenantAcknowledged">{{ 'Not acknowledged by the tenant.' | translate }}</span>
           </div>
         </div>
 
         <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
-          <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">Looked at</div><div class="kpi">{{ ins.assessed }} / {{ ins.items.length }}</div></div>
-          <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">Problems</div><div class="kpi" [style.color]="ins.problems ? '#b91c1c' : ''">{{ ins.problems }}</div></div>
-          <div class="card" style="padding:0.7rem 1rem;" *ngIf="ins.kind === 'MOVE_OUT'"><div class="text-muted kpi-label">Worse than at move-in</div><div class="kpi" [style.color]="ins.worse ? '#b91c1c' : ''">{{ ins.worse }}</div></div>
-          <div class="card" style="padding:0.7rem 1rem;" *ngIf="ins.repairCost"><div class="text-muted kpi-label">Repairs</div><div class="kpi">{{ ins.repairCost | number: '1.0-0' }}</div></div>
+          <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">{{ 'Looked at' | translate }}</div><div class="kpi">{{ ins.assessed }} / {{ ins.items.length }}</div></div>
+          <div class="card" style="padding:0.7rem 1rem;"><div class="text-muted kpi-label">{{ 'Problems' | translate }}</div><div class="kpi" [style.color]="ins.problems ? '#b91c1c' : ''">{{ ins.problems }}</div></div>
+          <div class="card" style="padding:0.7rem 1rem;" *ngIf="ins.kind === 'MOVE_OUT'"><div class="text-muted kpi-label">{{ 'Worse than at move-in' | translate }}</div><div class="kpi" [style.color]="ins.worse ? '#b91c1c' : ''">{{ ins.worse }}</div></div>
+          <div class="card" style="padding:0.7rem 1rem;" *ngIf="ins.repairCost"><div class="text-muted kpi-label">{{ 'Repairs' | translate }}</div><div class="kpi">{{ ins.repairCost | number: '1.0-0' }}</div></div>
           <div style="align-self:center;" *ngIf="editable && untouched">
-            <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="busy" (click)="allGood()">Mark the {{ untouched }} not yet looked at as Good</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="busy" (click)="allGood()">{{ 'Mark the {p0} not yet looked at as Good' | translate: { p0: (untouched) } }}</button>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngFor="let g of groups; trackBy: trackRoom">
           <h4 class="mb-2">{{ g.room }}</h4>
           <table class="stack table-sm">
-            <thead><tr><th>Item</th><th *ngIf="ins.kind === 'MOVE_OUT'">At move-in</th><th>Condition</th><th>Notes</th><th class="text-end" *ngIf="ins.kind !== 'MOVE_IN'">Repair cost</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Item' | translate }}</th><th *ngIf="ins.kind === 'MOVE_OUT'">{{ 'At move-in' | translate }}</th><th>{{ 'Condition' | translate }}</th><th>{{ 'Notes' | translate }}</th><th class="text-end" *ngIf="ins.kind !== 'MOVE_IN'">{{ 'Repair cost' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let it of g.items; trackBy: trackItem">
                 <td data-label="Item">{{ it.item }}</td>
                 <td data-label="At move-in" *ngIf="ins.kind === 'MOVE_OUT'"><span class="badge" [ngClass]="badge(it.baseline)">{{ label(it.baseline) }}</span></td>
                 <td data-label="Condition">
                   <select class="form-select" style="min-width:8.5rem;" *ngIf="editable" [name]="'c' + it.id" (change)="setCondition(it, $any($event.target).value)">
-                    <option value="" [selected]="!it.condition">Not looked at</option>
+                    <option value="" [selected]="!it.condition">{{ 'Not looked at' | translate }}</option>
                     <option *ngFor="let c of conditions" [value]="c.value" [selected]="it.condition === c.value">{{ c.label }}</option>
                   </select>
                   <span *ngIf="!editable" class="badge" [ngClass]="badge(it.condition)">{{ label(it.condition) }}</span>
-                  <span class="badge badge-danger" *ngIf="it.worse" style="margin-left:0.3rem;">Worse</span>
+                  <span class="badge badge-danger" *ngIf="it.worse" style="margin-left:0.3rem;">{{ 'Worse' | translate }}</span>
                 </td>
                 <td data-label="Notes">
                   <input class="form-control" *ngIf="editable" [name]="'n' + it.id" [value]="it.notes || ''" maxlength="500" (change)="setNotes(it, $any($event.target).value)" />
@@ -86,31 +87,31 @@ interface RoomGroup { room: string; items: InspectionItem[]; }
                   <input class="form-control text-end" style="width:7.5rem; display:inline-block;" type="number" min="0" step="0.01" *ngIf="editable" [name]="'r' + it.id" [value]="it.repairCost ?? ''" (change)="setCost(it, $any($event.target).value)" />
                   <span *ngIf="!editable">{{ it.repairCost ? (it.repairCost | number: '1.0-0') : '—' }}</span>
                 </td>
-                <td style="text-align:right;" data-label=""><button class="btn btn-sm btn-outline-danger" type="button" *ngIf="editable" [disabled]="busy" (click)="removeItem(it)">Remove</button></td>
+                <td style="text-align:right;" data-label=""><button class="btn btn-sm btn-outline-danger" type="button" *ngIf="editable" [disabled]="busy" (click)="removeItem(it)">{{ 'Remove' | translate }}</button></td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="editable">
-          <h4 class="mb-2">Add an item</h4>
+          <h4 class="mb-2">{{ 'Add an item' | translate }}</h4>
           <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-            <div class="form-group" style="min-width:12rem;"><label class="form-label">Room</label>
+            <div class="form-group" style="min-width:12rem;"><label class="form-label">{{ 'Room' | translate }}</label>
               <input class="form-control" name="ar" list="rooms" [(ngModel)]="add.room" maxlength="80" /><datalist id="rooms"><option *ngFor="let g of groups" [value]="g.room"></option></datalist></div>
-            <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">Item</label><input class="form-control" name="ai" [(ngModel)]="add.item" maxlength="120" /></div>
-            <button class="btn btn-outline-primary" type="button" [disabled]="busy || !add.room.trim() || !add.item.trim()" (click)="addItem()">Add</button>
+            <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'Item' | translate }}</label><input class="form-control" name="ai" [(ngModel)]="add.item" maxlength="120" /></div>
+            <button class="btn btn-outline-primary" type="button" [disabled]="busy || !add.room.trim() || !add.item.trim()" (click)="addItem()">{{ 'Add' | translate }}</button>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="editable">
-          <h4 class="mb-2">Sign off</h4>
-          <p class="text-muted" style="font-size:0.9rem;">Signing off locks the list. Print it first if the tenant signs on paper, then tick below.</p>
-          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ack" [(ngModel)]="sign.ack" /> The tenant has seen this list and agrees with it</label>
-          <div class="form-group mb-2 mt-2" *ngIf="sign.ack" style="max-width:24rem;"><label class="form-label">Name of the person who signed for the tenant *</label><input class="form-control" name="sn" [(ngModel)]="sign.name" maxlength="200" /></div>
-          <button class="btn btn-primary" type="button" [disabled]="busy" (click)="signOff()">Sign off</button>
+          <h4 class="mb-2">{{ 'Sign off' | translate }}</h4>
+          <p class="text-muted" style="font-size:0.9rem;">{{ 'Signing off locks the list. Print it first if the tenant signs on paper, then tick below.' | translate }}</p>
+          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ack" [(ngModel)]="sign.ack" /> {{ 'The tenant has seen this list and agrees with it' | translate }}</label>
+          <div class="form-group mb-2 mt-2" *ngIf="sign.ack" style="max-width:24rem;"><label class="form-label">{{ 'Name of the person who signed for the tenant *' | translate }}</label><input class="form-control" name="sn" [(ngModel)]="sign.name" maxlength="200" /></div>
+          <button class="btn btn-primary" type="button" [disabled]="busy" (click)="signOff()">{{ 'Sign off' | translate }}</button>
         </div>
 
-        <app-pm-documents-panel subjectType="INSPECTION" [subjectId]="ins.id" [canManage]="ins.canManage" defaultCategory="PHOTO" title="Photos and papers"></app-pm-documents-panel>
+        <app-pm-documents-panel subjectType="INSPECTION" [subjectId]="ins.id" [canManage]="ins.canManage" defaultCategory="PHOTO" [title]="'Photos and papers' | translate"></app-pm-documents-panel>
       </ng-container>
     </app-shell>
   `,

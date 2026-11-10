@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -14,45 +15,45 @@ const txt = (v: string | null | undefined): string | undefined => { const t = (v
 @Component({
   selector: 'app-owner-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, PmExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, PmExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Owners</h3>
-        <button class="btn btn-primary" type="button" (click)="adding = !adding">{{ adding ? 'Close' : '+ Add an owner' }}</button>
+        <h3>{{ 'Owners' | translate }}</h3>
+        <button class="btn btn-primary" type="button" (click)="adding = !adding">{{ adding ? ('Close' | translate) : ('+ Add an owner' | translate) }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form *ngIf="adding" class="card mb-3" style="padding:1rem; max-width:46rem;" (ngSubmit)="create()">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">Name *</label><input class="form-control" name="n" [(ngModel)]="f.name" maxlength="200" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">Phone</label><input class="form-control" name="p" [(ngModel)]="f.phone" maxlength="40" /></div>
-          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">E-mail</label><input class="form-control" type="email" name="e" [(ngModel)]="f.email" /></div>
-          <div class="form-group mb-2" style="width:10rem;"><label class="form-label">Management fee %</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="fee" [(ngModel)]="f.fee" placeholder="usual" /></div>
+          <div class="form-group mb-2" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Name *' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" maxlength="200" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:10rem;"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="p" [(ngModel)]="f.phone" maxlength="40" /></div>
+          <div class="form-group mb-2" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'E-mail' | translate }}</label><input class="form-control" type="email" name="e" [(ngModel)]="f.email" /></div>
+          <div class="form-group mb-2" style="width:10rem;"><label class="form-label">{{ 'Management fee %' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="fee" [(ngModel)]="f.fee" [placeholder]="'usual' | translate" /></div>
         </div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save owner' }}</button>
-          <span class="text-muted" style="margin-left:0.75rem; font-size:0.85rem;">More details (ID, bank account for payouts) can be added on the owner's page.</span></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? ('Saving…' | translate) : ('Save owner' | translate) }}</button>
+          <span class="text-muted" style="margin-left:0.75rem; font-size:0.85rem;">{{ 'More details (ID, bank account for payouts) can be added on the owner\\'s page.' | translate }}</span></div>
       </form>
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
-        <input class="form-control" style="width:16rem;" placeholder="Search name, code, phone, e-mail" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ao" [(ngModel)]="activeOnly" (ngModelChange)="load()" /> Active only</label>
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <input class="form-control" style="width:16rem;" [placeholder]="'Search name, code, phone, e-mail' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ao" [(ngModel)]="activeOnly" (ngModelChange)="load()" /> {{ 'Active only' | translate }}</label>
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
         <app-pm-export kind="owners" [filters]="{ q: q.trim(), activeOnly: activeOnly }"></app-pm-export>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Owner</th><th>Contact</th><th class="text-end">Properties</th><th class="text-end">Units</th><th class="text-end">Occupied</th><th class="text-end">Rent / month</th></tr></thead>
+        <thead><tr><th>{{ 'Owner' | translate }}</th><th>{{ 'Contact' | translate }}</th><th class="text-end">{{ 'Properties' | translate }}</th><th class="text-end">{{ 'Units' | translate }}</th><th class="text-end">{{ 'Occupied' | translate }}</th><th class="text-end">{{ 'Rent / month' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let o of list">
             <td data-label="Owner"><a [routerLink]="['/admin/propertymgmt/owners', o.id]"><strong>{{ o.name }}</strong></a> <span class="text-muted" style="font-size:0.8rem;">{{ o.code }}</span>
-              <span class="badge badge-secondary" *ngIf="!o.active" style="margin-left:0.3rem;">Inactive</span></td>
+              <span class="badge badge-secondary" *ngIf="!o.active" style="margin-left:0.3rem;">{{ 'Inactive' | translate }}</span></td>
             <td data-label="Contact">{{ o.phone || '—' }}<div class="text-muted" style="font-size:0.8rem;">{{ o.email }}</div></td>
             <td class="text-end" data-label="Properties">{{ o.properties }}</td><td class="text-end" data-label="Units">{{ o.units }}</td><td class="text-end" data-label="Occupied">{{ o.occupied }}</td><td class="text-end" data-label="Rent / month">{{ o.monthlyRent | number: '1.0-0' }}</td>
           </tr>
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No owners yet.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No owners yet.' | translate }}</p>
     </app-shell>
   `,
 })

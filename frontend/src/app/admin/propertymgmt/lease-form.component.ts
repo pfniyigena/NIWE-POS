@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,46 +14,46 @@ const MONTHS: Record<RentFrequency, number> = { MONTHLY: 1, QUARTERLY: 3, HALF_Y
 @Component({
   selector: 'app-lease-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
         <h3>{{ id ? 'Change lease ' + (lease?.code ?? '') : 'Draft a lease' }}</h3>
-        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/propertymgmt/leases', id] : ['/admin/propertymgmt/leases']">Cancel</a>
+        <a class="btn btn-outline-secondary" [routerLink]="id ? ['/admin/propertymgmt/leases', id] : ['/admin/propertymgmt/leases']">{{ 'Cancel' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-warning" *ngIf="locked">This lease is signed. The unit, tenant, dates, rent and deposit are fixed: renew it, or terminate it and draft a new one. You can still change the due day, yearly increase, notice period and terms.</div>
+      <div class="alert alert-warning" *ngIf="locked">{{ 'This lease is signed. The unit, tenant, dates, rent and deposit are fixed: renew it, or terminate it and draft a new one. You can still change the due day, yearly increase, notice period and terms.' | translate }}</div>
       <form class="card" style="padding:1rem; max-width:46rem;" (ngSubmit)="save()">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">Unit *</label>
+          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">{{ 'Unit *' | translate }}</label>
             <select class="form-select" name="u" [(ngModel)]="f.unitId" (ngModelChange)="unitPicked()" [disabled]="locked">
-              <option [ngValue]="null">— choose —</option>
+              <option [ngValue]="null">{{ '— choose —' | translate }}</option>
               <option *ngFor="let u of units" [ngValue]="u.id">{{ u.propertyName }} · {{ u.unitNo }}{{ u.occupancy === 'OCCUPIED' ? ' (occupied)' : u.occupancy === 'OFF_MARKET' ? ' (off the market)' : '' }}</option>
             </select></div>
-          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">Tenant *</label>
-            <select class="form-select" name="t" [(ngModel)]="f.tenantId" [disabled]="locked"><option [ngValue]="null">— choose —</option><option *ngFor="let t of tenants" [ngValue]="t.id">{{ t.name }}{{ t.phone ? ' · ' + t.phone : '' }}</option></select>
-            <div class="text-muted" style="font-size:0.85rem;" *ngIf="!locked">Not there? <a routerLink="/admin/propertymgmt/tenants">Add the tenant first</a>.</div></div>
+          <div class="form-group mb-2" style="flex:1; min-width:16rem;"><label class="form-label">{{ 'Tenant *' | translate }}</label>
+            <select class="form-select" name="t" [(ngModel)]="f.tenantId" [disabled]="locked"><option [ngValue]="null">{{ '— choose —' | translate }}</option><option *ngFor="let t of tenants" [ngValue]="t.id">{{ t.name }}{{ t.phone ? ' · ' + t.phone : '' }}</option></select>
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="!locked">{{ 'Not there?' | translate }} <a routerLink="/admin/propertymgmt/tenants">{{ 'Add the tenant first' | translate }}</a>.</div></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Starts *</label><input class="form-control" type="date" name="s" [(ngModel)]="f.startDate" [disabled]="locked" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Ends *</label><input class="form-control" type="date" name="e" [(ngModel)]="f.endDate" [disabled]="locked" /></div>
-          <div class="form-group mb-2" style="align-self:flex-end;" *ngIf="!locked"><button class="btn btn-sm btn-outline-secondary" type="button" (click)="oneYear()" title="End one year after the start date, less a day">1 year</button></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Starts *' | translate }}</label><input class="form-control" type="date" name="s" [(ngModel)]="f.startDate" [disabled]="locked" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Ends *' | translate }}</label><input class="form-control" type="date" name="e" [(ngModel)]="f.endDate" [disabled]="locked" /></div>
+          <div class="form-group mb-2" style="align-self:flex-end;" *ngIf="!locked"><button class="btn btn-sm btn-outline-secondary" type="button" (click)="oneYear()" [title]="'End one year after the start date, less a day' | translate">{{ '1 year' | translate }}</button></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Rent for each payment *</label><input class="form-control" type="number" min="0" step="0.01" name="r" [(ngModel)]="f.rent" [disabled]="locked" />
-            <div class="text-muted" style="font-size:0.85rem;" *ngIf="perMonth() != null">{{ perMonth() | number: '1.0-0' }} a month</div></div>
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Paid</label>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Rent for each payment *' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="r" [(ngModel)]="f.rent" [disabled]="locked" />
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="perMonth() != null">{{ '{p0} a month' | translate: { p0: (perMonth() | number: '1.0-0') } }}</div></div>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Paid' | translate }}</label>
             <select class="form-select" name="fr" [(ngModel)]="f.frequency" [disabled]="locked"><option *ngFor="let q of freqs" [ngValue]="q.value">{{ q.label }}</option></select></div>
-          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">Due on day</label><input class="form-control" type="number" min="1" max="28" name="dd" [(ngModel)]="f.dueDay" /></div>
+          <div class="form-group mb-2" style="width:9rem;"><label class="form-label">{{ 'Due on day' | translate }}</label><input class="form-control" type="number" min="1" max="28" name="dd" [(ngModel)]="f.dueDay" /></div>
         </div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">Deposit</label><input class="form-control" type="number" min="0" name="dp" [(ngModel)]="f.deposit" [disabled]="locked" placeholder="none" /></div>
-          <div class="form-group mb-2" style="width:11rem;"><label class="form-label">Yearly increase %</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="es" [(ngModel)]="f.escalation" placeholder="none" /></div>
-          <div class="form-group mb-2" style="width:11rem;"><label class="form-label">Notice (days)</label><input class="form-control" type="number" min="0" max="365" name="nd" [(ngModel)]="f.noticeDays" /></div>
+          <div class="form-group mb-2" style="min-width:12rem;"><label class="form-label">{{ 'Deposit' | translate }}</label><input class="form-control" type="number" min="0" name="dp" [(ngModel)]="f.deposit" [disabled]="locked" [placeholder]="'none' | translate" /></div>
+          <div class="form-group mb-2" style="width:11rem;"><label class="form-label">{{ 'Yearly increase %' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" name="es" [(ngModel)]="f.escalation" [placeholder]="'none' | translate" /></div>
+          <div class="form-group mb-2" style="width:11rem;"><label class="form-label">{{ 'Notice (days)' | translate }}</label><input class="form-control" type="number" min="0" max="365" name="nd" [(ngModel)]="f.noticeDays" /></div>
         </div>
-        <div class="form-group mb-3"><label class="form-label">Terms / notes</label><textarea class="form-control" rows="4" name="tm" [(ngModel)]="f.terms" maxlength="2000"></textarea></div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? 'Save changes' : 'Save draft' }}</button>
-          <span class="text-muted" style="margin-left:0.75rem; font-size:0.85rem;" *ngIf="!id">A draft does not let the unit. Sign it from the lease page.</span></div>
+        <div class="form-group mb-3"><label class="form-label">{{ 'Terms / notes' | translate }}</label><textarea class="form-control" rows="4" name="tm" [(ngModel)]="f.terms" maxlength="2000"></textarea></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : id ? ('Save changes' | translate) : ('Save draft' | translate) }}</button>
+          <span class="text-muted" style="margin-left:0.75rem; font-size:0.85rem;" *ngIf="!id">{{ 'A draft does not let the unit. Sign it from the lease page.' | translate }}</span></div>
       </form>
     </app-shell>
   `,

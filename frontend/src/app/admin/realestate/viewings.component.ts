@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,7 +14,7 @@ interface Day { date: string; label: string; today: boolean; items: ViewingDto[]
 @Component({
   selector: 'app-re-viewings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ViewingFormComponent, ReExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ViewingFormComponent, ReExportComponent],
   styles: [`
     .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem; align-items: start; }
     .week-day { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 0.4rem; min-height: 8rem; }
@@ -27,8 +28,8 @@ interface Day { date: string; label: string; today: boolean; items: ViewingDto[]
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Viewings</h3>
-        <button class="btn btn-primary" type="button" (click)="booking = !booking">+ Book viewing</button>
+        <h3>{{ 'Viewings' | translate }}</h3>
+        <button class="btn btn-primary" type="button" (click)="booking = !booking">{{ '+ Book viewing' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
@@ -37,34 +38,34 @@ interface Day { date: string; label: string; today: boolean; items: ViewingDto[]
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <span style="display:inline-flex; gap:0.2rem;">
-          <button class="btn btn-sm view-list" type="button" [class.btn-primary]="view === 'list'" [class.btn-outline-secondary]="view !== 'list'" (click)="setView('list')">List</button>
-          <button class="btn btn-sm view-week" type="button" [class.btn-primary]="view === 'week'" [class.btn-outline-secondary]="view !== 'week'" (click)="setView('week')">Week</button>
+          <button class="btn btn-sm view-list" type="button" [class.btn-primary]="view === 'list'" [class.btn-outline-secondary]="view !== 'list'" (click)="setView('list')">{{ 'List' | translate }}</button>
+          <button class="btn btn-sm view-week" type="button" [class.btn-primary]="view === 'week'" [class.btn-outline-secondary]="view !== 'week'" (click)="setView('week')">{{ 'Week' | translate }}</button>
         </span>
         <ng-container *ngIf="view === 'list'">
-          <label class="text-muted">From</label><input class="form-control" style="width:10.5rem;" type="date" name="from" [(ngModel)]="from" (change)="load()" />
-          <label class="text-muted">to</label><input class="form-control" style="width:10.5rem;" type="date" name="to" [(ngModel)]="to" (change)="load()" />
+          <label class="text-muted">{{ 'From' | translate }}</label><input class="form-control" style="width:10.5rem;" type="date" name="from" [(ngModel)]="from" (change)="load()" />
+          <label class="text-muted">{{ 'to' | translate }}</label><input class="form-control" style="width:10.5rem;" type="date" name="to" [(ngModel)]="to" (change)="load()" />
         </ng-container>
         <ng-container *ngIf="view === 'week'">
-          <button class="btn btn-sm btn-outline-secondary week-prev" type="button" (click)="shiftWeek(-1)">‹ Previous</button>
-          <button class="btn btn-sm btn-outline-secondary week-today" type="button" (click)="thisWeek()">This week</button>
-          <button class="btn btn-sm btn-outline-secondary week-next" type="button" (click)="shiftWeek(1)">Next ›</button>
+          <button class="btn btn-sm btn-outline-secondary week-prev" type="button" (click)="shiftWeek(-1)">{{ '‹ Previous' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary week-today" type="button" (click)="thisWeek()">{{ 'This week' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary week-next" type="button" (click)="shiftWeek(1)">{{ 'Next ›' | translate }}</button>
           <strong class="week-label">{{ weekLabel() }}</strong>
         </ng-container>
-        <select class="form-select" style="width:auto;" name="ag" [(ngModel)]="agentId" (ngModelChange)="load()"><option [ngValue]="null">Any agent</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select>
+        <select class="form-select" style="width:auto;" name="ag" [(ngModel)]="agentId" (ngModelChange)="load()"><option [ngValue]="null">{{ 'Any agent' | translate }}</option><option *ngFor="let a of agents" [ngValue]="a.id">{{ a.name }}</option></select>
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
-          <option value="">Any status</option><option value="SCHEDULED">Scheduled</option><option value="DONE">Done</option><option value="CANCELLED">Cancelled</option><option value="NO_SHOW">No-show</option>
+          <option value="">{{ 'Any status' | translate }}</option><option value="SCHEDULED">{{ 'Scheduled' | translate }}</option><option value="DONE">{{ 'Done' | translate }}</option><option value="CANCELLED">{{ 'Cancelled' | translate }}</option><option value="NO_SHOW">{{ 'No-show' | translate }}</option>
         </select>
         <app-re-export kind="viewings" [filters]="{ from: from, to: to, agentId: agentId, status: status }"></app-re-export>
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="outcome">
         <div class="alert alert-danger" *ngIf="outcomeError">{{ outcomeError }}</div>
-        <strong>Outcome of the viewing of {{ outcome.propertyCode }} on {{ outcome.startAt | date: 'd MMM, HH:mm' }}</strong>
+        <strong>{{ 'Outcome of the viewing of {p0} on {p1}' | translate: { p0: (outcome.propertyCode), p1: (outcome.startAt | date: 'd MMM, HH:mm') } }}</strong>
         <div class="flex gap-2 mt-1" style="flex-wrap:wrap;">
-          <select class="form-select" style="width:auto;" name="os" [(ngModel)]="outcomeStatus"><option value="DONE">Happened</option><option value="NO_SHOW">No-show</option><option value="CANCELLED">Cancelled</option></select>
-          <input class="form-control" style="flex:1; min-width:12rem;" name="of" [(ngModel)]="outcomeFeedback" maxlength="2000" placeholder="Feedback (optional)" />
-          <button class="btn btn-sm btn-primary" type="button" (click)="saveOutcome()" [disabled]="busy">Save</button>
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="outcome = null">Cancel</button>
+          <select class="form-select" style="width:auto;" name="os" [(ngModel)]="outcomeStatus"><option value="DONE">{{ 'Happened' | translate }}</option><option value="NO_SHOW">{{ 'No-show' | translate }}</option><option value="CANCELLED">{{ 'Cancelled' | translate }}</option></select>
+          <input class="form-control" style="flex:1; min-width:12rem;" name="of" [(ngModel)]="outcomeFeedback" maxlength="2000" [placeholder]="'Feedback (optional)' | translate" />
+          <button class="btn btn-sm btn-primary" type="button" (click)="saveOutcome()" [disabled]="busy">{{ 'Save' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="outcome = null">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
@@ -77,7 +78,7 @@ interface Day { date: string; label: string; today: boolean; items: ViewingDto[]
             <div>{{ v.leadName }}</div>
             <div class="text-muted">{{ v.agentName || '—' }}</div>
             <span class="badge badge-secondary" *ngIf="v.status !== 'SCHEDULED'">{{ statusName(v.status) }}</span>
-            <span class="badge badge-success" *ngIf="v.clientRemindedAt" title="The client was e-mailed a reminder">Reminded</span>
+            <span class="badge badge-success" *ngIf="v.clientRemindedAt" [title]="'The client was e-mailed a reminder' | translate">{{ 'Reminded' | translate }}</span>
           </div>
           <div class="text-muted" style="font-size:0.78rem;" *ngIf="!d.items.length">—</div>
         </div>
@@ -87,15 +88,15 @@ interface Day { date: string; label: string; today: boolean; items: ViewingDto[]
           <div>
             <a [routerLink]="['/admin/realestate/properties', picked.propertyId]"><strong>{{ picked.propertyCode }}</strong></a> {{ picked.propertyTitle }}<span class="text-muted" *ngIf="picked.propertyArea"> · {{ picked.propertyArea }}</span>
             <div>{{ picked.startAt | date: 'EEEE d MMM, HH:mm' }} – {{ picked.endAt | date: 'HH:mm' }} · <a [routerLink]="['/admin/realestate/leads', picked.leadId]">{{ picked.leadName }}</a><span class="text-muted" *ngIf="picked.leadPhone"> · {{ picked.leadPhone }}</span></div>
-            <div class="text-muted">Agent: {{ picked.agentName || '—' }} · {{ statusName(picked.status) }}<span *ngIf="picked.feedback"> · “{{ picked.feedback }}”</span></div>
+            <div class="text-muted">{{ 'Agent: {p0} · {p1}' | translate: { p0: (picked.agentName || '—'), p1: (statusName(picked.status)) } }}<span *ngIf="picked.feedback"> · “{{ picked.feedback }}”</span></div>
           </div>
           <div style="white-space:nowrap;">
             <ng-container *ngIf="picked.status === 'SCHEDULED' && picked.canManage">
-              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="moving = picked">Move</button>
-              <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="startOutcome(picked)">Outcome</button>
-              <button class="btn btn-sm btn-outline-secondary week-remind" type="button" style="margin-left:0.2rem;" (click)="remind(picked)" [disabled]="busy" *ngIf="canRemind(picked)">Remind</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="moving = picked">{{ 'Move' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="startOutcome(picked)">{{ 'Outcome' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary week-remind" type="button" style="margin-left:0.2rem;" (click)="remind(picked)" [disabled]="busy" *ngIf="canRemind(picked)">{{ 'Remind' | translate }}</button>
             </ng-container>
-            <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="picked = null">Close</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="picked = null">{{ 'Close' | translate }}</button>
           </div>
         </div>
       </div>
@@ -112,22 +113,22 @@ interface Day { date: string; label: string; today: boolean; items: ViewingDto[]
               <td data-label="Agent">{{ v.agentName || '—' }}</td>
               <td data-label="Status" style="white-space:nowrap;">
                 <span class="badge" [class.badge-success]="v.status === 'DONE'" [class.badge-warning]="v.status === 'SCHEDULED'" [class.badge-secondary]="v.status === 'CANCELLED' || v.status === 'NO_SHOW'">{{ statusName(v.status) }}</span>
-                <span class="badge badge-success" *ngIf="v.clientRemindedAt" style="margin-left:0.3rem;" title="The client was e-mailed a reminder">Reminded</span>
+                <span class="badge badge-success" *ngIf="v.clientRemindedAt" style="margin-left:0.3rem;" [title]="'The client was e-mailed a reminder' | translate">{{ 'Reminded' | translate }}</span>
                 <span class="text-muted" *ngIf="v.feedback" style="margin-left:0.4rem;">“{{ v.feedback }}”</span>
               </td>
               <td data-label="" style="white-space:nowrap; text-align:right;">
                 <ng-container *ngIf="v.status === 'SCHEDULED' && v.canManage">
-                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="moving = v">Move</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="startOutcome(v)">Outcome</button>
-                  <button class="btn btn-sm btn-outline-secondary row-remind" type="button" style="margin-left:0.2rem;" (click)="remind(v)" [disabled]="busy" *ngIf="canRemind(v)">Remind</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="moving = v">{{ 'Move' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" style="margin-left:0.2rem;" (click)="startOutcome(v)">{{ 'Outcome' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary row-remind" type="button" style="margin-left:0.2rem;" (click)="remind(v)" [disabled]="busy" *ngIf="canRemind(v)">{{ 'Remind' | translate }}</button>
                 </ng-container>
               </td>
             </tr>
           </tbody></table>
         </div>
-        <p class="text-muted" *ngIf="!days.length && loaded">No viewings in this period.</p>
+        <p class="text-muted" *ngIf="!days.length && loaded">{{ 'No viewings in this period.' | translate }}</p>
       </ng-container>
-      <p class="text-muted" *ngIf="view === 'week' && loaded && !count">No viewings this week.</p>
+      <p class="text-muted" *ngIf="view === 'week' && loaded && !count">{{ 'No viewings this week.' | translate }}</p>
     </app-shell>
   `,
 })

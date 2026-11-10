@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PM_DOC_CATEGORIES, PmDocCategory, PmDocSubject, PmDocument, PmDocumentsApiService, pmDocCategoryLabel } from '../../core/api/pm-documents-api.service';
@@ -7,35 +8,35 @@ import { PM_DOC_CATEGORIES, PmDocCategory, PmDocSubject, PmDocument, PmDocuments
 @Component({
   selector: 'app-pm-documents-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="card" style="padding:1rem; margin-top:0.75rem;">
       <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
         <h4>{{ title }}<span class="text-muted" style="font-size:0.85rem;" *ngIf="loaded && list.length"> ({{ list.length }})</span></h4>
-        <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="canManage && !adding" (click)="openAdd()">+ Add a document</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="canManage && !adding" (click)="openAdd()">{{ '+ Add a document' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form *ngIf="adding" (ngSubmit)="upload()" class="mb-3" style="padding:0.75rem; border:1px solid rgba(127,127,127,0.3); border-radius:6px;">
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <div class="form-group mb-2" style="flex:2; min-width:14rem;">
-            <label class="form-label">File * <span class="text-muted">(PDF, picture, Word, Excel or text; up to 20 MB)</span></label>
+            <label class="form-label">{{ 'File *' | translate }} <span class="text-muted">{{ '(PDF, picture, Word, Excel or text; up to 20 MB)' | translate }}</span></label>
             <input class="form-control" type="file" name="file" (change)="picked($event)" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx,.txt" />
           </div>
-          <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">Name</label><input class="form-control" name="nm" [(ngModel)]="f.name" maxlength="200" placeholder="the file name if left empty" /></div>
-          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">Kind</label>
+          <div class="form-group mb-2" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="nm" [(ngModel)]="f.name" maxlength="200" [placeholder]="'the file name if left empty' | translate" /></div>
+          <div class="form-group mb-2" style="min-width:11rem;"><label class="form-label">{{ 'Kind' | translate }}</label>
             <select class="form-select" name="cat" [(ngModel)]="f.category"><option *ngFor="let c of categories" [ngValue]="c.value">{{ c.label }}</option></select></div>
-          <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">Expires on <span class="text-muted">(optional)</span></label><input class="form-control" type="date" name="ex" [(ngModel)]="f.expiryDate" /></div>
+          <div class="form-group mb-2" style="min-width:10rem;"><label class="form-label">{{ 'Expires on' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label><input class="form-control" type="date" name="ex" [(ngModel)]="f.expiryDate" /></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Note</label><input class="form-control" name="ds" [(ngModel)]="f.description" maxlength="1000" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Note' | translate }}</label><input class="form-control" name="ds" [(ngModel)]="f.description" maxlength="1000" /></div>
         <div class="flex gap-2">
-          <button class="btn btn-sm btn-primary" type="submit" [disabled]="busy">{{ busy ? 'Uploading…' : 'Upload' }}</button>
-          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="adding = false" [disabled]="busy">Cancel</button>
+          <button class="btn btn-sm btn-primary" type="submit" [disabled]="busy">{{ busy ? ('Uploading…' | translate) : ('Upload' | translate) }}</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="adding = false" [disabled]="busy">{{ 'Cancel' | translate }}</button>
         </div>
       </form>
 
       <table class="stack table-sm" *ngIf="list.length">
-        <thead><tr><th>Document</th><th>Kind</th><th>Expires</th><th class="text-end">Size</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Document' | translate }}</th><th>{{ 'Kind' | translate }}</th><th>{{ 'Expires' | translate }}</th><th class="text-end">{{ 'Size' | translate }}</th><th></th></tr></thead>
         <tbody>
           <ng-container *ngFor="let d of list">
             <tr>
@@ -46,33 +47,33 @@ import { PM_DOC_CATEGORIES, PmDocCategory, PmDocSubject, PmDocument, PmDocuments
               <td data-label="Kind">{{ kind(d.category) }}</td>
               <td style="white-space:nowrap;" data-label="Expires">
                 <span *ngIf="d.expiryDate">{{ d.expiryDate | date: 'd MMM y' }}</span><span *ngIf="!d.expiryDate" class="text-muted">—</span>
-                <span class="badge badge-danger" *ngIf="d.expiryState === 'EXPIRED'" style="margin-left:0.3rem;">Expired</span>
-                <span class="badge badge-warning" *ngIf="d.expiryState === 'SOON'" style="margin-left:0.3rem;">{{ d.daysToExpiry }} day{{ d.daysToExpiry === 1 ? '' : 's' }} left</span>
+                <span class="badge badge-danger" *ngIf="d.expiryState === 'EXPIRED'" style="margin-left:0.3rem;">{{ 'Expired' | translate }}</span>
+                <span class="badge badge-warning" *ngIf="d.expiryState === 'SOON'" style="margin-left:0.3rem;">{{ '{p0} day{p1} left' | translate: { p0: (d.daysToExpiry), p1: (d.daysToExpiry === 1 ? '' : 's') } }}</span>
               </td>
               <td class="text-end" style="white-space:nowrap;" data-label="Size">{{ size(d.sizeBytes) }}</td>
               <td style="white-space:nowrap; text-align:right;" data-label="">
-                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="download(d)">Download</button>
-                <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="startEdit(d)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="remove(d)">Delete</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="download(d)">{{ 'Download' | translate }}</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="startEdit(d)">{{ 'Edit' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="canManage" style="margin-left:0.2rem;" (click)="remove(d)">{{ 'Delete' | translate }}</button>
               </td>
             </tr>
             <tr *ngIf="editing?.id === d.id">
               <td colspan="5">
                 <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-                  <div class="form-group" style="flex:2; min-width:12rem;"><label class="form-label">Name</label><input class="form-control" name="enm" [(ngModel)]="e.name" maxlength="200" /></div>
-                  <div class="form-group" style="min-width:11rem;"><label class="form-label">Kind</label>
+                  <div class="form-group" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="enm" [(ngModel)]="e.name" maxlength="200" /></div>
+                  <div class="form-group" style="min-width:11rem;"><label class="form-label">{{ 'Kind' | translate }}</label>
                     <select class="form-select" name="ecat" [(ngModel)]="e.category"><option *ngFor="let c of categories" [ngValue]="c.value">{{ c.label }}</option></select></div>
-                  <div class="form-group" style="min-width:10rem;"><label class="form-label">Expires on</label><input class="form-control" type="date" name="eex" [(ngModel)]="e.expiryDate" /></div>
-                  <div class="form-group" style="flex:2; min-width:12rem;"><label class="form-label">Note</label><input class="form-control" name="eds" [(ngModel)]="e.description" maxlength="1000" /></div>
-                  <button class="btn btn-sm btn-primary" type="button" (click)="saveEdit()" [disabled]="busy">Save</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="editing = null">Cancel</button>
+                  <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Expires on' | translate }}</label><input class="form-control" type="date" name="eex" [(ngModel)]="e.expiryDate" /></div>
+                  <div class="form-group" style="flex:2; min-width:12rem;"><label class="form-label">{{ 'Note' | translate }}</label><input class="form-control" name="eds" [(ngModel)]="e.description" maxlength="1000" /></div>
+                  <button class="btn btn-sm btn-primary" type="button" (click)="saveEdit()" [disabled]="busy">{{ 'Save' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="editing = null">{{ 'Cancel' | translate }}</button>
                 </div>
               </td>
             </tr>
           </ng-container>
         </tbody>
       </table>
-      <div class="text-muted" *ngIf="!list.length && loaded">No documents yet.</div>
+      <div class="text-muted" *ngIf="!list.length && loaded">{{ 'No documents yet.' | translate }}</div>
     </div>
   `,
 })

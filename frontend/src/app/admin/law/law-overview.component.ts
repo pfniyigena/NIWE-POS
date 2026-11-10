@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -21,30 +22,30 @@ interface LawOverview {
 @Component({
   selector: 'app-law-overview',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Law Firm overview</h3>
-        <span class="text-muted" style="font-size:0.85rem;">Only the matters you may open are counted.</span>
+        <h3>{{ 'Law Firm overview' | translate }}</h3>
+        <span class="text-muted" style="font-size:0.85rem;">{{ 'Only the matters you may open are counted.' | translate }}</span>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div *ngIf="!o && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!o && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
 
       <ng-container *ngIf="o">
         <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(11rem, 1fr)); gap:0.75rem;" class="mb-3">
-          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">Open matters</div><div class="kpi">{{ o.openMatters }}</div><div class="text-muted kpi-sub">{{ o.onHold }} on hold · {{ o.openedThisMonth }} opened and {{ o.closedThisMonth }} closed this month</div></div>
-          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">Deadlines this week</div><div class="kpi">{{ o.deadlinesThisWeek }}</div><div class="kpi-sub" [style.color]="o.overdueDeadlines ? '#b91c1c' : ''">{{ o.overdueDeadlines }} overdue · {{ o.overdueTasks }} tasks overdue</div></div>
-          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">Hours this month</div><div class="kpi">{{ o.hoursThisMonth | number: '1.0-1' }}</div><div class="text-muted kpi-sub">{{ o.billableHoursThisMonth | number: '1.0-1' }} billable</div></div>
-          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">Billed this month</div><div class="kpi">{{ o.billedThisMonth | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ o.unbilledWork | number: '1.0-0' }} of work not yet billed</div></div>
-          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">Owed by clients</div><div class="kpi">{{ o.outstanding | number: '1.0-0' }}</div><div class="kpi-sub" [style.color]="o.outstandingOver60Days ? '#b91c1c' : ''">{{ o.outstandingOver60Days | number: '1.0-0' }} older than 60 days</div></div>
-          <div class="card" style="padding:0.85rem;" *ngIf="o.trustEnabled"><div class="text-muted kpi-label">Client money held</div><div class="kpi">{{ o.clientMoneyHeld | number: '1.0-0' }}</div><div class="text-muted kpi-sub">in the trust account</div></div>
-          <div class="card" style="padding:0.85rem;" *ngIf="o.portalEnabled"><div class="text-muted kpi-label">Client portal</div><div class="kpi">{{ o.waitingUploads + o.unansweredMessages }}</div><div class="text-muted kpi-sub">{{ o.waitingUploads }} documents to review · {{ o.unansweredMessages }} messages</div></div>
-          <div class="card" style="padding:0.85rem;" *ngIf="o.conflictsNotCleared"><div class="text-muted kpi-label">Conflict checks open</div><div class="kpi" style="color:#b45309;">{{ o.conflictsNotCleared }}</div><div class="text-muted kpi-sub">matters not cleared</div></div>
+          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">{{ 'Open matters' | translate }}</div><div class="kpi">{{ o.openMatters }}</div><div class="text-muted kpi-sub">{{ '{p0} on hold · {p1} opened and {p2} closed this month' | translate: { p0: (o.onHold), p1: (o.openedThisMonth), p2: (o.closedThisMonth) } }}</div></div>
+          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">{{ 'Deadlines this week' | translate }}</div><div class="kpi">{{ o.deadlinesThisWeek }}</div><div class="kpi-sub" [style.color]="o.overdueDeadlines ? '#b91c1c' : ''">{{ '{p0} overdue · {p1} tasks overdue' | translate: { p0: (o.overdueDeadlines), p1: (o.overdueTasks) } }}</div></div>
+          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">{{ 'Hours this month' | translate }}</div><div class="kpi">{{ o.hoursThisMonth | number: '1.0-1' }}</div><div class="text-muted kpi-sub">{{ '{p0} billable' | translate: { p0: (o.billableHoursThisMonth | number: '1.0-1') } }}</div></div>
+          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">{{ 'Billed this month' | translate }}</div><div class="kpi">{{ o.billedThisMonth | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ '{p0} of work not yet billed' | translate: { p0: (o.unbilledWork | number: '1.0-0') } }}</div></div>
+          <div class="card" style="padding:0.85rem;"><div class="text-muted kpi-label">{{ 'Owed by clients' | translate }}</div><div class="kpi">{{ o.outstanding | number: '1.0-0' }}</div><div class="kpi-sub" [style.color]="o.outstandingOver60Days ? '#b91c1c' : ''">{{ '{p0} older than 60 days' | translate: { p0: (o.outstandingOver60Days | number: '1.0-0') } }}</div></div>
+          <div class="card" style="padding:0.85rem;" *ngIf="o.trustEnabled"><div class="text-muted kpi-label">{{ 'Client money held' | translate }}</div><div class="kpi">{{ o.clientMoneyHeld | number: '1.0-0' }}</div><div class="text-muted kpi-sub">{{ 'in the trust account' | translate }}</div></div>
+          <div class="card" style="padding:0.85rem;" *ngIf="o.portalEnabled"><div class="text-muted kpi-label">{{ 'Client portal' | translate }}</div><div class="kpi">{{ o.waitingUploads + o.unansweredMessages }}</div><div class="text-muted kpi-sub">{{ '{p0} documents to review · {p1} messages' | translate: { p0: (o.waitingUploads), p1: (o.unansweredMessages) } }}</div></div>
+          <div class="card" style="padding:0.85rem;" *ngIf="o.conflictsNotCleared"><div class="text-muted kpi-label">{{ 'Conflict checks open' | translate }}</div><div class="kpi" style="color:#b45309;">{{ o.conflictsNotCleared }}</div><div class="text-muted kpi-sub">{{ 'matters not cleared' | translate }}</div></div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="o.attention.length">
-          <h4 class="mb-2">Needs attention</h4>
+          <h4 class="mb-2">{{ 'Needs attention' | translate }}</h4>
           <table class="table-sm"><tbody>
             <tr *ngFor="let a of o.attention">
               <td style="width:9rem;"><span class="badge">{{ kindLabel(a.kind) }}</span></td>
@@ -55,7 +56,7 @@ interface LawOverview {
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(20rem, 1fr)); gap:0.75rem;">
           <div class="card" style="padding:1rem;">
-            <h4 class="mb-2">Fees billed, last six months</h4>
+            <h4 class="mb-2">{{ 'Fees billed, last six months' | translate }}</h4>
             <div style="display:flex; align-items:flex-end; gap:0.5rem; height:9rem;" *ngIf="max(o.billedByMonth) > 0; else nobills">
               <div *ngFor="let s of o.billedByMonth" style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%;">
                 <div class="text-muted" style="font-size:0.7rem;">{{ s.value | number: '1.0-0' }}</div>
@@ -63,11 +64,11 @@ interface LawOverview {
                 <div class="text-muted" style="font-size:0.7rem; margin-top:2px;">{{ s.label.slice(2) }}</div>
               </div>
             </div>
-            <ng-template #nobills><div class="text-muted">Nothing billed in these months.</div></ng-template>
+            <ng-template #nobills><div class="text-muted">{{ 'Nothing billed in these months.' | translate }}</div></ng-template>
           </div>
 
           <div class="card" style="padding:1rem;">
-            <h4 class="mb-2">Owed by clients, by age</h4>
+            <h4 class="mb-2">{{ 'Owed by clients, by age' | translate }}</h4>
             <div *ngIf="max(o.outstandingByAge) > 0; else noowed">
               <div *ngFor="let s of o.outstandingByAge" class="bar-row">
                 <span class="bar-label">{{ s.label }}</span>
@@ -75,27 +76,27 @@ interface LawOverview {
                 <span class="bar-num">{{ s.value | number: '1.0-0' }}</span>
               </div>
             </div>
-            <ng-template #noowed><div class="text-muted">No unpaid invoices.</div></ng-template>
+            <ng-template #noowed><div class="text-muted">{{ 'No unpaid invoices.' | translate }}</div></ng-template>
           </div>
 
           <div class="card" style="padding:1rem;">
-            <h4 class="mb-2">Open matters by practice area</h4>
+            <h4 class="mb-2">{{ 'Open matters by practice area' | translate }}</h4>
             <div *ngFor="let s of o.openByPracticeArea" class="bar-row">
               <span class="bar-label">{{ s.label }}</span>
               <span class="bar-track"><span class="bar-fill" [style.width.%]="pct(s.value, o.openByPracticeArea)" style="background:#0f766e;"></span></span>
               <span class="bar-num">{{ s.value }}</span>
             </div>
-            <div class="text-muted" *ngIf="!o.openByPracticeArea.length">No open matters.</div>
+            <div class="text-muted" *ngIf="!o.openByPracticeArea.length">{{ 'No open matters.' | translate }}</div>
           </div>
 
           <div class="card" style="padding:1rem;">
-            <h4 class="mb-2">Hours this month, by lawyer</h4>
+            <h4 class="mb-2">{{ 'Hours this month, by lawyer' | translate }}</h4>
             <div *ngFor="let s of o.hoursByLawyer" class="bar-row">
               <span class="bar-label">{{ s.label }}</span>
               <span class="bar-track"><span class="bar-fill" [style.width.%]="pct(s.value, o.hoursByLawyer)" style="background:#7c3aed;"></span></span>
               <span class="bar-num">{{ s.value | number: '1.0-1' }}</span>
             </div>
-            <div class="text-muted" *ngIf="!o.hoursByLawyer.length">No time logged yet this month.</div>
+            <div class="text-muted" *ngIf="!o.hoursByLawyer.length">{{ 'No time logged yet this month.' | translate }}</div>
           </div>
         </div>
       </ng-container>

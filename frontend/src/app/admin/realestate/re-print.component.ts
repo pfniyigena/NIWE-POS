@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE } from '../../core/constants';
@@ -29,12 +30,12 @@ function openPdf(http: HttpClient, path: string, file: string, done: (error: str
 @Component({
   selector: 'app-re-print',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="re-print mb-2" style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;" *ngIf="items.length">
-      <span class="text-muted" style="font-size:0.85rem;">Print:</span>
+      <span class="text-muted" style="font-size:0.85rem;">{{ 'Print:' | translate }}</span>
       <button *ngFor="let i of items; trackBy: track" class="btn btn-sm btn-outline-secondary" type="button" [disabled]="busy || !i.enabled" [title]="i.enabled ? '' : i.hint" (click)="open(i)">{{ i.label }}</button>
-      <span class="text-muted" style="font-size:0.8rem;" *ngIf="busy">Preparing…</span>
+      <span class="text-muted" style="font-size:0.8rem;" *ngIf="busy">{{ 'Preparing…' | translate }}</span>
       <span style="color:#b91c1c; font-size:0.85rem;" *ngIf="error">{{ error }}</span>
     </div>
   `,
@@ -91,17 +92,17 @@ export class RePrintComponent implements OnChanges {
 @Component({
   selector: 'app-re-payments',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
-    <h4 class="mb-2">Payments received</h4>
+    <h4 class="mb-2">{{ 'Payments received' | translate }}</h4>
     <div style="color:#b91c1c; font-size:0.85rem;" class="mb-1" *ngIf="error">{{ error }}</div>
-    <p class="text-muted" *ngIf="loaded && !rows.length">No payment has been received yet.</p>
+    <p class="text-muted" *ngIf="loaded && !rows.length">{{ 'No payment has been received yet.' | translate }}</p>
     <table class="stack table-sm" *ngIf="rows.length">
-      <thead><tr><th>Date</th><th>For</th><th>Method</th><th>Receipt no.</th><th class="text-end">Amount</th><th></th></tr></thead>
+      <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'For' | translate }}</th><th>{{ 'Method' | translate }}</th><th>{{ 'Receipt no.' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th></th></tr></thead>
       <tbody><tr *ngFor="let r of rows; trackBy: track">
         <td data-label="Date">{{ r.paidAt | date: 'd MMM y' }}</td><td data-label="For">{{ r.what }}</td><td data-label="Method">{{ r.method || '—' }}</td>
         <td data-label="Receipt no.">{{ r.receiptNumber || '—' }}</td><td class="text-end" data-label="Amount">{{ r.amount | number: '1.0-0' }}</td>
-        <td data-label="" style="text-align:right;"><button class="btn btn-sm btn-outline-secondary receipt-btn" type="button" (click)="receipt(r)" [disabled]="busy">Receipt</button></td>
+        <td data-label="" style="text-align:right;"><button class="btn btn-sm btn-outline-secondary receipt-btn" type="button" (click)="receipt(r)" [disabled]="busy">{{ 'Receipt' | translate }}</button></td>
       </tr></tbody>
     </table>
   `,

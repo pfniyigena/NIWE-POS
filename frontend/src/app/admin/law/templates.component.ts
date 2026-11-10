@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -14,65 +15,65 @@ import { downloadBlob } from '../../core/download-file';
 @Component({
   selector: 'app-law-templates',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Document templates</h3>
-        <button class="btn btn-primary" *ngIf="canManage" (click)="startNew()">New template</button>
+        <h3>{{ 'Document templates' | translate }}</h3>
+        <button class="btn btn-primary" *ngIf="canManage" (click)="startNew()">{{ 'New template' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="info">{{ info }}</div>
 
       <form class="card mb-3" style="padding:1rem;" *ngIf="f" (ngSubmit)="save()">
-        <h4 class="mb-2">{{ f.id ? 'Change the template' : 'New template' }}</h4>
+        <h4 class="mb-2">{{ f.id ? ('Change the template' | translate) : ('New template' | translate) }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">Name</label><input class="form-control" name="n" [(ngModel)]="f.name" /></div>
-          <div class="form-group" style="min-width:12rem;"><label class="form-label">Kind of document</label>
+          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" /></div>
+          <div class="form-group" style="min-width:12rem;"><label class="form-label">{{ 'Kind of document' | translate }}</label>
             <select class="form-select" name="c" [(ngModel)]="f.category"><option *ngFor="let c of categories" [value]="c.key">{{ c.label }}</option></select></div>
-          <div class="form-group" style="min-width:12rem;"><label class="form-label">Made of</label>
-            <select class="form-select" name="k" [(ngModel)]="f.kind" [disabled]="!!f.id"><option value="TEXT">Typed text</option><option value="DOCX">A Word file</option></select></div>
+          <div class="form-group" style="min-width:12rem;"><label class="form-label">{{ 'Made of' | translate }}</label>
+            <select class="form-select" name="k" [(ngModel)]="f.kind" [disabled]="!!f.id"><option value="TEXT">{{ 'Typed text' | translate }}</option><option value="DOCX">{{ 'A Word file' | translate }}</option></select></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Description</label><input class="form-control" name="d" [(ngModel)]="f.description" /></div>
-        <div class="form-group mb-2" *ngIf="f.kind === 'TEXT'"><label class="form-label">Text <span class="text-muted">(use the placeholders listed below)</span></label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Description' | translate }}</label><input class="form-control" name="d" [(ngModel)]="f.description" /></div>
+        <div class="form-group mb-2" *ngIf="f.kind === 'TEXT'"><label class="form-label">{{ 'Text' | translate }} <span class="text-muted">{{ '(use the placeholders listed below)' | translate }}</span></label>
           <textarea class="form-control" rows="12" name="b" [(ngModel)]="f.body"></textarea></div>
         <div class="mb-2" *ngIf="f.kind === 'DOCX'">
-          <div class="text-muted" style="font-size:0.85rem;" *ngIf="!f.id">Save the template first, then upload its Word file.</div>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="!f.id">{{ 'Save the template first, then upload its Word file.' | translate }}</div>
           <div *ngIf="f.id">
-            <label class="form-label">Word file (.docx) <span class="text-muted" *ngIf="f.fileName">· current: {{ f.fileName }}</span></label>
+            <label class="form-label">{{ 'Word file (.docx)' | translate }} <span class="text-muted" *ngIf="f.fileName">{{ '· current: {p0}' | translate: { p0: (f.fileName) } }}</span></label>
             <input class="form-control" type="file" accept=".docx" (change)="onFile($event)" />
-            <div class="text-muted mt-1" style="font-size:0.8rem;">Type the placeholders in the Word file as normal text, for example <span ngNonBindable>{{client.name}}</span>. They work in the body, tables, headers and footers.</div>
+            <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'Type the placeholders in the Word file as normal text, for example' | translate }} <span ngNonBindable>{{ '{{client.name}}' | translate }}</span>{{ '. They work in the body, tables, headers and footers.' | translate }}</div>
           </div>
         </div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="a" [(ngModel)]="f.active" /> In use (people can choose it when making a document)</label>
-        <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Save</button><button class="btn btn-outline-secondary" type="button" (click)="f = null">Close</button></div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="a" [(ngModel)]="f.active" /> {{ 'In use (people can choose it when making a document)' | translate }}</label>
+        <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button><button class="btn btn-outline-secondary" type="button" (click)="f = null">{{ 'Close' | translate }}</button></div>
       </form>
 
       <div class="card mb-3" style="padding:1rem;">
         <table class="stack table-sm" *ngIf="rows.length">
-          <thead><tr><th>Template</th><th>Kind</th><th>Made of</th><th>Used</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Template' | translate }}</th><th>{{ 'Kind' | translate }}</th><th>{{ 'Made of' | translate }}</th><th>{{ 'Used' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let t of rows">
-              <td data-label="Template"><strong>{{ t.name }}</strong><div class="text-muted" style="font-size:0.8rem;">{{ t.description }}<span *ngIf="t.kind === 'DOCX' && !t.fileName"> · no Word file uploaded yet</span></div></td>
+              <td data-label="Template"><strong>{{ t.name }}</strong><div class="text-muted" style="font-size:0.8rem;">{{ t.description }}<span *ngIf="t.kind === 'DOCX' && !t.fileName"> {{ '· no Word file uploaded yet' | translate }}</span></div></td>
               <td data-label="Kind">{{ catLabel(t.category) }}</td>
-              <td data-label="Made of">{{ t.kind === 'DOCX' ? 'Word file' : 'Typed text' }}</td>
+              <td data-label="Made of">{{ t.kind === 'DOCX' ? ('Word file' | translate) : ('Typed text' | translate) }}</td>
               <td data-label="Used">{{ t.uses }}</td>
-              <td data-label="Status">{{ t.active ? 'In use' : 'Switched off' }}</td>
+              <td data-label="Status">{{ t.active ? ('In use' | translate) : ('Switched off' | translate) }}</td>
               <td style="white-space:nowrap;">
-                <button class="btn btn-sm btn-outline-secondary" *ngIf="t.kind === 'DOCX' && t.fileName" (click)="downloadFile(t)">Download file</button>
-                <button class="btn btn-sm btn-outline-secondary" *ngIf="canManage" (click)="startEdit(t)">Change</button>
-                <button class="btn btn-sm btn-outline-danger" *ngIf="canManage && !t.uses" (click)="remove(t)">Delete</button>
+                <button class="btn btn-sm btn-outline-secondary" *ngIf="t.kind === 'DOCX' && t.fileName" (click)="downloadFile(t)">{{ 'Download file' | translate }}</button>
+                <button class="btn btn-sm btn-outline-secondary" *ngIf="canManage" (click)="startEdit(t)">{{ 'Change' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" *ngIf="canManage && !t.uses" (click)="remove(t)">{{ 'Delete' | translate }}</button>
               </td>
             </tr>
           </tbody>
         </table>
-        <div class="text-muted" *ngIf="!rows.length && loaded">No templates yet.<span *ngIf="canManage"> Use "New template" to add the first one.</span></div>
-        <div class="text-muted mt-2" style="font-size:0.8rem;" *ngIf="!canManage">Only an admin or an Operations manager can change templates.</div>
+        <div class="text-muted" *ngIf="!rows.length && loaded">{{ 'No templates yet.' | translate }}<span *ngIf="canManage"> {{ 'Use "New template" to add the first one.' | translate }}</span></div>
+        <div class="text-muted mt-2" style="font-size:0.8rem;" *ngIf="!canManage">{{ 'Only an admin or an Operations manager can change templates.' | translate }}</div>
       </div>
 
       <div class="card" style="padding:1rem;">
-        <h4 class="mb-2">Placeholders you can use</h4>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Write them with double curly brackets. Anything not on this list is left as written and reported when the document is made.</div>
+        <h4 class="mb-2">{{ 'Placeholders you can use' | translate }}</h4>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Write them with double curly brackets. Anything not on this list is left as written and reported when the document is made.' | translate }}</div>
         <table class="table-sm"><tbody>
           <tr *ngFor="let p of placeholders"><td><code>{{ ph(p.key) }}</code></td><td>{{ p.description }}</td></tr>
         </tbody></table>

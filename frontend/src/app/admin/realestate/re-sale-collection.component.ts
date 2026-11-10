@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -9,33 +10,33 @@ import { MailedBuyer, RealEstateApiService, SaleNote, SaleNoteKind } from '../..
 @Component({
   selector: 'app-re-sale-collection',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
-    <h4 class="mb-2">Collecting from the buyer</h4>
+    <h4 class="mb-2">{{ 'Collecting from the buyer' | translate }}</h4>
     <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
     <div class="alert alert-info" *ngIf="notice">{{ notice }}</div>
     <div class="flex gap-2 mb-2" style="flex-wrap:wrap;" *ngIf="canManage && stage === 'SOLD'">
-      <button class="btn btn-sm btn-outline-secondary sc-remind" type="button" *ngIf="hasPlan" (click)="send('remind')" [disabled]="busy">Remind the buyer</button>
-      <button class="btn btn-sm btn-outline-secondary sc-statement" type="button" (click)="send('statement')" [disabled]="busy">E-mail the statement</button>
-      <span class="text-muted" style="font-size:0.8rem; align-self:center;">Sent to {{ buyerEmail || 'the buyer (no e-mail address on file)' }}</span>
+      <button class="btn btn-sm btn-outline-secondary sc-remind" type="button" *ngIf="hasPlan" (click)="send('remind')" [disabled]="busy">{{ 'Remind the buyer' | translate }}</button>
+      <button class="btn btn-sm btn-outline-secondary sc-statement" type="button" (click)="send('statement')" [disabled]="busy">{{ 'E-mail the statement' | translate }}</button>
+      <span class="text-muted" style="font-size:0.8rem; align-self:center;">{{ 'Sent to {p0}' | translate: { p0: (buyerEmail || 'the buyer (no e-mail address on file)') } }}</span>
     </div>
     <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;" *ngIf="canManage && stage === 'SOLD'">
-      <div class="form-group" style="min-width:10rem;"><label class="form-label">Log</label>
-        <select class="form-select sc-kind" name="sk" [(ngModel)]="kind"><option value="CALL">Called the buyer</option><option value="PROMISE">Buyer promised to pay</option><option value="NOTE">Other note</option></select></div>
-      <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">What was said</label>
+      <div class="form-group" style="min-width:10rem;"><label class="form-label">{{ 'Log' | translate }}</label>
+        <select class="form-select sc-kind" name="sk" [(ngModel)]="kind"><option value="CALL">{{ 'Called the buyer' | translate }}</option><option value="PROMISE">{{ 'Buyer promised to pay' | translate }}</option><option value="NOTE">{{ 'Other note' | translate }}</option></select></div>
+      <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'What was said' | translate }}</label>
         <input class="form-control sc-text" name="st" [(ngModel)]="text" maxlength="2000" /></div>
-      <div class="form-group" *ngIf="kind === 'PROMISE'" style="min-width:11rem;"><label class="form-label">Promised date</label>
+      <div class="form-group" *ngIf="kind === 'PROMISE'" style="min-width:11rem;"><label class="form-label">{{ 'Promised date' | translate }}</label>
         <input class="form-control sc-date" type="date" name="sd" [(ngModel)]="promise" [min]="todayIso()" /></div>
-      <div class="form-group"><button class="btn btn-sm btn-primary sc-save" type="button" (click)="save()" [disabled]="busy">Save</button></div>
+      <div class="form-group"><button class="btn btn-sm btn-primary sc-save" type="button" (click)="save()" [disabled]="busy">{{ 'Save' | translate }}</button></div>
     </div>
-    <p class="text-muted" *ngIf="loaded && !notes.length">Nothing has been logged yet.</p>
+    <p class="text-muted" *ngIf="loaded && !notes.length">{{ 'Nothing has been logged yet.' | translate }}</p>
     <table class="stack table-sm" *ngIf="notes.length">
-      <thead><tr><th>When</th><th>What</th><th>Note</th><th>By</th></tr></thead>
+      <thead><tr><th>{{ 'When' | translate }}</th><th>{{ 'What' | translate }}</th><th>{{ 'Note' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
       <tbody><tr *ngFor="let n of notes; trackBy: track">
         <td data-label="When">{{ n.createdAt | date: 'd MMM y, HH:mm' }}</td>
-        <td data-label="What">{{ kindName(n.kind) }}<span *ngIf="n.promiseDate"> · by {{ n.promiseDate | date: 'd MMM' }}</span></td>
+        <td data-label="What">{{ kindName(n.kind) }}<span *ngIf="n.promiseDate"> {{ '· by {p0}' | translate: { p0: (n.promiseDate | date: 'd MMM') } }}</span></td>
         <td data-label="Note">{{ n.text }}</td>
-        <td data-label="By">{{ n.createdByName || 'The system' }}</td>
+        <td data-label="By">{{ n.createdByName || ('The system' | translate) }}</td>
       </tr></tbody>
     </table>
   `,

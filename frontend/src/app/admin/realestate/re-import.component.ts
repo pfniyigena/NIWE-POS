@@ -1,4 +1,5 @@
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { downloadBlob } from '../../core/download-file';
@@ -8,51 +9,50 @@ import { ImportResult, RealEstateApiService } from '../../core/api/realestate-ap
 @Component({
   selector: 'app-re-import',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <div class="card mb-3 re-import" style="padding:1rem;">
       <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
-        <h4>Import {{ kind }} from a file</h4>
-        <button class="btn btn-sm btn-outline-secondary imp-close" type="button" (click)="closed.emit()">Close</button>
+        <h4>{{ 'Import {p0} from a file' | translate: { p0: (kind) } }}</h4>
+        <button class="btn btn-sm btn-outline-secondary imp-close" type="button" (click)="closed.emit()">{{ 'Close' | translate }}</button>
       </div>
       <div class="text-muted mb-2" style="font-size:0.9rem;">
-        1. Download the template and fill it in (or use your own sheet: the first row must have headings such as {{ kind === 'leads' ? 'Name and Phone' : 'Title and Price' }}).
-        2. Choose the file. It is checked first and nothing is saved. 3. Read the result and import.
+        {{ '1. Download the template and fill it in (or use your own sheet: the first row must have headings such as {p0}). 2. Choose the file. It is checked first and nothing is saved. 3. Read the result and import.' | translate: { p0: (kind === 'leads' ? 'Name and Phone' : 'Title and Price') } }}
       </div>
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
-        <button class="btn btn-sm btn-outline-secondary imp-tpl-xlsx" type="button" (click)="template('xlsx')">Template (Excel)</button>
-        <button class="btn btn-sm btn-outline-secondary imp-tpl-csv" type="button" (click)="template('csv')">Template (CSV)</button>
+        <button class="btn btn-sm btn-outline-secondary imp-tpl-xlsx" type="button" (click)="template('xlsx')">{{ 'Template (Excel)' | translate }}</button>
+        <button class="btn btn-sm btn-outline-secondary imp-tpl-csv" type="button" (click)="template('csv')">{{ 'Template (CSV)' | translate }}</button>
         <input #pick class="imp-file" type="file" accept=".xlsx,.csv,.txt" (change)="chosen(pick.files)" style="max-width:22rem;" />
-        <label *ngIf="kind === 'properties'" style="display:flex; gap:0.4rem; align-items:center;" title="Properties that have the price they need are listed; the others stay as drafts">
-          <input class="imp-list" type="checkbox" name="lt" [(ngModel)]="listThem" (ngModelChange)="recheck()" /> List them as available
+        <label *ngIf="kind === 'properties'" style="display:flex; gap:0.4rem; align-items:center;" [title]="'Properties that have the price they need are listed; the others stay as drafts' | translate">
+          <input class="imp-list" type="checkbox" name="lt" [(ngModel)]="listThem" (ngModelChange)="recheck()" /> {{ 'List them as available' | translate }}
         </label>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success imp-done" *ngIf="done">{{ done }}</div>
-      <div class="text-muted" *ngIf="busy">Working…</div>
+      <div class="text-muted" *ngIf="busy">{{ 'Working…' | translate }}</div>
 
       <ng-container *ngIf="result && !done">
         <div class="alert imp-summary" [ngClass]="result.ok ? 'alert-info' : 'alert-warning'">
           <strong>{{ result.message }}</strong>
-          <div style="font-size:0.85rem;" *ngIf="result.ignoredColumns.length">Columns not used: {{ result.ignoredColumns.join(', ') }}</div>
+          <div style="font-size:0.85rem;" *ngIf="result.ignoredColumns.length">{{ 'Columns not used: {p0}' | translate: { p0: (result.ignoredColumns.join(', ')) } }}</div>
         </div>
-        <div class="mb-2" *ngIf="result.sample.length"><span class="text-muted" style="font-size:0.85rem;">First rows that will go in:</span> {{ result.sample.join(', ') }}<span class="text-muted" *ngIf="result.ok > result.sample.length"> and {{ result.ok - result.sample.length }} more</span></div>
+        <div class="mb-2" *ngIf="result.sample.length"><span class="text-muted" style="font-size:0.85rem;">{{ 'First rows that will go in:' | translate }}</span> {{ result.sample.join(', ') }}<span class="text-muted" *ngIf="result.ok > result.sample.length"> {{ 'and {p0} more' | translate: { p0: (result.ok - result.sample.length) } }}</span></div>
         <div class="mb-2" *ngIf="result.notes.length" style="font-size:0.9rem;">
-          <div *ngFor="let n of result.notes">Row {{ n.row }} ({{ n.label }}): {{ n.message }}</div>
+          <div *ngFor="let n of result.notes">{{ 'Row {p0} ({p1}): {p2}' | translate: { p0: (n.row), p1: (n.label), p2: (n.message) } }}</div>
         </div>
         <div *ngIf="result.problems.length">
-          <h5 class="mb-1">Rows that will be skipped ({{ result.skipped }})</h5>
-          <div class="text-muted mb-1" style="font-size:0.85rem;">Fix them in your file and choose it again, or import the rest now. The row number is the spreadsheet's row.</div>
+          <h5 class="mb-1">{{ 'Rows that will be skipped ({p0})' | translate: { p0: (result.skipped) } }}</h5>
+          <div class="text-muted mb-1" style="font-size:0.85rem;">{{ 'Fix them in your file and choose it again, or import the rest now. The row number is the spreadsheet\\'s row.' | translate }}</div>
           <table class="stack table-sm imp-problems">
-            <thead><tr><th>Row</th><th>{{ kind === 'leads' ? 'Lead' : 'Property' }}</th><th>Why</th></tr></thead>
+            <thead><tr><th>{{ 'Row' | translate }}</th><th>{{ kind === 'leads' ? ('Lead' | translate) : ('Property' | translate) }}</th><th>{{ 'Why' | translate }}</th></tr></thead>
             <tbody><tr *ngFor="let p of shown(); trackBy: byRow">
-              <td data-label="Row">{{ p.row }}</td><td [attr.data-label]="kind === 'leads' ? 'Lead' : 'Property'">{{ p.label }}</td><td data-label="Why">{{ p.message }}</td>
+              <td data-label="Row">{{ p.row }}</td><td [attr.data-label]="kind === 'leads' ? ('Lead' | translate) : ('Property' | translate)">{{ p.label }}</td><td data-label="Why">{{ p.message }}</td>
             </tr></tbody>
           </table>
-          <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="result.problems.length > 20" (click)="all = !all">{{ all ? 'Show fewer' : 'Show all ' + result.problems.length }}</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="result.problems.length > 20" (click)="all = !all">{{ all ? ('Show fewer' | translate) : ('Show all {p0}' | translate: { p0: result.problems.length }) }}</button>
         </div>
         <div class="mt-2 flex gap-2">
-          <button class="btn btn-primary imp-go" type="button" (click)="go()" [disabled]="busy || !result.ok">Import {{ result.ok }} {{ kind === 'leads' ? (result.ok === 1 ? 'lead' : 'leads') : (result.ok === 1 ? 'property' : 'properties') }}</button>
+          <button class="btn btn-primary imp-go" type="button" (click)="go()" [disabled]="busy || !result.ok">{{ 'Import {p0} {p1}' | translate: { p0: (result.ok), p1: (kind === 'leads' ? (result.ok === 1 ? 'lead' : 'leads') : (result.ok === 1 ? 'property' : 'properties')) } }}</button>
         </div>
       </ng-container>
     </div>

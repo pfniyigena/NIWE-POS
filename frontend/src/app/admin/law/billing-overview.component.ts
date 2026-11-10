@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,24 +13,24 @@ import { BILLING_LABEL, BillingOverviewRow, LawApiService } from '../../core/api
 @Component({
   selector: 'app-law-billing-overview',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, LawExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, LawExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Billing overview</h3>
+        <h3>{{ 'Billing overview' | translate }}</h3>
         <app-law-export kind="billing" [filters]="{ openOnly: openOnly ? 'true' : 'false' }"></app-law-export>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="openOnly" name="oo" (ngModelChange)="load()" /> Open matters only</label>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="openOnly" name="oo" (ngModelChange)="load()" /> {{ 'Open matters only' | translate }}</label>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3" style="flex-wrap:wrap;" *ngIf="rows.length">
-        <div class="card" style="padding:0.6rem 0.9rem;"><div class="text-muted" style="font-size:0.8rem;">Ready to bill</div><strong>{{ total('unbilledTime') + total('unbilledCosts') + total('stagesPlanned') | number: '1.0-2' }}</strong>
-          <div class="text-muted" style="font-size:0.75rem;">time {{ total('unbilledTime') | number: '1.0-2' }} · costs {{ total('unbilledCosts') | number: '1.0-2' }} · stages {{ total('stagesPlanned') | number: '1.0-2' }}</div></div>
-        <div class="card" style="padding:0.6rem 0.9rem;"><div class="text-muted" style="font-size:0.8rem;">Billed (before tax)</div><strong>{{ total('billed') | number: '1.0-2' }}</strong></div>
-        <div class="card" style="padding:0.6rem 0.9rem;"><div class="text-muted" style="font-size:0.8rem;">Still owed by clients</div><strong>{{ total('outstanding') | number: '1.0-2' }}</strong></div>
+        <div class="card" style="padding:0.6rem 0.9rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Ready to bill' | translate }}</div><strong>{{ total('unbilledTime') + total('unbilledCosts') + total('stagesPlanned') | number: '1.0-2' }}</strong>
+          <div class="text-muted" style="font-size:0.75rem;">{{ 'time {p0} · costs {p1} · stages {p2}' | translate: { p0: (total('unbilledTime') | number: '1.0-2'), p1: (total('unbilledCosts') | number: '1.0-2'), p2: (total('stagesPlanned') | number: '1.0-2') } }}</div></div>
+        <div class="card" style="padding:0.6rem 0.9rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Billed (before tax)' | translate }}</div><strong>{{ total('billed') | number: '1.0-2' }}</strong></div>
+        <div class="card" style="padding:0.6rem 0.9rem;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Still owed by clients' | translate }}</div><strong>{{ total('outstanding') | number: '1.0-2' }}</strong></div>
       </div>
       <div class="card" style="padding:1rem; overflow-x:auto;">
         <table class="stack table-sm">
-          <thead><tr><th>Matter</th><th>Client</th><th>Billing</th><th class="text-end">Hours</th><th class="text-end">Time to bill</th><th class="text-end">Costs to bill</th><th class="text-end">Stages to bill</th><th class="text-end">Billed</th><th class="text-end">Paid</th><th class="text-end">Owed</th><th class="text-end">Retainer left</th></tr></thead>
+          <thead><tr><th>{{ 'Matter' | translate }}</th><th>{{ 'Client' | translate }}</th><th>{{ 'Billing' | translate }}</th><th class="text-end">{{ 'Hours' | translate }}</th><th class="text-end">{{ 'Time to bill' | translate }}</th><th class="text-end">{{ 'Costs to bill' | translate }}</th><th class="text-end">{{ 'Stages to bill' | translate }}</th><th class="text-end">{{ 'Billed' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Owed' | translate }}</th><th class="text-end">{{ 'Retainer left' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let r of shown">
               <td data-label="Matter"><a [routerLink]="['/law/matters', r.matterId]">{{ r.number }}</a><div class="text-muted" style="font-size:0.8rem;">{{ r.restricted ? '(restricted)' : r.title }}</div></td>
@@ -39,11 +40,11 @@ import { BILLING_LABEL, BillingOverviewRow, LawApiService } from '../../core/api
               <td class="text-end" data-label="Billed">{{ r.billed | number: '1.0-2' }}</td><td class="text-end" data-label="Paid">{{ r.paid | number: '1.0-2' }}</td><td class="text-end" data-label="Owed">{{ r.outstanding | number: '1.0-2' }}</td>
               <td class="text-end" data-label="Retainer left">{{ r.retainerBalance ? (r.retainerBalance | number: '1.0-2') : '—' }}</td>
             </tr>
-            <tr *ngIf="!rows.length && !error"><td colspan="11" class="text-muted">No matters yet.</td></tr>
+            <tr *ngIf="!rows.length && !error"><td colspan="11" class="text-muted">{{ 'No matters yet.' | translate }}</td></tr>
           </tbody>
         </table>
         <app-pager [page]="page" [size]="size" [total]="rows.length" (pageChange)="goPage($event)"></app-pager>
-        <div class="text-muted mt-2" style="font-size:0.8rem;">Open a matter and use its Billing tab to approve time, add costs and create the invoice. The same figures are in the Law Firm reports.</div>
+        <div class="text-muted mt-2" style="font-size:0.8rem;">{{ 'Open a matter and use its Billing tab to approve time, add costs and create the invoice. The same figures are in the Law Firm reports.' | translate }}</div>
       </div>
     </app-shell>
   `,

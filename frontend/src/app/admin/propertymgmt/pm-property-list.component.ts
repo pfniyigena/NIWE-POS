@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -11,28 +12,28 @@ import { OwnerRow, PM_PROPERTY_KINDS, PropertyMgmtApiService, PropertyRow, pmLab
 @Component({
   selector: 'app-pm-property-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Managed properties</h3>
-        <a class="btn btn-primary" routerLink="/admin/propertymgmt/properties/new">+ Property</a>
+        <h3>{{ 'Managed properties' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/propertymgmt/properties/new">{{ '+ Property' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="ow" [(ngModel)]="ownerId" (ngModelChange)="load()">
-          <option [ngValue]="null">Any owner</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}</option>
+          <option [ngValue]="null">{{ 'Any owner' | translate }}</option><option *ngFor="let o of owners" [ngValue]="o.id">{{ o.name }}</option>
         </select>
-        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ao" [(ngModel)]="activeOnly" (ngModelChange)="load()" /> Active only</label>
-        <input class="form-control" style="width:16rem;" placeholder="Search name, code, area, owner" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
-        <button class="btn btn-outline-secondary" type="button" (click)="load()">Search</button>
+        <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="ao" [(ngModel)]="activeOnly" (ngModelChange)="load()" /> {{ 'Active only' | translate }}</label>
+        <input class="form-control" style="width:16rem;" [placeholder]="'Search name, code, area, owner' | translate" name="q" [(ngModel)]="q" (keyup.enter)="load()" />
+        <button class="btn btn-outline-secondary" type="button" (click)="load()">{{ 'Search' | translate }}</button>
       </div>
       <table class="stack table-sm">
-        <thead><tr><th>Property</th><th>Owner</th><th>Type</th><th>Area</th><th class="text-end">Units</th><th class="text-end">Occupied</th><th class="text-end">Vacant</th><th class="text-end">Rent / month</th><th class="text-end">Fee</th></tr></thead>
+        <thead><tr><th>{{ 'Property' | translate }}</th><th>{{ 'Owner' | translate }}</th><th>{{ 'Type' | translate }}</th><th>{{ 'Area' | translate }}</th><th class="text-end">{{ 'Units' | translate }}</th><th class="text-end">{{ 'Occupied' | translate }}</th><th class="text-end">{{ 'Vacant' | translate }}</th><th class="text-end">{{ 'Rent / month' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let p of list">
-            <td data-label="Property"><a [routerLink]="['/admin/propertymgmt/properties', p.id]"><strong>{{ p.name }}</strong></a> <span class="text-muted" style="font-size:0.8rem;">{{ p.code }}</span><span class="badge badge-secondary" *ngIf="!p.active" style="margin-left:0.3rem;">Inactive</span></td>
-            <td data-label="Owner"><a *ngIf="p.ownerCount <= 1" [routerLink]="['/admin/propertymgmt/owners', p.ownerId]">{{ p.ownerName }}</a><span *ngIf="p.ownerCount > 1" [title]="p.ownersLabel">{{ p.ownerName }} <span class="text-muted">+ {{ p.ownerCount - 1 }} more</span></span></td>
+            <td data-label="Property"><a [routerLink]="['/admin/propertymgmt/properties', p.id]"><strong>{{ p.name }}</strong></a> <span class="text-muted" style="font-size:0.8rem;">{{ p.code }}</span><span class="badge badge-secondary" *ngIf="!p.active" style="margin-left:0.3rem;">{{ 'Inactive' | translate }}</span></td>
+            <td data-label="Owner"><a *ngIf="p.ownerCount <= 1" [routerLink]="['/admin/propertymgmt/owners', p.ownerId]">{{ p.ownerName }}</a><span *ngIf="p.ownerCount > 1" [title]="p.ownersLabel">{{ p.ownerName }} <span class="text-muted">{{ '+ {p0} more' | translate: { p0: (p.ownerCount - 1) } }}</span></span></td>
             <td data-label="Type">{{ kind(p.kind) }}</td><td data-label="Area">{{ p.area || '—' }}</td>
             <td class="text-end" data-label="Units">{{ p.units }}</td><td class="text-end" data-label="Occupied">{{ p.occupied }}</td>
             <td class="text-end" data-label="Vacant"><span [style.color]="p.vacant ? '#b45309' : ''">{{ p.vacant }}</span></td>
@@ -42,7 +43,7 @@ import { OwnerRow, PM_PROPERTY_KINDS, PropertyMgmtApiService, PropertyRow, pmLab
         </tbody>
       </table>
       <app-pager [page]="page" [size]="size" [total]="total" (pageChange)="goPage($event)"></app-pager>
-      <p class="text-muted" *ngIf="!list.length && loaded">No properties match.</p>
+      <p class="text-muted" *ngIf="!list.length && loaded">{{ 'No properties match.' | translate }}</p>
     </app-shell>
   `,
 })
