@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -14,17 +15,17 @@ import { Bom, ManufacturingOrder, OverheadCost } from '../../core/models';
 @Component({
   selector: 'app-manufacturing-order-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ editing ? 'Change ' + (existing?.orderNumber || 'manufacturing order') : 'New manufacturing order' }}</h3>
-      <div class="alert alert-info" *ngIf="editing && existing && existing.status !== 'DRAFT'">This order is {{ existing.status.replace('_', ' ').toLowerCase() }}: only the planned quantity, the date and the note can change. The recipe, indirect costs and location are fixed once it is confirmed.</div>
+      <h3 class="mb-3">{{ editing ? (('Change' | translate) + ' ' + (existing?.orderNumber || ('manufacturing order' | translate))) : ('New manufacturing order' | translate) }}</h3>
+      <div class="alert alert-info" *ngIf="editing && existing && existing.status !== 'DRAFT'">{{ 'This order is {p0}: only the planned quantity, the date and the note can change. The recipe, indirect costs and location are fixed once it is confirmed.' | translate: { p0: (existing.status.replace('_', ' ').toLowerCase()) } }}</div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Bill of materials</label>
+          <label class="form-label">{{ 'Bill of materials' | translate }}</label>
           <select class="form-select" name="bomId" [(ngModel)]="bomId" required [disabled]="locked">
-            <option [ngValue]="null" disabled>Select a bill of materials…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a bill of materials…' | translate }}</option>
             <option *ngFor="let b of boms" [ngValue]="b.id">{{ b.productName }} — {{ b.code }}{{ b.name ? ' (' + b.name + ')' : '' }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="boms.length === 0">
@@ -32,31 +33,31 @@ import { Bom, ManufacturingOrder, OverheadCost } from '../../core/models';
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Planned quantity</label>
+          <label class="form-label">{{ 'Planned quantity' | translate }}</label>
           <input class="form-control" style="max-width:160px;" type="number" min="0.0001" step="any" name="quantityPlanned" [(ngModel)]="quantityPlanned" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Scheduled date (optional)</label>
+          <label class="form-label">{{ 'Scheduled date (optional)' | translate }}</label>
           <app-date-picker name="scheduledDate" [(ngModel)]="scheduledDate" ></app-date-picker>
         </div>
         <!-- Multi-warehouse phase 4 — shown only once there is a real choice (more than the default
              Receiving + Main Stock). Blank keeps the classic behaviour. -->
         <div class="form-group" *ngIf="locationChoices.length > 2">
-          <label class="form-label">Produce at</label>
+          <label class="form-label">{{ 'Produce at' | translate }}</label>
           <select class="form-select" name="locationId" [(ngModel)]="locationId" [disabled]="locked">
-            <option [ngValue]="null">Default (main warehouse sales stock)</option>
+            <option [ngValue]="null">{{ 'Default (main warehouse sales stock)' | translate }}</option>
             <option *ngFor="let l of locationChoices" [ngValue]="l.id">{{ l.label }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Components are consumed from, and finished goods added to, this location.
+            {{ 'Components are consumed from, and finished goods added to, this location.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Note</label>
+          <label class="form-label">{{ 'Note' | translate }}</label>
           <textarea class="form-control" name="note" rows="2" [(ngModel)]="note"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Indirect costs to apply (optional)</label>
+          <label class="form-label">{{ 'Indirect costs to apply (optional)' | translate }}</label>
           <div *ngFor="let o of overheadCosts">
             <label class="form-label">
               <input type="checkbox" [name]="'oc' + o.id" [checked]="selectedOverheadIds.has(o.id)" [disabled]="locked" (change)="toggleOverhead(o.id)" />
@@ -68,8 +69,8 @@ import { Bom, ManufacturingOrder, OverheadCost } from '../../core/models';
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">{{ editing ? 'Save changes' : 'Create draft' }}</button>
-          <a class="btn btn-link" [routerLink]="editing && existing ? ['/admin/manufacturing/orders', existing.id] : '/admin/manufacturing/orders'">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ editing ? ('Save changes' | translate) : ('Create draft' | translate) }}</button>
+          <a class="btn btn-link" [routerLink]="editing && existing ? ['/admin/manufacturing/orders', existing.id] : '/admin/manufacturing/orders'">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

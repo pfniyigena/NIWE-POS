@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -21,17 +22,17 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
 @Component({
   selector: 'app-public-helpdesk',
   standalone: true,
-  imports: [NiweFooterComponent, CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, NiweFooterComponent, CommonModule, FormsModule, RouterLink],
   template: `
     <div class="flex-col align-center" style="min-height:100vh; justify-content:center; padding:1rem 0;">
       <div class="card" style="width:520px; max-width:96vw; padding:2rem;">
-        <h3 class="mb-3" style="text-align:center;">Help Desk</h3>
+        <h3 class="mb-3" style="text-align:center;">{{ 'Help Desk' | translate }}</h3>
         <div class="flex gap-2 mb-3" style="justify-content:center;">
           <button type="button" class="btn" [class.btn-primary]="tab === 'submit'" [class.btn-outline-secondary]="tab !== 'submit'" (click)="switchTab('submit')">
-            Submit a ticket
+            {{ 'Submit a ticket' | translate }}
           </button>
           <button type="button" class="btn" [class.btn-primary]="tab === 'check'" [class.btn-outline-secondary]="tab !== 'check'" (click)="switchTab('check')">
-            Check my ticket
+            {{ 'Check my ticket' | translate }}
           </button>
         </div>
 
@@ -42,48 +43,48 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
           <ng-container *ngIf="!confirmation">
             <form (ngSubmit)="submit()">
               <div class="form-group mb-2">
-                <label class="form-label">Your name</label>
+                <label class="form-label">{{ 'Your name' | translate }}</label>
                 <input class="form-control" name="requesterName" [(ngModel)]="requesterName" required />
               </div>
               <div class="flex gap-2 mb-2">
                 <div class="grow">
-                  <label class="form-label">Your email</label>
+                  <label class="form-label">{{ 'Your email' | translate }}</label>
                   <input class="form-control" type="email" name="requesterEmail" [(ngModel)]="requesterEmail" required />
                 </div>
                 <div class="grow">
-                  <label class="form-label">Phone (optional)</label>
+                  <label class="form-label">{{ 'Phone (optional)' | translate }}</label>
                   <input class="form-control" name="requesterPhone" [(ngModel)]="requesterPhone" />
                 </div>
               </div>
               <div class="form-group mb-2" *ngIf="categories.length > 0">
-                <label class="form-label">Category (optional)</label>
+                <label class="form-label">{{ 'Category (optional)' | translate }}</label>
                 <select class="form-select" name="categoryId" [(ngModel)]="categoryId">
-                  <option [ngValue]="null">— Not sure —</option>
+                  <option [ngValue]="null">{{ '— Not sure —' | translate }}</option>
                   <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
                 </select>
               </div>
               <div class="form-group mb-2">
-                <label class="form-label">Subject</label>
+                <label class="form-label">{{ 'Subject' | translate }}</label>
                 <input class="form-control" name="subject" [(ngModel)]="subject" required />
               </div>
               <div class="form-group mb-3">
-                <label class="form-label">Tell us what's going on</label>
+                <label class="form-label">{{ 'Tell us what\\'s going on' | translate }}</label>
                 <textarea class="form-control" rows="4" name="description" [(ngModel)]="description" required></textarea>
               </div>
               <button class="btn btn-primary btn-block" type="submit" [disabled]="loading">
-                {{ loading ? 'Submitting…' : 'Submit ticket' }}
+                {{ loading ? ('Submitting…' | translate) : ('Submit ticket' | translate) }}
               </button>
             </form>
           </ng-container>
           <ng-container *ngIf="confirmation as c">
-            <h4 class="mb-2" style="text-align:center;">Ticket submitted</h4>
-            <p>Thanks — we've got your request and someone will be in touch.</p>
+            <h4 class="mb-2" style="text-align:center;">{{ 'Ticket submitted' | translate }}</h4>
+            <p>{{ 'Thanks — we\\'ve got your request and someone will be in touch.' | translate }}</p>
             <div class="card" style="padding:1rem; text-align:center; margin:1rem 0;">
-              <div class="text-muted" style="font-size:0.8rem;">Your ticket number</div>
+              <div class="text-muted" style="font-size:0.8rem;">{{ 'Your ticket number' | translate }}</div>
               <div style="font-size:1.4rem; font-weight:600; letter-spacing:0.03em;">{{ c.ticketNumber }}</div>
             </div>
             <p class="text-muted" style="font-size:0.85rem;">
-              Keep this number — use the "Check my ticket" tab above with it and your email to see updates.
+              {{ 'Keep this number — use the "Check my ticket" tab above with it and your email to see updates.' | translate }}
             </p>
           </ng-container>
         </ng-container>
@@ -93,15 +94,15 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
           <ng-container *ngIf="!status">
             <form (ngSubmit)="lookup()">
               <div class="form-group mb-2">
-                <label class="form-label">Ticket number</label>
-                <input class="form-control" name="lookupTicketNumber" [(ngModel)]="lookupTicketNumber" placeholder="e.g. HD-1234567890" required />
+                <label class="form-label">{{ 'Ticket number' | translate }}</label>
+                <input class="form-control" name="lookupTicketNumber" [(ngModel)]="lookupTicketNumber" [placeholder]="'e.g. HD-1234567890' | translate" required />
               </div>
               <div class="form-group mb-3">
-                <label class="form-label">Email used when you submitted it</label>
+                <label class="form-label">{{ 'Email used when you submitted it' | translate }}</label>
                 <input class="form-control" type="email" name="lookupEmail" [(ngModel)]="lookupEmail" required />
               </div>
               <button class="btn btn-primary btn-block" type="submit" [disabled]="loading">
-                {{ loading ? 'Checking…' : 'Check status' }}
+                {{ loading ? ('Checking…' | translate) : ('Check status' | translate) }}
               </button>
             </form>
           </ng-container>
@@ -112,25 +113,25 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
             </div>
             <h4 class="mb-1">{{ s.subject }}</h4>
             <div class="text-muted mb-2" style="font-size:0.85rem;">
-              {{ s.categoryName || 'Uncategorized' }} · submitted {{ s.createdAt | date: 'medium' }}
+              {{ '{p0} · submitted {p1}' | translate: { p0: (s.categoryName || 'Uncategorized'), p1: (s.createdAt | date: 'medium') } }}
             </div>
-            <div class="alert alert-info" *ngIf="s.status === 'WAITING'">We are waiting for your answer. Reply below to carry on.</div>
-            <div class="alert alert-info" *ngIf="s.status === 'MERGED'">This request was combined with another one. Please check the newer ticket number we sent you.</div>
+            <div class="alert alert-info" *ngIf="s.status === 'WAITING'">{{ 'We are waiting for your answer. Reply below to carry on.' | translate }}</div>
+            <div class="alert alert-info" *ngIf="s.status === 'MERGED'">{{ 'This request was combined with another one. Please check the newer ticket number we sent you.' | translate }}</div>
             <div class="card mt-2" style="padding:0.75rem;" *ngIf="s.resolutionNotes">
-              <strong>Resolution:</strong>
+              <strong>{{ 'Resolution:' | translate }}</strong>
               <p style="white-space:pre-wrap; margin:0.25rem 0 0;">{{ s.resolutionNotes }}</p>
             </div>
-            <h5 class="mt-3 mb-1">Updates</h5>
+            <h5 class="mt-3 mb-1">{{ 'Updates' | translate }}</h5>
             <div class="flex flex-col gap-2">
               <div class="card hd-update" style="padding:0.6rem;" *ngFor="let u of s.updates" [style.background]="u.fromRequester ? 'var(--hover, rgba(0,0,0,0.04))' : ''">
                 <div class="text-muted" style="font-size:0.75rem;">{{ u.fromRequester ? 'You' : 'Help desk' }} · {{ u.createdAt | date: 'medium' }}</div>
                 <p style="white-space:pre-wrap; margin:0.2rem 0 0;">{{ u.body }}</p>
               </div>
-              <p class="text-muted" *ngIf="s.updates.length === 0">No updates yet.</p>
+              <p class="text-muted" *ngIf="s.updates.length === 0">{{ 'No updates yet.' | translate }}</p>
             </div>
 
             <ng-container *ngIf="s.files.length">
-              <h5 class="mt-3 mb-1">Files</h5>
+              <h5 class="mt-3 mb-1">{{ 'Files' | translate }}</h5>
               <div *ngFor="let f of s.files" style="font-size:0.9rem;">
                 <a href="javascript:void(0)" (click)="openFile(f.id, f.fileName, f.contentType)">{{ f.fileName }}</a>
                 <span class="text-muted" style="font-size:0.75rem;"> · {{ f.fromRequester ? 'from you' : 'from the help desk' }}</span>
@@ -138,34 +139,34 @@ import { NiweFooterComponent } from '../shared/niwe-footer.component';
             </ng-container>
 
             <div class="mt-3 hd-reply-box" *ngIf="s.canReply">
-              <h5 class="mb-1">Add a reply</h5>
+              <h5 class="mb-1">{{ 'Add a reply' | translate }}</h5>
               <textarea class="form-control hd-public-reply" rows="3" name="replyBody" [(ngModel)]="replyBody" placeholder="Write your message here" maxlength="5000"></textarea>
               <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:center;">
-                <button type="button" class="btn btn-primary btn-sm hd-public-send" [disabled]="loading || !replyBody.trim()" (click)="sendReply()">Send</button>
+                <button type="button" class="btn btn-primary btn-sm hd-public-send" [disabled]="loading || !replyBody.trim()" (click)="sendReply()">{{ 'Send' | translate }}</button>
                 <input type="file" id="hd-public-file" class="hd-public-file" (change)="pickFile($event)" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain" />
-                <button type="button" class="btn btn-outline-secondary btn-sm hd-public-upload" [disabled]="loading || !pickedFile" (click)="sendFile()">Attach file</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm hd-public-upload" [disabled]="loading || !pickedFile" (click)="sendFile()">{{ 'Attach file' | translate }}</button>
               </div>
-              <div class="text-muted mt-1" style="font-size:0.75rem;">Pictures, PDF or text files, up to 10 MB.</div>
+              <div class="text-muted mt-1" style="font-size:0.75rem;">{{ 'Pictures, PDF or text files, up to 10 MB.' | translate }}</div>
             </div>
 
             <div class="mt-3 hd-rate-box" *ngIf="s.canRate">
-              <h5 class="mb-1">How did we do?</h5>
+              <h5 class="mb-1">{{ 'How did we do?' | translate }}</h5>
               <div style="font-size:1.6rem; line-height:1;">
                 <span *ngFor="let n of [1,2,3,4,5]" class="hd-star" [attr.data-star]="n" style="cursor:pointer;" [style.color]="n <= ratingChoice ? '#f5a623' : '#bbb'" (click)="ratingChoice = n">★</span>
               </div>
               <textarea class="form-control mt-2 hd-rate-comment" rows="2" name="ratingComment" [(ngModel)]="ratingComment" placeholder="Anything you'd like to add? (optional)" maxlength="1000"></textarea>
-              <button type="button" class="btn btn-primary btn-sm mt-2 hd-rate-send" [disabled]="loading || !ratingChoice" (click)="sendRating()">Send rating</button>
+              <button type="button" class="btn btn-primary btn-sm mt-2 hd-rate-send" [disabled]="loading || !ratingChoice" (click)="sendRating()">{{ 'Send rating' | translate }}</button>
             </div>
             <div class="mt-3 hd-rated" *ngIf="s.rating">
-              <strong>Your rating:</strong> <span style="color:#f5a623;">{{ stars(s.rating) }}</span> Thank you!
+              <strong>{{ 'Your rating:' | translate }}</strong> <span style="color:#f5a623;">{{ stars(s.rating) }}</span> {{ 'Thank you!' | translate }}
             </div>
 
-            <button type="button" class="btn btn-link mt-2" (click)="status = null">Check another ticket</button>
+            <button type="button" class="btn btn-link mt-2" (click)="status = null">{{ 'Check another ticket' | translate }}</button>
           </ng-container>
         </ng-container>
 
         <p style="margin-top:1rem; text-align:center;">
-          <a routerLink="/login">Staff login</a>
+          <a routerLink="/login">{{ 'Staff login' | translate }}</a>
         </p>
       </div>
     </div>

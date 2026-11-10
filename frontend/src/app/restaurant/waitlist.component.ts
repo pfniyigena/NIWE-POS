@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,39 +19,39 @@ import { PagerComponent } from '../shared/pager.component';
 @Component({
   selector: 'app-waitlist',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Waiting list</h3>
+        <h3>{{ 'Waiting list' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/reservations">Reservations</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">← Floor plan</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/reservations">{{ 'Reservations' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">{{ '← Floor plan' | translate }}</a>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem;">
-        <h4 style="font-size:1rem;" class="mb-2">Add a party</h4>
+        <h4 style="font-size:1rem;" class="mb-2">{{ 'Add a party' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group" style="flex:1; min-width:160px;"><label class="form-label">Name</label>
+          <div class="form-group" style="flex:1; min-width:160px;"><label class="form-label">{{ 'Name' | translate }}</label>
             <input class="form-control wl-name" [(ngModel)]="guestName" name="wlName" /></div>
-          <div class="form-group" style="min-width:140px;"><label class="form-label">Phone</label>
+          <div class="form-group" style="min-width:140px;"><label class="form-label">{{ 'Phone' | translate }}</label>
             <input class="form-control wl-phone" [(ngModel)]="guestPhone" name="wlPhone" /></div>
-          <div class="form-group" style="width:90px;"><label class="form-label">Party</label>
+          <div class="form-group" style="width:90px;"><label class="form-label">{{ 'Party' | translate }}</label>
             <input class="form-control wl-party" type="number" min="1" [(ngModel)]="partySize" name="wlParty" /></div>
-          <div class="form-group" style="width:150px;"><label class="form-label">Wait (min, blank = estimate)</label>
+          <div class="form-group" style="width:150px;"><label class="form-label">{{ 'Wait (min, blank = estimate)' | translate }}</label>
             <input class="form-control wl-quote" type="number" min="0" [(ngModel)]="quoted" name="wlQuote" /></div>
-          <div class="form-group" style="flex:1; min-width:160px;"><label class="form-label">Note</label>
-            <input class="form-control wl-notes" [(ngModel)]="notes" name="wlNotes" placeholder="high chair, outside…" /></div>
-          <button class="btn btn-primary wl-add" [disabled]="busy" (click)="add()">Add to the list</button>
+          <div class="form-group" style="flex:1; min-width:160px;"><label class="form-label">{{ 'Note' | translate }}</label>
+            <input class="form-control wl-notes" [(ngModel)]="notes" name="wlNotes" [placeholder]="'high chair, outside…' | translate" /></div>
+          <button class="btn btn-primary wl-add" [disabled]="busy" (click)="add()">{{ 'Add to the list' | translate }}</button>
         </div>
       </div>
 
-      <app-list-filter placeholder="Search name, phone, note" [statuses]="statuses" statusAll="Still waiting" [dates]="false" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter [placeholder]="'Search name, phone, note' | translate" [statuses]="statuses" statusAll="Still waiting" [dates]="false" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
-          <tr><th>#</th><th>Guest</th><th>Party</th><th>Quoted</th><th>Waiting</th><th>Status</th><th></th></tr>
+          <tr><th>#</th><th>{{ 'Guest' | translate }}</th><th>{{ 'Party' | translate }}</th><th>{{ 'Quoted' | translate }}</th><th>{{ 'Waiting' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let w of list.rows">
@@ -59,38 +60,38 @@ import { PagerComponent } from '../shared/pager.component';
               <td>{{ w.guestName }}<span class="text-muted" *ngIf="w.guestPhone"> — {{ w.guestPhone }}</span>
                 <div class="text-muted" style="font-size:0.8rem;" *ngIf="w.notes">{{ w.notes }}</div></td>
               <td>{{ w.partySize }}</td>
-              <td>{{ w.quotedMinutes }} min</td>
-              <td [style.color]="late(w) ? '#b91c1c' : ''">{{ w.waitedMinutes }} min</td>
-              <td>{{ pretty(w.status) }}<div class="wl-ready" style="font-size:0.8rem; color:#047857;" *ngIf="w.tableReady">Table {{ w.tableReady }} is free</div></td>
+              <td>{{ '{p0} min' | translate: { p0: (w.quotedMinutes) } }}</td>
+              <td [style.color]="late(w) ? '#b91c1c' : ''">{{ '{p0} min' | translate: { p0: (w.waitedMinutes) } }}</td>
+              <td>{{ pretty(w.status) }}<div class="wl-ready" style="font-size:0.8rem; color:#047857;" *ngIf="w.tableReady">{{ 'Table {p0} is free' | translate: { p0: (w.tableReady) } }}</div></td>
               <td class="flex gap-2" style="flex-wrap:wrap;">
                 <ng-container *ngIf="w.status === 'WAITING' || w.status === 'NOTIFIED'">
-                  <button class="btn btn-sm btn-outline-secondary wl-notify" *ngIf="w.status === 'WAITING'" (click)="notify(w)">Table ready</button>
-                  <button class="btn btn-sm btn-primary wl-seat" (click)="openSeat(w)">Seat</button>
-                  <button class="btn btn-sm btn-outline-danger wl-leave" (click)="leave(w)">Left</button>
+                  <button class="btn btn-sm btn-outline-secondary wl-notify" *ngIf="w.status === 'WAITING'" (click)="notify(w)">{{ 'Table ready' | translate }}</button>
+                  <button class="btn btn-sm btn-primary wl-seat" (click)="openSeat(w)">{{ 'Seat' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger wl-leave" (click)="leave(w)">{{ 'Left' | translate }}</button>
                 </ng-container>
-                <a *ngIf="w.status === 'SEATED' && w.orderId" [routerLink]="['/admin/restaurant/orders', w.orderId]">Open the order</a>
+                <a *ngIf="w.status === 'SEATED' && w.orderId" [routerLink]="['/admin/restaurant/orders', w.orderId]">{{ 'Open the order' | translate }}</a>
               </td>
             </tr>
             <tr *ngIf="seatingId === w.id">
               <td colspan="7">
                 <div class="card" style="padding:0.75rem;">
                   <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-                    <div class="form-group"><label class="form-label">Seat {{ w.guestName }} at</label>
+                    <div class="form-group"><label class="form-label">{{ 'Seat {p0} at' | translate: { p0: (w.guestName) } }}</label>
                       <select class="form-select wl-table" [(ngModel)]="seatTableId" name="wlTable">
-                        <option [ngValue]="null">— Choose a table —</option>
-                        <option *ngFor="let t of freeTables(w)" [ngValue]="t.id">{{ t.name }} (seats {{ t.capacity }})</option>
+                        <option [ngValue]="null">{{ '— Choose a table —' | translate }}</option>
+                        <option *ngFor="let t of freeTables(w)" [ngValue]="t.id">{{ '{p0} (seats {p1})' | translate: { p0: (t.name), p1: (t.capacity) } }}</option>
                       </select></div>
-                    <button class="btn btn-primary wl-seat-go" [disabled]="!seatTableId" (click)="seat(w)">Seat them</button>
-                    <button class="btn btn-link" (click)="seatingId = null">Close</button>
+                    <button class="btn btn-primary wl-seat-go" [disabled]="!seatTableId" (click)="seat(w)">{{ 'Seat them' | translate }}</button>
+                    <button class="btn btn-link" (click)="seatingId = null">{{ 'Close' | translate }}</button>
                   </div>
-                  <div class="text-muted" *ngIf="freeTables(w).length === 0">No free table fits this party right now.</div>
+                  <div class="text-muted" *ngIf="freeTables(w).length === 0">{{ 'No free table fits this party right now.' | translate }}</div>
                 </div>
               </td>
             </tr>
           </ng-container>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'Nobody matches these filters.' : 'Nobody is waiting.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('Nobody matches these filters.' | translate) : ('Nobody is waiting.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

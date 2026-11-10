@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
@@ -20,11 +21,11 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-restaurant-receipt',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="receipt" *ngIf="order as o">
       <p class="no-print dev-direct-error" *ngIf="directError" style="color:#b00; font-size:0.85rem;">{{ directError }}</p>
-      <h3 style="text-align:center; margin-bottom:0;">Receipt<span class="r-copy" *ngIf="(o.printCount ?? 0) > 1"> — COPY {{ (o.printCount ?? 1) - 1 }}</span></h3>
+      <h3 style="text-align:center; margin-bottom:0;">{{ 'Receipt' | translate }}<span class="r-copy" *ngIf="(o.printCount ?? 0) > 1"> {{ '— COPY {p0}' | translate: { p0: ((o.printCount ?? 1) - 1) } }}</span></h3>
       <div *ngIf="settings as s" style="text-align:center; margin:8px 0 12px;">
         <img *ngIf="s.logoDataUrl" [src]="s.logoDataUrl" alt="" style="max-width:120px; max-height:80px; margin-bottom:6px;" />
         <div *ngIf="s.businessName" style="font-weight:700; font-size:1.1rem;">{{ s.businessName }}</div>
@@ -32,14 +33,14 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
         <div *ngIf="s.phone || s.email" style="font-size:0.8rem; color:#444;">
           <span *ngIf="s.phone">{{ s.phone }}</span><span *ngIf="s.phone && s.email"> &middot; </span><span *ngIf="s.email">{{ s.email }}</span>
         </div>
-        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ s.taxId }}</div>
+        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (s.taxId) } }}</div>
       </div>
       <p style="text-align:center; margin:4px 0 12px;">{{ o.ticketNumber }}</p>
       <p style="text-align:center; margin:0 0 8px; color:#666; font-size:0.85rem;">
         {{ o.displayLabel }}<span *ngIf="o.serverName"> &middot; served by {{ o.serverName }}</span>
       </p>
-      <p style="margin:0 0 8px;" *ngIf="o.customerPhone">Phone: {{ o.customerPhone }}</p>
-      <p style="margin:0 0 8px;" *ngIf="o.customerAddress">Address: {{ o.customerAddress }}</p>
+      <p style="margin:0 0 8px;" *ngIf="o.customerPhone">{{ 'Phone: {p0}' | translate: { p0: (o.customerPhone) } }}</p>
+      <p style="margin:0 0 8px;" *ngIf="o.customerAddress">{{ 'Address: {p0}' | translate: { p0: (o.customerAddress) } }}</p>
       <hr />
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
@@ -53,7 +54,7 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
                 <span *ngFor="let o2 of l.options; let last = last">{{ o2.name }}<span *ngIf="o2.priceDelta !== 0"> ({{ o2.priceDelta > 0 ? '+' : '' }}{{ o2.priceDelta | number: '1.2-2' }})</span><span *ngIf="!last">, </span></span>
               </div>
               <div style="color:#666; font-size:0.8rem;" *ngIf="l.notes">{{ l.notes }}</div>
-              <div style="color:#666; font-size:0.8rem;" *ngIf="(l.discountTotal ?? 0) > 0">discount −{{ l.discountTotal | number: '1.2-2' }}</div>
+              <div style="color:#666; font-size:0.8rem;" *ngIf="(l.discountTotal ?? 0) > 0">{{ 'discount −{p0}' | translate: { p0: (l.discountTotal | number: '1.2-2') } }}</div>
             </td>
             <td style="text-align:right; padding:4px 0; vertical-align:top;">{{ l.lineGrandTotal | number: '1.2-2' }}</td>
           </tr>
@@ -63,56 +64,56 @@ import { RestaurantOrder, StoreSettings } from '../core/models';
       <table style="width:100%; font-size:0.9rem;">
         <tbody>
           <tr class="r-discount" *ngIf="(o.discountTotal ?? 0) > 0">
-            <td>Discounts given<span *ngIf="o.discountReason"> ({{ o.discountReason }})</span></td>
+            <td>{{ 'Discounts given' | translate }}<span *ngIf="o.discountReason"> ({{ o.discountReason }})</span></td>
             <td style="text-align:right;">−{{ o.discountTotal | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td>Subtotal</td>
+            <td>{{ 'Subtotal' | translate }}</td>
             <td style="text-align:right;">{{ o.subtotal | number: '1.2-2' }}</td>
           </tr>
           <tr class="r-service" *ngIf="(o.serviceCharge ?? 0) > 0">
-            <td>Service charge ({{ o.serviceChargePercent }}%)</td>
+            <td>{{ 'Service charge ({p0}%)' | translate: { p0: (o.serviceChargePercent) } }}</td>
             <td style="text-align:right;">{{ o.serviceCharge | number: '1.2-2' }}</td>
           </tr>
           <tr>
-            <td>Tax</td>
+            <td>{{ 'Tax' | translate }}</td>
             <td style="text-align:right;">{{ o.taxTotal | number: '1.2-2' }}</td>
           </tr>
           <tr class="r-rounding" *ngIf="(o.roundingAdjustment ?? 0) !== 0">
-            <td>Rounding</td>
+            <td>{{ 'Rounding' | translate }}</td>
             <td style="text-align:right;">{{ o.roundingAdjustment | number: '1.2-2' }}</td>
           </tr>
           <tr style="font-weight:700;">
-            <td>Total</td>
+            <td>{{ 'Total' | translate }}</td>
             <td style="text-align:right;">{{ o.total | number: '1.2-2' }}</td>
           </tr>
           <tr class="r-tip" *ngIf="(o.tipAmount ?? 0) > 0">
-            <td>Tip</td>
+            <td>{{ 'Tip' | translate }}</td>
             <td style="text-align:right;">{{ o.tipAmount | number: '1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
       <hr />
-      <p style="margin:0 0 4px; font-weight:600;">Payment</p>
+      <p style="margin:0 0 4px; font-weight:600;">{{ 'Payment' | translate }}</p>
       <div *ngFor="let p of o.payments" style="display:flex; justify-content:space-between; font-size:0.9rem;">
         <span>{{ p.method }}</span>
         <span>{{ p.amount | number: '1.2-2' }}</span>
       </div>
       <div class="r-deposit" *ngIf="(o.depositApplied ?? 0) > 0" style="display:flex; justify-content:space-between; font-size:0.9rem;">
-        <span>Reservation deposit (paid earlier)</span>
+        <span>{{ 'Reservation deposit (paid earlier)' | translate }}</span>
         <span>{{ o.depositApplied | number: '1.2-2' }}</span>
       </div>
       <div class="r-change" *ngIf="(o.changeGiven ?? 0) > 0" style="display:flex; justify-content:space-between; font-size:0.9rem; color:#666;">
-        <span>Change given</span>
+        <span>{{ 'Change given' | translate }}</span>
         <span>{{ o.changeGiven | number: '1.2-2' }}</span>
       </div>
 
-      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">Thank you!</p>
+      <p style="text-align:center; margin-top:20px; color:#666; font-size:0.85rem;">{{ 'Thank you!' | translate }}</p>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
+        <button (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
         <a routerLink="/admin/restaurant/receipts" style="flex:1; text-align:center; padding:10px; border:1px solid #ccc; border-radius:4px;">
-          Back to receipts
+          {{ 'Back to receipts' | translate }}
         </a>
       </div>
     </div>

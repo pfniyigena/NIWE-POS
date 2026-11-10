@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -9,25 +10,25 @@ import { WorkOrderTabsComponent } from './work-order-tabs.component';
 @Component({
   selector: 'app-work-order-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, WorkOrderTabsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, WorkOrderTabsComponent],
   template: `
     <app-shell>
-      <h3 class="mb-2">Work orders</h3>
+      <h3 class="mb-2">{{ 'Work orders' | translate }}</h3>
       <app-work-order-tabs></app-work-order-tabs>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
       <form class="card" style="padding:1rem; max-width:44rem;" *ngIf="s" (ngSubmit)="save()">
         <label style="display:flex; gap:0.5rem; align-items:flex-start;" class="mb-3">
           <input type="checkbox" name="ra" [(ngModel)]="s.requireApprovalDefault" />
-          <span><strong>New customer jobs need the customer's approval</strong><br />
-            <span class="text-muted">Work cannot start until an estimate has been sent and the customer has approved it. You can switch this off for a single job.</span></span>
+          <span><strong>{{ 'New customer jobs need the customer\\'s approval' | translate }}</strong><br />
+            <span class="text-muted">{{ 'Work cannot start until an estimate has been sent and the customer has approved it. You can switch this off for a single job.' | translate }}</span></span>
         </label>
         <label style="display:flex; gap:0.5rem; align-items:flex-start;" class="mb-3">
           <input type="checkbox" name="ec" [(ngModel)]="s.emailCustomerOnComplete" />
-          <span><strong>E-mail the customer when a job is completed</strong><br />
-            <span class="text-muted">A completion note (PDF) is sent to the customer's e-mail address. Needs e-mail to be set up in Settings. If it fails, the job is still completed.</span></span>
+          <span><strong>{{ 'E-mail the customer when a job is completed' | translate }}</strong><br />
+            <span class="text-muted">{{ 'A completion note (PDF) is sent to the customer\\'s e-mail address. Needs e-mail to be set up in Settings. If it fails, the job is still completed.' | translate }}</span></span>
         </label>
-        <div><button class="btn btn-primary" type="submit" [disabled]="busy">Save</button></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button></div>
       </form>
     </app-shell>
   `,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,33 +11,33 @@ import { OverheadAllocationMethod } from '../../core/models';
 @Component({
   selector: 'app-overhead-cost-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit indirect cost' : 'New indirect cost' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit indirect cost' | translate) : ('New indirect cost' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Code</label>
+          <label class="form-label">{{ 'Code' | translate }}</label>
           <input class="form-control" name="code" [(ngModel)]="code" [disabled]="!!id" required />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="id">
-            The code can't be changed once created.
+            {{ 'The code can\\'t be changed once created.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Electricity, Factory rent share" required />
+          <label class="form-label">{{ 'Name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Electricity, Factory rent share' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Allocation method</label>
+          <label class="form-label">{{ 'Allocation method' | translate }}</label>
           <select class="form-select" name="allocationMethod" [(ngModel)]="allocationMethod" required>
-            <option value="FLAT">Flat — a fixed total for the whole order</option>
-            <option value="PER_UNIT">Per unit produced</option>
-            <option value="PERCENT_OF_MATERIAL_COST">Percent of material cost</option>
+            <option value="FLAT">{{ 'Flat — a fixed total for the whole order' | translate }}</option>
+            <option value="PER_UNIT">{{ 'Per unit produced' | translate }}</option>
+            <option value="PERCENT_OF_MATERIAL_COST">{{ 'Percent of material cost' | translate }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Rate</label>
+          <label class="form-label">{{ 'Rate' | translate }}</label>
           <input class="form-control" style="max-width:160px;" type="number" min="0" step="0.01" name="rate" [(ngModel)]="rate" required />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
             {{ rateHint() }}
@@ -44,12 +45,12 @@ import { OverheadAllocationMethod } from '../../core/models';
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/manufacturing/overhead-costs">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/manufacturing/overhead-costs">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

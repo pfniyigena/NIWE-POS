@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,31 +10,31 @@ import { HelpDeskCategoryApiService } from '../core/api/helpdesk-api.service';
 @Component({
   selector: 'app-helpdesk-category-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit Help Desk category' : 'New Help Desk category' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit Help Desk category' | translate) : ('New Help Desk category' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Billing" required />
+          <label class="form-label">{{ 'Name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Billing' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Description (optional)</label>
+          <label class="form-label">{{ 'Description (optional)' | translate }}</label>
           <textarea class="form-control" name="description" [(ngModel)]="description" rows="2"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Inactive categories stay visible on existing tickets but can't be picked for new ones.
+            {{ 'Inactive categories stay visible on existing tickets but can\\'t be picked for new ones.' | translate }}
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/helpdesk/categories">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/helpdesk/categories">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

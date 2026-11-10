@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,49 +13,48 @@ import { AssetApiService, AssetCategory, PurchaseLine } from '../../core/api/ass
 @Component({
   selector: 'app-asset-from-purchase',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Register assets from purchases</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/assets">Back to the register</a>
+        <h3>{{ 'Register assets from purchases' | translate }}</h3>
+        <a class="btn btn-outline-primary" routerLink="/admin/assets">{{ 'Back to the register' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <p class="text-muted">
-        Pick a received purchase order line. The cost moves from Inventory to Fixed Assets, one asset per unit, each at the line's
-        cost without tax. Buy assets under a product that has <strong>Track stock</strong> switched off, so they don't stay in the stock count.
+        {{ 'Pick a received purchase order line. The cost moves from Inventory to Fixed Assets, one asset per unit, each at the line\\'s cost without tax. Buy assets under a product that has' | translate }} <strong>{{ 'Track stock' | translate }}</strong> {{ 'switched off, so they don\\'t stay in the stock count.' | translate }}
       </p>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="picked">
         <strong class="mb-2">{{ picked.productName }} — {{ picked.purchaseOrderNumber }}</strong>
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group"><label class="form-label">Category</label>
+          <div class="form-group"><label class="form-label">{{ 'Category' | translate }}</label>
             <select class="form-select" name="categoryId" [(ngModel)]="f.categoryId" (ngModelChange)="onCategory()" required>
-              <option [ngValue]="null" disabled>Select…</option>
+              <option [ngValue]="null" disabled>{{ 'Select…' | translate }}</option>
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">How many (max {{ remaining(picked) }})</label>
+          <div class="form-group"><label class="form-label">{{ 'How many (max {p0})' | translate: { p0: (remaining(picked)) } }}</label>
             <input class="form-control" type="number" min="1" [max]="remaining(picked)" name="qty" [(ngModel)]="f.quantity" style="width:7rem;" /></div>
-          <div class="form-group"><label class="form-label">Name</label>
+          <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label>
             <input class="form-control" name="name" [(ngModel)]="f.name" /></div>
-          <div class="form-group"><label class="form-label">Location</label>
+          <div class="form-group"><label class="form-label">{{ 'Location' | translate }}</label>
             <input class="form-control" name="location" [(ngModel)]="f.location" /></div>
-          <div class="form-group"><label class="form-label">Assigned to</label>
+          <div class="form-group"><label class="form-label">{{ 'Assigned to' | translate }}</label>
             <input class="form-control" name="assignedTo" [(ngModel)]="f.assignedTo" /></div>
-          <div class="form-group"><label class="form-label"><input type="checkbox" name="prorate" [(ngModel)]="f.prorateFirstMonth" /> Prorate first month</label></div>
+          <div class="form-group"><label class="form-label"><input type="checkbox" name="prorate" [(ngModel)]="f.prorateFirstMonth" /> {{ 'Prorate first month' | translate }}</label></div>
         </div>
         <div class="text-muted mb-2" style="font-size:0.85rem;">
-          Cost per asset {{ picked.unitNetCost | number: '1.2-2' }} — total {{ picked.unitNetCost * (f.quantity || 0) | number: '1.2-2' }}.
+          {{ 'Cost per asset {p0} — total {p1}.' | translate: { p0: (picked.unitNetCost | number: '1.2-2'), p1: (picked.unitNetCost * (f.quantity || 0) | number: '1.2-2') } }}
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="button" (click)="register()" [disabled]="busy">Register</button>
-          <button class="btn btn-link" type="button" (click)="picked = null">Cancel</button>
+          <button class="btn btn-primary" type="button" (click)="register()" [disabled]="busy">{{ 'Register' | translate }}</button>
+          <button class="btn btn-link" type="button" (click)="picked = null">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
       <table class="table-sm">
         <thead>
-          <tr><th>Purchase order</th><th>Date</th><th>Supplier</th><th>Product</th><th class="text-end">Received</th><th class="text-end">Registered</th><th class="text-end">Cost each</th><th></th></tr>
+          <tr><th>{{ 'Purchase order' | translate }}</th><th>{{ 'Date' | translate }}</th><th>{{ 'Supplier' | translate }}</th><th>{{ 'Product' | translate }}</th><th class="text-end">{{ 'Received' | translate }}</th><th class="text-end">{{ 'Registered' | translate }}</th><th class="text-end">{{ 'Cost each' | translate }}</th><th></th></tr>
         </thead>
         <tbody>
           <tr *ngFor="let l of lines">
@@ -66,14 +66,14 @@ import { AssetApiService, AssetCategory, PurchaseLine } from '../../core/api/ass
             <td class="text-end">{{ l.quantityRegistered }}</td>
             <td class="text-end">{{ l.unitNetCost | number: '1.2-2' }}</td>
             <td>
-              <span class="text-muted" *ngIf="l.stockTracked" title="Track stock is on for this product">Tracks stock</span>
-              <span class="text-muted" *ngIf="!l.stockTracked && remaining(l) === 0">Done</span>
-              <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="!l.stockTracked && remaining(l) > 0" (click)="pick(l)">Register…</button>
+              <span class="text-muted" *ngIf="l.stockTracked" [title]="'Track stock is on for this product' | translate">{{ 'Tracks stock' | translate }}</span>
+              <span class="text-muted" *ngIf="!l.stockTracked && remaining(l) === 0">{{ 'Done' | translate }}</span>
+              <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="!l.stockTracked && remaining(l) > 0" (click)="pick(l)">{{ 'Register…' | translate }}</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="lines.length === 0 && !error">No received purchase order lines yet.</p>
+      <p class="text-muted" *ngIf="lines.length === 0 && !error">{{ 'No received purchase order lines yet.' | translate }}</p>
     </app-shell>
   `,
 })

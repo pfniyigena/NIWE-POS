@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,12 +14,12 @@ interface Column { status: WorkOrderStatus; title: string; items: WorkOrderSumma
 @Component({
   selector: 'app-work-order-board',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, WorkOrderTabsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, WorkOrderTabsComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-2">
-        <h3>Work orders</h3>
-        <a class="btn btn-primary" routerLink="/admin/work-orders/new">+ New work order</a>
+        <h3>{{ 'Work orders' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/work-orders/new">{{ '+ New work order' | translate }}</a>
       </div>
       <app-work-order-tabs></app-work-order-tabs>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -26,16 +27,16 @@ interface Column { status: WorkOrderStatus; title: string; items: WorkOrderSumma
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="as" [(ngModel)]="assignee" (ngModelChange)="rebuild()">
-          <option [ngValue]="null">Everyone</option>
-          <option [ngValue]="0">Unassigned</option>
+          <option [ngValue]="null">{{ 'Everyone' | translate }}</option>
+          <option [ngValue]="0">{{ 'Unassigned' | translate }}</option>
           <option *ngFor="let s of staff" [ngValue]="s.id">{{ s.fullName }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="ty" [(ngModel)]="type" (ngModelChange)="rebuild()">
-          <option value="">Customer and internal</option>
-          <option value="CUSTOMER">Customer jobs</option><option value="INTERNAL">Internal maintenance</option>
+          <option value="">{{ 'Customer and internal' | translate }}</option>
+          <option value="CUSTOMER">{{ 'Customer jobs' | translate }}</option><option value="INTERNAL">{{ 'Internal maintenance' | translate }}</option>
         </select>
-        <input class="form-control" style="width:14rem;" placeholder="Search" name="q" [(ngModel)]="q" (ngModelChange)="rebuild()" />
-        <span class="text-muted" style="font-size:0.8rem;">Drag a card into <em>In progress</em> to start it, or into <em>On hold</em>.</span>
+        <input class="form-control" style="width:14rem;" [placeholder]="'Search' | translate" name="q" [(ngModel)]="q" (ngModelChange)="rebuild()" />
+        <span class="text-muted" style="font-size:0.8rem;">{{ 'Drag a card into' | translate }} <em>{{ 'In progress' | translate }}</em> {{ 'to start it, or into' | translate }} <em>{{ 'On hold' | translate }}</em>.</span>
       </div>
 
       <div class="board" style="display:flex; gap:0.75rem; align-items:flex-start; overflow-x:auto; padding-bottom:0.5rem;">
@@ -48,24 +49,24 @@ interface Column { status: WorkOrderStatus; title: string; items: WorkOrderSumma
                style="background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:0.5rem; margin-bottom:0.5rem; font-size:0.85rem;"
                [style.borderLeft]="w.priority === 'URGENT' ? '4px solid #c0392b' : w.priority === 'HIGH' ? '4px solid #e0a100' : '1px solid var(--border)'">
             <div class="flex justify-between"><a [routerLink]="['/admin/work-orders', w.id]"><strong>{{ w.number }}</strong></a>
-              <span class="text-muted" style="font-size:0.75rem;">{{ w.type === 'CUSTOMER' ? 'Customer' : 'Internal' }}</span></div>
+              <span class="text-muted" style="font-size:0.75rem;">{{ w.type === 'CUSTOMER' ? ('Customer' | translate) : ('Internal' | translate) }}</span></div>
             <div>{{ w.title }}</div>
-            <div class="text-muted" style="font-size:0.78rem;">{{ w.type === 'CUSTOMER' ? (w.customerName || '—') : (w.assetName || 'Internal') }}</div>
-            <div style="font-size:0.78rem;">{{ w.assignedToName || 'Unassigned' }}</div>
-            <div style="font-size:0.78rem;" [style.color]="w.overdue ? '#c0392b' : ''" *ngIf="w.dueDate">Due {{ w.dueDate }}<span *ngIf="w.overdue"> (late)</span></div>
+            <div class="text-muted" style="font-size:0.78rem;">{{ w.type === 'CUSTOMER' ? (w.customerName || '—') : (w.assetName || ('Internal' | translate)) }}</div>
+            <div style="font-size:0.78rem;">{{ w.assignedToName || ('Unassigned' | translate) }}</div>
+            <div style="font-size:0.78rem;" [style.color]="w.overdue ? '#c0392b' : ''" *ngIf="w.dueDate">{{ 'Due {p0}' | translate: { p0: (w.dueDate) } }}<span *ngIf="w.overdue"> {{ '(late)' | translate }}</span></div>
             <div style="margin-top:0.3rem;">
-              <span class="badge badge-success" *ngIf="w.approvalRequired && w.approvalStatus === 'APPROVED'">Approved</span>
-              <span class="badge badge-warning" *ngIf="w.approvalRequired && (w.approvalStatus === 'NONE' || w.approvalStatus === 'REQUESTED')">{{ w.approvalStatus === 'REQUESTED' ? 'Waiting for customer' : 'Needs estimate' }}</span>
-              <span class="badge badge-danger" *ngIf="w.approvalRequired && w.approvalStatus === 'REJECTED'">Declined</span>
-              <span class="badge badge-secondary" *ngIf="w.scheduleId">Planned</span>
+              <span class="badge badge-success" *ngIf="w.approvalRequired && w.approvalStatus === 'APPROVED'">{{ 'Approved' | translate }}</span>
+              <span class="badge badge-warning" *ngIf="w.approvalRequired && (w.approvalStatus === 'NONE' || w.approvalStatus === 'REQUESTED')">{{ w.approvalStatus === 'REQUESTED' ? ('Waiting for customer' | translate) : ('Needs estimate' | translate) }}</span>
+              <span class="badge badge-danger" *ngIf="w.approvalRequired && w.approvalStatus === 'REJECTED'">{{ 'Declined' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="w.scheduleId">{{ 'Planned' | translate }}</span>
               <span class="badge badge-secondary" *ngIf="w.checklistTotal">{{ w.checklistDone }}/{{ w.checklistTotal }}</span>
             </div>
             <div class="flex gap-1" style="margin-top:0.35rem;" *ngIf="w.status !== 'COMPLETED'">
-              <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="w.status === 'OPEN' || w.status === 'ON_HOLD'" (click)="move(w, 'IN_PROGRESS')">{{ w.status === 'ON_HOLD' ? 'Resume' : 'Start' }}</button>
-              <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="w.status === 'OPEN' || w.status === 'IN_PROGRESS'" (click)="move(w, 'ON_HOLD')">Hold</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" *ngIf="w.status === 'OPEN' || w.status === 'ON_HOLD'" (click)="move(w, 'IN_PROGRESS')">{{ w.status === 'ON_HOLD' ? ('Resume' | translate) : ('Start' | translate) }}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="w.status === 'OPEN' || w.status === 'IN_PROGRESS'" (click)="move(w, 'ON_HOLD')">{{ 'Hold' | translate }}</button>
             </div>
           </div>
-          <p class="text-muted" style="font-size:0.8rem;" *ngIf="!c.items.length">Nothing here.</p>
+          <p class="text-muted" style="font-size:0.8rem;" *ngIf="!c.items.length">{{ 'Nothing here.' | translate }}</p>
         </div>
       </div>
     </app-shell>

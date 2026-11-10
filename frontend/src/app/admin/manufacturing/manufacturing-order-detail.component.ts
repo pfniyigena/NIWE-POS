@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -19,7 +20,7 @@ import { q4 } from '../../core/qty';
 @Component({
   selector: 'app-manufacturing-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -30,91 +31,91 @@ import { q4 } from '../../core/qty';
             <span class="badge" [ngClass]="statusClass(o.status)">{{ o.status.replace('_', ' ') }}</span>
           </div>
           <div class="flex gap-2">
-            <a class="btn btn-outline-secondary btn-edit" *ngIf="o.status !== 'PRODUCED' && o.status !== 'CANCELLED'" [routerLink]="['/admin/manufacturing/orders', o.id, 'edit']">Edit</a>
-            <button class="btn btn-outline-secondary btn-jobcard" (click)="printJobCard()">Print job card</button>
-            <button class="btn btn-outline-secondary btn-copy" (click)="copy()">Copy as new draft</button>
-            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="confirm()">Confirm</button>
-            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'CONFIRMED'" (click)="cancel()">Cancel order</button>
+            <a class="btn btn-outline-secondary btn-edit" *ngIf="o.status !== 'PRODUCED' && o.status !== 'CANCELLED'" [routerLink]="['/admin/manufacturing/orders', o.id, 'edit']">{{ 'Edit' | translate }}</a>
+            <button class="btn btn-outline-secondary btn-jobcard" (click)="printJobCard()">{{ 'Print job card' | translate }}</button>
+            <button class="btn btn-outline-secondary btn-copy" (click)="copy()">{{ 'Copy as new draft' | translate }}</button>
+            <button class="btn btn-primary" *ngIf="o.status === 'DRAFT'" (click)="confirm()">{{ 'Confirm' | translate }}</button>
+            <button class="btn btn-outline-danger" *ngIf="o.status === 'DRAFT' || o.status === 'CONFIRMED'" (click)="cancel()">{{ 'Cancel order' | translate }}</button>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Product</div>
+            <div class="stat-label">{{ 'Product' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.productName }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Bill of materials</div>
+            <div class="stat-label">{{ 'Bill of materials' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.bomCode || '—' }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.locationName">
-            <div class="stat-label">Location</div>
+            <div class="stat-label">{{ 'Location' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.warehouseName ? o.warehouseName + ' / ' : '' }}{{ o.locationName }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Routing</div>
+            <div class="stat-label">{{ 'Routing' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.routingName || '—' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Planned</div>
+            <div class="stat-label">{{ 'Planned' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.quantityPlanned }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Produced</div>
+            <div class="stat-label">{{ 'Produced' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.quantityProduced }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Scheduled</div>
+            <div class="stat-label">{{ 'Scheduled' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.scheduledDate ? (o.scheduledDate | date: 'mediumDate') : '—' }}</div>
           </div>
         </div>
 
         <div class="stat-grid mb-3">
           <div class="stat-tile">
-            <div class="stat-label">Total material cost</div>
+            <div class="stat-label">{{ 'Total material cost' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalMaterialCost | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total overhead cost</div>
+            <div class="stat-label">{{ 'Total overhead cost' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalOverheadCost | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total labour cost</div>
+            <div class="stat-label">{{ 'Total labour cost' | translate }}</div>
             <div class="stat-value tl-labour" style="font-size:1.1rem;">{{ o.totalLabourCost | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total machine cost</div>
+            <div class="stat-label">{{ 'Total machine cost' | translate }}</div>
             <div class="stat-value tl-machine" style="font-size:1.1rem;">{{ o.totalMachineCost | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Total cost</div>
+            <div class="stat-label">{{ 'Total cost' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.totalCost | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile" *ngIf="o.totalScrapped > 0">
-            <div class="stat-label">Scrapped</div>
+            <div class="stat-label">{{ 'Scrapped' | translate }}</div>
             <div class="stat-value tl-scrap" style="font-size:1.1rem;">{{ o.totalScrapped }} ({{ o.totalScrapCost | number: '1.2-2' }})</div>
           </div>
           <div class="stat-tile" *ngIf="o.yieldPercent != null">
-            <div class="stat-label">Yield</div>
+            <div class="stat-label">{{ 'Yield' | translate }}</div>
             <div class="stat-value tl-yield" style="font-size:1.1rem;">{{ o.yieldPercent | number: '1.0-1' }}%</div>
           </div>
           <div class="stat-tile" *ngIf="o.totalByProductCredit > 0">
-            <div class="stat-label">By-product credit</div>
+            <div class="stat-label">{{ 'By-product credit' | translate }}</div>
             <div class="stat-value tl-credit" style="font-size:1.1rem;">{{ o.totalByProductCredit | number: '1.2-2' }}</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Unit cost</div>
+            <div class="stat-label">{{ 'Unit cost' | translate }}</div>
             <div class="stat-value" style="font-size:1.1rem;">{{ o.unitCost != null ? (o.unitCost | number: '1.2-2') : '—' }}</div>
           </div>
         </div>
 
         <ng-container *ngIf="o.status !== 'DRAFT' && o.status !== 'CANCELLED'">
-          <h4 class="mb-2">Planned cost</h4>
+          <h4 class="mb-2">{{ 'Planned cost' | translate }}</h4>
           <table class="table-sm mb-3 planned-cost">
-            <thead><tr><th></th><th class="text-end">Material</th><th class="text-end">Labour</th><th class="text-end">Machine</th><th class="text-end">Overhead</th><th class="text-end">Total</th></tr></thead>
+            <thead><tr><th></th><th class="text-end">{{ 'Material' | translate }}</th><th class="text-end">{{ 'Labour' | translate }}</th><th class="text-end">{{ 'Machine' | translate }}</th><th class="text-end">{{ 'Overhead' | translate }}</th><th class="text-end">{{ 'Total' | translate }}</th></tr></thead>
             <tbody>
               <tr>
-                <td>Planned for {{ o.quantityPlanned }}</td>
+                <td>{{ 'Planned for {p0}' | translate: { p0: (o.quantityPlanned) } }}</td>
                 <td class="text-end">{{ o.plannedMaterialCost | number: '1.2-2' }}</td>
                 <td class="text-end">{{ o.plannedLabourCost | number: '1.2-2' }}</td>
                 <td class="text-end">{{ o.plannedMachineCost | number: '1.2-2' }}</td>
@@ -126,9 +127,9 @@ import { q4 } from '../../core/qty';
         </ng-container>
 
         <ng-container *ngIf="o.operations.length > 0">
-          <h4 class="mb-2">Operations</h4>
+          <h4 class="mb-2">{{ 'Operations' | translate }}</h4>
           <table class="table-sm mb-3 op-table">
-            <thead><tr><th>Step</th><th>Operation</th><th>Workstation</th><th class="text-end">Min / unit</th><th class="text-end">Machine rate / h</th><th class="text-end">Labour rate / h</th></tr></thead>
+            <thead><tr><th>{{ 'Step' | translate }}</th><th>{{ 'Operation' | translate }}</th><th>{{ 'Workstation' | translate }}</th><th class="text-end">{{ 'Min / unit' | translate }}</th><th class="text-end">{{ 'Machine rate / h' | translate }}</th><th class="text-end">{{ 'Labour rate / h' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let op of o.operations" class="op-row">
                 <td>{{ op.sequence }}</td>
@@ -145,20 +146,20 @@ import { q4 } from '../../core/qty';
         <p class="text-muted mb-3" *ngIf="o.note">{{ o.note }}</p>
 
         <ng-container *ngIf="avail && avail.quantityRemaining > 0">
-          <h4 class="mb-2">Components for the {{ avail.quantityRemaining }} still to make</h4>
+          <h4 class="mb-2">{{ 'Components for the {p0} still to make' | translate: { p0: (avail.quantityRemaining) } }}</h4>
           <div class="alert alert-warning avail-warning" *ngIf="!avail.canProduceAll">
-            Stock is short for this order. {{ avail.maxProducible > 0 ? 'You can make ' + avail.maxProducible + ' of the ' + avail.quantityRemaining + ' with what is on hand.' : 'Nothing can be made until the missing components arrive.' }}
-            <span *ngIf="avail.allowNegativeStock"> (Negative stock is allowed, so production will still go through.)</span>
+            {{ 'Stock is short for this order. {p0}' | translate: { p0: (avail.maxProducible > 0 ? 'You can make ' + avail.maxProducible + ' of the ' + avail.quantityRemaining + ' with what is on hand.' : 'Nothing can be made until the missing components arrive.') } }}
+            <span *ngIf="avail.allowNegativeStock"> {{ '(Negative stock is allowed, so production will still go through.)' | translate }}</span>
           </div>
-          <div class="alert alert-success avail-ok" *ngIf="avail.canProduceAll">All components are in stock for the rest of this order.</div>
+          <div class="alert alert-success avail-ok" *ngIf="avail.canProduceAll">{{ 'All components are in stock for the rest of this order.' | translate }}</div>
           <table class="table-sm mb-3 avail-table">
-            <thead><tr><th>Component</th><th class="text-end">Per unit</th><th class="text-end">Needed</th><th class="text-end">On hand</th><th class="text-end">Short by</th></tr></thead>
+            <thead><tr><th>{{ 'Component' | translate }}</th><th class="text-end">{{ 'Per unit' | translate }}</th><th class="text-end">{{ 'Needed' | translate }}</th><th class="text-end">{{ 'On hand' | translate }}</th><th class="text-end">{{ 'Short by' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let l of avail.lines" class="avail-row" [class.avail-short]="l.shortBy > 0">
                 <td>{{ l.componentName }}</td>
                 <td class="text-end">{{ l.perUnit }}</td>
                 <td class="text-end">{{ l.required }}</td>
-                <td class="text-end">{{ l.available != null ? l.available : 'not tracked' }}</td>
+                <td class="text-end">{{ l.available != null ? l.available : ('not tracked' | translate) }}</td>
                 <td class="text-end"><span *ngIf="l.shortBy > 0" class="text-danger">{{ l.shortBy }}</span><span *ngIf="l.shortBy === 0">—</span></td>
               </tr>
             </tbody>
@@ -166,13 +167,13 @@ import { q4 } from '../../core/qty';
         </ng-container>
 
         <ng-container *ngIf="o.overheads.length > 0">
-          <h4 class="mb-2">Indirect costs applied</h4>
+          <h4 class="mb-2">{{ 'Indirect costs applied' | translate }}</h4>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Method</th>
-                <th class="text-end">Rate</th>
+                <th>{{ 'Name' | translate }}</th>
+                <th>{{ 'Method' | translate }}</th>
+                <th class="text-end">{{ 'Rate' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -186,28 +187,28 @@ import { q4 } from '../../core/qty';
         </ng-container>
 
         <ng-container *ngIf="o.status === 'CONFIRMED' || o.status === 'PARTIALLY_PRODUCED'">
-          <h4 class="mb-2">Record production</h4>
+          <h4 class="mb-2">{{ 'Record production' | translate }}</h4>
           <div class="alert alert-danger" *ngIf="produceError">{{ produceError }}</div>
           <div class="flex gap-2 align-center mb-3">
             <div>
-              <label class="form-label">Quantity to produce now (remaining: {{ remaining() }})</label>
+              <label class="form-label">{{ 'Quantity to produce now (remaining: {p0})' | translate: { p0: (remaining()) } }}</label>
               <input type="number" step="any" class="form-control" style="width:140px;" min="0.0001" [max]="remaining()" [(ngModel)]="produceQuantity" name="produceQuantity" />
             </div>
-            <button class="btn btn-primary" style="margin-top:1.5rem;" (click)="recordProduction()">Record production</button>
-            <button class="btn btn-outline-secondary btn-max" style="margin-top:1.5rem;" *ngIf="avail && !avail.canProduceAll && avail.maxProducible > 0" (click)="produceQuantity = avail.maxProducible">Use what stock allows ({{ avail.maxProducible }})</button>
+            <button class="btn btn-primary" style="margin-top:1.5rem;" (click)="recordProduction()">{{ 'Record production' | translate }}</button>
+            <button class="btn btn-outline-secondary btn-max" style="margin-top:1.5rem;" *ngIf="avail && !avail.canProduceAll && avail.maxProducible > 0" (click)="produceQuantity = avail.maxProducible">{{ 'Use what stock allows ({p0})' | translate: { p0: (avail.maxProducible) } }}</button>
           </div>
           <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
             <div>
-              <label class="form-label">Scrapped / rejected units (optional)</label>
+              <label class="form-label">{{ 'Scrapped / rejected units (optional)' | translate }}</label>
               <input type="number" step="any" class="form-control scrap-qty" style="width:140px;" min="0" [(ngModel)]="scrapQuantity" name="scrapQuantity" />
             </div>
             <div class="grow" style="min-width:220px;">
-              <label class="form-label">Reason</label>
-              <input class="form-control scrap-reason" [(ngModel)]="scrapReason" name="scrapReason" maxlength="255" placeholder="e.g. burnt, wrong size, failed check" />
+              <label class="form-label">{{ 'Reason' | translate }}</label>
+              <input class="form-control scrap-reason" [(ngModel)]="scrapReason" name="scrapReason" maxlength="255" [placeholder]="'e.g. burnt, wrong size, failed check' | translate" />
             </div>
           </div>
           <div class="mb-3" *ngIf="avail && avail.lines.length > 0">
-            <label class="form-label">Actual quantity used (optional — leave blank for the recipe's quantity for the units started)</label>
+            <label class="form-label">{{ 'Actual quantity used (optional — leave blank for the recipe\\'s quantity for the units started)' | translate }}</label>
             <div class="flex gap-2" style="flex-wrap:wrap;">
               <div *ngFor="let l of avail.lines" style="min-width:150px;">
                 <small class="text-muted">{{ l.componentName }}</small>
@@ -216,7 +217,7 @@ import { q4 } from '../../core/qty';
             </div>
           </div>
           <div class="mb-3" *ngIf="o.operations.length > 0">
-            <label class="form-label">Actual minutes taken (optional — leave blank to use the planned minutes)</label>
+            <label class="form-label">{{ 'Actual minutes taken (optional — leave blank to use the planned minutes)' | translate }}</label>
             <div class="flex gap-2" style="flex-wrap:wrap;">
               <div *ngFor="let op of o.operations" style="min-width:150px;">
                 <small class="text-muted">{{ op.sequence }}. {{ op.name }}</small>
@@ -227,17 +228,17 @@ import { q4 } from '../../core/qty';
         </ng-container>
 
         <ng-container *ngIf="o.runs.length > 0">
-          <h4 class="mb-2">Production run history</h4>
+          <h4 class="mb-2">{{ 'Production run history' | translate }}</h4>
           <table class="table-sm mb-3">
             <thead>
               <tr>
-                <th>Date</th>
-                <th class="text-end">Quantity produced</th>
-                <th class="text-end">Material cost</th>
-                <th class="text-end">Overhead cost</th>
-                <th class="text-end">Labour cost</th>
-                <th class="text-end">Machine cost</th>
-                <th class="text-end">Total cost</th>
+                <th>{{ 'Date' | translate }}</th>
+                <th class="text-end">{{ 'Quantity produced' | translate }}</th>
+                <th class="text-end">{{ 'Material cost' | translate }}</th>
+                <th class="text-end">{{ 'Overhead cost' | translate }}</th>
+                <th class="text-end">{{ 'Labour cost' | translate }}</th>
+                <th class="text-end">{{ 'Machine cost' | translate }}</th>
+                <th class="text-end">{{ 'Total cost' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -253,20 +254,18 @@ import { q4 } from '../../core/qty';
                 </tr>
                 <tr>
                   <td colspan="7" style="padding-left:2rem;">
-                    <span class="text-muted" style="font-size:0.85rem;">Consumed: </span>
+                    <span class="text-muted" style="font-size:0.85rem;">{{ 'Consumed:' | translate }} </span>
                     <span *ngFor="let c of run.consumptions; let last = last" class="run-use" style="font-size:0.85rem;">
-                      {{ c.componentName }} × {{ c.quantityConsumed }}<span *ngIf="c.varianceQuantity !== 0" class="run-variance" [class.text-danger]="c.varianceQuantity > 0"> (recipe {{ c.plannedQuantity }}, {{ c.varianceQuantity > 0 ? '+' : '' }}{{ c.varianceQuantity }} = {{ c.varianceCost | number: '1.2-2' }})</span>{{ !last ? ', ' : '' }}
+                      {{ c.componentName }} × {{ c.quantityConsumed }}<span *ngIf="c.varianceQuantity !== 0" class="run-variance" [class.text-danger]="c.varianceQuantity > 0"> {{ '(recipe {p0}, {p1}{p2} = {p3})' | translate: { p0: (c.plannedQuantity), p1: (c.varianceQuantity > 0 ? '+' : ''), p2: (c.varianceQuantity), p3: (c.varianceCost | number: '1.2-2') } }}</span>{{ !last ? ', ' : '' }}
                     </span>
                     <div *ngIf="run.quantityScrapped > 0" class="run-scrap" style="font-size:0.85rem;">
-                      Scrapped {{ run.quantityScrapped }}{{ run.scrapReason ? ' — ' + run.scrapReason : '' }} · cost {{ run.scrapCost | number: '1.2-2' }} · yield {{ run.yieldPercent | number: '1.0-1' }}%
+                      {{ 'Scrapped {p0}{p1} · cost {p2} · yield {p3}%' | translate: { p0: (run.quantityScrapped), p1: (run.scrapReason ? ' — ' + run.scrapReason : ''), p2: (run.scrapCost | number: '1.2-2'), p3: (run.yieldPercent | number: '1.0-1') } }}
                     </div>
                     <div *ngFor="let bp of run.byProducts" class="run-byproduct" style="font-size:0.85rem;">
-                      By-product: {{ bp.productName }} × {{ bp.quantity }}{{ bp.costValue > 0 ? ' (takes ' + (bp.costValue | number: '1.2-2') + ' of the cost)' : '' }}
+                      {{ 'By-product: {p0} × {p1}{p2}' | translate: { p0: (bp.productName), p1: (bp.quantity), p2: (bp.costValue > 0 ? ' (takes ' + (bp.costValue | number: '1.2-2') + ' of the cost)' : '') } }}
                     </div>
                     <div *ngFor="let ro of run.operations" class="run-op" style="font-size:0.85rem;">
-                      {{ ro.sequence }}. {{ ro.name }}{{ ro.workstationName ? ' @ ' + ro.workstationName : '' }}:
-                      {{ ro.actualMinutes | number: '1.0-2' }} min (planned {{ ro.plannedMinutes | number: '1.0-2' }}) —
-                      labour {{ ro.labourCost | number: '1.2-2' }}, machine {{ ro.machineCost | number: '1.2-2' }}
+                      {{ '{p0}. {p1}{p2}: {p3} min (planned {p4}) — labour {p5}, machine {p6}' | translate: { p0: (ro.sequence), p1: (ro.name), p2: (ro.workstationName ? ' @ ' + ro.workstationName : ''), p3: (ro.actualMinutes | number: '1.0-2'), p4: (ro.plannedMinutes | number: '1.0-2'), p5: (ro.labourCost | number: '1.2-2'), p6: (ro.machineCost | number: '1.2-2') } }}
                     </div>
                   </td>
                 </tr>

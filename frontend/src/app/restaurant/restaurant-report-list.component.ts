@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -16,15 +17,15 @@ import { REPORT_DEFS } from '../core/report-defs';
 @Component({
   selector: 'app-restaurant-report-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Restaurant Reports</h3>
+      <h3 class="mb-3">{{ 'Restaurant Reports' | translate }}</h3>
       <div class="mb-4">
-        <h5 class="mb-2">Analysis and cash-up</h5>
+        <h5 class="mb-2">{{ 'Analysis and cash-up' | translate }}</h5>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <a class="btn btn-primary" routerLink="/admin/restaurant/analysis">Sales analysis</a>
-          <a class="btn btn-primary" routerLink="/admin/restaurant/end-of-day">End of day (cash-up)</a>
+          <a class="btn btn-primary" routerLink="/admin/restaurant/analysis">{{ 'Sales analysis' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/restaurant/end-of-day">{{ 'End of day (cash-up)' | translate }}</a>
         </div>
       </div>
       <div *ngFor="let group of groups" class="mb-4">

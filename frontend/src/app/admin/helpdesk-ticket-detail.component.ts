@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -19,79 +20,79 @@ import { HD_EVENT_LABELS, hdDistance, hdPriorityClass, hdSlaClass, hdSlaLabel, h
 @Component({
   selector: 'app-helpdesk-ticket-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Ticket{{ ticket ? ' — ' + ticket.ticketNumber : '' }}</h3>
+        <h3>{{ 'Ticket{p0}' | translate: { p0: (ticket ? ' — ' + ticket.ticketNumber : '') } }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" *ngIf="ticket" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
-          <a class="btn btn-outline-primary" *ngIf="ticket && ticket.status !== 'MERGED'" [routerLink]="['/admin/helpdesk/tickets', ticket.id, 'edit']">Edit</a>
-          <a class="btn btn-link" routerLink="/admin/helpdesk/tickets">Back to tickets</a>
+          <button class="btn btn-outline-secondary" *ngIf="ticket" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
+          <a class="btn btn-outline-primary" *ngIf="ticket && ticket.status !== 'MERGED'" [routerLink]="['/admin/helpdesk/tickets', ticket.id, 'edit']">{{ 'Edit' | translate }}</a>
+          <a class="btn btn-link" routerLink="/admin/helpdesk/tickets">{{ 'Back to tickets' | translate }}</a>
         </div>
       </div>
 
       <div class="alert alert-info hd-merged" *ngIf="ticket && ticket.status === 'MERGED'">
-        This ticket was merged into
-        <a [routerLink]="['/admin/helpdesk/tickets', ticket.mergedIntoId]">{{ ticket.mergedIntoNumber }}</a>. Its conversation and files now live there.
+        {{ 'This ticket was merged into' | translate }}
+        <a [routerLink]="['/admin/helpdesk/tickets', ticket.mergedIntoId]">{{ ticket.mergedIntoNumber }}</a>{{ '. Its conversation and files now live there.' | translate }}
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="ticket as t">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div><strong>Type:</strong> {{ t.type === 'CUSTOMER' ? 'Customer' : 'Internal' }}</div>
-          <div><strong>Status:</strong> <span class="badge" [ngClass]="statusClass(t.status)">{{ statusLabel(t.status) }}</span></div>
-          <div><strong>Priority:</strong> <span class="badge" [ngClass]="priorityClass(t.priority)">{{ t.priority }}</span></div>
-          <div><strong>Category:</strong> {{ t.categoryName || '—' }}</div>
-          <div *ngIf="t.requesterName"><strong>Requester:</strong> {{ t.requesterName }}</div>
-          <div *ngIf="t.requesterEmail"><strong>Email:</strong> {{ t.requesterEmail }}</div>
-          <div *ngIf="t.requesterPhone"><strong>Phone:</strong> {{ t.requesterPhone }}</div>
-          <div *ngIf="t.customerName"><strong>Customer record:</strong> {{ t.customerName }}</div>
-          <div><strong>Created:</strong> {{ t.createdAt | date: 'medium' }} <span *ngIf="t.createdByUserFullName">by {{ t.createdByUserFullName }}</span></div>
-          <div *ngIf="t.resolvedAt"><strong>Resolved:</strong> {{ t.resolvedAt | date: 'medium' }}</div>
-          <div *ngIf="t.closedAt"><strong>Closed:</strong> {{ t.closedAt | date: 'medium' }}</div>
+          <div><strong>{{ 'Type:' | translate }}</strong> {{ t.type === 'CUSTOMER' ? ('Customer' | translate) : ('Internal' | translate) }}</div>
+          <div><strong>{{ 'Status:' | translate }}</strong> <span class="badge" [ngClass]="statusClass(t.status)">{{ statusLabel(t.status) }}</span></div>
+          <div><strong>{{ 'Priority:' | translate }}</strong> <span class="badge" [ngClass]="priorityClass(t.priority)">{{ t.priority }}</span></div>
+          <div><strong>{{ 'Category:' | translate }}</strong> {{ t.categoryName || '—' }}</div>
+          <div *ngIf="t.requesterName"><strong>{{ 'Requester:' | translate }}</strong> {{ t.requesterName }}</div>
+          <div *ngIf="t.requesterEmail"><strong>{{ 'Email:' | translate }}</strong> {{ t.requesterEmail }}</div>
+          <div *ngIf="t.requesterPhone"><strong>{{ 'Phone:' | translate }}</strong> {{ t.requesterPhone }}</div>
+          <div *ngIf="t.customerName"><strong>{{ 'Customer record:' | translate }}</strong> {{ t.customerName }}</div>
+          <div><strong>{{ 'Created:' | translate }}</strong> {{ t.createdAt | date: 'medium' }} <span *ngIf="t.createdByUserFullName">{{ 'by {p0}' | translate: { p0: (t.createdByUserFullName) } }}</span></div>
+          <div *ngIf="t.resolvedAt"><strong>{{ 'Resolved:' | translate }}</strong> {{ t.resolvedAt | date: 'medium' }}</div>
+          <div *ngIf="t.closedAt"><strong>{{ 'Closed:' | translate }}</strong> {{ t.closedAt | date: 'medium' }}</div>
         </div>
 
         <div class="hd-sla mt-3 flex gap-3" style="flex-wrap:wrap;" *ngIf="t.firstResponseDueAt || t.resolutionDueAt">
           <div *ngIf="t.firstResponseDueAt">
-            <strong>First reply due:</strong> {{ t.firstResponseDueAt | date: 'medium' }}
+            <strong>{{ 'First reply due:' | translate }}</strong> {{ t.firstResponseDueAt | date: 'medium' }}
             <span class="badge" [ngClass]="slaClass(t.responseState)">{{ slaLabel(t.responseState, 'reply') }}</span>
             <span class="text-muted" style="font-size:0.8rem;" *ngIf="!t.firstRespondedAt && t.responseState !== 'PAUSED'"> ({{ distance(t.firstResponseDueAt) }})</span>
-            <span class="text-muted" style="font-size:0.8rem;" *ngIf="t.firstRespondedAt"> · answered {{ t.firstRespondedAt | date: 'short' }}</span>
+            <span class="text-muted" style="font-size:0.8rem;" *ngIf="t.firstRespondedAt"> {{ '· answered {p0}' | translate: { p0: (t.firstRespondedAt | date: 'short') } }}</span>
           </div>
           <div *ngIf="t.resolutionDueAt">
-            <strong>Resolve by:</strong> {{ t.resolutionDueAt | date: 'medium' }}
+            <strong>{{ 'Resolve by:' | translate }}</strong> {{ t.resolutionDueAt | date: 'medium' }}
             <span class="badge" [ngClass]="slaClass(t.resolutionState)">{{ slaLabel(t.resolutionState, 'fix') }}</span>
             <span class="text-muted" style="font-size:0.8rem;" *ngIf="!t.resolvedAt && t.resolutionState !== 'PAUSED'"> ({{ distance(t.resolutionDueAt) }})</span>
           </div>
-          <div *ngIf="t.waitingSince" class="text-muted">Waiting for the customer since {{ t.waitingSince | date: 'medium' }} — the clock is paused.</div>
+          <div *ngIf="t.waitingSince" class="text-muted">{{ 'Waiting for the customer since {p0} — the clock is paused.' | translate: { p0: (t.waitingSince | date: 'medium') } }}</div>
         </div>
 
         <h4 class="mt-3 mb-1">{{ t.subject }}</h4>
         <p style="white-space:pre-wrap;">{{ t.description }}</p>
         <div class="card mt-2" style="padding:0.75rem; background:var(--hover, rgba(0, 0, 0, 0.05));" *ngIf="t.resolutionNotes">
-          <strong>Resolution notes:</strong>
+          <strong>{{ 'Resolution notes:' | translate }}</strong>
           <p style="white-space:pre-wrap; margin:0.25rem 0 0;">{{ t.resolutionNotes }}</p>
         </div>
         <div class="card mt-2 hd-rating" style="padding:0.75rem;" *ngIf="t.satisfactionRating">
-          <strong>Customer rating:</strong> <span class="hd-stars">{{ stars(t.satisfactionRating) }}</span> ({{ t.satisfactionRating }} of 5)
+          <strong>{{ 'Customer rating:' | translate }}</strong> <span class="hd-stars">{{ stars(t.satisfactionRating) }}</span> {{ '({p0} of 5)' | translate: { p0: (t.satisfactionRating) } }}
           <p style="white-space:pre-wrap; margin:0.25rem 0 0;" *ngIf="t.satisfactionComment">{{ t.satisfactionComment }}</p>
         </div>
 
         <div class="flex gap-3 mt-3" style="flex-wrap:wrap; align-items:flex-end;" *ngIf="t.status !== 'MERGED'">
           <div class="form-group" style="min-width:260px; margin:0;">
-            <label class="form-label">Assigned to</label>
+            <label class="form-label">{{ 'Assigned to' | translate }}</label>
             <select class="form-select" name="assignedToUserId" [(ngModel)]="assignedToUserId" (ngModelChange)="assign()">
-              <option [ngValue]="null">— Unassigned —</option>
+              <option [ngValue]="null">{{ '— Unassigned —' | translate }}</option>
               <option *ngFor="let u of users" [ngValue]="u.id">{{ u.fullName }}</option>
             </select>
           </div>
           <div class="form-group" style="min-width:300px; margin:0;">
-            <label class="form-label">Tags (comma separated)</label>
+            <label class="form-label">{{ 'Tags (comma separated)' | translate }}</label>
             <div class="flex gap-2">
-              <input class="form-control hd-tags" name="tagsText" [(ngModel)]="tagsText" placeholder="billing, vip" />
-              <button type="button" class="btn btn-outline-primary btn-sm hd-save-tags" [disabled]="busy" (click)="saveTags()">Save tags</button>
+              <input class="form-control hd-tags" name="tagsText" [(ngModel)]="tagsText" [placeholder]="'billing, vip' | translate" />
+              <button type="button" class="btn btn-outline-primary btn-sm hd-save-tags" [disabled]="busy" (click)="saveTags()">{{ 'Save tags' | translate }}</button>
             </div>
           </div>
         </div>
@@ -99,58 +100,58 @@ import { HD_EVENT_LABELS, hdDistance, hdPriorityClass, hdSlaClass, hdSlaLabel, h
 
         <div class="flex gap-3 mt-3" style="flex-wrap:wrap; align-items:flex-end;" *ngIf="t.status !== 'MERGED'">
           <div class="form-group" style="margin:0;">
-            <label class="form-label">Invoice number</label>
-            <input class="form-control hd-link-invoice" name="linkInvoice" [(ngModel)]="linkInvoice" placeholder="INV-…" />
+            <label class="form-label">{{ 'Invoice number' | translate }}</label>
+            <input class="form-control hd-link-invoice" name="linkInvoice" [(ngModel)]="linkInvoice" [placeholder]="'INV-…' | translate" />
           </div>
           <div class="form-group" style="margin:0;">
-            <label class="form-label">Job (work order) number</label>
-            <input class="form-control hd-link-wo" name="linkWo" [(ngModel)]="linkWo" placeholder="WO-…" />
+            <label class="form-label">{{ 'Job (work order) number' | translate }}</label>
+            <input class="form-control hd-link-wo" name="linkWo" [(ngModel)]="linkWo" [placeholder]="'WO-…' | translate" />
           </div>
-          <button type="button" class="btn btn-outline-primary btn-sm hd-save-links" [disabled]="busy" (click)="saveLinks()">Save links</button>
-          <span *ngIf="t.linkedInvoiceId">→ <a [routerLink]="['/admin/invoices', t.linkedInvoiceId]">Invoice {{ t.linkedInvoiceNumber }}</a></span>
-          <span *ngIf="t.linkedWorkOrderId">→ <a [routerLink]="['/admin/work-orders', t.linkedWorkOrderId]">Job {{ t.linkedWorkOrderNumber }}</a></span>
+          <button type="button" class="btn btn-outline-primary btn-sm hd-save-links" [disabled]="busy" (click)="saveLinks()">{{ 'Save links' | translate }}</button>
+          <span *ngIf="t.linkedInvoiceId">→ <a [routerLink]="['/admin/invoices', t.linkedInvoiceId]">{{ 'Invoice {p0}' | translate: { p0: (t.linkedInvoiceNumber) } }}</a></span>
+          <span *ngIf="t.linkedWorkOrderId">→ <a [routerLink]="['/admin/work-orders', t.linkedWorkOrderId]">{{ 'Job {p0}' | translate: { p0: (t.linkedWorkOrderNumber) } }}</a></span>
         </div>
 
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap;" *ngIf="t.status !== 'MERGED'">
-          <button class="btn btn-outline-primary hd-start" (click)="start()" *ngIf="t.status === 'OPEN' || t.status === 'WAITING'" [disabled]="busy">{{ t.status === 'WAITING' ? 'Back to work' : 'Start progress' }}</button>
-          <button class="btn btn-outline-secondary hd-wait" (click)="wait()" *ngIf="t.status === 'OPEN' || t.status === 'IN_PROGRESS'" [disabled]="busy">Wait for customer</button>
-          <button class="btn btn-outline-primary hd-resolve" (click)="openResolve()" *ngIf="t.status === 'OPEN' || t.status === 'IN_PROGRESS' || t.status === 'WAITING'" [disabled]="busy">Resolve</button>
-          <button class="btn btn-outline-secondary hd-close" (click)="close()" *ngIf="t.status !== 'CLOSED'" [disabled]="busy">Close</button>
-          <button class="btn btn-outline-secondary hd-reopen" (click)="reopen()" *ngIf="t.status === 'RESOLVED' || t.status === 'CLOSED'" [disabled]="busy">Reopen</button>
-          <button class="btn btn-outline-secondary hd-merge-open" (click)="showMerge = !showMerge" [disabled]="busy">Merge into another ticket…</button>
+          <button class="btn btn-outline-primary hd-start" (click)="start()" *ngIf="t.status === 'OPEN' || t.status === 'WAITING'" [disabled]="busy">{{ t.status === 'WAITING' ? ('Back to work' | translate) : ('Start progress' | translate) }}</button>
+          <button class="btn btn-outline-secondary hd-wait" (click)="wait()" *ngIf="t.status === 'OPEN' || t.status === 'IN_PROGRESS'" [disabled]="busy">{{ 'Wait for customer' | translate }}</button>
+          <button class="btn btn-outline-primary hd-resolve" (click)="openResolve()" *ngIf="t.status === 'OPEN' || t.status === 'IN_PROGRESS' || t.status === 'WAITING'" [disabled]="busy">{{ 'Resolve' | translate }}</button>
+          <button class="btn btn-outline-secondary hd-close" (click)="close()" *ngIf="t.status !== 'CLOSED'" [disabled]="busy">{{ 'Close' | translate }}</button>
+          <button class="btn btn-outline-secondary hd-reopen" (click)="reopen()" *ngIf="t.status === 'RESOLVED' || t.status === 'CLOSED'" [disabled]="busy">{{ 'Reopen' | translate }}</button>
+          <button class="btn btn-outline-secondary hd-merge-open" (click)="showMerge = !showMerge" [disabled]="busy">{{ 'Merge into another ticket…' | translate }}</button>
         </div>
 
         <div class="card mt-3" style="padding:0.9rem; max-width:480px;" *ngIf="showResolve">
           <div class="form-group">
-            <label class="form-label">Resolution notes (optional)</label>
+            <label class="form-label">{{ 'Resolution notes (optional)' | translate }}</label>
             <textarea class="form-control" name="resolutionNotes" [(ngModel)]="resolutionNotesDraft" rows="3"></textarea>
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-primary btn-sm hd-resolve-confirm" (click)="resolve()" [disabled]="busy">Mark resolved</button>
-            <button class="btn btn-link btn-sm" (click)="showResolve = false">Never mind</button>
+            <button class="btn btn-primary btn-sm hd-resolve-confirm" (click)="resolve()" [disabled]="busy">{{ 'Mark resolved' | translate }}</button>
+            <button class="btn btn-link btn-sm" (click)="showResolve = false">{{ 'Never mind' | translate }}</button>
           </div>
         </div>
 
         <div class="card mt-3 hd-merge-panel" style="padding:0.9rem; max-width:560px;" *ngIf="showMerge">
-          <p class="text-muted" style="margin-top:0;">Use this when the same problem was reported twice. All of this ticket's conversation and files move to the ticket you choose, and this one is closed as merged.</p>
+          <p class="text-muted" style="margin-top:0;">{{ 'Use this when the same problem was reported twice. All of this ticket\\'s conversation and files move to the ticket you choose, and this one is closed as merged.' | translate }}</p>
           <div class="flex gap-2">
-            <input class="form-control hd-merge-q" name="mergeQ" [(ngModel)]="mergeQ" placeholder="Ticket number or subject" (keyup.enter)="searchMerge()" />
-            <button class="btn btn-outline-primary btn-sm hd-merge-search" type="button" (click)="searchMerge()">Find</button>
+            <input class="form-control hd-merge-q" name="mergeQ" [(ngModel)]="mergeQ" [placeholder]="'Ticket number or subject' | translate" (keyup.enter)="searchMerge()" />
+            <button class="btn btn-outline-primary btn-sm hd-merge-search" type="button" (click)="searchMerge()">{{ 'Find' | translate }}</button>
           </div>
           <div class="mt-2" *ngFor="let c of mergeCandidates">
             <label style="display:flex; gap:0.5rem; align-items:center;">
               <input type="radio" name="mergeTarget" [value]="c.id" [(ngModel)]="mergeTargetId" /> {{ c.ticketNumber }} — {{ c.subject }} ({{ statusLabel(c.status) }})
             </label>
           </div>
-          <div class="text-muted mt-1" *ngIf="mergeSearched && !mergeCandidates.length">No other open ticket matches.</div>
+          <div class="text-muted mt-1" *ngIf="mergeSearched && !mergeCandidates.length">{{ 'No other open ticket matches.' | translate }}</div>
           <div class="flex gap-2 mt-2">
-            <button class="btn btn-primary btn-sm hd-merge-confirm" type="button" [disabled]="busy || !mergeTargetId" (click)="doMerge()">Merge</button>
-            <button class="btn btn-link btn-sm" type="button" (click)="showMerge = false">Never mind</button>
+            <button class="btn btn-primary btn-sm hd-merge-confirm" type="button" [disabled]="busy || !mergeTargetId" (click)="doMerge()">{{ 'Merge' | translate }}</button>
+            <button class="btn btn-link btn-sm" type="button" (click)="showMerge = false">{{ 'Never mind' | translate }}</button>
           </div>
         </div>
       </div>
 
-      <h4 class="mt-3 mb-2">Conversation</h4>
+      <h4 class="mt-3 mb-2">{{ 'Conversation' | translate }}</h4>
       <div class="flex flex-col gap-2 mb-3">
         <div class="card hd-comment" style="padding:0.75rem;" *ngFor="let c of comments">
           <div class="flex justify-between align-center">
@@ -162,53 +163,53 @@ import { HD_EVENT_LABELS, hdDistance, hdPriorityClass, hdSlaClass, hdSlaLabel, h
           <p style="white-space:pre-wrap; margin:0.4rem 0 0.2rem;">{{ c.body }}</p>
           <div class="text-muted" style="font-size:0.8rem;">{{ c.createdAt | date: 'medium' }}</div>
         </div>
-        <p class="text-muted" *ngIf="comments.length === 0">No updates yet.</p>
+        <p class="text-muted" *ngIf="comments.length === 0">{{ 'No updates yet.' | translate }}</p>
       </div>
 
       <div class="card mb-3 hd-composer" style="padding:0.9rem; max-width:640px;" *ngIf="ticket && ticket.status !== 'MERGED'">
         <div class="flex gap-3 mb-2" style="flex-wrap:wrap; align-items:center;">
-          <label style="display:flex; gap:0.35rem; align-items:center; margin:0;"><input type="radio" name="replyMode" value="note" [(ngModel)]="replyMode" /> Internal note</label>
-          <label style="display:flex; gap:0.35rem; align-items:center; margin:0;"><input type="radio" name="replyMode" value="reply" [(ngModel)]="replyMode" /> Reply to the customer</label>
+          <label style="display:flex; gap:0.35rem; align-items:center; margin:0;"><input type="radio" name="replyMode" value="note" [(ngModel)]="replyMode" /> {{ 'Internal note' | translate }}</label>
+          <label style="display:flex; gap:0.35rem; align-items:center; margin:0;"><input type="radio" name="replyMode" value="reply" [(ngModel)]="replyMode" /> {{ 'Reply to the customer' | translate }}</label>
           <select class="form-select hd-canned" style="max-width:220px; margin-left:auto;" name="cannedId" [ngModel]="null" (ngModelChange)="useCanned($event)" *ngIf="canned.length">
-            <option [ngValue]="null">Insert a saved reply…</option>
+            <option [ngValue]="null">{{ 'Insert a saved reply…' | translate }}</option>
             <option *ngFor="let r of canned" [ngValue]="r.id">{{ r.title }}</option>
           </select>
         </div>
         <textarea class="form-control hd-reply-body" name="newCommentBody" [(ngModel)]="newCommentBody" rows="4" [placeholder]="replyMode === 'reply' ? 'Your answer to the customer' : 'A note for your colleagues'"></textarea>
         <div class="text-muted mt-1" style="font-size:0.8rem;" *ngIf="replyMode === 'reply'">
-          The customer sees this on the ticket page{{ ticket.requesterEmail ? ' and gets it by e-mail at ' + ticket.requesterEmail : '' }}.
+          {{ 'The customer sees this on the ticket page{p0}.' | translate: { p0: (ticket.requesterEmail ? ' and gets it by e-mail at ' + ticket.requesterEmail : '') } }}
         </div>
         <div class="flex justify-between align-center mt-2" style="flex-wrap:wrap; gap:0.5rem;">
           <label style="display:flex; gap:0.35rem; align-items:center; margin:0;" *ngIf="replyMode === 'reply'">
-            <input type="checkbox" class="hd-wait-after" name="waitAfter" [(ngModel)]="waitAfter" /> Then wait for the customer's answer
+            <input type="checkbox" class="hd-wait-after" name="waitAfter" [(ngModel)]="waitAfter" /> {{ 'Then wait for the customer\\'s answer' | translate }}
           </label>
           <span *ngIf="replyMode !== 'reply'"></span>
-          <button class="btn btn-primary btn-sm hd-send" (click)="addComment()" [disabled]="busy || !newCommentBody.trim()">{{ replyMode === 'reply' ? 'Send reply' : 'Add note' }}</button>
+          <button class="btn btn-primary btn-sm hd-send" (click)="addComment()" [disabled]="busy || !newCommentBody.trim()">{{ replyMode === 'reply' ? ('Send reply' | translate) : ('Add note' | translate) }}</button>
         </div>
       </div>
 
-      <h4 class="mt-3 mb-2">Files</h4>
+      <h4 class="mt-3 mb-2">{{ 'Files' | translate }}</h4>
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
         <div class="hd-file card" style="padding:0.5rem; width:11rem;" *ngFor="let a of files">
           <img *ngIf="a.image && thumbs[a.id]" [src]="thumbs[a.id]" [alt]="a.fileName" style="width:100%; height:5.5rem; object-fit:cover; border-radius:4px;" />
           <div *ngIf="!a.image || !thumbs[a.id]" style="height:5.5rem; display:flex; align-items:center; justify-content:center; font-size:0.75rem; text-align:center; word-break:break-all;">{{ a.fileName }}</div>
           <div style="font-size:0.75rem; word-break:break-all;" class="mt-1"><a href="javascript:void(0)" (click)="openFile(a)">{{ a.fileName }}</a></div>
-          <div class="text-muted" style="font-size:0.7rem;">{{ a.sizeBytes / 1024 | number: '1.0-0' }} KB · {{ a.fromRequester ? 'from the customer' : (a.uploadedBy || '') }}</div>
+          <div class="text-muted" style="font-size:0.7rem;">{{ '{p0} KB · {p1}' | translate: { p0: (a.sizeBytes / 1024 | number: '1.0-0'), p1: (a.fromRequester ? 'from the customer' : (a.uploadedBy || '')) } }}</div>
           <label style="display:flex; gap:0.3rem; align-items:center; font-size:0.75rem; margin:0.25rem 0 0;" *ngIf="!a.fromRequester && ticket?.status !== 'MERGED'">
-            <input type="checkbox" [checked]="a.visibleToRequester" (change)="toggleVisible(a, $event)" /> Customer can see
+            <input type="checkbox" [checked]="a.visibleToRequester" (change)="toggleVisible(a, $event)" /> {{ 'Customer can see' | translate }}
           </label>
-          <button type="button" class="btn btn-link btn-sm" style="padding:0;" (click)="removeFile(a)" *ngIf="ticket?.status !== 'MERGED'">Remove</button>
+          <button type="button" class="btn btn-link btn-sm" style="padding:0;" (click)="removeFile(a)" *ngIf="ticket?.status !== 'MERGED'">{{ 'Remove' | translate }}</button>
         </div>
-        <p class="text-muted" *ngIf="files.length === 0">No files yet.</p>
+        <p class="text-muted" *ngIf="files.length === 0">{{ 'No files yet.' | translate }}</p>
       </div>
       <div class="flex gap-2 mb-3" style="flex-wrap:wrap; align-items:center;" *ngIf="ticket && ticket.status !== 'MERGED'">
         <input type="file" id="hd-file-input" class="hd-file-input" (change)="picked($event)" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain" />
-        <label style="display:flex; gap:0.35rem; align-items:center; margin:0;"><input type="checkbox" name="fileVisible" [(ngModel)]="fileVisible" /> Customer can see it</label>
-        <button class="btn btn-outline-primary btn-sm hd-upload" type="button" [disabled]="busy || !chosen" (click)="upload()">Add file</button>
-        <span class="text-muted" style="font-size:0.8rem;">Pictures, PDF or text, up to 10 MB each.</span>
+        <label style="display:flex; gap:0.35rem; align-items:center; margin:0;"><input type="checkbox" name="fileVisible" [(ngModel)]="fileVisible" /> {{ 'Customer can see it' | translate }}</label>
+        <button class="btn btn-outline-primary btn-sm hd-upload" type="button" [disabled]="busy || !chosen" (click)="upload()">{{ 'Add file' | translate }}</button>
+        <span class="text-muted" style="font-size:0.8rem;">{{ 'Pictures, PDF or text, up to 10 MB each.' | translate }}</span>
       </div>
 
-      <h4 class="mt-3 mb-2">History</h4>
+      <h4 class="mt-3 mb-2">{{ 'History' | translate }}</h4>
       <table class="table-sm mb-3 hd-history">
         <tbody>
           <tr *ngFor="let e of events">
@@ -216,7 +217,7 @@ import { HD_EVENT_LABELS, hdDistance, hdPriorityClass, hdSlaClass, hdSlaLabel, h
             <td>{{ eventLabel(e.kind) }}<span class="text-muted" *ngIf="e.detail"> — {{ e.detail }}</span></td>
             <td class="text-muted">{{ e.by || '' }}</td>
           </tr>
-          <tr *ngIf="events.length === 0"><td class="text-muted">Nothing recorded yet.</td></tr>
+          <tr *ngIf="events.length === 0"><td class="text-muted">{{ 'Nothing recorded yet.' | translate }}</td></tr>
         </tbody>
       </table>
     </app-shell>

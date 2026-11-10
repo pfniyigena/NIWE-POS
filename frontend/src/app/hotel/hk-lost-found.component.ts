@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/auth.service';
@@ -12,70 +13,70 @@ import { errMsg, today } from './hotel-util';
 @Component({
   selector: 'app-hk-lost-found',
   standalone: true,
-  imports: [CommonModule, FormsModule, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ListFilterComponent, PagerComponent],
   template: `
     <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
     <div class="alert alert-success" *ngIf="message">{{ message }}</div>
     <div class="flex justify-between align-center mb-3">
-      <span class="text-muted">Items found in rooms and public areas.</span>
-      <button class="btn btn-primary new-found" type="button" (click)="openForm(null)">+ Log an item</button>
+      <span class="text-muted">{{ 'Items found in rooms and public areas.' | translate }}</span>
+      <button class="btn btn-primary new-found" type="button" (click)="openForm(null)">{{ '+ Log an item' | translate }}</button>
     </div>
 
     <form class="card mb-3 found-form" *ngIf="form" (ngSubmit)="save()">
       <div class="card-body">
-        <h5>{{ editingId ? 'Edit item' : 'Log an item' }}</h5>
+        <h5>{{ editingId ? ('Edit item' | translate) : ('Log an item' | translate) }}</h5>
         <div class="form-grid">
-          <div><label class="form-label">What was found *</label><input class="form-control f-desc" name="fdesc" [(ngModel)]="form.description" required /></div>
-          <div><label class="form-label">Found on</label><input class="form-control f-date" type="date" name="fdate" [(ngModel)]="form.foundOn" /></div>
-          <div><label class="form-label">Room</label>
-            <select class="form-control f-room" name="froom" [(ngModel)]="form.roomId"><option [ngValue]="null">— none / public area —</option><option *ngFor="let r of rooms" [ngValue]="r.id">{{ r.number }}</option></select></div>
-          <div><label class="form-label">Place (if not a room)</label><input class="form-control f-place" name="fplace" [(ngModel)]="form.location" placeholder="Lobby, restaurant, pool…" /></div>
-          <div><label class="form-label">Found by</label><input class="form-control f-by" name="fby" [(ngModel)]="form.foundBy" /></div>
-          <div><label class="form-label">Notes</label><input class="form-control f-notes" name="fnotes" [(ngModel)]="form.notes" /></div>
+          <div><label class="form-label">{{ 'What was found *' | translate }}</label><input class="form-control f-desc" name="fdesc" [(ngModel)]="form.description" required /></div>
+          <div><label class="form-label">{{ 'Found on' | translate }}</label><input class="form-control f-date" type="date" name="fdate" [(ngModel)]="form.foundOn" /></div>
+          <div><label class="form-label">{{ 'Room' | translate }}</label>
+            <select class="form-control f-room" name="froom" [(ngModel)]="form.roomId"><option [ngValue]="null">{{ '— none / public area —' | translate }}</option><option *ngFor="let r of rooms" [ngValue]="r.id">{{ r.number }}</option></select></div>
+          <div><label class="form-label">{{ 'Place (if not a room)' | translate }}</label><input class="form-control f-place" name="fplace" [(ngModel)]="form.location" [placeholder]="'Lobby, restaurant, pool…' | translate" /></div>
+          <div><label class="form-label">{{ 'Found by' | translate }}</label><input class="form-control f-by" name="fby" [(ngModel)]="form.foundBy" /></div>
+          <div><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control f-notes" name="fnotes" [(ngModel)]="form.notes" /></div>
         </div>
-        <p class="text-muted" style="font-size:0.85rem;" *ngIf="form.roomId">The guest who last stayed in that room on the day is linked automatically, so you know whom to contact.</p>
+        <p class="text-muted" style="font-size:0.85rem;" *ngIf="form.roomId">{{ 'The guest who last stayed in that room on the day is linked automatically, so you know whom to contact.' | translate }}</p>
         <div class="flex gap-2">
-          <button class="btn btn-primary save-found" type="submit" [disabled]="busy">Save</button>
-          <button class="btn btn-secondary" type="button" (click)="form = null">Cancel</button>
+          <button class="btn btn-primary save-found" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button>
+          <button class="btn btn-secondary" type="button" (click)="form = null">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
     </form>
 
     <form class="card mb-3 claim-form" *ngIf="claiming" (ngSubmit)="claim()">
       <div class="card-body">
-        <h5>Hand over {{ claiming.itemNo }} — {{ claiming.description }}</h5>
+        <h5>{{ 'Hand over {p0} — {p1}' | translate: { p0: (claiming.itemNo), p1: (claiming.description) } }}</h5>
         <div class="form-grid">
-          <div><label class="form-label">Collected by *</label><input class="form-control c-by" name="cby" [(ngModel)]="claimBy" required /></div>
-          <div><label class="form-label">Notes (ID checked, courier…)</label><input class="form-control c-notes" name="cnotes" [(ngModel)]="claimNotes" /></div>
+          <div><label class="form-label">{{ 'Collected by *' | translate }}</label><input class="form-control c-by" name="cby" [(ngModel)]="claimBy" required /></div>
+          <div><label class="form-label">{{ 'Notes (ID checked, courier…)' | translate }}</label><input class="form-control c-notes" name="cnotes" [(ngModel)]="claimNotes" /></div>
         </div>
-        <div class="flex gap-2"><button class="btn btn-success confirm-claim" type="submit" [disabled]="busy">Hand over</button><button class="btn btn-secondary" type="button" (click)="claiming = null">Cancel</button></div>
+        <div class="flex gap-2"><button class="btn btn-success confirm-claim" type="submit" [disabled]="busy">{{ 'Hand over' | translate }}</button><button class="btn btn-secondary" type="button" (click)="claiming = null">{{ 'Cancel' | translate }}</button></div>
       </div>
     </form>
 
-    <app-list-filter exportPath="/hotel/lost-found/export" placeholder="Search item, room, guest, place" [statuses]="statuses" statusAll="All items" [dates]="false" (filterChange)="list.apply($event)"></app-list-filter>
+    <app-list-filter exportPath="/hotel/lost-found/export" [placeholder]="'Search item, room, guest, place' | translate" [statuses]="statuses" statusAll="All items" [dates]="false" (filterChange)="list.apply($event)"></app-list-filter>
     <table class="table-sm found-table">
-      <thead><tr><th>No.</th><th>Item</th><th>Found</th><th>Where</th><th>Guest to contact</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>{{ 'No.' | translate }}</th><th>{{ 'Item' | translate }}</th><th>{{ 'Found' | translate }}</th><th>{{ 'Where' | translate }}</th><th>{{ 'Guest to contact' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
       <tbody>
         <tr *ngFor="let i of list.rows" class="found-row">
           <td><strong>{{ i.itemNo }}</strong></td>
           <td>{{ i.description }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="i.notes">{{ i.notes }}</div></td>
-          <td>{{ i.foundOn }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="i.foundBy">by {{ i.foundBy }}</div></td>
-          <td>{{ i.roomNumber ? 'Room ' + i.roomNumber : (i.location || '—') }}</td>
+          <td>{{ i.foundOn }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="i.foundBy">{{ 'by {p0}' | translate: { p0: (i.foundBy) } }}</div></td>
+          <td>{{ i.roomNumber ? ('Room {p0}' | translate: { p0: i.roomNumber }) : (i.location || '—') }}</td>
           <td><span *ngIf="i.guestName">{{ i.guestName }}<span class="text-muted" *ngIf="i.guestPhone"> · {{ i.guestPhone }}</span></span><span *ngIf="!i.guestName" class="text-muted">—</span></td>
           <td><span class="badge" [ngClass]="i.status === 'FOUND' ? 'badge-warning' : i.status === 'CLAIMED' ? 'badge-success' : 'badge-secondary'">{{ i.status | titlecase }}</span>
             <div class="text-muted" style="font-size:0.8rem;" *ngIf="i.claimedBy">{{ i.claimedBy }} · {{ i.claimedOn }}</div></td>
           <td class="flex gap-1" style="flex-wrap:wrap;">
-            <button class="btn btn-sm btn-outline-secondary edit-found" type="button" *ngIf="i.status === 'FOUND'" (click)="openForm(i)">Edit</button>
+            <button class="btn btn-sm btn-outline-secondary edit-found" type="button" *ngIf="i.status === 'FOUND'" (click)="openForm(i)">{{ 'Edit' | translate }}</button>
             <ng-container *ngIf="canManage && i.status === 'FOUND'">
-              <button class="btn btn-sm btn-success claim-found" type="button" (click)="startClaim(i)">Hand over</button>
-              <button class="btn btn-sm btn-outline-secondary dispose-found" type="button" (click)="dispose(i)">Dispose</button>
+              <button class="btn btn-sm btn-success claim-found" type="button" (click)="startClaim(i)">{{ 'Hand over' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary dispose-found" type="button" (click)="dispose(i)">{{ 'Dispose' | translate }}</button>
             </ng-container>
-            <button class="btn btn-sm btn-outline-danger delete-found" type="button" *ngIf="canManage" (click)="remove(i)">Delete</button>
+            <button class="btn btn-sm btn-outline-danger delete-found" type="button" *ngIf="canManage" (click)="remove(i)">{{ 'Delete' | translate }}</button>
           </td>
         </tr>
       </tbody>
     </table>
-    <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No item matches these filters.' : 'Nothing logged yet.' }}</p>
+    <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('No item matches these filters.' | translate) : ('Nothing logged yet.' | translate) }}</p>
     <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
   `,
 })

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,7 +14,7 @@ import { errMsg } from './hotel-util';
 @Component({
   selector: 'app-guest-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, GuestFormComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, GuestFormComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -22,46 +23,46 @@ import { errMsg } from './hotel-util';
         <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
           <h3 class="profile-name">
             {{ pr.guest.fullName }}
-            <span class="badge badge-warning vip-badge" style="font-size:0.75rem;" *ngIf="pr.guest.vip">VIP</span>
-            <span class="badge badge-danger black-badge" style="font-size:0.75rem;" *ngIf="pr.guest.blacklisted">Blacklisted</span>
+            <span class="badge badge-warning vip-badge" style="font-size:0.75rem;" *ngIf="pr.guest.vip">{{ 'VIP' | translate }}</span>
+            <span class="badge badge-danger black-badge" style="font-size:0.75rem;" *ngIf="pr.guest.blacklisted">{{ 'Blacklisted' | translate }}</span>
           </h3>
           <div class="flex gap-2">
-            <a class="btn btn-outline-secondary" routerLink="/admin/hotel/guests">← Guests</a>
-            <button class="btn btn-outline-primary edit-profile" type="button" *ngIf="canManage && !editing" (click)="editing = true">Edit</button>
+            <a class="btn btn-outline-secondary" routerLink="/admin/hotel/guests">{{ '← Guests' | translate }}</a>
+            <button class="btn btn-outline-primary edit-profile" type="button" *ngIf="canManage && !editing" (click)="editing = true">{{ 'Edit' | translate }}</button>
           </div>
         </div>
-        <div class="alert alert-danger black-reason" *ngIf="pr.guest.blacklisted">Blacklisted: {{ pr.guest.blacklistReason }}</div>
+        <div class="alert alert-danger black-reason" *ngIf="pr.guest.blacklisted">{{ 'Blacklisted: {p0}' | translate: { p0: (pr.guest.blacklistReason) } }}</div>
         <app-guest-form *ngIf="editing" [guest]="pr.guest" (saved)="editing = false; message = 'Guest saved.'; load()" (cancelled)="editing = false"></app-guest-form>
 
         <div class="card" style="padding:1rem; margin-bottom:1rem;">
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div><div class="text-muted" style="font-size:0.75rem;">CONTACT</div>{{ pr.guest.phone || '—' }}<div style="font-size:0.85rem;">{{ pr.guest.email }}</div></div>
-            <div><div class="text-muted" style="font-size:0.75rem;">NATIONALITY</div>{{ pr.guest.nationality || '—' }}</div>
-            <div><div class="text-muted" style="font-size:0.75rem;">ID</div>{{ pr.guest.idType }} {{ pr.guest.idNumber }}<span *ngIf="!pr.guest.idType && !pr.guest.idNumber">—</span></div>
-            <div><div class="text-muted" style="font-size:0.75rem;">BORN</div>{{ pr.guest.dateOfBirth || '—' }}</div>
-            <div><div class="text-muted" style="font-size:0.75rem;">PROFESSION</div>{{ pr.guest.profession || '—' }}</div>
-            <div><div class="text-muted" style="font-size:0.75rem;">ADDRESS</div>{{ pr.guest.address || '—' }}</div>
+            <div><div class="text-muted" style="font-size:0.75rem;">{{ 'CONTACT' | translate }}</div>{{ pr.guest.phone || '—' }}<div style="font-size:0.85rem;">{{ pr.guest.email }}</div></div>
+            <div><div class="text-muted" style="font-size:0.75rem;">{{ 'NATIONALITY' | translate }}</div>{{ pr.guest.nationality || '—' }}</div>
+            <div><div class="text-muted" style="font-size:0.75rem;">{{ 'ID' | translate }}</div>{{ pr.guest.idType }} {{ pr.guest.idNumber }}<span *ngIf="!pr.guest.idType && !pr.guest.idNumber">—</span></div>
+            <div><div class="text-muted" style="font-size:0.75rem;">{{ 'BORN' | translate }}</div>{{ pr.guest.dateOfBirth || '—' }}</div>
+            <div><div class="text-muted" style="font-size:0.75rem;">{{ 'PROFESSION' | translate }}</div>{{ pr.guest.profession || '—' }}</div>
+            <div><div class="text-muted" style="font-size:0.75rem;">{{ 'ADDRESS' | translate }}</div>{{ pr.guest.address || '—' }}</div>
           </div>
-          <div style="margin-top:0.6rem;" *ngIf="pr.guest.preferences"><span class="text-muted" style="font-size:0.75rem;">PREFERENCES</span> <span class="prefs">{{ pr.guest.preferences }}</span></div>
-          <div style="margin-top:0.3rem;" *ngIf="pr.guest.notes"><span class="text-muted" style="font-size:0.75rem;">NOTES</span> {{ pr.guest.notes }}</div>
+          <div style="margin-top:0.6rem;" *ngIf="pr.guest.preferences"><span class="text-muted" style="font-size:0.75rem;">{{ 'PREFERENCES' | translate }}</span> <span class="prefs">{{ pr.guest.preferences }}</span></div>
+          <div style="margin-top:0.3rem;" *ngIf="pr.guest.notes"><span class="text-muted" style="font-size:0.75rem;">{{ 'NOTES' | translate }}</span> {{ pr.guest.notes }}</div>
         </div>
 
         <div class="stat-grid mb-3">
-          <div class="stat-tile"><div class="stat-label">Stays</div><div class="stat-value st-stays">{{ pr.stats.stays }}</div><div class="text-muted" style="font-size:0.8rem;">{{ pr.stats.nights }} night{{ pr.stats.nights === 1 ? '' : 's' }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Lifetime spend</div><div class="stat-value st-spend">{{ pr.stats.lifetimeSpend | number: '1.2-2' }}</div><div class="text-muted" style="font-size:0.8rem;">tax included</div></div>
-          <div class="stat-tile"><div class="stat-label">Average per stay</div><div class="stat-value st-avg">{{ pr.stats.averageSpend | number: '1.2-2' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ pr.stats.averageNightly | number: '1.2-2' }} a night</div></div>
-          <div class="stat-tile"><div class="stat-label">Last stay</div><div class="stat-value st-last" style="font-size:1.1rem;">{{ pr.stats.lastStay || '—' }}</div><div class="text-muted" style="font-size:0.8rem;" *ngIf="pr.stats.firstStay">first {{ pr.stats.firstStay }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Usually books</div><div class="stat-value st-fav" style="font-size:1.1rem;">{{ pr.stats.favouriteRoomType || '—' }}</div><div class="text-muted" style="font-size:0.8rem;" *ngIf="pr.stats.favouriteSource">via {{ pr.stats.favouriteSource }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Upcoming / cancelled</div><div class="stat-value st-up" style="font-size:1.1rem;">{{ pr.stats.upcoming }} / {{ pr.stats.cancelled + pr.stats.noShows }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Stays' | translate }}</div><div class="stat-value st-stays">{{ pr.stats.stays }}</div><div class="text-muted" style="font-size:0.8rem;">{{ '{p0} night{p1}' | translate: { p0: (pr.stats.nights), p1: (pr.stats.nights === 1 ? '' : 's') } }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Lifetime spend' | translate }}</div><div class="stat-value st-spend">{{ pr.stats.lifetimeSpend | number: '1.2-2' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ 'tax included' | translate }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Average per stay' | translate }}</div><div class="stat-value st-avg">{{ pr.stats.averageSpend | number: '1.2-2' }}</div><div class="text-muted" style="font-size:0.8rem;">{{ '{p0} a night' | translate: { p0: (pr.stats.averageNightly | number: '1.2-2') } }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Last stay' | translate }}</div><div class="stat-value st-last" style="font-size:1.1rem;">{{ pr.stats.lastStay || '—' }}</div><div class="text-muted" style="font-size:0.8rem;" *ngIf="pr.stats.firstStay">{{ 'first {p0}' | translate: { p0: (pr.stats.firstStay) } }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Usually books' | translate }}</div><div class="stat-value st-fav" style="font-size:1.1rem;">{{ pr.stats.favouriteRoomType || '—' }}</div><div class="text-muted" style="font-size:0.8rem;" *ngIf="pr.stats.favouriteSource">{{ 'via {p0}' | translate: { p0: (pr.stats.favouriteSource) } }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Upcoming / cancelled' | translate }}</div><div class="stat-value st-up" style="font-size:1.1rem;">{{ pr.stats.upcoming }} / {{ pr.stats.cancelled + pr.stats.noShows }}</div></div>
         </div>
 
-        <h5>Stays</h5>
+        <h5>{{ 'Stays' | translate }}</h5>
         <table class="table-sm stays-table">
-          <thead><tr><th>Booking</th><th>Dates</th><th>Room</th><th>Status</th><th>Source</th><th class="text-end">Charged</th></tr></thead>
+          <thead><tr><th>{{ 'Booking' | translate }}</th><th>{{ 'Dates' | translate }}</th><th>{{ 'Room' | translate }}</th><th>{{ 'Status' | translate }}</th><th>{{ 'Source' | translate }}</th><th class="text-end">{{ 'Charged' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let s of pr.stays" class="stay-row">
               <td><a [routerLink]="['/admin/hotel/bookings', s.bookingId]">{{ s.bookingNumber }}</a></td>
-              <td>{{ s.checkInDate }} → {{ s.checkOutDate }} <span class="text-muted">({{ s.nights }}n)</span></td>
+              <td>{{ s.checkInDate }} → {{ s.checkOutDate }} <span class="text-muted">{{ '({p0}n)' | translate: { p0: (s.nights) } }}</span></td>
               <td>{{ s.roomNumber || '—' }} <span class="text-muted">{{ s.roomTypeName }}</span></td>
               <td>{{ statusLabel(s.status) }}</td>
               <td>{{ s.source || '—' }}</td>
@@ -69,46 +70,46 @@ import { errMsg } from './hotel-util';
             </tr>
           </tbody>
         </table>
-        <p class="text-muted" *ngIf="!pr.stays.length">No bookings yet.</p>
+        <p class="text-muted" *ngIf="!pr.stays.length">{{ 'No bookings yet.' | translate }}</p>
 
-        <h5 style="margin-top:1.5rem;">ID documents</h5>
+        <h5 style="margin-top:1.5rem;">{{ 'ID documents' | translate }}</h5>
         <table class="table-sm docs-table" *ngIf="pr.documents.length">
-          <thead><tr><th>Document</th><th>Number</th><th>Expires</th><th>File</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Document' | translate }}</th><th>{{ 'Number' | translate }}</th><th>{{ 'Expires' | translate }}</th><th>{{ 'File' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let d of pr.documents" class="doc-row">
               <td><strong>{{ d.name }}</strong> <span class="text-muted">{{ typeLabel(d.docType) }}</span></td>
               <td>{{ d.docNumber || '—' }}</td>
-              <td>{{ d.expiryDate || '—' }} <span class="badge" [ngClass]="d.expiryState === 'EXPIRED' ? 'badge-danger' : 'badge-warning'" *ngIf="d.expiryState === 'EXPIRED' || d.expiryState === 'SOON'">{{ d.expiryState === 'EXPIRED' ? 'Expired' : 'Expires soon' }}</span></td>
-              <td>{{ d.fileName }} <span class="text-muted">{{ (d.sizeBytes / 1024) | number: '1.0-0' }} KB</span></td>
+              <td>{{ d.expiryDate || '—' }} <span class="badge" [ngClass]="d.expiryState === 'EXPIRED' ? 'badge-danger' : 'badge-warning'" *ngIf="d.expiryState === 'EXPIRED' || d.expiryState === 'SOON'">{{ d.expiryState === 'EXPIRED' ? ('Expired' | translate) : ('Expires soon' | translate) }}</span></td>
+              <td>{{ d.fileName }} <span class="text-muted">{{ '{p0} KB' | translate: { p0: ((d.sizeBytes / 1024) | number: '1.0-0') } }}</span></td>
               <td class="flex gap-1">
-                <button class="btn btn-sm btn-outline-secondary download-doc" type="button" (click)="download(d)">Download</button>
-                <button class="btn btn-sm btn-outline-danger delete-doc" type="button" *ngIf="canManage" (click)="removeDoc(d)">Delete</button>
+                <button class="btn btn-sm btn-outline-secondary download-doc" type="button" (click)="download(d)">{{ 'Download' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger delete-doc" type="button" *ngIf="canManage" (click)="removeDoc(d)">{{ 'Delete' | translate }}</button>
               </td>
             </tr>
           </tbody>
         </table>
-        <p class="text-muted" *ngIf="!pr.documents.length">No ID documents on file.</p>
+        <p class="text-muted" *ngIf="!pr.documents.length">{{ 'No ID documents on file.' | translate }}</p>
         <form class="card doc-form" style="padding:0.8rem; margin-bottom:1rem;" *ngIf="canManage" (ngSubmit)="upload()">
           <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-            <select class="form-control doc-type" style="width:auto;" name="dtype" [(ngModel)]="docType"><option value="PASSPORT">Passport</option><option value="NATIONAL_ID">National ID</option><option value="DRIVING_LICENCE">Driving licence</option><option value="VISA">Visa</option><option value="OTHER">Other</option></select>
-            <input class="form-control doc-name" style="width:170px;" name="dname" [(ngModel)]="docName" placeholder="Name (optional)" />
-            <input class="form-control doc-number" style="width:150px;" name="dnum" [(ngModel)]="docNumber" placeholder="Document number" />
-            <label class="text-muted" style="font-size:0.85rem;">Expires <input class="form-control doc-expiry" type="date" style="width:auto; display:inline-block;" name="dexp" [(ngModel)]="docExpiry" /></label>
+            <select class="form-control doc-type" style="width:auto;" name="dtype" [(ngModel)]="docType"><option value="PASSPORT">{{ 'Passport' | translate }}</option><option value="NATIONAL_ID">{{ 'National ID' | translate }}</option><option value="DRIVING_LICENCE">{{ 'Driving licence' | translate }}</option><option value="VISA">{{ 'Visa' | translate }}</option><option value="OTHER">{{ 'Other' | translate }}</option></select>
+            <input class="form-control doc-name" style="width:170px;" name="dname" [(ngModel)]="docName" [placeholder]="'Name (optional)' | translate" />
+            <input class="form-control doc-number" style="width:150px;" name="dnum" [(ngModel)]="docNumber" [placeholder]="'Document number' | translate" />
+            <label class="text-muted" style="font-size:0.85rem;">{{ 'Expires' | translate }} <input class="form-control doc-expiry" type="date" style="width:auto; display:inline-block;" name="dexp" [(ngModel)]="docExpiry" /></label>
             <input class="doc-file" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" (change)="pick($event)" />
-            <button class="btn btn-primary upload-doc" type="submit" [disabled]="busy || !file">Upload</button>
+            <button class="btn btn-primary upload-doc" type="submit" [disabled]="busy || !file">{{ 'Upload' | translate }}</button>
           </div>
         </form>
 
         <div *ngIf="canManage" class="card merge-card" style="padding:0.8rem;">
-          <h5 style="margin-bottom:0.4rem;">Merge a duplicate into {{ pr.guest.fullName }}</h5>
+          <h5 style="margin-bottom:0.4rem;">{{ 'Merge a duplicate into {p0}' | translate: { p0: (pr.guest.fullName) } }}</h5>
           <p class="text-muted" style="font-size:0.85rem;">All bookings, groups, lost &amp; found items and ID documents of the other guest move here, missing details are filled in, and the other record is removed. This cannot be undone.</p>
           <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-            <input class="form-control merge-search" style="max-width:260px;" name="msearch" [(ngModel)]="mergeQuery" (ngModelChange)="searchMerge()" placeholder="Search the other guest" />
+            <input class="form-control merge-search" style="max-width:260px;" name="msearch" [(ngModel)]="mergeQuery" (ngModelChange)="searchMerge()" [placeholder]="'Search the other guest' | translate" />
             <select class="form-control merge-pick" style="width:auto; max-width:360px;" name="mpick" [(ngModel)]="mergeId" *ngIf="mergeOptions.length">
-              <option [ngValue]="null">— choose —</option>
-              <option *ngFor="let o of mergeOptions" [ngValue]="o.id">{{ o.fullName }} · {{ o.phone || o.email || 'no contact' }} · {{ o.stays }} stay{{ o.stays === 1 ? '' : 's' }}</option>
+              <option [ngValue]="null">{{ '— choose —' | translate }}</option>
+              <option *ngFor="let o of mergeOptions" [ngValue]="o.id">{{ '{p0} · {p1} · {p2} stay{p3}' | translate: { p0: (o.fullName), p1: (o.phone || o.email || 'no contact'), p2: (o.stays), p3: (o.stays === 1 ? '' : 's') } }}</option>
             </select>
-            <button class="btn btn-danger do-merge" type="button" [disabled]="busy || !mergeId" (click)="merge()">Merge into this guest</button>
+            <button class="btn btn-danger do-merge" type="button" [disabled]="busy || !mergeId" (click)="merge()">{{ 'Merge into this guest' | translate }}</button>
           </div>
         </div>
       </ng-container>

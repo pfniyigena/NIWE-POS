@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,34 +21,34 @@ const daysBetween = (a: string, b: string) => Math.round((fromIso(b).getTime() -
 @Component({
   selector: 'app-work-order-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, WorkOrderTabsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, WorkOrderTabsComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-2">
-        <h3>Work orders</h3>
-        <a class="btn btn-primary" routerLink="/admin/work-orders/new">+ New work order</a>
+        <h3>{{ 'Work orders' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/work-orders/new">{{ '+ New work order' | translate }}</a>
       </div>
       <app-work-order-tabs></app-work-order-tabs>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
-        <button class="btn btn-outline-secondary btn-sm" type="button" id="cal-prev" (click)="shift(-7)">‹ Previous week</button>
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="goToday()">This week</button>
-        <button class="btn btn-outline-secondary btn-sm" type="button" id="cal-next" (click)="shift(7)">Next week ›</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="cal-prev" (click)="shift(-7)">{{ '‹ Previous week' | translate }}</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="goToday()">{{ 'This week' | translate }}</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="cal-next" (click)="shift(7)">{{ 'Next week ›' | translate }}</button>
         <strong>{{ days[0].iso }} — {{ days[6].iso }}</strong>
         <select class="form-select" style="width:auto;" name="ty" [(ngModel)]="type" (ngModelChange)="build()">
-          <option value="">Customer and internal</option>
-          <option value="CUSTOMER">Customer jobs</option><option value="INTERNAL">Internal maintenance</option>
+          <option value="">{{ 'Customer and internal' | translate }}</option>
+          <option value="CUSTOMER">{{ 'Customer jobs' | translate }}</option><option value="INTERNAL">{{ 'Internal maintenance' | translate }}</option>
         </select>
-        <span class="text-muted" style="font-size:0.8rem;">Drag a job to another day or person. Jobs are shown on their scheduled day (or their due day if not scheduled).</span>
+        <span class="text-muted" style="font-size:0.8rem;">{{ 'Drag a job to another day or person. Jobs are shown on their scheduled day (or their due day if not scheduled).' | translate }}</span>
       </div>
 
       <div style="overflow-x:auto;">
         <table class="cal-table" style="border-collapse:collapse; width:100%; table-layout:fixed; min-width:60rem;">
           <thead>
             <tr>
-              <th style="width:9rem; text-align:left; padding:0.4rem;">Person</th>
+              <th style="width:9rem; text-align:left; padding:0.4rem;">{{ 'Person' | translate }}</th>
               <th *ngFor="let d of days" style="padding:0.4rem; text-align:left;" [style.background]="d.today ? 'rgba(47,190,114,0.14)' : ''">{{ d.label }}</th>
             </tr>
           </thead>
@@ -63,9 +64,9 @@ const daysBetween = (a: string, b: string) => Math.round((fromIso(b).getTime() -
                      [style.borderLeft]="w.overdue ? '4px solid #c0392b' : w.status === 'IN_PROGRESS' ? '4px solid #3b82f6' : w.status === 'COMPLETED' ? '4px solid #2e9e5b' : '4px solid #9aa4b2'"
                      [style.opacity]="movable(w) ? 1 : 0.6">
                   <a [routerLink]="['/admin/work-orders', w.id]"><strong>{{ w.number }}</strong></a>
-                  <span *ngIf="!w.scheduledDate" class="text-muted"> (due)</span>
+                  <span *ngIf="!w.scheduledDate" class="text-muted"> {{ '(due)' | translate }}</span>
                   <div>{{ w.title }}</div>
-                  <div class="text-muted">{{ w.type === 'CUSTOMER' ? (w.customerName || '') : (w.assetName || 'Internal') }}</div>
+                  <div class="text-muted">{{ w.type === 'CUSTOMER' ? (w.customerName || '') : (w.assetName || ('Internal' | translate)) }}</div>
                 </div>
               </td>
             </tr>
@@ -73,7 +74,7 @@ const daysBetween = (a: string, b: string) => Math.round((fromIso(b).getTime() -
         </table>
       </div>
       <p class="text-muted mt-2" *ngIf="unscheduled.length">
-        {{ unscheduled.length }} job(s) have no date yet:
+        {{ '{p0} job(s) have no date yet:' | translate: { p0: (unscheduled.length) } }}
         <a *ngFor="let w of unscheduled; let last = last" [routerLink]="['/admin/work-orders', w.id]">{{ w.number }}{{ last ? '' : ', ' }}</a>.
       </p>
     </app-shell>

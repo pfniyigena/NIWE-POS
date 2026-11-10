@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,22 +14,22 @@ import { Routing } from '../../core/models';
 @Component({
   selector: 'app-routing-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Production routings</h3>
-        <a class="btn btn-primary" routerLink="/admin/manufacturing/routings/new">+ New routing</a>
+        <h3>{{ 'Production routings' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/manufacturing/routings/new">{{ '+ New routing' | translate }}</a>
       </div>
-      <app-list-filter exportPath="/manufacturing/routings/export" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" placeholder="Search name, step, workstation" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportPath="/manufacturing/routings/export" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" [placeholder]="'Search name, step, workstation' | translate" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th class="text-end">Operations</th>
-            <th>Status</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Description' | translate }}</th>
+            <th class="text-end">{{ 'Operations' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -38,17 +39,17 @@ import { Routing } from '../../core/models';
             <td>{{ r.description || '—' }}</td>
             <td class="text-end">{{ r.operations.length }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="r.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!r.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="r.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!r.active">{{ 'Inactive' | translate }}</span>
             </td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/routings', r.id, 'edit']">Edit</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/routings', r.id, 'edit']">{{ 'Edit' | translate }}</a></td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No routings match these filters.' : 'No routings yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('No routings match these filters.' | translate) : ('No routings yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
       <p class="text-muted" style="margin-top:1rem;">
-        A routing is optional — a Bill of Materials without one still works end to end; a routing just adds an operation-by-operation time/labor estimate on top.
+        {{ 'A routing is optional — a Bill of Materials without one still works end to end; a routing just adds an operation-by-operation time/labor estimate on top.' | translate }}
       </p>
     </app-shell>
   `,

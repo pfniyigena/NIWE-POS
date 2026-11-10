@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -13,28 +14,28 @@ import { ExpoOrder } from '../core/models';
 @Component({
   selector: 'app-kitchen-expo',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Expo</h3>
+        <h3>{{ 'Expo' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/kitchen">Kitchen display</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">← Floor plan</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/kitchen">{{ 'Kitchen display' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">{{ '← Floor plan' | translate }}</a>
         </div>
       </div>
       <div class="ex-grid">
         <div class="ex-card" *ngFor="let o of orders" [class.complete]="o.allReady" [class.warn]="!o.allReady && o.urgency === 'WARN'" [class.late]="!o.allReady && o.urgency === 'LATE'">
           <div class="flex justify-between align-center">
             <a [routerLink]="['/admin/restaurant/orders', o.orderId]"><strong style="font-size:1.1rem;">{{ o.label }}</strong></a>
-            <span class="ex-age" style="font-weight:700;">{{ o.oldestMinutes }} min</span>
+            <span class="ex-age" style="font-weight:700;">{{ '{p0} min' | translate: { p0: (o.oldestMinutes) } }}</span>
           </div>
-          <div class="text-muted" style="font-size:0.8rem;">{{ o.guestCount }} guests<span *ngIf="o.serverName"> · {{ o.serverName }}</span><span *ngIf="o.heldCount > 0"> · {{ o.heldCount }} held for a later course</span></div>
-          <div class="ex-allergy" *ngIf="o.guestAllergens" style="font-size:0.8rem; color:#b45309;">Guest allergies: {{ pretty(o.guestAllergens) }}</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ '{p0} guests' | translate: { p0: (o.guestCount) } }}<span *ngIf="o.serverName"> · {{ o.serverName }}</span><span *ngIf="o.heldCount > 0"> {{ '· {p0} held for a later course' | translate: { p0: (o.heldCount) } }}</span></div>
+          <div class="ex-allergy" *ngIf="o.guestAllergens" style="font-size:0.8rem; color:#b45309;">{{ 'Guest allergies: {p0}' | translate: { p0: (pretty(o.guestAllergens)) } }}</div>
           <div class="ex-status mt-1" style="font-weight:600;">
-            <span *ngIf="o.allReady" style="color:#047857;">✔ Complete — ready to go out</span>
-            <span *ngIf="!o.allReady">Waiting on {{ o.waitingOn.join(', ') }}</span>
+            <span *ngIf="o.allReady" style="color:#047857;">{{ '✔ Complete — ready to go out' | translate }}</span>
+            <span *ngIf="!o.allReady">{{ 'Waiting on {p0}' | translate: { p0: (o.waitingOn.join(', ')) } }}</span>
           </div>
           <table class="mt-2" style="width:100%;">
             <tr class="ex-line" *ngFor="let l of o.lines" [style.opacity]="l.status === 'READY' ? 1 : 0.9">
@@ -42,23 +43,23 @@ import { ExpoOrder } from '../core/models';
                 <span [style.color]="l.status === 'READY' ? '#047857' : l.urgency === 'LATE' ? '#b91c1c' : l.urgency === 'WARN' ? '#b45309' : ''">{{ l.status === 'READY' ? '✔' : l.status === 'PREPARING' ? '🔥' : '·' }}</span>
                 {{ l.quantity }}× {{ l.description }}
                 <span class="text-muted" style="font-size:0.75rem;" *ngIf="l.options.length > 0"> ({{ l.options.join(', ') }})</span>
-                <span class="text-muted" style="font-size:0.75rem;" *ngIf="l.seat"> seat {{ l.seat }}</span>
+                <span class="text-muted" style="font-size:0.75rem;" *ngIf="l.seat"> {{ 'seat {p0}' | translate: { p0: (l.seat) } }}</span>
                 <div class="text-muted" style="font-size:0.75rem;" *ngIf="l.notes">“{{ l.notes }}”</div>
-                <div *ngIf="l.allergyConflict" style="font-size:0.75rem; color:#991b1b; font-weight:700;">⚠ allergy: {{ pretty(l.allergyConflict) }}</div>
+                <div *ngIf="l.allergyConflict" style="font-size:0.75rem; color:#991b1b; font-weight:700;">{{ '⚠ allergy: {p0}' | translate: { p0: (pretty(l.allergyConflict)) } }}</div>
               </td>
               <td class="text-muted" style="font-size:0.75rem; white-space:nowrap; vertical-align:top;">{{ l.station }}</td>
               <td style="white-space:nowrap; text-align:right; vertical-align:top;">
-                <span style="font-size:0.8rem;">{{ l.elapsedMinutes }}/{{ l.targetMinutes }}m</span>
-                <button class="btn btn-sm btn-link ex-remake" *ngIf="l.status === 'READY'" (click)="remake(o, l.lineId, l.description)">Remake</button>
+                <span style="font-size:0.8rem;">{{ '{p0}/{p1}m' | translate: { p0: (l.elapsedMinutes), p1: (l.targetMinutes) } }}</span>
+                <button class="btn btn-sm btn-link ex-remake" *ngIf="l.status === 'READY'" (click)="remake(o, l.lineId, l.description)">{{ 'Remake' | translate }}</button>
               </td>
             </tr>
           </table>
           <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
-            <button class="btn btn-sm btn-primary ex-serve" *ngIf="o.readyCount > 0" (click)="serve(o)">Serve {{ o.allReady ? 'all' : 'the ' + o.readyCount + ' ready' }}</button>
-            <button class="btn btn-sm btn-outline-secondary ex-bump" *ngIf="o.cookingCount > 0" (click)="bump(o)">Mark everything ready</button>
+            <button class="btn btn-sm btn-primary ex-serve" *ngIf="o.readyCount > 0" (click)="serve(o)">{{ 'Serve {p0}' | translate: { p0: (o.allReady ? 'all' : 'the ' + o.readyCount + ' ready') } }}</button>
+            <button class="btn btn-sm btn-outline-secondary ex-bump" *ngIf="o.cookingCount > 0" (click)="bump(o)">{{ 'Mark everything ready' | translate }}</button>
           </div>
         </div>
-        <p class="text-muted" *ngIf="loaded && orders.length === 0">Nothing is in the kitchen right now.</p>
+        <p class="text-muted" *ngIf="loaded && orders.length === 0">{{ 'Nothing is in the kitchen right now.' | translate }}</p>
       </div>
     </app-shell>
   `,

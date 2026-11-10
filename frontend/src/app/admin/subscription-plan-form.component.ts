@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,58 +12,58 @@ import { BillingInterval, TaxRateOption } from '../core/models';
 @Component({
   selector: 'app-subscription-plan-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit subscription plan' : 'New subscription plan' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit subscription plan' | translate) : ('New subscription plan' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Name</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Gold membership" required />
+          <label class="form-label">{{ 'Name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Gold membership' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Description (optional)</label>
+          <label class="form-label">{{ 'Description (optional)' | translate }}</label>
           <textarea class="form-control" name="description" [(ngModel)]="description" rows="2"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Price</label>
+          <label class="form-label">{{ 'Price' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0.01" name="price" [(ngModel)]="price" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Billing interval</label>
+          <label class="form-label">{{ 'Billing interval' | translate }}</label>
           <select class="form-select" name="billingInterval" [(ngModel)]="billingInterval">
-            <option value="WEEKLY">Weekly</option>
-            <option value="MONTHLY">Monthly</option>
-            <option value="QUARTERLY">Quarterly</option>
-            <option value="YEARLY">Yearly</option>
+            <option value="WEEKLY">{{ 'Weekly' | translate }}</option>
+            <option value="MONTHLY">{{ 'Monthly' | translate }}</option>
+            <option value="QUARTERLY">{{ 'Quarterly' | translate }}</option>
+            <option value="YEARLY">{{ 'Yearly' | translate }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Tax rate</label>
+          <label class="form-label">{{ 'Tax rate' | translate }}</label>
           <select class="form-select" name="taxRateId" [(ngModel)]="taxRateId">
-            <option [ngValue]="null">— None (tax-exempt) —</option>
+            <option [ngValue]="null">{{ '— None (tax-exempt) —' | translate }}</option>
             <option *ngFor="let t of activeTaxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Discount %</label>
+          <label class="form-label">{{ 'Discount %' | translate }}</label>
           <input class="form-control" type="number" step="0.01" min="0" max="100" name="discountPercent" [(ngModel)]="discountPercent" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Default discount for a new subscription on this plan — stays editable per customer.
+            {{ 'Default discount for a new subscription on this plan — stays editable per customer.' | translate }}
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Inactive plans stay visible on existing subscriptions but can't be picked for new ones.
+            {{ 'Inactive plans stay visible on existing subscriptions but can\\'t be picked for new ones.' | translate }}
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/subscription-plans">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/subscription-plans">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

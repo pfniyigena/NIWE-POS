@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -15,35 +16,35 @@ const ROW_H = 56; // pixels per hour
 @Component({
   selector: 'app-booking-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Booking calendar</h3>
+        <h3>{{ 'Booking calendar' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" type="button" id="print-day" (click)="printSheet()" [disabled]="!view">Print day sheet</button>
-          <a class="btn btn-primary" [routerLink]="['/admin/booking/appointments/new']" [queryParams]="{ date: date }">+ New appointment</a>
+          <button class="btn btn-outline-secondary" type="button" id="print-day" (click)="printSheet()" [disabled]="!view">{{ 'Print day sheet' | translate }}</button>
+          <a class="btn btn-primary" [routerLink]="['/admin/booking/appointments/new']" [queryParams]="{ date: date }">{{ '+ New appointment' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="stat-grid mb-3" *ngIf="s">
-        <div class="stat-tile"><div class="stat-label">Today</div><div class="stat-value">{{ s.today }}</div></div>
-        <div class="stat-tile"><div class="stat-label">Next 7 days</div><div class="stat-value">{{ s.upcomingWeek }}</div></div>
-        <div class="stat-tile" [class.warn]="s.awaitingPayment > 0"><div class="stat-label">Waiting for payment</div><div class="stat-value">{{ s.awaitingPayment }}</div></div>
-        <div class="stat-tile" [class.warn]="s.noShowsThisMonth > 0"><div class="stat-label">No-shows this month</div><div class="stat-value">{{ s.noShowsThisMonth }}</div></div>
+        <div class="stat-tile"><div class="stat-label">{{ 'Today' | translate }}</div><div class="stat-value">{{ s.today }}</div></div>
+        <div class="stat-tile"><div class="stat-label">{{ 'Next 7 days' | translate }}</div><div class="stat-value">{{ s.upcomingWeek }}</div></div>
+        <div class="stat-tile" [class.warn]="s.awaitingPayment > 0"><div class="stat-label">{{ 'Waiting for payment' | translate }}</div><div class="stat-value">{{ s.awaitingPayment }}</div></div>
+        <div class="stat-tile" [class.warn]="s.noShowsThisMonth > 0"><div class="stat-label">{{ 'No-shows this month' | translate }}</div><div class="stat-value">{{ s.noShowsThisMonth }}</div></div>
       </div>
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <button class="btn btn-outline-secondary" (click)="go(-1)">‹</button>
         <app-date-picker name="d" [(ngModel)]="date" (ngModelChange)="load()"></app-date-picker>
         <button class="btn btn-outline-secondary" (click)="go(1)">›</button>
-        <button class="btn btn-outline-secondary" (click)="date = todayIso(); load()">Today</button>
+        <button class="btn btn-outline-secondary" (click)="date = todayIso(); load()">{{ 'Today' | translate }}</button>
         <select class="form-select" style="width:auto;" name="m" [(ngModel)]="mode">
-          <option value="staff">By person</option>
-          <option value="resource">By room / equipment</option>
+          <option value="staff">{{ 'By person' | translate }}</option>
+          <option value="resource">{{ 'By room / equipment' | translate }}</option>
         </select>
-        <span class="text-muted" *ngIf="view && !view.workDay">Not a working day.</span>
+        <span class="text-muted" *ngIf="view && !view.workDay">{{ 'Not a working day.' | translate }}</span>
       </div>
 
       <div *ngIf="view" style="overflow-x:auto;">
@@ -68,12 +69,12 @@ const ROW_H = 56; // pixels per hour
                  [style.border]="a.status === 'PENDING_PAYMENT' ? '2px dashed #e6a700' : '1px solid rgba(0,0,0,0.25)'"
                  style="position:absolute; left:2px; right:2px; border-radius:4px; color:#fff; padding:0.15rem 0.35rem; font-size:0.75rem; overflow:hidden; text-decoration:none;">
                 <strong>{{ a.startAt | date: 'HH:mm' }}</strong> {{ a.guestName }}<br>{{ a.serviceName }}
-                <span *ngIf="a.status === 'PENDING_PAYMENT'"> · unpaid</span><span *ngIf="a.status === 'NO_SHOW'"> · no-show</span>
+                <span *ngIf="a.status === 'PENDING_PAYMENT'"> {{ '· unpaid' | translate }}</span><span *ngIf="a.status === 'NO_SHOW'"> {{ '· no-show' | translate }}</span>
               </a>
             </div>
           </div>
         </div>
-        <p class="text-muted mt-2" *ngIf="!view.appointments.length">Nothing booked on this day.</p>
+        <p class="text-muted mt-2" *ngIf="!view.appointments.length">{{ 'Nothing booked on this day.' | translate }}</p>
       </div>
     </app-shell>
   `,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -23,56 +24,56 @@ import { PagerComponent } from '../shared/pager.component';
 @Component({
   selector: 'app-reservation-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Reservations</h3>
+        <h3>{{ 'Reservations' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/waitlist">Waiting list</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">← Floor plan</a>
-          <button class="btn btn-primary rv-new" (click)="startNew()">+ New reservation</button>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/waitlist">{{ 'Waiting list' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">{{ '← Floor plan' | translate }}</a>
+          <button class="btn btn-primary rv-new" (click)="startNew()">{{ '+ New reservation' | translate }}</button>
         </div>
       </div>
 
       <div class="card mb-3 rv-due" style="padding:0.75rem 1rem;" *ngIf="due.length > 0">
-        <strong>{{ due.length }} reminder{{ due.length === 1 ? '' : 's' }} due</strong>
-        <span class="text-muted"> — parties coming up soon who have not been reminded: </span>
+        <strong>{{ '{p0} reminder{p1} due' | translate: { p0: (due.length), p1: (due.length === 1 ? '' : 's') } }}</strong>
+        <span class="text-muted"> {{ '— parties coming up soon who have not been reminded:' | translate }} </span>
         <span *ngFor="let d of due; let last = last">{{ d.guestName }} ({{ d.reservedFor | date: 'EEE HH:mm' }})<span *ngIf="!last">, </span></span>
       </div>
 
       <div class="card mb-3" style="padding:1rem;">
-        <h4 style="font-size:1rem;" class="mb-2">Seat by reservation number</h4>
+        <h4 style="font-size:1rem;" class="mb-2">{{ 'Seat by reservation number' | translate }}</h4>
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" style="min-width:200px;">
-            <label class="form-label">Reservation number</label>
-            <input class="form-control" [(ngModel)]="seatCode" name="seatCode" placeholder="RES-123456" />
+            <label class="form-label">{{ 'Reservation number' | translate }}</label>
+            <input class="form-control" [(ngModel)]="seatCode" name="seatCode" [placeholder]="'RES-123456' | translate" />
           </div>
           <button class="btn btn-primary" [disabled]="!seatCode.trim() || seating" (click)="seatByCode()">
-            {{ seating ? 'Seating…' : 'Seat' }}
+            {{ seating ? ('Seating…' | translate) : ('Seat' | translate) }}
           </button>
         </div>
       </div>
 
       <div class="card mb-3 rv-form" style="padding:1rem;" *ngIf="editing">
-        <h4 style="font-size:1rem;" class="mb-2">{{ editingId ? 'Change reservation' : 'New reservation' }}</h4>
+        <h4 style="font-size:1rem;" class="mb-2">{{ editingId ? ('Change reservation' | translate) : ('New reservation' | translate) }}</h4>
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
           <div class="form-group" style="flex:1; min-width:160px;">
-            <label class="form-label">Guest name</label>
+            <label class="form-label">{{ 'Guest name' | translate }}</label>
             <input class="form-control rv-name" [(ngModel)]="guestName" name="guestName" />
           </div>
           <div class="form-group" style="flex:1; min-width:140px;">
-            <label class="form-label">Phone</label>
+            <label class="form-label">{{ 'Phone' | translate }}</label>
             <input class="form-control rv-phone" [(ngModel)]="guestPhone" name="guestPhone" />
           </div>
           <div class="form-group" style="flex:1; min-width:180px;">
-            <label class="form-label">E-mail (for reminders)</label>
+            <label class="form-label">{{ 'E-mail (for reminders)' | translate }}</label>
             <input class="form-control rv-email" type="email" [(ngModel)]="guestEmail" name="guestEmail" />
           </div>
           <div class="form-group" style="width:100px;">
-            <label class="form-label">Party size</label>
+            <label class="form-label">{{ 'Party size' | translate }}</label>
             <input class="form-control rv-party" type="number" min="1" [(ngModel)]="partySize" name="partySize" (ngModelChange)="refreshAvailability()" />
           </div>
         </div>
@@ -82,20 +83,20 @@ import { PagerComponent } from '../shared/pager.component';
             <input class="form-control rv-when" type="datetime-local" [(ngModel)]="reservedForLocal" name="reservedFor" (ngModelChange)="refreshAvailability()" />
           </div>
           <div class="form-group" style="width:120px;">
-            <label class="form-label">Minutes at table</label>
-            <input class="form-control rv-duration" type="number" min="15" max="480" step="15" [(ngModel)]="durationMinutes" name="duration" placeholder="usual" (ngModelChange)="refreshAvailability()" />
+            <label class="form-label">{{ 'Minutes at table' | translate }}</label>
+            <input class="form-control rv-duration" type="number" min="15" max="480" step="15" [(ngModel)]="durationMinutes" name="duration" [placeholder]="'usual' | translate" (ngModelChange)="refreshAvailability()" />
           </div>
           <div class="form-group" style="min-width:200px;">
-            <label class="form-label">Table (optional)</label>
+            <label class="form-label">{{ 'Table (optional)' | translate }}</label>
             <select class="form-select rv-table" [(ngModel)]="tableId" name="tableId">
-              <option [ngValue]="null">— Unassigned —</option>
-              <option *ngFor="let t of tableChoices" [ngValue]="t.id">{{ t.name }} (seats {{ t.capacity }})</option>
+              <option [ngValue]="null">{{ '— Unassigned —' | translate }}</option>
+              <option *ngFor="let t of tableChoices" [ngValue]="t.id">{{ '{p0} (seats {p1})' | translate: { p0: (t.name), p1: (t.capacity) } }}</option>
             </select>
             <div class="text-muted rv-free-hint" style="font-size:0.8rem;" *ngIf="reservedForLocal">{{ freeHint }}</div>
           </div>
         </div>
         <div class="mb-2" *ngIf="slots.length > 0">
-          <div class="text-muted" style="font-size:0.85rem;">Free times that day (tap to use)</div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'Free times that day (tap to use)' | translate }}</div>
           <div class="flex gap-1" style="flex-wrap:wrap;">
             <button type="button" class="btn btn-sm rv-slot" *ngFor="let s of slots"
               [class.btn-primary]="s.label === pickedLabel" [class.btn-outline-secondary]="s.label !== pickedLabel"
@@ -104,56 +105,56 @@ import { PagerComponent } from '../shared/pager.component';
         </div>
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" style="width:160px;" *ngIf="!depositPaid">
-            <label class="form-label">Deposit (blank = usual)</label>
+            <label class="form-label">{{ 'Deposit (blank = usual)' | translate }}</label>
             <input class="form-control rv-deposit" type="number" min="0" step="any" [(ngModel)]="depositAmount" name="depositAmount" />
           </div>
           <div class="form-group" style="min-width:180px;" *ngIf="!depositPaid && !editingId">
-            <label class="form-label">Take the deposit now with</label>
+            <label class="form-label">{{ 'Take the deposit now with' | translate }}</label>
             <select class="form-select rv-dep-method" [(ngModel)]="depositMethod" name="depositMethod">
-              <option [ngValue]="null">— Not yet —</option>
+              <option [ngValue]="null">{{ '— Not yet —' | translate }}</option>
               <option *ngFor="let m of depositMethods" [ngValue]="m.code">{{ m.name }}</option>
             </select>
           </div>
-          <div class="text-muted" *ngIf="depositPaid">The deposit has been taken and stays as it is.</div>
+          <div class="text-muted" *ngIf="depositPaid">{{ 'The deposit has been taken and stays as it is.' | translate }}</div>
         </div>
         <div class="form-group mb-2">
-          <label class="form-label">Notes</label>
+          <label class="form-label">{{ 'Notes' | translate }}</label>
           <input class="form-control rv-notes" [(ngModel)]="notes" name="notes" />
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary rv-save" [disabled]="saving" (click)="save()">{{ saving ? 'Saving…' : 'Save' }}</button>
-          <button class="btn btn-link" (click)="editing = false">Cancel</button>
+          <button class="btn btn-primary rv-save" [disabled]="saving" (click)="save()">{{ saving ? ('Saving…' | translate) : ('Save' | translate) }}</button>
+          <button class="btn btn-link" (click)="editing = false">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
-      <app-list-filter exportPath="/restaurant/reservations/export" placeholder="Search guest, phone, e-mail, number, table" [statuses]="statuses" statusAll="All statuses" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportPath="/restaurant/reservations/export" [placeholder]="'Search guest, phone, e-mail, number, table' | translate" [statuses]="statuses" statusAll="All statuses" (filterChange)="list.apply($event)"></app-list-filter>
       <div class="flex gap-2 mb-2" *ngIf="isAdmin">
-        <button class="btn btn-sm btn-outline-secondary rv-mark-all" (click)="markAllNoShows()">Mark overdue bookings as no-shows</button>
+        <button class="btn btn-sm btn-outline-secondary rv-mark-all" (click)="markAllNoShows()">{{ 'Mark overdue bookings as no-shows' | translate }}</button>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Reservation #</th>
-            <th>Guest</th>
-            <th>Party</th>
-            <th>When</th>
-            <th>Table</th>
-            <th>Deposit</th>
-            <th>Status</th>
+            <th>{{ 'Reservation #' | translate }}</th>
+            <th>{{ 'Guest' | translate }}</th>
+            <th>{{ 'Party' | translate }}</th>
+            <th>{{ 'When' | translate }}</th>
+            <th>{{ 'Table' | translate }}</th>
+            <th>{{ 'Deposit' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let r of list.rows">
             <tr class="rv-row">
-              <td>{{ r.confirmationCode || '—' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="r.source === 'ONLINE'">booked online</div></td>
+              <td>{{ r.confirmationCode || '—' }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="r.source === 'ONLINE'">{{ 'booked online' | translate }}</div></td>
               <td>
                 {{ r.guestName }}<span class="text-muted" *ngIf="r.guestPhone"> — {{ r.guestPhone }}</span>
-                <div class="rv-history" style="font-size:0.75rem; color:#b45309;" *ngIf="(r.guestNoShows ?? 0) > 0">⚠ {{ r.guestNoShows }} earlier no-show{{ r.guestNoShows === 1 ? '' : 's' }}</div>
-                <div class="text-muted rv-visits" style="font-size:0.75rem;" *ngIf="(r.guestVisits ?? 0) > 0">{{ r.guestVisits }} earlier visit{{ r.guestVisits === 1 ? '' : 's' }}</div>
+                <div class="rv-history" style="font-size:0.75rem; color:#b45309;" *ngIf="(r.guestNoShows ?? 0) > 0">{{ '⚠ {p0} earlier no-show{p1}' | translate: { p0: (r.guestNoShows), p1: (r.guestNoShows === 1 ? '' : 's') } }}</div>
+                <div class="text-muted rv-visits" style="font-size:0.75rem;" *ngIf="(r.guestVisits ?? 0) > 0">{{ '{p0} earlier visit{p1}' | translate: { p0: (r.guestVisits), p1: (r.guestVisits === 1 ? '' : 's') } }}</div>
               </td>
               <td>{{ r.partySize }}</td>
-              <td>{{ r.reservedFor | date: 'EEE d MMM, HH:mm' }}<div class="text-muted" style="font-size:0.75rem;">{{ r.durationMinutes }} min<span *ngIf="r.remindedAt"> · reminded</span></div></td>
+              <td>{{ r.reservedFor | date: 'EEE d MMM, HH:mm' }}<div class="text-muted" style="font-size:0.75rem;">{{ '{p0} min' | translate: { p0: (r.durationMinutes) } }}<span *ngIf="r.remindedAt"> {{ '· reminded' | translate }}</span></div></td>
               <td>{{ r.tableName || '—' }}</td>
               <td class="rv-dep-cell">
                 <span *ngIf="(r.depositAmount ?? 0) > 0 || r.depositStatus === 'REFUNDED' || r.depositStatus === 'FORFEITED'">{{ r.depositAmount | number: '1.0-2' }} <span class="text-muted">{{ depositLabel(r.depositStatus) }}</span></span>
@@ -162,12 +163,12 @@ import { PagerComponent } from '../shared/pager.component';
               <td>{{ prettyStatus(r.status) }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="r.cancelReason">{{ r.cancelReason }}</div></td>
               <td class="flex gap-2" style="flex-wrap:wrap;">
                 <ng-container *ngIf="r.status === 'BOOKED'">
-                  <button class="btn btn-sm btn-primary rv-seat" (click)="seat(r)">Seat</button>
-                  <button class="btn btn-sm btn-outline-secondary rv-edit" (click)="startEdit(r)">Change</button>
-                  <button class="btn btn-sm btn-outline-secondary rv-dep" *ngIf="r.depositStatus === 'REQUIRED'" (click)="openPanel(r, 'deposit')">Take deposit</button>
-                  <button class="btn btn-sm btn-outline-secondary rv-remind" (click)="openPanel(r, 'remind')">Remind</button>
-                  <button class="btn btn-sm btn-outline-secondary rv-noshow" (click)="noShow(r)">No-show</button>
-                  <button class="btn btn-sm btn-outline-danger rv-cancel" *ngIf="isAdmin" (click)="openPanel(r, 'cancel')">Cancel</button>
+                  <button class="btn btn-sm btn-primary rv-seat" (click)="seat(r)">{{ 'Seat' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary rv-edit" (click)="startEdit(r)">{{ 'Change' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary rv-dep" *ngIf="r.depositStatus === 'REQUIRED'" (click)="openPanel(r, 'deposit')">{{ 'Take deposit' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary rv-remind" (click)="openPanel(r, 'remind')">{{ 'Remind' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary rv-noshow" (click)="noShow(r)">{{ 'No-show' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger rv-cancel" *ngIf="isAdmin" (click)="openPanel(r, 'cancel')">{{ 'Cancel' | translate }}</button>
                 </ng-container>
               </td>
             </tr>
@@ -176,35 +177,35 @@ import { PagerComponent } from '../shared/pager.component';
                 <div class="card rv-panel" style="padding:0.75rem;">
                   <ng-container *ngIf="panelMode === 'deposit'">
                     <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-                      <div class="form-group"><label class="form-label">Deposit of {{ r.depositAmount | number: '1.0-2' }} paid with</label>
+                      <div class="form-group"><label class="form-label">{{ 'Deposit of {p0} paid with' | translate: { p0: (r.depositAmount | number: '1.0-2') } }}</label>
                         <select class="form-select rv-p-method" [(ngModel)]="panelMethod" name="panelMethod">
                           <option *ngFor="let m of depositMethods" [value]="m.code">{{ m.name }}</option>
                         </select></div>
-                      <button class="btn btn-primary rv-p-go" (click)="takeDeposit(r)">Take deposit</button>
-                      <button class="btn btn-link" (click)="panelId = null">Close</button>
+                      <button class="btn btn-primary rv-p-go" (click)="takeDeposit(r)">{{ 'Take deposit' | translate }}</button>
+                      <button class="btn btn-link" (click)="panelId = null">{{ 'Close' | translate }}</button>
                     </div>
                   </ng-container>
                   <ng-container *ngIf="panelMode === 'cancel'">
                     <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-                      <div class="form-group" style="min-width:240px;"><label class="form-label">Reason (optional)</label>
+                      <div class="form-group" style="min-width:240px;"><label class="form-label">{{ 'Reason (optional)' | translate }}</label>
                         <input class="form-control rv-c-reason" [(ngModel)]="cancelReason" name="cancelReason" /></div>
-                      <div class="form-group" *ngIf="r.depositStatus === 'HELD'"><label class="form-label">The {{ r.depositAmount | number: '1.0-2' }} deposit</label>
+                      <div class="form-group" *ngIf="r.depositStatus === 'HELD'"><label class="form-label">{{ 'The {p0} deposit' | translate: { p0: (r.depositAmount | number: '1.0-2') } }}</label>
                         <select class="form-select rv-c-dep" [(ngModel)]="cancelDeposit" name="cancelDeposit">
-                          <option value="">By the refund window</option>
-                          <option value="REFUND">Refund it</option>
-                          <option value="FORFEIT">Keep it</option>
+                          <option value="">{{ 'By the refund window' | translate }}</option>
+                          <option value="REFUND">{{ 'Refund it' | translate }}</option>
+                          <option value="FORFEIT">{{ 'Keep it' | translate }}</option>
                         </select></div>
-                      <button class="btn btn-outline-danger rv-c-go" (click)="cancel(r)">Cancel reservation</button>
-                      <button class="btn btn-link" (click)="panelId = null">Keep it</button>
+                      <button class="btn btn-outline-danger rv-c-go" (click)="cancel(r)">{{ 'Cancel reservation' | translate }}</button>
+                      <button class="btn btn-link" (click)="panelId = null">{{ 'Keep it' | translate }}</button>
                     </div>
                   </ng-container>
                   <ng-container *ngIf="panelMode === 'remind'">
                     <div class="rv-r-text" style="white-space:pre-wrap;">{{ reminder?.text }}</div>
                     <div class="text-muted rv-r-note" *ngIf="reminder?.note">{{ reminder?.note }}</div>
                     <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
-                      <button class="btn btn-primary rv-r-send" *ngIf="r.guestEmail" (click)="sendReminder(r)">E-mail it to {{ r.guestEmail }}</button>
-                      <button class="btn btn-outline-secondary rv-r-sent" (click)="markReminded(r)">I sent it myself</button>
-                      <button class="btn btn-link" (click)="panelId = null">Close</button>
+                      <button class="btn btn-primary rv-r-send" *ngIf="r.guestEmail" (click)="sendReminder(r)">{{ 'E-mail it to {p0}' | translate: { p0: (r.guestEmail) } }}</button>
+                      <button class="btn btn-outline-secondary rv-r-sent" (click)="markReminded(r)">{{ 'I sent it myself' | translate }}</button>
+                      <button class="btn btn-link" (click)="panelId = null">{{ 'Close' | translate }}</button>
                     </div>
                   </ng-container>
                 </div>
@@ -213,7 +214,7 @@ import { PagerComponent } from '../shared/pager.component';
           </ng-container>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No reservations match these filters.' : 'No reservations yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('No reservations match these filters.' | translate) : ('No reservations yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

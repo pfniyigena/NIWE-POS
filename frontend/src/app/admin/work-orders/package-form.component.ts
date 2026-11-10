@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -11,52 +12,52 @@ import { PackagePayload, WorkOrderApiService } from '../../core/api/work-order-a
 @Component({
   selector: 'app-service-package-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>{{ id ? 'Service package' : 'New service package' }}</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/work-orders/packages">Back to packages</a>
+        <h3>{{ id ? ('Service package' | translate) : ('New service package' | translate) }}</h3>
+        <a class="btn btn-outline-secondary" routerLink="/admin/work-orders/packages">{{ 'Back to packages' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
       <form class="card" style="padding:1rem; max-width:44rem;" (ngSubmit)="save()">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">Name</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
-          <div class="form-group" style="flex:1; min-width:8rem;"><label class="form-label">Code (optional)</label><input class="form-control" name="c" [(ngModel)]="f.code" /></div>
+          <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
+          <div class="form-group" style="flex:1; min-width:8rem;"><label class="form-label">{{ 'Code (optional)' | translate }}</label><input class="form-control" name="c" [(ngModel)]="f.code" /></div>
         </div>
-        <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" rows="2" name="d" [(ngModel)]="f.description"></textarea></div>
+        <div class="form-group"><label class="form-label">{{ 'Description' | translate }}</label><textarea class="form-control" rows="2" name="d" [(ngModel)]="f.description"></textarea></div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Fixed price</label><input class="form-control" type="number" min="0" step="0.01" name="p" [(ngModel)]="f.fixedPrice" placeholder="0 = bill hours and parts" /></div>
-          <div class="form-group"><label class="form-label">Estimated hours</label><input class="form-control" type="number" min="0" step="0.25" name="h" [(ngModel)]="f.estimatedHours" /></div>
-          <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center; margin-top:1.8rem;"><input type="checkbox" name="a" [(ngModel)]="f.active" /> Active</label></div>
+          <div class="form-group"><label class="form-label">{{ 'Fixed price' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="p" [(ngModel)]="f.fixedPrice" [placeholder]="'0 = bill hours and parts' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Estimated hours' | translate }}</label><input class="form-control" type="number" min="0" step="0.25" name="h" [(ngModel)]="f.estimatedHours" /></div>
+          <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center; margin-top:1.8rem;"><input type="checkbox" name="a" [(ngModel)]="f.active" /> {{ 'Active' | translate }}</label></div>
         </div>
-        <div class="form-group"><label class="form-label">Checklist (one step per line)</label><textarea class="form-control" rows="6" name="s" [(ngModel)]="steps"></textarea></div>
+        <div class="form-group"><label class="form-label">{{ 'Checklist (one step per line)' | translate }}</label><textarea class="form-control" rows="6" name="s" [(ngModel)]="steps"></textarea></div>
 
-        <strong class="mb-2">Usual parts</strong>
+        <strong class="mb-2">{{ 'Usual parts' | translate }}</strong>
         <table class="table-sm" *ngIf="f.parts.length">
-          <thead><tr><th>Product</th><th style="width:6rem;">Qty</th><th>In the price</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Product' | translate }}</th><th style="width:6rem;">{{ 'Qty' | translate }}</th><th>{{ 'In the price' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let p of f.parts; let i = index">
               <td>{{ names[p.productId] }}</td>
               <td><input class="form-control" type="number" step="any" min="0.0001" [name]="'q' + i" [(ngModel)]="p.quantity" /></td>
               <td><input type="checkbox" [name]="'i' + i" [(ngModel)]="p.included" /></td>
-              <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="f.parts.splice(i, 1)">Remove</button></td>
+              <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="f.parts.splice(i, 1)">{{ 'Remove' | translate }}</button></td>
             </tr>
           </tbody>
         </table>
         <div class="flex gap-2 align-center mb-3" style="flex-wrap:wrap;">
-          <input class="form-control" style="width:14rem;" placeholder="Search a product" name="ps" [(ngModel)]="query" (keyup.enter)="search()" />
-          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="search()">Search</button>
+          <input class="form-control" style="width:14rem;" [placeholder]="'Search a product' | translate" name="ps" [(ngModel)]="query" (keyup.enter)="search()" />
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="search()">{{ 'Search' | translate }}</button>
           <select class="form-select" style="width:auto; max-width:18rem;" name="pp" [(ngModel)]="pick" *ngIf="products.length">
-            <option [ngValue]="null">Choose…</option>
+            <option [ngValue]="null">{{ 'Choose…' | translate }}</option>
             <option *ngFor="let p of products" [ngValue]="p.id">{{ p.name }}</option>
           </select>
-          <button class="btn btn-outline-primary btn-sm" type="button" *ngIf="pick" (click)="add()">Add</button>
+          <button class="btn btn-outline-primary btn-sm" type="button" *ngIf="pick" (click)="add()">{{ 'Add' | translate }}</button>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="busy">Save</button>
-          <button class="btn btn-outline-danger" type="button" *ngIf="id" (click)="remove()">Delete</button>
+          <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button>
+          <button class="btn btn-outline-danger" type="button" *ngIf="id" (click)="remove()">{{ 'Delete' | translate }}</button>
         </div>
       </form>
     </app-shell>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import * as QRCode from 'qrcode';
@@ -10,19 +11,19 @@ interface Card { title: string; sub: string; url: string; image: string }
 @Component({
   selector: 'app-qr-print',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="qp-page" style="padding:1rem;">
       <div class="qp-bar flex gap-2 mb-3">
-        <button class="btn btn-primary qp-print" (click)="print()">🖨 Print</button>
-        <button class="btn btn-outline-secondary" (click)="back()">← Back</button>
+        <button class="btn btn-primary qp-print" (click)="print()">{{ '🖨 Print' | translate }}</button>
+        <button class="btn btn-outline-secondary" (click)="back()">{{ '← Back' | translate }}</button>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="qp-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:16px;">
         <div class="qp-card" *ngFor="let c of cards" style="border:2px solid #111; border-radius:12px; padding:16px; text-align:center; page-break-inside:avoid;">
           <div style="font-size:1.1rem;">{{ c.sub }}</div>
           <div class="qp-title" style="font-size:2rem; font-weight:700; margin-bottom:6px;">{{ c.title }}</div>
-          <img [src]="c.image" alt="QR code" style="width:200px; height:200px;" />
+          <img [src]="c.image" [alt]="'QR code' | translate" style="width:200px; height:200px;" />
           <div style="font-size:0.8rem; word-break:break-all; margin-top:6px;">{{ c.url }}</div>
         </div>
       </div>

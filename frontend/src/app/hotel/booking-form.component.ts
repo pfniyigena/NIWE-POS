@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,97 +17,97 @@ import { addDays, errMsg, nightsBetween, today } from './hotel-util';
 @Component({
   selector: 'app-booking-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ walkIn ? 'Walk-in guest' : 'New booking' }}</h3>
+      <h3 class="mb-3">{{ walkIn ? ('Walk-in guest' | translate) : ('New booking' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
-        <h4 style="font-size:1rem;" class="mb-2">Guest</h4>
+        <h4 style="font-size:1rem;" class="mb-2">{{ 'Guest' | translate }}</h4>
         <div class="flex gap-3 mb-2">
-          <label><input type="radio" name="gmode" [value]="false" [(ngModel)]="newGuest" /> Existing guest</label>
-          <label><input type="radio" name="gmode" [value]="true" [(ngModel)]="newGuest" /> New guest</label>
+          <label><input type="radio" name="gmode" [value]="false" [(ngModel)]="newGuest" /> {{ 'Existing guest' | translate }}</label>
+          <label><input type="radio" name="gmode" [value]="true" [(ngModel)]="newGuest" /> {{ 'New guest' | translate }}</label>
         </div>
         <div *ngIf="!newGuest" class="form-group">
-          <input class="form-control" placeholder="Search by name, phone or ID number" name="gq" [(ngModel)]="guestQuery" (ngModelChange)="searchGuests()" />
+          <input class="form-control" [placeholder]="'Search by name, phone or ID number' | translate" name="gq" [(ngModel)]="guestQuery" (ngModelChange)="searchGuests()" />
           <select class="form-control" style="margin-top:0.4rem;" name="guestId" [(ngModel)]="guestId" size="4" *ngIf="guestOptions.length">
             <option *ngFor="let g of guestOptions" [ngValue]="g.id">{{ g.fullName }} {{ g.phone ? '· ' + g.phone : '' }}</option>
           </select>
         </div>
         <div *ngIf="newGuest" class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Full name</label><input class="form-control" name="gname" [(ngModel)]="guest.fullName" /></div>
-          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" name="gphone" [(ngModel)]="guest.phone" /></div>
-          <div class="form-group"><label class="form-label">Email</label><input class="form-control" name="gemail" [(ngModel)]="guest.email" /></div>
-          <div class="form-group"><label class="form-label">ID number</label><input class="form-control" name="gid" [(ngModel)]="guest.idNumber" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Full name' | translate }}</label><input class="form-control" name="gname" [(ngModel)]="guest.fullName" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="gphone" [(ngModel)]="guest.phone" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Email' | translate }}</label><input class="form-control" name="gemail" [(ngModel)]="guest.email" /></div>
+          <div class="form-group"><label class="form-label">{{ 'ID number' | translate }}</label><input class="form-control" name="gid" [(ngModel)]="guest.idNumber" /></div>
         </div>
 
-        <h4 style="font-size:1rem;" class="mb-2 mt-3">Stay</h4>
+        <h4 style="font-size:1rem;" class="mb-2 mt-3">{{ 'Stay' | translate }}</h4>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" *ngIf="!walkIn"><label class="form-label">Arrival</label>
+          <div class="form-group" *ngIf="!walkIn"><label class="form-label">{{ 'Arrival' | translate }}</label>
             <input class="form-control" type="date" name="from" [min]="todayStr" [(ngModel)]="checkIn" (ngModelChange)="datesChanged()" required /></div>
-          <div class="form-group"><label class="form-label">Departure</label>
+          <div class="form-group"><label class="form-label">{{ 'Departure' | translate }}</label>
             <input class="form-control" type="date" name="to" [min]="minDeparture" [(ngModel)]="checkOut" (ngModelChange)="datesChanged()" required /></div>
-          <div class="form-group" *ngIf="!walkIn"><label class="form-label">Room type</label>
+          <div class="form-group" *ngIf="!walkIn"><label class="form-label">{{ 'Room type' | translate }}</label>
             <select class="form-control" name="type" [(ngModel)]="roomTypeId" (ngModelChange)="datesChanged()" required>
               <option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }} ({{ t.baseRate | number: '1.0-2' }})</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Adults</label>
+          <div class="form-group"><label class="form-label">{{ 'Adults' | translate }}</label>
             <input class="form-control" style="max-width:90px;" type="number" min="1" name="adults" [(ngModel)]="adults" (ngModelChange)="requote()" /></div>
-          <div class="form-group"><label class="form-label">Children</label>
+          <div class="form-group"><label class="form-label">{{ 'Children' | translate }}</label>
             <input class="form-control" style="max-width:90px;" type="number" min="0" name="children" [(ngModel)]="children" (ngModelChange)="requote()" /></div>
         </div>
         <div class="form-group">
-          <label class="form-label">Room {{ walkIn ? '' : '(optional — can be chosen at check-in)' }}</label>
+          <label class="form-label">{{ 'Room {p0}' | translate: { p0: (walkIn ? '' : '(optional — can be chosen at check-in)') } }}</label>
           <select class="form-control" style="max-width:360px;" name="room" [(ngModel)]="roomId" (ngModelChange)="roomPicked()">
-            <option [ngValue]="null" *ngIf="!walkIn">Assign later</option>
+            <option [ngValue]="null" *ngIf="!walkIn">{{ 'Assign later' | translate }}</option>
             <option *ngFor="let r of freeRooms" [ngValue]="r.id">{{ r.number }} · {{ r.roomTypeName }} · {{ r.rate | number: '1.0-2' }}{{ r.housekeepingStatus === 'DIRTY' ? ' (needs cleaning)' : '' }}</option>
           </select>
-          <div class="text-muted" style="font-size:0.8rem;" *ngIf="freeRooms.length === 0 && checkOut">No room is free for those dates.</div>
+          <div class="text-muted" style="font-size:0.8rem;" *ngIf="freeRooms.length === 0 && checkOut">{{ 'No room is free for those dates.' | translate }}</div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" *ngIf="plans.length"><label class="form-label">Rate plan</label>
+          <div class="form-group" *ngIf="plans.length"><label class="form-label">{{ 'Rate plan' | translate }}</label>
             <select class="form-control plan-select" style="max-width:260px;" name="plan" [(ngModel)]="ratePlanId" (ngModelChange)="requote()">
-              <option [ngValue]="null">Standard rate</option>
+              <option [ngValue]="null">{{ 'Standard rate' | translate }}</option>
               <option *ngFor="let p of plans" [ngValue]="p.id">{{ p.name }}</option>
             </select></div>
-          <div class="form-group" *ngIf="!walkIn"><label class="form-label">Source</label>
-            <input class="form-control" name="source" [(ngModel)]="source" placeholder="Phone, website, agent..." /></div>
+          <div class="form-group" *ngIf="!walkIn"><label class="form-label">{{ 'Source' | translate }}</label>
+            <input class="form-control" name="source" [(ngModel)]="source" [placeholder]="'Phone, website, agent...' | translate" /></div>
         </div>
         <div class="card quote-box" style="padding:0.75rem 1rem; margin-bottom:0.75rem;" *ngIf="!agree">
           <div class="text-muted" style="font-size:0.85rem;" *ngIf="quoteError">{{ quoteError }}</div>
           <ng-container *ngIf="quote && !quoteError">
             <div *ngIf="sameRate(); else byNight" class="quote-line">
-              {{ quote.nights }} night{{ quote.nights === 1 ? '' : 's' }} × {{ quote.items[0].net | number: '1.2-2' }}<span class="text-muted" *ngIf="quote.items[0].ruleName"> ({{ quote.items[0].ruleName }})</span>
+              {{ '{p0} night{p1} × {p2}' | translate: { p0: (quote.nights), p1: (quote.nights === 1 ? '' : 's'), p2: (quote.items[0].net | number: '1.2-2') } }}<span class="text-muted" *ngIf="quote.items[0].ruleName"> ({{ quote.items[0].ruleName }})</span>
             </div>
             <ng-template #byNight>
               <table class="table-sm quote-nights no-stack" style="margin-bottom:0.4rem;">
-                <thead><tr><th>Night</th><th>Price</th><th>Rate</th></tr></thead>
-                <tbody><tr *ngFor="let n of quote.items"><td>{{ n.date }}</td><td>{{ n.net | number: '1.2-2' }}</td><td class="text-muted">{{ n.ruleName || 'Standard' }}</td></tr></tbody>
+                <thead><tr><th>{{ 'Night' | translate }}</th><th>{{ 'Price' | translate }}</th><th>{{ 'Rate' | translate }}</th></tr></thead>
+                <tbody><tr *ngFor="let n of quote.items"><td>{{ n.date }}</td><td>{{ n.net | number: '1.2-2' }}</td><td class="text-muted">{{ n.ruleName || ('Standard' | translate) }}</td></tr></tbody>
               </table>
             </ng-template>
-            <div class="quote-total">Total <strong>{{ quote.net | number: '1.2-2' }}</strong> before tax · tax {{ quote.tax | number: '1.2-2' }} · <strong>{{ quote.gross | number: '1.2-2' }}</strong> with tax</div>
+            <div class="quote-total">{{ 'Total' | translate }} <strong>{{ quote.net | number: '1.2-2' }}</strong> {{ 'before tax · tax {p0} ·' | translate: { p0: (quote.tax | number: '1.2-2') } }} <strong>{{ quote.gross | number: '1.2-2' }}</strong> {{ 'with tax' | translate }}</div>
           </ng-container>
         </div>
-        <label class="mb-2" style="display:block;"><input type="checkbox" class="agree-price" name="agree" [(ngModel)]="agree" /> Agree a different price with the guest</label>
-        <div class="form-group" *ngIf="agree"><label class="form-label">Nightly rate (before tax)</label>
+        <label class="mb-2" style="display:block;"><input type="checkbox" class="agree-price" name="agree" [(ngModel)]="agree" /> {{ 'Agree a different price with the guest' | translate }}</label>
+        <div class="form-group" *ngIf="agree"><label class="form-label">{{ 'Nightly rate (before tax)' | translate }}</label>
           <input class="form-control agreed-rate" style="max-width:160px;" type="number" min="0" step="0.01" name="rate" [(ngModel)]="rate" [placeholder]="quote ? (quote.averageRate + '') : defaultRate() + ''" />
-          <div class="text-muted" style="font-size:0.85rem;" *ngIf="nights() > 0">{{ nights() }} night{{ nights() === 1 ? '' : 's' }} × {{ nightly() | number: '1.2-2' }} = <strong>{{ nights() * nightly() | number: '1.2-2' }}</strong> before tax</div>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="nights() > 0">{{ '{p0} night{p1} × {p2} =' | translate: { p0: (nights()), p1: (nights() === 1 ? '' : 's'), p2: (nightly() | number: '1.2-2') } }} <strong>{{ nights() * nightly() | number: '1.2-2' }}</strong> {{ 'before tax' | translate }}</div>
         </div>
-        <div class="form-group"><label class="form-label">Notes (optional)</label><input class="form-control" name="notes" [(ngModel)]="notes" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Notes (optional)' | translate }}</label><input class="form-control" name="notes" [(ngModel)]="notes" /></div>
 
-        <h4 style="font-size:1rem;" class="mb-2 mt-3">Deposit (optional)</h4>
+        <h4 style="font-size:1rem;" class="mb-2 mt-3">{{ 'Deposit (optional)' | translate }}</h4>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Amount</label>
+          <div class="form-group"><label class="form-label">{{ 'Amount' | translate }}</label>
             <input class="form-control" style="max-width:160px;" type="number" min="0" step="0.01" name="dep" [(ngModel)]="deposit" /></div>
-          <div class="form-group" *ngIf="deposit && deposit > 0"><label class="form-label">Paid by</label>
+          <div class="form-group" *ngIf="deposit && deposit > 0"><label class="form-label">{{ 'Paid by' | translate }}</label>
             <select class="form-control" name="depm" [(ngModel)]="depositMethod">
               <option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option>
             </select></div>
         </div>
 
         <div class="flex gap-2 mt-3">
-          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ walkIn ? 'Check in guest' : 'Create booking' }}</button>
-          <a class="btn btn-link" routerLink="/admin/hotel/bookings">Cancel</a>
+          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ walkIn ? ('Check in guest' | translate) : ('Create booking' | translate) }}</button>
+          <a class="btn btn-link" routerLink="/admin/hotel/bookings">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

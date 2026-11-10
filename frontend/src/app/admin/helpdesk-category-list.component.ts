@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -13,23 +14,23 @@ import { HelpDeskCategory } from '../core/models';
 @Component({
   selector: 'app-helpdesk-category-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Help Desk categories</h3>
+        <h3>{{ 'Help Desk categories' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/tickets">Tickets</a>
-          <a class="btn btn-primary" routerLink="/admin/helpdesk/categories/new">+ New category</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/tickets">{{ 'Tickets' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/helpdesk/categories/new">{{ '+ New category' | translate }}</a>
         </div>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Status</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Description' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -38,16 +39,16 @@ import { HelpDeskCategory } from '../core/models';
             <td>{{ c.name }}</td>
             <td>{{ c.description }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="c.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!c.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="c.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!c.active">{{ 'Inactive' | translate }}</span>
             </td>
             <td class="flex gap-2">
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/helpdesk/categories', c.id, 'edit']">Edit</a>
-              <button class="btn btn-sm btn-outline-danger" (click)="remove(c)">Delete</button>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/helpdesk/categories', c.id, 'edit']">{{ 'Edit' | translate }}</a>
+              <button class="btn btn-sm btn-outline-danger" (click)="remove(c)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
           <tr *ngIf="categories.length === 0">
-            <td colspan="4" class="text-muted">No categories yet — tickets can still be created without one.</td>
+            <td colspan="4" class="text-muted">{{ 'No categories yet — tickets can still be created without one.' | translate }}</td>
           </tr>
         </tbody>
       </table>

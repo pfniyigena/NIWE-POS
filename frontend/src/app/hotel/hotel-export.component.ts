@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { API_BASE } from '../core/constants';
@@ -8,12 +9,12 @@ import { downloadBlob } from '../core/download-file';
 @Component({
   selector: 'app-hotel-export',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <span class="hotel-export" style="display:inline-flex; gap:0.3rem; align-items:center; flex-wrap:wrap;">
-      <span class="text-muted" style="font-size:0.85rem;">Export</span>
+      <span class="text-muted" style="font-size:0.85rem;">{{ 'Export' | translate }}</span>
       <button *ngFor="let f of formats" class="btn btn-sm btn-outline-secondary" [ngClass]="'hx-' + f.value" type="button" (click)="go(f.value)" [disabled]="busy">{{ f.label }}</button>
-      <span class="text-muted" style="font-size:0.8rem;" *ngIf="busy">Preparing…</span>
+      <span class="text-muted" style="font-size:0.8rem;" *ngIf="busy">{{ 'Preparing…' | translate }}</span>
       <span style="color:#b91c1c; font-size:0.8rem;" *ngIf="error">{{ error }}</span>
     </span>
   `,

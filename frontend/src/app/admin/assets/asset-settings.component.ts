@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,31 +10,31 @@ import { AssetApiService, AssetSettings } from '../../core/api/asset-api.service
 @Component({
   selector: 'app-asset-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Asset settings</h3>
+      <h3 class="mb-3">{{ 'Asset settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
       <form (ngSubmit)="save()" *ngIf="s">
         <div class="form-group">
-          <label class="form-label">Warn before a warranty or insurance ends (days)</label>
+          <label class="form-label">{{ 'Warn before a warranty or insurance ends (days)' | translate }}</label>
           <input class="form-control" type="number" min="1" max="365" name="alertDays" [(ngModel)]="s.alertDays" />
         </div>
         <div class="form-group">
-          <label class="form-label">"Fully depreciated soon" means within (months)</label>
+          <label class="form-label">{{ '"Fully depreciated soon" means within (months)' | translate }}</label>
           <input class="form-control" type="number" min="1" max="60" name="soonMonths" [(ngModel)]="s.soonMonths" />
         </div>
         <div class="form-group">
-          <label class="form-label">Disposal approval limit (book value)</label>
+          <label class="form-label">{{ 'Disposal approval limit (book value)' | translate }}</label>
           <input class="form-control" type="number" min="0" step="0.01" name="limit" [(ngModel)]="s.disposalApprovalLimit" />
           <div class="text-muted" style="font-size:0.8rem;">
-            Disposing of an asset whose book value is above this needs an administrator or a user with the permission <em>Approve large asset disposals</em>. 0 means no limit.
+            {{ 'Disposing of an asset whose book value is above this needs an administrator or a user with the permission' | translate }} <em>{{ 'Approve large asset disposals' | translate }}</em>{{ '. 0 means no limit.' | translate }}
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="busy">Save</button>
-          <a class="btn btn-link" routerLink="/admin/assets/overview">Back</a>
+          <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/assets/overview">{{ 'Back' | translate }}</a>
         </div>
       </form>
     </app-shell>

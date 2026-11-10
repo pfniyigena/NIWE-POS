@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
@@ -8,28 +9,28 @@ import { PackageSummary, WorkOrderApiService } from '../../core/api/work-order-a
 @Component({
   selector: 'app-service-package-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>Service packages</h3>
-        <a class="btn btn-primary" routerLink="/admin/work-orders/packages/new">+ New package</a>
+        <h3>{{ 'Service packages' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/work-orders/packages/new">{{ '+ New package' | translate }}</a>
       </div>
-      <p class="text-muted">A package is a standard service you sell again and again: its steps, usual parts and price are copied onto a new work order.</p>
+      <p class="text-muted">{{ 'A package is a standard service you sell again and again: its steps, usual parts and price are copied onto a new work order.' | translate }}</p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <table class="table-sm">
-        <thead><tr><th>Package</th><th class="text-end">Price</th><th class="text-end">Hours</th><th class="text-end">Steps</th><th class="text-end">Parts</th><th class="text-end">Used</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Package' | translate }}</th><th class="text-end">{{ 'Price' | translate }}</th><th class="text-end">{{ 'Hours' | translate }}</th><th class="text-end">{{ 'Steps' | translate }}</th><th class="text-end">{{ 'Parts' | translate }}</th><th class="text-end">{{ 'Used' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let p of list" [style.opacity]="p.active ? 1 : 0.55">
             <td><a [routerLink]="['/admin/work-orders/packages', p.id]">{{ p.name }}</a><span class="text-muted" *ngIf="p.code"> · {{ p.code }}</span></td>
             <td class="text-end">{{ p.fixedPrice > 0 ? (p.fixedPrice | number: '1.0-2') : '—' }}</td>
             <td class="text-end">{{ p.estimatedHours != null ? (p.estimatedHours | number: '1.0-2') : '—' }}</td>
             <td class="text-end">{{ p.steps }}</td><td class="text-end">{{ p.parts }}</td><td class="text-end">{{ p.timesUsed }}</td>
-            <td><span class="badge badge-secondary" *ngIf="!p.active">Inactive</span></td>
+            <td><span class="badge badge-secondary" *ngIf="!p.active">{{ 'Inactive' | translate }}</span></td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="!list.length">No packages yet.</p>
+      <p class="text-muted" *ngIf="!list.length">{{ 'No packages yet.' | translate }}</p>
     </app-shell>
   `,
 })

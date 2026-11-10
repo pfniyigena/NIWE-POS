@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,23 +14,23 @@ import { Workstation } from '../../core/models';
 @Component({
   selector: 'app-workstation-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Workstations</h3>
-        <a class="btn btn-primary" routerLink="/admin/manufacturing/workstations/new">+ New workstation</a>
+        <h3>{{ 'Workstations' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/manufacturing/workstations/new">{{ '+ New workstation' | translate }}</a>
       </div>
-      <app-list-filter exportPath="/manufacturing/workstations/export" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" placeholder="Search code, name, description" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportPath="/manufacturing/workstations/export" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" [placeholder]="'Search code, name, description' | translate" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th class="text-end">Hourly rate</th>
-            <th>Status</th>
+            <th>{{ 'Code' | translate }}</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Description' | translate }}</th>
+            <th class="text-end">{{ 'Hourly rate' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -40,14 +41,14 @@ import { Workstation } from '../../core/models';
             <td>{{ w.description || '—' }}</td>
             <td class="text-end">{{ w.hourlyRate | number: '1.2-2' }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="w.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!w.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="w.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!w.active">{{ 'Inactive' | translate }}</span>
             </td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/workstations', w.id, 'edit']">Edit</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/workstations', w.id, 'edit']">{{ 'Edit' | translate }}</a></td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No workstations match these filters.' : 'No workstations yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('No workstations match these filters.' | translate) : ('No workstations yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -25,17 +26,17 @@ export function billingLabel(b: string): string {
 @Component({
   selector: 'app-group-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Groups</h3>
-        <a class="btn btn-primary new-group" *ngIf="auth.canManage('HOTEL')" routerLink="/admin/hotel/groups/new">+ New group</a>
+        <h3>{{ 'Groups' | translate }}</h3>
+        <a class="btn btn-primary new-group" *ngIf="auth.canManage('HOTEL')" routerLink="/admin/hotel/groups/new">{{ '+ New group' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
-      <app-list-filter exportPath="/hotel/groups/export" placeholder="Search group, contact, e-mail, phone" [statuses]="statuses" statusAll="All groups" [dates]="false" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportPath="/hotel/groups/export" [placeholder]="'Search group, contact, e-mail, phone' | translate" [statuses]="statuses" statusAll="All groups" [dates]="false" (filterChange)="list.apply($event)"></app-list-filter>
       <table class="table-sm groups-table">
-        <thead><tr><th>Group</th><th>Contact</th><th>Stay</th><th>Status</th><th class="text-end">Rooms held</th><th class="text-end">Booked</th><th class="text-end">In house</th><th>Pays</th><th class="text-end">Owed</th><th class="text-end">Deposit held</th></tr></thead>
+        <thead><tr><th>{{ 'Group' | translate }}</th><th>{{ 'Contact' | translate }}</th><th>{{ 'Stay' | translate }}</th><th>{{ 'Status' | translate }}</th><th class="text-end">{{ 'Rooms held' | translate }}</th><th class="text-end">{{ 'Booked' | translate }}</th><th class="text-end">{{ 'In house' | translate }}</th><th>{{ 'Pays' | translate }}</th><th class="text-end">{{ 'Owed' | translate }}</th><th class="text-end">{{ 'Deposit held' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let g of list.rows" class="group-row">
             <td><a [routerLink]="['/admin/hotel/groups', g.id]"><strong>{{ g.groupCode }}</strong></a><div>{{ g.name }}</div></td>
@@ -51,7 +52,7 @@ export function billingLabel(b: string): string {
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'No group matches these filters.' : 'No groups yet. Use "New group" to hold rooms for a wedding, a conference or a tour.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('No group matches these filters.' | translate) : ('No groups yet. Use "New group" to hold rooms for a wedding, a conference or a tour.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

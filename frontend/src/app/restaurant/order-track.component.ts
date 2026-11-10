@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantOnlineApiService } from '../core/api/restaurant-online-api.service';
@@ -8,22 +9,22 @@ import { OnlineTrack } from '../core/models';
 @Component({
   selector: 'app-order-track',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="ot-page" style="max-width:520px; margin:0 auto; padding:1rem 0.75rem 3rem;">
       <div class="alert alert-danger ot-error" *ngIf="error">{{ error }}</div>
-      <div *ngIf="!t && !error" class="text-muted">Looking for your order…</div>
+      <div *ngIf="!t && !error" class="text-muted">{{ 'Looking for your order…' | translate }}</div>
       <ng-container *ngIf="t">
         <div style="text-align:center;" class="mb-3">
           <div class="text-muted">{{ t.restaurantName }}</div>
-          <div class="text-muted" style="font-size:0.85rem;">Your order code</div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'Your order code' | translate }}</div>
           <div class="ot-code" style="font-size:2rem; font-weight:700; letter-spacing:0.12em;">{{ t.code }}</div>
         </div>
 
         <div class="card mb-3" style="padding:1rem; text-align:center;" [style.borderColor]="bad() ? '#dc2626' : done() ? '#16a34a' : ''">
           <div class="ot-stage" style="font-weight:700;">{{ stageTitle() }}</div>
           <div class="ot-text mt-1">{{ t.stageText }}</div>
-          <div class="ot-eta text-muted mt-1" *ngIf="t.etaMinutes && !bad() && !done() && t.mode !== 'TABLE'">About {{ t.etaMinutes }} minutes</div>
+          <div class="ot-eta text-muted mt-1" *ngIf="t.etaMinutes && !bad() && !done() && t.mode !== 'TABLE'">{{ 'About {p0} minutes' | translate: { p0: (t.etaMinutes) } }}</div>
           <div class="ot-reason mt-1" *ngIf="t.rejectReason" style="color:#b91c1c;">{{ t.rejectReason }}</div>
           <div class="flex gap-1 mt-2" *ngIf="!bad()" style="justify-content:center;">
             <span *ngFor="let s of steps()" class="ot-step" [style.background]="s.reached ? '#16a34a' : '#d1d5db'" style="height:6px; flex:1; border-radius:3px;" [title]="s.label"></span>
@@ -36,16 +37,16 @@ import { OnlineTrack } from '../core/models';
             <div>{{ l.quantity }} × {{ l.name }}<div class="text-muted" style="font-size:0.8rem;" *ngIf="l.options">{{ l.options }}</div><div class="text-muted" style="font-size:0.8rem;" *ngIf="l.notes">“{{ l.notes }}”</div></div>
             <div>{{ l.lineTotal | number: '1.0-2' }}</div>
           </div>
-          <div class="flex justify-between" *ngIf="t.deliveryFee > 0" style="padding-top:0.3rem;"><span>Delivery fee ({{ t.zoneName }})</span><span>{{ t.deliveryFee | number: '1.0-2' }}</span></div>
+          <div class="flex justify-between" *ngIf="t.deliveryFee > 0" style="padding-top:0.3rem;"><span>{{ 'Delivery fee ({p0})' | translate: { p0: (t.zoneName) } }}</span><span>{{ t.deliveryFee | number: '1.0-2' }}</span></div>
           <hr />
-          <div class="flex justify-between"><strong>Total (estimate)</strong><strong class="ot-total">{{ t.total | number: '1.0-2' }}</strong></div>
-          <div class="text-muted" style="font-size:0.8rem;">Includes tax and service charge. {{ t.mode === 'TABLE' ? 'Pay at the table.' : t.mode === 'DELIVERY' ? 'Pay on delivery.' : 'Pay when you collect.' }}</div>
+          <div class="flex justify-between"><strong>{{ 'Total (estimate)' | translate }}</strong><strong class="ot-total">{{ t.total | number: '1.0-2' }}</strong></div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Includes tax and service charge. {p0}' | translate: { p0: (t.mode === 'TABLE' ? 'Pay at the table.' : t.mode === 'DELIVERY' ? 'Pay on delivery.' : 'Pay when you collect.') } }}</div>
         </div>
 
         <div class="flex gap-2" style="flex-wrap:wrap; justify-content:center;">
-          <button class="btn btn-outline-danger ot-cancel" *ngIf="t.stage === 'WAITING'" [disabled]="busy" (click)="cancel()">Cancel this order</button>
-          <a class="btn btn-primary ot-more" *ngIf="token" [routerLink]="['/menu', token]">Order something else</a>
-          <a class="btn btn-primary ot-more" *ngIf="!token && t.mode !== 'TABLE'" routerLink="/order">Order again</a>
+          <button class="btn btn-outline-danger ot-cancel" *ngIf="t.stage === 'WAITING'" [disabled]="busy" (click)="cancel()">{{ 'Cancel this order' | translate }}</button>
+          <a class="btn btn-primary ot-more" *ngIf="token" [routerLink]="['/menu', token]">{{ 'Order something else' | translate }}</a>
+          <a class="btn btn-primary ot-more" *ngIf="!token && t.mode !== 'TABLE'" routerLink="/order">{{ 'Order again' | translate }}</a>
         </div>
       </ng-container>
     </div>

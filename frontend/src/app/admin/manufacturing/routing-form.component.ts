@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -23,35 +24,35 @@ interface DraftOperation {
 @Component({
   selector: 'app-routing-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">{{ id ? 'Edit routing' : 'New routing' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit routing' | translate) : ('New routing' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3">
-        <label class="form-label">Name</label>
+        <label class="form-label">{{ 'Name' | translate }}</label>
         <input class="form-control" name="name" [(ngModel)]="name" required />
       </div>
       <div class="form-group mb-3">
-        <label class="form-label">Description</label>
+        <label class="form-label">{{ 'Description' | translate }}</label>
         <textarea class="form-control" name="description" rows="2" [(ngModel)]="description"></textarea>
       </div>
       <div class="form-group mb-3" *ngIf="id">
         <label class="form-label">
-          <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+          <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
         </label>
       </div>
 
-      <h4 class="mb-2">Operations</h4>
+      <h4 class="mb-2">{{ 'Operations' | translate }}</h4>
       <table class="table-sm mb-2">
         <thead>
           <tr>
-            <th style="width:80px;">Seq</th>
-            <th>Operation name</th>
-            <th>Workstation</th>
-            <th class="text-end">Est. minutes/unit</th>
-            <th class="text-end">Labour rate / hour</th>
+            <th style="width:80px;">{{ 'Seq' | translate }}</th>
+            <th>{{ 'Operation name' | translate }}</th>
+            <th>{{ 'Workstation' | translate }}</th>
+            <th class="text-end">{{ 'Est. minutes/unit' | translate }}</th>
+            <th class="text-end">{{ 'Labour rate / hour' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -61,7 +62,7 @@ interface DraftOperation {
               <input type="number" class="form-control form-control-sm" style="width:70px;" min="1" [(ngModel)]="op.sequence" [name]="'seq' + i" />
             </td>
             <td>
-              <input class="form-control form-control-sm" [(ngModel)]="op.name" [name]="'opname' + i" placeholder="e.g. Cut, Assemble, Paint, Pack" />
+              <input class="form-control form-control-sm" [(ngModel)]="op.name" [name]="'opname' + i" [placeholder]="'e.g. Cut, Assemble, Paint, Pack' | translate" />
             </td>
             <td>
               <select class="form-select form-select-sm" [(ngModel)]="op.workstationId" [name]="'ws' + i">
@@ -83,18 +84,18 @@ interface DraftOperation {
             <td class="text-end">
               <input type="number" class="form-control form-control-sm lab-rate" style="width:110px; margin-left:auto;" min="0" step="0.01" [(ngModel)]="op.labourHourlyRate" [name]="'lab' + i" />
             </td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeOperation(i)">Remove</button></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeOperation(i)">{{ 'Remove' | translate }}</button></td>
           </tr>
           <tr *ngIf="operations.length === 0">
-            <td colspan="6" class="text-muted">No operations yet — add at least one below.</td>
+            <td colspan="6" class="text-muted">{{ 'No operations yet — add at least one below.' | translate }}</td>
           </tr>
         </tbody>
       </table>
-      <button type="button" class="btn btn-outline-secondary btn-sm mb-3" (click)="addOperation()">+ Add operation</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm mb-3" (click)="addOperation()">{{ '+ Add operation' | translate }}</button>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save</button>
-        <a class="btn btn-link" routerLink="/admin/manufacturing/routings">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/manufacturing/routings">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

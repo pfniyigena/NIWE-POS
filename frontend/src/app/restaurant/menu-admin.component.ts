@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HotelExportComponent } from '../hotel/hotel-export.component';
@@ -16,25 +17,25 @@ import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
 @Component({
   selector: 'app-menu-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, HotelExportComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, HotelExportComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Menu</h3>
+        <h3>{{ 'Menu' | translate }}</h3>
         <app-hotel-export path="/restaurant/menu/items/export" name="restaurant-menu"></app-hotel-export>
       </div>
       <div class="flex gap-3" style="align-items:flex-start;">
         <div class="card" style="padding:1rem; flex:0 0 280px;">
           <div class="flex justify-between align-center mb-2">
-            <h4 style="font-size:1rem; margin:0;">Categories</h4>
-            <button class="btn btn-sm btn-outline-primary" (click)="startNewCategory()">+ Add</button>
+            <h4 style="font-size:1rem; margin:0;">{{ 'Categories' | translate }}</h4>
+            <button class="btn btn-sm btn-outline-primary" (click)="startNewCategory()">{{ '+ Add' | translate }}</button>
           </div>
           <div class="card mb-2" style="padding:0.5rem;" *ngIf="editingCategory">
-            <input class="form-control mb-2" placeholder="Category name" [(ngModel)]="categoryName" name="categoryName" />
+            <input class="form-control mb-2" [placeholder]="'Category name' | translate" [(ngModel)]="categoryName" name="categoryName" />
             <div class="flex gap-2">
-              <button class="btn btn-sm btn-primary" (click)="saveCategory()">Save</button>
-              <button class="btn btn-sm btn-link" (click)="editingCategory = false">Cancel</button>
+              <button class="btn btn-sm btn-primary" (click)="saveCategory()">{{ 'Save' | translate }}</button>
+              <button class="btn btn-sm btn-link" (click)="editingCategory = false">{{ 'Cancel' | translate }}</button>
             </div>
           </div>
           <div
@@ -47,17 +48,17 @@ import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
             <span [class.text-muted]="!c.active">{{ c.name }}</span>
             <button class="btn btn-sm btn-outline-danger" (click)="deleteCategory(c); $event.stopPropagation()">✕</button>
           </div>
-          <p class="text-muted" *ngIf="categories.length === 0">No categories yet.</p>
+          <p class="text-muted" *ngIf="categories.length === 0">{{ 'No categories yet.' | translate }}</p>
         </div>
 
         <div class="card" style="padding:1rem; flex:1;">
-          <div *ngIf="!selectedCategory" class="text-muted">Select or add a category to manage its items.</div>
+          <div *ngIf="!selectedCategory" class="text-muted">{{ 'Select or add a category to manage its items.' | translate }}</div>
           <div *ngIf="selectedCategory">
-            <h4 style="font-size:1rem;" class="mb-2">{{ selectedCategory.name }} — items</h4>
+            <h4 style="font-size:1rem;" class="mb-2">{{ '{p0} — items' | translate: { p0: (selectedCategory.name) } }}</h4>
             <div class="mb-2" style="position:relative;">
               <input
                 class="form-control"
-                placeholder="Search products by name/SKU to add to this category"
+                [placeholder]="'Search products by name/SKU to add to this category' | translate"
                 [(ngModel)]="productSearch"
                 (input)="onProductSearch()"
               />
@@ -70,12 +71,12 @@ import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
             <table class="table-sm">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Station</th>
-                  <th>Course</th>
-                  <th>Prep (min)</th>
+                  <th>{{ 'Product' | translate }}</th>
+                  <th>{{ 'Station' | translate }}</th>
+                  <th>{{ 'Course' | translate }}</th>
+                  <th>{{ 'Prep (min)' | translate }}</th>
                   <th>Choices &amp; allergens</th>
-                  <th class="text-end">Menu price</th>
+                  <th class="text-end">{{ 'Menu price' | translate }}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -84,29 +85,29 @@ import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
                 <tr class="menu-row">
                   <td>
                     {{ item.product?.name }}
-                    <span *ngIf="item.hasRecipe" class="text-muted" title="Has a bill of materials — checkout consumes its ingredients (Admin > Manufacturing > Bill of materials)">🍳 recipe</span>
+                    <span *ngIf="item.hasRecipe" class="text-muted" [title]="'Has a bill of materials — checkout consumes its ingredients (Admin > Manufacturing > Bill of materials)' | translate">{{ '🍳 recipe' | translate }}</span>
                   </td>
                   <td>
                     <input
                       type="text"
                       class="form-control form-control-sm"
                       style="width:130px;"
-                      placeholder="e.g. Grill"
+                      [placeholder]="'e.g. Grill' | translate"
                       [ngModel]="item.station"
                       (ngModelChange)="setStation(item, $event)"
                     />
                   </td>
                   <td>
                     <select class="form-select form-select-sm mi-course" style="width:90px;" [ngModel]="item.defaultCourse ?? 1" (ngModelChange)="setCourse(item, $event)" [name]="'course' + item.id">
-                      <option *ngFor="let c of [1,2,3,4,5]" [ngValue]="c">Course {{ c }}</option>
+                      <option *ngFor="let c of [1,2,3,4,5]" [ngValue]="c">{{ 'Course {p0}' | translate: { p0: (c) } }}</option>
                     </select>
                   </td>
                   <td>
-                    <input type="number" class="form-control form-control-sm mi-prep" style="width:80px;" min="0" max="240" placeholder="usual" [ngModel]="item.prepMinutes" (change)="setPrep(item, $any($event.target).value)" [name]="'prep' + item.id" />
+                    <input type="number" class="form-control form-control-sm mi-prep" style="width:80px;" min="0" max="240" [placeholder]="'usual' | translate" [ngModel]="item.prepMinutes" (change)="setPrep(item, $any($event.target).value)" [name]="'prep' + item.id" />
                   </td>
                   <td>
                     <button class="btn btn-sm btn-outline-secondary mi-expand" (click)="toggleDetail(item)">
-                      {{ item.optionGroups?.length ?? 0 }} group{{ (item.optionGroups?.length ?? 0) === 1 ? '' : 's' }}<span *ngIf="item.allergens"> · {{ pretty(item.allergens) }}</span>
+                      {{ '{p0} group{p1}' | translate: { p0: (item.optionGroups?.length ?? 0), p1: ((item.optionGroups?.length ?? 0) === 1 ? '' : 's') } }}<span *ngIf="item.allergens"> · {{ pretty(item.allergens) }}</span>
                     </button>
                   </td>
                   <td class="text-end">
@@ -121,48 +122,48 @@ import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
                     />
                   </td>
                   <td class="flex gap-1">
-                    <button class="btn btn-sm mi-soldout" [class.btn-danger]="item.soldOut" [class.btn-outline-secondary]="!item.soldOut" (click)="toggleSoldOut(item)">{{ item.soldOut ? 'Sold out — put back' : 'Sold out?' }}</button>
-                    <button class="btn btn-sm btn-outline-danger" (click)="removeItem(item)">Remove</button>
+                    <button class="btn btn-sm mi-soldout" [class.btn-danger]="item.soldOut" [class.btn-outline-secondary]="!item.soldOut" (click)="toggleSoldOut(item)">{{ item.soldOut ? ('Sold out — put back' | translate) : ('Sold out?' | translate) }}</button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="removeItem(item)">{{ 'Remove' | translate }}</button>
                   </td>
                 </tr>
                 <tr class="item-detail" *ngIf="detailId === item.id">
                   <td colspan="8" style="background:var(--hover, rgba(0,0,0,0.03)); padding:0.75rem;">
                     <div class="mb-3">
-                      <strong>Allergens</strong>
+                      <strong>{{ 'Allergens' | translate }}</strong>
                       <div class="flex gap-3" style="flex-wrap:wrap;">
                         <label *ngFor="let a of allergenList"><input type="checkbox" class="ma-chk" [attr.data-al]="a" [(ngModel)]="alSel[a]" [name]="'ma' + a" /> {{ pretty(a) }}</label>
                       </div>
-                      <button class="btn btn-sm btn-primary mt-1 ma-save" (click)="saveAllergens(item)">Save allergens</button>
+                      <button class="btn btn-sm btn-primary mt-1 ma-save" (click)="saveAllergens(item)">{{ 'Save allergens' | translate }}</button>
                     </div>
                     <div>
-                      <strong>Choices</strong>
-                      <span class="text-muted" style="font-size:0.85rem;"> — sizes, cooking, extras. Each option can add to the price.</span>
+                      <strong>{{ 'Choices' | translate }}</strong>
+                      <span class="text-muted" style="font-size:0.85rem;"> {{ '— sizes, cooking, extras. Each option can add to the price.' | translate }}</span>
                       <div class="card mb-2 mt-1 mo-group" style="padding:0.5rem;" *ngFor="let g of editGroups; let gi = index">
                         <div class="flex gap-2 align-center mb-1" style="flex-wrap:wrap;">
-                          <input class="form-control form-control-sm mo-gname" style="width:160px;" placeholder="Group, e.g. Size" [(ngModel)]="g.name" [name]="'gn' + gi" />
-                          <label><input type="checkbox" class="mo-req" [(ngModel)]="g.required" [name]="'gr' + gi" /> Must choose</label>
-                          <label>Up to <input type="number" class="form-control form-control-sm mo-max" min="0" max="20" style="width:60px; display:inline-block;" [(ngModel)]="g.maxSelect" [name]="'gm' + gi" /></label>
-                          <label><input type="checkbox" [(ngModel)]="g.active" [name]="'ga' + gi" /> On</label>
-                          <button class="btn btn-sm btn-outline-danger mo-gdel" (click)="editGroups.splice(gi, 1)">Remove group</button>
+                          <input class="form-control form-control-sm mo-gname" style="width:160px;" [placeholder]="'Group, e.g. Size' | translate" [(ngModel)]="g.name" [name]="'gn' + gi" />
+                          <label><input type="checkbox" class="mo-req" [(ngModel)]="g.required" [name]="'gr' + gi" /> {{ 'Must choose' | translate }}</label>
+                          <label>{{ 'Up to' | translate }} <input type="number" class="form-control form-control-sm mo-max" min="0" max="20" style="width:60px; display:inline-block;" [(ngModel)]="g.maxSelect" [name]="'gm' + gi" /></label>
+                          <label><input type="checkbox" [(ngModel)]="g.active" [name]="'ga' + gi" /> {{ 'On' | translate }}</label>
+                          <button class="btn btn-sm btn-outline-danger mo-gdel" (click)="editGroups.splice(gi, 1)">{{ 'Remove group' | translate }}</button>
                         </div>
                         <div class="flex gap-2 align-center mb-1" *ngFor="let o of g.options; let oi = index">
-                          <input class="form-control form-control-sm mo-oname" style="width:160px;" placeholder="Option" [(ngModel)]="o.name" [name]="'on' + gi + '_' + oi" />
-                          <input class="form-control form-control-sm mo-oprice" type="number" step="0.01" style="width:100px;" placeholder="+ price" [(ngModel)]="o.priceDelta" [name]="'op' + gi + '_' + oi" />
-                          <label><input type="checkbox" [(ngModel)]="o.active" [name]="'oa' + gi + '_' + oi" /> On</label>
+                          <input class="form-control form-control-sm mo-oname" style="width:160px;" [placeholder]="'Option' | translate" [(ngModel)]="o.name" [name]="'on' + gi + '_' + oi" />
+                          <input class="form-control form-control-sm mo-oprice" type="number" step="0.01" style="width:100px;" [placeholder]="'+ price' | translate" [(ngModel)]="o.priceDelta" [name]="'op' + gi + '_' + oi" />
+                          <label><input type="checkbox" [(ngModel)]="o.active" [name]="'oa' + gi + '_' + oi" /> {{ 'On' | translate }}</label>
                           <button class="btn btn-sm btn-outline-danger mo-odel" (click)="g.options.splice(oi, 1)">✕</button>
                         </div>
-                        <div><button class="btn btn-sm btn-outline-secondary mo-add-opt" (click)="g.options.push({ name: '', priceDelta: 0, active: true })">+ Option</button></div>
+                        <div><button class="btn btn-sm btn-outline-secondary mo-add-opt" (click)="g.options.push({ name: '', priceDelta: 0, active: true })">{{ '+ Option' | translate }}</button></div>
                       </div>
                       <div class="flex gap-2">
-                        <button class="btn btn-sm btn-outline-secondary mo-add-group" (click)="addGroup()">+ Group</button>
-                        <button class="btn btn-sm btn-primary mo-save" (click)="saveOptions(item)">Save choices</button>
+                        <button class="btn btn-sm btn-outline-secondary mo-add-group" (click)="addGroup()">{{ '+ Group' | translate }}</button>
+                        <button class="btn btn-sm btn-primary mo-save" (click)="saveOptions(item)">{{ 'Save choices' | translate }}</button>
                       </div>
                     </div>
                   </td>
                 </tr>
                 </ng-container>
                 <tr *ngIf="items.length === 0">
-                  <td colspan="6" class="text-muted">No items yet — search for a product above to add one.</td>
+                  <td colspan="6" class="text-muted">{{ 'No items yet — search for a product above to add one.' | translate }}</td>
                 </tr>
               </tbody>
             </table>

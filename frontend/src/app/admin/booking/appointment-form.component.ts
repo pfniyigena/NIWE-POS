@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,42 +14,42 @@ import { today } from '../../core/time-util';
 @Component({
   selector: 'app-appointment-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>New appointment</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/booking">Back to calendar</a>
+        <h3>{{ 'New appointment' | translate }}</h3>
+        <a class="btn btn-outline-secondary" routerLink="/admin/booking">{{ 'Back to calendar' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form class="card" style="padding:1rem; max-width:44rem;" (ngSubmit)="save()">
         <div class="form-group mb-2">
-          <label class="form-label">Service</label>
+          <label class="form-label">{{ 'Service' | translate }}</label>
           <select class="form-select" name="svc" [(ngModel)]="serviceId" (ngModelChange)="onServiceChange()" required>
-            <option [ngValue]="null">Choose a service…</option>
-            <option *ngFor="let s of services" [ngValue]="s.id">{{ s.name }} · {{ s.durationMinutes }} min<span *ngIf="s.price"> · {{ s.price | number: '1.0-2' }}</span></option>
+            <option [ngValue]="null">{{ 'Choose a service…' | translate }}</option>
+            <option *ngFor="let s of services" [ngValue]="s.id">{{ '{p0} · {p1} min' | translate: { p0: (s.name), p1: (s.durationMinutes) } }}<span *ngIf="s.price"> · {{ s.price | number: '1.0-2' }}</span></option>
           </select>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="service?.description">{{ service?.description }}</div>
         </div>
 
         <div class="form-group mb-2" *ngIf="service">
-          <label class="form-label">Date</label>
+          <label class="form-label">{{ 'Date' | translate }}</label>
           <app-date-picker name="date" [(ngModel)]="date" (ngModelChange)="loadSlots()" required></app-date-picker>
         </div>
 
         <div class="form-group mb-2" *ngIf="service && service.staff.length">
-          <label class="form-label">Prefer a person <span class="text-muted">(optional)</span></label>
+          <label class="form-label">{{ 'Prefer a person' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
           <select class="form-select" name="stf" [(ngModel)]="staffId" (ngModelChange)="loadSlots()">
-            <option [ngValue]="null">Anyone free</option>
+            <option [ngValue]="null">{{ 'Anyone free' | translate }}</option>
             <option *ngFor="let p of service.staff" [ngValue]="p.id">{{ p.name }}</option>
           </select>
         </div>
 
         <div class="form-group mb-2" *ngIf="service">
-          <label class="form-label">Time</label>
-          <div class="text-muted" *ngIf="loadingSlots">Checking availability…</div>
-          <div class="text-muted" *ngIf="!loadingSlots && slotsLoaded && !slots.length">Nothing free on this day for this service. Try another day or person.</div>
+          <label class="form-label">{{ 'Time' | translate }}</label>
+          <div class="text-muted" *ngIf="loadingSlots">{{ 'Checking availability…' | translate }}</div>
+          <div class="text-muted" *ngIf="!loadingSlots && slotsLoaded && !slots.length">{{ 'Nothing free on this day for this service. Try another day or person.' | translate }}</div>
           <div class="flex gap-2" style="flex-wrap:wrap;" *ngIf="slots.length">
             <button type="button" class="btn" *ngFor="let sl of slots" [class.btn-primary]="time === sl.time" [class.btn-outline-secondary]="time !== sl.time"
                     (click)="pick(sl)">{{ sl.time }}</button>
@@ -57,54 +58,54 @@ import { today } from '../../core/time-util';
 
         <ng-container *ngIf="chosen">
           <div class="form-group mb-2" *ngIf="chosen.staff.length">
-            <label class="form-label">Person</label>
+            <label class="form-label">{{ 'Person' | translate }}</label>
             <select class="form-select" name="who" [(ngModel)]="staffUserId">
-              <option [ngValue]="null">Assign automatically</option>
+              <option [ngValue]="null">{{ 'Assign automatically' | translate }}</option>
               <option *ngFor="let p of chosen.staff" [ngValue]="p.id">{{ p.name }}</option>
             </select>
           </div>
           <div class="form-group mb-2" *ngIf="chosen.resources.length">
-            <label class="form-label">Room / equipment</label>
+            <label class="form-label">{{ 'Room / equipment' | translate }}</label>
             <select class="form-select" name="room" [(ngModel)]="resourceId">
-              <option [ngValue]="null">Assign automatically</option>
+              <option [ngValue]="null">{{ 'Assign automatically' | translate }}</option>
               <option *ngFor="let r of chosen.resources" [ngValue]="r.id">{{ r.name }}</option>
             </select>
           </div>
 
           <hr />
           <div class="form-group mb-2">
-            <label class="form-label">Who is it for?</label>
+            <label class="form-label">{{ 'Who is it for?' | translate }}</label>
             <select class="form-select" name="cust" [(ngModel)]="customerId" (ngModelChange)="onCustomer()">
-              <option [ngValue]="null">A walk-in / someone new (type the name below)</option>
+              <option [ngValue]="null">{{ 'A walk-in / someone new (type the name below)' | translate }}</option>
               <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}<span *ngIf="c.phone"> · {{ c.phone }}</span></option>
             </select>
           </div>
           <div class="form-group mb-2">
-            <label class="form-label">Name</label>
+            <label class="form-label">{{ 'Name' | translate }}</label>
             <input class="form-control" name="gn" [(ngModel)]="guestName" [readonly]="customerId !== null" required />
           </div>
           <div class="flex gap-2">
             <div class="form-group mb-2" style="flex:1;">
-              <label class="form-label">Phone</label>
+              <label class="form-label">{{ 'Phone' | translate }}</label>
               <input class="form-control" name="gp" [(ngModel)]="guestPhone" />
             </div>
             <div class="form-group mb-2" style="flex:1;">
-              <label class="form-label">Email <span class="text-muted">(for the confirmation)</span></label>
+              <label class="form-label">{{ 'Email' | translate }} <span class="text-muted">{{ '(for the confirmation)' | translate }}</span></label>
               <input class="form-control" type="email" name="ge" [(ngModel)]="guestEmail" />
             </div>
           </div>
           <div class="form-group mb-2">
-            <label class="form-label">Notes</label>
+            <label class="form-label">{{ 'Notes' | translate }}</label>
             <textarea class="form-control" rows="2" name="nt" [(ngModel)]="notes"></textarea>
           </div>
           <label class="mb-3" style="display:flex; gap:0.5rem; align-items:center;" *ngIf="service && service.price > 0 && service.paymentMode !== 'NONE'">
             <input type="checkbox" name="skip" [(ngModel)]="skipPayment" />
-            Confirm now without waiting for payment (no invoice is held back)
+            {{ 'Confirm now without waiting for payment (no invoice is held back)' | translate }}
           </label>
           <p class="text-muted" *ngIf="service && service.price > 0 && service.paymentMode !== 'NONE' && !skipPayment" style="font-size:0.85rem;">
-            An invoice for {{ service.price | number: '1.0-2' }} will be raised and the time is held for the guest to pay.
+            {{ 'An invoice for {p0} will be raised and the time is held for the guest to pay.' | translate: { p0: (service.price | number: '1.0-2') } }}
           </p>
-          <button class="btn btn-primary" type="submit" [disabled]="saving || !time">{{ saving ? 'Booking…' : 'Book it' }}</button>
+          <button class="btn btn-primary" type="submit" [disabled]="saving || !time">{{ saving ? ('Booking…' | translate) : ('Book it' | translate) }}</button>
         </ng-container>
       </form>
     </app-shell>

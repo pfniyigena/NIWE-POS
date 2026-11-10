@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantReportApiService } from '../core/api/restaurant-report-api.service';
@@ -9,71 +10,71 @@ import { EndOfDay, StoreSettings } from '../core/models';
 @Component({
   selector: 'app-end-of-day-print',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, RouterLink],
   template: `
     <div class="zr" *ngIf="e as r">
-      <h3 style="text-align:center; margin-bottom:0;">{{ r.closed ? 'Z-REPORT Z-' + pad(r.zNumber) : 'DAY REPORT (not closed yet)' }}</h3>
+      <h3 style="text-align:center; margin-bottom:0;">{{ r.closed ? (('Z-REPORT' | translate) + ' Z-' + pad(r.zNumber)) : ('DAY REPORT (not closed yet)' | translate) }}</h3>
       <div *ngIf="settings as s" style="text-align:center; margin:6px 0 10px;">
         <div *ngIf="s.businessName" style="font-weight:700;">{{ s.businessName }}</div>
         <div *ngIf="s.address" style="font-size:0.8rem; color:#444;">{{ s.address }}</div>
-        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">Tax ID: {{ s.taxId }}</div>
+        <div *ngIf="s.taxId" style="font-size:0.8rem; color:#444;">{{ 'Tax ID: {p0}' | translate: { p0: (s.taxId) } }}</div>
       </div>
-      <p style="text-align:center; margin:0 0 4px;" class="zr-date">Business day {{ r.date }}</p>
-      <p style="text-align:center; margin:0 0 8px; color:#666; font-size:0.8rem;" *ngIf="r.closed">Closed by {{ r.closedBy }} on {{ r.closedAt | date: 'medium' }}</p>
-      <p class="zr-warn" *ngIf="r.closed && r.changedSinceClose">Sales were recorded after this day was closed.</p>
+      <p style="text-align:center; margin:0 0 4px;" class="zr-date">{{ 'Business day {p0}' | translate: { p0: (r.date) } }}</p>
+      <p style="text-align:center; margin:0 0 8px; color:#666; font-size:0.8rem;" *ngIf="r.closed">{{ 'Closed by {p0} on {p1}' | translate: { p0: (r.closedBy), p1: (r.closedAt | date: 'medium') } }}</p>
+      <p class="zr-warn" *ngIf="r.closed && r.changedSinceClose">{{ 'Sales were recorded after this day was closed.' | translate }}</p>
 
-      <h5>Sales</h5>
+      <h5>{{ 'Sales' | translate }}</h5>
       <table>
-        <tr><td>Checks</td><td class="n">{{ r.sales.checks }}</td></tr>
-        <tr><td>Covers</td><td class="n">{{ r.sales.covers }}</td></tr>
-        <tr><td>Gross sales</td><td class="n">{{ r.sales.gross | number: '1.2-2' }}</td></tr>
-        <tr><td>Discounts</td><td class="n">-{{ r.sales.discounts | number: '1.2-2' }}</td></tr>
-        <tr class="b"><td>Net sales</td><td class="n zr-net">{{ r.sales.netSales | number: '1.2-2' }}</td></tr>
-        <tr><td>Service charge</td><td class="n">{{ r.sales.serviceCharge | number: '1.2-2' }}</td></tr>
-        <tr><td>Tax</td><td class="n">{{ r.sales.tax | number: '1.2-2' }}</td></tr>
-        <tr *ngIf="r.sales.rounding !== 0"><td>Rounding</td><td class="n">{{ r.sales.rounding | number: '1.2-2' }}</td></tr>
-        <tr class="b"><td>Total billed</td><td class="n zr-billed">{{ r.sales.billed | number: '1.2-2' }}</td></tr>
-        <tr><td>Tips</td><td class="n">{{ r.sales.tips | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ 'Checks' | translate }}</td><td class="n">{{ r.sales.checks }}</td></tr>
+        <tr><td>{{ 'Covers' | translate }}</td><td class="n">{{ r.sales.covers }}</td></tr>
+        <tr><td>{{ 'Gross sales' | translate }}</td><td class="n">{{ r.sales.gross | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ 'Discounts' | translate }}</td><td class="n">-{{ r.sales.discounts | number: '1.2-2' }}</td></tr>
+        <tr class="b"><td>{{ 'Net sales' | translate }}</td><td class="n zr-net">{{ r.sales.netSales | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ 'Service charge' | translate }}</td><td class="n">{{ r.sales.serviceCharge | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ 'Tax' | translate }}</td><td class="n">{{ r.sales.tax | number: '1.2-2' }}</td></tr>
+        <tr *ngIf="r.sales.rounding !== 0"><td>{{ 'Rounding' | translate }}</td><td class="n">{{ r.sales.rounding | number: '1.2-2' }}</td></tr>
+        <tr class="b"><td>{{ 'Total billed' | translate }}</td><td class="n zr-billed">{{ r.sales.billed | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ 'Tips' | translate }}</td><td class="n">{{ r.sales.tips | number: '1.2-2' }}</td></tr>
       </table>
 
-      <h5 *ngIf="r.taxes.length">Tax</h5>
-      <table *ngIf="r.taxes.length"><tr *ngFor="let t of r.taxes"><td>{{ t.label }} on {{ t.base | number: '1.2-2' }}</td><td class="n">{{ t.tax | number: '1.2-2' }}</td></tr></table>
+      <h5 *ngIf="r.taxes.length">{{ 'Tax' | translate }}</h5>
+      <table *ngIf="r.taxes.length"><tr *ngFor="let t of r.taxes"><td>{{ '{p0} on {p1}' | translate: { p0: (t.label), p1: (t.base | number: '1.2-2') } }}</td><td class="n">{{ t.tax | number: '1.2-2' }}</td></tr></table>
 
-      <h5>Payments</h5>
+      <h5>{{ 'Payments' | translate }}</h5>
       <table>
-        <tr *ngFor="let p of r.payments"><td>{{ p.kind === 'DEPOSIT' ? 'Booking deposit (paid earlier)' : p.method }} ({{ p.checks }})</td><td class="n">{{ p.amount | number: '1.2-2' }}</td></tr>
-        <tr class="b"><td>Collected</td><td class="n">{{ r.sales.collected | number: '1.2-2' }}</td></tr>
+        <tr *ngFor="let p of r.payments"><td>{{ p.kind === 'DEPOSIT' ? ('Booking deposit (paid earlier)' | translate) : p.method }} ({{ p.checks }})</td><td class="n">{{ p.amount | number: '1.2-2' }}</td></tr>
+        <tr class="b"><td>{{ 'Collected' | translate }}</td><td class="n">{{ r.sales.collected | number: '1.2-2' }}</td></tr>
       </table>
 
-      <h5 *ngIf="r.tips.length">Tips by server</h5>
+      <h5 *ngIf="r.tips.length">{{ 'Tips by server' | translate }}</h5>
       <table *ngIf="r.tips.length"><tr *ngFor="let t of r.tips"><td>{{ t.server }}</td><td class="n">{{ t.tips | number: '1.2-2' }}</td></tr></table>
 
-      <h5 *ngIf="r.controls.length">Voids, comps, cancelled</h5>
+      <h5 *ngIf="r.controls.length">{{ 'Voids, comps, cancelled' | translate }}</h5>
       <table *ngIf="r.controls.length"><tr *ngFor="let c of r.controls"><td>{{ pretty(c.type) }} ({{ c.count }})</td><td class="n">{{ c.type === 'REPRINT' ? '' : (c.amount | number: '1.2-2') }}</td></tr></table>
 
-      <h5>Cash</h5>
+      <h5>{{ 'Cash' | translate }}</h5>
       <table>
-        <tr><td>Opening float</td><td class="n">{{ r.cash.openingFloat | number: '1.2-2' }}</td></tr>
-        <tr><td>+ Cash sales</td><td class="n">{{ r.cash.cashSales | number: '1.2-2' }}</td></tr>
-        <tr><td>+ Deposits in</td><td class="n">{{ r.cash.depositsIn | number: '1.2-2' }}</td></tr>
-        <tr><td>- Deposits refunded</td><td class="n">{{ r.cash.depositsOut | number: '1.2-2' }}</td></tr>
-        <tr><td>+ Paid in</td><td class="n">{{ r.cash.paidIn | number: '1.2-2' }}</td></tr>
-        <tr><td>- Paid out</td><td class="n">{{ r.cash.paidOut | number: '1.2-2' }}</td></tr>
-        <tr><td>- Tips paid out</td><td class="n">{{ r.cash.tipsPaid | number: '1.2-2' }}</td></tr>
-        <tr class="b"><td>Should be in drawer</td><td class="n zr-expected">{{ r.cash.expected | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ 'Opening float' | translate }}</td><td class="n">{{ r.cash.openingFloat | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ '+ Cash sales' | translate }}</td><td class="n">{{ r.cash.cashSales | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ '+ Deposits in' | translate }}</td><td class="n">{{ r.cash.depositsIn | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ '- Deposits refunded' | translate }}</td><td class="n">{{ r.cash.depositsOut | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ '+ Paid in' | translate }}</td><td class="n">{{ r.cash.paidIn | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ '- Paid out' | translate }}</td><td class="n">{{ r.cash.paidOut | number: '1.2-2' }}</td></tr>
+        <tr><td>{{ '- Tips paid out' | translate }}</td><td class="n">{{ r.cash.tipsPaid | number: '1.2-2' }}</td></tr>
+        <tr class="b"><td>{{ 'Should be in drawer' | translate }}</td><td class="n zr-expected">{{ r.cash.expected | number: '1.2-2' }}</td></tr>
         <ng-container *ngIf="r.closed">
-          <tr><td>Counted</td><td class="n zr-counted">{{ r.cash.counted | number: '1.2-2' }}</td></tr>
-          <tr class="b"><td>Difference</td><td class="n zr-variance">{{ r.cash.variance | number: '1.2-2' }}</td></tr>
-          <tr><td>Left in drawer</td><td class="n">{{ r.cash.floatKept | number: '1.2-2' }}</td></tr>
-          <tr><td>Banked</td><td class="n">{{ r.cash.banked | number: '1.2-2' }}</td></tr>
+          <tr><td>{{ 'Counted' | translate }}</td><td class="n zr-counted">{{ r.cash.counted | number: '1.2-2' }}</td></tr>
+          <tr class="b"><td>{{ 'Difference' | translate }}</td><td class="n zr-variance">{{ r.cash.variance | number: '1.2-2' }}</td></tr>
+          <tr><td>{{ 'Left in drawer' | translate }}</td><td class="n">{{ r.cash.floatKept | number: '1.2-2' }}</td></tr>
+          <tr><td>{{ 'Banked' | translate }}</td><td class="n">{{ r.cash.banked | number: '1.2-2' }}</td></tr>
         </ng-container>
       </table>
-      <p *ngIf="r.notes" style="margin-top:8px;">Note: {{ r.notes }}</p>
-      <div *ngIf="r.closed" style="margin-top:28px; display:flex; gap:24px;"><div style="flex:1; border-top:1px solid #333; padding-top:2px; font-size:0.8rem;">Counted by</div><div style="flex:1; border-top:1px solid #333; padding-top:2px; font-size:0.8rem;">Checked by</div></div>
+      <p *ngIf="r.notes" style="margin-top:8px;">{{ 'Note: {p0}' | translate: { p0: (r.notes) } }}</p>
+      <div *ngIf="r.closed" style="margin-top:28px; display:flex; gap:24px;"><div style="flex:1; border-top:1px solid #333; padding-top:2px; font-size:0.8rem;">{{ 'Counted by' | translate }}</div><div style="flex:1; border-top:1px solid #333; padding-top:2px; font-size:0.8rem;">{{ 'Checked by' | translate }}</div></div>
 
       <div class="no-print" style="display:flex; gap:8px; margin-top:20px;">
-        <button class="zr-print" (click)="print()" style="flex:1; padding:10px; cursor:pointer;">Print</button>
-        <a routerLink="/admin/restaurant/end-of-day" style="flex:1; padding:10px; text-align:center; border:1px solid #999; border-radius:4px; color:#111; text-decoration:none;">Back</a>
+        <button class="zr-print" (click)="print()" style="flex:1; padding:10px; cursor:pointer;">{{ 'Print' | translate }}</button>
+        <a routerLink="/admin/restaurant/end-of-day" style="flex:1; padding:10px; text-align:center; border:1px solid #999; border-radius:4px; color:#111; text-decoration:none;">{{ 'Back' | translate }}</a>
       </div>
     </div>
     <p *ngIf="!e && error" class="no-print" style="text-align:center; margin-top:40px; color:#b00;">{{ error }}</p>

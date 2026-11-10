@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as QRCode from 'qrcode';
@@ -13,18 +14,18 @@ interface Tag { id: number; code: string; name: string; place: string; image: st
 @Component({
   selector: 'app-asset-labels',
   standalone: true,
-  imports: [CommonModule],
+  imports: [TranslatePipe, CommonModule],
   template: `
     <div class="al-page" style="padding:1rem;">
       <div class="al-bar flex gap-2 mb-3">
-        <button class="btn btn-primary" (click)="print()" [disabled]="!tags.length">🖨 Print</button>
-        <button class="btn btn-outline-secondary" (click)="back()">← Back</button>
-        <span class="text-muted" style="align-self:center;">{{ tags.length }} tag(s)</span>
+        <button class="btn btn-primary" (click)="print()" [disabled]="!tags.length">{{ '🖨 Print' | translate }}</button>
+        <button class="btn btn-outline-secondary" (click)="back()">{{ '← Back' | translate }}</button>
+        <span class="text-muted" style="align-self:center;">{{ '{p0} tag(s)' | translate: { p0: (tags.length) } }}</span>
       </div>
       <div class="alert alert-danger al-bar" *ngIf="error">{{ error }}</div>
       <div class="al-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px;">
         <div class="al-tag" *ngFor="let t of tags" style="border:2px solid #111; border-radius:8px; padding:10px; display:flex; gap:10px; align-items:center; page-break-inside:avoid;">
-          <img [src]="t.image" alt="QR code" style="width:96px; height:96px;" />
+          <img [src]="t.image" [alt]="'QR code' | translate" style="width:96px; height:96px;" />
           <div style="min-width:0;">
             <div style="font-size:1.25rem; font-weight:700;">{{ t.code }}</div>
             <div style="font-size:0.85rem; word-break:break-word;">{{ t.name }}</div>

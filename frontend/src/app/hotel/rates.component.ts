@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -15,108 +16,108 @@ const DAYS = [
 @Component({
   selector: 'app-hotel-rates',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-2">Rates</h3>
-      <p class="text-muted" style="font-size:0.9rem;">A room type's own rate is the standard price. Seasonal rules change it for a date range (and optionally certain weekdays); the rule with the highest priority wins. Rate plans give a discount on top. Existing bookings keep their price.</p>
+      <h3 class="mb-2">{{ 'Rates' | translate }}</h3>
+      <p class="text-muted" style="font-size:0.9rem;">{{ 'A room type\\'s own rate is the standard price. Seasonal rules change it for a date range (and optionally certain weekdays); the rule with the highest priority wins. Rate plans give a discount on top. Existing bookings keep their price.' | translate }}</p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
       <div class="flex justify-between align-center mb-2">
-        <h4>Seasonal rules</h4>
-        <button class="btn btn-primary" *ngIf="auth.canManage('HOTEL')" (click)="newRule()">+ Add rule</button>
+        <h4>{{ 'Seasonal rules' | translate }}</h4>
+        <button class="btn btn-primary" *ngIf="auth.canManage('HOTEL')" (click)="newRule()">{{ '+ Add rule' | translate }}</button>
       </div>
       <form *ngIf="rule" class="card rule-form" style="padding:1rem; margin-bottom:1rem;" (ngSubmit)="saveRule()">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Name</label><input class="form-control" name="rn" [(ngModel)]="rule.name" required placeholder="High season" /></div>
-          <div class="form-group"><label class="form-label">Room type</label>
-            <select class="form-control" name="rt" [(ngModel)]="rule.roomTypeId"><option [ngValue]="null">All room types</option><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
-          <div class="form-group"><label class="form-label">From</label><input class="form-control" type="date" name="rs" [(ngModel)]="rule.startDate" required /></div>
-          <div class="form-group"><label class="form-label">Until (last night)</label><input class="form-control" type="date" name="re" [(ngModel)]="rule.endDate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="rn" [(ngModel)]="rule.name" required [placeholder]="'High season' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Room type' | translate }}</label>
+            <select class="form-control" name="rt" [(ngModel)]="rule.roomTypeId"><option [ngValue]="null">{{ 'All room types' | translate }}</option><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
+          <div class="form-group"><label class="form-label">{{ 'From' | translate }}</label><input class="form-control" type="date" name="rs" [(ngModel)]="rule.startDate" required /></div>
+          <div class="form-group"><label class="form-label">{{ 'Until (last night)' | translate }}</label><input class="form-control" type="date" name="re" [(ngModel)]="rule.endDate" /></div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group"><label class="form-label">Price is</label>
+          <div class="form-group"><label class="form-label">{{ 'Price is' | translate }}</label>
             <select class="form-control" name="rm" [(ngModel)]="rule.mode">
-              <option value="FIXED">A fixed nightly price</option><option value="PERCENT">A % change</option><option value="AMOUNT">An amount added or taken off</option>
+              <option value="FIXED">{{ 'A fixed nightly price' | translate }}</option><option value="PERCENT">{{ 'A % change' | translate }}</option><option value="AMOUNT">{{ 'An amount added or taken off' | translate }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">{{ rule.mode === 'FIXED' ? 'Price' : rule.mode === 'PERCENT' ? 'Percent (+/-)' : 'Amount (+/-)' }}</label>
+          <div class="form-group"><label class="form-label">{{ rule.mode === 'FIXED' ? 'Price' : rule.mode === 'PERCENT' ? ('Percent (+/-)' | translate) : ('Amount (+/-)' | translate) }}</label>
             <input class="form-control" style="max-width:140px;" type="number" step="0.01" name="rv" [(ngModel)]="rule.value" required /></div>
-          <div class="form-group"><label class="form-label">Min nights</label><input class="form-control" style="max-width:100px;" type="number" min="1" name="rmn" [(ngModel)]="rule.minNights" /></div>
-          <div class="form-group"><label class="form-label">Priority</label><input class="form-control" style="max-width:100px;" type="number" name="rp" [(ngModel)]="rule.priority" /></div>
-          <label class="mb-2"><input type="checkbox" name="ra" [(ngModel)]="rule.active" /> Active</label>
+          <div class="form-group"><label class="form-label">{{ 'Min nights' | translate }}</label><input class="form-control" style="max-width:100px;" type="number" min="1" name="rmn" [(ngModel)]="rule.minNights" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Priority' | translate }}</label><input class="form-control" style="max-width:100px;" type="number" name="rp" [(ngModel)]="rule.priority" /></div>
+          <label class="mb-2"><input type="checkbox" name="ra" [(ngModel)]="rule.active" /> {{ 'Active' | translate }}</label>
         </div>
-        <div class="mb-2"><span class="form-label" style="margin-right:0.5rem;">Only on</span>
+        <div class="mb-2"><span class="form-label" style="margin-right:0.5rem;">{{ 'Only on' | translate }}</span>
           <label *ngFor="let d of days" style="margin-right:0.6rem;"><input type="checkbox" [checked]="hasDay(d.code)" (change)="toggleDay(d.code)" [attr.data-day]="d.code" /> {{ d.label }}</label>
-          <span class="text-muted" style="font-size:0.8rem;">(none ticked = every day)</span></div>
-        <button class="btn btn-primary" type="submit" [disabled]="busy">Save rule</button>
-        <button class="btn btn-link" type="button" (click)="rule = null">Cancel</button>
+          <span class="text-muted" style="font-size:0.8rem;">{{ '(none ticked = every day)' | translate }}</span></div>
+        <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save rule' | translate }}</button>
+        <button class="btn btn-link" type="button" (click)="rule = null">{{ 'Cancel' | translate }}</button>
       </form>
       <table class="table-sm rules-table">
-        <thead><tr><th>Rule</th><th>Room type</th><th>Dates</th><th>Price</th><th>Priority</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Rule' | translate }}</th><th>{{ 'Room type' | translate }}</th><th>{{ 'Dates' | translate }}</th><th>{{ 'Price' | translate }}</th><th>{{ 'Priority' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let r of rules" [class.text-muted]="!r.active">
-            <td><strong>{{ r.name }}</strong><div class="badge badge-warning" *ngIf="!r.active">Off</div><div style="font-size:0.8rem;" *ngIf="r.daysOfWeek">{{ r.daysOfWeek }}</div><div style="font-size:0.8rem;" *ngIf="r.minNights > 1">min {{ r.minNights }} nights</div></td>
-            <td>{{ r.roomTypeName || 'All' }}</td>
+            <td><strong>{{ r.name }}</strong><div class="badge badge-warning" *ngIf="!r.active">{{ 'Off' | translate }}</div><div style="font-size:0.8rem;" *ngIf="r.daysOfWeek">{{ r.daysOfWeek }}</div><div style="font-size:0.8rem;" *ngIf="r.minNights > 1">{{ 'min {p0} nights' | translate: { p0: (r.minNights) } }}</div></td>
+            <td>{{ r.roomTypeName || ('All' | translate) }}</td>
             <td>{{ r.startDate }} → {{ r.endDate || 'open' }}</td>
             <td>{{ describe(r) }}</td>
             <td>{{ r.priority }}</td>
             <td class="flex gap-2" *ngIf="auth.canManage('HOTEL')">
-              <button class="btn btn-sm btn-outline-primary" (click)="editRule(r)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="removeRule(r)">Delete</button>
+              <button class="btn btn-sm btn-outline-primary" (click)="editRule(r)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" (click)="removeRule(r)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="loaded && rules.length === 0">No seasonal rules yet. Every night uses the room type's own rate.</p>
+      <p class="text-muted" *ngIf="loaded && rules.length === 0">{{ 'No seasonal rules yet. Every night uses the room type\\'s own rate.' | translate }}</p>
 
       <div class="flex justify-between align-center mb-2" style="margin-top:2rem;">
-        <h4>Rate plans</h4>
-        <button class="btn btn-primary" *ngIf="auth.canManage('HOTEL')" (click)="newPlan()">+ Add plan</button>
+        <h4>{{ 'Rate plans' | translate }}</h4>
+        <button class="btn btn-primary" *ngIf="auth.canManage('HOTEL')" (click)="newPlan()">{{ '+ Add plan' | translate }}</button>
       </div>
       <form *ngIf="plan" class="card plan-form" style="padding:1rem; margin-bottom:1rem;" (ngSubmit)="savePlan()">
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group"><label class="form-label">Plan name</label><input class="form-control" name="pn" [(ngModel)]="plan.name" required placeholder="Corporate" /></div>
-          <div class="form-group"><label class="form-label">Percent (+/-)</label><input class="form-control" style="max-width:120px;" type="number" step="0.01" name="pp" [(ngModel)]="plan.adjustPercent" /></div>
-          <div class="form-group"><label class="form-label">Amount (+/-)</label><input class="form-control" style="max-width:120px;" type="number" step="0.01" name="pa" [(ngModel)]="plan.adjustAmount" /></div>
-          <div class="form-group"><label class="form-label">Min nights</label><input class="form-control" style="max-width:100px;" type="number" min="1" name="pm" [(ngModel)]="plan.minNights" /></div>
-          <label class="mb-2"><input type="checkbox" name="pac" [(ngModel)]="plan.active" /> Active</label>
+          <div class="form-group"><label class="form-label">{{ 'Plan name' | translate }}</label><input class="form-control" name="pn" [(ngModel)]="plan.name" required [placeholder]="'Corporate' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Percent (+/-)' | translate }}</label><input class="form-control" style="max-width:120px;" type="number" step="0.01" name="pp" [(ngModel)]="plan.adjustPercent" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Amount (+/-)' | translate }}</label><input class="form-control" style="max-width:120px;" type="number" step="0.01" name="pa" [(ngModel)]="plan.adjustAmount" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Min nights' | translate }}</label><input class="form-control" style="max-width:100px;" type="number" min="1" name="pm" [(ngModel)]="plan.minNights" /></div>
+          <label class="mb-2"><input type="checkbox" name="pac" [(ngModel)]="plan.active" /> {{ 'Active' | translate }}</label>
         </div>
-        <div class="form-group"><label class="form-label">Description</label><input class="form-control" name="pd" [(ngModel)]="plan.description" /></div>
-        <button class="btn btn-primary" type="submit" [disabled]="busy">Save plan</button>
-        <button class="btn btn-link" type="button" (click)="plan = null">Cancel</button>
+        <div class="form-group"><label class="form-label">{{ 'Description' | translate }}</label><input class="form-control" name="pd" [(ngModel)]="plan.description" /></div>
+        <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save plan' | translate }}</button>
+        <button class="btn btn-link" type="button" (click)="plan = null">{{ 'Cancel' | translate }}</button>
       </form>
       <table class="table-sm plans-table">
-        <thead><tr><th>Plan</th><th>Adjustment</th><th>Min nights</th><th>Bookings</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Plan' | translate }}</th><th>{{ 'Adjustment' | translate }}</th><th>{{ 'Min nights' | translate }}</th><th>{{ 'Bookings' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let p of plans" [class.text-muted]="!p.active">
-            <td><strong>{{ p.name }}</strong><div class="badge badge-warning" *ngIf="!p.active">Off</div><div style="font-size:0.8rem;" *ngIf="p.description">{{ p.description }}</div></td>
+            <td><strong>{{ p.name }}</strong><div class="badge badge-warning" *ngIf="!p.active">{{ 'Off' | translate }}</div><div style="font-size:0.8rem;" *ngIf="p.description">{{ p.description }}</div></td>
             <td>{{ p.adjustPercent }}% <span *ngIf="p.adjustAmount">/ {{ p.adjustAmount | number: '1.2-2' }}</span></td>
             <td>{{ p.minNights }}</td>
             <td>{{ p.bookings }}</td>
             <td class="flex gap-2" *ngIf="auth.canManage('HOTEL')">
-              <button class="btn btn-sm btn-outline-primary" (click)="editPlan(p)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="removePlan(p)">Delete</button>
+              <button class="btn btn-sm btn-outline-primary" (click)="editPlan(p)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" (click)="removePlan(p)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="loaded && plans.length === 0">No rate plans yet.</p>
+      <p class="text-muted" *ngIf="loaded && plans.length === 0">{{ 'No rate plans yet.' | translate }}</p>
 
-      <h4 style="margin-top:2rem;" class="mb-2">Price calendar</h4>
+      <h4 style="margin-top:2rem;" class="mb-2">{{ 'Price calendar' | translate }}</h4>
       <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-        <div class="form-group"><label class="form-label">Room type</label>
+        <div class="form-group"><label class="form-label">{{ 'Room type' | translate }}</label>
           <select class="form-control cal-type" name="ct" [(ngModel)]="calType"><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
-        <div class="form-group"><label class="form-label">From</label><input class="form-control cal-from" type="date" name="cf" [(ngModel)]="calFrom" /></div>
-        <div class="form-group"><label class="form-label">Days</label><select class="form-control cal-days" name="cd" [(ngModel)]="calDays"><option [ngValue]="14">14</option><option [ngValue]="31">31</option><option [ngValue]="62">62</option></select></div>
-        <div class="form-group"><label class="form-label">Plan</label>
-          <select class="form-control cal-plan" name="cp" [(ngModel)]="calPlan"><option [ngValue]="null">Standard</option><option *ngFor="let p of plans" [ngValue]="p.id">{{ p.name }}</option></select></div>
-        <button class="btn btn-outline-primary cal-go" type="button" (click)="loadCalendar()">Show</button>
+        <div class="form-group"><label class="form-label">{{ 'From' | translate }}</label><input class="form-control cal-from" type="date" name="cf" [(ngModel)]="calFrom" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Days' | translate }}</label><select class="form-control cal-days" name="cd" [(ngModel)]="calDays"><option [ngValue]="14">14</option><option [ngValue]="31">31</option><option [ngValue]="62">62</option></select></div>
+        <div class="form-group"><label class="form-label">{{ 'Plan' | translate }}</label>
+          <select class="form-control cal-plan" name="cp" [(ngModel)]="calPlan"><option [ngValue]="null">{{ 'Standard' | translate }}</option><option *ngFor="let p of plans" [ngValue]="p.id">{{ p.name }}</option></select></div>
+        <button class="btn btn-outline-primary cal-go" type="button" (click)="loadCalendar()">{{ 'Show' | translate }}</button>
       </div>
       <div *ngIf="cal">
-        <p class="text-muted" style="font-size:0.85rem;">{{ cal.roomTypeName }} — standard rate {{ cal.baseRate | number: '1.2-2' }} (one-night price per day)</p>
+        <p class="text-muted" style="font-size:0.85rem;">{{ '{p0} — standard rate {p1} (one-night price per day)' | translate: { p0: (cal.roomTypeName), p1: (cal.baseRate | number: '1.2-2') } }}</p>
         <div class="cal-grid">
-          <div *ngFor="let d of cal.days" class="cal-cell" [class.cal-diff]="d.rate !== cal.baseRate" [attr.title]="d.ruleName || 'Standard'">
+          <div *ngFor="let d of cal.days" class="cal-cell" [class.cal-diff]="d.rate !== cal.baseRate" [attr.title]="d.ruleName || ('Standard' | translate)">
             <div style="font-size:0.7rem;" class="text-muted">{{ d.date | date: 'EEE d MMM' }}</div>
             <strong>{{ d.rate | number: '1.0-2' }}</strong>
             <div style="font-size:0.7rem;">{{ d.ruleName || '' }}</div>

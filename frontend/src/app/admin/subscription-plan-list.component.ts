@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -14,25 +15,25 @@ import { SubscriptionPlan } from '../core/models';
 @Component({
   selector: 'app-subscription-plan-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Subscription plans</h3>
+        <h3>{{ 'Subscription plans' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions">Subscriptions</a>
-          <a class="btn btn-primary" routerLink="/admin/subscription-plans/new">+ New plan</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions">{{ 'Subscriptions' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/subscription-plans/new">{{ '+ New plan' | translate }}</a>
         </div>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Price</th>
-            <th>Billing interval</th>
-            <th>Status</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Description' | translate }}</th>
+            <th>{{ 'Price' | translate }}</th>
+            <th>{{ 'Billing interval' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -43,17 +44,17 @@ import { SubscriptionPlan } from '../core/models';
             <td class="text-end">{{ p.price | number: '1.2-2' }}</td>
             <td>{{ p.billingInterval }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="p.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!p.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="p.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!p.active">{{ 'Inactive' | translate }}</span>
             </td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/subscription-plans', p.id, 'edit']">Edit</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/subscription-plans', p.id, 'edit']">{{ 'Edit' | translate }}</a>
             </td>
           </tr>
         </tbody>
       </table>
       <p class="text-muted" *ngIf="plans.length === 0">
-        No subscription plans yet — add one to start offering customers a recurring plan.
+        {{ 'No subscription plans yet — add one to start offering customers a recurring plan.' | translate }}
       </p>
     </app-shell>
   `,

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,57 +12,57 @@ import { AssetApiService, AssetOverview, AttentionItem } from '../../core/api/as
 @Component({
   selector: 'app-asset-overview',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Assets overview</h3>
+        <h3>{{ 'Assets overview' | translate }}</h3>
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <select class="form-select" *ngIf="branches.length > 1" [(ngModel)]="branchId" (ngModelChange)="load()" name="branch" style="width:auto;">
-            <option [ngValue]="null">All branches</option>
+            <option [ngValue]="null">{{ 'All branches' | translate }}</option>
             <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
           </select>
-          <a class="btn btn-outline-primary" routerLink="/admin/assets/settings">Settings</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/assets">Asset register</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets/settings">{{ 'Settings' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets">{{ 'Asset register' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <ng-container *ngIf="o">
         <div class="alert alert-warning" *ngIf="o.monthsBehind > 0">
-          Depreciation is {{ o.monthsBehind }} month(s) behind (charged up to {{ o.depreciatedThrough || 'nothing yet' }}).
-          <a routerLink="/admin/assets">Run it from the register</a>.
+          {{ 'Depreciation is {p0} month(s) behind (charged up to {p1}).' | translate: { p0: (o.monthsBehind), p1: (o.depreciatedThrough || 'nothing yet') } }}
+          <a routerLink="/admin/assets">{{ 'Run it from the register' | translate }}</a>.
         </div>
 
         <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Assets in use</div><strong>{{ o.assetCount }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Total cost</div><strong>{{ o.totalCost | number: '1.2-2' }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Accumulated depreciation</div><strong>{{ o.totalAccumulated | number: '1.2-2' }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Book value</div><strong>{{ o.totalBookValue | number: '1.2-2' }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Next month's depreciation</div><strong>{{ o.nextMonthCharge | number: '1.2-2' }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Fully depreciated</div><strong>{{ o.fullyDepreciatedCount }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Disposed</div><strong>{{ o.disposedCount }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Assets in use' | translate }}</div><strong>{{ o.assetCount }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Total cost' | translate }}</div><strong>{{ o.totalCost | number: '1.2-2' }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Accumulated depreciation' | translate }}</div><strong>{{ o.totalAccumulated | number: '1.2-2' }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Book value' | translate }}</div><strong>{{ o.totalBookValue | number: '1.2-2' }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Next month\\'s depreciation' | translate }}</div><strong>{{ o.nextMonthCharge | number: '1.2-2' }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Fully depreciated' | translate }}</div><strong>{{ o.fullyDepreciatedCount }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Disposed' | translate }}</div><strong>{{ o.disposedCount }}</strong></div>
           <a class="card" style="padding:0.75rem 1rem; text-decoration:none; color:inherit;" routerLink="/admin/assets" [queryParams]="{ view: 'no-custodian' }">
-            <div class="text-muted">Nobody holding</div><strong>{{ o.withoutCustodian }}</strong></a>
+            <div class="text-muted">{{ 'Nobody holding' | translate }}</div><strong>{{ o.withoutCustodian }}</strong></a>
           <a class="card" style="padding:0.75rem 1rem; text-decoration:none; color:inherit;" routerLink="/admin/assets/verifications">
-            <div class="text-muted">Open verification rounds</div><strong>{{ o.openVerifications }}</strong></a>
+            <div class="text-muted">{{ 'Open verification rounds' | translate }}</div><strong>{{ o.openVerifications }}</strong></a>
         </div>
 
         <div class="flex gap-4" style="flex-wrap:wrap; align-items:flex-start;">
           <div style="flex:1; min-width:22rem;">
-            <h4 class="mb-2">By category</h4>
+            <h4 class="mb-2">{{ 'By category' | translate }}</h4>
             <table class="table-sm mb-3">
-              <thead><tr><th>Category</th><th class="text-end">Assets</th><th class="text-end">Cost</th><th class="text-end">Book value</th></tr></thead>
+              <thead><tr><th>{{ 'Category' | translate }}</th><th class="text-end">{{ 'Assets' | translate }}</th><th class="text-end">{{ 'Cost' | translate }}</th><th class="text-end">{{ 'Book value' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let r of o.byCategory"><td>{{ r.name }}</td><td class="text-end">{{ r.count }}</td><td class="text-end">{{ r.cost | number: '1.2-2' }}</td><td class="text-end">{{ r.bookValue | number: '1.2-2' }}</td></tr>
-                <tr *ngIf="!o.byCategory.length"><td colspan="4" class="text-muted">No assets yet.</td></tr>
+                <tr *ngIf="!o.byCategory.length"><td colspan="4" class="text-muted">{{ 'No assets yet.' | translate }}</td></tr>
               </tbody>
             </table>
           </div>
           <div style="flex:1; min-width:22rem;" *ngIf="o.byBranch.length > 1">
-            <h4 class="mb-2">By branch</h4>
+            <h4 class="mb-2">{{ 'By branch' | translate }}</h4>
             <table class="table-sm mb-3">
-              <thead><tr><th>Branch</th><th class="text-end">Assets</th><th class="text-end">Cost</th><th class="text-end">Book value</th></tr></thead>
+              <thead><tr><th>{{ 'Branch' | translate }}</th><th class="text-end">{{ 'Assets' | translate }}</th><th class="text-end">{{ 'Cost' | translate }}</th><th class="text-end">{{ 'Book value' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let r of o.byBranch"><td>{{ r.name }}</td><td class="text-end">{{ r.count }}</td><td class="text-end">{{ r.cost | number: '1.2-2' }}</td><td class="text-end">{{ r.bookValue | number: '1.2-2' }}</td></tr>
               </tbody>
@@ -71,15 +72,15 @@ import { AssetApiService, AssetOverview, AttentionItem } from '../../core/api/as
 
         <div class="flex gap-4" style="flex-wrap:wrap; align-items:flex-start;">
           <div style="flex:1; min-width:20rem;">
-            <h4 class="mb-2">Warranty ending in {{ o.alertDays }} days</h4>
+            <h4 class="mb-2">{{ 'Warranty ending in {p0} days' | translate: { p0: (o.alertDays) } }}</h4>
             <ng-container *ngTemplateOutlet="list; context: { $implicit: o.warrantyExpiring }"></ng-container>
           </div>
           <div style="flex:1; min-width:20rem;">
-            <h4 class="mb-2">Insurance ending in {{ o.alertDays }} days</h4>
+            <h4 class="mb-2">{{ 'Insurance ending in {p0} days' | translate: { p0: (o.alertDays) } }}</h4>
             <ng-container *ngTemplateOutlet="list; context: { $implicit: o.insuranceExpiring }"></ng-container>
           </div>
           <div style="flex:1; min-width:20rem;">
-            <h4 class="mb-2">Fully depreciated within {{ o.soonMonths }} months</h4>
+            <h4 class="mb-2">{{ 'Fully depreciated within {p0} months' | translate: { p0: (o.soonMonths) } }}</h4>
             <ng-container *ngTemplateOutlet="list; context: { $implicit: o.fullyDepreciatingSoon }"></ng-container>
           </div>
         </div>
@@ -93,7 +94,7 @@ import { AssetApiService, AssetOverview, AttentionItem } from '../../core/api/as
               <td>{{ i.name }}</td>
               <td>{{ i.detail }}<span *ngIf="i.date"> — {{ i.date }}</span></td>
             </tr>
-            <tr *ngIf="!items.length"><td class="text-muted">Nothing to watch.</td></tr>
+            <tr *ngIf="!items.length"><td class="text-muted">{{ 'Nothing to watch.' | translate }}</td></tr>
           </tbody>
         </table>
       </ng-template>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
 import { FormsModule } from '@angular/forms';
@@ -22,21 +23,21 @@ interface CartLine {
 @Component({
   selector: 'app-public-order',
   standalone: true,
-  imports: [NiweFooterComponent, CommonModule, FormsModule],
+  imports: [TranslatePipe, NiweFooterComponent, CommonModule, FormsModule],
   template: `
     <div class="po-page" style="max-width:640px; margin:0 auto; padding:0.75rem 0.75rem 6rem;">
       <div class="alert alert-danger po-error" *ngIf="error">{{ error }}</div>
-      <div *ngIf="!menu && !error" class="text-muted">Loading the menu…</div>
+      <div *ngIf="!menu && !error" class="text-muted">{{ 'Loading the menu…' | translate }}</div>
 
       <ng-container *ngIf="menu">
         <div style="text-align:center;" class="mb-2">
           <h2 class="po-title" style="margin-bottom:0.2rem;">{{ menu.restaurantName }}</h2>
-          <div class="text-muted po-sub" *ngIf="menu.tableName">Table {{ menu.tableName }}</div>
-          <div class="text-muted po-sub" *ngIf="!menu.tableName">Open {{ menu.openTime }}–{{ menu.closeTime }}</div>
+          <div class="text-muted po-sub" *ngIf="menu.tableName">{{ 'Table {p0}' | translate: { p0: (menu.tableName) } }}</div>
+          <div class="text-muted po-sub" *ngIf="!menu.tableName">{{ 'Open {p0}–{p1}' | translate: { p0: (menu.openTime), p1: (menu.closeTime) } }}</div>
         </div>
         <div class="alert alert-info po-message" *ngIf="menu.message">{{ menu.message }}</div>
-        <div class="alert alert-warning po-paused" *ngIf="menu.paused">We are not taking online orders right now.</div>
-        <div class="alert alert-warning po-closed" *ngIf="!menu.paused && !menu.openNow">We are closed at the moment. Orders are taken between {{ menu.openTime }} and {{ menu.closeTime }}.</div>
+        <div class="alert alert-warning po-paused" *ngIf="menu.paused">{{ 'We are not taking online orders right now.' | translate }}</div>
+        <div class="alert alert-warning po-closed" *ngIf="!menu.paused && !menu.openNow">{{ 'We are closed at the moment. Orders are taken between {p0} and {p1}.' | translate: { p0: (menu.openTime), p1: (menu.closeTime) } }}</div>
 
         <!-- the menu -->
         <ng-container *ngIf="!reviewing">
@@ -49,24 +50,24 @@ interface CartLine {
                 <div class="flex justify-between" style="gap:0.75rem;">
                   <div>
                     <div class="po-name" style="font-weight:600;">{{ i.name }}</div>
-                    <div class="text-muted" style="font-size:0.8rem;" *ngIf="i.allergens">Contains: {{ i.allergens }}</div>
-                    <div class="text-muted po-unavailable" style="font-size:0.8rem;" *ngIf="!i.available">{{ i.unavailableReason || 'Not available' }}</div>
+                    <div class="text-muted" style="font-size:0.8rem;" *ngIf="i.allergens">{{ 'Contains: {p0}' | translate: { p0: (i.allergens) } }}</div>
+                    <div class="text-muted po-unavailable" style="font-size:0.8rem;" *ngIf="!i.available">{{ i.unavailableReason || ('Not available' | translate) }}</div>
                   </div>
                   <div style="text-align:right; white-space:nowrap;">
                     <div class="po-price">{{ i.price | number: '1.0-2' }}</div>
-                    <button type="button" class="btn btn-sm btn-primary po-add" *ngIf="i.available" [disabled]="!canOrder()" (click)="pick(i)">Add</button>
+                    <button type="button" class="btn btn-sm btn-primary po-add" *ngIf="i.available" [disabled]="!canOrder()" (click)="pick(i)">{{ 'Add' | translate }}</button>
                   </div>
                 </div>
                 <div *ngIf="picking?.id === i.id" class="po-picker mt-2" style="border-top:1px solid var(--border, #ddd); padding-top:0.5rem;">
                   <div *ngFor="let g of i.groups" class="mb-2">
-                    <div style="font-weight:600; font-size:0.9rem;">{{ g.name }} <span class="text-muted" style="font-weight:400;">{{ g.required ? '(choose ' + (g.maxSelect > 1 ? 'up to ' + g.maxSelect : 'one') + ')' : '(optional' + (g.maxSelect > 1 ? ', up to ' + g.maxSelect : '') + ')' }}</span></div>
+                    <div style="font-weight:600; font-size:0.9rem;">{{ g.name }} <span class="text-muted" style="font-weight:400;">{{ g.required ? (g.maxSelect > 1 ? ('(choose up to {p0})' | translate: { p0: g.maxSelect }) : ('(choose one)' | translate)) : (g.maxSelect > 1 ? ('(optional, up to {p0})' | translate: { p0: g.maxSelect }) : ('(optional)' | translate)) }}</span></div>
                     <label *ngFor="let o of g.options" class="po-opt flex gap-2" style="align-items:center; cursor:pointer; padding:0.15rem 0;">
                       <input [type]="g.maxSelect === 1 ? 'radio' : 'checkbox'" [name]="'g' + g.id" [checked]="chosen.includes(o.id)" (change)="toggle(g, o.id)" />
                       <span>{{ o.name }}</span><span class="text-muted" *ngIf="o.priceDelta">+{{ o.priceDelta | number: '1.0-2' }}</span>
                     </label>
                   </div>
                   <div class="flex gap-2" style="align-items:center; flex-wrap:wrap;">
-                    <input class="form-control po-note" style="flex:1; min-width:160px;" maxlength="200" placeholder="Note for the kitchen (optional)" [(ngModel)]="pickNote" name="pn" />
+                    <input class="form-control po-note" style="flex:1; min-width:160px;" maxlength="200" [placeholder]="'Note for the kitchen (optional)' | translate" [(ngModel)]="pickNote" name="pn" />
                     <div class="flex gap-1" style="align-items:center;">
                       <button type="button" class="btn btn-sm btn-outline-secondary" (click)="pickQty = pickQty > 1 ? pickQty - 1 : 1">−</button>
                       <strong class="po-qty">{{ pickQty }}</strong>
@@ -75,8 +76,8 @@ interface CartLine {
                   </div>
                   <div class="alert alert-danger mt-2 po-pick-error" *ngIf="pickError">{{ pickError }}</div>
                   <div class="flex gap-2 mt-2">
-                    <button type="button" class="btn btn-primary po-pick-add" (click)="confirmPick()">Add to my order</button>
-                    <button type="button" class="btn btn-link" (click)="picking = null">Cancel</button>
+                    <button type="button" class="btn btn-primary po-pick-add" (click)="confirmPick()">{{ 'Add to my order' | translate }}</button>
+                    <button type="button" class="btn btn-link" (click)="picking = null">{{ 'Cancel' | translate }}</button>
                   </div>
                 </div>
               </div>
@@ -86,7 +87,7 @@ interface CartLine {
 
         <!-- review and send -->
         <ng-container *ngIf="reviewing">
-          <h4>Your order</h4>
+          <h4>{{ 'Your order' | translate }}</h4>
           <div class="card po-line" *ngFor="let l of cart; let idx = index" style="padding:0.6rem; margin-bottom:0.4rem;">
             <div class="flex justify-between" style="gap:0.5rem;">
               <div><strong>{{ l.item.name }}</strong>
@@ -102,39 +103,39 @@ interface CartLine {
 
           <div class="card mt-2 mb-2" style="padding:0.75rem;">
             <div *ngIf="!menu.tableOrdering" class="flex gap-2 mb-2">
-              <button type="button" class="btn po-mode-takeaway" *ngIf="menu.takeaway" [class.btn-primary]="mode === 'TAKEAWAY'" [class.btn-outline-secondary]="mode !== 'TAKEAWAY'" (click)="mode = 'TAKEAWAY'">Pick up</button>
-              <button type="button" class="btn po-mode-delivery" *ngIf="menu.delivery" [class.btn-primary]="mode === 'DELIVERY'" [class.btn-outline-secondary]="mode !== 'DELIVERY'" (click)="mode = 'DELIVERY'">Delivery</button>
+              <button type="button" class="btn po-mode-takeaway" *ngIf="menu.takeaway" [class.btn-primary]="mode === 'TAKEAWAY'" [class.btn-outline-secondary]="mode !== 'TAKEAWAY'" (click)="mode = 'TAKEAWAY'">{{ 'Pick up' | translate }}</button>
+              <button type="button" class="btn po-mode-delivery" *ngIf="menu.delivery" [class.btn-primary]="mode === 'DELIVERY'" [class.btn-outline-secondary]="mode !== 'DELIVERY'" (click)="mode = 'DELIVERY'">{{ 'Delivery' | translate }}</button>
             </div>
-            <div class="form-group mb-2" *ngIf="!menu.tableOrdering"><label class="form-label">Your name</label>
+            <div class="form-group mb-2" *ngIf="!menu.tableOrdering"><label class="form-label">{{ 'Your name' | translate }}</label>
               <input class="form-control po-cname" maxlength="80" [(ngModel)]="name" name="cn" autocomplete="name" /></div>
-            <div class="form-group mb-2" *ngIf="!menu.tableOrdering"><label class="form-label">Phone number</label>
+            <div class="form-group mb-2" *ngIf="!menu.tableOrdering"><label class="form-label">{{ 'Phone number' | translate }}</label>
               <input class="form-control po-cphone" type="tel" maxlength="40" [(ngModel)]="phone" name="cp" autocomplete="tel" /></div>
-            <div class="form-group mb-2" *ngIf="menu.tableOrdering"><label class="form-label">Your name (optional)</label>
+            <div class="form-group mb-2" *ngIf="menu.tableOrdering"><label class="form-label">{{ 'Your name (optional)' | translate }}</label>
               <input class="form-control po-cname" maxlength="80" [(ngModel)]="name" name="cn2" /></div>
-            <div class="form-group mb-2"><label class="form-label">E-mail (optional, for updates)</label>
+            <div class="form-group mb-2"><label class="form-label">{{ 'E-mail (optional, for updates)' | translate }}</label>
               <input class="form-control po-cemail" type="email" maxlength="160" [(ngModel)]="email" name="ce" autocomplete="email" /></div>
             <ng-container *ngIf="mode === 'DELIVERY'">
-              <div class="form-group mb-2" *ngIf="menu.zones.length"><label class="form-label">Delivery area</label>
+              <div class="form-group mb-2" *ngIf="menu.zones.length"><label class="form-label">{{ 'Delivery area' | translate }}</label>
                 <select class="form-select po-zone" [(ngModel)]="zoneId" name="zn">
-                  <option [ngValue]="null">— Choose your area —</option>
-                  <option *ngFor="let z of menu.zones" [ngValue]="z.id">{{ z.name }} (fee {{ z.fee | number: '1.0-2' }})</option>
+                  <option [ngValue]="null">{{ '— Choose your area —' | translate }}</option>
+                  <option *ngFor="let z of menu.zones" [ngValue]="z.id">{{ '{p0} (fee {p1})' | translate: { p0: (z.name), p1: (z.fee | number: '1.0-2') } }}</option>
                 </select></div>
-              <div class="form-group mb-2"><label class="form-label">Delivery address</label>
+              <div class="form-group mb-2"><label class="form-label">{{ 'Delivery address' | translate }}</label>
                 <textarea class="form-control po-caddr" rows="2" maxlength="240" [(ngModel)]="address" name="ca"></textarea></div>
             </ng-container>
-            <div class="form-group mb-2"><label class="form-label">Anything else?</label>
+            <div class="form-group mb-2"><label class="form-label">{{ 'Anything else?' | translate }}</label>
               <input class="form-control po-notes" maxlength="300" [(ngModel)]="notes" name="nt" /></div>
-            <div class="flex justify-between"><span>Items</span><strong class="po-subtotal">{{ subtotal() | number: '1.0-2' }}</strong></div>
-            <div class="flex justify-between" *ngIf="mode === 'DELIVERY' && fee() > 0"><span>Delivery fee</span><strong class="po-fee">{{ fee() | number: '1.0-2' }}</strong></div>
-            <div class="text-muted" style="font-size:0.8rem;">Tax and any service charge are added by the restaurant. You pay {{ menu.tableOrdering ? 'at the table' : mode === 'DELIVERY' ? 'on delivery' : 'when you collect' }}.</div>
-            <div class="text-muted" style="font-size:0.8rem;" *ngIf="minimum() > 0">Minimum order {{ minimum() | number: '1.0-2' }}.</div>
+            <div class="flex justify-between"><span>{{ 'Items' | translate }}</span><strong class="po-subtotal">{{ subtotal() | number: '1.0-2' }}</strong></div>
+            <div class="flex justify-between" *ngIf="mode === 'DELIVERY' && fee() > 0"><span>{{ 'Delivery fee' | translate }}</span><strong class="po-fee">{{ fee() | number: '1.0-2' }}</strong></div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ 'Tax and any service charge are added by the restaurant. You pay {p0}.' | translate: { p0: (menu.tableOrdering ? 'at the table' : mode === 'DELIVERY' ? 'on delivery' : 'when you collect') } }}</div>
+            <div class="text-muted" style="font-size:0.8rem;" *ngIf="minimum() > 0">{{ 'Minimum order {p0}.' | translate: { p0: (minimum() | number: '1.0-2') } }}</div>
             <!-- hidden from real people; bots fill it -->
             <input type="text" tabindex="-1" autocomplete="off" aria-hidden="true" [(ngModel)]="website" name="website" style="position:absolute; left:-9999px; height:0; width:0; opacity:0;" />
           </div>
           <div class="alert alert-danger po-place-error" *ngIf="placeError">{{ placeError }}</div>
           <div class="flex gap-2">
-            <button type="button" class="btn btn-primary po-place" [disabled]="busy || !canOrder()" (click)="place()">{{ busy ? 'Sending…' : 'Send my order' }}</button>
-            <button type="button" class="btn btn-outline-secondary po-back" (click)="reviewing = false">← Back to the menu</button>
+            <button type="button" class="btn btn-primary po-place" [disabled]="busy || !canOrder()" (click)="place()">{{ busy ? ('Sending…' | translate) : ('Send my order' | translate) }}</button>
+            <button type="button" class="btn btn-outline-secondary po-back" (click)="reviewing = false">{{ '← Back to the menu' | translate }}</button>
           </div>
         </ng-container>
       </ng-container>
@@ -142,7 +143,7 @@ interface CartLine {
       <div *ngIf="menu && !reviewing && cart.length" class="po-cart" style="position:fixed; left:0; right:0; bottom:0; padding:0.6rem 0.75rem; background:var(--bg, #fff); border-top:1px solid var(--border, #ddd); z-index:5;">
         <div style="max-width:640px; margin:0 auto;">
           <button type="button" class="btn btn-primary po-open-cart" style="width:100%;" (click)="reviewing = true; placeError = null">
-            View my order — {{ count() }} item{{ count() === 1 ? '' : 's' }} · {{ subtotal() | number: '1.0-2' }}
+            {{ 'View my order — {p0} item{p1} · {p2}' | translate: { p0: (count()), p1: (count() === 1 ? '' : 's'), p2: (subtotal() | number: '1.0-2') } }}
           </button>
         </div>
       </div>

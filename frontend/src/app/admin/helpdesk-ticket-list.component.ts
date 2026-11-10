@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -16,18 +17,18 @@ import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla }
 @Component({
   selector: 'app-helpdesk-ticket-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Help Desk tickets</h3>
+        <h3>{{ 'Help Desk tickets' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/overview">Overview</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/canned">Saved replies</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/categories">Categories</a>
-          <a class="btn btn-primary" routerLink="/admin/helpdesk/tickets/new">+ New ticket</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/overview">{{ 'Overview' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/canned">{{ 'Saved replies' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/helpdesk/categories">{{ 'Categories' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/helpdesk/tickets/new">{{ '+ New ticket' | translate }}</a>
         </div>
       </div>
 
@@ -37,36 +38,36 @@ import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla }
 
       <div class="card mb-3" style="padding:0.9rem;">
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <input class="form-control" style="max-width:240px;" placeholder="Search ticket #, subject, requester, tag…" name="q" [(ngModel)]="q" (ngModelChange)="load()" />
-          <input class="form-control hd-tag-filter" style="max-width:140px;" placeholder="Tag" name="tag" [(ngModel)]="tag" (ngModelChange)="load()" />
+          <input class="form-control" style="max-width:240px;" [placeholder]="'Search ticket #, subject, requester, tag…' | translate" name="q" [(ngModel)]="q" (ngModelChange)="load()" />
+          <input class="form-control hd-tag-filter" style="max-width:140px;" [placeholder]="'Tag' | translate" name="tag" [(ngModel)]="tag" (ngModelChange)="load()" />
           <select class="form-select" style="max-width:150px;" name="type" [(ngModel)]="type" (ngModelChange)="load()">
-            <option [ngValue]="null">All types</option>
-            <option value="CUSTOMER">Customer</option>
-            <option value="INTERNAL">Internal</option>
+            <option [ngValue]="null">{{ 'All types' | translate }}</option>
+            <option value="CUSTOMER">{{ 'Customer' | translate }}</option>
+            <option value="INTERNAL">{{ 'Internal' | translate }}</option>
           </select>
           <select class="form-select" style="max-width:190px;" name="status" [(ngModel)]="status" (ngModelChange)="load()">
-            <option [ngValue]="null">All statuses</option>
-            <option value="OPEN">Open</option>
-            <option value="IN_PROGRESS">In progress</option>
-            <option value="WAITING">Waiting for customer</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
-            <option value="MERGED">Merged</option>
+            <option [ngValue]="null">{{ 'All statuses' | translate }}</option>
+            <option value="OPEN">{{ 'Open' | translate }}</option>
+            <option value="IN_PROGRESS">{{ 'In progress' | translate }}</option>
+            <option value="WAITING">{{ 'Waiting for customer' | translate }}</option>
+            <option value="RESOLVED">{{ 'Resolved' | translate }}</option>
+            <option value="CLOSED">{{ 'Closed' | translate }}</option>
+            <option value="MERGED">{{ 'Merged' | translate }}</option>
           </select>
           <select class="form-select" style="max-width:150px;" name="priority" [(ngModel)]="priority" (ngModelChange)="load()">
-            <option [ngValue]="null">All priorities</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-            <option value="URGENT">Urgent</option>
+            <option [ngValue]="null">{{ 'All priorities' | translate }}</option>
+            <option value="LOW">{{ 'Low' | translate }}</option>
+            <option value="MEDIUM">{{ 'Medium' | translate }}</option>
+            <option value="HIGH">{{ 'High' | translate }}</option>
+            <option value="URGENT">{{ 'Urgent' | translate }}</option>
           </select>
           <select class="form-select" style="max-width:170px;" name="categoryId" [(ngModel)]="categoryId" (ngModelChange)="load()">
-            <option [ngValue]="null">All categories</option>
+            <option [ngValue]="null">{{ 'All categories' | translate }}</option>
             <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
           </select>
           <select class="form-select" style="max-width:170px;" name="assignedToUserId" [(ngModel)]="assignedToUserId" (ngModelChange)="load()">
-            <option [ngValue]="null">All assignees</option>
-            <option [ngValue]="-1">Unassigned</option>
+            <option [ngValue]="null">{{ 'All assignees' | translate }}</option>
+            <option [ngValue]="-1">{{ 'Unassigned' | translate }}</option>
             <option *ngFor="let u of users" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
         </div>
@@ -74,27 +75,27 @@ import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla }
 
       <div class="card mb-3 hd-bulk" style="padding:0.75rem;" *ngIf="selected.size > 0">
         <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-          <strong>{{ selected.size }} selected</strong>
+          <strong>{{ '{p0} selected' | translate: { p0: (selected.size) } }}</strong>
           <select class="form-select" style="max-width:190px;" name="bulkAssignee" [(ngModel)]="bulkAssignee">
-            <option [ngValue]="undefined">Assign to…</option>
-            <option [ngValue]="null">— Unassigned —</option>
+            <option [ngValue]="undefined">{{ 'Assign to…' | translate }}</option>
+            <option [ngValue]="null">{{ '— Unassigned —' | translate }}</option>
             <option *ngFor="let u of users" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
-          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || bulkAssignee === undefined" (click)="bulk('ASSIGN')">Assign</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || bulkAssignee === undefined" (click)="bulk('ASSIGN')">{{ 'Assign' | translate }}</button>
           <select class="form-select" style="max-width:150px;" name="bulkPriority" [(ngModel)]="bulkPriority">
-            <option [ngValue]="null">Priority…</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-            <option value="URGENT">Urgent</option>
+            <option [ngValue]="null">{{ 'Priority…' | translate }}</option>
+            <option value="LOW">{{ 'Low' | translate }}</option>
+            <option value="MEDIUM">{{ 'Medium' | translate }}</option>
+            <option value="HIGH">{{ 'High' | translate }}</option>
+            <option value="URGENT">{{ 'Urgent' | translate }}</option>
           </select>
-          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || !bulkPriority" (click)="bulk('PRIORITY')">Set priority</button>
-          <input class="form-control" style="max-width:130px;" placeholder="Tag" name="bulkTag" [(ngModel)]="bulkTag" />
-          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || !bulkTag.trim()" (click)="bulk('TAG')">Add tag</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy" (click)="bulk('START')">Start</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy" (click)="bulk('WAIT')">Wait for customer</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary hd-bulk-close" [disabled]="busy" (click)="bulk('CLOSE')">Close</button>
-          <button type="button" class="btn btn-link btn-sm" (click)="clearSelection()">Clear</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || !bulkPriority" (click)="bulk('PRIORITY')">{{ 'Set priority' | translate }}</button>
+          <input class="form-control" style="max-width:130px;" [placeholder]="'Tag' | translate" name="bulkTag" [(ngModel)]="bulkTag" />
+          <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="busy || !bulkTag.trim()" (click)="bulk('TAG')">{{ 'Add tag' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy" (click)="bulk('START')">{{ 'Start' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="busy" (click)="bulk('WAIT')">{{ 'Wait for customer' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary hd-bulk-close" [disabled]="busy" (click)="bulk('CLOSE')">{{ 'Close' | translate }}</button>
+          <button type="button" class="btn btn-link btn-sm" (click)="clearSelection()">{{ 'Clear' | translate }}</button>
         </div>
         <div class="text-muted mt-1" style="font-size:0.85rem;" *ngIf="skippedText">{{ skippedText }}</div>
       </div>
@@ -103,14 +104,14 @@ import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla }
         <thead>
           <tr>
             <th style="width:30px;"><input type="checkbox" name="all" [checked]="allSelected" (change)="toggleAll($event)" /></th>
-            <th>Ticket #</th>
-            <th>Subject</th>
-            <th>Requester</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Deadline</th>
-            <th>Assigned to</th>
-            <th>Created</th>
+            <th>{{ 'Ticket #' | translate }}</th>
+            <th>{{ 'Subject' | translate }}</th>
+            <th>{{ 'Requester' | translate }}</th>
+            <th>{{ 'Priority' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th>{{ 'Deadline' | translate }}</th>
+            <th>{{ 'Assigned to' | translate }}</th>
+            <th>{{ 'Created' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -120,7 +121,7 @@ import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla }
             <td>{{ t.ticketNumber }}</td>
             <td>
               {{ t.subject }}
-              <span class="badge badge-outline" style="margin-left:0.25rem;" *ngIf="t.type === 'INTERNAL'">Internal</span>
+              <span class="badge badge-outline" style="margin-left:0.25rem;" *ngIf="t.type === 'INTERNAL'">{{ 'Internal' | translate }}</span>
               <div class="text-muted" style="font-size:0.75rem;" *ngIf="t.tags.length">{{ t.tags.join(' · ') }}</div>
             </td>
             <td>{{ t.requesterName || t.customerName || '—' }}</td>
@@ -133,10 +134,10 @@ import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla }
             </td>
             <td>{{ t.assignedToUserFullName || '—' }}</td>
             <td>{{ t.createdAt | date: 'mediumDate' }}</td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/helpdesk/tickets', t.id]">View</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/helpdesk/tickets', t.id]">{{ 'View' | translate }}</a></td>
           </tr>
           <tr *ngIf="filteredTickets.length === 0">
-            <td colspan="10" class="text-muted">No tickets match these filters.</td>
+            <td colspan="10" class="text-muted">{{ 'No tickets match these filters.' | translate }}</td>
           </tr>
         </tbody>
       </table>

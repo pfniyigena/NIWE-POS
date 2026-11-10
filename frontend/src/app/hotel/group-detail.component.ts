@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -16,40 +17,40 @@ import { billingLabel, groupBadge } from './group-list.component';
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <p><a routerLink="/admin/hotel/groups">← All groups</a></p>
+      <p><a routerLink="/admin/hotel/groups">{{ '← All groups' | translate }}</a></p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="message">{{ message }}</div>
 
       <!-- create / edit -->
       <div class="card group-form-card" style="padding:1rem; margin-bottom:1rem;" *ngIf="editing">
-        <h4 class="mb-2">{{ g ? 'Edit group' : 'New group' }}</h4>
+        <h4 class="mb-2">{{ g ? ('Edit group' | translate) : ('New group' | translate) }}</h4>
         <form (ngSubmit)="saveGroup()" class="group-form">
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group" style="flex:2; min-width:220px;"><label class="form-label">Group name</label><input class="form-control gname" name="gname" [(ngModel)]="form.name" required placeholder="e.g. Uwase–Habimana wedding" /></div>
-            <div class="form-group"><label class="form-label">Arrival</label><input class="form-control garrival" type="date" name="garr" [(ngModel)]="form.arrivalDate" required [min]="g ? '' : todayStr" /></div>
-            <div class="form-group"><label class="form-label">Departure</label><input class="form-control gdeparture" type="date" name="gdep" [(ngModel)]="form.departureDate" required /></div>
+            <div class="form-group" style="flex:2; min-width:220px;"><label class="form-label">{{ 'Group name' | translate }}</label><input class="form-control gname" name="gname" [(ngModel)]="form.name" required [placeholder]="'e.g. Uwase–Habimana wedding' | translate" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Arrival' | translate }}</label><input class="form-control garrival" type="date" name="garr" [(ngModel)]="form.arrivalDate" required [min]="g ? '' : todayStr" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Departure' | translate }}</label><input class="form-control gdeparture" type="date" name="gdep" [(ngModel)]="form.departureDate" required /></div>
           </div>
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group"><label class="form-label">Contact person</label><input class="form-control gcontact" name="gcn" [(ngModel)]="form.contactName" /></div>
-            <div class="form-group"><label class="form-label">Phone</label><input class="form-control" name="gcp" [(ngModel)]="form.contactPhone" /></div>
-            <div class="form-group"><label class="form-label">E-mail</label><input class="form-control" type="email" name="gce" [(ngModel)]="form.contactEmail" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Contact person' | translate }}</label><input class="form-control gcontact" name="gcn" [(ngModel)]="form.contactName" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control" name="gcp" [(ngModel)]="form.contactPhone" /></div>
+            <div class="form-group"><label class="form-label">{{ 'E-mail' | translate }}</label><input class="form-control" type="email" name="gce" [(ngModel)]="form.contactEmail" /></div>
           </div>
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group"><label class="form-label">Who pays</label>
+            <div class="form-group"><label class="form-label">{{ 'Who pays' | translate }}</label>
               <select class="form-control gbilling" name="gbill" [(ngModel)]="form.billing">
-                <option value="INDIVIDUAL">Each guest pays their own bill</option>
-                <option value="MASTER_ROOMS">The group pays the rooms; guests pay extras</option>
-                <option value="MASTER_ALL">The group pays everything</option>
+                <option value="INDIVIDUAL">{{ 'Each guest pays their own bill' | translate }}</option>
+                <option value="MASTER_ROOMS">{{ 'The group pays the rooms; guests pay extras' | translate }}</option>
+                <option value="MASTER_ALL">{{ 'The group pays everything' | translate }}</option>
               </select></div>
-            <div class="form-group" *ngIf="companies.length"><label class="form-label">Invoice to (optional)</label>
+            <div class="form-group" *ngIf="companies.length"><label class="form-label">{{ 'Invoice to (optional)' | translate }}</label>
               <select class="form-control gcompany" name="gco" [(ngModel)]="form.companyId"><option [ngValue]="null">—</option><option *ngFor="let c of companies" [ngValue]="c.id">{{ c.name }}</option></select></div>
           </div>
-          <div class="form-group"><label class="form-label">Notes</label><textarea class="form-control" rows="2" name="gnotes" [(ngModel)]="form.notes"></textarea></div>
-          <button class="btn btn-primary save-group" type="submit" [disabled]="busy">{{ g ? 'Save' : 'Create group' }}</button>
-          <button class="btn btn-link" type="button" (click)="cancelEdit()">Cancel</button>
+          <div class="form-group"><label class="form-label">{{ 'Notes' | translate }}</label><textarea class="form-control" rows="2" name="gnotes" [(ngModel)]="form.notes"></textarea></div>
+          <button class="btn btn-primary save-group" type="submit" [disabled]="busy">{{ g ? ('Save' | translate) : ('Create group' | translate) }}</button>
+          <button class="btn btn-link" type="button" (click)="cancelEdit()">{{ 'Cancel' | translate }}</button>
         </form>
       </div>
 
@@ -57,74 +58,74 @@ import { billingLabel, groupBadge } from './group-list.component';
         <div class="flex justify-between align-center mb-2 group-header" style="flex-wrap:wrap; gap:0.5rem;">
           <div>
             <h3>{{ g.groupCode }} · {{ g.name }} <span class="badge" [ngClass]="badge(g.status)">{{ g.status | titlecase }}</span></h3>
-            <div class="text-muted">{{ g.arrivalDate }} → {{ g.departureDate }} · {{ billLabel(g.billing) }}<span *ngIf="g.companyName"> · invoice to {{ g.companyName }}</span></div>
-            <div class="text-muted" *ngIf="g.contactName || g.contactPhone || g.contactEmail">Contact: {{ g.contactName }} {{ g.contactPhone }} {{ g.contactEmail }}</div>
+            <div class="text-muted">{{ g.arrivalDate }} → {{ g.departureDate }} · {{ billLabel(g.billing) }}<span *ngIf="g.companyName"> {{ '· invoice to {p0}' | translate: { p0: (g.companyName) } }}</span></div>
+            <div class="text-muted" *ngIf="g.contactName || g.contactPhone || g.contactEmail">{{ 'Contact: {p0} {p1} {p2}' | translate: { p0: (g.contactName), p1: (g.contactPhone), p2: (g.contactEmail) } }}</div>
             <div *ngIf="g.notes" style="margin-top:0.25rem;">{{ g.notes }}</div>
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <button class="btn btn-sm btn-outline-secondary statement-pdf" type="button" (click)="statement()">Statement</button>
+            <button class="btn btn-sm btn-outline-secondary statement-pdf" type="button" (click)="statement()">{{ 'Statement' | translate }}</button>
             <ng-container *ngIf="canManage && open">
-              <button class="btn btn-sm btn-outline-secondary edit-group" type="button" (click)="startEdit()">Edit</button>
-              <button class="btn btn-sm btn-primary confirm-group" type="button" *ngIf="g.status === 'TENTATIVE'" [disabled]="busy" (click)="confirm()">Confirm</button>
-              <button class="btn btn-sm btn-outline-primary complete-group" type="button" [disabled]="busy" (click)="complete()">Complete</button>
-              <button class="btn btn-sm btn-outline-danger cancel-group" type="button" (click)="cancelOpen = !cancelOpen">Cancel group</button>
+              <button class="btn btn-sm btn-outline-secondary edit-group" type="button" (click)="startEdit()">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-primary confirm-group" type="button" *ngIf="g.status === 'TENTATIVE'" [disabled]="busy" (click)="confirm()">{{ 'Confirm' | translate }}</button>
+              <button class="btn btn-sm btn-outline-primary complete-group" type="button" [disabled]="busy" (click)="complete()">{{ 'Complete' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger cancel-group" type="button" (click)="cancelOpen = !cancelOpen">{{ 'Cancel group' | translate }}</button>
             </ng-container>
           </div>
         </div>
         <div class="card cancel-panel" style="padding:1rem; margin-bottom:1rem;" *ngIf="cancelOpen">
-          <p>This cancels every room that has not arrived and stops holding rooms.</p>
+          <p>{{ 'This cancels every room that has not arrived and stops holding rooms.' | translate }}</p>
           <div class="flex gap-3 align-center" style="flex-wrap:wrap;">
-            <input class="form-control cancel-reason" style="max-width:320px;" name="creason" [(ngModel)]="cancelReason" placeholder="Reason" />
-            <label><input type="checkbox" class="cancel-waive" name="cwaive" [(ngModel)]="cancelWaive" /> Waive cancellation fees</label>
-            <button class="btn btn-danger do-cancel" type="button" [disabled]="busy" (click)="cancelGroup()">Cancel the group</button>
+            <input class="form-control cancel-reason" style="max-width:320px;" name="creason" [(ngModel)]="cancelReason" [placeholder]="'Reason' | translate" />
+            <label><input type="checkbox" class="cancel-waive" name="cwaive" [(ngModel)]="cancelWaive" /> {{ 'Waive cancellation fees' | translate }}</label>
+            <button class="btn btn-danger do-cancel" type="button" [disabled]="busy" (click)="cancelGroup()">{{ 'Cancel the group' | translate }}</button>
           </div>
         </div>
 
         <div class="stat-row flex gap-3 mb-3" style="flex-wrap:wrap;">
-          <div class="stat-tile"><div class="stat-label">Rooms held</div><div class="stat-value held-count">{{ g.roomsBlocked }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Rooms booked</div><div class="stat-value booked-count">{{ g.roomsBooked }}</div></div>
-          <div class="stat-tile"><div class="stat-label">In house</div><div class="stat-value">{{ g.checkedIn }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Group owes</div><div class="stat-value owed-total">{{ g.totals.owed | number: '1.2-2' }}</div></div>
-          <div class="stat-tile"><div class="stat-label">Deposit held</div><div class="stat-value held-total">{{ g.totals.held | number: '1.2-2' }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Rooms held' | translate }}</div><div class="stat-value held-count">{{ g.roomsBlocked }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Rooms booked' | translate }}</div><div class="stat-value booked-count">{{ g.roomsBooked }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'In house' | translate }}</div><div class="stat-value">{{ g.checkedIn }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Group owes' | translate }}</div><div class="stat-value owed-total">{{ g.totals.owed | number: '1.2-2' }}</div></div>
+          <div class="stat-tile"><div class="stat-label">{{ 'Deposit held' | translate }}</div><div class="stat-value held-total">{{ g.totals.held | number: '1.2-2' }}</div></div>
         </div>
 
         <!-- blocks -->
         <div class="card blocks-card" style="padding:1rem; margin-bottom:1rem;">
-          <h4 class="mb-2">Room blocks</h4>
-          <p class="text-muted" style="font-size:0.85rem;">A block keeps rooms off general sale for the group. Rooms the group has not booked go back on sale on the release date.</p>
+          <h4 class="mb-2">{{ 'Room blocks' | translate }}</h4>
+          <p class="text-muted" style="font-size:0.85rem;">{{ 'A block keeps rooms off general sale for the group. Rooms the group has not booked go back on sale on the release date.' | translate }}</p>
           <table class="table-sm blocks-table" *ngIf="g.blocks.length">
-            <thead><tr><th>Room type</th><th class="text-end">Rooms</th><th class="text-end">Booked</th><th class="text-end">Unbooked</th><th class="text-end">Rate</th><th>Nights</th><th>Release</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Room type' | translate }}</th><th class="text-end">{{ 'Rooms' | translate }}</th><th class="text-end">{{ 'Booked' | translate }}</th><th class="text-end">{{ 'Unbooked' | translate }}</th><th class="text-end">{{ 'Rate' | translate }}</th><th>{{ 'Nights' | translate }}</th><th>{{ 'Release' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let b of g.blocks" class="block-row">
                 <td>{{ b.roomTypeName }}</td>
                 <td class="text-end">{{ b.rooms }}</td>
                 <td class="text-end">{{ b.booked }}</td>
                 <td class="text-end">{{ b.unbooked }}</td>
-                <td class="text-end">{{ b.rate === null ? 'hotel rate' : (b.rate | number: '1.2-2') }}</td>
+                <td class="text-end">{{ b.rate === null ? ('hotel rate' | translate) : (b.rate | number: '1.2-2') }}</td>
                 <td>{{ b.startDate }} → {{ b.endDate }}</td>
                 <td>{{ b.releaseDate || '—' }}</td>
-                <td><span class="badge badge-success" *ngIf="b.holding">Holding</span><span class="badge badge-secondary" *ngIf="!b.holding">{{ b.released ? 'Released' : 'Not holding' }}</span></td>
+                <td><span class="badge badge-success" *ngIf="b.holding">{{ 'Holding' | translate }}</span><span class="badge badge-secondary" *ngIf="!b.holding">{{ b.released ? ('Released' | translate) : ('Not holding' | translate) }}</span></td>
                 <td class="flex gap-2" *ngIf="canManage && open">
-                  <button class="btn btn-sm btn-outline-secondary edit-block" type="button" (click)="editBlock(b)">Edit</button>
-                  <button class="btn btn-sm btn-outline-secondary release-block" type="button" *ngIf="b.holding" [disabled]="busy" (click)="release(b)">Release now</button>
-                  <button class="btn btn-sm btn-outline-danger remove-block" type="button" [disabled]="busy" (click)="removeBlock(b)">Remove</button>
+                  <button class="btn btn-sm btn-outline-secondary edit-block" type="button" (click)="editBlock(b)">{{ 'Edit' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary release-block" type="button" *ngIf="b.holding" [disabled]="busy" (click)="release(b)">{{ 'Release now' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger remove-block" type="button" [disabled]="busy" (click)="removeBlock(b)">{{ 'Remove' | translate }}</button>
                 </td>
                 <td *ngIf="!(canManage && open)"></td>
               </tr>
             </tbody>
           </table>
-          <p class="text-muted" *ngIf="!g.blocks.length">No rooms held yet.</p>
+          <p class="text-muted" *ngIf="!g.blocks.length">{{ 'No rooms held yet.' | translate }}</p>
           <form *ngIf="canManage && open" class="hold-form" (ngSubmit)="saveBlock()" style="margin-top:0.75rem;">
             <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-              <div class="form-group" style="margin:0;"><label class="form-label">Room type</label>
-                <select class="form-control block-type" name="bt" [(ngModel)]="blk.roomTypeId" required><option [ngValue]="null">Choose…</option><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
-              <div class="form-group" style="margin:0;"><label class="form-label">Rooms</label><input class="form-control block-rooms" style="max-width:90px;" type="number" min="1" name="br" [(ngModel)]="blk.rooms" required /></div>
-              <div class="form-group" style="margin:0;"><label class="form-label">Group rate / night</label><input class="form-control block-rate" style="max-width:140px;" type="number" min="0" step="0.01" name="brate" [(ngModel)]="blk.rate" placeholder="hotel rate" /></div>
-              <div class="form-group" style="margin:0;"><label class="form-label">From</label><input class="form-control block-start" type="date" name="bs" [(ngModel)]="blk.startDate" /></div>
-              <div class="form-group" style="margin:0;"><label class="form-label">To</label><input class="form-control block-end" type="date" name="be" [(ngModel)]="blk.endDate" /></div>
-              <div class="form-group" style="margin:0;"><label class="form-label">Release unbooked rooms on</label><input class="form-control block-release" type="date" name="brel" [(ngModel)]="blk.releaseDate" /></div>
-              <button class="btn btn-primary save-block" type="submit" [disabled]="busy">{{ blockId ? 'Save block' : 'Hold rooms' }}</button>
-              <button class="btn btn-link" type="button" *ngIf="blockId" (click)="resetBlock()">Cancel</button>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Room type' | translate }}</label>
+                <select class="form-control block-type" name="bt" [(ngModel)]="blk.roomTypeId" required><option [ngValue]="null">{{ 'Choose…' | translate }}</option><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Rooms' | translate }}</label><input class="form-control block-rooms" style="max-width:90px;" type="number" min="1" name="br" [(ngModel)]="blk.rooms" required /></div>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Group rate / night' | translate }}</label><input class="form-control block-rate" style="max-width:140px;" type="number" min="0" step="0.01" name="brate" [(ngModel)]="blk.rate" [placeholder]="'hotel rate' | translate" /></div>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'From' | translate }}</label><input class="form-control block-start" type="date" name="bs" [(ngModel)]="blk.startDate" /></div>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'To' | translate }}</label><input class="form-control block-end" type="date" name="be" [(ngModel)]="blk.endDate" /></div>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Release unbooked rooms on' | translate }}</label><input class="form-control block-release" type="date" name="brel" [(ngModel)]="blk.releaseDate" /></div>
+              <button class="btn btn-primary save-block" type="submit" [disabled]="busy">{{ blockId ? ('Save block' | translate) : ('Hold rooms' | translate) }}</button>
+              <button class="btn btn-link" type="button" *ngIf="blockId" (click)="resetBlock()">{{ 'Cancel' | translate }}</button>
             </div>
           </form>
         </div>
@@ -132,26 +133,26 @@ import { billingLabel, groupBadge } from './group-list.component';
         <!-- rooming -->
         <div class="card rooming-card" style="padding:1rem; margin-bottom:1rem;">
           <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:0.5rem;">
-            <h4>Rooming list</h4>
+            <h4>{{ 'Rooming list' | translate }}</h4>
             <div class="flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary rooming-xlsx" type="button" (click)="exportRooming('xlsx')">Excel</button>
-              <button class="btn btn-sm btn-outline-secondary rooming-pdf" type="button" (click)="exportRooming('pdf')">PDF</button>
-              <button class="btn btn-sm btn-outline-secondary rooming-csv" type="button" (click)="exportRooming('csv')">CSV</button>
+              <button class="btn btn-sm btn-outline-secondary rooming-xlsx" type="button" (click)="exportRooming('xlsx')">{{ 'Excel' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary rooming-pdf" type="button" (click)="exportRooming('pdf')">{{ 'PDF' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary rooming-csv" type="button" (click)="exportRooming('csv')">{{ 'CSV' | translate }}</button>
             </div>
           </div>
           <table class="table-sm rooming-table" *ngIf="g.rooming.length">
-            <thead><tr><th>Booking</th><th>Guest</th><th>Room</th><th>Stay</th><th class="text-end">Adults</th><th>Status</th><th>Bill to</th><th class="text-end">Charges</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Booking' | translate }}</th><th>{{ 'Guest' | translate }}</th><th>{{ 'Room' | translate }}</th><th>{{ 'Stay' | translate }}</th><th class="text-end">{{ 'Adults' | translate }}</th><th>{{ 'Status' | translate }}</th><th>{{ 'Bill to' | translate }}</th><th class="text-end">{{ 'Charges' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let r of g.rooming" class="rooming-row">
                 <td><a [routerLink]="['/admin/hotel/bookings', r.bookingId]">{{ r.bookingNumber }}</a></td>
                 <td>
                   <ng-container *ngIf="editRoom !== r.bookingId">
-                    <em class="text-muted" *ngIf="r.unnamed">to be named</em><span *ngIf="!r.unnamed">{{ r.guestName }}</span>
+                    <em class="text-muted" *ngIf="r.unnamed">{{ 'to be named' | translate }}</em><span *ngIf="!r.unnamed">{{ r.guestName }}</span>
                     <div class="text-muted" style="font-size:0.8rem;" *ngIf="r.guestPhone && !r.unnamed">{{ r.guestPhone }}</div>
                   </ng-container>
                   <ng-container *ngIf="editRoom === r.bookingId">
-                    <input class="form-control room-name" style="min-width:150px;" name="rn" [(ngModel)]="roomEdit.name" placeholder="Guest name" />
-                    <input class="form-control room-phone" style="min-width:150px; margin-top:0.25rem;" name="rp" [(ngModel)]="roomEdit.phone" placeholder="Phone" />
+                    <input class="form-control room-name" style="min-width:150px;" name="rn" [(ngModel)]="roomEdit.name" [placeholder]="'Guest name' | translate" />
+                    <input class="form-control room-phone" style="min-width:150px; margin-top:0.25rem;" name="rp" [(ngModel)]="roomEdit.phone" [placeholder]="'Phone' | translate" />
                   </ng-container>
                 </td>
                 <td>{{ r.roomTypeName }}<span *ngIf="r.roomNumber"> · {{ r.roomNumber }}</span></td>
@@ -165,66 +166,66 @@ import { billingLabel, groupBadge } from './group-list.component';
                 <td class="text-end">{{ r.charges | number: '1.2-2' }}</td>
                 <td>
                   <ng-container *ngIf="canManage && (r.status === 'BOOKED' || r.status === 'CHECKED_IN') && open">
-                    <button class="btn btn-sm btn-outline-secondary rename-room" type="button" *ngIf="editRoom !== r.bookingId" (click)="startRoom(r)">Edit</button>
-                    <button class="btn btn-sm btn-primary save-room" type="button" *ngIf="editRoom === r.bookingId" [disabled]="busy" (click)="saveRoom(r)">Save</button>
-                    <button class="btn btn-sm btn-link" type="button" *ngIf="editRoom === r.bookingId" (click)="editRoom = null">Cancel</button>
+                    <button class="btn btn-sm btn-outline-secondary rename-room" type="button" *ngIf="editRoom !== r.bookingId" (click)="startRoom(r)">{{ 'Edit' | translate }}</button>
+                    <button class="btn btn-sm btn-primary save-room" type="button" *ngIf="editRoom === r.bookingId" [disabled]="busy" (click)="saveRoom(r)">{{ 'Save' | translate }}</button>
+                    <button class="btn btn-sm btn-link" type="button" *ngIf="editRoom === r.bookingId" (click)="editRoom = null">{{ 'Cancel' | translate }}</button>
                   </ng-container>
                 </td>
               </tr>
             </tbody>
           </table>
-          <p class="text-muted" *ngIf="!g.rooming.length">No rooms booked for this group yet.</p>
+          <p class="text-muted" *ngIf="!g.rooming.length">{{ 'No rooms booked for this group yet.' | translate }}</p>
 
           <div *ngIf="canManage && open" style="margin-top:0.75rem;">
             <form class="add-rooms-form" (ngSubmit)="addRooms()">
               <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-                <div class="form-group" style="margin:0;"><label class="form-label">Room type</label>
-                  <select class="form-control rooms-type" name="rt" [(ngModel)]="add.roomTypeId" required><option [ngValue]="null">Choose…</option><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
-                <div class="form-group" style="margin:0;"><label class="form-label">How many</label><input class="form-control rooms-count" style="max-width:90px;" type="number" min="1" max="100" name="rc" [(ngModel)]="add.count" /></div>
-                <div class="form-group" style="margin:0;"><label class="form-label">Adults per room</label><input class="form-control rooms-adults" style="max-width:90px;" type="number" min="1" name="rad" [(ngModel)]="add.adults" /></div>
-                <div class="form-group" style="margin:0;"><label class="form-label">Rate / night (optional)</label><input class="form-control rooms-rate" style="max-width:140px;" type="number" min="0" step="0.01" name="rrate" [(ngModel)]="add.nightlyRate" placeholder="block or hotel rate" /></div>
-                <button class="btn btn-primary add-rooms" type="submit" [disabled]="busy">Add rooms</button>
+                <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Room type' | translate }}</label>
+                  <select class="form-control rooms-type" name="rt" [(ngModel)]="add.roomTypeId" required><option [ngValue]="null">{{ 'Choose…' | translate }}</option><option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }}</option></select></div>
+                <div class="form-group" style="margin:0;"><label class="form-label">{{ 'How many' | translate }}</label><input class="form-control rooms-count" style="max-width:90px;" type="number" min="1" max="100" name="rc" [(ngModel)]="add.count" /></div>
+                <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Adults per room' | translate }}</label><input class="form-control rooms-adults" style="max-width:90px;" type="number" min="1" name="rad" [(ngModel)]="add.adults" /></div>
+                <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Rate / night (optional)' | translate }}</label><input class="form-control rooms-rate" style="max-width:140px;" type="number" min="0" step="0.01" name="rrate" [(ngModel)]="add.nightlyRate" [placeholder]="'block or hotel rate' | translate" /></div>
+                <button class="btn btn-primary add-rooms" type="submit" [disabled]="busy">{{ 'Add rooms' | translate }}</button>
               </div>
             </form>
             <form class="names-form" (ngSubmit)="applyNames()" style="margin-top:0.75rem;">
-              <label class="form-label">Paste guest names, one per line — they go on the rooms still to be named</label>
+              <label class="form-label">{{ 'Paste guest names, one per line — they go on the rooms still to be named' | translate }}</label>
               <textarea class="form-control names-text" rows="4" name="names" [(ngModel)]="namesText" placeholder="Chantal Ingabire&#10;Dieudonné Habimana"></textarea>
-              <button class="btn btn-outline-primary apply-names" type="submit" style="margin-top:0.4rem;" [disabled]="busy || !namesText.trim()">Put names on rooms</button>
+              <button class="btn btn-outline-primary apply-names" type="submit" style="margin-top:0.4rem;" [disabled]="busy || !namesText.trim()">{{ 'Put names on rooms' | translate }}</button>
             </form>
           </div>
         </div>
 
         <!-- account -->
         <div class="card account-card" style="padding:1rem; margin-bottom:1rem;">
-          <h4 class="mb-2">Group account</h4>
+          <h4 class="mb-2">{{ 'Group account' | translate }}</h4>
           <table class="table-sm no-stack totals-table" style="max-width:420px;">
             <tbody>
-              <tr><td>Billed to the group</td><td class="text-end">{{ g.totals.billed | number: '1.2-2' }}</td></tr>
-              <tr><td>Deposits received</td><td class="text-end">{{ g.totals.deposits | number: '1.2-2' }}</td></tr>
-              <tr><td>Deposit used against bills</td><td class="text-end">{{ g.totals.applied | number: '1.2-2' }}</td></tr>
-              <tr><td>Paid</td><td class="text-end">{{ g.totals.paid | number: '1.2-2' }}</td></tr>
-              <tr><td>Deposit refunded</td><td class="text-end">{{ g.totals.refunded | number: '1.2-2' }}</td></tr>
-              <tr><td><strong>Owed by the group</strong></td><td class="text-end"><strong>{{ g.totals.owed | number: '1.2-2' }}</strong></td></tr>
-              <tr><td>Deposit still held</td><td class="text-end">{{ g.totals.held | number: '1.2-2' }}</td></tr>
+              <tr><td>{{ 'Billed to the group' | translate }}</td><td class="text-end">{{ g.totals.billed | number: '1.2-2' }}</td></tr>
+              <tr><td>{{ 'Deposits received' | translate }}</td><td class="text-end">{{ g.totals.deposits | number: '1.2-2' }}</td></tr>
+              <tr><td>{{ 'Deposit used against bills' | translate }}</td><td class="text-end">{{ g.totals.applied | number: '1.2-2' }}</td></tr>
+              <tr><td>{{ 'Paid' | translate }}</td><td class="text-end">{{ g.totals.paid | number: '1.2-2' }}</td></tr>
+              <tr><td>{{ 'Deposit refunded' | translate }}</td><td class="text-end">{{ g.totals.refunded | number: '1.2-2' }}</td></tr>
+              <tr><td><strong>{{ 'Owed by the group' | translate }}</strong></td><td class="text-end"><strong>{{ g.totals.owed | number: '1.2-2' }}</strong></td></tr>
+              <tr><td>{{ 'Deposit still held' | translate }}</td><td class="text-end">{{ g.totals.held | number: '1.2-2' }}</td></tr>
             </tbody>
           </table>
           <div class="flex gap-2" style="margin:0.75rem 0;" *ngIf="canManage">
-            <button class="btn btn-sm btn-outline-primary money-deposit" type="button" *ngIf="open" (click)="openMoney('deposits')">Receive deposit</button>
-            <button class="btn btn-sm btn-outline-primary money-payment" type="button" *ngIf="g.totals.owed > 0" (click)="openMoney('payments')">Receive payment</button>
-            <button class="btn btn-sm btn-outline-secondary money-refund" type="button" *ngIf="g.totals.held > 0" (click)="openMoney('refunds')">Refund deposit</button>
+            <button class="btn btn-sm btn-outline-primary money-deposit" type="button" *ngIf="open" (click)="openMoney('deposits')">{{ 'Receive deposit' | translate }}</button>
+            <button class="btn btn-sm btn-outline-primary money-payment" type="button" *ngIf="g.totals.owed > 0" (click)="openMoney('payments')">{{ 'Receive payment' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary money-refund" type="button" *ngIf="g.totals.held > 0" (click)="openMoney('refunds')">{{ 'Refund deposit' | translate }}</button>
           </div>
           <form *ngIf="moneyKind" class="money-form" (ngSubmit)="saveMoney()">
             <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-              <div class="form-group" style="margin:0;"><label class="form-label">Amount</label><input class="form-control money-amount" style="max-width:150px;" type="number" min="0.01" step="0.01" name="ma" [(ngModel)]="money.amount" required /></div>
-              <div class="form-group" style="margin:0;"><label class="form-label">Method</label>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control money-amount" style="max-width:150px;" type="number" min="0.01" step="0.01" name="ma" [(ngModel)]="money.amount" required /></div>
+              <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Method' | translate }}</label>
                 <select class="form-control money-method" name="mm" [(ngModel)]="money.method"><option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option></select></div>
-              <div class="form-group" style="margin:0;" *ngIf="moneyKind !== 'refunds'"><label class="form-label">Reference</label><input class="form-control money-ref" name="mr" [(ngModel)]="money.reference" /></div>
-              <button class="btn btn-primary save-money" type="submit" [disabled]="busy">Record {{ moneyKind === 'deposits' ? 'deposit' : moneyKind === 'payments' ? 'payment' : 'refund' }}</button>
-              <button class="btn btn-link" type="button" (click)="moneyKind = null">Cancel</button>
+              <div class="form-group" style="margin:0;" *ngIf="moneyKind !== 'refunds'"><label class="form-label">{{ 'Reference' | translate }}</label><input class="form-control money-ref" name="mr" [(ngModel)]="money.reference" /></div>
+              <button class="btn btn-primary save-money" type="submit" [disabled]="busy">{{ 'Record {p0}' | translate: { p0: (moneyKind === 'deposits' ? 'deposit' : moneyKind === 'payments' ? 'payment' : 'refund') } }}</button>
+              <button class="btn btn-link" type="button" (click)="moneyKind = null">{{ 'Cancel' | translate }}</button>
             </div>
           </form>
           <table class="table-sm entries-table" *ngIf="g.entries.length" style="margin-top:0.75rem;">
-            <thead><tr><th>Date</th><th>Entry</th><th>Detail</th><th>Method</th><th class="text-end">Amount</th></tr></thead>
+            <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Entry' | translate }}</th><th>{{ 'Detail' | translate }}</th><th>{{ 'Method' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let e of g.entries" class="entry-row">
                 <td>{{ e.entryDate }}</td>

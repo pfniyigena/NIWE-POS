@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
@@ -18,26 +19,26 @@ import { OverheadCost, ProductionPlan, ProductionPlanLine } from '../../core/mod
 @Component({
   selector: 'app-production-plan-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <ng-container *ngIf="plan as p">
         <div class="mb-3">
           <h3 style="margin-bottom:0.25rem;">{{ p.planNumber }}</h3>
-          <span class="text-muted">Generated {{ p.generatedAt | date: 'medium' }} — low-stock threshold {{ p.lowStockThreshold }}</span>
+          <span class="text-muted">{{ 'Generated {p0} — low-stock threshold {p1}' | translate: { p0: (p.generatedAt | date: 'medium'), p1: (p.lowStockThreshold) } }}</span>
         </div>
         <p class="text-muted mb-3" *ngIf="p.note">{{ p.note }}</p>
 
         <table class="table-sm mb-3">
           <thead>
             <tr>
-              <th>Product</th>
-              <th>Bill of materials</th>
-              <th class="text-end">From sales</th>
-              <th class="text-end">From low stock</th>
-              <th class="text-end">Suggested qty</th>
-              <th>Component shortfalls</th>
+              <th>{{ 'Product' | translate }}</th>
+              <th>{{ 'Bill of materials' | translate }}</th>
+              <th class="text-end">{{ 'From sales' | translate }}</th>
+              <th class="text-end">{{ 'From low stock' | translate }}</th>
+              <th class="text-end">{{ 'Suggested qty' | translate }}</th>
+              <th>{{ 'Component shortfalls' | translate }}</th>
               <th></th>
             </tr>
           </thead>
@@ -49,7 +50,7 @@ import { OverheadCost, ProductionPlan, ProductionPlanLine } from '../../core/mod
               <td class="text-end">{{ line.demandFromLowStock }}</td>
               <td class="text-end">{{ line.suggestedQuantity }}</td>
               <td>
-                <span *ngIf="line.componentShortfalls.length === 0" class="text-muted">None</span>
+                <span *ngIf="line.componentShortfalls.length === 0" class="text-muted">{{ 'None' | translate }}</span>
                 <span *ngFor="let s of shortfallsOnly(line); let last = last" [class.text-danger]="s.shortfall > 0">
                   {{ s.componentName }}: {{ s.availableQuantity }}/{{ s.requiredQuantity }}{{ !last ? ', ' : '' }}
                 </span>
@@ -65,31 +66,31 @@ import { OverheadCost, ProductionPlan, ProductionPlanLine } from '../../core/mod
                   [disabled]="!line.bomId"
                   (click)="openGenerate(line)"
                 >
-                  Generate order
+                  {{ 'Generate order' | translate }}
                 </button>
               </td>
             </tr>
             <tr *ngIf="p.lines.length === 0">
-              <td colspan="7" class="text-muted">Nothing needed producing at the time this plan was generated.</td>
+              <td colspan="7" class="text-muted">{{ 'Nothing needed producing at the time this plan was generated.' | translate }}</td>
             </tr>
           </tbody>
         </table>
 
         <div class="card mb-3" style="padding:0.9rem; border:1px solid var(--border, #ddd); border-radius:0.375rem;" *ngIf="generatingLine">
           <div class="alert alert-danger" *ngIf="generateError">{{ generateError }}</div>
-          <h4 class="mb-2">Generate manufacturing order — {{ generatingLine.productName }}</h4>
+          <h4 class="mb-2">{{ 'Generate manufacturing order — {p0}' | translate: { p0: (generatingLine.productName) } }}</h4>
           <div class="flex gap-2 mb-2">
             <div>
-              <label class="form-label">Quantity</label>
+              <label class="form-label">{{ 'Quantity' | translate }}</label>
               <input class="form-control" type="number" step="any" style="width:140px;" min="0.0001" [(ngModel)]="generateQuantity" name="generateQuantity" />
             </div>
             <div>
-              <label class="form-label">Scheduled date (optional)</label>
+              <label class="form-label">{{ 'Scheduled date (optional)' | translate }}</label>
               <app-date-picker [(ngModel)]="generateScheduledDate" name="generateScheduledDate" ></app-date-picker>
             </div>
           </div>
           <div class="mb-2" *ngIf="overheadCosts.length > 0">
-            <label class="form-label">Indirect costs to apply (optional)</label>
+            <label class="form-label">{{ 'Indirect costs to apply (optional)' | translate }}</label>
             <div *ngFor="let o of overheadCosts">
               <label class="form-label">
                 <input type="checkbox" [checked]="selectedOverheadIds.has(o.id)" (change)="toggleOverhead(o.id)" />
@@ -98,8 +99,8 @@ import { OverheadCost, ProductionPlan, ProductionPlanLine } from '../../core/mod
             </div>
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-primary btn-sm" (click)="generateOrder()">Create manufacturing order</button>
-            <button class="btn btn-link btn-sm" (click)="cancelGenerate()">Cancel</button>
+            <button class="btn btn-primary btn-sm" (click)="generateOrder()">{{ 'Create manufacturing order' | translate }}</button>
+            <button class="btn btn-link btn-sm" (click)="cancelGenerate()">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
       </ng-container>

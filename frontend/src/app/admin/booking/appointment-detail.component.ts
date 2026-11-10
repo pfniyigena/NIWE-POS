@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,12 +11,12 @@ import { Appointment, BookingApiService, Slot } from '../../core/api/booking-api
 @Component({
   selector: 'app-appointment-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Appointment <span *ngIf="a">{{ a.number }}</span></h3>
-        <a class="btn btn-outline-secondary" [routerLink]="admin ? '/admin/booking' : '/booking/mine'">Back</a>
+        <h3>{{ 'Appointment' | translate }} <span *ngIf="a">{{ a.number }}</span></h3>
+        <a class="btn btn-outline-secondary" [routerLink]="admin ? '/admin/booking' : '/booking/mine'">{{ 'Back' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="info">{{ info }}</div>
@@ -25,92 +26,92 @@ import { Appointment, BookingApiService, Slot } from '../../core/api/booking-api
           <div class="flex justify-between" style="flex-wrap:wrap; gap:1rem;">
             <div>
               <div style="font-size:1.15rem; font-weight:600;">{{ a.serviceName }}</div>
-              <div>{{ a.startAt | date: 'EEE d MMM y, HH:mm' }} – {{ a.endAt | date: 'HH:mm' }} <span class="text-muted">({{ a.durationMinutes }} min)</span></div>
+              <div>{{ a.startAt | date: 'EEE d MMM y, HH:mm' }} – {{ a.endAt | date: 'HH:mm' }} <span class="text-muted">{{ '({p0} min)' | translate: { p0: (a.durationMinutes) } }}</span></div>
               <div class="text-muted">
-                <span *ngIf="a.staffName">With {{ a.staffName }}</span><span *ngIf="a.staffName && a.resourceName"> · </span><span *ngIf="a.resourceName">{{ a.resourceName }}</span>
+                <span *ngIf="a.staffName">{{ 'With {p0}' | translate: { p0: (a.staffName) } }}</span><span *ngIf="a.staffName && a.resourceName"> · </span><span *ngIf="a.resourceName">{{ a.resourceName }}</span>
               </div>
             </div>
             <div style="text-align:right;">
               <span class="badge" [class.badge-success]="a.status === 'CONFIRMED' || a.status === 'COMPLETED'" [class.badge-warning]="a.status === 'PENDING_PAYMENT'"
-                    [class.badge-danger]="a.status === 'NO_SHOW'" [class.badge-secondary]="a.status === 'CANCELLED'">{{ label(a.status) }}</span>
-              <div class="text-muted" style="font-size:0.8rem;">Code {{ a.confirmationCode }} · {{ a.source === 'PUBLIC' ? 'Booked online' : 'Booked by staff' }}</div>
-              <div class="text-muted" style="font-size:0.8rem;" *ngIf="a.holdExpiresAt && a.status === 'PENDING_PAYMENT'">Held until {{ a.holdExpiresAt | date: 'd MMM, HH:mm' }}</div>
+                    [class.badge-danger]="a.status === 'NO_SHOW'" [class.badge-secondary]="a.status === 'CANCELLED'">{{ label(a.status) | translate }}</span>
+              <div class="text-muted" style="font-size:0.8rem;">{{ 'Code {p0} · {p1}' | translate: { p0: (a.confirmationCode), p1: (a.source === 'PUBLIC' ? 'Booked online' : 'Booked by staff') } }}</div>
+              <div class="text-muted" style="font-size:0.8rem;" *ngIf="a.holdExpiresAt && a.status === 'PENDING_PAYMENT'">{{ 'Held until {p0}' | translate: { p0: (a.holdExpiresAt | date: 'd MMM, HH:mm') } }}</div>
             </div>
           </div>
           <hr />
           <div><strong>{{ a.guestName }}</strong>
             <span *ngIf="a.guestPhone"> · {{ a.guestPhone }}</span><span *ngIf="a.guestEmail"> · {{ a.guestEmail }}</span></div>
-          <div *ngIf="a.cancelReason" class="text-muted">Cancelled: {{ a.cancelReason }}</div>
+          <div *ngIf="a.cancelReason" class="text-muted">{{ 'Cancelled: {p0}' | translate: { p0: (a.cancelReason) } }}</div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="a.history && (a.history.completed || a.history.noShows || a.history.cancelled || a.history.upcoming)" id="guest-history">
-          <strong>This guest's other visits</strong>
+          <strong>{{ 'This guest\\'s other visits' | translate }}</strong>
           <div [style.color]="a.history.noShows >= 2 ? 'var(--danger, #c0392b)' : ''">
-            {{ a.history.completed }} done · {{ a.history.noShows }} no-show{{ a.history.noShows === 1 ? '' : 's' }} · {{ a.history.cancelled }} cancelled · {{ a.history.upcoming }} coming up
-            <span *ngIf="a.history.lastVisit" class="text-muted"> · last visit {{ a.history.lastVisit | date: 'd MMM y' }}</span>
+            {{ '{p0} done · {p1} no-show{p2} · {p3} cancelled · {p4} coming up' | translate: { p0: (a.history.completed), p1: (a.history.noShows), p2: (a.history.noShows === 1 ? '' : 's'), p3: (a.history.cancelled), p4: (a.history.upcoming) } }}
+            <span *ngIf="a.history.lastVisit" class="text-muted"> {{ '· last visit {p0}' | translate: { p0: (a.history.lastVisit | date: 'd MMM y') } }}</span>
           </div>
-          <div style="font-size:0.85rem; color:var(--danger, #c0392b);" *ngIf="a.history.noShows >= 2">This guest has missed {{ a.history.noShows }} earlier appointments. You may want to confirm with them first.</div>
+          <div style="font-size:0.85rem; color:var(--danger, #c0392b);" *ngIf="a.history.noShows >= 2">{{ 'This guest has missed {p0} earlier appointments. You may want to confirm with them first.' | translate: { p0: (a.history.noShows) } }}</div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="a.status === 'CONFIRMED' || a.status === 'PENDING_PAYMENT'">
-          <strong>Reminder and calendar</strong>
+          <strong>{{ 'Reminder and calendar' | translate }}</strong>
           <div class="text-muted" id="reminder-state">
-            <span *ngIf="a.reminderSentAt">Reminder e-mailed {{ a.reminderSentAt | date: 'd MMM, HH:mm' }}.</span>
-            <span *ngIf="!a.reminderSentAt">No reminder sent yet.</span>
-            <span *ngIf="a.rescheduleCount"> The guest has moved this booking online {{ a.rescheduleCount }} time{{ a.rescheduleCount === 1 ? '' : 's' }}.</span>
+            <span *ngIf="a.reminderSentAt">{{ 'Reminder e-mailed {p0}.' | translate: { p0: (a.reminderSentAt | date: 'd MMM, HH:mm') } }}</span>
+            <span *ngIf="!a.reminderSentAt">{{ 'No reminder sent yet.' | translate }}</span>
+            <span *ngIf="a.rescheduleCount"> {{ 'The guest has moved this booking online {p0} time{p1}.' | translate: { p0: (a.rescheduleCount), p1: (a.rescheduleCount === 1 ? '' : 's') } }}</span>
           </div>
           <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
-            <button class="btn btn-sm btn-outline-primary" id="remind-now" *ngIf="a.canWork && a.status === 'CONFIRMED' && a.guestEmail" (click)="remind()" [disabled]="busy">Send reminder now</button>
-            <button class="btn btn-sm btn-outline-secondary" id="download-ics" (click)="downloadIcs()">Download calendar file</button>
+            <button class="btn btn-sm btn-outline-primary" id="remind-now" *ngIf="a.canWork && a.status === 'CONFIRMED' && a.guestEmail" (click)="remind()" [disabled]="busy">{{ 'Send reminder now' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary" id="download-ics" (click)="downloadIcs()">{{ 'Download calendar file' | translate }}</button>
           </div>
-          <div class="text-muted mt-1" style="font-size:0.8rem;" *ngIf="a.canWork && a.status === 'CONFIRMED' && !a.guestEmail">No e-mail address on this booking, so no reminder can be sent.</div>
+          <div class="text-muted mt-1" style="font-size:0.8rem;" *ngIf="a.canWork && a.status === 'CONFIRMED' && !a.guestEmail">{{ 'No e-mail address on this booking, so no reminder can be sent.' | translate }}</div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="a.price > 0">
-          <strong>Payment</strong>
-          <div>Price {{ a.price | number: '1.0-2' }}<span *ngIf="a.paymentMode === 'DEPOSIT'"> · deposit to confirm {{ a.amountDue | number: '1.0-2' }}</span>
-            <span *ngIf="a.paymentMode === 'FULL'"> · paid in full to confirm</span><span *ngIf="a.paymentMode === 'NONE'"> · pay at the visit</span></div>
-          <div *ngIf="a.invoiceId">Invoice <a [routerLink]="['/admin/invoices', a.invoiceId]" *ngIf="admin">{{ a.invoiceNumber }}</a><span *ngIf="!admin">{{ a.invoiceNumber }}</span>
-            · paid {{ a.amountPaid | number: '1.0-2' }} of {{ a.amountDue | number: '1.0-2' }}
+          <strong>{{ 'Payment' | translate }}</strong>
+          <div>{{ 'Price {p0}' | translate: { p0: (a.price | number: '1.0-2') } }}<span *ngIf="a.paymentMode === 'DEPOSIT'"> {{ '· deposit to confirm {p0}' | translate: { p0: (a.amountDue | number: '1.0-2') } }}</span>
+            <span *ngIf="a.paymentMode === 'FULL'"> {{ '· paid in full to confirm' | translate }}</span><span *ngIf="a.paymentMode === 'NONE'"> {{ '· pay at the visit' | translate }}</span></div>
+          <div *ngIf="a.invoiceId">{{ 'Invoice' | translate }} <a [routerLink]="['/admin/invoices', a.invoiceId]" *ngIf="admin">{{ a.invoiceNumber }}</a><span *ngIf="!admin">{{ a.invoiceNumber }}</span>
+            {{ '· paid {p0} of {p1}' | translate: { p0: (a.amountPaid | number: '1.0-2'), p1: (a.amountDue | number: '1.0-2') } }}
             <a class="btn btn-sm btn-outline-primary" style="margin-left:0.5rem;" *ngIf="admin && a.canManage && a.status === 'PENDING_PAYMENT'"
-               [routerLink]="['/admin/invoices', a.invoiceId, 'record-payment']">Record payment</a></div>
+               [routerLink]="['/admin/invoices', a.invoiceId, 'record-payment']">{{ 'Record payment' | translate }}</a></div>
           <div *ngIf="!a.invoiceId && a.canManage && a.status !== 'CANCELLED'">
-            <span class="text-muted">No invoice yet.</span>
-            <button class="btn btn-sm btn-outline-primary" style="margin-left:0.5rem;" (click)="invoice()" [disabled]="busy">Create invoice</button>
+            <span class="text-muted">{{ 'No invoice yet.' | translate }}</span>
+            <button class="btn btn-sm btn-outline-primary" style="margin-left:0.5rem;" (click)="invoice()" [disabled]="busy">{{ 'Create invoice' | translate }}</button>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem;">
-          <strong>Notes</strong>
+          <strong>{{ 'Notes' | translate }}</strong>
           <textarea class="form-control mt-1" rows="3" [(ngModel)]="notes" name="notes" [readonly]="!a.canWork"></textarea>
-          <button class="btn btn-sm btn-outline-secondary mt-2" *ngIf="a.canWork" (click)="saveNotes()" [disabled]="busy">Save notes</button>
+          <button class="btn btn-sm btn-outline-secondary mt-2" *ngIf="a.canWork" (click)="saveNotes()" [disabled]="busy">{{ 'Save notes' | translate }}</button>
         </div>
 
         <div class="flex gap-2 mb-3" style="flex-wrap:wrap;" *ngIf="a.status === 'PENDING_PAYMENT' || a.status === 'CONFIRMED'">
-          <button class="btn btn-primary" *ngIf="a.canManage && a.status === 'PENDING_PAYMENT'" (click)="act('confirm')" [disabled]="busy">Confirm without payment</button>
-          <button class="btn btn-primary" *ngIf="a.canWork && a.status === 'CONFIRMED'" (click)="act('complete')" [disabled]="busy">Mark done</button>
-          <button class="btn btn-outline-secondary" *ngIf="a.canWork && a.status === 'CONFIRMED'" (click)="act('noShow')" [disabled]="busy">No-show</button>
-          <button class="btn btn-outline-secondary" *ngIf="a.canManage" (click)="startReschedule()" [disabled]="busy">Move to another time</button>
-          <button class="btn btn-outline-danger" *ngIf="a.canManage" (click)="cancelOpen = !cancelOpen">Cancel appointment</button>
+          <button class="btn btn-primary" *ngIf="a.canManage && a.status === 'PENDING_PAYMENT'" (click)="act('confirm')" [disabled]="busy">{{ 'Confirm without payment' | translate }}</button>
+          <button class="btn btn-primary" *ngIf="a.canWork && a.status === 'CONFIRMED'" (click)="act('complete')" [disabled]="busy">{{ 'Mark done' | translate }}</button>
+          <button class="btn btn-outline-secondary" *ngIf="a.canWork && a.status === 'CONFIRMED'" (click)="act('noShow')" [disabled]="busy">{{ 'No-show' | translate }}</button>
+          <button class="btn btn-outline-secondary" *ngIf="a.canManage" (click)="startReschedule()" [disabled]="busy">{{ 'Move to another time' | translate }}</button>
+          <button class="btn btn-outline-danger" *ngIf="a.canManage" (click)="cancelOpen = !cancelOpen">{{ 'Cancel appointment' | translate }}</button>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="cancelOpen">
-          <label class="form-label">Reason <span class="text-muted">(optional)</span></label>
+          <label class="form-label">{{ 'Reason' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
           <input class="form-control" name="cr" [(ngModel)]="cancelReason" />
-          <div class="mt-2"><button class="btn btn-danger" (click)="cancelNow()" [disabled]="busy">Yes, cancel it</button></div>
-          <p class="text-muted mt-2" style="font-size:0.8rem;">An unpaid invoice for this booking is voided. Money already received stays on the invoice for you to refund or keep.</p>
+          <div class="mt-2"><button class="btn btn-danger" (click)="cancelNow()" [disabled]="busy">{{ 'Yes, cancel it' | translate }}</button></div>
+          <p class="text-muted mt-2" style="font-size:0.8rem;">{{ 'An unpaid invoice for this booking is voided. Money already received stays on the invoice for you to refund or keep.' | translate }}</p>
         </div>
 
         <div class="card mb-3" style="padding:1rem;" *ngIf="moving">
-          <strong>Move to another time</strong>
+          <strong>{{ 'Move to another time' | translate }}</strong>
           <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
             <app-date-picker name="rd" [(ngModel)]="rdate" (ngModelChange)="loadSlots()"></app-date-picker>
           </div>
           <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
             <button class="btn" *ngFor="let s of slots" [class.btn-primary]="rtime === s.time" [class.btn-outline-secondary]="rtime !== s.time" (click)="rtime = s.time">{{ s.time }}</button>
           </div>
-          <p class="text-muted mt-2" *ngIf="slotsLoaded && !slots.length">Nothing free on that day.</p>
-          <div class="mt-2"><button class="btn btn-primary" [disabled]="!rtime || busy" (click)="reschedule()">Move it</button></div>
+          <p class="text-muted mt-2" *ngIf="slotsLoaded && !slots.length">{{ 'Nothing free on that day.' | translate }}</p>
+          <div class="mt-2"><button class="btn btn-primary" [disabled]="!rtime || busy" (click)="reschedule()">{{ 'Move it' | translate }}</button></div>
         </div>
       </ng-container>
     </app-shell>

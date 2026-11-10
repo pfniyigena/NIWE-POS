@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,62 +13,61 @@ import { BillingPreview, ProjectSummary, TimeApiService } from '../../core/api/t
 @Component({
   selector: 'app-time-billing',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Bill time</h3>
+      <h3 class="mb-3">{{ 'Bill time' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="done">
-        Draft invoice <a [routerLink]="['/admin/invoices', done.invoiceId]">{{ done.invoiceNumber }}</a> created from {{ done.entries }} entries
-        ({{ done.totalAmount | number: '1.0-2' }}). Open it to review, then issue it.
+        {{ 'Draft invoice' | translate }} <a [routerLink]="['/admin/invoices', done.invoiceId]">{{ done.invoiceNumber }}</a> {{ 'created from {p0} entries ({p1}). Open it to review, then issue it.' | translate: { p0: (done.entries), p1: (done.totalAmount | number: '1.0-2') } }}
       </div>
 
       <table class="table-sm mb-3">
-        <thead><tr><th>Project</th><th>Customer</th><th class="text-end">Billable hours</th><th class="text-end">Ready to invoice</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Project' | translate }}</th><th>{{ 'Customer' | translate }}</th><th class="text-end">{{ 'Billable hours' | translate }}</th><th class="text-end">{{ 'Ready to invoice' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let p of ready">
             <td>{{ p.name }}</td><td>{{ p.customerName || '—' }}</td>
             <td class="text-end">{{ p.billableHours | number: '1.0-2' }}</td>
             <td class="text-end">{{ p.unbilledAmount | number: '1.0-2' }}</td>
-            <td><button class="btn btn-sm btn-primary" type="button" (click)="open(p)">Prepare invoice</button></td>
+            <td><button class="btn btn-sm btn-primary" type="button" (click)="open(p)">{{ 'Prepare invoice' | translate }}</button></td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="!ready.length">No approved billable time is waiting. Time appears here once it is approved.</p>
+      <p class="text-muted" *ngIf="!ready.length">{{ 'No approved billable time is waiting. Time appears here once it is approved.' | translate }}</p>
 
       <div class="card mb-3" style="padding:1rem; max-width:52rem;" *ngIf="current">
         <strong class="mb-2">{{ current.name }}</strong>
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group" *ngIf="!current.customerId"><label class="form-label">Customer</label>
+          <div class="form-group" *ngIf="!current.customerId"><label class="form-label">{{ 'Customer' | translate }}</label>
             <select class="form-select" name="cu" [(ngModel)]="customerId" (ngModelChange)="refresh()">
-              <option [ngValue]="null">Choose…</option><option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
+              <option [ngValue]="null">{{ 'Choose…' | translate }}</option><option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Time from</label><app-date-picker name="f" [(ngModel)]="from" (ngModelChange)="refresh()"></app-date-picker></div>
-          <div class="form-group"><label class="form-label">to</label><app-date-picker name="t" [(ngModel)]="to" (ngModelChange)="refresh()"></app-date-picker></div>
-          <div class="form-group"><label class="form-label">Invoice due</label><app-date-picker name="dd" [(ngModel)]="dueDate"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'Time from' | translate }}</label><app-date-picker name="f" [(ngModel)]="from" (ngModelChange)="refresh()"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'to' | translate }}</label><app-date-picker name="t" [(ngModel)]="to" (ngModelChange)="refresh()"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'Invoice due' | translate }}</label><app-date-picker name="dd" [(ngModel)]="dueDate"></app-date-picker></div>
         </div>
         <table class="table-sm" *ngIf="preview?.lines?.length">
-          <thead><tr><th>Invoice line</th><th class="text-end">Hours</th><th class="text-end">Rate</th><th class="text-end">Amount</th></tr></thead>
+          <thead><tr><th>{{ 'Invoice line' | translate }}</th><th class="text-end">{{ 'Hours' | translate }}</th><th class="text-end">{{ 'Rate' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let l of preview!.lines"><td>{{ l.description }}</td><td class="text-end">{{ l.hours | number: '1.0-2' }}</td>
               <td class="text-end">{{ l.hourlyRate | number: '1.0-2' }}</td><td class="text-end">{{ l.amount | number: '1.0-2' }}</td></tr>
           </tbody>
-          <tfoot><tr><th>Total</th><th class="text-end">{{ preview!.totalHours | number: '1.0-2' }}</th><th></th><th class="text-end">{{ preview!.totalAmount | number: '1.0-2' }}</th></tr></tfoot>
+          <tfoot><tr><th>{{ 'Total' | translate }}</th><th class="text-end">{{ preview!.totalHours | number: '1.0-2' }}</th><th></th><th class="text-end">{{ preview!.totalAmount | number: '1.0-2' }}</th></tr></tfoot>
         </table>
-        <p class="text-muted" *ngIf="preview && !preview.lines.length">No billable approved time in this period.</p>
-        <p class="text-muted" style="font-size:0.85rem;">One line per person and rate. The invoice is created as a draft, so you can add or change lines before issuing it. Tax follows the service product set in Time Tracking settings.</p>
+        <p class="text-muted" *ngIf="preview && !preview.lines.length">{{ 'No billable approved time in this period.' | translate }}</p>
+        <p class="text-muted" style="font-size:0.85rem;">{{ 'One line per person and rate. The invoice is created as a draft, so you can add or change lines before issuing it. Tax follows the service product set in Time Tracking settings.' | translate }}</p>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="button" [disabled]="!preview?.lines?.length || busy" (click)="create()">Create draft invoice</button>
-          <button class="btn btn-outline-secondary" type="button" (click)="current = null">Close</button>
+          <button class="btn btn-primary" type="button" [disabled]="!preview?.lines?.length || busy" (click)="create()">{{ 'Create draft invoice' | translate }}</button>
+          <button class="btn btn-outline-secondary" type="button" (click)="current = null">{{ 'Close' | translate }}</button>
         </div>
       </div>
 
       <div class="card" style="padding:1rem; max-width:52rem;" *ngIf="billed.length">
-        <strong class="mb-2">Undo a time invoice</strong>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">If a draft invoice was deleted or an issued one was voided, release its time so it can be billed again.</div>
+        <strong class="mb-2">{{ 'Undo a time invoice' | translate }}</strong>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'If a draft invoice was deleted or an issued one was voided, release its time so it can be billed again.' | translate }}</div>
         <table class="table-sm">
-          <tbody><tr *ngFor="let b of billed"><td>{{ b.number }}</td><td>{{ b.count }} entries</td>
-            <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="release(b.id)">Release time</button></td></tr></tbody>
+          <tbody><tr *ngFor="let b of billed"><td>{{ b.number }}</td><td>{{ '{p0} entries' | translate: { p0: (b.count) } }}</td>
+            <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="release(b.id)">{{ 'Release time' | translate }}</button></td></tr></tbody>
         </table>
       </div>
     </app-shell>

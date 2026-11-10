@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,31 +17,31 @@ import { DiningTable } from '../core/models';
 @Component({
   selector: 'app-floor-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Restaurant — floor plan</h3>
+        <h3>{{ 'Restaurant — floor plan' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders">📝 All orders</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders/new">🥡 Takeaway/Delivery</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/deliveries">🛵 Deliveries board</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/kitchen">🍳 Kitchen display</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/reservations">📅 Reservations</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/receipts">🧾 Receipts</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/wastage">🗑️ Wastage</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/reports">📊 Reports</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders">{{ '📝 All orders' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders/new">{{ '🥡 Takeaway/Delivery' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/deliveries">{{ '🛵 Deliveries board' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/kitchen">{{ '🍳 Kitchen display' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/reservations">{{ '📅 Reservations' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/receipts">{{ '🧾 Receipts' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/wastage">{{ '🗑️ Wastage' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/reports">{{ '📊 Reports' | translate }}</a>
         </div>
       </div>
 
       <div class="card mb-3" style="padding:1rem;" *ngIf="openingTable">
-        <h4 style="font-size:1rem;" class="mb-2">Open order at {{ openingTable.name }}</h4>
+        <h4 style="font-size:1rem;" class="mb-2">{{ 'Open order at {p0}' | translate: { p0: (openingTable.name) } }}</h4>
         <div class="flex gap-2 align-center">
-          <label class="form-label" style="margin:0;">Guests</label>
+          <label class="form-label" style="margin:0;">{{ 'Guests' | translate }}</label>
           <input class="form-control" type="number" min="1" style="width:100px;" [(ngModel)]="guestCount" name="guestCount" />
-          <button class="btn btn-primary" (click)="confirmOpen()">Open order</button>
-          <button class="btn btn-link" (click)="openingTable = null">Cancel</button>
+          <button class="btn btn-primary" (click)="confirmOpen()">{{ 'Open order' | translate }}</button>
+          <button class="btn btn-link" (click)="openingTable = null">{{ 'Cancel' | translate }}</button>
         </div>
       </div>
 
@@ -57,10 +58,10 @@ import { DiningTable } from '../core/models';
           <div class="table-name">{{ t.name }}</div>
           <div class="table-section text-muted" *ngIf="t.section">{{ t.section }}</div>
           <div class="table-status">{{ t.status.replace('_', ' ') }}</div>
-          <div class="table-capacity text-muted">Seats {{ t.capacity }}</div>
+          <div class="table-capacity text-muted">{{ 'Seats {p0}' | translate: { p0: (t.capacity) } }}</div>
         </div>
         <div *ngIf="tables.length === 0" class="text-muted">
-          No tables set up yet — add some in <a routerLink="/admin/restaurant/tables">Admin &gt; Restaurant &gt; Tables</a>.
+          {{ 'No tables set up yet — add some in' | translate }} <a routerLink="/admin/restaurant/tables">Admin &gt; Restaurant &gt; Tables</a>.
         </div>
       </div>
     </app-shell>

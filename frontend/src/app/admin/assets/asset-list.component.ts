@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -21,17 +22,17 @@ import {
 @Component({
   selector: 'app-asset-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3 style="margin-bottom:0;">Asset register</h3>
+        <h3 style="margin-bottom:0;">{{ 'Asset register' | translate }}</h3>
         <div class="flex gap-2" style="flex-wrap:wrap;">
-          <a class="btn btn-outline-primary" routerLink="/admin/assets/overview">Overview</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/assets/verifications">Verification</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/assets/categories">Categories</a>
-          <a class="btn btn-outline-primary" *ngIf="canManage" routerLink="/admin/assets/from-purchase">From a purchase</a>
-          <a class="btn btn-primary" *ngIf="canManage" routerLink="/admin/assets/new">+ New asset</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets/overview">{{ 'Overview' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets/verifications">{{ 'Verification' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets/categories">{{ 'Categories' | translate }}</a>
+          <a class="btn btn-outline-primary" *ngIf="canManage" routerLink="/admin/assets/from-purchase">{{ 'From a purchase' | translate }}</a>
+          <a class="btn btn-primary" *ngIf="canManage" routerLink="/admin/assets/new">{{ '+ New asset' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -39,21 +40,21 @@ import {
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
       <div class="flex gap-3 mb-3" style="flex-wrap:wrap;" *ngIf="summary">
-        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Assets</div><strong>{{ summary.assetCount }}</strong></div>
-        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Total cost</div><strong>{{ summary.totalCost | number: '1.2-2' }}</strong></div>
-        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Accumulated depreciation</div><strong>{{ summary.totalAccumulatedDepreciation | number: '1.2-2' }}</strong></div>
-        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Book value</div><strong>{{ summary.totalBookValue | number: '1.2-2' }}</strong></div>
+        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Assets' | translate }}</div><strong>{{ summary.assetCount }}</strong></div>
+        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Total cost' | translate }}</div><strong>{{ summary.totalCost | number: '1.2-2' }}</strong></div>
+        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Accumulated depreciation' | translate }}</div><strong>{{ summary.totalAccumulatedDepreciation | number: '1.2-2' }}</strong></div>
+        <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Book value' | translate }}</div><strong>{{ summary.totalBookValue | number: '1.2-2' }}</strong></div>
       </div>
 
       <div class="card mb-3" style="padding:0.75rem 1rem;" *ngIf="canManage">
         <div class="flex align-center gap-3" style="flex-wrap:wrap;">
-          <strong>Run depreciation</strong>
-          <label class="flex align-center gap-2">Up to
+          <strong>{{ 'Run depreciation' | translate }}</strong>
+          <label class="flex align-center gap-2">{{ 'Up to' | translate }}
             <app-date-picker name="upTo" [(ngModel)]="upTo"></app-date-picker>
           </label>
-          <button class="btn btn-outline-primary" type="button" (click)="run()" [disabled]="running">{{ running ? 'Running…' : 'Run now' }}</button>
+          <button class="btn btn-outline-primary" type="button" (click)="run()" [disabled]="running">{{ running ? ('Running…' | translate) : ('Run now' | translate) }}</button>
           <span class="text-muted" style="font-size:0.85rem;">
-            Charges every full month up to that date that has not been charged yet, and posts it to Accounting. This also runs by itself every day for months that have ended.
+            {{ 'Charges every full month up to that date that has not been charged yet, and posts it to Accounting. This also runs by itself every day for months that have ended.' | translate }}
           </span>
         </div>
       </div>
@@ -62,81 +63,81 @@ import {
         <button type="button" class="btn btn-sm" *ngFor="let v of views" [ngClass]="view === v.key ? 'btn-primary' : 'btn-outline-primary'" (click)="setView(v.key)">{{ v.label }}</button>
       </div>
       <div class="flex gap-2 mb-3 as-filters" style="flex-wrap:wrap; align-items:flex-end;">
-        <input class="form-control" style="width:15rem;" placeholder="Search tag, name, serial, holder, place" [(ngModel)]="q" (keyup.enter)="reload()" name="q" />
-        <select class="form-select" style="width:auto; max-width:14rem;" [(ngModel)]="categoryId" (ngModelChange)="reload()" name="categoryId" title="Category">
-          <option [ngValue]="null">Any category</option>
+        <input class="form-control" style="width:15rem;" [placeholder]="'Search tag, name, serial, holder, place' | translate" [(ngModel)]="q" (keyup.enter)="reload()" name="q" />
+        <select class="form-select" style="width:auto; max-width:14rem;" [(ngModel)]="categoryId" (ngModelChange)="reload()" name="categoryId" [title]="'Category' | translate">
+          <option [ngValue]="null">{{ 'Any category' | translate }}</option>
           <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
         </select>
-        <select class="form-select" style="width:auto;" [(ngModel)]="status" (ngModelChange)="reload()" name="status" title="Status">
-          <option value="">All assets</option>
-          <option value="ACTIVE">Active</option>
-          <option value="FULLY_DEPRECIATED">Fully depreciated</option>
-          <option value="DISPOSED">Disposed</option>
+        <select class="form-select" style="width:auto;" [(ngModel)]="status" (ngModelChange)="reload()" name="status" [title]="'Status' | translate">
+          <option value="">{{ 'All assets' | translate }}</option>
+          <option value="ACTIVE">{{ 'Active' | translate }}</option>
+          <option value="FULLY_DEPRECIATED">{{ 'Fully depreciated' | translate }}</option>
+          <option value="DISPOSED">{{ 'Disposed' | translate }}</option>
         </select>
-        <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="branchId" (ngModelChange)="reload()" name="branch" title="Branch">
-          <option [ngValue]="null">All branches</option>
+        <select class="form-select" style="width:auto;" *ngIf="branches.length > 1" [(ngModel)]="branchId" (ngModelChange)="reload()" name="branch" [title]="'Branch' | translate">
+          <option [ngValue]="null">{{ 'All branches' | translate }}</option>
           <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
         </select>
-        <input class="form-control" style="width:10rem;" placeholder="Place" [(ngModel)]="location" (keyup.enter)="reload()" name="location" />
-        <input class="form-control" style="width:10rem;" placeholder="Held by" [(ngModel)]="custodian" (keyup.enter)="reload()" name="custodian" />
-        <button type="button" class="btn btn-outline-secondary" (click)="reload()">Search</button>
-        <button type="button" class="btn btn-link" (click)="clear()">Clear</button>
+        <input class="form-control" style="width:10rem;" [placeholder]="'Place' | translate" [(ngModel)]="location" (keyup.enter)="reload()" name="location" />
+        <input class="form-control" style="width:10rem;" [placeholder]="'Held by' | translate" [(ngModel)]="custodian" (keyup.enter)="reload()" name="custodian" />
+        <button type="button" class="btn btn-outline-secondary" (click)="reload()">{{ 'Search' | translate }}</button>
+        <button type="button" class="btn btn-link" (click)="clear()">{{ 'Clear' | translate }}</button>
         <span style="flex:1;"></span>
-        <button type="button" class="btn btn-outline-primary" (click)="download('xlsx')" [disabled]="busy">Excel</button>
-        <button type="button" class="btn btn-outline-primary" (click)="download('pdf')" [disabled]="busy">PDF</button>
+        <button type="button" class="btn btn-outline-primary" (click)="download('xlsx')" [disabled]="busy">{{ 'Excel' | translate }}</button>
+        <button type="button" class="btn btn-outline-primary" (click)="download('pdf')" [disabled]="busy">{{ 'PDF' | translate }}</button>
       </div>
 
       <div class="card mb-3" style="padding:0.75rem 1rem;" *ngIf="canManage && selectedCount > 0">
         <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-          <strong>{{ selectedCount }} selected</strong>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="mode = mode === 'move' ? '' : 'move'">Move…</button>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="mode = mode === 'out' ? '' : 'out'">Hand out…</button>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="bulkIn()" [disabled]="busy">Take back</button>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="printTags()">Print tags</button>
-          <button type="button" class="btn btn-sm btn-link" (click)="selected = {}; mode = ''">Clear selection</button>
+          <strong>{{ '{p0} selected' | translate: { p0: (selectedCount) } }}</strong>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="mode = mode === 'move' ? '' : 'move'">{{ 'Move…' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="mode = mode === 'out' ? '' : 'out'">{{ 'Hand out…' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="bulkIn()" [disabled]="busy">{{ 'Take back' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="printTags()">{{ 'Print tags' | translate }}</button>
+          <button type="button" class="btn btn-sm btn-link" (click)="selected = {}; mode = ''">{{ 'Clear selection' | translate }}</button>
         </div>
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap; align-items:flex-end;" *ngIf="mode === 'move'">
-          <div class="form-group" *ngIf="branches.length > 1"><label class="form-label">To branch</label>
+          <div class="form-group" *ngIf="branches.length > 1"><label class="form-label">{{ 'To branch' | translate }}</label>
             <select class="form-select" name="bBranch" [(ngModel)]="bulkBranch">
-              <option [ngValue]="null">Keep the branch</option>
+              <option [ngValue]="null">{{ 'Keep the branch' | translate }}</option>
               <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">New place</label><input class="form-control" name="bLoc" [(ngModel)]="bulkLocation" /></div>
-          <div class="form-group"><label class="form-label">Date</label><app-date-picker name="bDate" [(ngModel)]="bulkDate"></app-date-picker></div>
-          <div class="form-group"><label class="form-label">Reason</label><input class="form-control" name="bReason" [(ngModel)]="bulkReason" /></div>
-          <button type="button" class="btn btn-primary" (click)="bulkMove()" [disabled]="busy">Move {{ selectedCount }}</button>
+          <div class="form-group"><label class="form-label">{{ 'New place' | translate }}</label><input class="form-control" name="bLoc" [(ngModel)]="bulkLocation" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Date' | translate }}</label><app-date-picker name="bDate" [(ngModel)]="bulkDate"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'Reason' | translate }}</label><input class="form-control" name="bReason" [(ngModel)]="bulkReason" /></div>
+          <button type="button" class="btn btn-primary" (click)="bulkMove()" [disabled]="busy">{{ 'Move {p0}' | translate: { p0: (selectedCount) } }}</button>
         </div>
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap; align-items:flex-end;" *ngIf="mode === 'out'">
-          <div class="form-group"><label class="form-label">A user</label>
+          <div class="form-group"><label class="form-label">{{ 'A user' | translate }}</label>
             <select class="form-select" name="bUser" [(ngModel)]="bulkUser">
-              <option [ngValue]="null">— or type a name —</option>
+              <option [ngValue]="null">{{ '— or type a name —' | translate }}</option>
               <option *ngFor="let u of custodians" [ngValue]="u.id">{{ u.name }}</option>
             </select></div>
-          <div class="form-group" *ngIf="!bulkUser"><label class="form-label">Name</label><input class="form-control" name="bName" [(ngModel)]="bulkName" /></div>
-          <div class="form-group"><label class="form-label">Date</label><app-date-picker name="bDate2" [(ngModel)]="bulkDate"></app-date-picker></div>
-          <button type="button" class="btn btn-primary" (click)="bulkOut()" [disabled]="busy">Hand out {{ selectedCount }}</button>
+          <div class="form-group" *ngIf="!bulkUser"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="bName" [(ngModel)]="bulkName" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Date' | translate }}</label><app-date-picker name="bDate2" [(ngModel)]="bulkDate"></app-date-picker></div>
+          <button type="button" class="btn btn-primary" (click)="bulkOut()" [disabled]="busy">{{ 'Hand out {p0}' | translate: { p0: (selectedCount) } }}</button>
         </div>
       </div>
       <div class="alert alert-warning" *ngIf="skipped.length">
-        <strong>Some were left as they were:</strong>
+        <strong>{{ 'Some were left as they were:' | translate }}</strong>
         <div *ngFor="let s of skipped">{{ s.code || ('#' + s.id) }} — {{ s.reason }}</div>
       </div>
 
       <table class="table-sm">
         <thead>
           <tr>
-            <th style="width:2rem;"><input *ngIf="canManage" type="checkbox" [checked]="allPageSelected" (change)="toggleAll($event)" title="Select this page" /></th>
-            <th>Tag</th><th>Asset</th><th>Category</th><th>Purchased</th>
-            <th class="text-end">Cost</th><th class="text-end">Accumulated</th><th class="text-end">Book value</th>
-            <th *ngIf="branches.length > 1">Branch</th><th>Place</th><th>Held by</th><th>Status</th><th></th>
+            <th style="width:2rem;"><input *ngIf="canManage" type="checkbox" [checked]="allPageSelected" (change)="toggleAll($event)" [title]="'Select this page' | translate" /></th>
+            <th>{{ 'Tag' | translate }}</th><th>{{ 'Asset' | translate }}</th><th>{{ 'Category' | translate }}</th><th>{{ 'Purchased' | translate }}</th>
+            <th class="text-end">{{ 'Cost' | translate }}</th><th class="text-end">{{ 'Accumulated' | translate }}</th><th class="text-end">{{ 'Book value' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th><th>{{ 'Place' | translate }}</th><th>{{ 'Held by' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let a of pageRows">
             <td><input *ngIf="canManage" type="checkbox" [checked]="!!selected[a.id]" (change)="toggle(a.id, $event)" /></td>
-            <td><a [routerLink]="['/admin/assets', a.id]">{{ a.code }}</a> <span title="Files attached" *ngIf="a.fileCount">📎{{ a.fileCount }}</span></td>
+            <td><a [routerLink]="['/admin/assets', a.id]">{{ a.code }}</a> <span [title]="'Files attached' | translate" *ngIf="a.fileCount">📎{{ a.fileCount }}</span></td>
             <td>{{ a.name }}
-              <div class="text-muted" style="font-size:0.75rem;" *ngIf="a.serialNumber">S/N {{ a.serialNumber }}</div></td>
+              <div class="text-muted" style="font-size:0.75rem;" *ngIf="a.serialNumber">{{ 'S/N {p0}' | translate: { p0: (a.serialNumber) } }}</div></td>
             <td>{{ a.categoryName }}</td>
             <td>{{ a.purchaseDate }}</td>
             <td class="text-end">{{ a.cost | number: '1.2-2' }}</td>
@@ -146,18 +147,18 @@ import {
             <td>{{ a.location || '—' }}</td>
             <td>{{ a.custodianName || '—' }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="a.status === 'ACTIVE'">Active</span>
-              <span class="badge badge-secondary" *ngIf="a.status === 'FULLY_DEPRECIATED'">Fully depreciated</span>
-              <span class="badge badge-secondary" *ngIf="a.status === 'DISPOSED'">Disposed</span>
-              <span class="badge badge-warning" *ngIf="a.warrantyState === 'EXPIRING'" title="Warranty ends {{ a.warrantyExpiresOn }}">Warranty ending</span>
-              <span class="badge badge-danger" *ngIf="a.warrantyState === 'EXPIRED'" title="Warranty ended {{ a.warrantyExpiresOn }}">Warranty ended</span>
-              <span class="badge badge-warning" *ngIf="a.insuranceState === 'EXPIRING'" title="Insurance ends {{ a.insuranceExpiresOn }}">Insurance ending</span>
-              <span class="badge badge-danger" *ngIf="a.insuranceState === 'EXPIRED'" title="Insurance ended {{ a.insuranceExpiresOn }}">Insurance ended</span>
+              <span class="badge badge-success" *ngIf="a.status === 'ACTIVE'">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="a.status === 'FULLY_DEPRECIATED'">{{ 'Fully depreciated' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="a.status === 'DISPOSED'">{{ 'Disposed' | translate }}</span>
+              <span class="badge badge-warning" *ngIf="a.warrantyState === 'EXPIRING'" title="Warranty ends {{ a.warrantyExpiresOn }}">{{ 'Warranty ending' | translate }}</span>
+              <span class="badge badge-danger" *ngIf="a.warrantyState === 'EXPIRED'" title="Warranty ended {{ a.warrantyExpiresOn }}">{{ 'Warranty ended' | translate }}</span>
+              <span class="badge badge-warning" *ngIf="a.insuranceState === 'EXPIRING'" title="Insurance ends {{ a.insuranceExpiresOn }}">{{ 'Insurance ending' | translate }}</span>
+              <span class="badge badge-danger" *ngIf="a.insuranceState === 'EXPIRED'" title="Insurance ended {{ a.insuranceExpiresOn }}">{{ 'Insurance ended' | translate }}</span>
             </td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/assets', a.id]">Open</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/assets', a.id]">{{ 'Open' | translate }}</a></td>
           </tr>
           <tr *ngIf="!assets.length && !loading"><td [attr.colspan]="branches.length > 1 ? 13 : 12" class="text-muted">
-            {{ filtered ? 'Nothing matches these filters.' : 'No assets yet — add the asset categories first (with their depreciation terms), then register your equipment, vehicles and furniture.' }}
+            {{ filtered ? ('Nothing matches these filters.' | translate) : ('No assets yet — add the asset categories first (with their depreciation terms), then register your equipment, vehicles and furniture.' | translate) }}
           </td></tr>
         </tbody>
       </table>

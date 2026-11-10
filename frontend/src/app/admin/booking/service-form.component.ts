@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,45 +10,45 @@ import { BookingApiService, Option, PaymentMode, ServicePayload } from '../../co
 @Component({
   selector: 'app-booking-service-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>{{ id ? 'Edit service' : 'New service' }}</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/booking/services">Back</a>
+        <h3>{{ id ? ('Edit service' | translate) : ('New service' | translate) }}</h3>
+        <a class="btn btn-outline-secondary" routerLink="/admin/booking/services">{{ 'Back' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form class="card" style="padding:1rem; max-width:44rem;" (ngSubmit)="save()">
-        <div class="form-group mb-2"><label class="form-label">Name</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
-        <div class="form-group mb-2"><label class="form-label">Description <span class="text-muted">(shown on the public page)</span></label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Description' | translate }} <span class="text-muted">{{ '(shown on the public page)' | translate }}</span></label>
           <textarea class="form-control" rows="2" name="d" [(ngModel)]="description"></textarea></div>
         <div class="flex gap-2">
-          <div class="form-group mb-2" style="flex:1;"><label class="form-label">Length (minutes)</label><input class="form-control" type="number" min="5" name="dm" [(ngModel)]="f.durationMinutes" required /></div>
-          <div class="form-group mb-2" style="flex:1;"><label class="form-label">Buffer after (minutes)</label><input class="form-control" type="number" min="0" name="bm" [(ngModel)]="f.bufferMinutes" /></div>
-          <div class="form-group mb-2" style="flex:1;"><label class="form-label">Price</label><input class="form-control" type="number" min="0" step="0.01" name="p" [(ngModel)]="f.price" /></div>
+          <div class="form-group mb-2" style="flex:1;"><label class="form-label">{{ 'Length (minutes)' | translate }}</label><input class="form-control" type="number" min="5" name="dm" [(ngModel)]="f.durationMinutes" required /></div>
+          <div class="form-group mb-2" style="flex:1;"><label class="form-label">{{ 'Buffer after (minutes)' | translate }}</label><input class="form-control" type="number" min="0" name="bm" [(ngModel)]="f.bufferMinutes" /></div>
+          <div class="form-group mb-2" style="flex:1;"><label class="form-label">{{ 'Price' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="p" [(ngModel)]="f.price" /></div>
         </div>
         <div class="flex gap-2">
-          <div class="form-group mb-2" style="flex:1;"><label class="form-label">Payment needed to confirm</label>
+          <div class="form-group mb-2" style="flex:1;"><label class="form-label">{{ 'Payment needed to confirm' | translate }}</label>
             <select class="form-select" name="pm" [(ngModel)]="f.paymentMode">
-              <option value="NONE">None — pay at the visit</option><option value="DEPOSIT">A deposit</option><option value="FULL">The full price</option>
+              <option value="NONE">{{ 'None — pay at the visit' | translate }}</option><option value="DEPOSIT">{{ 'A deposit' | translate }}</option><option value="FULL">{{ 'The full price' | translate }}</option>
             </select></div>
-          <div class="form-group mb-2" style="flex:1;" *ngIf="f.paymentMode === 'DEPOSIT'"><label class="form-label">Deposit (% of price)</label>
+          <div class="form-group mb-2" style="flex:1;" *ngIf="f.paymentMode === 'DEPOSIT'"><label class="form-label">{{ 'Deposit (% of price)' | translate }}</label>
             <input class="form-control" type="number" min="1" max="100" name="dp" [(ngModel)]="f.depositPercent" /></div>
         </div>
-        <div class="form-group mb-2"><label class="form-label">Needs a room or piece of equipment of this kind <span class="text-muted">(optional)</span></label>
-          <input class="form-control" name="rk" [(ngModel)]="resourceKind" placeholder="e.g. Room, Chair, Court" /></div>
-        <div class="form-group mb-2"><label class="form-label">Colour on the calendar</label><input type="color" name="c" [(ngModel)]="color" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Needs a room or piece of equipment of this kind' | translate }} <span class="text-muted">{{ '(optional)' | translate }}</span></label>
+          <input class="form-control" name="rk" [(ngModel)]="resourceKind" [placeholder]="'e.g. Room, Chair, Court' | translate" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Colour on the calendar' | translate }}</label><input type="color" name="c" [(ngModel)]="color" /></div>
         <div class="form-group mb-2">
-          <label class="form-label">Who can do this <span class="text-muted">(leave empty for anyone)</span></label>
+          <label class="form-label">{{ 'Who can do this' | translate }} <span class="text-muted">{{ '(leave empty for anyone)' | translate }}</span></label>
           <div class="flex gap-2" style="flex-wrap:wrap;">
             <label *ngFor="let p of staff" style="display:flex; gap:0.3rem; align-items:center;">
               <input type="checkbox" [checked]="f.staffIds.includes(p.id)" (change)="toggle(p.id)" [name]="'s' + p.id" /> {{ p.name }}
             </label>
           </div>
         </div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="a" [(ngModel)]="f.active" /> Can be booked</label>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-3"><input type="checkbox" name="v" [(ngModel)]="f.publicVisible" /> Show on the public booking page</label>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button></div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-1"><input type="checkbox" name="a" [(ngModel)]="f.active" /> {{ 'Can be booked' | translate }}</label>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-3"><input type="checkbox" name="v" [(ngModel)]="f.publicVisible" /> {{ 'Show on the public booking page' | translate }}</label>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? ('Saving…' | translate) : ('Save' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

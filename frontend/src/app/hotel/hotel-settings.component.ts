@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -10,41 +11,41 @@ import { errMsg } from './hotel-util';
 @Component({
   selector: 'app-hotel-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">Hotel settings</h3>
+      <h3 class="mb-3">{{ 'Hotel settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="message">{{ message }}</div>
       <form *ngIf="loaded" (ngSubmit)="save()">
         <div class="form-group">
           <label class="form-label">
             <input type="checkbox" name="enabled" [(ngModel)]="s.enabled" [disabled]="activated" />
-            {{ activated ? 'Hotel module is active' : 'Activate the Hotel module' }}
+            {{ activated ? ('Hotel module is active' | translate) : ('Activate the Hotel module' | translate) }}
           </label>
           <div class="text-muted" style="font-size:0.8rem;">
-            Shows the Hotel menu and adds the "Charge to room" payment method to the POS and the Restaurant. Set up room types and rooms first.
-            <span *ngIf="activated">An activated module can't be deactivated.</span>
-            <span *ngIf="!activated">Activation is permanent, and also activates the POS and the Restaurant.</span>
+            {{ 'Shows the Hotel menu and adds the "Charge to room" payment method to the POS and the Restaurant. Set up room types and rooms first.' | translate }}
+            <span *ngIf="activated">{{ 'An activated module can\\'t be deactivated.' | translate }}</span>
+            <span *ngIf="!activated">{{ 'Activation is permanent, and also activates the POS and the Restaurant.' | translate }}</span>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">How room revenue reaches Accounting</label>
+          <label class="form-label">{{ 'How room revenue reaches Accounting' | translate }}</label>
           <label class="flex gap-2" style="align-items:flex-start; margin-bottom:0.4rem;">
             <input type="radio" name="mode" value="NIGHTLY" [(ngModel)]="s.postingMode" />
-            <span><strong>Every night</strong> — each night's room charge is posted as revenue by the night audit. Best for most hotels.</span>
+            <span><strong>{{ 'Every night' | translate }}</strong> {{ '— each night\\'s room charge is posted as revenue by the night audit. Best for most hotels.' | translate }}</span>
           </label>
           <label class="flex gap-2" style="align-items:flex-start; margin-bottom:0.4rem;">
             <input type="radio" name="mode" value="AT_CHECKOUT" [(ngModel)]="s.postingMode" />
-            <span><strong>At check-out</strong> — nothing is posted for the room until the guest leaves, then the whole stay at once.</span>
+            <span><strong>{{ 'At check-out' | translate }}</strong> {{ '— nothing is posted for the room until the guest leaves, then the whole stay at once.' | translate }}</span>
           </label>
           <label class="flex gap-2" style="align-items:flex-start;">
             <input type="radio" name="mode" value="BOOKING_AND_CHECKOUT" [(ngModel)]="s.postingMode" />
-            <span><strong>At booking and check-out</strong> — the booked value is recorded as unearned room revenue when the booking is made, and becomes revenue at check-out.</span>
+            <span><strong>{{ 'At booking and check-out' | translate }}</strong> {{ '— the booked value is recorded as unearned room revenue when the booking is made, and becomes revenue at check-out.' | translate }}</span>
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.35rem;">
-            Deposits, payments and refunds are always posted when the money moves. The mode can only be changed when no booking is open (booked or in-house).
+            {{ 'Deposits, payments and refunds are always posted when the money moves. The mode can only be changed when no booking is open (booked or in-house).' | translate }}
           </div>
         </div>
 
@@ -54,52 +55,51 @@ import { errMsg } from './hotel-util';
             <input class="form-control" style="max-width:140px;" type="number" min="0" max="100" step="0.01" name="tax" [(ngModel)]="s.taxPercent" />
           </div>
           <div class="form-group">
-            <label class="form-label">Check-in time</label>
+            <label class="form-label">{{ 'Check-in time' | translate }}</label>
             <input class="form-control" style="max-width:140px;" type="time" name="cin" [(ngModel)]="s.checkInTime" />
           </div>
           <div class="form-group">
-            <label class="form-label">Check-out time</label>
+            <label class="form-label">{{ 'Check-out time' | translate }}</label>
             <input class="form-control" style="max-width:140px;" type="time" name="cout" [(ngModel)]="s.checkOutTime" />
           </div>
           <div class="form-group">
-            <label class="form-label">Night audit runs at</label>
+            <label class="form-label">{{ 'Night audit runs at' | translate }}</label>
             <input class="form-control" style="max-width:140px;" type="time" name="audit" [(ngModel)]="s.auditTime" />
           </div>
         </div>
 
         <div class="card fee-policy" style="padding:1rem; margin:1rem 0;">
-          <h4 style="font-size:1rem; margin-bottom:0.4rem;">Cancellation and fee policy</h4>
-          <p class="text-muted" style="font-size:0.85rem;">Leave a field at 0 (or empty) for no fee. Fees are charged in room-rate nights, and the front desk can waive any fee when it happens.</p>
+          <h4 style="font-size:1rem; margin-bottom:0.4rem;">{{ 'Cancellation and fee policy' | translate }}</h4>
+          <p class="text-muted" style="font-size:0.85rem;">{{ 'Leave a field at 0 (or empty) for no fee. Fees are charged in room-rate nights, and the front desk can waive any fee when it happens.' | translate }}</p>
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group"><label class="form-label">Free cancellation until (days before arrival)</label>
+            <div class="form-group"><label class="form-label">{{ 'Free cancellation until (days before arrival)' | translate }}</label>
               <input class="form-control" style="max-width:140px;" type="number" min="0" max="365" name="cfd" [(ngModel)]="s.cancelFreeDays" /></div>
-            <div class="form-group"><label class="form-label">Late cancellation fee (nights)</label>
+            <div class="form-group"><label class="form-label">{{ 'Late cancellation fee (nights)' | translate }}</label>
               <input class="form-control" style="max-width:140px;" type="number" min="0" max="30" name="cfn" [(ngModel)]="s.cancelFeeNights" /></div>
-            <div class="form-group"><label class="form-label">No-show fee (nights)</label>
+            <div class="form-group"><label class="form-label">{{ 'No-show fee (nights)' | translate }}</label>
               <input class="form-control" style="max-width:140px;" type="number" min="0" max="30" name="nsn" [(ngModel)]="s.noShowFeeNights" /></div>
-            <div class="form-group"><label class="form-label">Early departure fee (nights)</label>
+            <div class="form-group"><label class="form-label">{{ 'Early departure fee (nights)' | translate }}</label>
               <input class="form-control" style="max-width:140px;" type="number" min="0" max="30" name="edn" [(ngModel)]="s.earlyDepartureFeeNights" /></div>
           </div>
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group"><label class="form-label">Late check-out fee applies after</label>
+            <div class="form-group"><label class="form-label">{{ 'Late check-out fee applies after' | translate }}</label>
               <input class="form-control" style="max-width:140px;" type="time" name="lco" [(ngModel)]="s.lateCheckoutFrom" /></div>
-            <div class="form-group"><label class="form-label">Late check-out fee (% of a night)</label>
+            <div class="form-group"><label class="form-label">{{ 'Late check-out fee (% of a night)' | translate }}</label>
               <input class="form-control" style="max-width:140px;" type="number" min="0" max="100" step="0.01" name="lcp" [(ngModel)]="s.lateCheckoutPercent" /></div>
           </div>
-          <label><input type="checkbox" name="tof" [(ngModel)]="s.taxOnFees" /> Add the hotel tax to fees</label>
+          <label><input type="checkbox" name="tof" [(ngModel)]="s.taxOnFees" /> {{ 'Add the hotel tax to fees' | translate }}</label>
         </div>
-        <button class="btn btn-primary" type="submit" [disabled]="saving">Save</button>
+        <button class="btn btn-primary" type="submit" [disabled]="saving">{{ 'Save' | translate }}</button>
       </form>
 
       <div class="card" style="padding:1rem; margin-top:1.5rem;" *ngIf="loaded && s.enabled">
-        <h4 style="font-size:1rem; margin-bottom:0.4rem;">Night audit</h4>
+        <h4 style="font-size:1rem; margin-bottom:0.4rem;">{{ 'Night audit' | translate }}</h4>
         <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.5rem;">
-          Once a day (after the time above) the system charges every in-house guest for the nights that have ended and marks occupied rooms for cleaning.
-          Running it again is safe — a night is never charged twice.
+          {{ 'Once a day (after the time above) the system charges every in-house guest for the nights that have ended and marks occupied rooms for cleaning. Running it again is safe — a night is never charged twice.' | translate }}
         </p>
-        <p style="font-size:0.85rem;" *ngIf="s.auditLastRun">Last run {{ s.auditLastRun }} — {{ s.auditLastSummary }}</p>
-        <p class="text-muted" style="font-size:0.85rem;" *ngIf="!s.auditLastRun">It has not run yet.</p>
-        <button class="btn btn-outline-primary" type="button" (click)="runAudit()" [disabled]="auditing">Run night audit now</button>
+        <p style="font-size:0.85rem;" *ngIf="s.auditLastRun">{{ 'Last run {p0} — {p1}' | translate: { p0: (s.auditLastRun), p1: (s.auditLastSummary) } }}</p>
+        <p class="text-muted" style="font-size:0.85rem;" *ngIf="!s.auditLastRun">{{ 'It has not run yet.' | translate }}</p>
+        <button class="btn btn-outline-primary" type="button" (click)="runAudit()" [disabled]="auditing">{{ 'Run night audit now' | translate }}</button>
       </div>
     </app-shell>
   `,

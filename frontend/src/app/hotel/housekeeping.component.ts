@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ShellComponent } from '../shared/shell.component';
 import { HotelApiService, HousekeepingStatus, Room } from '../core/api/hotel-api.service';
@@ -12,10 +13,10 @@ import { HkSetupComponent } from './hk-setup.component';
 @Component({
   selector: 'app-housekeeping',
   standalone: true,
-  imports: [CommonModule, ShellComponent, HkBoardComponent, HkLostFoundComponent, HkSuppliesComponent, HkSetupComponent],
+  imports: [TranslatePipe, CommonModule, ShellComponent, HkBoardComponent, HkLostFoundComponent, HkSuppliesComponent, HkSetupComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Housekeeping</h3>
+      <h3 class="mb-3">{{ 'Housekeeping' | translate }}</h3>
       <div class="flex gap-2 mb-3 hk-tabs" style="flex-wrap:wrap;">
         <button class="btn btn-sm" *ngFor="let t of tabs" [ngClass]="tab === t.code ? 'btn-primary' : 'btn-outline-secondary'" [attr.data-tab]="t.code" (click)="tab = t.code">{{ t.label }}</button>
       </div>
@@ -36,21 +37,21 @@ import { HkSetupComponent } from './hk-setup.component';
           </div>
           <div class="text-muted" style="font-size:0.8rem;">{{ r.roomTypeName }}</div>
           <div style="font-size:0.8rem; margin:0.3rem 0;">
-            <span *ngIf="r.outOfOrder" class="text-danger">Out of order</span>
-            <span *ngIf="!r.outOfOrder && r.occupied">Occupied · {{ r.occupantGuest }}</span>
-            <span *ngIf="r.dnd" class="badge badge-secondary dnd-badge" style="margin-left:0.25rem;">DND</span>
-            <span *ngIf="!r.outOfOrder && !r.occupied" class="text-muted">Vacant</span>
+            <span *ngIf="r.outOfOrder" class="text-danger">{{ 'Out of order' | translate }}</span>
+            <span *ngIf="!r.outOfOrder && r.occupied">{{ 'Occupied · {p0}' | translate: { p0: (r.occupantGuest) } }}</span>
+            <span *ngIf="r.dnd" class="badge badge-secondary dnd-badge" style="margin-left:0.25rem;">{{ 'DND' | translate }}</span>
+            <span *ngIf="!r.outOfOrder && !r.occupied" class="text-muted">{{ 'Vacant' | translate }}</span>
           </div>
-          <div class="text-muted" style="font-size:0.75rem;" *ngIf="r.housekeeper">By {{ r.housekeeper }}</div>
+          <div class="text-muted" style="font-size:0.75rem;" *ngIf="r.housekeeper">{{ 'By {p0}' | translate: { p0: (r.housekeeper) } }}</div>
           <div class="flex gap-1" style="flex-wrap:wrap; margin-top:0.4rem;">
-            <button class="btn btn-sm btn-outline-secondary" *ngIf="r.housekeepingStatus !== 'DIRTY'" (click)="set(r, 'DIRTY')">Dirty</button>
-            <button class="btn btn-sm btn-outline-primary" *ngIf="r.housekeepingStatus !== 'CLEANING'" (click)="set(r, 'CLEANING')">Start cleaning</button>
-            <button class="btn btn-sm btn-success" *ngIf="r.housekeepingStatus !== 'CLEAN' && r.housekeepingStatus !== 'INSPECTED'" (click)="set(r, 'CLEAN')">Clean</button>
-            <button class="btn btn-sm btn-outline-primary" *ngIf="r.housekeepingStatus === 'CLEAN'" (click)="set(r, 'INSPECTED')">Inspected</button>
+            <button class="btn btn-sm btn-outline-secondary" *ngIf="r.housekeepingStatus !== 'DIRTY'" (click)="set(r, 'DIRTY')">{{ 'Dirty' | translate }}</button>
+            <button class="btn btn-sm btn-outline-primary" *ngIf="r.housekeepingStatus !== 'CLEANING'" (click)="set(r, 'CLEANING')">{{ 'Start cleaning' | translate }}</button>
+            <button class="btn btn-sm btn-success" *ngIf="r.housekeepingStatus !== 'CLEAN' && r.housekeepingStatus !== 'INSPECTED'" (click)="set(r, 'CLEAN')">{{ 'Clean' | translate }}</button>
+            <button class="btn btn-sm btn-outline-primary" *ngIf="r.housekeepingStatus === 'CLEAN'" (click)="set(r, 'INSPECTED')">{{ 'Inspected' | translate }}</button>
           </div>
         </div>
       </div>
-      <p class="text-muted" *ngIf="shown().length === 0">No rooms in this view.</p>
+      <p class="text-muted" *ngIf="shown().length === 0">{{ 'No rooms in this view.' | translate }}</p>
       </ng-container>
     </app-shell>
   `,

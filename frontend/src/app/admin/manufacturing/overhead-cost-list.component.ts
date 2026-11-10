@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,31 +14,31 @@ import { OverheadCost } from '../../core/models';
 @Component({
   selector: 'app-overhead-cost-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Indirect costs</h3>
-        <a class="btn btn-primary" routerLink="/admin/manufacturing/overhead-costs/new">+ New indirect cost</a>
+        <h3>{{ 'Indirect costs' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/manufacturing/overhead-costs/new">{{ '+ New indirect cost' | translate }}</a>
       </div>
-      <app-list-filter exportPath="/manufacturing/overhead-costs/export" [exportExtra]="extra" [extraActive]="method !== ''" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" placeholder="Search code, name" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <app-list-filter exportPath="/manufacturing/overhead-costs/export" [exportExtra]="extra" [extraActive]="method !== ''" [dates]="false" [statuses]="statuses" statusAll="Active and inactive" [placeholder]="'Search code, name' | translate" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
       <div class="flex gap-2 mb-3 align-center">
-        <select class="form-select oc-method" style="width:auto;" [(ngModel)]="method" (ngModelChange)="extraChanged()" name="method" title="Allocation method">
-          <option value="">Any method</option>
-          <option value="FLAT">Flat (per order)</option>
-          <option value="PER_UNIT">Per unit produced</option>
-          <option value="PERCENT_OF_MATERIAL_COST">% of material cost</option>
+        <select class="form-select oc-method" style="width:auto;" [(ngModel)]="method" (ngModelChange)="extraChanged()" name="method" [title]="'Allocation method' | translate">
+          <option value="">{{ 'Any method' | translate }}</option>
+          <option value="FLAT">{{ 'Flat (per order)' | translate }}</option>
+          <option value="PER_UNIT">{{ 'Per unit produced' | translate }}</option>
+          <option value="PERCENT_OF_MATERIAL_COST">{{ '% of material cost' | translate }}</option>
         </select>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Allocation method</th>
-            <th class="text-end">Rate</th>
-            <th>Status</th>
+            <th>{{ 'Code' | translate }}</th>
+            <th>{{ 'Name' | translate }}</th>
+            <th>{{ 'Allocation method' | translate }}</th>
+            <th class="text-end">{{ 'Rate' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -48,19 +49,17 @@ import { OverheadCost } from '../../core/models';
             <td>{{ methodLabel(o.allocationMethod) }}</td>
             <td class="text-end">{{ o.rate | number: '1.2-2' }}</td>
             <td>
-              <span class="badge badge-success" *ngIf="o.active">Active</span>
-              <span class="badge badge-secondary" *ngIf="!o.active">Inactive</span>
+              <span class="badge badge-success" *ngIf="o.active">{{ 'Active' | translate }}</span>
+              <span class="badge badge-secondary" *ngIf="!o.active">{{ 'Inactive' | translate }}</span>
             </td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/overhead-costs', o.id, 'edit']">Edit</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/manufacturing/overhead-costs', o.id, 'edit']">{{ 'Edit' | translate }}</a></td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || method ? 'No indirect costs match these filters.' : 'No indirect costs yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || method ? ('No indirect costs match these filters.' | translate) : ('No indirect costs yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
       <p class="text-muted" style="margin-top:1rem;">
-        "Flat" spreads a fixed total across a Manufacturing Order's runs proportional to quantity produced.
-        "Per unit" charges the rate for every unit actually produced. "Percent of material cost" charges a
-        percentage of each run's own material cost.
+        {{ '"Flat" spreads a fixed total across a Manufacturing Order\\'s runs proportional to quantity produced. "Per unit" charges the rate for every unit actually produced. "Percent of material cost" charges a percentage of each run\\'s own material cost.' | translate }}
       </p>
     </app-shell>
   `,

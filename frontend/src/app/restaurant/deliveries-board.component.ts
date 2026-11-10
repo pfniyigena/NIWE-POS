@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -16,15 +17,15 @@ import { RestaurantOrder } from '../core/models';
 @Component({
   selector: 'app-deliveries-board',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Deliveries board</h3>
+        <h3>{{ 'Deliveries board' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders/new">+ New delivery</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">← Floor plan</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders/new">{{ '+ New delivery' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">{{ '← Floor plan' | translate }}</a>
         </div>
       </div>
 
@@ -36,23 +37,23 @@ import { RestaurantOrder } from '../core/models';
           </div>
           <div class="text-muted" *ngIf="o.customerPhone">📞 {{ o.customerPhone }}</div>
           <div class="text-muted" *ngIf="o.customerAddress">📍 {{ o.customerAddress }}</div>
-          <div class="mt-2">{{ o.total | number: '1.2-2' }} — {{ o.lines.length }} item{{ o.lines.length === 1 ? '' : 's' }}</div>
+          <div class="mt-2">{{ '{p0} — {p1} item{p2}' | translate: { p0: (o.total | number: '1.2-2'), p1: (o.lines.length), p2: (o.lines.length === 1 ? '' : 's') } }}</div>
 
           <div class="mt-2">
-            <label class="form-label" style="margin:0;">Driver</label>
+            <label class="form-label" style="margin:0;">{{ 'Driver' | translate }}</label>
             <select class="form-control form-control-sm" [ngModel]="o.driverId" (ngModelChange)="onAssignDriver(o, $event)">
-              <option [ngValue]="null">— Unassigned —</option>
+              <option [ngValue]="null">{{ '— Unassigned —' | translate }}</option>
               <option *ngFor="let s of staff" [ngValue]="s.id">{{ s.fullName }}</option>
             </select>
           </div>
 
           <div class="flex gap-2 mt-2">
-            <button class="btn btn-sm btn-outline-secondary" *ngIf="o.deliveryStatus === 'AWAITING_DRIVER'" (click)="advance(o, 'OUT_FOR_DELIVERY')">Out for delivery</button>
-            <button class="btn btn-sm btn-primary" *ngIf="o.deliveryStatus === 'OUT_FOR_DELIVERY'" (click)="advance(o, 'DELIVERED')">Mark delivered</button>
-            <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/restaurant/orders', o.id]">Open order</a>
+            <button class="btn btn-sm btn-outline-secondary" *ngIf="o.deliveryStatus === 'AWAITING_DRIVER'" (click)="advance(o, 'OUT_FOR_DELIVERY')">{{ 'Out for delivery' | translate }}</button>
+            <button class="btn btn-sm btn-primary" *ngIf="o.deliveryStatus === 'OUT_FOR_DELIVERY'" (click)="advance(o, 'DELIVERED')">{{ 'Mark delivered' | translate }}</button>
+            <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/restaurant/orders', o.id]">{{ 'Open order' | translate }}</a>
           </div>
         </div>
-        <p class="text-muted" *ngIf="orders.length === 0">No deliveries in progress.</p>
+        <p class="text-muted" *ngIf="orders.length === 0">{{ 'No deliveries in progress.' | translate }}</p>
       </div>
     </app-shell>
   `,

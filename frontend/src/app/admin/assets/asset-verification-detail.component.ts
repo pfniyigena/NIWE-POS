@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,7 +11,7 @@ import { AssetApiService, Verification, VerificationLine } from '../../core/api/
 @Component({
   selector: 'app-asset-verification-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -18,42 +19,42 @@ import { AssetApiService, Verification, VerificationLine } from '../../core/api/
       <ng-container *ngIf="v">
         <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
           <h3>{{ v.name }}
-            <span class="badge ml-2" [class.badge-warning]="v.status === 'OPEN'" [class.badge-success]="v.status === 'CLOSED'">{{ v.status === 'OPEN' ? 'Open' : 'Closed ' + (v.closedOn || '') }}</span>
+            <span class="badge ml-2" [class.badge-warning]="v.status === 'OPEN'" [class.badge-success]="v.status === 'CLOSED'">{{ v.status === 'OPEN' ? ('Open' | translate) : (('Closed' | translate) + ' ' + (v.closedOn || '')) }}</span>
           </h3>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <a class="btn btn-outline-primary" routerLink="/admin/assets/verifications">Back</a>
-            <a class="btn btn-outline-primary" [routerLink]="['/admin/reports/assets-verification']" [queryParams]="{ verificationId: v.id }">Report</a>
-            <button class="btn btn-outline-secondary" type="button" *ngIf="canManage && v.status === 'OPEN'" (click)="remove()">Delete round</button>
+            <a class="btn btn-outline-primary" routerLink="/admin/assets/verifications">{{ 'Back' | translate }}</a>
+            <a class="btn btn-outline-primary" [routerLink]="['/admin/reports/assets-verification']" [queryParams]="{ verificationId: v.id }">{{ 'Report' | translate }}</a>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="canManage && v.status === 'OPEN'" (click)="remove()">{{ 'Delete round' | translate }}</button>
           </div>
         </div>
         <p class="text-muted">
-          Covers {{ cover() }}. Started {{ v.startedOn }}<span *ngIf="v.createdByName"> by {{ v.createdByName }}</span><span *ngIf="v.note"> — {{ v.note }}</span>.
+          {{ 'Covers {p0}. Started {p1}' | translate: { p0: (cover()), p1: (v.startedOn) } }}<span *ngIf="v.createdByName"> {{ 'by {p0}' | translate: { p0: (v.createdByName) } }}</span><span *ngIf="v.note"> — {{ v.note }}</span>.
         </p>
         <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Assets</div><strong>{{ v.total }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Found</div><strong>{{ v.found }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Missing</div><strong>{{ v.missing }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Damaged</div><strong>{{ v.damaged }}</strong></div>
-          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">Still to check</div><strong>{{ v.pending }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Assets' | translate }}</div><strong>{{ v.total }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Found' | translate }}</div><strong>{{ v.found }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Missing' | translate }}</div><strong>{{ v.missing }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Damaged' | translate }}</div><strong>{{ v.damaged }}</strong></div>
+          <div class="card" style="padding:0.75rem 1rem;"><div class="text-muted">{{ 'Still to check' | translate }}</div><strong>{{ v.pending }}</strong></div>
         </div>
 
         <div class="card mb-3" style="padding:0.75rem 1rem;" *ngIf="canManage && v.status === 'OPEN'">
           <div class="flex gap-3 align-center" style="flex-wrap:wrap;">
-            <span *ngIf="v.pending > 0">Mark everything still unchecked as
-              <button class="btn btn-sm btn-outline-primary" type="button" (click)="rest('FOUND')" [disabled]="busy">Found</button>
-              <button class="btn btn-sm btn-outline-primary" type="button" (click)="rest('MISSING')" [disabled]="busy">Missing</button>
+            <span *ngIf="v.pending > 0">{{ 'Mark everything still unchecked as' | translate }}
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="rest('FOUND')" [disabled]="busy">{{ 'Found' | translate }}</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="rest('MISSING')" [disabled]="busy">{{ 'Missing' | translate }}</button>
             </span>
-            <label class="flex align-center gap-2"><input type="checkbox" name="applyLoc" [(ngModel)]="applyLocations" /> Move assets to the place where they were found</label>
-            <button class="btn btn-primary" type="button" (click)="close()" [disabled]="busy || v.pending > 0" [title]="v.pending > 0 ? 'Check every asset first' : ''">Close the round</button>
+            <label class="flex align-center gap-2"><input type="checkbox" name="applyLoc" [(ngModel)]="applyLocations" /> {{ 'Move assets to the place where they were found' | translate }}</label>
+            <button class="btn btn-primary" type="button" (click)="close()" [disabled]="busy || v.pending > 0" [title]="v.pending > 0 ? 'Check every asset first' : ''">{{ 'Close the round' | translate }}</button>
           </div>
         </div>
 
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
           <button type="button" class="btn btn-sm" *ngFor="let f of filters" [ngClass]="filter === f.key ? 'btn-primary' : 'btn-outline-primary'" (click)="filter = f.key">{{ f.label }}</button>
-          <input class="form-control" style="width:14rem;" placeholder="Search" [(ngModel)]="search" name="search" />
+          <input class="form-control" style="width:14rem;" [placeholder]="'Search' | translate" [(ngModel)]="search" name="search" />
         </div>
         <table class="table-sm">
-          <thead><tr><th>Tag</th><th>Asset</th><th>Should be at</th><th>Held by</th><th class="text-end">Book value</th><th>Result</th><th>Found at / note</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Tag' | translate }}</th><th>{{ 'Asset' | translate }}</th><th>{{ 'Should be at' | translate }}</th><th>{{ 'Held by' | translate }}</th><th class="text-end">{{ 'Book value' | translate }}</th><th>{{ 'Result' | translate }}</th><th>{{ 'Found at / note' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let l of visible()">
               <td><a [routerLink]="['/admin/assets', l.assetId]">{{ l.assetCode }}</a></td>
@@ -62,29 +63,29 @@ import { AssetApiService, Verification, VerificationLine } from '../../core/api/
               <td>{{ l.expectedCustodian || '—' }}</td>
               <td class="text-end">{{ l.bookValue | number: '1.2-2' }}</td>
               <td>
-                <span class="badge badge-secondary" *ngIf="l.result === 'PENDING'">To check</span>
-                <span class="badge badge-success" *ngIf="l.result === 'FOUND'">Found</span>
-                <span class="badge badge-danger" *ngIf="l.result === 'MISSING'">Missing</span>
-                <span class="badge badge-warning" *ngIf="l.result === 'DAMAGED'">Damaged</span>
-                <span class="badge badge-secondary" *ngIf="l.writtenOff">Written off</span>
+                <span class="badge badge-secondary" *ngIf="l.result === 'PENDING'">{{ 'To check' | translate }}</span>
+                <span class="badge badge-success" *ngIf="l.result === 'FOUND'">{{ 'Found' | translate }}</span>
+                <span class="badge badge-danger" *ngIf="l.result === 'MISSING'">{{ 'Missing' | translate }}</span>
+                <span class="badge badge-warning" *ngIf="l.result === 'DAMAGED'">{{ 'Damaged' | translate }}</span>
+                <span class="badge badge-secondary" *ngIf="l.writtenOff">{{ 'Written off' | translate }}</span>
               </td>
               <td>
                 <ng-container *ngIf="canManage && v.status === 'OPEN'; else ro">
-                  <input class="form-control" style="width:9rem; display:inline-block;" placeholder="found at" [(ngModel)]="edit[l.id].place" [name]="'p' + l.id" />
-                  <input class="form-control" style="width:9rem; display:inline-block;" placeholder="note" [(ngModel)]="edit[l.id].note" [name]="'n' + l.id" />
+                  <input class="form-control" style="width:9rem; display:inline-block;" [placeholder]="'found at' | translate" [(ngModel)]="edit[l.id].place" [name]="'p' + l.id" />
+                  <input class="form-control" style="width:9rem; display:inline-block;" [placeholder]="'note' | translate" [(ngModel)]="edit[l.id].note" [name]="'n' + l.id" />
                 </ng-container>
                 <ng-template #ro>{{ l.foundLocation || '' }}{{ l.foundLocation && l.note ? ' — ' : '' }}{{ l.note || '' }}</ng-template>
               </td>
               <td style="white-space:nowrap;">
                 <ng-container *ngIf="canManage && v.status === 'OPEN'">
-                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="mark(l, 'FOUND')">Found</button>
-                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="mark(l, 'MISSING')">Missing</button>
-                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="mark(l, 'DAMAGED')">Damaged</button>
+                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="mark(l, 'FOUND')">{{ 'Found' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="mark(l, 'MISSING')">{{ 'Missing' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="mark(l, 'DAMAGED')">{{ 'Damaged' | translate }}</button>
                 </ng-container>
-                <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="canManage && l.result === 'MISSING' && !l.writtenOff && l.assetStatus !== 'DISPOSED'" (click)="writeOff(l)" [disabled]="busy">Write off…</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" *ngIf="canManage && l.result === 'MISSING' && !l.writtenOff && l.assetStatus !== 'DISPOSED'" (click)="writeOff(l)" [disabled]="busy">{{ 'Write off…' | translate }}</button>
               </td>
             </tr>
-            <tr *ngIf="!visible().length"><td colspan="8" class="text-muted">Nothing here.</td></tr>
+            <tr *ngIf="!visible().length"><td colspan="8" class="text-muted">{{ 'Nothing here.' | translate }}</td></tr>
           </tbody>
         </table>
       </ng-container>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,15 +11,15 @@ import { addDays, errMsg, today } from './hotel-util';
 @Component({
   selector: 'app-reservation-grid',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Reservation chart</h3>
+        <h3>{{ 'Reservation chart' | translate }}</h3>
         <div class="flex gap-2 align-center">
-          <button class="btn btn-outline-secondary" (click)="shift(-14)">« 2 weeks</button>
+          <button class="btn btn-outline-secondary" (click)="shift(-14)">{{ '« 2 weeks' | translate }}</button>
           <input class="form-control" style="width:auto;" type="date" name="from" [(ngModel)]="from" (ngModelChange)="load()" />
-          <button class="btn btn-outline-secondary" (click)="shift(14)">2 weeks »</button>
+          <button class="btn btn-outline-secondary" (click)="shift(14)">{{ '2 weeks »' | translate }}</button>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -27,17 +28,17 @@ import { addDays, errMsg, today } from './hotel-util';
         <table class="no-stack" style="min-width:900px; table-layout:fixed;">
           <thead>
             <tr>
-              <th style="width:130px;">Room</th>
+              <th style="width:130px;">{{ 'Room' | translate }}</th>
               <th *ngFor="let d of days" style="text-align:center; font-size:0.75rem; padding:0.3rem 0;" [style.background]="d === todayStr ? 'var(--surface-alt)' : 'transparent'">{{ d.slice(5) }}</th>
             </tr>
             <tr *ngIf="avail">
-              <th style="font-weight:400; font-size:0.75rem;" class="text-muted">Free rooms</th>
+              <th style="font-weight:400; font-size:0.75rem;" class="text-muted">{{ 'Free rooms' | translate }}</th>
               <th *ngFor="let d of days; let i = index" style="text-align:center; font-weight:400; font-size:0.75rem;" class="text-muted">{{ freeOn(i) }}</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let r of grid.rooms">
-              <td style="padding:0.25rem 0.5rem;"><strong>{{ r.roomNumber }}</strong><div class="text-muted" style="font-size:0.7rem;">{{ r.roomTypeName }}<span *ngIf="r.outOfOrder"> · out of order</span></div></td>
+              <td style="padding:0.25rem 0.5rem;"><strong>{{ r.roomNumber }}</strong><div class="text-muted" style="font-size:0.7rem;">{{ r.roomTypeName }}<span *ngIf="r.outOfOrder"> {{ '· out of order' | translate }}</span></div></td>
               <td *ngFor="let d of days" style="padding:0; height:34px; border-left:1px solid var(--border); position:relative; cursor:pointer;"
                   [style.background]="r.outOfOrder ? 'var(--danger-bg)' : 'transparent'" (click)="cellClick(r, d)">
                 <div *ngIf="barAt(r, d) as b" (click)="$event.stopPropagation(); open(b)"
@@ -52,7 +53,7 @@ import { addDays, errMsg, today } from './hotel-util';
           </tbody>
         </table>
       </div>
-      <p class="text-muted" style="font-size:0.8rem; margin-top:0.5rem;">Green = in-house, amber = booked. A bar runs from the arrival day up to (not including) the departure day.</p>
+      <p class="text-muted" style="font-size:0.8rem; margin-top:0.5rem;">{{ 'Green = in-house, amber = booked. A bar runs from the arrival day up to (not including) the departure day.' | translate }}</p>
     </app-shell>
   `,
 })

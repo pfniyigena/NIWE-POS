@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -22,83 +23,83 @@ import { AppUser, Customer, HelpDeskCategory, HelpDeskPriority, HelpDeskTicketTy
 @Component({
   selector: 'app-helpdesk-ticket-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit ticket' : 'New Help Desk ticket' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit ticket' | translate) : ('New Help Desk ticket' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Type</label>
+          <label class="form-label">{{ 'Type' | translate }}</label>
           <select class="form-select" name="type" [(ngModel)]="type" [disabled]="!!id">
-            <option value="CUSTOMER">Customer request</option>
-            <option value="INTERNAL">Internal request</option>
+            <option value="CUSTOMER">{{ 'Customer request' | translate }}</option>
+            <option value="INTERNAL">{{ 'Internal request' | translate }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="id">
-            Type can't be changed after a ticket is created — close this one and open a new one if it was miscategorized.
+            {{ 'Type can\\'t be changed after a ticket is created — close this one and open a new one if it was miscategorized.' | translate }}
           </div>
         </div>
 
         <div class="form-group" *ngIf="type === 'CUSTOMER'">
-          <label class="form-label">Customer (optional)</label>
+          <label class="form-label">{{ 'Customer (optional)' | translate }}</label>
           <select class="form-select" name="customerId" [(ngModel)]="customerId" (ngModelChange)="onCustomerChange()">
-            <option [ngValue]="null">— Not an existing customer / internal —</option>
+            <option [ngValue]="null">{{ '— Not an existing customer / internal —' | translate }}</option>
             <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
           </select>
         </div>
 
         <div class="form-group" *ngIf="type === 'CUSTOMER'">
-          <label class="form-label">Requester name</label>
-          <input class="form-control" name="requesterName" [(ngModel)]="requesterName" placeholder="Who's asking" />
+          <label class="form-label">{{ 'Requester name' | translate }}</label>
+          <input class="form-control" name="requesterName" [(ngModel)]="requesterName" [placeholder]="'Who\\'s asking' | translate" />
         </div>
         <div class="flex gap-2 mb-2" *ngIf="type === 'CUSTOMER'">
           <div class="grow">
-            <label class="form-label">Requester email</label>
+            <label class="form-label">{{ 'Requester email' | translate }}</label>
             <input class="form-control" type="email" name="requesterEmail" [(ngModel)]="requesterEmail" />
           </div>
           <div class="grow">
-            <label class="form-label">Requester phone</label>
+            <label class="form-label">{{ 'Requester phone' | translate }}</label>
             <input class="form-control" name="requesterPhone" [(ngModel)]="requesterPhone" />
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Subject</label>
-          <input class="form-control" name="subject" [(ngModel)]="subject" placeholder="Short summary" required />
+          <label class="form-label">{{ 'Subject' | translate }}</label>
+          <input class="form-control" name="subject" [(ngModel)]="subject" [placeholder]="'Short summary' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Description</label>
+          <label class="form-label">{{ 'Description' | translate }}</label>
           <textarea class="form-control" name="description" [(ngModel)]="description" rows="4" required></textarea>
         </div>
         <div class="flex gap-2 mb-2">
           <div class="grow">
-            <label class="form-label">Category (optional)</label>
+            <label class="form-label">{{ 'Category (optional)' | translate }}</label>
             <select class="form-select" name="categoryId" [(ngModel)]="categoryId">
-              <option [ngValue]="null">— None —</option>
+              <option [ngValue]="null">{{ '— None —' | translate }}</option>
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select>
           </div>
           <div class="grow">
-            <label class="form-label">Priority</label>
+            <label class="form-label">{{ 'Priority' | translate }}</label>
             <select class="form-select" name="priority" [(ngModel)]="priority">
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
+              <option value="LOW">{{ 'Low' | translate }}</option>
+              <option value="MEDIUM">{{ 'Medium' | translate }}</option>
+              <option value="HIGH">{{ 'High' | translate }}</option>
+              <option value="URGENT">{{ 'Urgent' | translate }}</option>
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Assign to (optional)</label>
+          <label class="form-label">{{ 'Assign to (optional)' | translate }}</label>
           <select class="form-select" name="assignedToUserId" [(ngModel)]="assignedToUserId">
-            <option [ngValue]="null">— Unassigned —</option>
+            <option [ngValue]="null">{{ '— Unassigned —' | translate }}</option>
             <option *ngFor="let u of users" [ngValue]="u.id">{{ u.fullName }}</option>
           </select>
         </div>
 
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">{{ id ? 'Save' : 'Create ticket' }}</button>
-          <a class="btn btn-link" [routerLink]="id ? ['/admin/helpdesk/tickets', id] : ['/admin/helpdesk/tickets']">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ id ? ('Save' | translate) : ('Create ticket' | translate) }}</button>
+          <a class="btn btn-link" [routerLink]="id ? ['/admin/helpdesk/tickets', id] : ['/admin/helpdesk/tickets']">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

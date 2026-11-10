@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -18,25 +19,25 @@ import { RestaurantOrder } from '../core/models';
 @Component({
   selector: 'app-restaurant-orders',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Restaurant orders</h3>
+        <h3>{{ 'Restaurant orders' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">🍽️ Floor plan</a>
-          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders/new">🥡 New takeaway/delivery</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/tables/floor-plan">{{ '🍽️ Floor plan' | translate }}</a>
+          <a class="btn btn-outline-secondary" routerLink="/admin/restaurant/orders/new">{{ '🥡 New takeaway/delivery' | translate }}</a>
         </div>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Opened</th>
-            <th>Type</th>
-            <th>Table / customer</th>
-            <th class="text-end">Guests</th>
-            <th class="text-end">Running total</th>
+            <th>{{ 'Opened' | translate }}</th>
+            <th>{{ 'Type' | translate }}</th>
+            <th>{{ 'Table / customer' | translate }}</th>
+            <th class="text-end">{{ 'Guests' | translate }}</th>
+            <th class="text-end">{{ 'Running total' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -47,10 +48,10 @@ import { RestaurantOrder } from '../core/models';
             <td>{{ o.displayLabel }}</td>
             <td class="text-end">{{ o.orderType === 'DINE_IN' ? o.guestCount : '—' }}</td>
             <td class="text-end">{{ o.total | number: '1.2-2' }}</td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/restaurant/orders', o.id]">Open</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/restaurant/orders', o.id]">{{ 'Open' | translate }}</a></td>
           </tr>
           <tr *ngIf="orders.length === 0">
-            <td colspan="6" class="text-muted">No open orders right now.</td>
+            <td colspan="6" class="text-muted">{{ 'No open orders right now.' | translate }}</td>
           </tr>
         </tbody>
       </table>

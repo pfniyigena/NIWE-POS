@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -18,52 +19,51 @@ const DAYS = [
 @Component({
   selector: 'app-booking-staff-schedules',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-2">Working hours and leave</h3>
-      <p class="text-muted">By default everyone who performs a service can be booked during the business opening hours
-        <span *ngIf="settings">({{ settings.dayStart.slice(0, 5) }}–{{ settings.dayEnd.slice(0, 5) }})</span>. Give a person their own hours when they work shorter days or fewer days, and add leave for days they are away.
-        Own hours must fall inside the opening hours.</p>
+      <h3 class="mb-2">{{ 'Working hours and leave' | translate }}</h3>
+      <p class="text-muted">{{ 'By default everyone who performs a service can be booked during the business opening hours' | translate }}
+        <span *ngIf="settings">({{ settings.dayStart.slice(0, 5) }}–{{ settings.dayEnd.slice(0, 5) }})</span>{{ '. Give a person their own hours when they work shorter days or fewer days, and add leave for days they are away. Own hours must fall inside the opening hours.' | translate }}</p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="card mb-3" style="padding:1rem;" *ngFor="let c of cards" [attr.data-user]="c.s.userId">
         <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.5rem;">
           <strong>{{ c.s.userName }}</strong>
-          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" class="bk-custom" [name]="'cu' + c.s.userId" [(ngModel)]="c.custom" (ngModelChange)="onCustom(c)" /> Own working hours</label>
+          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" class="bk-custom" [name]="'cu' + c.s.userId" [(ngModel)]="c.custom" (ngModelChange)="onCustom(c)" /> {{ 'Own working hours' | translate }}</label>
         </div>
         <div class="alert alert-danger mt-2" *ngIf="c.err">{{ c.err }}</div>
         <div class="alert alert-success mt-2" *ngIf="c.msg">{{ c.msg }}</div>
 
         <table class="table-sm mt-2" *ngIf="c.custom" style="max-width:34rem;">
-          <thead><tr><th>Day</th><th>Works</th><th>From</th><th>Until</th></tr></thead>
+          <thead><tr><th>{{ 'Day' | translate }}</th><th>{{ 'Works' | translate }}</th><th>{{ 'From' | translate }}</th><th>{{ 'Until' | translate }}</th></tr></thead>
           <tbody><tr *ngFor="let r of c.rows" [style.opacity]="r.open ? 1 : 0.5">
-            <td>{{ r.label }}<span class="text-muted" *ngIf="!r.open" style="font-size:0.75rem;"> (business closed)</span></td>
+            <td>{{ r.label }}<span class="text-muted" *ngIf="!r.open" style="font-size:0.75rem;"> {{ '(business closed)' | translate }}</span></td>
             <td><input type="checkbox" [disabled]="!r.open" [name]="'on' + c.s.userId + r.key" [(ngModel)]="r.on" /></td>
             <td><input class="form-control" type="time" style="width:9.5rem;" [disabled]="!r.on" [name]="'st' + c.s.userId + r.key" [(ngModel)]="r.start" /></td>
             <td><input class="form-control" type="time" style="width:9.5rem;" [disabled]="!r.on" [name]="'en' + c.s.userId + r.key" [(ngModel)]="r.end" /></td>
           </tr></tbody>
         </table>
-        <div class="mt-2" *ngIf="c.custom || c.s.custom"><button class="btn btn-sm btn-primary bk-save-hours" type="button" (click)="saveHours(c)">Save hours</button></div>
+        <div class="mt-2" *ngIf="c.custom || c.s.custom"><button class="btn btn-sm btn-primary bk-save-hours" type="button" (click)="saveHours(c)">{{ 'Save hours' | translate }}</button></div>
 
         <hr />
-        <strong style="font-size:0.9rem;">Leave</strong>
+        <strong style="font-size:0.9rem;">{{ 'Leave' | translate }}</strong>
         <table class="table-sm mt-1" *ngIf="c.s.leave.length" style="max-width:34rem;">
           <tbody><tr *ngFor="let l of c.s.leave">
-            <td>{{ l.fromDate }}<span *ngIf="l.toDate !== l.fromDate"> to {{ l.toDate }}</span></td><td>{{ l.reason || '—' }}</td>
-            <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="removeLeave(c, l.id)">Remove</button></td>
+            <td>{{ l.fromDate }}<span *ngIf="l.toDate !== l.fromDate"> {{ 'to {p0}' | translate: { p0: (l.toDate) } }}</span></td><td>{{ l.reason || '—' }}</td>
+            <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="removeLeave(c, l.id)">{{ 'Remove' | translate }}</button></td>
           </tr></tbody>
         </table>
-        <div class="text-muted" *ngIf="!c.s.leave.length" style="font-size:0.85rem;">No leave planned.</div>
+        <div class="text-muted" *ngIf="!c.s.leave.length" style="font-size:0.85rem;">{{ 'No leave planned.' | translate }}</div>
         <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
           <app-date-picker [name]="'lf' + c.s.userId" [(ngModel)]="c.from"></app-date-picker>
-          <span>to</span>
+          <span>{{ 'to' | translate }}</span>
           <app-date-picker [name]="'lt' + c.s.userId" [(ngModel)]="c.to"></app-date-picker>
-          <input class="form-control" style="width:14rem;" placeholder="Reason (optional)" [name]="'lr' + c.s.userId" [(ngModel)]="c.reason" />
-          <button class="btn btn-outline-primary bk-add-leave" type="button" [disabled]="!c.from" (click)="addLeave(c)">Add leave</button>
+          <input class="form-control" style="width:14rem;" [placeholder]="'Reason (optional)' | translate" [name]="'lr' + c.s.userId" [(ngModel)]="c.reason" />
+          <button class="btn btn-outline-primary bk-add-leave" type="button" [disabled]="!c.from" (click)="addLeave(c)">{{ 'Add leave' | translate }}</button>
         </div>
       </div>
-      <p class="text-muted" *ngIf="loaded && !cards.length">Nobody performs a service yet. Choose who performs each service under Services.</p>
+      <p class="text-muted" *ngIf="loaded && !cards.length">{{ 'Nobody performs a service yet. Choose who performs each service under Services.' | translate }}</p>
     </app-shell>
   `,
 })

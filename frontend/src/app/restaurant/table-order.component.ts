@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -32,25 +33,25 @@ interface PaymentRow {
 @Component({
   selector: 'app-table-order',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div *ngIf="!order && !error" class="text-muted">Loading…</div>
+      <div *ngIf="!order && !error" class="text-muted">{{ 'Loading…' | translate }}</div>
 
       <div *ngIf="order">
         <div class="flex justify-between align-center mb-1">
           <h3>
             {{ order.displayLabel }}
-            <ng-container *ngIf="order.orderType === 'DINE_IN'"> — {{ order.guestCount }} guest{{ order.guestCount === 1 ? '' : 's' }}</ng-container>
+            <ng-container *ngIf="order.orderType === 'DINE_IN'"> {{ '— {p0} guest{p1}' | translate: { p0: (order.guestCount), p1: (order.guestCount === 1 ? '' : 's') } }}</ng-container>
             <span class="text-muted" style="font-size:0.9rem;"> ({{ order.status }})</span>
             <span class="to-source" *ngIf="order.source === 'QR' || order.source === 'WEB'" style="font-size:0.75rem; background:#dbeafe; color:#1e40af; border-radius:4px; padding:0.1rem 0.4rem; margin-left:0.4rem;">{{ order.source === 'QR' ? 'Ordered from the table' : 'Online order' }}{{ order.onlineOrderCode ? ' ' + order.onlineOrderCode : '' }}</span>
           </h3>
           <div class="flex gap-2">
-            <a class="btn btn-outline-primary" *ngIf="order.status === 'CLOSED'" [routerLink]="['/admin/restaurant/receipts', order.id]">🧾 View receipt</a>
-            <a class="btn btn-outline-secondary" *ngIf="order.orderType === 'DINE_IN'" routerLink="/admin/restaurant/tables/floor-plan">← Floor plan</a>
-            <a class="btn btn-outline-secondary" *ngIf="order.orderType === 'DELIVERY'" routerLink="/admin/restaurant/deliveries">← Deliveries board</a>
-            <a class="btn btn-outline-secondary" *ngIf="order.orderType === 'TAKEAWAY'" routerLink="/admin/restaurant/orders/new">← New order</a>
+            <a class="btn btn-outline-primary" *ngIf="order.status === 'CLOSED'" [routerLink]="['/admin/restaurant/receipts', order.id]">{{ '🧾 View receipt' | translate }}</a>
+            <a class="btn btn-outline-secondary" *ngIf="order.orderType === 'DINE_IN'" routerLink="/admin/restaurant/tables/floor-plan">{{ '← Floor plan' | translate }}</a>
+            <a class="btn btn-outline-secondary" *ngIf="order.orderType === 'DELIVERY'" routerLink="/admin/restaurant/deliveries">{{ '← Deliveries board' | translate }}</a>
+            <a class="btn btn-outline-secondary" *ngIf="order.orderType === 'TAKEAWAY'" routerLink="/admin/restaurant/orders/new">{{ '← New order' | translate }}</a>
           </div>
         </div>
         <div class="text-muted mb-3" *ngIf="order.orderType !== 'DINE_IN'">
@@ -62,19 +63,19 @@ interface PaymentRow {
         </div>
 
         <div class="checks-bar flex gap-2 align-center mb-2" *ngIf="siblings.length > 1">
-          <span class="text-muted">Checks at this table:</span>
+          <span class="text-muted">{{ 'Checks at this table:' | translate }}</span>
           <a *ngFor="let c of siblings" class="check-link btn btn-sm" [class.btn-primary]="c.id === order.id" [class.btn-outline-secondary]="c.id !== order.id"
              [routerLink]="['/admin/restaurant/orders', c.id]">{{ c.checkLabel || 'Check' }} · {{ c.total | number: '1.2-2' }}</a>
         </div>
         <div class="alert alert-success move-info" *ngIf="moveInfo">{{ moveInfo }}</div>
 
         <div class="alert alert-warning guest-allergens flex justify-between align-center" *ngIf="order.guestAllergens">
-          <span>⚠ Guest allergies: <strong>{{ pretty(order.guestAllergens) }}</strong></span>
+          <span>{{ '⚠ Guest allergies:' | translate }} <strong>{{ pretty(order.guestAllergens) }}</strong></span>
         </div>
 
         <div class="flex gap-3" style="align-items:flex-start;">
           <div class="card" style="padding:1rem; flex:1;" *ngIf="order.status === 'OPEN'">
-            <h4 style="font-size:1rem;" class="mb-2">Menu</h4>
+            <h4 style="font-size:1rem;" class="mb-2">{{ 'Menu' | translate }}</h4>
             <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
               <button
                 *ngFor="let c of categories"
@@ -88,23 +89,23 @@ interface PaymentRow {
             </div>
             <div class="menu-grid">
               <button type="button" class="menu-item" *ngFor="let item of items" [class.sold-out]="item.soldOut" [disabled]="item.soldOut" [title]="item.soldOut ? 'Sold out' + (item.soldOutReason ? ' — ' + item.soldOutReason : '') : ''" (click)="onTile(item)">
-                <div>{{ item.product?.name }}<span class="mi-options" *ngIf="groupsOf(item).length > 0" title="Has choices"> ⚙</span></div>
+                <div>{{ item.product?.name }}<span class="mi-options" *ngIf="groupsOf(item).length > 0" [title]="'Has choices' | translate"> ⚙</span></div>
                 <div class="text-muted">{{ item.effectivePrice | number: '1.2-2' }}</div>
                 <div class="mi-allergens" *ngIf="item.allergens" style="font-size:0.7rem; color:#b45309;">{{ pretty(item.allergens) }}</div>
               </button>
-              <p class="text-muted" *ngIf="items.length === 0">No items in this category yet.</p>
+              <p class="text-muted" *ngIf="items.length === 0">{{ 'No items in this category yet.' | translate }}</p>
             </div>
           </div>
 
           <div class="card" style="padding:1rem; flex:1;">
-            <h4 style="font-size:1rem;" class="mb-2">Order</h4>
+            <h4 style="font-size:1rem;" class="mb-2">{{ 'Order' | translate }}</h4>
             <table class="table-sm mb-2">
               <thead>
                 <tr>
-                  <th>Item</th>
-                  <th class="text-end">Qty</th>
-                  <th class="text-end">Total</th>
-                  <th>Kitchen</th>
+                  <th>{{ 'Item' | translate }}</th>
+                  <th class="text-end">{{ 'Qty' | translate }}</th>
+                  <th class="text-end">{{ 'Total' | translate }}</th>
+                  <th>{{ 'Kitchen' | translate }}</th>
                   <th *ngIf="order.status === 'OPEN'"></th>
                 </tr>
               </thead>
@@ -113,40 +114,40 @@ interface PaymentRow {
                   <td>
                     {{ line.description }}<span class="text-muted line-note" *ngIf="line.notes"> — {{ line.notes }}</span>
                     <div class="line-options text-muted" *ngIf="line.options && line.options.length > 0" style="font-size:0.8rem;">
-                      {{ optionText(line) }}<span *ngIf="(line.optionsPrice ?? 0) !== 0"> ({{ (line.optionsPrice ?? 0) > 0 ? '+' : '' }}{{ line.optionsPrice | number: '1.2-2' }} each)</span>
+                      {{ optionText(line) }}<span *ngIf="(line.optionsPrice ?? 0) !== 0"> {{ '({p0}{p1} each)' | translate: { p0: ((line.optionsPrice ?? 0) > 0 ? '+' : ''), p1: (line.optionsPrice | number: '1.2-2') } }}</span>
                     </div>
                     <div style="font-size:0.75rem;">
-                      <span class="line-course badge" *ngIf="showCourses()">Course {{ line.course }}</span>
-                      <span class="line-held" *ngIf="line.held" style="color:#b45309;"> ⏸ on hold</span>
+                      <span class="line-course badge" *ngIf="showCourses()">{{ 'Course {p0}' | translate: { p0: (line.course) } }}</span>
+                      <span class="line-held" *ngIf="line.held" style="color:#b45309;"> {{ '⏸ on hold' | translate }}</span>
                       <span class="line-allergens text-muted" *ngIf="line.allergens"> {{ pretty(line.allergens) }}</span>
  
-                      <span class="line-seat text-muted" *ngIf="line.seat"> Seat {{ line.seat }}</span>
-                      <span class="line-comped" *ngIf="line.comped" style="color:#047857; font-weight:600;"> 🎁 comped</span>
-                      <span class="line-conflict" *ngIf="line.allergyConflict" style="color:#b91c1c; font-weight:600;"> ⚠ contains {{ pretty(line.allergyConflict) }}</span>
+                      <span class="line-seat text-muted" *ngIf="line.seat"> {{ 'Seat {p0}' | translate: { p0: (line.seat) } }}</span>
+                      <span class="line-comped" *ngIf="line.comped" style="color:#047857; font-weight:600;"> {{ '🎁 comped' | translate }}</span>
+                      <span class="line-conflict" *ngIf="line.allergyConflict" style="color:#b91c1c; font-weight:600;"> {{ '⚠ contains {p0}' | translate: { p0: (pretty(line.allergyConflict)) } }}</span>
                     </div>
                     <div class="line-discount text-muted" *ngIf="(line.discountPercent ?? 0) > 0" style="font-size:0.8rem;">−{{ line.discountPercent }}% ({{ line.discountReason }})</div>
                     <div class="void-form mt-1" *ngIf="voidLineId === line.id">
-                      <div class="text-muted" style="font-size:0.8rem;">This item has already gone to the kitchen — a manager must approve taking it off.</div>
+                      <div class="text-muted" style="font-size:0.8rem;">{{ 'This item has already gone to the kitchen — a manager must approve taking it off.' | translate }}</div>
                       <div class="flex gap-2 align-center mt-1">
-                        <input class="form-control void-reason" style="flex:1;" [(ngModel)]="voidReason" [name]="'vr' + line.id" placeholder="Why? (required)" maxlength="200" />
-                        <button class="btn btn-sm btn-danger void-confirm" (click)="confirmVoid(line)">Void it</button>
-                        <button class="btn btn-sm btn-link" (click)="voidLineId = null">Close</button>
+                        <input class="form-control void-reason" style="flex:1;" [(ngModel)]="voidReason" [name]="'vr' + line.id" [placeholder]="'Why? (required)' | translate" maxlength="200" />
+                        <button class="btn btn-sm btn-danger void-confirm" (click)="confirmVoid(line)">{{ 'Void it' | translate }}</button>
+                        <button class="btn btn-sm btn-link" (click)="voidLineId = null">{{ 'Close' | translate }}</button>
                       </div>
                       <div class="flex gap-1 mt-1" style="flex-wrap:wrap;"><button type="button" class="btn btn-sm btn-outline-secondary void-chip" *ngFor="let r of voidPresets" (click)="voidReason = r">{{ r }}</button></div>
                     </div>
                     <div class="comp-form mt-1" *ngIf="compLineId === line.id">
                       <div class="flex gap-2 align-center">
-                        <input class="form-control comp-reason" style="flex:1;" [(ngModel)]="compReason" [name]="'cr' + line.id" placeholder="Why is it free? (required)" maxlength="200" />
-                        <button class="btn btn-sm btn-primary comp-confirm" (click)="confirmComp(line)">Give free</button>
-                        <button class="btn btn-sm btn-link" (click)="compLineId = null">Close</button>
+                        <input class="form-control comp-reason" style="flex:1;" [(ngModel)]="compReason" [name]="'cr' + line.id" [placeholder]="'Why is it free? (required)' | translate" maxlength="200" />
+                        <button class="btn btn-sm btn-primary comp-confirm" (click)="confirmComp(line)">{{ 'Give free' | translate }}</button>
+                        <button class="btn btn-sm btn-link" (click)="compLineId = null">{{ 'Close' | translate }}</button>
                       </div>
                       <div class="flex gap-1 mt-1" style="flex-wrap:wrap;"><button type="button" class="btn btn-sm btn-outline-secondary comp-chip" *ngFor="let r of compPresets" (click)="compReason = r">{{ r }}</button></div>
                     </div>
                     <div class="line-disc-form flex gap-2 align-center mt-1" *ngIf="discountLineId === line.id">
                       <input class="form-control ld-percent" type="number" min="0" max="100" style="width:80px;" [(ngModel)]="ldPercent" [name]="'ldp' + line.id" placeholder="%" />
-                      <input class="form-control ld-reason" style="flex:1;" [(ngModel)]="ldReason" [name]="'ldr' + line.id" placeholder="Reason" />
-                      <button class="btn btn-sm btn-primary ld-apply" (click)="applyLineDiscount(line)">Apply</button>
-                      <button class="btn btn-sm btn-link" (click)="discountLineId = null">Close</button>
+                      <input class="form-control ld-reason" style="flex:1;" [(ngModel)]="ldReason" [name]="'ldr' + line.id" [placeholder]="'Reason' | translate" />
+                      <button class="btn btn-sm btn-primary ld-apply" (click)="applyLineDiscount(line)">{{ 'Apply' | translate }}</button>
+                      <button class="btn btn-sm btn-link" (click)="discountLineId = null">{{ 'Close' | translate }}</button>
                     </div>
                   </td>
                   <td class="text-end">
@@ -159,18 +160,18 @@ interface PaymentRow {
                   </td>
                   <td class="text-end">{{ line.lineTotal | number: '1.2-2' }}</td>
                   <td><span class="text-muted">{{ line.kitchenStatus }}</span>
-                    <span class="line-remade" *ngIf="(line.remakeCount ?? 0) > 0" style="color:#b45309; font-size:0.75rem;"> remade ×{{ line.remakeCount }}</span>
-                    <button class="btn btn-sm btn-link line-refire-btn" *ngIf="order.status === 'OPEN' && line.kitchenStatus !== 'PENDING'" (click)="sendBack(line)">Send back</button></td>
+                    <span class="line-remade" *ngIf="(line.remakeCount ?? 0) > 0" style="color:#b45309; font-size:0.75rem;"> {{ 'remade ×{p0}' | translate: { p0: (line.remakeCount) } }}</span>
+                    <button class="btn btn-sm btn-link line-refire-btn" *ngIf="order.status === 'OPEN' && line.kitchenStatus !== 'PENDING'" (click)="sendBack(line)">{{ 'Send back' | translate }}</button></td>
                   <td *ngIf="order.status === 'OPEN'" class="flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary line-edit-btn" title="Note, course and choices" (click)="openEditPanel(line)">✎</button>
-                    <button class="btn btn-sm btn-outline-secondary line-disc-btn" title="Discount this item" (click)="openLineDiscount(line)">%</button>
-                    <button class="btn btn-sm btn-outline-secondary line-comp-btn" *ngIf="!line.comped" title="Give this item free" (click)="openComp(line)">🎁</button>
-                    <button class="btn btn-sm btn-outline-secondary uncomp-btn" *ngIf="line.comped" title="Charge this item again" (click)="uncomp(line)">Charge</button>
+                    <button class="btn btn-sm btn-outline-secondary line-edit-btn" [title]="'Note, course and choices' | translate" (click)="openEditPanel(line)">✎</button>
+                    <button class="btn btn-sm btn-outline-secondary line-disc-btn" [title]="'Discount this item' | translate" (click)="openLineDiscount(line)">%</button>
+                    <button class="btn btn-sm btn-outline-secondary line-comp-btn" *ngIf="!line.comped" [title]="'Give this item free' | translate" (click)="openComp(line)">🎁</button>
+                    <button class="btn btn-sm btn-outline-secondary uncomp-btn" *ngIf="line.comped" [title]="'Charge this item again' | translate" (click)="uncomp(line)">{{ 'Charge' | translate }}</button>
                     <button class="btn btn-sm btn-outline-danger line-remove-btn" (click)="startRemove(line)">✕</button>
                   </td>
                 </tr>
                 <tr *ngIf="order.lines.length === 0">
-                  <td colspan="5" class="text-muted">No items yet — add from the menu.</td>
+                  <td colspan="5" class="text-muted">{{ 'No items yet — add from the menu.' | translate }}</td>
                 </tr>
               </tbody>
             </table>
@@ -179,11 +180,11 @@ interface PaymentRow {
               <h4 style="font-size:1rem;" class="mb-2">{{ panel.mode === 'add' ? 'Add' : 'Change' }} {{ panel.item.product?.name }}</h4>
               <div class="alert alert-danger" *ngIf="panelError">{{ panelError }}</div>
               <div class="flex gap-2 mb-2 align-center" *ngIf="panel.mode === 'add'">
-                <label class="form-label" style="margin:0;">Quantity</label>
+                <label class="form-label" style="margin:0;">{{ 'Quantity' | translate }}</label>
                 <input class="form-control ip-qty" type="number" step="any" min="0.0001" style="width:80px;" [(ngModel)]="pQty" name="pQty" />
               </div>
               <div class="mb-2" *ngIf="panel.mode === 'edit' && !panelEditable()" style="font-size:0.85rem; color:#b45309;">
-                This line has already gone to the kitchen — only its note can change now.
+                {{ 'This line has already gone to the kitchen — only its note can change now.' | translate }}
               </div>
               <div class="mb-2" *ngFor="let g of panelGroups()">
                 <div style="font-weight:600;">{{ g.name }}<span class="text-muted" style="font-weight:400; font-size:0.8rem;"> {{ g.required ? '— choose' + (g.maxSelect === 1 ? ' one' : '') : '— optional' }}{{ g.maxSelect > 1 ? ' (up to ' + g.maxSelect + ')' : '' }}</span></div>
@@ -196,160 +197,160 @@ interface PaymentRow {
                 </div>
               </div>
               <div class="flex gap-2 mb-2 align-center">
-                <label class="form-label" style="margin:0;">Seat</label>
-                <input class="form-control ip-seat" type="number" min="1" max="40" style="width:80px;" [(ngModel)]="pSeat" name="pSeat" placeholder="optional" />
+                <label class="form-label" style="margin:0;">{{ 'Seat' | translate }}</label>
+                <input class="form-control ip-seat" type="number" min="1" max="40" style="width:80px;" [(ngModel)]="pSeat" name="pSeat" [placeholder]="'optional' | translate" />
               </div>
               <div class="flex gap-2 mb-2 align-center" *ngIf="panelEditable()">
-                <label class="form-label" style="margin:0;">Course</label>
+                <label class="form-label" style="margin:0;">{{ 'Course' | translate }}</label>
                 <select class="form-select ip-course" style="width:110px;" [(ngModel)]="pCourse" name="pCourse">
-                  <option *ngFor="let c of [1,2,3,4,5]" [ngValue]="c">Course {{ c }}</option>
+                  <option *ngFor="let c of [1,2,3,4,5]" [ngValue]="c">{{ 'Course {p0}' | translate: { p0: (c) } }}</option>
                 </select>
               </div>
               <div class="mb-2">
-                <label class="form-label">Note for the kitchen</label>
+                <label class="form-label">{{ 'Note for the kitchen' | translate }}</label>
                 <input class="form-control ip-notes" [(ngModel)]="pNotes" name="pNotes" maxlength="200" />
                 <div class="flex gap-1 mt-1" style="flex-wrap:wrap;">
                   <button type="button" class="btn btn-sm btn-outline-secondary note-chip" *ngFor="let n of notePresets" (click)="addNoteChip(n)">{{ n }}</button>
                 </div>
               </div>
               <div class="flex gap-2">
-                <button class="btn btn-primary ip-save" [disabled]="panelBusy" (click)="savePanel()">{{ panel.mode === 'add' ? 'Add to order' : 'Save' }}</button>
-                <button class="btn btn-link ip-cancel" (click)="closePanel()">Cancel</button>
+                <button class="btn btn-primary ip-save" [disabled]="panelBusy" (click)="savePanel()">{{ panel.mode === 'add' ? ('Add to order' | translate) : ('Save' | translate) }}</button>
+                <button class="btn btn-link ip-cancel" (click)="closePanel()">{{ 'Cancel' | translate }}</button>
               </div>
             </div>
 
             <div class="totals mb-3">
-              <div class="flex justify-between t-discount" *ngIf="(order.discountTotal ?? 0) > 0"><span>Discounts given</span><span>−{{ order.discountTotal | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between"><span>Subtotal</span><span>{{ order.subtotal | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between t-discount" *ngIf="(order.discountTotal ?? 0) > 0"><span>{{ 'Discounts given' | translate }}</span><span>−{{ order.discountTotal | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between"><span>{{ 'Subtotal' | translate }}</span><span>{{ order.subtotal | number: '1.2-2' }}</span></div>
               <div class="flex justify-between t-service" *ngIf="(order.serviceChargePercent ?? 0) > 0">
-                <span>Service charge ({{ order.serviceChargePercent }}%)<span *ngIf="order.serviceChargeWaived"> — waived</span>
-                  <button class="btn btn-sm btn-link sc-toggle" *ngIf="order.status === 'OPEN'" (click)="toggleServiceCharge()">{{ order.serviceChargeWaived ? 'Restore' : 'Waive' }}</button></span>
+                <span>{{ 'Service charge ({p0}%)' | translate: { p0: (order.serviceChargePercent) } }}<span *ngIf="order.serviceChargeWaived"> {{ '— waived' | translate }}</span>
+                  <button class="btn btn-sm btn-link sc-toggle" *ngIf="order.status === 'OPEN'" (click)="toggleServiceCharge()">{{ order.serviceChargeWaived ? ('Restore' | translate) : ('Waive' | translate) }}</button></span>
                 <span>{{ (order.serviceCharge ?? 0) | number: '1.2-2' }}</span>
               </div>
-              <div class="flex justify-between"><span>Tax</span><span>{{ order.taxTotal | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between t-rounding" *ngIf="(order.roundingAdjustment ?? 0) !== 0"><span>Rounding</span><span>{{ order.roundingAdjustment | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between t-total" style="font-weight:600;"><span>Total</span><span>{{ order.total | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between t-tip" *ngIf="(order.tipAmount ?? 0) > 0"><span>Tip</span><span>{{ order.tipAmount | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between t-deposit" *ngIf="depositUsed() > 0"><span>Reservation deposit already paid</span><span>−{{ depositUsed() | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between" *ngIf="order.paidTotal > 0"><span>Paid</span><span>{{ order.paidTotal | number: '1.2-2' }}</span></div>
-              <div class="flex justify-between t-balance" *ngIf="order.paidTotal > 0 || depositUsed() > 0" style="font-weight:600;"><span>Balance due</span><span>{{ order.balanceDue | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between"><span>{{ 'Tax' | translate }}</span><span>{{ order.taxTotal | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between t-rounding" *ngIf="(order.roundingAdjustment ?? 0) !== 0"><span>{{ 'Rounding' | translate }}</span><span>{{ order.roundingAdjustment | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between t-total" style="font-weight:600;"><span>{{ 'Total' | translate }}</span><span>{{ order.total | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between t-tip" *ngIf="(order.tipAmount ?? 0) > 0"><span>{{ 'Tip' | translate }}</span><span>{{ order.tipAmount | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between t-deposit" *ngIf="depositUsed() > 0"><span>{{ 'Reservation deposit already paid' | translate }}</span><span>−{{ depositUsed() | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between" *ngIf="order.paidTotal > 0"><span>{{ 'Paid' | translate }}</span><span>{{ order.paidTotal | number: '1.2-2' }}</span></div>
+              <div class="flex justify-between t-balance" *ngIf="order.paidTotal > 0 || depositUsed() > 0" style="font-weight:600;"><span>{{ 'Balance due' | translate }}</span><span>{{ order.balanceDue | number: '1.2-2' }}</span></div>
             </div>
 
             <div class="alert alert-warning print-note" *ngIf="printNote">{{ printNote }}</div>
             <div class="flex gap-2 mb-3" *ngIf="order.status === 'OPEN'">
-              <button class="btn btn-outline-primary send-kitchen" [disabled]="order.lines.length === 0" (click)="sendToKitchen()">Send to kitchen</button>
-              <button class="btn btn-outline-secondary print-bill" [disabled]="order.lines.length === 0" (click)="printBill()" title="Print the bill for the guest">🖨️ Bill</button>
-              <button class="btn btn-outline-secondary print-tickets" [disabled]="order.lines.length === 0" (click)="printKitchenTickets()" title="Print the kitchen / bar tickets again">🖨️ Tickets</button>
-              <button class="btn btn-outline-primary fire-course" *ngFor="let c of heldCourses()" (click)="fireCourse(c)">Fire course {{ c }}</button>
-              <button class="btn btn-outline-secondary allergy-btn" (click)="toggleAllergy()">Allergies</button>
-              <button class="btn btn-primary" [disabled]="order.lines.length === 0" (click)="toggleCheckout()">Checkout</button>
-              <button class="btn btn-outline-secondary discount-btn" [disabled]="order.lines.length === 0" (click)="toggleDiscount()">Discount</button>
-              <button class="btn btn-outline-secondary split-btn" [disabled]="order.lines.length === 0" (click)="openMove()">Split / move items…</button>
-              <button class="btn btn-outline-secondary move-table-btn" *ngIf="order.orderType === 'DINE_IN'" (click)="openMoveTable()">Move table…</button>
-              <button class="btn btn-outline-secondary" (click)="onToggleMerge()">Merge into…</button>
-              <button class="btn btn-outline-danger cancel-btn" (click)="cancelOrder()">Cancel order</button>
+              <button class="btn btn-outline-primary send-kitchen" [disabled]="order.lines.length === 0" (click)="sendToKitchen()">{{ 'Send to kitchen' | translate }}</button>
+              <button class="btn btn-outline-secondary print-bill" [disabled]="order.lines.length === 0" (click)="printBill()" [title]="'Print the bill for the guest' | translate">{{ '🖨️ Bill' | translate }}</button>
+              <button class="btn btn-outline-secondary print-tickets" [disabled]="order.lines.length === 0" (click)="printKitchenTickets()" [title]="'Print the kitchen / bar tickets again' | translate">{{ '🖨️ Tickets' | translate }}</button>
+              <button class="btn btn-outline-primary fire-course" *ngFor="let c of heldCourses()" (click)="fireCourse(c)">{{ 'Fire course {p0}' | translate: { p0: (c) } }}</button>
+              <button class="btn btn-outline-secondary allergy-btn" (click)="toggleAllergy()">{{ 'Allergies' | translate }}</button>
+              <button class="btn btn-primary" [disabled]="order.lines.length === 0" (click)="toggleCheckout()">{{ 'Checkout' | translate }}</button>
+              <button class="btn btn-outline-secondary discount-btn" [disabled]="order.lines.length === 0" (click)="toggleDiscount()">{{ 'Discount' | translate }}</button>
+              <button class="btn btn-outline-secondary split-btn" [disabled]="order.lines.length === 0" (click)="openMove()">{{ 'Split / move items…' | translate }}</button>
+              <button class="btn btn-outline-secondary move-table-btn" *ngIf="order.orderType === 'DINE_IN'" (click)="openMoveTable()">{{ 'Move table…' | translate }}</button>
+              <button class="btn btn-outline-secondary" (click)="onToggleMerge()">{{ 'Merge into…' | translate }}</button>
+              <button class="btn btn-outline-danger cancel-btn" (click)="cancelOrder()">{{ 'Cancel order' | translate }}</button>
             </div>
 
-            <div class="text-muted held-note mb-2" style="font-size:0.85rem;" *ngIf="order.status === 'OPEN' && heldCount() > 0">⏸ {{ heldCount() }} item{{ heldCount() === 1 ? '' : 's' }} waiting for their course to be fired.</div>
+            <div class="text-muted held-note mb-2" style="font-size:0.85rem;" *ngIf="order.status === 'OPEN' && heldCount() > 0">{{ '⏸ {p0} item{p1} waiting for their course to be fired.' | translate: { p0: (heldCount()), p1: (heldCount() === 1 ? '' : 's') } }}</div>
 
             <div class="card move-panel mb-3" *ngIf="showMove" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));">
-              <h4 style="font-size:1rem;" class="mb-2">Split or move items</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Split or move items' | translate }}</h4>
               <div class="flex gap-2 align-center mb-2">
-                <label class="form-label" style="margin:0;">Move to</label>
+                <label class="form-label" style="margin:0;">{{ 'Move to' | translate }}</label>
                 <select class="form-select mv-dest" style="width:auto;" [(ngModel)]="mvDest" name="mvDest">
-                  <option *ngIf="order.orderType === 'DINE_IN'" value="new">A new check at this table</option>
+                  <option *ngIf="order.orderType === 'DINE_IN'" value="new">{{ 'A new check at this table' | translate }}</option>
                   <option *ngFor="let o of moveTargets()" [value]="o.id">{{ o.displayLabel }} ({{ o.total | number: '1.2-2' }})</option>
                 </select>
               </div>
               <div class="flex gap-2 mb-2" *ngIf="seatList().length > 0" style="flex-wrap:wrap;">
-                <span class="text-muted" style="align-self:center;">By seat:</span>
-                <button type="button" class="btn btn-sm mv-seat" *ngFor="let n of seatList()" [class.btn-primary]="seatAllPicked(n)" [class.btn-outline-secondary]="!seatAllPicked(n)" (click)="toggleSeat(n)">Seat {{ n }}</button>
+                <span class="text-muted" style="align-self:center;">{{ 'By seat:' | translate }}</span>
+                <button type="button" class="btn btn-sm mv-seat" *ngFor="let n of seatList()" [class.btn-primary]="seatAllPicked(n)" [class.btn-outline-secondary]="!seatAllPicked(n)" (click)="toggleSeat(n)">{{ 'Seat {p0}' | translate: { p0: (n) } }}</button>
               </div>
               <div class="flex justify-between align-center mb-1" *ngFor="let line of order.lines">
-                <label><input type="checkbox" class="mv-chk" [checked]="mvPick[line.id] != null" (change)="mvToggle(line, $any($event.target).checked)" /> {{ line.quantity }}× {{ line.description }}<span class="text-muted" *ngIf="line.seat"> (seat {{ line.seat }})</span> — {{ line.lineGrandTotal | number: '1.2-2' }}</label>
-                <span *ngIf="mvPick[line.id] != null && line.quantity > 1">move <input type="number" class="form-control mv-qty" style="width:70px; display:inline-block;" min="1" [max]="line.quantity" [ngModel]="mvPick[line.id]" (ngModelChange)="mvPick[line.id] = $event" [name]="'mq' + line.id" /> of {{ line.quantity }}</span>
+                <label><input type="checkbox" class="mv-chk" [checked]="mvPick[line.id] != null" (change)="mvToggle(line, $any($event.target).checked)" /> {{ line.quantity }}× {{ line.description }}<span class="text-muted" *ngIf="line.seat"> {{ '(seat {p0})' | translate: { p0: (line.seat) } }}</span> — {{ line.lineGrandTotal | number: '1.2-2' }}</label>
+                <span *ngIf="mvPick[line.id] != null && line.quantity > 1">{{ 'move' | translate }} <input type="number" class="form-control mv-qty" style="width:70px; display:inline-block;" min="1" [max]="line.quantity" [ngModel]="mvPick[line.id]" (ngModelChange)="mvPick[line.id] = $event" [name]="'mq' + line.id" /> {{ 'of {p0}' | translate: { p0: (line.quantity) } }}</span>
               </div>
               <div class="flex gap-2 mt-2">
-                <button class="btn btn-primary mv-go" (click)="doMove()">Move</button>
-                <button class="btn btn-link" (click)="showMove = false">Close</button>
+                <button class="btn btn-primary mv-go" (click)="doMove()">{{ 'Move' | translate }}</button>
+                <button class="btn btn-link" (click)="showMove = false">{{ 'Close' | translate }}</button>
               </div>
             </div>
 
             <div class="card mt-panel mb-3" *ngIf="showMoveTable" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));">
-              <h4 style="font-size:1rem;" class="mb-2">Move this bill to another table</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Move this bill to another table' | translate }}</h4>
               <div class="flex gap-2">
                 <select class="form-select mt-table" [(ngModel)]="mtTableId" name="mtTable">
-                  <option [ngValue]="null">Choose a free table…</option>
+                  <option [ngValue]="null">{{ 'Choose a free table…' | translate }}</option>
                   <option *ngFor="let t of freeTables" [ngValue]="t.id">{{ t.name }}<ng-container *ngIf="t.section"> — {{ t.section }}</ng-container></option>
                 </select>
-                <button class="btn btn-primary mt-go" [disabled]="!mtTableId" (click)="doMoveTable()">Move</button>
+                <button class="btn btn-primary mt-go" [disabled]="!mtTableId" (click)="doMoveTable()">{{ 'Move' | translate }}</button>
               </div>
-              <div class="text-muted" style="font-size:0.85rem;" *ngIf="freeTables.length === 0">No table is free right now.</div>
+              <div class="text-muted" style="font-size:0.85rem;" *ngIf="freeTables.length === 0">{{ 'No table is free right now.' | translate }}</div>
             </div>
 
             <div class="card cancel-panel mb-3" *ngIf="showCancel" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));">
-              <h4 style="font-size:1rem;" class="mb-2">Cancel this order</h4>
-              <div class="text-muted mb-2" style="font-size:0.85rem;">This frees the table without recording a sale.<span *ngIf="hasSent()"> Some of it has already gone to the kitchen, so a reason and a manager's approval are needed.</span></div>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Cancel this order' | translate }}</h4>
+              <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'This frees the table without recording a sale.' | translate }}<span *ngIf="hasSent()"> {{ 'Some of it has already gone to the kitchen, so a reason and a manager\\'s approval are needed.' | translate }}</span></div>
               <div class="flex gap-2">
                 <input class="form-control cancel-reason" style="flex:1;" [(ngModel)]="cancelReason" name="cancelReason" [placeholder]="hasSent() ? 'Why? (required)' : 'Why? (optional)'" maxlength="200" />
-                <button class="btn btn-danger cancel-confirm" (click)="doCancel()">Cancel the order</button>
-                <button class="btn btn-link" (click)="showCancel = false">Keep it</button>
+                <button class="btn btn-danger cancel-confirm" (click)="doCancel()">{{ 'Cancel the order' | translate }}</button>
+                <button class="btn btn-link" (click)="showCancel = false">{{ 'Keep it' | translate }}</button>
               </div>
             </div>
 
             <div class="card allergy-panel mb-3" *ngIf="showAllergy" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));">
-              <h4 style="font-size:1rem;" class="mb-2">Guest allergies</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Guest allergies' | translate }}</h4>
               <div class="flex gap-3 mb-2" style="flex-wrap:wrap;">
                 <label *ngFor="let a of allergenList"><input type="checkbox" class="al-chk" [attr.data-al]="a" [(ngModel)]="alSel[a]" [name]="'al' + a" /> {{ pretty(a) }}</label>
               </div>
               <div class="flex gap-2">
-                <button class="btn btn-primary al-save" (click)="saveAllergy()">Save</button>
-                <button class="btn btn-link" (click)="showAllergy = false">Close</button>
+                <button class="btn btn-primary al-save" (click)="saveAllergy()">{{ 'Save' | translate }}</button>
+                <button class="btn btn-link" (click)="showAllergy = false">{{ 'Close' | translate }}</button>
               </div>
             </div>
 
             <div class="card order-discount" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));" *ngIf="showDiscount">
-              <h4 style="font-size:1rem;" class="mb-2">Discount on the whole bill</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Discount on the whole bill' | translate }}</h4>
               <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
                 <select class="form-select od-kind" style="width:auto;" [(ngModel)]="odKind" name="odKind">
-                  <option value="percent">Percent</option>
-                  <option value="amount">Amount</option>
+                  <option value="percent">{{ 'Percent' | translate }}</option>
+                  <option value="amount">{{ 'Amount' | translate }}</option>
                 </select>
                 <input class="form-control od-value" type="number" min="0" step="0.01" style="width:120px;" [(ngModel)]="odValue" name="odValue" />
-                <input class="form-control od-reason" style="flex:1; min-width:160px;" [(ngModel)]="odReason" name="odReason" placeholder="Reason (required)" />
+                <input class="form-control od-reason" style="flex:1; min-width:160px;" [(ngModel)]="odReason" name="odReason" [placeholder]="'Reason (required)' | translate" />
               </div>
               <div class="flex gap-2">
-                <button class="btn btn-primary od-apply" (click)="applyOrderDiscount()">Apply</button>
-                <button class="btn btn-outline-danger od-remove" *ngIf="order.orderDiscountPercent || order.orderDiscountAmount" (click)="removeOrderDiscount()">Remove the discount</button>
-                <span class="text-muted" style="align-self:center; font-size:0.85rem;" *ngIf="order.discountReason">Now: {{ order.discountReason }}<span *ngIf="order.discountBy"> ({{ order.discountBy }})</span></span>
+                <button class="btn btn-primary od-apply" (click)="applyOrderDiscount()">{{ 'Apply' | translate }}</button>
+                <button class="btn btn-outline-danger od-remove" *ngIf="order.orderDiscountPercent || order.orderDiscountAmount" (click)="removeOrderDiscount()">{{ 'Remove the discount' | translate }}</button>
+                <span class="text-muted" style="align-self:center; font-size:0.85rem;" *ngIf="order.discountReason">{{ 'Now: {p0}' | translate: { p0: (order.discountReason) } }}<span *ngIf="order.discountBy"> ({{ order.discountBy }})</span></span>
               </div>
             </div>
 
             <div class="card" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));" *ngIf="showCheckout">
-              <h4 style="font-size:1rem;" class="mb-2">Payments</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Payments' | translate }}</h4>
 
               <div class="flex gap-2 mb-2">
                 <button class="btn btn-sm" [class.btn-primary]="splitMode === 'custom'" [class.btn-outline-secondary]="splitMode !== 'custom'" (click)="setSplitMode('custom')">
-                  Custom amount
+                  {{ 'Custom amount' | translate }}
                 </button>
                 <button class="btn btn-sm" [class.btn-primary]="splitMode === 'equal'" [class.btn-outline-secondary]="splitMode !== 'equal'" (click)="setSplitMode('equal')">
-                  Split equally
+                  {{ 'Split equally' | translate }}
                 </button>
                 <button class="btn btn-sm" [class.btn-primary]="splitMode === 'byItem'" [class.btn-outline-secondary]="splitMode !== 'byItem'" (click)="setSplitMode('byItem')">
-                  Split by item
+                  {{ 'Split by item' | translate }}
                 </button>
               </div>
 
               <div class="flex gap-2 align-center mb-2" *ngIf="splitMode === 'equal'">
-                <label class="form-label" style="margin:0;">Split into</label>
+                <label class="form-label" style="margin:0;">{{ 'Split into' | translate }}</label>
                 <input class="form-control" type="number" min="2" style="width:80px;" [(ngModel)]="splitCount" name="splitCount" />
-                <span>guests' shares</span>
-                <button class="btn btn-sm btn-outline-primary" (click)="applyEqualSplit()">Apply</button>
+                <span>{{ 'guests\\' shares' | translate }}</span>
+                <button class="btn btn-sm btn-outline-primary" (click)="applyEqualSplit()">{{ 'Apply' | translate }}</button>
               </div>
 
               <div class="mb-2" *ngIf="splitMode === 'byItem'">
                 <div class="flex gap-2 align-center mb-2">
-                  <label class="form-label" style="margin:0;">Number of guests' shares</label>
+                  <label class="form-label" style="margin:0;">{{ 'Number of guests\\' shares' | translate }}</label>
                   <input class="form-control" type="number" min="2" style="width:80px;" [(ngModel)]="splitCount" name="splitCountItem" />
                 </div>
                 <div class="flex justify-between align-center mb-1" *ngFor="let line of order.lines">
@@ -361,15 +362,15 @@ interface PaymentRow {
                     (ngModelChange)="setLineShare(line.id, $event)"
                     [name]="'share' + line.id"
                   >
-                    <option [ngValue]="null">Unassigned</option>
-                    <option *ngFor="let n of shareRange()" [ngValue]="n">Share {{ n }}</option>
+                    <option [ngValue]="null">{{ 'Unassigned' | translate }}</option>
+                    <option *ngFor="let n of shareRange()" [ngValue]="n">{{ 'Share {p0}' | translate: { p0: (n) } }}</option>
                   </select>
                 </div>
-                <button class="btn btn-sm btn-outline-primary mt-2" (click)="applyItemSplit()">Apply</button>
+                <button class="btn btn-sm btn-outline-primary mt-2" (click)="applyItemSplit()">{{ 'Apply' | translate }}</button>
               </div>
 
               <div class="flex gap-2 align-center mb-2" *ngFor="let row of paymentRows; let i = index">
-                <span class="text-muted" style="width:70px;" *ngIf="splitMode !== 'custom'">Share {{ i + 1 }}</span>
+                <span class="text-muted" style="width:70px;" *ngIf="splitMode !== 'custom'">{{ 'Share {p0}' | translate: { p0: (i + 1) } }}</span>
                 <select class="form-select" style="flex:1;" [(ngModel)]="row.method" [name]="'method' + i">
                   <option *ngFor="let m of paymentMethods" [value]="m.code">{{ m.name }}</option>
                 </select>
@@ -377,40 +378,40 @@ interface PaymentRow {
                 <button class="btn btn-sm btn-outline-danger" (click)="removePaymentRow(i)">✕</button>
               </div>
               <div class="form-group mb-2" *ngIf="roomRowSelected()">
-                <label class="form-label">Charge to which room?</label>
+                <label class="form-label">{{ 'Charge to which room?' | translate }}</label>
                 <select class="form-select" [(ngModel)]="roomBookingId" name="roomBooking">
-                  <option [ngValue]="null">Choose the guest…</option>
-                  <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">Room {{ g.roomNumber }} — {{ g.guestName }}</option>
+                  <option [ngValue]="null">{{ 'Choose the guest…' | translate }}</option>
+                  <option *ngFor="let g of inHouse" [ngValue]="g.bookingId">{{ 'Room {p0} — {p1}' | translate: { p0: (g.roomNumber), p1: (g.guestName) } }}</option>
                 </select>
-                <div class="text-muted" style="font-size:0.8rem;" *ngIf="inHouse.length === 0">No guest is checked in right now.</div>
+                <div class="text-muted" style="font-size:0.8rem;" *ngIf="inHouse.length === 0">{{ 'No guest is checked in right now.' | translate }}</div>
               </div>
               <div class="mb-2" *ngIf="settings?.tipsEnabled">
-                <label class="form-label">Tip</label>
+                <label class="form-label">{{ 'Tip' | translate }}</label>
                 <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
                   <button class="btn btn-sm btn-outline-secondary tip-preset" *ngFor="let p of tipPresets" (click)="setTipPercent(p)">{{ p }}%</button>
-                  <button class="btn btn-sm btn-outline-secondary tip-none" (click)="setTip(0)">No tip</button>
+                  <button class="btn btn-sm btn-outline-secondary tip-none" (click)="setTip(0)">{{ 'No tip' | translate }}</button>
                   <input class="form-control tip-amount" type="number" min="0" step="0.01" style="width:120px;" [(ngModel)]="tip" (ngModelChange)="tipChanged()" name="tip" />
                 </div>
               </div>
               <div class="flex gap-2 mb-2">
-                <button class="btn btn-sm btn-outline-secondary" (click)="addPaymentRow()">+ Add payment</button>
+                <button class="btn btn-sm btn-outline-secondary" (click)="addPaymentRow()">{{ '+ Add payment' | translate }}</button>
                 <span class="text-muted pay-summary" style="align-self:center;">
-                  Entered: {{ paymentRowsTotal() | number: '1.2-2' }} / due {{ payable() | number: '1.2-2' }}<span *ngIf="tip > 0"> (bill {{ order.total | number: '1.2-2' }} + tip {{ tip | number: '1.2-2' }})</span>
+                  {{ 'Entered: {p0} / due {p1}' | translate: { p0: (paymentRowsTotal() | number: '1.2-2'), p1: (payable() | number: '1.2-2') } }}<span *ngIf="tip > 0"> {{ '(bill {p0} + tip {p1})' | translate: { p0: (order.total | number: '1.2-2'), p1: (tip | number: '1.2-2') } }}</span>
                 </span>
               </div>
-              <div class="mb-2 text-muted dep-note" *ngIf="depositUsed() > 0">A reservation deposit of {{ depositUsed() | number: '1.2-2' }} has already been paid and is taken off the amount due.<span *ngIf="depositUnused() > 0"> The other {{ depositUnused() | number: '1.2-2' }} is given back to the guest.</span></div>
-              <div class="mb-2 change-due" *ngIf="changeDue() > 0" style="font-weight:600;">Change to give back: {{ changeDue() | number: '1.2-2' }}</div>
-              <button class="btn btn-primary" [disabled]="checkingOut" (click)="doCheckout()">{{ checkingOut ? 'Processing…' : 'Confirm checkout' }}</button>
+              <div class="mb-2 text-muted dep-note" *ngIf="depositUsed() > 0">{{ 'A reservation deposit of {p0} has already been paid and is taken off the amount due.' | translate: { p0: (depositUsed() | number: '1.2-2') } }}<span *ngIf="depositUnused() > 0"> {{ 'The other {p0} is given back to the guest.' | translate: { p0: (depositUnused() | number: '1.2-2') } }}</span></div>
+              <div class="mb-2 change-due" *ngIf="changeDue() > 0" style="font-weight:600;">{{ 'Change to give back: {p0}' | translate: { p0: (changeDue() | number: '1.2-2') } }}</div>
+              <button class="btn btn-primary" [disabled]="checkingOut" (click)="doCheckout()">{{ checkingOut ? ('Processing…' | translate) : ('Confirm checkout' | translate) }}</button>
             </div>
 
             <div class="card" style="padding:1rem; background:var(--hover, rgba(0,0,0,0.03));" *ngIf="showMerge">
-              <h4 style="font-size:1rem;" class="mb-2">Merge this order into another open table</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Merge this order into another open table' | translate }}</h4>
               <div class="flex gap-2">
                 <select class="form-select" [(ngModel)]="mergeTargetId" name="mergeTarget">
-                  <option [ngValue]="null">Select a table…</option>
+                  <option [ngValue]="null">{{ 'Select a table…' | translate }}</option>
                   <option *ngFor="let o of otherOpenOrders" [ngValue]="o.id">{{ o.displayLabel }} ({{ o.total | number: '1.2-2' }})</option>
                 </select>
-                <button class="btn btn-primary" [disabled]="!mergeTargetId" (click)="doMerge()">Merge</button>
+                <button class="btn btn-primary" [disabled]="!mergeTargetId" (click)="doMerge()">{{ 'Merge' | translate }}</button>
               </div>
             </div>
           </div>

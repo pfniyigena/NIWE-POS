@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,35 +13,35 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
 @Component({
   selector: 'app-sales-analysis',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:8px;">
-        <h3>Sales analysis</h3>
-        <a class="btn btn-outline-primary" routerLink="/admin/restaurant/end-of-day">End of day (cash-up)</a>
+        <h3>{{ 'Sales analysis' | translate }}</h3>
+        <a class="btn btn-outline-primary" routerLink="/admin/restaurant/end-of-day">{{ 'End of day (cash-up)' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="card mb-3" style="padding:0.75rem;">
         <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
           <button *ngFor="let p of presets" class="btn btn-sm btn-outline-secondary an-preset" (click)="preset(p.key)">{{ p.label }}</button>
-          <label class="ms-2">From <input type="date" class="form-control an-from" style="display:inline-block; width:auto;" [(ngModel)]="from" name="anfrom" /></label>
-          <label>To <input type="date" class="form-control an-to" style="display:inline-block; width:auto;" [(ngModel)]="to" name="anto" /></label>
-          <button class="btn btn-primary an-go" (click)="load()" [disabled]="loading">{{ loading ? 'Loading…' : 'Show' }}</button>
+          <label class="ms-2">{{ 'From' | translate }} <input type="date" class="form-control an-from" style="display:inline-block; width:auto;" [(ngModel)]="from" name="anfrom" /></label>
+          <label>{{ 'To' | translate }} <input type="date" class="form-control an-to" style="display:inline-block; width:auto;" [(ngModel)]="to" name="anto" /></label>
+          <button class="btn btn-primary an-go" (click)="load()" [disabled]="loading">{{ loading ? ('Loading…' | translate) : ('Show' | translate) }}</button>
         </div>
       </div>
 
       <ng-container *ngIf="a">
         <div class="flex gap-3 mb-3" style="flex-wrap:wrap;">
-          <div class="an-card"><div class="an-n an-k-net">{{ a.totals.netSales | number: '1.2-2' }}</div><div class="text-muted">net sales</div></div>
-          <div class="an-card"><div class="an-n an-k-billed">{{ a.totals.billed | number: '1.2-2' }}</div><div class="text-muted">billed (with tax and service)</div></div>
-          <div class="an-card"><div class="an-n an-k-checks">{{ a.totals.checks }}</div><div class="text-muted">checks</div></div>
-          <div class="an-card"><div class="an-n an-k-covers">{{ a.totals.covers }}</div><div class="text-muted">covers</div></div>
-          <div class="an-card"><div class="an-n an-k-avg">{{ a.totals.averageCheck | number: '1.2-2' }}</div><div class="text-muted">average check</div></div>
-          <div class="an-card"><div class="an-n an-k-cover">{{ a.totals.averagePerCover | number: '1.2-2' }}</div><div class="text-muted">per cover (dine-in)</div></div>
-          <div class="an-card"><div class="an-n an-k-margin">{{ a.totals.marginPercent | number: '1.1-1' }}%</div><div class="text-muted">margin ({{ a.totals.profit | number: '1.2-2' }})</div></div>
-          <div class="an-card"><div class="an-n an-k-tips">{{ a.totals.tips | number: '1.2-2' }}</div><div class="text-muted">tips</div></div>
-          <div class="an-card"><div class="an-n an-k-minutes">{{ a.totals.averageMinutesAtTable }}<small> min</small></div><div class="text-muted">at the table</div></div>
+          <div class="an-card"><div class="an-n an-k-net">{{ a.totals.netSales | number: '1.2-2' }}</div><div class="text-muted">{{ 'net sales' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-billed">{{ a.totals.billed | number: '1.2-2' }}</div><div class="text-muted">{{ 'billed (with tax and service)' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-checks">{{ a.totals.checks }}</div><div class="text-muted">{{ 'checks' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-covers">{{ a.totals.covers }}</div><div class="text-muted">{{ 'covers' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-avg">{{ a.totals.averageCheck | number: '1.2-2' }}</div><div class="text-muted">{{ 'average check' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-cover">{{ a.totals.averagePerCover | number: '1.2-2' }}</div><div class="text-muted">{{ 'per cover (dine-in)' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-margin">{{ a.totals.marginPercent | number: '1.1-1' }}%</div><div class="text-muted">{{ 'margin ({p0})' | translate: { p0: (a.totals.profit | number: '1.2-2') } }}</div></div>
+          <div class="an-card"><div class="an-n an-k-tips">{{ a.totals.tips | number: '1.2-2' }}</div><div class="text-muted">{{ 'tips' | translate }}</div></div>
+          <div class="an-card"><div class="an-n an-k-minutes">{{ a.totals.averageMinutesAtTable }}<small> {{ 'min' | translate }}</small></div><div class="text-muted">{{ 'at the table' | translate }}</div></div>
         </div>
 
         <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
@@ -49,9 +50,9 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
             <select class="form-control an-export-what" style="width:auto;" [(ngModel)]="exportWhat" name="anexw">
               <option *ngFor="let e of exportChoices()" [ngValue]="e.key">{{ e.label }}</option>
             </select>
-            <button class="btn btn-sm btn-outline-secondary an-export-xlsx" (click)="download('xlsx')" [disabled]="exporting">Excel</button>
-            <button class="btn btn-sm btn-outline-secondary an-export-pdf" (click)="download('pdf')" [disabled]="exporting">PDF</button>
-            <button class="btn btn-sm btn-outline-secondary an-export-csv" (click)="download('csv')" [disabled]="exporting">CSV</button>
+            <button class="btn btn-sm btn-outline-secondary an-export-xlsx" (click)="download('xlsx')" [disabled]="exporting">{{ 'Excel' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary an-export-pdf" (click)="download('pdf')" [disabled]="exporting">{{ 'PDF' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary an-export-csv" (click)="download('csv')" [disabled]="exporting">{{ 'CSV' | translate }}</button>
           </span>
         </div>
         <div class="alert alert-danger" *ngIf="exportError">{{ exportError }}</div>
@@ -59,21 +60,21 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
         <!-- overview -->
         <div *ngIf="tab === 'overview'">
           <div class="card mb-3" style="padding:1rem;">
-            <h4 style="font-size:1rem;" class="mb-2">Sales by hour <small class="text-muted">(by the hour the bill was paid)</small></h4>
-            <p class="text-muted" *ngIf="hourRows.length === 0">No sales in this period.</p>
+            <h4 style="font-size:1rem;" class="mb-2">{{ 'Sales by hour' | translate }} <small class="text-muted">{{ '(by the hour the bill was paid)' | translate }}</small></h4>
+            <p class="text-muted" *ngIf="hourRows.length === 0">{{ 'No sales in this period.' | translate }}</p>
             <div *ngFor="let h of hourRows" class="an-hour-row flex align-center gap-2">
               <span class="an-hour-label">{{ h.hour < 10 ? '0' : '' }}{{ h.hour }}:00</span>
               <span class="an-bar-wrap"><span class="an-bar an-hour-bar" [style.width.%]="pctOf(h.netSales, maxHour)"></span></span>
               <span class="an-hour-amt">{{ h.netSales | number: '1.2-2' }}</span>
-              <span class="text-muted">{{ h.checks }} check{{ h.checks === 1 ? '' : 's' }}, {{ h.covers }} cover{{ h.covers === 1 ? '' : 's' }}</span>
+              <span class="text-muted">{{ '{p0} check{p1}, {p2} cover{p3}' | translate: { p0: (h.checks), p1: (h.checks === 1 ? '' : 's'), p2: (h.covers), p3: (h.covers === 1 ? '' : 's') } }}</span>
             </div>
           </div>
 
           <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-start;">
             <div class="card" style="padding:1rem; flex:1; min-width:320px;">
-              <h4 style="font-size:1rem;" class="mb-2">By weekday</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'By weekday' | translate }}</h4>
               <table class="an-weekday-table">
-                <thead><tr><th>Day</th><th class="text-end">Days</th><th class="text-end">Checks</th><th class="text-end">Net sales</th><th class="text-end">Per day</th></tr></thead>
+                <thead><tr><th>{{ 'Day' | translate }}</th><th class="text-end">{{ 'Days' | translate }}</th><th class="text-end">{{ 'Checks' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Per day' | translate }}</th></tr></thead>
                 <tbody>
                   <tr *ngFor="let w of a.weekdays" class="an-weekday-row" [class.text-muted]="w.days === 0">
                     <td>{{ w.name }}</td><td class="text-end">{{ w.days }}</td><td class="text-end">{{ w.checks }}</td>
@@ -83,9 +84,9 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
               </table>
             </div>
             <div class="card" style="padding:1rem; flex:1; min-width:320px;">
-              <h4 style="font-size:1rem;" class="mb-2">By order type</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'By order type' | translate }}</h4>
               <table class="an-type-table">
-                <thead><tr><th>Type</th><th class="text-end">Checks</th><th class="text-end">Covers</th><th class="text-end">Net sales</th><th class="text-end">Average check</th></tr></thead>
+                <thead><tr><th>{{ 'Type' | translate }}</th><th class="text-end">{{ 'Checks' | translate }}</th><th class="text-end">{{ 'Covers' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Average check' | translate }}</th></tr></thead>
                 <tbody>
                   <tr *ngFor="let t of a.types" class="an-type-row">
                     <td>{{ pretty(t.type) }}</td><td class="text-end">{{ t.checks }}</td><td class="text-end">{{ t.covers }}</td>
@@ -93,12 +94,12 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
                   </tr>
                 </tbody>
               </table>
-              <h4 style="font-size:1rem;" class="mb-2 mt-3">How guests paid</h4>
+              <h4 style="font-size:1rem;" class="mb-2 mt-3">{{ 'How guests paid' | translate }}</h4>
               <table class="an-pay-table">
-                <thead><tr><th>Method</th><th class="text-end">Checks</th><th class="text-end">Amount</th><th class="text-end">Share</th></tr></thead>
+                <thead><tr><th>{{ 'Method' | translate }}</th><th class="text-end">{{ 'Checks' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th class="text-end">{{ 'Share' | translate }}</th></tr></thead>
                 <tbody>
                   <tr *ngFor="let p of a.payments" class="an-pay-row">
-                    <td>{{ p.method === 'DEPOSIT' ? 'Booking deposit' : p.method }}</td><td class="text-end">{{ p.checks }}</td>
+                    <td>{{ p.method === 'DEPOSIT' ? ('Booking deposit' | translate) : p.method }}</td><td class="text-end">{{ p.checks }}</td>
                     <td class="text-end">{{ p.amount | number: '1.2-2' }}</td><td class="text-end">{{ p.percent | number: '1.1-1' }}%</td>
                   </tr>
                 </tbody>
@@ -107,9 +108,9 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
           </div>
 
           <div class="card mt-3" style="padding:1rem;" *ngIf="a.days.length > 1">
-            <h4 style="font-size:1rem;" class="mb-2">By day</h4>
+            <h4 style="font-size:1rem;" class="mb-2">{{ 'By day' | translate }}</h4>
             <table class="an-day-table">
-              <thead><tr><th>Date</th><th class="text-end">Checks</th><th class="text-end">Covers</th><th class="text-end">Net sales</th><th class="text-end">Billed</th></tr></thead>
+              <thead><tr><th>{{ 'Date' | translate }}</th><th class="text-end">{{ 'Checks' | translate }}</th><th class="text-end">{{ 'Covers' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Billed' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let d of a.days" class="an-day-row" [class.text-muted]="d.checks === 0">
                   <td>{{ d.date }}</td><td class="text-end">{{ d.checks }}</td><td class="text-end">{{ d.covers }}</td>
@@ -123,9 +124,9 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
         <!-- menu mix -->
         <div *ngIf="tab === 'menu'">
           <div class="card mb-3" style="padding:1rem;">
-            <h4 style="font-size:1rem;" class="mb-2">By category</h4>
+            <h4 style="font-size:1rem;" class="mb-2">{{ 'By category' | translate }}</h4>
             <table class="an-cat-table">
-              <thead><tr><th>Category</th><th class="text-end">Sold</th><th class="text-end">Net sales</th><th class="text-end">Share</th><th class="text-end">Cost</th><th class="text-end">Profit</th><th class="text-end">Margin</th></tr></thead>
+              <thead><tr><th>{{ 'Category' | translate }}</th><th class="text-end">{{ 'Sold' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Share' | translate }}</th><th class="text-end">{{ 'Cost' | translate }}</th><th class="text-end">{{ 'Profit' | translate }}</th><th class="text-end">{{ 'Margin' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let c of a.categories" class="an-cat-row">
                   <td>{{ c.name }}</td><td class="text-end">{{ c.quantity }}</td><td class="text-end">{{ c.netSales | number: '1.2-2' }}</td>
@@ -137,19 +138,18 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
           </div>
           <div class="card" style="padding:1rem;">
             <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:8px;">
-              <h4 style="font-size:1rem;">Menu mix</h4>
+              <h4 style="font-size:1rem;">{{ 'Menu mix' | translate }}</h4>
               <span class="flex gap-2">
-                <button class="btn btn-sm an-class-filter" [class.btn-primary]="classFilter === ''" [class.btn-outline-secondary]="classFilter !== ''" (click)="setClass('')">All</button>
+                <button class="btn btn-sm an-class-filter" [class.btn-primary]="classFilter === ''" [class.btn-outline-secondary]="classFilter !== ''" (click)="setClass('')">{{ 'All' | translate }}</button>
                 <button *ngFor="let c of classes" class="btn btn-sm an-class-filter" [class.btn-primary]="classFilter === c.key" [class.btn-outline-secondary]="classFilter !== c.key" (click)="setClass(c.key)">{{ c.label }}</button>
               </span>
             </div>
             <p class="text-muted" style="font-size:0.85rem;">
-              <b>Star</b>: sells well and earns well — protect it. <b>Plowhorse</b>: sells well but earns little — try a small price rise or a cheaper recipe.
-              <b>Puzzle</b>: earns well but sells little — promote it. <b>Dog</b>: sells little and earns little — rework or drop it.
-              A dish sells well when it is at least 70% of an even share of everything sold; it earns well when its profit per plate is at or above the menu's average.
+              <b>{{ 'Star' | translate }}</b>{{ ': sells well and earns well — protect it.' | translate }} <b>{{ 'Plowhorse' | translate }}</b>{{ ': sells well but earns little — try a small price rise or a cheaper recipe.' | translate }}
+              <b>{{ 'Puzzle' | translate }}</b>{{ ': earns well but sells little — promote it.' | translate }} <b>{{ 'Dog' | translate }}</b>{{ ': sells little and earns little — rework or drop it. A dish sells well when it is at least 70% of an even share of everything sold; it earns well when its profit per plate is at or above the menu\\'s average.' | translate }}
             </p>
             <table class="an-item-table">
-              <thead><tr><th>Dish</th><th>Category</th><th class="text-end">Sold</th><th class="text-end">Net sales</th><th class="text-end">Cost</th><th class="text-end">Profit</th><th class="text-end">Margin</th><th class="text-end">Profit each</th><th class="text-end">Share of dishes</th><th>Class</th></tr></thead>
+              <thead><tr><th>{{ 'Dish' | translate }}</th><th>{{ 'Category' | translate }}</th><th class="text-end">{{ 'Sold' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Cost' | translate }}</th><th class="text-end">{{ 'Profit' | translate }}</th><th class="text-end">{{ 'Margin' | translate }}</th><th class="text-end">{{ 'Profit each' | translate }}</th><th class="text-end">{{ 'Share of dishes' | translate }}</th><th>{{ 'Class' | translate }}</th></tr></thead>
               <tbody>
                 <tr *ngFor="let i of shownItems" class="an-item-row">
                   <td>{{ i.name }}</td><td>{{ i.category }}</td><td class="text-end">{{ i.quantity }}</td>
@@ -160,15 +160,15 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
                 </tr>
               </tbody>
             </table>
-            <p class="text-muted mt-2" *ngIf="shownItems.length === 0">No dishes to show.</p>
+            <p class="text-muted mt-2" *ngIf="shownItems.length === 0">{{ 'No dishes to show.' | translate }}</p>
           </div>
         </div>
 
         <!-- servers -->
         <div *ngIf="tab === 'servers'" class="card" style="padding:1rem;">
-          <h4 style="font-size:1rem;" class="mb-2">By server</h4>
+          <h4 style="font-size:1rem;" class="mb-2">{{ 'By server' | translate }}</h4>
           <table class="an-server-table">
-            <thead><tr><th>Server</th><th class="text-end">Checks</th><th class="text-end">Covers</th><th class="text-end">Net sales</th><th class="text-end">Average check</th><th class="text-end">Service charge</th><th class="text-end">Tips</th><th class="text-end">Discounts</th><th class="text-end">Voids</th><th class="text-end">Comps</th></tr></thead>
+            <thead><tr><th>{{ 'Server' | translate }}</th><th class="text-end">{{ 'Checks' | translate }}</th><th class="text-end">{{ 'Covers' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Average check' | translate }}</th><th class="text-end">{{ 'Service charge' | translate }}</th><th class="text-end">{{ 'Tips' | translate }}</th><th class="text-end">{{ 'Discounts' | translate }}</th><th class="text-end">{{ 'Voids' | translate }}</th><th class="text-end">{{ 'Comps' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let s of a.servers" class="an-server-row">
                 <td>{{ s.name }}</td><td class="text-end">{{ s.checks }}</td><td class="text-end">{{ s.covers }}</td>
@@ -180,15 +180,15 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
               </tr>
             </tbody>
           </table>
-          <p class="text-muted mt-2" style="font-size:0.85rem;">Voids and comps are counted against the person who took the item off, which is a manager's name in most cases.</p>
-          <p class="text-muted" *ngIf="a.servers.length === 0">No sales in this period.</p>
+          <p class="text-muted mt-2" style="font-size:0.85rem;">{{ 'Voids and comps are counted against the person who took the item off, which is a manager\\'s name in most cases.' | translate }}</p>
+          <p class="text-muted" *ngIf="a.servers.length === 0">{{ 'No sales in this period.' | translate }}</p>
         </div>
 
         <!-- tables -->
         <div *ngIf="tab === 'tables'" class="card" style="padding:1rem;">
-          <h4 style="font-size:1rem;" class="mb-2">Table turns</h4>
+          <h4 style="font-size:1rem;" class="mb-2">{{ 'Table turns' | translate }}</h4>
           <table class="an-table-table">
-            <thead><tr><th>Table</th><th>Section</th><th class="text-end">Seats</th><th class="text-end">Parties</th><th class="text-end">Covers</th><th class="text-end">Turns per day</th><th class="text-end">Minutes per party</th><th class="text-end">Net sales</th><th class="text-end">Per cover</th></tr></thead>
+            <thead><tr><th>{{ 'Table' | translate }}</th><th>{{ 'Section' | translate }}</th><th class="text-end">{{ 'Seats' | translate }}</th><th class="text-end">{{ 'Parties' | translate }}</th><th class="text-end">{{ 'Covers' | translate }}</th><th class="text-end">{{ 'Turns per day' | translate }}</th><th class="text-end">{{ 'Minutes per party' | translate }}</th><th class="text-end">{{ 'Net sales' | translate }}</th><th class="text-end">{{ 'Per cover' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let t of a.tables" class="an-table-row">
                 <td>{{ t.name }}</td><td>{{ t.section }}</td><td class="text-end">{{ t.seats }}</td><td class="text-end">{{ t.parties }}</td><td class="text-end">{{ t.covers }}</td>
@@ -197,21 +197,21 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
               </tr>
             </tbody>
           </table>
-          <p class="text-muted mt-2" style="font-size:0.85rem;">A party that split its bill counts once, from sitting down until the last check was paid.</p>
-          <p class="text-muted" *ngIf="a.tables.length === 0">No table sales in this period.</p>
+          <p class="text-muted mt-2" style="font-size:0.85rem;">{{ 'A party that split its bill counts once, from sitting down until the last check was paid.' | translate }}</p>
+          <p class="text-muted" *ngIf="a.tables.length === 0">{{ 'No table sales in this period.' | translate }}</p>
         </div>
 
         <!-- controls -->
         <div *ngIf="tab === 'controls'" class="card" style="padding:1rem; max-width:620px;">
-          <h4 style="font-size:1rem;" class="mb-2">Voids, comps and cancelled orders</h4>
+          <h4 style="font-size:1rem;" class="mb-2">{{ 'Voids, comps and cancelled orders' | translate }}</h4>
           <table class="an-control-table">
-            <thead><tr><th>Kind</th><th class="text-end">Count</th><th class="text-end">Value</th></tr></thead>
+            <thead><tr><th>{{ 'Kind' | translate }}</th><th class="text-end">{{ 'Count' | translate }}</th><th class="text-end">{{ 'Value' | translate }}</th></tr></thead>
             <tbody>
               <tr *ngFor="let c of a.controls" class="an-control-row"><td>{{ pretty(c.type) }}</td><td class="text-end">{{ c.count }}</td><td class="text-end">{{ c.type === 'REPRINT' ? '' : (c.amount | number: '1.2-2') }}</td></tr>
             </tbody>
           </table>
-          <p class="text-muted" *ngIf="a.controls.length === 0">Nothing was voided, comped, cancelled or reprinted in this period.</p>
-          <p class="text-muted mt-2" style="font-size:0.85rem;">Discounts given on bills: {{ a.totals.discounts | number: '1.2-2' }} (this includes comps). See <a routerLink="/admin/restaurant/voids">Voids and comps</a> for who and why.</p>
+          <p class="text-muted" *ngIf="a.controls.length === 0">{{ 'Nothing was voided, comped, cancelled or reprinted in this period.' | translate }}</p>
+          <p class="text-muted mt-2" style="font-size:0.85rem;">{{ 'Discounts given on bills: {p0} (this includes comps). See' | translate: { p0: (a.totals.discounts | number: '1.2-2') } }} <a routerLink="/admin/restaurant/voids">{{ 'Voids and comps' | translate }}</a> {{ 'for who and why.' | translate }}</p>
         </div>
       </ng-container>
     </app-shell>

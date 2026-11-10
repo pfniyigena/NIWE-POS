@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
@@ -13,53 +14,53 @@ const DAYS = [
 @Component({
   selector: 'app-booking-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell>
-      <h3 class="mb-3">Booking settings</h3>
+      <h3 class="mb-3">{{ 'Booking settings' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
       <form class="card" style="padding:1rem; max-width:44rem;" *ngIf="s" (ngSubmit)="save()">
-        <strong>Opening hours</strong>
+        <strong>{{ 'Opening hours' | translate }}</strong>
         <div class="flex gap-2 mt-2">
-          <div class="form-group mb-2"><label class="form-label">Opens</label><input class="form-control" type="time" name="ds" [(ngModel)]="s.dayStart" required /></div>
-          <div class="form-group mb-2"><label class="form-label">Closes</label><input class="form-control" type="time" name="de" [(ngModel)]="s.dayEnd" required /></div>
-          <div class="form-group mb-2"><label class="form-label">Time between start times (min)</label><input class="form-control" type="number" min="5" max="240" name="st" [(ngModel)]="s.slotStepMinutes" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Opens' | translate }}</label><input class="form-control" type="time" name="ds" [(ngModel)]="s.dayStart" required /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Closes' | translate }}</label><input class="form-control" type="time" name="de" [(ngModel)]="s.dayEnd" required /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Time between start times (min)' | translate }}</label><input class="form-control" type="number" min="5" max="240" name="st" [(ngModel)]="s.slotStepMinutes" /></div>
         </div>
-        <div class="form-group mb-3"><label class="form-label">Working days</label>
+        <div class="form-group mb-3"><label class="form-label">{{ 'Working days' | translate }}</label>
           <div class="flex gap-2"><label *ngFor="let d of days" style="display:flex; gap:0.3rem; align-items:center;">
             <input type="checkbox" [checked]="has(d.key)" (change)="toggle(d.key)" [name]="'wd' + d.key" /> {{ d.label }}</label></div></div>
 
-        <strong>Booking rules</strong>
+        <strong>{{ 'Booking rules' | translate }}</strong>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
-          <div class="form-group mb-2"><label class="form-label">Earliest booking (minutes ahead)</label><input class="form-control" type="number" min="0" name="mn" [(ngModel)]="s.minNoticeMinutes" /></div>
-          <div class="form-group mb-2"><label class="form-label">Furthest ahead (days)</label><input class="form-control" type="number" min="1" name="ma" [(ngModel)]="s.maxAdvanceDays" /></div>
-          <div class="form-group mb-2"><label class="form-label">Hold for payment (minutes)</label><input class="form-control" type="number" min="5" name="hm" [(ngModel)]="s.holdMinutes" /></div>
-          <div class="form-group mb-2"><label class="form-label">Online cancel until (hours before)</label><input class="form-control" type="number" min="0" name="cn" [(ngModel)]="s.cancelNoticeHours" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Earliest booking (minutes ahead)' | translate }}</label><input class="form-control" type="number" min="0" name="mn" [(ngModel)]="s.minNoticeMinutes" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Furthest ahead (days)' | translate }}</label><input class="form-control" type="number" min="1" name="ma" [(ngModel)]="s.maxAdvanceDays" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Hold for payment (minutes)' | translate }}</label><input class="form-control" type="number" min="5" name="hm" [(ngModel)]="s.holdMinutes" /></div>
+          <div class="form-group mb-2"><label class="form-label">{{ 'Online cancel until (hours before)' | translate }}</label><input class="form-control" type="number" min="0" name="cn" [(ngModel)]="s.cancelNoticeHours" /></div>
         </div>
 
-        <strong class="mt-2">Reminders and moving a booking</strong>
+        <strong class="mt-2">{{ 'Reminders and moving a booking' | translate }}</strong>
         <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" id="bk-reminders" name="re" [(ngModel)]="s.reminderEnabled" />
-          E-mail the guest a reminder before the visit (with a calendar file)</label>
+          {{ 'E-mail the guest a reminder before the visit (with a calendar file)' | translate }}</label>
         <div class="flex gap-2 align-center mb-1" *ngIf="s.reminderEnabled">
-          <span>Send it about</span><input class="form-control" style="width:6rem;" type="number" min="1" max="168" name="rh" [(ngModel)]="s.reminderHours" /><span>hours before</span>
+          <span>{{ 'Send it about' | translate }}</span><input class="form-control" style="width:6rem;" type="number" min="1" max="168" name="rh" [(ngModel)]="s.reminderHours" /><span>{{ 'hours before' | translate }}</span>
         </div>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Needs e-mail set up in Settings and an e-mail address on the booking. A visit booked less than this many hours ahead is not reminded; you can still send one by hand from the appointment.</div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" id="bk-guest-move" name="gr" [(ngModel)]="s.allowGuestReschedule" /> Guests can move their own booking on the public page</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Needs e-mail set up in Settings and an e-mail address on the booking. A visit booked less than this many hours ahead is not reminded; you can still send one by hand from the appointment.' | translate }}</div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" id="bk-guest-move" name="gr" [(ngModel)]="s.allowGuestReschedule" /> {{ 'Guests can move their own booking on the public page' | translate }}</label>
         <div class="flex gap-2 align-center mb-3" *ngIf="s.allowGuestReschedule">
-          <span>At most</span><input class="form-control" style="width:5rem;" type="number" min="0" max="10" name="gm" [(ngModel)]="s.maxGuestReschedules" /><span>times, and only until the cancellation notice above</span>
+          <span>{{ 'At most' | translate }}</span><input class="form-control" style="width:5rem;" type="number" min="0" max="10" name="gm" [(ngModel)]="s.maxGuestReschedules" /><span>{{ 'times, and only until the cancellation notice above' | translate }}</span>
         </div>
 
-        <strong class="mt-2">Public website</strong>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" class="bk-public" name="pe" [(ngModel)]="s.publicEnabled" /> Allow public website</label>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">Guests can then pick a service and a time themselves at <strong>/book</strong> on this site, without signing in. Switch it off to close the page and take its tile off the home page; staff still book appointments as usual.</div>
-        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ec" [(ngModel)]="s.emailConfirmations" /> Email a confirmation when the guest gives an email address</label>
-        <div class="form-group mb-2"><label class="form-label">Bookings per phone number per day</label><input class="form-control" style="width:8rem;" type="number" min="1" max="50" name="pp" [(ngModel)]="s.maxPublicPerPhonePerDay" /></div>
-        <div class="form-group mb-2"><label class="form-label">Page title</label><input class="form-control" name="pt" [(ngModel)]="title" /></div>
-        <div class="form-group mb-2"><label class="form-label">Intro text</label><textarea class="form-control" rows="2" name="pi" [(ngModel)]="intro"></textarea></div>
-        <div class="form-group mb-3"><label class="form-label">How to pay <span class="text-muted">(shown to guests who owe a deposit — for example mobile money number or bank details)</span></label>
+        <strong class="mt-2">{{ 'Public website' | translate }}</strong>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mt-2 mb-2"><input type="checkbox" class="bk-public" name="pe" [(ngModel)]="s.publicEnabled" /> {{ 'Allow public website' | translate }}</label>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Guests can then pick a service and a time themselves at' | translate }} <strong>{{ '/book' | translate }}</strong> {{ 'on this site, without signing in. Switch it off to close the page and take its tile off the home page; staff still book appointments as usual.' | translate }}</div>
+        <label style="display:flex; gap:0.5rem; align-items:center;" class="mb-2"><input type="checkbox" name="ec" [(ngModel)]="s.emailConfirmations" /> {{ 'Email a confirmation when the guest gives an email address' | translate }}</label>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Bookings per phone number per day' | translate }}</label><input class="form-control" style="width:8rem;" type="number" min="1" max="50" name="pp" [(ngModel)]="s.maxPublicPerPhonePerDay" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Page title' | translate }}</label><input class="form-control" name="pt" [(ngModel)]="title" /></div>
+        <div class="form-group mb-2"><label class="form-label">{{ 'Intro text' | translate }}</label><textarea class="form-control" rows="2" name="pi" [(ngModel)]="intro"></textarea></div>
+        <div class="form-group mb-3"><label class="form-label">{{ 'How to pay' | translate }} <span class="text-muted">{{ '(shown to guests who owe a deposit — for example mobile money number or bank details)' | translate }}</span></label>
           <textarea class="form-control" rows="3" name="pay" [(ngModel)]="pay"></textarea></div>
-        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save settings' }}</button></div>
+        <div><button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? ('Saving…' | translate) : ('Save settings' | translate) }}</button></div>
       </form>
     </app-shell>
   `,

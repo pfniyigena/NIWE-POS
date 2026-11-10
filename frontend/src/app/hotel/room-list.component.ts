@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,68 +14,68 @@ import { errMsg } from './hotel-util';
 @Component({
   selector: 'app-room-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Rooms</h3>
-        <button class="btn btn-primary" (click)="startNew()" *ngIf="!editing" [disabled]="types.length === 0">+ New room</button>
+        <h3>{{ 'Rooms' | translate }}</h3>
+        <button class="btn btn-primary" (click)="startNew()" *ngIf="!editing" [disabled]="types.length === 0">{{ '+ New room' | translate }}</button>
       </div>
-      <div class="alert alert-warning" *ngIf="types.length === 0">Add a <a routerLink="/admin/hotel/room-types">room type</a> before adding rooms.</div>
+      <div class="alert alert-warning" *ngIf="types.length === 0">{{ 'Add a' | translate }} <a routerLink="/admin/hotel/room-types">{{ 'room type' | translate }}</a> {{ 'before adding rooms.' | translate }}</div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form *ngIf="editing" class="card" style="padding:1rem; margin-bottom:1rem;" (ngSubmit)="save()">
-        <h4 style="font-size:1rem;" class="mb-2">{{ editing.id ? 'Edit room' : 'New room' }}</h4>
+        <h4 style="font-size:1rem;" class="mb-2">{{ editing.id ? ('Edit room' | translate) : ('New room' | translate) }}</h4>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Room number</label>
+          <div class="form-group"><label class="form-label">{{ 'Room number' | translate }}</label>
             <input class="form-control" style="max-width:130px;" name="number" [(ngModel)]="form.number" required /></div>
-          <div class="form-group"><label class="form-label">Floor (optional)</label>
+          <div class="form-group"><label class="form-label">{{ 'Floor (optional)' | translate }}</label>
             <input class="form-control" style="max-width:110px;" name="floor" [(ngModel)]="form.floor" /></div>
-          <div class="form-group"><label class="form-label">Room type</label>
+          <div class="form-group"><label class="form-label">{{ 'Room type' | translate }}</label>
             <select class="form-control" name="type" [(ngModel)]="form.roomTypeId" required>
               <option *ngFor="let t of types" [ngValue]="t.id">{{ t.name }} ({{ t.baseRate | number: '1.0-2' }})</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Own rate (optional)</label>
-            <input class="form-control" style="max-width:140px;" type="number" min="0" step="0.01" name="override" [(ngModel)]="form.rateOverride" placeholder="Type's rate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Own rate (optional)' | translate }}</label>
+            <input class="form-control" style="max-width:140px;" type="number" min="0" step="0.01" name="override" [(ngModel)]="form.rateOverride" [placeholder]="'Type\\'s rate' | translate" /></div>
         </div>
-        <div class="form-group"><label class="form-label">Notes (optional)</label>
-          <input class="form-control" name="notes" [(ngModel)]="form.notes" placeholder="Sea view, connecting door..." /></div>
-        <div class="form-group"><label class="form-label"><input type="checkbox" name="active" [(ngModel)]="form.active" /> In use</label></div>
+        <div class="form-group"><label class="form-label">{{ 'Notes (optional)' | translate }}</label>
+          <input class="form-control" name="notes" [(ngModel)]="form.notes" [placeholder]="'Sea view, connecting door...' | translate" /></div>
+        <div class="form-group"><label class="form-label"><input type="checkbox" name="active" [(ngModel)]="form.active" /> {{ 'In use' | translate }}</label></div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <button class="btn btn-link" type="button" (click)="editing = null">Cancel</button>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <button class="btn btn-link" type="button" (click)="editing = null">{{ 'Cancel' | translate }}</button>
         </div>
       </form>
 
-      <app-list-filter exportPath="/hotel/rooms/export" [exportExtra]="extra" [extraActive]="roomTypeId !== null" placeholder="Search room, floor, type, guest" [statuses]="statuses" statusAll="All rooms" [dates]="false" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <app-list-filter exportPath="/hotel/rooms/export" [exportExtra]="extra" [extraActive]="roomTypeId !== null" [placeholder]="'Search room, floor, type, guest' | translate" [statuses]="statuses" statusAll="All rooms" [dates]="false" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
       <div class="flex gap-2 mb-3 align-center" *ngIf="types.length > 1">
-        <select class="form-select type-filter" style="width:auto;" [(ngModel)]="roomTypeId" (ngModelChange)="typeChanged()" name="rt" title="Room type">
-          <option [ngValue]="null">All room types</option>
+        <select class="form-select type-filter" style="width:auto;" [(ngModel)]="roomTypeId" (ngModelChange)="typeChanged()" name="rt" [title]="'Room type' | translate">
+          <option [ngValue]="null">{{ 'All room types' | translate }}</option>
           <option *ngFor="let t of allTypes" [ngValue]="t.id">{{ t.name }}</option>
         </select>
       </div>
       <table class="table-sm">
-        <thead><tr><th>Room</th><th>Type</th><th>Rate</th><th>State</th><th>Cleaning</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Room' | translate }}</th><th>{{ 'Type' | translate }}</th><th>{{ 'Rate' | translate }}</th><th>{{ 'State' | translate }}</th><th>{{ 'Cleaning' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let r of list.rows">
-            <td><strong>{{ r.number }}</strong><span class="text-muted" *ngIf="r.floor"> · floor {{ r.floor }}</span></td>
+            <td><strong>{{ r.number }}</strong><span class="text-muted" *ngIf="r.floor"> {{ '· floor {p0}' | translate: { p0: (r.floor) } }}</span></td>
             <td>{{ r.roomTypeName }}</td>
-            <td>{{ r.rate | number: '1.2-2' }}<span class="text-muted" *ngIf="r.rateOverride !== null"> (own)</span></td>
+            <td>{{ r.rate | number: '1.2-2' }}<span class="text-muted" *ngIf="r.rateOverride !== null"> {{ '(own)' | translate }}</span></td>
             <td>
-              <span class="badge badge-secondary" *ngIf="!r.active">Not in use</span>
-              <span class="badge badge-danger" *ngIf="r.active && r.outOfOrder">Out of order</span>
-              <span class="badge badge-warning" *ngIf="r.active && !r.outOfOrder && r.occupied">Occupied · {{ r.occupantGuest }}</span>
-              <span class="badge badge-success" *ngIf="r.active && !r.outOfOrder && !r.occupied">Vacant</span>
+              <span class="badge badge-secondary" *ngIf="!r.active">{{ 'Not in use' | translate }}</span>
+              <span class="badge badge-danger" *ngIf="r.active && r.outOfOrder">{{ 'Out of order' | translate }}</span>
+              <span class="badge badge-warning" *ngIf="r.active && !r.outOfOrder && r.occupied">{{ 'Occupied · {p0}' | translate: { p0: (r.occupantGuest) } }}</span>
+              <span class="badge badge-success" *ngIf="r.active && !r.outOfOrder && !r.occupied">{{ 'Vacant' | translate }}</span>
             </td>
             <td>{{ r.housekeepingStatus | titlecase }}</td>
             <td class="flex gap-2">
-              <button class="btn btn-sm btn-outline-primary" (click)="edit(r)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="remove(r)">Delete</button>
+              <button class="btn btn-sm btn-outline-primary" (click)="edit(r)">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" (click)="remove(r)">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || roomTypeId ? 'No rooms match these filters.' : 'No rooms yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || roomTypeId ? ('No rooms match these filters.' | translate) : ('No rooms yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

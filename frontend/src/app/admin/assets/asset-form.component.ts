@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,111 +16,111 @@ import { AcquisitionFunding, AssetApiService, AssetCategory, DepreciationMethod,
 @Component({
   selector: 'app-asset-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit asset' : 'New asset' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit asset' | translate) : ('New asset' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-info" *ngIf="locked">
-        Depreciation or the purchase posting already exists for this asset, so cost, dates and depreciation terms can't be changed here. Use <em>Add improvement</em>, <em>Write value down</em> or <em>Change terms</em> on the asset page, and edit the details below.
+        {{ 'Depreciation or the purchase posting already exists for this asset, so cost, dates and depreciation terms can\\'t be changed here. Use' | translate }} <em>{{ 'Add improvement' | translate }}</em>, <em>{{ 'Write value down' | translate }}</em> {{ 'or' | translate }} <em>{{ 'Change terms' | translate }}</em> {{ 'on the asset page, and edit the details below.' | translate }}
       </div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Asset name</label>
-          <input class="form-control" name="name" [(ngModel)]="f.name" placeholder="e.g. Delivery van" required />
+          <label class="form-label">{{ 'Asset name' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="f.name" [placeholder]="'e.g. Delivery van' | translate" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Tag (optional)</label>
-          <input class="form-control" name="code" [(ngModel)]="f.code" placeholder="Left empty, one is generated (FA-0001…)" />
+          <label class="form-label">{{ 'Tag (optional)' | translate }}</label>
+          <input class="form-control" name="code" [(ngModel)]="f.code" [placeholder]="'Left empty, one is generated (FA-0001…)' | translate" />
         </div>
         <div class="form-group" *ngIf="!id && branches.length > 1">
-          <label class="form-label">Branch</label>
+          <label class="form-label">{{ 'Branch' | translate }}</label>
           <select class="form-select" name="branchId" [(ngModel)]="f.branchId">
-            <option [ngValue]="null">Head office</option>
+            <option [ngValue]="null">{{ 'Head office' | translate }}</option>
             <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
           </select>
-          <div class="text-muted" style="font-size:0.8rem;">Use <em>Transfer</em> on the asset page to move it to another branch later.</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Use' | translate }} <em>{{ 'Transfer' | translate }}</em> {{ 'on the asset page to move it to another branch later.' | translate }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Category</label>
+          <label class="form-label">{{ 'Category' | translate }}</label>
           <select class="form-select" name="categoryId" [(ngModel)]="f.categoryId" (ngModelChange)="onCategory()" [disabled]="locked" required>
-            <option [ngValue]="null" disabled>Select a category…</option>
+            <option [ngValue]="null" disabled>{{ 'Select a category…' | translate }}</option>
             <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
           </select>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="categories.length === 0">
-            No categories yet — <a routerLink="/admin/assets/categories">add one first</a>.
+            {{ 'No categories yet —' | translate }} <a routerLink="/admin/assets/categories">{{ 'add one first' | translate }}</a>.
           </div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Purchase date</label>
+          <div class="form-group"><label class="form-label">{{ 'Purchase date' | translate }}</label>
             <app-date-picker name="purchaseDate" [(ngModel)]="f.purchaseDate" [disabled]="locked" required></app-date-picker></div>
-          <div class="form-group"><label class="form-label">Cost</label>
+          <div class="form-group"><label class="form-label">{{ 'Cost' | translate }}</label>
             <input class="form-control" type="number" step="0.01" min="0.01" name="cost" [(ngModel)]="f.cost" [disabled]="locked" required /></div>
         </div>
         <div class="card mb-3" style="padding:0.75rem 1rem;">
-          <strong class="mb-2">Depreciation</strong>
+          <strong class="mb-2">{{ 'Depreciation' | translate }}</strong>
           <div class="form-group">
-            <label class="form-label">Method</label>
+            <label class="form-label">{{ 'Method' | translate }}</label>
             <select class="form-select" name="method" [(ngModel)]="f.method" [disabled]="locked">
-              <option value="STRAIGHT_LINE">Straight line (same amount each month)</option>
-              <option value="DECLINING_BALANCE">Declining balance (bigger early)</option>
+              <option value="STRAIGHT_LINE">{{ 'Straight line (same amount each month)' | translate }}</option>
+              <option value="DECLINING_BALANCE">{{ 'Declining balance (bigger early)' | translate }}</option>
             </select>
           </div>
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group"><label class="form-label">Useful life (months)</label>
+            <div class="form-group"><label class="form-label">{{ 'Useful life (months)' | translate }}</label>
               <input class="form-control" type="number" min="1" name="life" [(ngModel)]="f.usefulLifeMonths" [disabled]="locked" /></div>
-            <div class="form-group"><label class="form-label">Salvage value</label>
+            <div class="form-group"><label class="form-label">{{ 'Salvage value' | translate }}</label>
               <input class="form-control" type="number" step="0.01" min="0" name="salvage" [(ngModel)]="f.salvageValue" [disabled]="locked" /></div>
           </div>
           <div class="form-group">
-            <label class="form-label">Start depreciating in</label>
+            <label class="form-label">{{ 'Start depreciating in' | translate }}</label>
             <app-date-picker name="startDate" [(ngModel)]="f.depreciationStartDate" [disabled]="locked"></app-date-picker>
-            <div class="text-muted" style="font-size:0.8rem;">{{ f.prorateFirstMonth ? 'The first month is charged only for the days from this date.' : 'A full month is charged for the month of this date.' }}</div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ f.prorateFirstMonth ? ('The first month is charged only for the days from this date.' | translate) : ('A full month is charged for the month of this date.' | translate) }}</div>
           </div>
           <div class="form-group">
-            <label class="form-label"><input type="checkbox" name="prorate" [(ngModel)]="f.prorateFirstMonth" [disabled]="locked" /> Prorate the first month by days</label>
+            <label class="form-label"><input type="checkbox" name="prorate" [(ngModel)]="f.prorateFirstMonth" [disabled]="locked" /> {{ 'Prorate the first month by days' | translate }}</label>
           </div>
           <div class="form-group" *ngIf="!id">
-            <label class="form-label">Depreciation already charged before this system (optional)</label>
+            <label class="form-label">{{ 'Depreciation already charged before this system (optional)' | translate }}</label>
             <input class="form-control" type="number" step="0.01" min="0" name="opening" [(ngModel)]="f.openingAccumulatedDepreciation" />
             <div class="text-muted" style="font-size:0.8rem;">
-              For an asset you already own: set "Start depreciating in" to the first month still to be charged. This opening amount is not posted to Accounting — record it with a journal entry if you need it there.
+              {{ 'For an asset you already own: set "Start depreciating in" to the first month still to be charged. This opening amount is not posted to Accounting — record it with a journal entry if you need it there.' | translate }}
             </div>
           </div>
         </div>
         <div class="form-group" *ngIf="!id">
-          <label class="form-label">Purchase posting</label>
+          <label class="form-label">{{ 'Purchase posting' | translate }}</label>
           <select class="form-select" name="funding" [(ngModel)]="f.acquisitionFunding">
-            <option value="NONE">Don't post (the purchase is already in the books)</option>
-            <option value="CASH">Post: paid in cash (Fixed Assets / Cash)</option>
-            <option value="PAYABLE">Post: owed to the supplier (Fixed Assets / Accounts Payable)</option>
+            <option value="NONE">{{ 'Don\\'t post (the purchase is already in the books)' | translate }}</option>
+            <option value="CASH">{{ 'Post: paid in cash (Fixed Assets / Cash)' | translate }}</option>
+            <option value="PAYABLE">{{ 'Post: owed to the supplier (Fixed Assets / Accounts Payable)' | translate }}</option>
           </select>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Location</label><input class="form-control" name="location" [(ngModel)]="f.location" /></div>
-          <div class="form-group"><label class="form-label">Held by</label><input class="form-control" name="assignedTo" [(ngModel)]="f.assignedTo" /></div>
-          <div class="form-group"><label class="form-label">Serial number</label><input class="form-control" name="serial" [(ngModel)]="f.serialNumber" /></div>
-          <div class="form-group"><label class="form-label">Supplier</label><input class="form-control" name="supplier" [(ngModel)]="f.supplierName" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Location' | translate }}</label><input class="form-control" name="location" [(ngModel)]="f.location" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Held by' | translate }}</label><input class="form-control" name="assignedTo" [(ngModel)]="f.assignedTo" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Serial number' | translate }}</label><input class="form-control" name="serial" [(ngModel)]="f.serialNumber" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Supplier' | translate }}</label><input class="form-control" name="supplier" [(ngModel)]="f.supplierName" /></div>
         </div>
         <div class="card mb-3" style="padding:0.75rem 1rem;">
-          <strong class="mb-2">Warranty and insurance (optional)</strong>
+          <strong class="mb-2">{{ 'Warranty and insurance (optional)' | translate }}</strong>
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div class="form-group"><label class="form-label">Warranty ends</label>
+            <div class="form-group"><label class="form-label">{{ 'Warranty ends' | translate }}</label>
               <app-date-picker name="warrantyExpiresOn" [(ngModel)]="f.warrantyExpiresOn"></app-date-picker></div>
-            <div class="form-group"><label class="form-label">Insurance ends</label>
+            <div class="form-group"><label class="form-label">{{ 'Insurance ends' | translate }}</label>
               <app-date-picker name="insuranceExpiresOn" [(ngModel)]="f.insuranceExpiresOn"></app-date-picker></div>
-            <div class="form-group"><label class="form-label">Insurance policy</label>
+            <div class="form-group"><label class="form-label">{{ 'Insurance policy' | translate }}</label>
               <input class="form-control" name="insurancePolicy" [(ngModel)]="f.insurancePolicy" /></div>
           </div>
-          <div class="text-muted" style="font-size:0.8rem;">The register and the overview warn you before these dates.</div>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'The register and the overview warn you before these dates.' | translate }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Notes</label>
+          <label class="form-label">{{ 'Notes' | translate }}</label>
           <textarea class="form-control" rows="2" name="notes" [(ngModel)]="f.notes"></textarea>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="saving">Save</button>
-          <a class="btn btn-link" [routerLink]="id ? ['/admin/assets', id] : ['/admin/assets']">Cancel</a>
+          <button class="btn btn-primary" type="submit" [disabled]="saving">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" [routerLink]="id ? ['/admin/assets', id] : ['/admin/assets']">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

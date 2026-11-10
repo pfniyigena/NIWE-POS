@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -20,51 +21,51 @@ import { SubscriptionPlanApiService } from '../core/api/subscription-plan-api.se
 @Component({
   selector: 'app-subscription-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex justify-between align-center mb-3">
         <div>
           <h3 style="margin-bottom:0;">{{ customerName ? 'Subscriptions for ' + customerName : 'Subscriptions' }}</h3>
-          <a *ngIf="customerName" class="text-muted" routerLink="/admin/subscriptions" style="font-size:0.85rem;">Show every customer's subscriptions</a>
+          <a *ngIf="customerName" class="text-muted" routerLink="/admin/subscriptions" style="font-size:0.85rem;">{{ 'Show every customer\\'s subscriptions' | translate }}</a>
         </div>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/overview">Overview</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/reports">Reports</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/job-settings">Job settings</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/subscription-plans">Plans</a>
-          <a class="btn btn-primary" routerLink="/admin/subscriptions/new">+ New subscription</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/overview">{{ 'Overview' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/reports">{{ 'Reports' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/subscriptions/job-settings">{{ 'Job settings' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/subscription-plans">{{ 'Plans' | translate }}</a>
+          <a class="btn btn-primary" routerLink="/admin/subscriptions/new">{{ '+ New subscription' | translate }}</a>
         </div>
       </div>
-      <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="jobSummary">Daily billing job — last run: {{ jobSummary }}</div>
+      <div class="text-muted mb-2" style="font-size:0.85rem;" *ngIf="jobSummary">{{ 'Daily billing job — last run: {p0}' | translate: { p0: (jobSummary) } }}</div>
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
         <button type="button" class="btn btn-sm" *ngFor="let v of views" [ngClass]="view === v.key ? 'btn-primary' : 'btn-outline-primary'" (click)="setView(v.key)">{{ v.label }}</button>
       </div>
       <div class="flex gap-2 mb-3" style="flex-wrap:wrap;">
-        <input class="form-control" style="width:16rem;" name="q" placeholder="Search customer or plan" [(ngModel)]="search" (ngModelChange)="reload()" />
+        <input class="form-control" style="width:16rem;" name="q" [placeholder]="'Search customer or plan' | translate" [(ngModel)]="search" (ngModelChange)="reload()" />
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="reload()">
-          <option value="">Any status</option>
-          <option value="ACTIVE">Active</option>
-          <option value="PAUSED">Paused</option>
-          <option value="CANCELLED">Cancelled</option>
-          <option value="ENDED">Ended</option>
+          <option value="">{{ 'Any status' | translate }}</option>
+          <option value="ACTIVE">{{ 'Active' | translate }}</option>
+          <option value="PAUSED">{{ 'Paused' | translate }}</option>
+          <option value="CANCELLED">{{ 'Cancelled' | translate }}</option>
+          <option value="ENDED">{{ 'Ended' | translate }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="pl" [(ngModel)]="planId" (ngModelChange)="reload()">
-          <option [ngValue]="null">Any plan</option>
+          <option [ngValue]="null">{{ 'Any plan' | translate }}</option>
           <option *ngFor="let p of plans" [ngValue]="p.id">{{ p.name }}</option>
         </select>
       </div>
       <table class="table-sm">
         <thead>
           <tr>
-            <th>Customer</th>
-            <th>Plan</th>
-            <th class="text-end">Qty</th>
-            <th class="text-end">Per cycle</th>
-            <th>Interval</th>
-            <th>Status</th>
-            <th>Next billing</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Plan' | translate }}</th>
+            <th class="text-end">{{ 'Qty' | translate }}</th>
+            <th class="text-end">{{ 'Per cycle' | translate }}</th>
+            <th>{{ 'Interval' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th>{{ 'Next billing' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -77,19 +78,19 @@ import { SubscriptionPlanApiService } from '../core/api/subscription-plan-api.se
             <td>{{ s.billingInterval }}</td>
             <td>
               <span class="badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span>
-              <span class="badge badge-info" style="margin-left:0.25rem;" *ngIf="s.onTrial">TRIAL</span>
-              <span class="badge badge-warning" style="margin-left:0.25rem;" *ngIf="s.cancelAtPeriodEnd">CANCELS</span>
-              <div class="text-muted" style="font-size:0.75rem;" *ngIf="s.status === 'PAUSED' && s.resumeOn">resumes {{ s.resumeOn }}</div>
-              <div class="text-muted" style="font-size:0.75rem;" *ngIf="s.termCycles && s.status === 'ACTIVE'">cycle {{ s.cyclesBilled }} of {{ s.termCycles }}</div>
+              <span class="badge badge-info" style="margin-left:0.25rem;" *ngIf="s.onTrial">{{ 'TRIAL' | translate }}</span>
+              <span class="badge badge-warning" style="margin-left:0.25rem;" *ngIf="s.cancelAtPeriodEnd">{{ 'CANCELS' | translate }}</span>
+              <div class="text-muted" style="font-size:0.75rem;" *ngIf="s.status === 'PAUSED' && s.resumeOn">{{ 'resumes {p0}' | translate: { p0: (s.resumeOn) } }}</div>
+              <div class="text-muted" style="font-size:0.75rem;" *ngIf="s.termCycles && s.status === 'ACTIVE'">{{ 'cycle {p0} of {p1}' | translate: { p0: (s.cyclesBilled), p1: (s.termCycles) } }}</div>
             </td>
             <td>{{ s.status === 'CANCELLED' || s.status === 'ENDED' ? '—' : s.nextBillingDate }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/subscriptions', s.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/subscriptions', s.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="subscriptions.length === 0">
             <td colspan="8" class="text-muted">
-              {{ customerName ? 'No subscriptions for ' + customerName + ' yet.' : (search || status || planId || view !== 'all') ? 'No subscription matches this filter.' : 'No subscriptions yet — create one with "+ New subscription".' }}
+              {{ customerName ? 'No subscriptions for ' + customerName + ' yet.' : (search || status || planId || view !== 'all') ? ('No subscription matches this filter.' | translate) : ('No subscriptions yet — create one with "+ New subscription".' | translate) }}
             </td>
           </tr>
         </tbody>

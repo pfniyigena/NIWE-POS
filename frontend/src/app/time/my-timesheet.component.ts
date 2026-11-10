@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -12,25 +13,25 @@ import { addDays, formatClock, formatMinutes, mondayOf, parseDuration, parseIso,
 @Component({
   selector: 'app-my-timesheet',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">My time</h3>
+      <h3 class="mb-3">{{ 'My time' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
       <div class="stat-grid mb-3" *ngIf="summary">
-        <div class="stat-tile"><div class="stat-label">Today</div><div class="stat-value">{{ summary.hoursToday | number: '1.0-2' }} h</div></div>
-        <div class="stat-tile"><div class="stat-label">This week</div><div class="stat-value">{{ summary.hoursThisWeek | number: '1.0-2' }} h</div>
-          <div class="text-muted" style="font-size:0.75rem;">{{ summary.billableHoursThisWeek | number: '1.0-2' }} h billable</div></div>
-        <div class="stat-tile"><div class="stat-label">This month</div><div class="stat-value">{{ summary.hoursThisMonth | number: '1.0-2' }} h</div></div>
+        <div class="stat-tile"><div class="stat-label">{{ 'Today' | translate }}</div><div class="stat-value">{{ '{p0} h' | translate: { p0: (summary.hoursToday | number: '1.0-2') } }}</div></div>
+        <div class="stat-tile"><div class="stat-label">{{ 'This week' | translate }}</div><div class="stat-value">{{ '{p0} h' | translate: { p0: (summary.hoursThisWeek | number: '1.0-2') } }}</div>
+          <div class="text-muted" style="font-size:0.75rem;">{{ '{p0} h billable' | translate: { p0: (summary.billableHoursThisWeek | number: '1.0-2') } }}</div></div>
+        <div class="stat-tile"><div class="stat-label">{{ 'This month' | translate }}</div><div class="stat-value">{{ '{p0} h' | translate: { p0: (summary.hoursThisMonth | number: '1.0-2') } }}</div></div>
         <div class="stat-tile" [class.warn]="summary.rejected > 0">
-          <div class="stat-label">To submit</div><div class="stat-value">{{ summary.toSubmit }}</div>
-          <div class="text-muted" style="font-size:0.75rem;" *ngIf="summary.rejected">{{ summary.rejected }} sent back</div></div>
+          <div class="stat-label">{{ 'To submit' | translate }}</div><div class="stat-value">{{ summary.toSubmit }}</div>
+          <div class="text-muted" style="font-size:0.75rem;" *ngIf="summary.rejected">{{ '{p0} sent back' | translate: { p0: (summary.rejected) } }}</div></div>
       </div>
 
       <div class="alert alert-warning" id="long-timer" *ngIf="timer?.running && tooLong()">
-        This timer has been running for {{ clock }}. If you forgot it, stop it and correct the time below; it will be stopped for you at {{ timer!.autoStopHours }} hours.
+        {{ 'This timer has been running for {p0}. If you forgot it, stop it and correct the time below; it will be stopped for you at {p1} hours.' | translate: { p0: (clock), p1: (timer!.autoStopHours) } }}
       </div>
 
       <!-- Stopwatch -->
@@ -43,96 +44,96 @@ import { addDays, formatClock, formatMinutes, mondayOf, parseDuration, parseIso,
               <div class="text-muted" *ngIf="timer!.description">{{ timer!.description }}</div>
             </div>
             <span class="spacer"></span>
-            <input class="form-control" style="width:14rem;" placeholder="What did you do? (optional)" name="sd" [(ngModel)]="stopNote" />
-            <button class="btn btn-primary" type="button" (click)="stop()">Stop and save</button>
-            <button class="btn btn-outline-secondary" type="button" (click)="discard()" title="Throw this time away">Discard</button>
+            <input class="form-control" style="width:14rem;" [placeholder]="'What did you do? (optional)' | translate" name="sd" [(ngModel)]="stopNote" />
+            <button class="btn btn-primary" type="button" (click)="stop()">{{ 'Stop and save' | translate }}</button>
+            <button class="btn btn-outline-secondary" type="button" (click)="discard()" [title]="'Throw this time away' | translate">{{ 'Discard' | translate }}</button>
           </div>
         </ng-container>
         <ng-template #idle>
           <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
-            <strong>Timer</strong>
+            <strong>{{ 'Timer' | translate }}</strong>
             <select class="form-select" style="width:auto; max-width:16rem;" name="tp" [(ngModel)]="timerForm.projectId" (ngModelChange)="timerForm.taskId = null">
-              <option [ngValue]="null">Project…</option>
+              <option [ngValue]="null">{{ 'Project…' | translate }}</option>
               <option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}<ng-container *ngIf="p.customerName"> — {{ p.customerName }}</ng-container></option>
             </select>
             <select class="form-select" style="width:auto;" name="tt" [(ngModel)]="timerForm.taskId" *ngIf="tasksOf(timerForm.projectId).length">
-              <option [ngValue]="null">No task</option>
+              <option [ngValue]="null">{{ 'No task' | translate }}</option>
               <option *ngFor="let t of tasksOf(timerForm.projectId)" [ngValue]="t.id">{{ t.name }}</option>
             </select>
-            <input class="form-control" style="width:16rem;" placeholder="What are you working on?" name="td" [(ngModel)]="timerForm.description" />
-            <button class="btn btn-success" type="button" [disabled]="!timerForm.projectId" (click)="start()">▶ Start</button>
+            <input class="form-control" style="width:16rem;" [placeholder]="'What are you working on?' | translate" name="td" [(ngModel)]="timerForm.description" />
+            <button class="btn btn-success" type="button" [disabled]="!timerForm.projectId" (click)="start()">{{ '▶ Start' | translate }}</button>
           </div>
         </ng-template>
       </div>
 
       <!-- Add / edit one entry -->
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="save()">
-        <strong class="mb-2">{{ editingId ? 'Change this entry' : 'Add time' }}</strong>
+        <strong class="mb-2">{{ editingId ? ('Change this entry' | translate) : ('Add time' | translate) }}</strong>
         <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group"><label class="form-label">Date</label>
+          <div class="form-group"><label class="form-label">{{ 'Date' | translate }}</label>
             <app-date-picker name="wd" [(ngModel)]="form.workDate" [max]="todayIso"></app-date-picker></div>
-          <div class="form-group"><label class="form-label">Project</label>
+          <div class="form-group"><label class="form-label">{{ 'Project' | translate }}</label>
             <select class="form-select" name="fp" [(ngModel)]="form.projectId" (ngModelChange)="onProject()">
-              <option [ngValue]="null">Choose…</option>
+              <option [ngValue]="null">{{ 'Choose…' | translate }}</option>
               <option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}<ng-container *ngIf="p.customerName"> — {{ p.customerName }}</ng-container></option>
             </select></div>
-          <div class="form-group" *ngIf="tasksOf(form.projectId).length"><label class="form-label">Task</label>
+          <div class="form-group" *ngIf="tasksOf(form.projectId).length"><label class="form-label">{{ 'Task' | translate }}</label>
             <select class="form-select" name="ft" [(ngModel)]="form.taskId">
-              <option [ngValue]="null">No task</option>
+              <option [ngValue]="null">{{ 'No task' | translate }}</option>
               <option *ngFor="let t of tasksOf(form.projectId)" [ngValue]="t.id">{{ t.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Time</label>
-            <input class="form-control" style="width:7rem;" name="fh" [(ngModel)]="form.duration" placeholder="1:30 or 1.5" /></div>
-          <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">What did you do?</label>
+          <div class="form-group"><label class="form-label">{{ 'Time' | translate }}</label>
+            <input class="form-control" style="width:7rem;" name="fh" [(ngModel)]="form.duration" [placeholder]="'1:30 or 1.5' | translate" /></div>
+          <div class="form-group" style="flex:1; min-width:12rem;"><label class="form-label">{{ 'What did you do?' | translate }}</label>
             <input class="form-control" name="fd" [(ngModel)]="form.description" /></div>
           <div class="form-group" *ngIf="budgetNote()" style="flex-basis:100%;"><div id="budget-note" [style.color]="budgetNote()!.over ? '#c0392b' : '#b07d00'" style="font-size:0.85rem;">{{ budgetNote()!.text }}</div></div>
           <div class="form-group" *ngIf="currentProject()?.billable"><label style="display:flex; gap:0.3rem; align-items:center;">
-            <input type="checkbox" name="fb" [(ngModel)]="form.billable" /> Billable</label></div>
+            <input type="checkbox" name="fb" [(ngModel)]="form.billable" /> {{ 'Billable' | translate }}</label></div>
           <div class="form-group">
-            <button class="btn btn-primary" type="submit" [disabled]="busy">{{ editingId ? 'Save' : 'Add' }}</button>
-            <button class="btn btn-outline-secondary" type="button" *ngIf="editingId" (click)="cancelEdit()" style="margin-left:0.4rem;">Cancel</button>
+            <button class="btn btn-primary" type="submit" [disabled]="busy">{{ editingId ? ('Save' | translate) : ('Add' | translate) }}</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="editingId" (click)="cancelEdit()" style="margin-left:0.4rem;">{{ 'Cancel' | translate }}</button>
           </div>
         </div>
-        <div class="text-muted" style="font-size:0.8rem;">Type time as 1:30, 1.5, 90m or 2h. Rates are worked out from the project; you don't need to enter any.</div>
+        <div class="text-muted" style="font-size:0.8rem;">{{ 'Type time as 1:30, 1.5, 90m or 2h. Rates are worked out from the project; you don\\'t need to enter any.' | translate }}</div>
       </form>
 
       <!-- Week -->
       <div class="flex gap-2 mb-2 align-center" style="flex-wrap:wrap;" *ngIf="week">
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shift(-7)">‹ Previous week</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shift(-7)">{{ '‹ Previous week' | translate }}</button>
         <strong>{{ weekLabel }}</strong>
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shift(7)">Next week ›</button>
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="thisWeek()">This week</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shift(7)">{{ 'Next week ›' | translate }}</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="thisWeek()">{{ 'This week' | translate }}</button>
         <span class="spacer"></span>
-        <span>{{ week.totalHours | number: '1.0-2' }} h total · {{ week.billableHours | number: '1.0-2' }} h billable</span>
+        <span>{{ '{p0} h total · {p1} h billable' | translate: { p0: (week.totalHours | number: '1.0-2'), p1: (week.billableHours | number: '1.0-2') } }}</span>
         <button class="btn btn-outline-secondary" type="button" id="copy-week" [disabled]="busy" (click)="copyLast()"
-          title="Copy the entries of the week before as drafts">Copy last week</button>
+          [title]="'Copy the entries of the week before as drafts' | translate">{{ 'Copy last week' | translate }}</button>
         <button class="btn btn-success" type="button" [disabled]="!submittable().length || busy" (click)="submitWeek()">
-          Submit {{ submittable().length }} for approval</button>
+          {{ 'Submit {p0} for approval' | translate: { p0: (submittable().length) } }}</button>
       </div>
 
       <table class="table-sm" *ngIf="week">
-        <thead><tr><th>Date</th><th>Project</th><th>Task</th><th>What</th><th class="text-end">Time</th><th>Billable</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Project' | translate }}</th><th>{{ 'Task' | translate }}</th><th>{{ 'What' | translate }}</th><th class="text-end">{{ 'Time' | translate }}</th><th>{{ 'Billable' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let e of week.entries">
             <td>{{ dayLabel(e.workDate) }}</td>
             <td>{{ e.projectName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="e.customerName">{{ e.customerName }}</div></td>
             <td>{{ e.taskName || '—' }}</td>
-            <td>{{ e.description || '—' }}<span class="badge badge-secondary" *ngIf="e.origin === 'TIMER'" style="margin-left:0.3rem;">timer</span>
-              <div style="color:var(--danger, #c0392b); font-size:0.8rem;" *ngIf="e.rejectReason">Sent back: {{ e.rejectReason }}</div></td>
+            <td>{{ e.description || '—' }}<span class="badge badge-secondary" *ngIf="e.origin === 'TIMER'" style="margin-left:0.3rem;">{{ 'timer' | translate }}</span>
+              <div style="color:var(--danger, #c0392b); font-size:0.8rem;" *ngIf="e.rejectReason">{{ 'Sent back: {p0}' | translate: { p0: (e.rejectReason) } }}</div></td>
             <td class="text-end">{{ fmt(e.minutes) }}</td>
-            <td>{{ e.billable ? 'Yes' : 'No' }}</td>
+            <td>{{ e.billable ? ('Yes' | translate) : ('No' | translate) }}</td>
             <td><span class="badge" [class.badge-secondary]="e.status === 'DRAFT'" [class.badge-warning]="e.status === 'SUBMITTED'"
                 [class.badge-success]="e.status === 'APPROVED' || e.status === 'INVOICED'" [class.badge-danger]="e.status === 'REJECTED'">{{ label(e.status) }}</span></td>
             <td style="white-space:nowrap;">
               <ng-container *ngIf="e.status === 'DRAFT' || e.status === 'REJECTED'">
-                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="edit(e)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(e)" style="margin-left:0.3rem;">Delete</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="edit(e)">{{ 'Edit' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" (click)="remove(e)" style="margin-left:0.3rem;">{{ 'Delete' | translate }}</button>
               </ng-container>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="week && !week.entries.length">Nothing logged this week yet. Start the timer or add time above.</p>
+      <p class="text-muted" *ngIf="week && !week.entries.length">{{ 'Nothing logged this week yet. Start the timer or add time above.' | translate }}</p>
     </app-shell>
   `,
 })

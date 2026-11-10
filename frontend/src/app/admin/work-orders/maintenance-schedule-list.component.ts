@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -19,14 +20,14 @@ import { WorkOrderTabsComponent } from './work-order-tabs.component';
 @Component({
   selector: 'app-maintenance-schedule-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, WorkOrderTabsComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, WorkOrderTabsComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-2">
-        <h3>Work orders</h3>
+        <h3>{{ 'Work orders' | translate }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-secondary" type="button" id="run-due" [disabled]="busy" (click)="runDue()">Create the jobs that are due</button>
-          <button class="btn btn-primary" type="button" id="new-schedule" (click)="startNew()">+ New schedule</button>
+          <button class="btn btn-outline-secondary" type="button" id="run-due" [disabled]="busy" (click)="runDue()">{{ 'Create the jobs that are due' | translate }}</button>
+          <button class="btn btn-primary" type="button" id="new-schedule" (click)="startNew()">{{ '+ New schedule' | translate }}</button>
         </div>
       </div>
       <app-work-order-tabs></app-work-order-tabs>
@@ -34,91 +35,91 @@ import { WorkOrderTabsComponent } from './work-order-tabs.component';
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
       <form class="card mb-3" style="padding:1rem; max-width:60rem;" *ngIf="f" (ngSubmit)="save()">
-        <strong class="mb-2">{{ editId ? 'Edit schedule' : 'New schedule' }}</strong>
+        <strong class="mb-2">{{ editId ? ('Edit schedule' | translate) : ('New schedule' | translate) }}</strong>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:2; min-width:16rem;"><label class="form-label">Title (becomes the job title)</label><input class="form-control" name="ti" [(ngModel)]="f.title" required /></div>
-          <div class="form-group"><label class="form-label">Type</label>
+          <div class="form-group" style="flex:2; min-width:16rem;"><label class="form-label">{{ 'Title (becomes the job title)' | translate }}</label><input class="form-control" name="ti" [(ngModel)]="f.title" required /></div>
+          <div class="form-group"><label class="form-label">{{ 'Type' | translate }}</label>
             <select class="form-select" name="ty" [(ngModel)]="f.type">
-              <option value="INTERNAL">Internal maintenance</option><option value="CUSTOMER">Customer job (billed)</option>
+              <option value="INTERNAL">{{ 'Internal maintenance' | translate }}</option><option value="CUSTOMER">{{ 'Customer job (billed)' | translate }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Priority</label>
+          <div class="form-group"><label class="form-label">{{ 'Priority' | translate }}</label>
             <select class="form-select" name="pr" [(ngModel)]="f.priority">
-              <option value="LOW">Low</option><option value="NORMAL">Normal</option><option value="HIGH">High</option><option value="URGENT">Urgent</option>
+              <option value="LOW">{{ 'Low' | translate }}</option><option value="NORMAL">{{ 'Normal' | translate }}</option><option value="HIGH">{{ 'High' | translate }}</option><option value="URGENT">{{ 'Urgent' | translate }}</option>
             </select></div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="f.type === 'CUSTOMER'"><label class="form-label">Customer</label>
+          <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="f.type === 'CUSTOMER'"><label class="form-label">{{ 'Customer' | translate }}</label>
             <select class="form-select" name="cu" [(ngModel)]="f.customerId">
-              <option [ngValue]="null">Choose…</option>
+              <option [ngValue]="null">{{ 'Choose…' | translate }}</option>
               <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
             </select></div>
-          <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="assets.length"><label class="form-label">Asset (optional)</label>
+          <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="assets.length"><label class="form-label">{{ 'Asset (optional)' | translate }}</label>
             <select class="form-select" name="as" [(ngModel)]="f.assetId">
-              <option [ngValue]="null">None</option>
+              <option [ngValue]="null">{{ 'None' | translate }}</option>
               <option *ngFor="let a of assets" [ngValue]="a.id">{{ a.code }} — {{ a.name }}</option>
             </select></div>
-          <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="packages.length"><label class="form-label">Service package (checklist and parts)</label>
+          <div class="form-group" style="flex:1; min-width:14rem;" *ngIf="packages.length"><label class="form-label">{{ 'Service package (checklist and parts)' | translate }}</label>
             <select class="form-select" name="pk" [(ngModel)]="f.packageId">
-              <option [ngValue]="null">None</option>
+              <option [ngValue]="null">{{ 'None' | translate }}</option>
               <option *ngFor="let p of packages" [ngValue]="p.id">{{ p.name }}</option>
             </select></div>
-          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">Assigned to</label>
+          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Assigned to' | translate }}</label>
             <select class="form-select" name="au" [(ngModel)]="f.assignedToUserId">
-              <option [ngValue]="null">Nobody yet</option>
+              <option [ngValue]="null">{{ 'Nobody yet' | translate }}</option>
               <option *ngFor="let s of staff" [ngValue]="s.id">{{ s.fullName }}</option>
             </select></div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;" *ngIf="f.type === 'CUSTOMER'">
-          <div class="form-group"><label class="form-label">Fixed price (optional)</label><input class="form-control" type="number" min="0" step="0.01" name="fp" [(ngModel)]="f.fixedPrice" /></div>
-          <div class="form-group"><label class="form-label">Hourly rate (optional)</label><input class="form-control" type="number" min="0" step="0.01" name="lr" [(ngModel)]="f.labourRate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Fixed price (optional)' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="fp" [(ngModel)]="f.fixedPrice" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Hourly rate (optional)' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="lr" [(ngModel)]="f.labourRate" /></div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">Description</label><textarea class="form-control" rows="2" name="de" [(ngModel)]="f.description"></textarea></div>
-          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">What is being worked on (optional)</label><input class="form-control" name="it" [(ngModel)]="f.itemDescription" /></div>
+          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Description' | translate }}</label><textarea class="form-control" rows="2" name="de" [(ngModel)]="f.description"></textarea></div>
+          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'What is being worked on (optional)' | translate }}</label><input class="form-control" name="it" [(ngModel)]="f.itemDescription" /></div>
         </div>
         <div class="flex gap-3 align-center" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Repeat every</label>
+          <div class="form-group"><label class="form-label">{{ 'Repeat every' | translate }}</label>
             <div class="flex gap-2">
               <input class="form-control" type="number" min="1" max="120" name="ic" style="width:5rem;" [(ngModel)]="f.intervalCount" />
               <select class="form-select" name="iu" [(ngModel)]="f.intervalUnit">
-                <option value="DAYS">day(s)</option><option value="WEEKS">week(s)</option><option value="MONTHS">month(s)</option>
+                <option value="DAYS">{{ 'day(s)' | translate }}</option><option value="WEEKS">{{ 'week(s)' | translate }}</option><option value="MONTHS">{{ 'month(s)' | translate }}</option>
               </select>
             </div></div>
-          <div class="form-group"><label class="form-label">Next one is due</label><app-date-picker name="nd" [(ngModel)]="f.nextDueDate"></app-date-picker></div>
-          <div class="form-group"><label class="form-label">Create the job this many days early</label><input class="form-control" type="number" min="0" max="365" name="ld" style="width:6rem;" [(ngModel)]="f.leadDays" /></div>
-          <div class="form-group"><label class="form-label">Job is due after (days)</label><input class="form-control" type="number" min="0" max="365" name="da" style="width:6rem;" [(ngModel)]="f.dueAfterDays" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Next one is due' | translate }}</label><app-date-picker name="nd" [(ngModel)]="f.nextDueDate"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'Create the job this many days early' | translate }}</label><input class="form-control" type="number" min="0" max="365" name="ld" style="width:6rem;" [(ngModel)]="f.leadDays" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Job is due after (days)' | translate }}</label><input class="form-control" type="number" min="0" max="365" name="da" style="width:6rem;" [(ngModel)]="f.dueAfterDays" /></div>
         </div>
-        <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-1"><input type="checkbox" name="so" [(ngModel)]="f.skipIfOpen" /> Do not create a new job while the last one is still open</label>
-        <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-2"><input type="checkbox" name="ac" [(ngModel)]="f.active" /> Active</label>
+        <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-1"><input type="checkbox" name="so" [(ngModel)]="f.skipIfOpen" /> {{ 'Do not create a new job while the last one is still open' | translate }}</label>
+        <label style="display:flex; gap:0.4rem; align-items:center;" class="mb-2"><input type="checkbox" name="ac" [(ngModel)]="f.active" /> {{ 'Active' | translate }}</label>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="busy">Save schedule</button>
-          <button class="btn btn-outline-secondary" type="button" (click)="f = null">Cancel</button>
+          <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save schedule' | translate }}</button>
+          <button class="btn btn-outline-secondary" type="button" (click)="f = null">{{ 'Cancel' | translate }}</button>
         </div>
       </form>
 
       <table class="table-sm" *ngIf="list.length">
-        <thead><tr><th>Schedule</th><th>For</th><th>Repeats</th><th>Next due</th><th>Assigned to</th><th>Last job</th><th class="text-end">Made</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Schedule' | translate }}</th><th>{{ 'For' | translate }}</th><th>{{ 'Repeats' | translate }}</th><th>{{ 'Next due' | translate }}</th><th>{{ 'Assigned to' | translate }}</th><th>{{ 'Last job' | translate }}</th><th class="text-end">{{ 'Made' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let s of list" [attr.data-id]="s.id">
             <td>{{ s.title }}</td>
-            <td>{{ s.type === 'CUSTOMER' ? (s.customerName || '—') : ('Internal' + (s.assetName ? ' · ' + s.assetName : '')) }}</td>
+            <td>{{ s.type === 'CUSTOMER' ? (s.customerName || '—') : (('Internal' | translate) + (s.assetName ? ' · ' + s.assetName : '')) }}</td>
             <td>{{ s.every }}</td>
-            <td>{{ s.nextDueDate }} <span class="badge badge-warning" *ngIf="s.dueNow && s.active">Due now</span></td>
+            <td>{{ s.nextDueDate }} <span class="badge badge-warning" *ngIf="s.dueNow && s.active">{{ 'Due now' | translate }}</span></td>
             <td>{{ s.assignedToName || '—' }}</td>
             <td><a *ngIf="s.lastWorkOrderId" [routerLink]="['/admin/work-orders', s.lastWorkOrderId]">{{ s.lastWorkOrderNumber }}</a><span *ngIf="!s.lastWorkOrderId" class="text-muted">—</span>
               <span class="text-muted" *ngIf="s.lastWorkOrderStatus"> ({{ s.lastWorkOrderStatus.replace('_', ' ').toLowerCase() }})</span></td>
             <td class="text-end">{{ s.timesGenerated }}</td>
-            <td><span class="badge" [class.badge-success]="s.active" [class.badge-secondary]="!s.active">{{ s.active ? 'Active' : 'Paused' }}</span></td>
+            <td><span class="badge" [class.badge-success]="s.active" [class.badge-secondary]="!s.active">{{ s.active ? ('Active' | translate) : ('Paused' | translate) }}</span></td>
             <td style="white-space:nowrap;">
-              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="busy" (click)="run(s)">Run now</button>
-              <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="busy" (click)="toggle(s)" style="margin-left:0.25rem;">{{ s.active ? 'Pause' : 'Resume' }}</button>
-              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="startEdit(s)" style="margin-left:0.25rem;">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" type="button" [disabled]="busy" (click)="remove(s)" style="margin-left:0.25rem;">Delete</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" [disabled]="busy" (click)="run(s)">{{ 'Run now' | translate }}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" [disabled]="busy" (click)="toggle(s)" style="margin-left:0.25rem;">{{ s.active ? ('Pause' | translate) : ('Resume' | translate) }}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="startEdit(s)" style="margin-left:0.25rem;">{{ 'Edit' | translate }}</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" [disabled]="busy" (click)="remove(s)" style="margin-left:0.25rem;">{{ 'Delete' | translate }}</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="loaded && !list.length">No planned maintenance yet. Add a schedule and the jobs are created for you when they fall due (a check runs every morning).</p>
+      <p class="text-muted" *ngIf="loaded && !list.length">{{ 'No planned maintenance yet. Add a schedule and the jobs are created for you when they fall due (a check runs every morning).' | translate }}</p>
     </app-shell>
   `,
 })

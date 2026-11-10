@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,113 +14,111 @@ import { ProjectDetail, ProjectPayload, ProjectStatus, StaffOption, TimeApiServi
 @Component({
   selector: 'app-time-project-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, QuickCustomerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent, QuickCustomerComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>{{ id ? 'Project' : 'New project' }}</h3>
-        <a class="btn btn-outline-secondary" routerLink="/admin/time/projects">Back to projects</a>
+        <h3>{{ id ? ('Project' | translate) : ('New project' | translate) }}</h3>
+        <a class="btn btn-outline-secondary" routerLink="/admin/time/projects">{{ 'Back to projects' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="saved">Saved.</div>
+      <div class="alert alert-success" *ngIf="saved">{{ 'Saved.' | translate }}</div>
 
       <form class="card mb-3" style="padding:1rem; max-width:44rem;" (ngSubmit)="save()">
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">Name</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
-          <div class="form-group" style="flex:1; min-width:8rem;"><label class="form-label">Code (optional)</label><input class="form-control" name="c" [(ngModel)]="f.code" /></div>
+          <div class="form-group" style="flex:2; min-width:14rem;"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="n" [(ngModel)]="f.name" required /></div>
+          <div class="form-group" style="flex:1; min-width:8rem;"><label class="form-label">{{ 'Code (optional)' | translate }}</label><input class="form-control" name="c" [(ngModel)]="f.code" /></div>
         </div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">Customer (who is billed)</label>
+          <div class="form-group" style="flex:1; min-width:14rem;"><label class="form-label">{{ 'Customer (who is billed)' | translate }}</label>
             <select class="form-select" name="cu" [(ngModel)]="f.customerId">
-              <option [ngValue]="null">No customer</option>
+              <option [ngValue]="null">{{ 'No customer' | translate }}</option>
               <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}</option>
             </select>
             <app-quick-customer (created)="onCustomerCreated($event)"></app-quick-customer></div>
-          <div class="form-group" *ngIf="id"><label class="form-label">Status</label>
+          <div class="form-group" *ngIf="id"><label class="form-label">{{ 'Status' | translate }}</label>
             <select class="form-select" name="s" [(ngModel)]="f.status">
-              <option value="ACTIVE">Active — time can be logged</option>
-              <option value="COMPLETED">Completed — no new time</option>
-              <option value="ARCHIVED">Archived — hidden</option>
+              <option value="ACTIVE">{{ 'Active — time can be logged' | translate }}</option>
+              <option value="COMPLETED">{{ 'Completed — no new time' | translate }}</option>
+              <option value="ARCHIVED">{{ 'Archived — hidden' | translate }}</option>
             </select></div>
         </div>
-        <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" rows="2" name="d" [(ngModel)]="f.description"></textarea></div>
+        <div class="form-group"><label class="form-label">{{ 'Description' | translate }}</label><textarea class="form-control" rows="2" name="d" [(ngModel)]="f.description"></textarea></div>
         <div class="flex gap-3" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">Hourly rate</label><input class="form-control" type="number" min="0" step="0.01" name="r" [(ngModel)]="f.defaultRate" placeholder="Use the default" /></div>
-          <div class="form-group"><label class="form-label">Budget (hours)</label><input class="form-control" type="number" min="0" step="0.5" name="b" [(ngModel)]="f.budgetHours" placeholder="No budget" /></div>
-          <div class="form-group"><label class="form-label">Start</label><app-date-picker name="sd" [(ngModel)]="f.startDate"></app-date-picker></div>
-          <div class="form-group"><label class="form-label">End</label><app-date-picker name="ed" [(ngModel)]="f.endDate"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'Hourly rate' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" name="r" [(ngModel)]="f.defaultRate" [placeholder]="'Use the default' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Budget (hours)' | translate }}</label><input class="form-control" type="number" min="0" step="0.5" name="b" [(ngModel)]="f.budgetHours" [placeholder]="'No budget' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Start' | translate }}</label><app-date-picker name="sd" [(ngModel)]="f.startDate"></app-date-picker></div>
+          <div class="form-group"><label class="form-label">{{ 'End' | translate }}</label><app-date-picker name="ed" [(ngModel)]="f.endDate"></app-date-picker></div>
         </div>
-        <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="bl" [(ngModel)]="f.billable" /> Time on this project is billable to the customer</label></div>
+        <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="bl" [(ngModel)]="f.billable" /> {{ 'Time on this project is billable to the customer' | translate }}</label></div>
         <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="bb" [(ngModel)]="f.blockOverBudget" [disabled]="f.budgetHours == null || f.budgetHours <= 0" />
-          Refuse time that would go over the budget</label>
-          <div class="text-muted" style="font-size:0.8rem;">Needs a budget. Managers can still correct entries after the fact.</div></div>
+          {{ 'Refuse time that would go over the budget' | translate }}</label>
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Needs a budget. Managers can still correct entries after the fact.' | translate }}</div></div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="busy">Save</button>
-          <button class="btn btn-outline-danger" type="button" *ngIf="id" (click)="remove()">Delete</button>
+          <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button>
+          <button class="btn btn-outline-danger" type="button" *ngIf="id" (click)="remove()">{{ 'Delete' | translate }}</button>
         </div>
       </form>
 
       <ng-container *ngIf="detail">
         <div class="card mb-3" style="padding:1rem; max-width:44rem;">
-          <strong class="mb-2">Hours</strong>
-          <div>{{ detail.summary.hoursLogged | number: '1.0-2' }} h logged · {{ detail.summary.billableHours | number: '1.0-2' }} h billable ·
-            {{ detail.summary.unbilledAmount | number: '1.0-2' }} ready to invoice
-            <span *ngIf="detail.summary.budgetHours != null"> · budget {{ detail.summary.budgetHours | number: '1.0-2' }} h ({{ detail.summary.percentOfBudget | number: '1.0-0' }}% used)</span></div>
-          <a *ngIf="detail.summary.unbilledAmount > 0" routerLink="/admin/time/billing" style="font-size:0.9rem;">Go to billing</a>
+          <strong class="mb-2">{{ 'Hours' | translate }}</strong>
+          <div>{{ '{p0} h logged · {p1} h billable · {p2} ready to invoice' | translate: { p0: (detail.summary.hoursLogged | number: '1.0-2'), p1: (detail.summary.billableHours | number: '1.0-2'), p2: (detail.summary.unbilledAmount | number: '1.0-2') } }}
+            <span *ngIf="detail.summary.budgetHours != null"> {{ '· budget {p0} h ({p1}% used)' | translate: { p0: (detail.summary.budgetHours | number: '1.0-2'), p1: (detail.summary.percentOfBudget | number: '1.0-0') } }}</span></div>
+          <a *ngIf="detail.summary.unbilledAmount > 0" routerLink="/admin/time/billing" style="font-size:0.9rem;">{{ 'Go to billing' | translate }}</a>
         </div>
 
         <div class="card mb-3" style="padding:1rem; max-width:44rem;" *ngIf="detail.summary.sourceType === 'MANUAL'">
-          <strong class="mb-2">Project team</strong>
-          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="rt" [(ngModel)]="restrict" /> Only the people below can log time on this project</label>
-          <div class="text-muted mb-2" style="font-size:0.85rem;">Administrators can always log time. People outside the team still show in reports for time they logged earlier.</div>
+          <strong class="mb-2">{{ 'Project team' | translate }}</strong>
+          <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="rt" [(ngModel)]="restrict" /> {{ 'Only the people below can log time on this project' | translate }}</label>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Administrators can always log time. People outside the team still show in reports for time they logged earlier.' | translate }}</div>
           <div class="flex gap-2" style="flex-wrap:wrap;" *ngIf="team.length">
             <span class="badge badge-secondary" *ngFor="let m of team" style="font-size:0.85rem;">{{ m.userName }}
-              <a href="javascript:void(0)" (click)="dropMember(m.userId)" style="margin-left:0.3rem;" title="Remove">✕</a></span>
+              <a href="javascript:void(0)" (click)="dropMember(m.userId)" style="margin-left:0.3rem;" [title]="'Remove' | translate">✕</a></span>
           </div>
           <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
-            <select class="form-select" style="width:auto;" name="tm" [(ngModel)]="teamPick"><option [ngValue]="null">Add a person…</option>
+            <select class="form-select" style="width:auto;" name="tm" [(ngModel)]="teamPick"><option [ngValue]="null">{{ 'Add a person…' | translate }}</option>
               <option *ngFor="let u of teamChoices()" [ngValue]="u.id">{{ u.fullName }}</option></select>
-            <button class="btn btn-outline-primary" type="button" [disabled]="!teamPick" (click)="addMember()">Add</button>
-            <button class="btn btn-primary" type="button" (click)="saveTeam()">Save team</button>
+            <button class="btn btn-outline-primary" type="button" [disabled]="!teamPick" (click)="addMember()">{{ 'Add' | translate }}</button>
+            <button class="btn btn-primary" type="button" (click)="saveTeam()">{{ 'Save team' | translate }}</button>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem; max-width:44rem;">
-          <strong class="mb-2">Tasks (optional)</strong>
+          <strong class="mb-2">{{ 'Tasks (optional)' | translate }}</strong>
           <table class="table-sm" *ngIf="detail.tasks.length">
-            <thead><tr><th>Task</th><th class="text-end">Estimate (h)</th><th class="text-end">Logged (h)</th><th></th></tr></thead>
+            <thead><tr><th>{{ 'Task' | translate }}</th><th class="text-end">{{ 'Estimate (h)' | translate }}</th><th class="text-end">{{ 'Logged (h)' | translate }}</th><th></th></tr></thead>
             <tbody>
               <tr *ngFor="let t of detail.tasks">
-                <td [style.opacity]="t.active ? 1 : 0.5">{{ t.name }}<span class="text-muted" *ngIf="!t.active"> (closed)</span></td>
+                <td [style.opacity]="t.active ? 1 : 0.5">{{ t.name }}<span class="text-muted" *ngIf="!t.active"> {{ '(closed)' | translate }}</span></td>
                 <td class="text-end">{{ t.estimatedHours != null ? (t.estimatedHours | number: '1.0-2') : '—' }}</td>
                 <td class="text-end" [style.color]="t.estimatedHours != null && t.hoursLogged > t.estimatedHours ? '#c0392b' : ''">{{ t.hoursLogged | number: '1.0-2' }}
                   <span class="text-muted" *ngIf="t.estimatedHours" style="font-size:0.75rem;">({{ t.hoursLogged / t.estimatedHours * 100 | number: '1.0-0' }}%)</span></td>
                 <td style="white-space:nowrap;">
-                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleTask(t)">{{ t.active ? 'Close' : 'Reopen' }}</button>
-                  <button class="btn btn-sm btn-outline-danger" type="button" style="margin-left:0.3rem;" (click)="removeTask(t.id)">Remove</button>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleTask(t)">{{ t.active ? ('Close' | translate) : ('Reopen' | translate) }}</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" style="margin-left:0.3rem;" (click)="removeTask(t.id)">{{ 'Remove' | translate }}</button>
                 </td>
               </tr>
             </tbody>
           </table>
           <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
-            <input class="form-control" style="width:14rem;" placeholder="New task" name="tn" [(ngModel)]="newTask" />
-            <input class="form-control" style="width:8rem;" type="number" min="0" step="0.5" placeholder="Hours" name="te" [(ngModel)]="newTaskHours" />
-            <button class="btn btn-outline-primary" type="button" [disabled]="!newTask.trim()" (click)="addTask()">Add task</button>
+            <input class="form-control" style="width:14rem;" [placeholder]="'New task' | translate" name="tn" [(ngModel)]="newTask" />
+            <input class="form-control" style="width:8rem;" type="number" min="0" step="0.5" [placeholder]="'Hours' | translate" name="te" [(ngModel)]="newTaskHours" />
+            <button class="btn btn-outline-primary" type="button" [disabled]="!newTask.trim()" (click)="addTask()">{{ 'Add task' | translate }}</button>
           </div>
         </div>
 
         <div class="card mb-3" style="padding:1rem; max-width:44rem;">
-          <strong class="mb-2">Rates per person</strong>
-          <div class="text-muted mb-2" style="font-size:0.85rem;">Anyone not listed is billed at the project rate{{ detail.summary.defaultRate != null ? ' (' + detail.summary.defaultRate + ')' : ' or the default rate in the settings' }}.
-            A rate is fixed on an entry when it is submitted, so changing it later does not alter time already handed in.</div>
+          <strong class="mb-2">{{ 'Rates per person' | translate }}</strong>
+          <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Anyone not listed is billed at the project rate{p0}. A rate is fixed on an entry when it is submitted, so changing it later does not alter time already handed in.' | translate: { p0: (detail.summary.defaultRate != null ? ' (' + detail.summary.defaultRate + ')' : ' or the default rate in the settings') } }}</div>
           <table class="table-sm" *ngIf="detail.rates.length">
             <tbody><tr *ngFor="let r of detail.rates"><td>{{ r.userName }}</td><td class="text-end">{{ r.hourlyRate | number: '1.0-2' }}</td>
-              <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="removeRate(r.userId)">Remove</button></td></tr></tbody>
+              <td><button class="btn btn-sm btn-outline-danger" type="button" (click)="removeRate(r.userId)">{{ 'Remove' | translate }}</button></td></tr></tbody>
           </table>
           <div class="flex gap-2 align-center mt-2" style="flex-wrap:wrap;">
-            <select class="form-select" style="width:auto;" name="ru" [(ngModel)]="rateUser"><option [ngValue]="null">Person…</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.fullName }}</option></select>
-            <input class="form-control" style="width:8rem;" type="number" min="0" step="0.01" placeholder="Rate" name="rv" [(ngModel)]="rateValue" />
-            <button class="btn btn-outline-primary" type="button" [disabled]="!rateUser || rateValue == null" (click)="addRate()">Set rate</button>
+            <select class="form-select" style="width:auto;" name="ru" [(ngModel)]="rateUser"><option [ngValue]="null">{{ 'Person…' | translate }}</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.fullName }}</option></select>
+            <input class="form-control" style="width:8rem;" type="number" min="0" step="0.01" [placeholder]="'Rate' | translate" name="rv" [(ngModel)]="rateValue" />
+            <button class="btn btn-outline-primary" type="button" [disabled]="!rateUser || rateValue == null" (click)="addRate()">{{ 'Set rate' | translate }}</button>
           </div>
         </div>
       </ng-container>

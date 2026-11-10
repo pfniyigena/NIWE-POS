@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Guest, GuestPayload, HotelApiService } from '../core/api/hotel-api.service';
@@ -8,35 +9,35 @@ import { errMsg } from './hotel-util';
 @Component({
   selector: 'app-guest-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule],
   template: `
     <form class="card guest-form" style="padding:1rem; margin-bottom:1rem;" (ngSubmit)="save()">
-      <h4 style="font-size:1rem;" class="mb-2">{{ guest ? 'Edit guest' : 'New guest' }}</h4>
+      <h4 style="font-size:1rem;" class="mb-2">{{ guest ? ('Edit guest' | translate) : ('New guest' | translate) }}</h4>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="flex gap-3" style="flex-wrap:wrap;">
-        <div class="form-group"><label class="form-label">Full name</label><input class="form-control g-name" name="fullName" [(ngModel)]="form.fullName" required /></div>
-        <div class="form-group"><label class="form-label">Phone</label><input class="form-control g-phone" name="phone" [(ngModel)]="form.phone" /></div>
-        <div class="form-group"><label class="form-label">Email</label><input class="form-control g-email" type="email" name="email" [(ngModel)]="form.email" /></div>
-        <div class="form-group"><label class="form-label">Nationality</label><input class="form-control g-nat" name="nat" [(ngModel)]="form.nationality" /></div>
-        <div class="form-group"><label class="form-label">ID type</label>
+        <div class="form-group"><label class="form-label">{{ 'Full name' | translate }}</label><input class="form-control g-name" name="fullName" [(ngModel)]="form.fullName" required /></div>
+        <div class="form-group"><label class="form-label">{{ 'Phone' | translate }}</label><input class="form-control g-phone" name="phone" [(ngModel)]="form.phone" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Email' | translate }}</label><input class="form-control g-email" type="email" name="email" [(ngModel)]="form.email" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Nationality' | translate }}</label><input class="form-control g-nat" name="nat" [(ngModel)]="form.nationality" /></div>
+        <div class="form-group"><label class="form-label">{{ 'ID type' | translate }}</label>
           <select class="form-control g-idtype" name="idType" [(ngModel)]="form.idType">
-            <option [ngValue]="null">—</option><option>National ID</option><option>Passport</option><option>Driving licence</option><option>Other</option>
+            <option [ngValue]="null">—</option><option>{{ 'National ID' | translate }}</option><option>{{ 'Passport' | translate }}</option><option>{{ 'Driving licence' | translate }}</option><option>{{ 'Other' | translate }}</option>
           </select></div>
-        <div class="form-group"><label class="form-label">ID number</label><input class="form-control g-idnumber" name="idNumber" [(ngModel)]="form.idNumber" /></div>
-        <div class="form-group"><label class="form-label">Date of birth</label><input class="form-control g-dob" type="date" name="dob" [(ngModel)]="form.dateOfBirth" /></div>
-        <div class="form-group"><label class="form-label">Profession</label><input class="form-control g-profession" name="profession" [(ngModel)]="form.profession" /></div>
+        <div class="form-group"><label class="form-label">{{ 'ID number' | translate }}</label><input class="form-control g-idnumber" name="idNumber" [(ngModel)]="form.idNumber" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Date of birth' | translate }}</label><input class="form-control g-dob" type="date" name="dob" [(ngModel)]="form.dateOfBirth" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Profession' | translate }}</label><input class="form-control g-profession" name="profession" [(ngModel)]="form.profession" /></div>
       </div>
-      <div class="form-group"><label class="form-label">Address</label><input class="form-control g-address" name="address" [(ngModel)]="form.address" /></div>
-      <div class="form-group"><label class="form-label">Preferences</label><input class="form-control g-prefs" name="prefs" [(ngModel)]="form.preferences" placeholder="High floor, extra pillow, late arrival, vegetarian..." /></div>
-      <div class="form-group"><label class="form-label">Notes</label><input class="form-control g-notes" name="notes" [(ngModel)]="form.notes" placeholder="Anything else the team should know" /></div>
+      <div class="form-group"><label class="form-label">{{ 'Address' | translate }}</label><input class="form-control g-address" name="address" [(ngModel)]="form.address" /></div>
+      <div class="form-group"><label class="form-label">{{ 'Preferences' | translate }}</label><input class="form-control g-prefs" name="prefs" [(ngModel)]="form.preferences" [placeholder]="'High floor, extra pillow, late arrival, vegetarian...' | translate" /></div>
+      <div class="form-group"><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control g-notes" name="notes" [(ngModel)]="form.notes" [placeholder]="'Anything else the team should know' | translate" /></div>
       <div class="flex gap-3 align-center" style="flex-wrap:wrap;">
-        <label><input type="checkbox" class="g-vip" name="vip" [(ngModel)]="vip" /> VIP guest</label>
-        <label><input type="checkbox" class="g-black" name="black" [(ngModel)]="blacklisted" /> Blacklisted (no bookings or check-in)</label>
-        <input class="form-control g-reason" *ngIf="blacklisted" style="max-width:360px;" name="reason" [(ngModel)]="reason" placeholder="Why? (required)" />
+        <label><input type="checkbox" class="g-vip" name="vip" [(ngModel)]="vip" /> {{ 'VIP guest' | translate }}</label>
+        <label><input type="checkbox" class="g-black" name="black" [(ngModel)]="blacklisted" /> {{ 'Blacklisted (no bookings or check-in)' | translate }}</label>
+        <input class="form-control g-reason" *ngIf="blacklisted" style="max-width:360px;" name="reason" [(ngModel)]="reason" [placeholder]="'Why? (required)' | translate" />
       </div>
       <div class="flex gap-2 mt-2">
-        <button class="btn btn-primary save-guest" type="submit" [disabled]="busy">Save</button>
-        <button class="btn btn-link cancel-guest" type="button" (click)="cancelled.emit()">Cancel</button>
+        <button class="btn btn-primary save-guest" type="submit" [disabled]="busy">{{ 'Save' | translate }}</button>
+        <button class="btn btn-link cancel-guest" type="button" (click)="cancelled.emit()">{{ 'Cancel' | translate }}</button>
       </div>
     </form>
   `,

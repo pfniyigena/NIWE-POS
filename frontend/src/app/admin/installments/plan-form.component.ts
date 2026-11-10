@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,67 +14,67 @@ import { Invoice, PaymentMethodOption } from '../../core/models';
 @Component({
   selector: 'app-installment-plan-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell>
       <div class="flex justify-between align-center mb-3">
-        <h3>New instalment plan</h3>
-        <a class="btn btn-link" routerLink="/admin/installments">Back</a>
+        <h3>{{ 'New instalment plan' | translate }}</h3>
+        <a class="btn btn-link" routerLink="/admin/installments">{{ 'Back' | translate }}</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="doPreview()">
         <div class="form-group">
-          <label class="form-label">Invoice</label>
+          <label class="form-label">{{ 'Invoice' | translate }}</label>
           <select class="form-select" name="inv" [(ngModel)]="req.invoiceId" (ngModelChange)="invoiceChanged()" required>
-            <option [ngValue]="null">Choose an issued invoice…</option>
-            <option *ngFor="let i of invoices" [ngValue]="i.id">{{ i.invoiceNumber }} — {{ i.customerName }} — owes {{ i.amountOutstanding | number: '1.0-2' }}</option>
+            <option [ngValue]="null">{{ 'Choose an issued invoice…' | translate }}</option>
+            <option *ngFor="let i of invoices" [ngValue]="i.id">{{ '{p0} — {p1} — owes {p2}' | translate: { p0: (i.invoiceNumber), p1: (i.customerName), p2: (i.amountOutstanding | number: '1.0-2') } }}</option>
           </select>
-          <div class="text-muted" style="font-size:0.8rem;" *ngIf="!invoices.length">No issued invoice with a customer and an unpaid balance was found.</div>
+          <div class="text-muted" style="font-size:0.8rem;" *ngIf="!invoices.length">{{ 'No issued invoice with a customer and an unpaid balance was found.' | translate }}</div>
         </div>
 
         <ng-container *ngIf="selected as inv">
-          <div class="text-muted mb-2">Invoice total {{ inv.totalAmount | number: '1.0-2' }} · paid {{ inv.amountPaid | number: '1.0-2' }} · still owed <strong>{{ inv.amountOutstanding | number: '1.0-2' }}</strong></div>
+          <div class="text-muted mb-2">{{ 'Invoice total {p0} · paid {p1} · still owed' | translate: { p0: (inv.totalAmount | number: '1.0-2'), p1: (inv.amountPaid | number: '1.0-2') } }} <strong>{{ inv.amountOutstanding | number: '1.0-2' }}</strong></div>
           <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-            <div class="form-group"><label class="form-label">Deposit now (optional)</label><input class="form-control" type="number" min="0" step="0.01" style="width:10rem;" name="dep" [(ngModel)]="req.deposit" /></div>
-            <div class="form-group" *ngIf="(req.deposit ?? 0) > 0"><label class="form-label">Deposit paid by</label>
+            <div class="form-group"><label class="form-label">{{ 'Deposit now (optional)' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" style="width:10rem;" name="dep" [(ngModel)]="req.deposit" /></div>
+            <div class="form-group" *ngIf="(req.deposit ?? 0) > 0"><label class="form-label">{{ 'Deposit paid by' | translate }}</label>
               <select class="form-select" name="dm" [(ngModel)]="req.depositMethod"><option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option></select></div>
-            <div class="form-group"><label class="form-label">Number of instalments</label><input class="form-control" type="number" min="2" max="60" style="width:8rem;" name="n" [(ngModel)]="req.numberOfInstallments" required /></div>
-            <div class="form-group"><label class="form-label">Every</label>
-              <select class="form-select" name="fr" [(ngModel)]="req.frequency"><option value="WEEKLY">Week</option><option value="BIWEEKLY">2 weeks</option><option value="MONTHLY">Month</option><option value="QUARTERLY">3 months</option></select></div>
-            <div class="form-group"><label class="form-label">First due date</label><app-date-picker name="fd" [(ngModel)]="req.firstDueDate"></app-date-picker></div>
+            <div class="form-group"><label class="form-label">{{ 'Number of instalments' | translate }}</label><input class="form-control" type="number" min="2" max="60" style="width:8rem;" name="n" [(ngModel)]="req.numberOfInstallments" required /></div>
+            <div class="form-group"><label class="form-label">{{ 'Every' | translate }}</label>
+              <select class="form-select" name="fr" [(ngModel)]="req.frequency"><option value="WEEKLY">{{ 'Week' | translate }}</option><option value="BIWEEKLY">{{ '2 weeks' | translate }}</option><option value="MONTHLY">{{ 'Month' | translate }}</option><option value="QUARTERLY">{{ '3 months' | translate }}</option></select></div>
+            <div class="form-group"><label class="form-label">{{ 'First due date' | translate }}</label><app-date-picker name="fd" [(ngModel)]="req.firstDueDate"></app-date-picker></div>
           </div>
           <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-            <div class="form-group"><label class="form-label">Interest</label>
+            <div class="form-group"><label class="form-label">{{ 'Interest' | translate }}</label>
               <select class="form-select" name="im" [(ngModel)]="req.interestMethod">
-                <option value="NONE">None</option><option value="FLAT">Flat (on the whole amount)</option><option value="REDUCING">Reducing balance</option></select></div>
-            <div class="form-group" *ngIf="req.interestMethod !== 'NONE'"><label class="form-label">Yearly rate %</label><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:8rem;" name="ir" [(ngModel)]="req.interestRate" /></div>
-            <div class="form-group"><label class="form-label">Grace days</label><input class="form-control" type="number" min="0" max="90" style="width:7rem;" name="gd" [(ngModel)]="req.graceDays" /></div>
-            <div class="form-group"><label class="form-label">Late fee (fixed)</label><input class="form-control" type="number" min="0" step="0.01" style="width:8rem;" name="lf" [(ngModel)]="req.lateFeeFixed" /></div>
-            <div class="form-group"><label class="form-label">Late fee (% of unpaid)</label><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:8rem;" name="lp" [(ngModel)]="req.lateFeePercent" /></div>
+                <option value="NONE">{{ 'None' | translate }}</option><option value="FLAT">{{ 'Flat (on the whole amount)' | translate }}</option><option value="REDUCING">{{ 'Reducing balance' | translate }}</option></select></div>
+            <div class="form-group" *ngIf="req.interestMethod !== 'NONE'"><label class="form-label">{{ 'Yearly rate %' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:8rem;" name="ir" [(ngModel)]="req.interestRate" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Grace days' | translate }}</label><input class="form-control" type="number" min="0" max="90" style="width:7rem;" name="gd" [(ngModel)]="req.graceDays" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Late fee (fixed)' | translate }}</label><input class="form-control" type="number" min="0" step="0.01" style="width:8rem;" name="lf" [(ngModel)]="req.lateFeeFixed" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Late fee (% of unpaid)' | translate }}</label><input class="form-control" type="number" min="0" max="100" step="0.01" style="width:8rem;" name="lp" [(ngModel)]="req.lateFeePercent" /></div>
           </div>
-          <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="wu" [(ngModel)]="req.wholeUnits" /> Whole amounts (no cents) — the last instalment takes any rounding left over</label></div>
-          <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="rm" [(ngModel)]="req.remindersEnabled" /> Email the customer reminders for this plan</label></div>
-          <div class="form-group"><label class="form-label">Notes</label><input class="form-control" name="nt" [(ngModel)]="req.notes" /></div>
-          <button class="btn btn-outline-primary" type="submit" [disabled]="busy">Preview schedule</button>
+          <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="wu" [(ngModel)]="req.wholeUnits" /> {{ 'Whole amounts (no cents) — the last instalment takes any rounding left over' | translate }}</label></div>
+          <div class="form-group"><label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="rm" [(ngModel)]="req.remindersEnabled" /> {{ 'Email the customer reminders for this plan' | translate }}</label></div>
+          <div class="form-group"><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control" name="nt" [(ngModel)]="req.notes" /></div>
+          <button class="btn btn-outline-primary" type="submit" [disabled]="busy">{{ 'Preview schedule' | translate }}</button>
         </ng-container>
       </form>
 
       <div class="card" style="padding:1rem;" *ngIf="preview as p">
-        <h4 class="mb-2">Schedule</h4>
+        <h4 class="mb-2">{{ 'Schedule' | translate }}</h4>
         <div class="flex gap-3 mb-2" style="flex-wrap:wrap;">
-          <div><strong>Financed:</strong> {{ p.financedAmount | number: '1.0-2' }}</div>
-          <div><strong>Interest:</strong> {{ p.totalInterest | number: '1.0-2' }}</div>
-          <div><strong>Total to pay in instalments:</strong> {{ p.totalPayable | number: '1.0-2' }}</div>
-          <div *ngIf="p.deposit > 0"><strong>Deposit:</strong> {{ p.deposit | number: '1.0-2' }}</div>
+          <div><strong>{{ 'Financed:' | translate }}</strong> {{ p.financedAmount | number: '1.0-2' }}</div>
+          <div><strong>{{ 'Interest:' | translate }}</strong> {{ p.totalInterest | number: '1.0-2' }}</div>
+          <div><strong>{{ 'Total to pay in instalments:' | translate }}</strong> {{ p.totalPayable | number: '1.0-2' }}</div>
+          <div *ngIf="p.deposit > 0"><strong>{{ 'Deposit:' | translate }}</strong> {{ p.deposit | number: '1.0-2' }}</div>
         </div>
         <table class="table-sm">
-          <thead><tr><th>No.</th><th>Due date</th><th class="text-end">Principal</th><th class="text-end">Interest</th><th class="text-end">Total</th></tr></thead>
+          <thead><tr><th>{{ 'No.' | translate }}</th><th>{{ 'Due date' | translate }}</th><th class="text-end">{{ 'Principal' | translate }}</th><th class="text-end">{{ 'Interest' | translate }}</th><th class="text-end">{{ 'Total' | translate }}</th></tr></thead>
           <tbody><tr *ngFor="let l of p.lines"><td>{{ l.seq }}</td><td>{{ l.dueDate }}</td><td class="text-end">{{ l.principalDue | number: '1.0-2' }}</td><td class="text-end">{{ l.interestDue | number: '1.0-2' }}</td><td class="text-end">{{ l.totalDue | number: '1.0-2' }}</td></tr></tbody>
         </table>
         <div class="mt-3">
-          <button class="btn btn-primary" type="button" (click)="create()" [disabled]="busy">{{ busy ? 'Creating…' : 'Create plan' }}</button>
-          <span class="text-muted" style="margin-left:0.6rem; font-size:0.85rem;" *ngIf="p.deposit > 0">The deposit is recorded as a payment on the invoice.</span>
+          <button class="btn btn-primary" type="button" (click)="create()" [disabled]="busy">{{ busy ? ('Creating…' | translate) : ('Create plan' | translate) }}</button>
+          <span class="text-muted" style="margin-left:0.6rem; font-size:0.85rem;" *ngIf="p.deposit > 0">{{ 'The deposit is recorded as a payment on the invoice.' | translate }}</span>
         </div>
       </div>
     </app-shell>

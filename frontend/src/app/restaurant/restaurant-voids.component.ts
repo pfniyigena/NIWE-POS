@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
@@ -12,26 +13,26 @@ import { PagerComponent } from '../shared/pager.component';
 @Component({
   selector: 'app-restaurant-voids',
   standalone: true,
-  imports: [CommonModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="list.error">{{ list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Voids and comps</h3>
+        <h3>{{ 'Voids and comps' | translate }}</h3>
       </div>
-      <app-list-filter exportPath="/restaurant/voids/export" placeholder="Search item, reason, table or person" [statuses]="kinds" statusAll="All kinds" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportPath="/restaurant/voids/export" [placeholder]="'Search item, reason, table or person' | translate" [statuses]="kinds" statusAll="All kinds" (filterChange)="list.apply($event)"></app-list-filter>
       <table class="void-table">
         <thead>
           <tr>
-            <th>When</th>
-            <th>Kind</th>
-            <th>Table / customer</th>
-            <th>Item</th>
-            <th class="text-end">Qty</th>
-            <th class="text-end">Value</th>
-            <th>Reason</th>
-            <th>By</th>
-            <th>Approved by</th>
+            <th>{{ 'When' | translate }}</th>
+            <th>{{ 'Kind' | translate }}</th>
+            <th>{{ 'Table / customer' | translate }}</th>
+            <th>{{ 'Item' | translate }}</th>
+            <th class="text-end">{{ 'Qty' | translate }}</th>
+            <th class="text-end">{{ 'Value' | translate }}</th>
+            <th>{{ 'Reason' | translate }}</th>
+            <th>{{ 'By' | translate }}</th>
+            <th>{{ 'Approved by' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -48,7 +49,7 @@ import { PagerComponent } from '../shared/pager.component';
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? 'Nothing matches these filters.' : 'Nothing has been voided, comped or reprinted yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered ? ('Nothing matches these filters.' | translate) : ('Nothing has been voided, comped or reprinted yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

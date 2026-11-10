@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -10,27 +11,27 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../../core/api/in
 @Component({
   selector: 'app-installment-plan-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, InstallmentSummaryComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>Installments</h3>
-        <div class="flex gap-2"><a class="btn btn-outline-primary" routerLink="/admin/installments/collections">Collections</a><a class="btn btn-primary" routerLink="/admin/installments/new">+ New instalment plan</a></div>
+        <h3>{{ 'Installments' | translate }}</h3>
+        <div class="flex gap-2"><a class="btn btn-outline-primary" routerLink="/admin/installments/collections">{{ 'Collections' | translate }}</a><a class="btn btn-primary" routerLink="/admin/installments/new">{{ '+ New instalment plan' | translate }}</a></div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <app-installment-summary></app-installment-summary>
 
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
-          <option value="">All agreements</option>
-          <option value="ACTIVE">Active</option><option value="DEFAULTED">Defaulted</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option><option value="WRITTEN_OFF">Written off</option>
+          <option value="">{{ 'All agreements' | translate }}</option>
+          <option value="ACTIVE">{{ 'Active' | translate }}</option><option value="DEFAULTED">{{ 'Defaulted' | translate }}</option><option value="COMPLETED">{{ 'Completed' | translate }}</option><option value="CANCELLED">{{ 'Cancelled' | translate }}</option><option value="WRITTEN_OFF">{{ 'Written off' | translate }}</option>
         </select>
-        <input class="form-control" style="width:16rem;" placeholder="Search customer, plan or invoice" name="q" [(ngModel)]="search" />
-        <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="od" [(ngModel)]="overdueOnly" /> Overdue only</label>
+        <input class="form-control" style="width:16rem;" [placeholder]="'Search customer, plan or invoice' | translate" name="q" [(ngModel)]="search" />
+        <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="od" [(ngModel)]="overdueOnly" /> {{ 'Overdue only' | translate }}</label>
       </div>
 
       <table class="table-sm">
-        <thead><tr><th>Plan</th><th>Customer</th><th>Invoice</th><th class="text-end">Total payable</th><th class="text-end">Paid</th><th class="text-end">Outstanding</th><th>Progress</th><th>Next due</th><th>Status</th></tr></thead>
+        <thead><tr><th>{{ 'Plan' | translate }}</th><th>{{ 'Customer' | translate }}</th><th>{{ 'Invoice' | translate }}</th><th class="text-end">{{ 'Total payable' | translate }}</th><th class="text-end">{{ 'Paid' | translate }}</th><th class="text-end">{{ 'Outstanding' | translate }}</th><th>{{ 'Progress' | translate }}</th><th>{{ 'Next due' | translate }}</th><th>{{ 'Status' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let p of visible()">
             <td><a [routerLink]="['/admin/installments', p.id]">{{ p.planNumber }}</a></td>
@@ -40,13 +41,13 @@ import { InstallmentApiService, InstallmentPlanSummary } from '../../core/api/in
             <td class="text-end">{{ p.paid | number: '1.0-2' }}</td>
             <td class="text-end">{{ p.outstanding | number: '1.0-2' }}</td>
             <td>{{ p.paidInstallments }} / {{ p.numberOfInstallments }}
-              <span class="badge badge-danger" *ngIf="p.overdueInstallments" style="margin-left:0.3rem;">{{ p.overdueInstallments }} overdue</span></td>
+              <span class="badge badge-danger" *ngIf="p.overdueInstallments" style="margin-left:0.3rem;">{{ '{p0} overdue' | translate: { p0: (p.overdueInstallments) } }}</span></td>
             <td><span *ngIf="p.nextDueDate">{{ p.nextDueDate }} <span class="text-muted">({{ p.nextDueAmount | number: '1.0-2' }})</span></span><span *ngIf="!p.nextDueDate">—</span></td>
-            <td><span class="badge" [class.badge-success]="p.status === 'COMPLETED'" [class.badge-warning]="p.status === 'ACTIVE'" [class.badge-danger]="p.status === 'DEFAULTED'" [class.badge-secondary]="p.status === 'CANCELLED' || p.status === 'WRITTEN_OFF'">{{ p.status === 'WRITTEN_OFF' ? 'WRITTEN OFF' : p.status }}</span></td>
+            <td><span class="badge" [class.badge-success]="p.status === 'COMPLETED'" [class.badge-warning]="p.status === 'ACTIVE'" [class.badge-danger]="p.status === 'DEFAULTED'" [class.badge-secondary]="p.status === 'CANCELLED' || p.status === 'WRITTEN_OFF'">{{ p.status === 'WRITTEN_OFF' ? ('WRITTEN OFF' | translate) : (p.status | translate) }}</span></td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="!visible().length">No instalment plans found. Open an issued invoice and choose "Pay in instalments", or use the button above.</p>
+      <p class="text-muted" *ngIf="!visible().length">{{ 'No instalment plans found. Open an issued invoice and choose "Pay in instalments", or use the button above.' | translate }}</p>
     </app-shell>
   `,
 })

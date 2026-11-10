@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -17,17 +18,17 @@ import { errMsg, today } from './hotel-util';
 @Component({
   selector: 'app-company-accounts',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-2">Company accounts</h3>
-      <p class="text-muted" style="font-size:0.9rem;">Stays billed to a company appear here at check-out. Record the money when the company pays.</p>
+      <h3 class="mb-2">{{ 'Company accounts' | translate }}</h3>
+      <p class="text-muted" style="font-size:0.9rem;">{{ 'Stays billed to a company appear here at check-out. Record the money when the company pays.' | translate }}</p>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="message">{{ message }}</div>
 
       <div class="card summary-card" style="padding:1rem; margin-bottom:1rem;" *ngIf="summary.length">
         <table class="table-sm summary-table">
-          <thead><tr><th>Company</th><th class="text-end">Billed</th><th class="text-end">Received</th><th class="text-end">Owing</th><th class="text-end">Overdue</th><th class="text-end">Open bills</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Company' | translate }}</th><th class="text-end">{{ 'Billed' | translate }}</th><th class="text-end">{{ 'Received' | translate }}</th><th class="text-end">{{ 'Owing' | translate }}</th><th class="text-end">{{ 'Overdue' | translate }}</th><th class="text-end">{{ 'Open bills' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let c of summary">
               <td><strong>{{ c.companyName }}</strong></td>
@@ -36,20 +37,20 @@ import { errMsg, today } from './hotel-util';
               <td class="text-end"><strong>{{ c.outstanding | number: '1.2-2' }}</strong></td>
               <td class="text-end" [style.color]="c.overdue > 0 ? 'var(--danger-text)' : 'inherit'">{{ c.overdue | number: '1.2-2' }}</td>
               <td class="text-end">{{ c.openBills }}</td>
-              <td><button class="btn btn-sm btn-outline-secondary only-company" type="button" (click)="onlyCompany(c)">Show bills</button></td>
+              <td><button class="btn btn-sm btn-outline-secondary only-company" type="button" (click)="onlyCompany(c)">{{ 'Show bills' | translate }}</button></td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <app-list-filter exportPath="/hotel/company-bills/export" [exportExtra]="extra" [extraActive]="companyId !== null" placeholder="Search invoice, company, guest, booking" [statuses]="statuses" statusAll="All bills" [dates]="false" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <app-list-filter exportPath="/hotel/company-bills/export" [exportExtra]="extra" [extraActive]="companyId !== null" [placeholder]="'Search invoice, company, guest, booking' | translate" [statuses]="statuses" statusAll="All bills" [dates]="false" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
       <div class="flex gap-2 mb-2 align-center" *ngIf="companyId !== null">
         <span class="badge badge-info">{{ companyName }}</span>
-        <button class="btn btn-sm btn-link clear-company" type="button" (click)="onlyCompany(null)">Show all companies</button>
+        <button class="btn btn-sm btn-link clear-company" type="button" (click)="onlyCompany(null)">{{ 'Show all companies' | translate }}</button>
       </div>
 
       <table class="table-sm bills-list">
-        <thead><tr><th>Invoice</th><th>Company</th><th>Stay</th><th>Issued</th><th>Due</th><th class="text-end">Amount</th><th class="text-end">Received</th><th class="text-end">Owing</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Invoice' | translate }}</th><th>{{ 'Company' | translate }}</th><th>{{ 'Stay' | translate }}</th><th>{{ 'Issued' | translate }}</th><th>{{ 'Due' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th class="text-end">{{ 'Received' | translate }}</th><th class="text-end">{{ 'Owing' | translate }}</th><th></th></tr></thead>
         <tbody>
           <ng-container *ngFor="let b of list.rows">
             <tr>
@@ -57,14 +58,14 @@ import { errMsg, today } from './hotel-util';
               <td>{{ b.companyName }}</td>
               <td><a [routerLink]="['/admin/hotel/bookings', b.bookingId]">{{ b.bookingNumber }}</a><div class="text-muted" style="font-size:0.8rem;">{{ b.guestName }}</div></td>
               <td>{{ b.issuedOn }}</td>
-              <td>{{ b.dueDate || '—' }}<span class="badge badge-danger" style="margin-left:0.3rem;" *ngIf="b.overdue">Overdue</span></td>
+              <td>{{ b.dueDate || '—' }}<span class="badge badge-danger" style="margin-left:0.3rem;" *ngIf="b.overdue">{{ 'Overdue' | translate }}</span></td>
               <td class="text-end">{{ b.amount | number: '1.2-2' }}</td>
               <td class="text-end">{{ b.paid | number: '1.2-2' }}</td>
-              <td class="text-end"><span class="badge badge-success" *ngIf="b.status === 'PAID'">Paid</span><strong *ngIf="b.status !== 'PAID'">{{ b.outstanding | number: '1.2-2' }}</strong></td>
+              <td class="text-end"><span class="badge badge-success" *ngIf="b.status === 'PAID'">{{ 'Paid' | translate }}</span><strong *ngIf="b.status !== 'PAID'">{{ b.outstanding | number: '1.2-2' }}</strong></td>
               <td class="flex gap-2" style="flex-wrap:wrap;">
-                <button class="btn btn-sm btn-outline-secondary inv-pdf" type="button" (click)="pdf(b)">Invoice</button>
-                <button class="btn btn-sm btn-outline-primary receive" type="button" *ngIf="canManage && b.status !== 'PAID'" (click)="openReceive(b)">Receive money</button>
-                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggle(b)">{{ openId === b.id ? 'Hide' : 'Receipts' }}</button>
+                <button class="btn btn-sm btn-outline-secondary inv-pdf" type="button" (click)="pdf(b)">{{ 'Invoice' | translate }}</button>
+                <button class="btn btn-sm btn-outline-primary receive" type="button" *ngIf="canManage && b.status !== 'PAID'" (click)="openReceive(b)">{{ 'Receive money' | translate }}</button>
+                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggle(b)">{{ openId === b.id ? ('Hide' | translate) : ('Receipts' | translate) }}</button>
               </td>
             </tr>
             <tr *ngIf="openId === b.id">
@@ -72,19 +73,19 @@ import { errMsg, today } from './hotel-util';
                 <div style="padding:0.5rem 0.25rem;">
                   <div class="text-muted" style="font-size:0.85rem;">{{ b.description }}</div>
                   <table class="table-sm no-stack" style="max-width:520px; margin:0.4rem 0;" *ngIf="detail && detail.receipts.length">
-                    <thead><tr><th>Received</th><th>Method</th><th>Reference</th><th class="text-end">Amount</th></tr></thead>
+                    <thead><tr><th>{{ 'Received' | translate }}</th><th>{{ 'Method' | translate }}</th><th>{{ 'Reference' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th></tr></thead>
                     <tbody><tr *ngFor="let r of detail.receipts"><td>{{ r.receivedOn }}</td><td>{{ r.method }}</td><td>{{ r.reference }}</td><td class="text-end">{{ r.amount | number: '1.2-2' }}</td></tr></tbody>
                   </table>
-                  <p class="text-muted" *ngIf="detail && !detail.receipts.length">Nothing received yet.</p>
+                  <p class="text-muted" *ngIf="detail && !detail.receipts.length">{{ 'Nothing received yet.' | translate }}</p>
                   <form *ngIf="receiveFor === b.id" class="receive-form" (ngSubmit)="receive(b)">
                     <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-                      <div class="form-group" style="margin:0;"><label class="form-label">Amount</label><input class="form-control" style="max-width:150px;" type="number" min="0.01" step="0.01" name="ra" [(ngModel)]="recAmount" required /></div>
-                      <div class="form-group" style="margin:0;"><label class="form-label">Method</label>
+                      <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Amount' | translate }}</label><input class="form-control" style="max-width:150px;" type="number" min="0.01" step="0.01" name="ra" [(ngModel)]="recAmount" required /></div>
+                      <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Method' | translate }}</label>
                         <select class="form-control" name="rm" [(ngModel)]="recMethod"><option *ngFor="let m of methods" [value]="m.code">{{ m.name }}</option></select></div>
-                      <div class="form-group" style="margin:0;"><label class="form-label">Reference</label><input class="form-control" name="rr" [(ngModel)]="recRef" placeholder="Cheque or transfer no." /></div>
-                      <div class="form-group" style="margin:0;"><label class="form-label">Date</label><input class="form-control" type="date" name="rd" [(ngModel)]="recDate" /></div>
-                      <button class="btn btn-primary" type="submit" [disabled]="busy">Record</button>
-                      <button class="btn btn-link" type="button" (click)="receiveFor = null">Cancel</button>
+                      <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Reference' | translate }}</label><input class="form-control" name="rr" [(ngModel)]="recRef" [placeholder]="'Cheque or transfer no.' | translate" /></div>
+                      <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Date' | translate }}</label><input class="form-control" type="date" name="rd" [(ngModel)]="recDate" /></div>
+                      <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Record' | translate }}</button>
+                      <button class="btn btn-link" type="button" (click)="receiveFor = null">{{ 'Cancel' | translate }}</button>
                     </div>
                   </form>
                 </div>
@@ -93,7 +94,7 @@ import { errMsg, today } from './hotel-util';
           </ng-container>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || companyId !== null ? 'Nothing matches these filters.' : 'No company has been billed yet. Open a stay, choose "Bill a company…" on a bill, and it lands here at check-out.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || companyId !== null ? ('Nothing matches these filters.' | translate) : ('No company has been billed yet. Open a stay, choose "Bill a company…" on a bill, and it lands here at check-out.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

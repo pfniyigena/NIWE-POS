@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -25,134 +26,134 @@ import { BillingInterval, Invoice, Subscription, SubscriptionPlan, TaxRateOption
 @Component({
   selector: 'app-subscription-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Subscription{{ sub ? ' — ' + sub.customerName : '' }}</h3>
+        <h3>{{ 'Subscription{p0}' | translate: { p0: (sub ? ' — ' + sub.customerName : '') } }}</h3>
         <div class="flex gap-2">
-          <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? 'Opening…' : 'Print' }}</button>
-          <a class="btn btn-link" routerLink="/admin/subscriptions">Back to subscriptions</a>
+          <button class="btn btn-outline-primary" [disabled]="printing" (click)="print()">{{ printing ? ('Opening…' | translate) : ('Print' | translate) }}</button>
+          <a class="btn btn-link" routerLink="/admin/subscriptions">{{ 'Back to subscriptions' | translate }}</a>
         </div>
       </div>
 
       <ng-container *ngIf="sub as s">
-        <div class="alert alert-info" *ngIf="s.onTrial">Free trial until {{ s.trialEndDate }} — the first bill is on {{ s.nextBillingDate }}.</div>
-        <div class="alert alert-warning" *ngIf="s.status === 'PAUSED'">Paused<span *ngIf="s.pauseReason"> — {{ s.pauseReason }}</span>. {{ s.resumeOn ? 'Resumes by itself on ' + s.resumeOn + '.' : 'It stays paused until you resume it.' }}</div>
-        <div class="alert alert-warning" *ngIf="s.cancelAtPeriodEnd">Cancellation scheduled: this subscription ends on {{ s.nextBillingDate }}{{ s.billInAdvance ? ' (no further bill)' : ' (after the last cycle is billed)' }}.
-          <button class="btn btn-sm btn-outline-secondary" style="margin-left:0.5rem;" (click)="undoCancel()" [disabled]="busy">Withdraw cancellation</button></div>
-        <div class="alert alert-secondary" *ngIf="s.status === 'ENDED'">This fixed-term subscription ended on {{ s.endedAt | date: 'mediumDate' }} after {{ s.termCycles }} cycle(s).</div>
-        <div class="alert alert-info" *ngIf="s.creditBalance > 0">Credit of {{ s.creditBalance | number: '1.2-2' }} (before tax) will be taken off the next invoice(s).</div>
-        <div class="alert alert-danger" *ngIf="s.dunningCount > 0">{{ s.dunningCount }} overdue reminder(s) e-mailed for the latest unpaid invoice (last on {{ s.dunningLastOn }}).</div>
+        <div class="alert alert-info" *ngIf="s.onTrial">{{ 'Free trial until {p0} — the first bill is on {p1}.' | translate: { p0: (s.trialEndDate), p1: (s.nextBillingDate) } }}</div>
+        <div class="alert alert-warning" *ngIf="s.status === 'PAUSED'">{{ 'Paused' | translate }}<span *ngIf="s.pauseReason"> — {{ s.pauseReason }}</span>. {{ s.resumeOn ? 'Resumes by itself on ' + s.resumeOn + '.' : 'It stays paused until you resume it.' }}</div>
+        <div class="alert alert-warning" *ngIf="s.cancelAtPeriodEnd">{{ 'Cancellation scheduled: this subscription ends on {p0}{p1}.' | translate: { p0: (s.nextBillingDate), p1: (s.billInAdvance ? ' (no further bill)' : ' (after the last cycle is billed)') } }}
+          <button class="btn btn-sm btn-outline-secondary" style="margin-left:0.5rem;" (click)="undoCancel()" [disabled]="busy">{{ 'Withdraw cancellation' | translate }}</button></div>
+        <div class="alert alert-secondary" *ngIf="s.status === 'ENDED'">{{ 'This fixed-term subscription ended on {p0} after {p1} cycle(s).' | translate: { p0: (s.endedAt | date: 'mediumDate'), p1: (s.termCycles) } }}</div>
+        <div class="alert alert-info" *ngIf="s.creditBalance > 0">{{ 'Credit of {p0} (before tax) will be taken off the next invoice(s).' | translate: { p0: (s.creditBalance | number: '1.2-2') } }}</div>
+        <div class="alert alert-danger" *ngIf="s.dunningCount > 0">{{ '{p0} overdue reminder(s) e-mailed for the latest unpaid invoice (last on {p1}).' | translate: { p0: (s.dunningCount), p1: (s.dunningLastOn) } }}</div>
 
         <div class="card mb-3" style="padding:1rem;">
           <div class="flex gap-3" style="flex-wrap:wrap;">
-            <div><strong>Customer:</strong> {{ s.customerName }}</div>
-            <div><strong>Plan:</strong> {{ s.planName || '—' }}</div>
-            <div><strong>Price:</strong> {{ s.price | number: '1.2-2' }}</div>
-            <div *ngIf="s.quantity > 1"><strong>Quantity:</strong> {{ s.quantity }}</div>
-            <div *ngIf="s.discountPercent > 0"><strong>Discount:</strong> {{ s.discountPercent | number: '1.0-2' }}%</div>
-            <div *ngIf="s.taxCode"><strong>Tax:</strong> {{ s.taxCode }} {{ s.taxRatePercent | number: '1.0-2' }}%{{ s.taxInclusive ? ' (included)' : '' }}</div>
-            <div><strong>Per cycle:</strong> {{ s.cycleAmount | number: '1.2-2' }} <span class="text-muted">(before tax)</span></div>
-            <div><strong>Interval:</strong> {{ s.billingInterval }}</div>
-            <div><strong>Billing timing:</strong> {{ s.billInAdvance ? 'Prepaid' : 'Paid after service' }}</div>
-            <div><strong>Status:</strong> <span class="badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span></div>
-            <div><strong>Start date:</strong> {{ s.startDate }}</div>
-            <div *ngIf="s.status === 'ACTIVE' || s.status === 'PAUSED'"><strong>Next billing:</strong> {{ s.nextBillingDate }}</div>
-            <div *ngIf="s.lastBilledAt"><strong>Last billed:</strong> {{ s.lastBilledAt | date: 'medium' }}</div>
-            <div *ngIf="s.setupFee > 0"><strong>Setup fee:</strong> {{ s.setupFee | number: '1.2-2' }} {{ s.setupFeeBilled ? '(billed)' : '(on the first invoice)' }}</div>
-            <div *ngIf="s.termCycles"><strong>Term:</strong> cycle {{ s.cyclesBilled }} of {{ s.termCycles }}, then {{ s.autoRenew ? 'renews' : 'ends' }}<span *ngIf="s.renewals"> ({{ s.renewals }} renewal(s) so far)</span></div>
-            <div *ngIf="s.cancelledAt"><strong>Cancelled:</strong> {{ s.cancelledAt | date: 'medium' }}</div>
+            <div><strong>{{ 'Customer:' | translate }}</strong> {{ s.customerName }}</div>
+            <div><strong>{{ 'Plan:' | translate }}</strong> {{ s.planName || '—' }}</div>
+            <div><strong>{{ 'Price:' | translate }}</strong> {{ s.price | number: '1.2-2' }}</div>
+            <div *ngIf="s.quantity > 1"><strong>{{ 'Quantity:' | translate }}</strong> {{ s.quantity }}</div>
+            <div *ngIf="s.discountPercent > 0"><strong>{{ 'Discount:' | translate }}</strong> {{ s.discountPercent | number: '1.0-2' }}%</div>
+            <div *ngIf="s.taxCode"><strong>{{ 'Tax:' | translate }}</strong> {{ s.taxCode }} {{ s.taxRatePercent | number: '1.0-2' }}%{{ s.taxInclusive ? ' (included)' : '' }}</div>
+            <div><strong>{{ 'Per cycle:' | translate }}</strong> {{ s.cycleAmount | number: '1.2-2' }} <span class="text-muted">{{ '(before tax)' | translate }}</span></div>
+            <div><strong>{{ 'Interval:' | translate }}</strong> {{ s.billingInterval }}</div>
+            <div><strong>{{ 'Billing timing:' | translate }}</strong> {{ s.billInAdvance ? ('Prepaid' | translate) : ('Paid after service' | translate) }}</div>
+            <div><strong>{{ 'Status:' | translate }}</strong> <span class="badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span></div>
+            <div><strong>{{ 'Start date:' | translate }}</strong> {{ s.startDate }}</div>
+            <div *ngIf="s.status === 'ACTIVE' || s.status === 'PAUSED'"><strong>{{ 'Next billing:' | translate }}</strong> {{ s.nextBillingDate }}</div>
+            <div *ngIf="s.lastBilledAt"><strong>{{ 'Last billed:' | translate }}</strong> {{ s.lastBilledAt | date: 'medium' }}</div>
+            <div *ngIf="s.setupFee > 0"><strong>{{ 'Setup fee:' | translate }}</strong> {{ s.setupFee | number: '1.2-2' }} {{ s.setupFeeBilled ? '(billed)' : '(on the first invoice)' }}</div>
+            <div *ngIf="s.termCycles"><strong>{{ 'Term:' | translate }}</strong> {{ 'cycle {p0} of {p1}, then {p2}' | translate: { p0: (s.cyclesBilled), p1: (s.termCycles), p2: (s.autoRenew ? 'renews' : 'ends') } }}<span *ngIf="s.renewals"> {{ '({p0} renewal(s) so far)' | translate: { p0: (s.renewals) } }}</span></div>
+            <div *ngIf="s.cancelledAt"><strong>{{ 'Cancelled:' | translate }}</strong> {{ s.cancelledAt | date: 'medium' }}</div>
           </div>
           <div class="text-muted mt-2" *ngIf="s.notes">{{ s.notes }}</div>
-          <div class="text-muted mt-2" *ngIf="s.cancelReason && !s.cancelAtPeriodEnd">Cancel reason: {{ s.cancelReason }}</div>
+          <div class="text-muted mt-2" *ngIf="s.cancelReason && !s.cancelAtPeriodEnd">{{ 'Cancel reason: {p0}' | translate: { p0: (s.cancelReason) } }}</div>
 
           <div class="flex gap-2 mt-3" style="flex-wrap:wrap;" *ngIf="s.status === 'ACTIVE' || s.status === 'PAUSED'">
-            <button class="btn btn-outline-primary" (click)="billNow()" [disabled]="s.status !== 'ACTIVE' || s.cancelAtPeriodEnd || busy">Bill now</button>
-            <button class="btn btn-outline-primary" (click)="toggle('edit')">Edit terms</button>
-            <button class="btn btn-outline-primary" (click)="toggle('plan')">Change plan</button>
-            <button class="btn btn-outline-secondary" (click)="toggle('pause')" *ngIf="s.status === 'ACTIVE'" [disabled]="busy">Pause…</button>
-            <button class="btn btn-outline-secondary" (click)="resume()" *ngIf="s.status === 'PAUSED'" [disabled]="busy">Resume</button>
-            <button class="btn btn-outline-secondary" (click)="skipNext()" *ngIf="s.status === 'ACTIVE' && !s.cancelAtPeriodEnd" [disabled]="busy">Skip next billing</button>
-            <button class="btn btn-outline-danger" (click)="toggle('cancel')" [disabled]="busy">Cancel subscription</button>
+            <button class="btn btn-outline-primary" (click)="billNow()" [disabled]="s.status !== 'ACTIVE' || s.cancelAtPeriodEnd || busy">{{ 'Bill now' | translate }}</button>
+            <button class="btn btn-outline-primary" (click)="toggle('edit')">{{ 'Edit terms' | translate }}</button>
+            <button class="btn btn-outline-primary" (click)="toggle('plan')">{{ 'Change plan' | translate }}</button>
+            <button class="btn btn-outline-secondary" (click)="toggle('pause')" *ngIf="s.status === 'ACTIVE'" [disabled]="busy">{{ 'Pause…' | translate }}</button>
+            <button class="btn btn-outline-secondary" (click)="resume()" *ngIf="s.status === 'PAUSED'" [disabled]="busy">{{ 'Resume' | translate }}</button>
+            <button class="btn btn-outline-secondary" (click)="skipNext()" *ngIf="s.status === 'ACTIVE' && !s.cancelAtPeriodEnd" [disabled]="busy">{{ 'Skip next billing' | translate }}</button>
+            <button class="btn btn-outline-danger" (click)="toggle('cancel')" [disabled]="busy">{{ 'Cancel subscription' | translate }}</button>
           </div>
 
           <!-- Edit terms -->
           <form class="card mt-3" style="padding:1rem;" *ngIf="panel === 'edit'" (ngSubmit)="saveEdit()">
-            <h4 class="mb-2">Edit terms</h4>
-            <div class="text-muted mb-2" style="font-size:0.85rem;">Changes apply from the next bill. Nothing is charged or credited now — use “Change plan” to settle the current period.</div>
+            <h4 class="mb-2">{{ 'Edit terms' | translate }}</h4>
+            <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'Changes apply from the next bill. Nothing is charged or credited now — use “Change plan” to settle the current period.' | translate }}</div>
             <div class="flex gap-2" style="flex-wrap:wrap;">
-              <div class="form-group"><label class="form-label">Price</label><input class="form-control" type="number" step="0.01" min="0.01" name="ep" [(ngModel)]="ed.price" /></div>
-              <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" type="number" step="1" min="1" name="eq" [(ngModel)]="ed.quantity" /></div>
-              <div class="form-group"><label class="form-label">Interval</label>
-                <select class="form-select" name="ei" [(ngModel)]="ed.billingInterval"><option value="WEEKLY">Weekly</option><option value="MONTHLY">Monthly</option><option value="QUARTERLY">Quarterly</option><option value="YEARLY">Yearly</option></select></div>
-              <div class="form-group"><label class="form-label">Discount %</label><input class="form-control" type="number" step="0.01" min="0" max="100" name="ed" [(ngModel)]="ed.discountPercent" /></div>
-              <div class="form-group"><label class="form-label">Tax rate</label>
-                <select class="form-select" name="et" [(ngModel)]="ed.taxRateId"><option [ngValue]="null">— None (tax-exempt) —</option><option *ngFor="let t of taxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option></select></div>
-              <div class="form-group" *ngIf="!s.setupFeeBilled"><label class="form-label">Setup fee</label><input class="form-control" type="number" step="0.01" min="0" name="es" [(ngModel)]="ed.setupFee" /></div>
-              <div class="form-group"><label class="form-label">Term (cycles, blank = open)</label><input class="form-control" type="number" step="1" min="1" max="1200" name="ec" [(ngModel)]="ed.termCycles" /></div>
-              <div class="form-group" *ngIf="ed.termCycles"><label class="form-label">At the end</label>
-                <select class="form-select" name="ea" [(ngModel)]="ed.autoRenew"><option [ngValue]="true">Renew</option><option [ngValue]="false">End</option></select></div>
+              <div class="form-group"><label class="form-label">{{ 'Price' | translate }}</label><input class="form-control" type="number" step="0.01" min="0.01" name="ep" [(ngModel)]="ed.price" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Quantity' | translate }}</label><input class="form-control" type="number" step="1" min="1" name="eq" [(ngModel)]="ed.quantity" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Interval' | translate }}</label>
+                <select class="form-select" name="ei" [(ngModel)]="ed.billingInterval"><option value="WEEKLY">{{ 'Weekly' | translate }}</option><option value="MONTHLY">{{ 'Monthly' | translate }}</option><option value="QUARTERLY">{{ 'Quarterly' | translate }}</option><option value="YEARLY">{{ 'Yearly' | translate }}</option></select></div>
+              <div class="form-group"><label class="form-label">{{ 'Discount %' | translate }}</label><input class="form-control" type="number" step="0.01" min="0" max="100" name="ed" [(ngModel)]="ed.discountPercent" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Tax rate' | translate }}</label>
+                <select class="form-select" name="et" [(ngModel)]="ed.taxRateId"><option [ngValue]="null">{{ '— None (tax-exempt) —' | translate }}</option><option *ngFor="let t of taxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option></select></div>
+              <div class="form-group" *ngIf="!s.setupFeeBilled"><label class="form-label">{{ 'Setup fee' | translate }}</label><input class="form-control" type="number" step="0.01" min="0" name="es" [(ngModel)]="ed.setupFee" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Term (cycles, blank = open)' | translate }}</label><input class="form-control" type="number" step="1" min="1" max="1200" name="ec" [(ngModel)]="ed.termCycles" /></div>
+              <div class="form-group" *ngIf="ed.termCycles"><label class="form-label">{{ 'At the end' | translate }}</label>
+                <select class="form-select" name="ea" [(ngModel)]="ed.autoRenew"><option [ngValue]="true">{{ 'Renew' | translate }}</option><option [ngValue]="false">{{ 'End' | translate }}</option></select></div>
             </div>
-            <div class="form-group"><label class="form-label">Notes</label><input class="form-control" name="en" [(ngModel)]="ed.notes" /></div>
-            <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Save changes</button><button class="btn btn-link" type="button" (click)="panel = ''">Never mind</button></div>
+            <div class="form-group"><label class="form-label">{{ 'Notes' | translate }}</label><input class="form-control" name="en" [(ngModel)]="ed.notes" /></div>
+            <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save changes' | translate }}</button><button class="btn btn-link" type="button" (click)="panel = ''">{{ 'Never mind' | translate }}</button></div>
           </form>
 
           <!-- Change plan -->
           <form class="card mt-3" style="padding:1rem;" *ngIf="panel === 'plan'" (ngSubmit)="applyPlanChange()">
-            <h4 class="mb-2">Change plan</h4>
+            <h4 class="mb-2">{{ 'Change plan' | translate }}</h4>
             <div class="flex gap-2" style="flex-wrap:wrap;">
-              <div class="form-group"><label class="form-label">Plan</label>
+              <div class="form-group"><label class="form-label">{{ 'Plan' | translate }}</label>
                 <select class="form-select" name="cp" [(ngModel)]="cp.planId" (ngModelChange)="onPlanPicked()"><option *ngFor="let p of plans" [ngValue]="p.id">{{ p.name }} — {{ p.price | number: '1.2-2' }} / {{ p.billingInterval }}</option></select></div>
-              <div class="form-group"><label class="form-label">Price</label><input class="form-control" type="number" step="0.01" min="0.01" name="cpp" [(ngModel)]="cp.price" (ngModelChange)="refreshQuote()" /></div>
-              <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" type="number" step="1" min="1" name="cpq" [(ngModel)]="cp.quantity" (ngModelChange)="refreshQuote()" /></div>
-              <div class="form-group"><label class="form-label">Interval</label>
-                <select class="form-select" name="cpi" [(ngModel)]="cp.billingInterval" (ngModelChange)="refreshQuote()"><option value="WEEKLY">Weekly</option><option value="MONTHLY">Monthly</option><option value="QUARTERLY">Quarterly</option><option value="YEARLY">Yearly</option></select></div>
-              <div class="form-group"><label class="form-label">Discount %</label><input class="form-control" type="number" step="0.01" min="0" max="100" name="cpd" [(ngModel)]="cp.discountPercent" (ngModelChange)="refreshQuote()" /></div>
-              <div class="form-group"><label class="form-label">Tax rate</label>
-                <select class="form-select" name="cpt" [(ngModel)]="cp.taxRateId"><option [ngValue]="null">— None (tax-exempt) —</option><option *ngFor="let t of taxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option></select></div>
+              <div class="form-group"><label class="form-label">{{ 'Price' | translate }}</label><input class="form-control" type="number" step="0.01" min="0.01" name="cpp" [(ngModel)]="cp.price" (ngModelChange)="refreshQuote()" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Quantity' | translate }}</label><input class="form-control" type="number" step="1" min="1" name="cpq" [(ngModel)]="cp.quantity" (ngModelChange)="refreshQuote()" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Interval' | translate }}</label>
+                <select class="form-select" name="cpi" [(ngModel)]="cp.billingInterval" (ngModelChange)="refreshQuote()"><option value="WEEKLY">{{ 'Weekly' | translate }}</option><option value="MONTHLY">{{ 'Monthly' | translate }}</option><option value="QUARTERLY">{{ 'Quarterly' | translate }}</option><option value="YEARLY">{{ 'Yearly' | translate }}</option></select></div>
+              <div class="form-group"><label class="form-label">{{ 'Discount %' | translate }}</label><input class="form-control" type="number" step="0.01" min="0" max="100" name="cpd" [(ngModel)]="cp.discountPercent" (ngModelChange)="refreshQuote()" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Tax rate' | translate }}</label>
+                <select class="form-select" name="cpt" [(ngModel)]="cp.taxRateId"><option [ngValue]="null">{{ '— None (tax-exempt) —' | translate }}</option><option *ngFor="let t of taxRates" [ngValue]="t.id">{{ t.name }} ({{ t.ratePercent | number: '1.0-2' }}%)</option></select></div>
             </div>
-            <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="cpr" [(ngModel)]="cp.prorate" (ngModelChange)="refreshQuote()" /> Settle the unused part of the current period now (prepaid subscriptions that were already billed)</label>
+            <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" name="cpr" [(ngModel)]="cp.prorate" (ngModelChange)="refreshQuote()" /> {{ 'Settle the unused part of the current period now (prepaid subscriptions that were already billed)' | translate }}</label>
             <div class="alert alert-info mt-2" *ngIf="quote">
               {{ quote.message }}
-              <div *ngIf="quote.prorated">Current period: {{ quote.remainingDays }} of {{ quote.periodDays }} days left.</div>
-              <div>Monthly value: {{ quote.monthlyBefore | number: '1.2-2' }} → {{ quote.monthlyAfter | number: '1.2-2' }}</div>
+              <div *ngIf="quote.prorated">{{ 'Current period: {p0} of {p1} days left.' | translate: { p0: (quote.remainingDays), p1: (quote.periodDays) } }}</div>
+              <div>{{ 'Monthly value: {p0} → {p1}' | translate: { p0: (quote.monthlyBefore | number: '1.2-2'), p1: (quote.monthlyAfter | number: '1.2-2') } }}</div>
             </div>
-            <div class="flex gap-2 mt-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Change plan</button><button class="btn btn-link" type="button" (click)="panel = ''">Never mind</button></div>
+            <div class="flex gap-2 mt-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Change plan' | translate }}</button><button class="btn btn-link" type="button" (click)="panel = ''">{{ 'Never mind' | translate }}</button></div>
           </form>
 
           <!-- Pause -->
           <form class="card mt-3" style="padding:1rem; max-width:34rem;" *ngIf="panel === 'pause'" (ngSubmit)="pause()">
-            <h4 class="mb-2">Pause subscription</h4>
-            <div class="form-group"><label class="form-label">Reason (optional)</label><input class="form-control" name="pr" [(ngModel)]="pauseReason" /></div>
-            <div class="form-group"><label class="form-label">Resume automatically on (optional)</label><app-date-picker name="prd" [(ngModel)]="pauseResumeOn"></app-date-picker></div>
-            <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">Pause</button><button class="btn btn-link" type="button" (click)="panel = ''">Never mind</button></div>
+            <h4 class="mb-2">{{ 'Pause subscription' | translate }}</h4>
+            <div class="form-group"><label class="form-label">{{ 'Reason (optional)' | translate }}</label><input class="form-control" name="pr" [(ngModel)]="pauseReason" /></div>
+            <div class="form-group"><label class="form-label">{{ 'Resume automatically on (optional)' | translate }}</label><app-date-picker name="prd" [(ngModel)]="pauseResumeOn"></app-date-picker></div>
+            <div class="flex gap-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Pause' | translate }}</button><button class="btn btn-link" type="button" (click)="panel = ''">{{ 'Never mind' | translate }}</button></div>
           </form>
 
           <!-- Cancel -->
           <form class="card mt-3" style="padding:1rem; max-width:34rem;" *ngIf="panel === 'cancel'" (ngSubmit)="cancel()">
-            <h4 class="mb-2">Cancel subscription</h4>
-            <div class="form-group"><label class="form-label">Reason (optional)</label><input class="form-control" name="cr" [(ngModel)]="cancelReason" /></div>
+            <h4 class="mb-2">{{ 'Cancel subscription' | translate }}</h4>
+            <div class="form-group"><label class="form-label">{{ 'Reason (optional)' | translate }}</label><input class="form-control" name="cr" [(ngModel)]="cancelReason" /></div>
             <div class="form-group" *ngIf="s.status === 'ACTIVE'">
-              <label style="display:flex; gap:0.4rem; align-items:center;"><input type="radio" name="cw" [value]="false" [(ngModel)]="cancelAtEnd" /> Cancel now</label>
-              <label style="display:flex; gap:0.4rem; align-items:center;"><input type="radio" name="cw" [value]="true" [(ngModel)]="cancelAtEnd" /> At the end of the paid period ({{ s.nextBillingDate }})</label>
+              <label style="display:flex; gap:0.4rem; align-items:center;"><input type="radio" name="cw" [value]="false" [(ngModel)]="cancelAtEnd" /> {{ 'Cancel now' | translate }}</label>
+              <label style="display:flex; gap:0.4rem; align-items:center;"><input type="radio" name="cw" [value]="true" [(ngModel)]="cancelAtEnd" /> {{ 'At the end of the paid period ({p0})' | translate: { p0: (s.nextBillingDate) } }}</label>
             </div>
-            <div class="flex gap-2"><button class="btn btn-danger" type="submit" [disabled]="busy">{{ cancelAtEnd && s.status === 'ACTIVE' ? 'Schedule cancellation' : 'Confirm cancel' }}</button><button class="btn btn-link" type="button" (click)="panel = ''">Never mind</button></div>
+            <div class="flex gap-2"><button class="btn btn-danger" type="submit" [disabled]="busy">{{ cancelAtEnd && s.status === 'ACTIVE' ? ('Schedule cancellation' | translate) : ('Confirm cancel' | translate) }}</button><button class="btn btn-link" type="button" (click)="panel = ''">{{ 'Never mind' | translate }}</button></div>
           </form>
         </div>
       </ng-container>
 
-      <h4 class="mt-3 mb-2">Billing history</h4>
+      <h4 class="mt-3 mb-2">{{ 'Billing history' | translate }}</h4>
       <table>
         <thead>
           <tr>
-            <th>Invoice #</th>
-            <th>Billed on</th>
-            <th>Period covered</th>
-            <th>Status</th>
-            <th class="text-end">Total</th>
+            <th>{{ 'Invoice #' | translate }}</th>
+            <th>{{ 'Billed on' | translate }}</th>
+            <th>{{ 'Period covered' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -165,18 +166,18 @@ import { BillingInterval, Invoice, Subscription, SubscriptionPlan, TaxRateOption
             <td><span class="badge" [ngClass]="inv.status === 'ISSUED' ? 'badge-success' : 'badge-secondary'">{{ inv.status }}</span></td>
             <td class="text-end">{{ inv.totalAmount | number: '1.2-2' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="history.length === 0">
-            <td colspan="6" class="text-muted">No invoices generated for this subscription yet.</td>
+            <td colspan="6" class="text-muted">{{ 'No invoices generated for this subscription yet.' | translate }}</td>
           </tr>
         </tbody>
       </table>
 
-      <h4 class="mt-3 mb-2">Activity</h4>
+      <h4 class="mt-3 mb-2">{{ 'Activity' | translate }}</h4>
       <table class="table-sm">
-        <thead><tr><th>When</th><th>What</th><th>Details</th><th>By</th></tr></thead>
+        <thead><tr><th>{{ 'When' | translate }}</th><th>{{ 'What' | translate }}</th><th>{{ 'Details' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
         <tbody>
           <tr *ngFor="let e of events">
             <td style="white-space:nowrap;">{{ e.at | date: 'medium' }}</td>
@@ -184,7 +185,7 @@ import { BillingInterval, Invoice, Subscription, SubscriptionPlan, TaxRateOption
             <td>{{ e.detail }}</td>
             <td>{{ e.by || '—' }}</td>
           </tr>
-          <tr *ngIf="events.length === 0"><td colspan="4" class="text-muted">Nothing recorded yet.</td></tr>
+          <tr *ngIf="events.length === 0"><td colspan="4" class="text-muted">{{ 'Nothing recorded yet.' | translate }}</td></tr>
         </tbody>
       </table>
     </app-shell>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -29,63 +30,63 @@ interface DraftLine {
 @Component({
   selector: 'app-bom-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">{{ id ? 'Edit bill of materials' : 'New bill of materials' }}<span class="text-muted" *ngIf="costing?.version" style="font-size:1rem;"> — version {{ costing?.version }}</span></h3>
+      <h3 class="mb-3">{{ id ? ('Edit bill of materials' | translate) : ('New bill of materials' | translate) }}<span class="text-muted" *ngIf="costing?.version" style="font-size:1rem;"> {{ '— version {p0}' | translate: { p0: (costing?.version) } }}</span></h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
       <div class="form-group mb-3" style="position:relative; max-width:480px;">
-        <label class="form-label">Finished-good product</label>
+        <label class="form-label">{{ 'Finished-good product' | translate }}</label>
         <input
           class="form-control"
           [(ngModel)]="productSearch"
           name="productSearch"
           [disabled]="!!id"
-          placeholder="Search products by name, SKU or code"
+          [placeholder]="'Search products by name, SKU or code' | translate"
           (input)="onProductSearch()"
         />
         <div class="dropdown-panel" *ngIf="productResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of productResults" (click)="selectProduct(p)">{{ p.name }}</div>
         </div>
         <div class="text-muted" style="font-size:0.85rem; margin-top:0.25rem;" *ngIf="selectedProduct">
-          Selected: <strong>{{ selectedProduct.name }}</strong>
+          {{ 'Selected:' | translate }} <strong>{{ selectedProduct.name }}</strong>
         </div>
         <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="id">
-          The product a bill of materials belongs to can't be changed once created.
+          {{ 'The product a bill of materials belongs to can\\'t be changed once created.' | translate }}
         </div>
       </div>
 
       <div class="flex gap-2 mb-3">
         <div class="grow">
-          <label class="form-label">Name (optional)</label>
-          <input class="form-control" name="name" [(ngModel)]="name" placeholder="e.g. Standard, Alt — no walnut" />
+          <label class="form-label">{{ 'Name (optional)' | translate }}</label>
+          <input class="form-control" name="name" [(ngModel)]="name" [placeholder]="'e.g. Standard, Alt — no walnut' | translate" />
         </div>
         <div class="grow">
-          <label class="form-label">Routing (optional)</label>
+          <label class="form-label">{{ 'Routing (optional)' | translate }}</label>
           <select class="form-select" name="routingId" [(ngModel)]="routingId">
-            <option [ngValue]="null">— None —</option>
+            <option [ngValue]="null">{{ '— None —' | translate }}</option>
             <option *ngFor="let r of routings" [ngValue]="r.id">{{ r.name }}</option>
           </select>
         </div>
       </div>
       <div class="form-group mb-3" *ngIf="id">
         <label class="form-label">
-          <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+          <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
         </label>
       </div>
 
-      <h4 class="mb-2">Components</h4>
+      <h4 class="mb-2">{{ 'Components' | translate }}</h4>
       <div class="flex gap-2 mb-2" style="position:relative;">
         <input
           class="form-control"
-          placeholder="Search products by name, SKU or code to add a component"
+          [placeholder]="'Search products by name, SKU or code to add a component' | translate"
           [(ngModel)]="componentSearch"
           (input)="onComponentSearch()"
         />
         <div class="dropdown-panel" *ngIf="componentResults.length > 0">
           <div class="dropdown-item" *ngFor="let p of componentResults" (click)="addLine(p)">
-            {{ p.name }} <span class="text-muted">— stock {{ p.stockQuantity }}</span>
+            {{ p.name }} <span class="text-muted">{{ '— stock {p0}' | translate: { p0: (p.stockQuantity) } }}</span>
           </div>
         </div>
       </div>
@@ -93,8 +94,8 @@ interface DraftLine {
       <table class="table-sm mb-3">
         <thead>
           <tr>
-            <th>Component</th>
-            <th class="text-end">Quantity per unit</th>
+            <th>{{ 'Component' | translate }}</th>
+            <th class="text-end">{{ 'Quantity per unit' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -111,38 +112,38 @@ interface DraftLine {
                 [name]="'qty' + i"
               />
             </td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">Remove</button></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeLine(i)">{{ 'Remove' | translate }}</button></td>
           </tr>
           <tr *ngIf="lines.length === 0">
-            <td colspan="3" class="text-muted">No components yet — search for a product above to add one.</td>
+            <td colspan="3" class="text-muted">{{ 'No components yet — search for a product above to add one.' | translate }}</td>
           </tr>
         </tbody>
       </table>
       <p class="text-muted" style="font-size:0.85rem;">
-        "Quantity per unit" is how many of this component it takes to make exactly ONE unit of the finished good.
+        {{ '"Quantity per unit" is how many of this component it takes to make exactly ONE unit of the finished good.' | translate }}
       </p>
 
       <div class="card mb-3 cost-card" style="padding:1rem;" *ngIf="costing">
-        <h4 class="mb-2">Cost of one unit (today's prices)</h4>
+        <h4 class="mb-2">{{ 'Cost of one unit (today\\'s prices)' | translate }}</h4>
         <table class="table-sm" style="max-width:420px;">
           <tbody>
-            <tr><td>Components</td><td class="text-end cc-material">{{ costing.estimatedUnitMaterialCost | number: '1.2-2' }}</td></tr>
-            <tr><td>Labour</td><td class="text-end cc-labour">{{ costing.estimatedUnitLabourCost | number: '1.2-2' }}</td></tr>
-            <tr><td>Machines</td><td class="text-end cc-machine">{{ costing.estimatedUnitMachineCost | number: '1.2-2' }}</td></tr>
-            <tr><td><strong>Cost per unit</strong></td><td class="text-end cc-total"><strong>{{ costing.estimatedUnitCost | number: '1.2-2' }}</strong></td></tr>
-            <tr *ngIf="costing.estimatedNetUnitCost !== costing.estimatedUnitCost"><td>After by-products</td><td class="text-end cc-net">{{ costing.estimatedNetUnitCost | number: '1.2-2' }}</td></tr>
-            <tr><td>Selling price</td><td class="text-end cc-price">{{ costing.productPrice | number: '1.2-2' }}</td></tr>
-            <tr><td>Margin</td><td class="text-end cc-margin">{{ costing.estimatedMarginPercent != null ? (costing.estimatedMarginPercent | number: '1.0-1') + '%' : '—' }}</td></tr>
+            <tr><td>{{ 'Components' | translate }}</td><td class="text-end cc-material">{{ costing.estimatedUnitMaterialCost | number: '1.2-2' }}</td></tr>
+            <tr><td>{{ 'Labour' | translate }}</td><td class="text-end cc-labour">{{ costing.estimatedUnitLabourCost | number: '1.2-2' }}</td></tr>
+            <tr><td>{{ 'Machines' | translate }}</td><td class="text-end cc-machine">{{ costing.estimatedUnitMachineCost | number: '1.2-2' }}</td></tr>
+            <tr><td><strong>{{ 'Cost per unit' | translate }}</strong></td><td class="text-end cc-total"><strong>{{ costing.estimatedUnitCost | number: '1.2-2' }}</strong></td></tr>
+            <tr *ngIf="costing.estimatedNetUnitCost !== costing.estimatedUnitCost"><td>{{ 'After by-products' | translate }}</td><td class="text-end cc-net">{{ costing.estimatedNetUnitCost | number: '1.2-2' }}</td></tr>
+            <tr><td>{{ 'Selling price' | translate }}</td><td class="text-end cc-price">{{ costing.productPrice | number: '1.2-2' }}</td></tr>
+            <tr><td>{{ 'Margin' | translate }}</td><td class="text-end cc-margin">{{ costing.estimatedMarginPercent != null ? (costing.estimatedMarginPercent | number: '1.0-1') + '%' : '—' }}</td></tr>
           </tbody>
         </table>
-        <div class="text-muted" style="font-size:0.8rem;">Indirect costs (rent, power…) are added per order and are not included here. Save to refresh after editing.</div>
+        <div class="text-muted" style="font-size:0.8rem;">{{ 'Indirect costs (rent, power…) are added per order and are not included here. Save to refresh after editing.' | translate }}</div>
       </div>
 
-      <h4 class="mb-2">By-products (optional)</h4>
+      <h4 class="mb-2">{{ 'By-products (optional)' | translate }}</h4>
       <div class="flex gap-2 mb-2" style="position:relative;">
         <input
           class="form-control bp-search"
-          placeholder="Search products to add a by-product (bran, offcuts, whey…)"
+          [placeholder]="'Search products to add a by-product (bran, offcuts, whey…)' | translate"
           [(ngModel)]="byProductSearch"
           name="byProductSearch"
           (input)="onByProductSearch()"
@@ -154,9 +155,9 @@ interface DraftLine {
       <table class="table-sm mb-2" *ngIf="byProducts.length > 0">
         <thead>
           <tr>
-            <th>By-product</th>
-            <th class="text-end">Quantity per good unit</th>
-            <th class="text-end">Share of the cost (%)</th>
+            <th>{{ 'By-product' | translate }}</th>
+            <th class="text-end">{{ 'Quantity per good unit' | translate }}</th>
+            <th class="text-end">{{ 'Share of the cost (%)' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -165,17 +166,17 @@ interface DraftLine {
             <td>{{ bp.productName }}</td>
             <td class="text-end"><input type="number" step="any" class="form-control form-control-sm bp-qty" style="width:100px; margin-left:auto;" min="0.0001" [(ngModel)]="bp.quantityPerUnit" [name]="'bpq' + i" /></td>
             <td class="text-end"><input type="number" class="form-control form-control-sm bp-share" style="width:100px; margin-left:auto;" min="0" max="100" step="0.01" [(ngModel)]="bp.costSharePercent" [name]="'bps' + i" /></td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeByProduct(i)">Remove</button></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeByProduct(i)">{{ 'Remove' | translate }}</button></td>
           </tr>
         </tbody>
       </table>
       <p class="text-muted" style="font-size:0.85rem;">
-        Each good unit made also puts this many of the by-product into stock. The cost share is the part of the run's cost that belongs to it; it is taken off the finished good's unit cost.
+        {{ 'Each good unit made also puts this many of the by-product into stock. The cost share is the part of the run\\'s cost that belongs to it; it is taken off the finished good\\'s unit cost.' | translate }}
       </p>
 
       <div class="flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="submit()">Save</button>
-        <a class="btn btn-link" routerLink="/admin/manufacturing/boms">Cancel</a>
+        <button class="btn btn-primary" type="button" (click)="submit()">{{ 'Save' | translate }}</button>
+        <a class="btn btn-link" routerLink="/admin/manufacturing/boms">{{ 'Cancel' | translate }}</a>
       </div>
     </app-shell>
   `,

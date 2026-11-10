@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -9,42 +10,42 @@ import { WorkstationApiService } from '../../core/api/workstation-api.service';
 @Component({
   selector: 'app-workstation-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">{{ id ? 'Edit workstation' : 'New workstation' }}</h3>
+      <h3 class="mb-3">{{ id ? ('Edit workstation' | translate) : ('New workstation' | translate) }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <form (ngSubmit)="submit()">
         <div class="form-group">
-          <label class="form-label">Code</label>
+          <label class="form-label">{{ 'Code' | translate }}</label>
           <input class="form-control" name="code" [(ngModel)]="code" [disabled]="!!id" required />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;" *ngIf="id">
-            The code can't be changed once created.
+            {{ 'The code can\\'t be changed once created.' | translate }}
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Name</label>
+          <label class="form-label">{{ 'Name' | translate }}</label>
           <input class="form-control" name="name" [(ngModel)]="name" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Description</label>
+          <label class="form-label">{{ 'Description' | translate }}</label>
           <textarea class="form-control" name="description" rows="2" [(ngModel)]="description"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Hourly rate</label>
+          <label class="form-label">{{ 'Hourly rate' | translate }}</label>
           <input class="form-control" style="max-width:160px;" type="number" min="0" step="0.01" name="hourlyRate" [(ngModel)]="hourlyRate" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            This workstation's own operating cost per hour — used with a routing operation's estimated minutes to estimate labor/overhead cost.
+            {{ 'This workstation\\'s own operating cost per hour — used with a routing operation\\'s estimated minutes to estimate labor/overhead cost.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="id">
           <label class="form-label">
-            <input type="checkbox" name="active" [(ngModel)]="active" /> Active
+            <input type="checkbox" name="active" [(ngModel)]="active" /> {{ 'Active' | translate }}
           </label>
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" type="submit">Save</button>
-          <a class="btn btn-link" routerLink="/admin/manufacturing/workstations">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ 'Save' | translate }}</button>
+          <a class="btn btn-link" routerLink="/admin/manufacturing/workstations">{{ 'Cancel' | translate }}</a>
         </div>
       </form>
     </app-shell>

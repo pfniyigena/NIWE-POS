@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -22,31 +23,31 @@ import { PagerComponent } from '../shared/pager.component';
 @Component({
   selector: 'app-restaurant-wastage-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, ListFilterComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
-        <h3>Restaurant wastage</h3>
-        <a class="btn btn-primary" routerLink="/admin/restaurant/wastage/new">+ Record wastage</a>
+        <h3>{{ 'Restaurant wastage' | translate }}</h3>
+        <a class="btn btn-primary" routerLink="/admin/restaurant/wastage/new">{{ '+ Record wastage' | translate }}</a>
       </div>
-      <app-list-filter exportPath="/restaurant/wastage/export" [exportExtra]="extra" [extraActive]="reason !== ''" placeholder="Search item or note" [statuses]="statuses" statusAll="All statuses" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
+      <app-list-filter exportPath="/restaurant/wastage/export" [exportExtra]="extra" [extraActive]="reason !== ''" [placeholder]="'Search item or note' | translate" [statuses]="statuses" statusAll="All statuses" (filterChange)="list.apply($event)" (cleared)="clearedExtra()"></app-list-filter>
       <div class="flex gap-2 mb-3 align-center">
-        <select class="form-select reason-filter" style="width:auto;" [(ngModel)]="reason" (ngModelChange)="extraChanged()" name="reason" title="Reason">
-          <option value="">All reasons</option>
+        <select class="form-select reason-filter" style="width:auto;" [(ngModel)]="reason" (ngModelChange)="extraChanged()" name="reason" [title]="'Reason' | translate">
+          <option value="">{{ 'All reasons' | translate }}</option>
           <option *ngFor="let r of reasons" [value]="r">{{ r.replace('_', ' ') | titlecase }}</option>
         </select>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th class="text-end">Qty wasted</th>
-            <th>Reason</th>
-            <th>Note</th>
-            <th>Status</th>
-            <th class="text-end">Cost impact</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Product' | translate }}</th>
+            <th class="text-end">{{ 'Qty wasted' | translate }}</th>
+            <th>{{ 'Reason' | translate }}</th>
+            <th>{{ 'Note' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th class="text-end">{{ 'Cost impact' | translate }}</th>
             <th *ngIf="isAdmin"></th>
           </tr>
         </thead>
@@ -68,14 +69,14 @@ import { PagerComponent } from '../shared/pager.component';
             <td class="text-end">{{ w.costImpact != null ? (w.costImpact | currency) : '—' }}</td>
             <td *ngIf="isAdmin" class="flex gap-2">
               <ng-container *ngIf="w.status === 'PENDING'">
-                <button class="btn btn-sm btn-primary" [disabled]="busyId === w.id" (click)="confirm(w)">Confirm</button>
-                <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === w.id" (click)="reject(w)">Reject</button>
+                <button class="btn btn-sm btn-primary" [disabled]="busyId === w.id" (click)="confirm(w)">{{ 'Confirm' | translate }}</button>
+                <button class="btn btn-sm btn-outline-danger" [disabled]="busyId === w.id" (click)="reject(w)">{{ 'Reject' | translate }}</button>
               </ng-container>
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || reason ? 'No wastage matches these filters.' : 'No wastage recorded yet.' }}</p>
+      <p class="text-muted" *ngIf="list.loaded && list.rows.length === 0">{{ list.filtered || reason ? ('No wastage matches these filters.' | translate) : ('No wastage recorded yet.' | translate) }}</p>
       <app-pager [page]="list.page" [size]="list.size" [total]="list.total" (pageChange)="list.goto($event)"></app-pager>
     </app-shell>
   `,

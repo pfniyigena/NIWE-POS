@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,71 +12,71 @@ import { addDays, formatMinutes, mondayOf, parseDuration, today } from '../../co
 @Component({
   selector: 'app-time-approvals',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, DatePickerComponent],
   template: `
     <app-shell [wide]="true">
-      <h3 class="mb-3">Approvals and team time</h3>
+      <h3 class="mb-3">{{ 'Approvals and team time' | translate }}</h3>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="notice">{{ notice }}</div>
 
       <div class="flex gap-2 mb-3" role="tablist">
-        <button type="button" class="btn btn-sm" [class.btn-primary]="!missingMode" [class.btn-outline-secondary]="missingMode" (click)="setMissing(false)">Approvals and team time</button>
-        <button type="button" id="tab-missing" class="btn btn-sm" [class.btn-primary]="missingMode" [class.btn-outline-secondary]="!missingMode" (click)="setMissing(true)">Not submitted</button>
+        <button type="button" class="btn btn-sm" [class.btn-primary]="!missingMode" [class.btn-outline-secondary]="missingMode" (click)="setMissing(false)">{{ 'Approvals and team time' | translate }}</button>
+        <button type="button" id="tab-missing" class="btn btn-sm" [class.btn-primary]="missingMode" [class.btn-outline-secondary]="!missingMode" (click)="setMissing(true)">{{ 'Not submitted' | translate }}</button>
       </div>
 
       <ng-container *ngIf="missingMode">
         <div class="flex gap-2 mb-2 align-center" style="flex-wrap:wrap;">
-          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shiftWeek(-7)">‹ Earlier</button>
-          <strong>Week of {{ missingWeek }}</strong>
-          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shiftWeek(7)">Later ›</button>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shiftWeek(-7)">{{ '‹ Earlier' | translate }}</button>
+          <strong>{{ 'Week of {p0}' | translate: { p0: (missingWeek) } }}</strong>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="shiftWeek(7)">{{ 'Later ›' | translate }}</button>
           <span class="spacer"></span>
-          <button class="btn btn-primary btn-sm" type="button" id="remind-all" [disabled]="!missing?.rows?.length || sending" (click)="remind(null)">Send reminder to everyone listed</button>
+          <button class="btn btn-primary btn-sm" type="button" id="remind-all" [disabled]="!missing?.rows?.length || sending" (click)="remind(null)">{{ 'Send reminder to everyone listed' | translate }}</button>
         </div>
-        <div class="text-muted mb-2" style="font-size:0.85rem;">People who normally log time but have not handed in everything for this week (Monday to Sunday).</div>
+        <div class="text-muted mb-2" style="font-size:0.85rem;">{{ 'People who normally log time but have not handed in everything for this week (Monday to Sunday).' | translate }}</div>
         <table class="table-sm" *ngIf="missing?.rows?.length">
-          <thead><tr><th>Person</th><th>Where they are</th><th class="text-end">Logged</th><th class="text-end">Not handed in</th><th class="text-end">Waiting</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Person' | translate }}</th><th>{{ 'Where they are' | translate }}</th><th class="text-end">{{ 'Logged' | translate }}</th><th class="text-end">{{ 'Not handed in' | translate }}</th><th class="text-end">{{ 'Waiting' | translate }}</th><th></th></tr></thead>
           <tbody><tr *ngFor="let r of missing!.rows">
-            <td>{{ r.userName }}<span class="text-muted" *ngIf="!r.hasEmail" style="font-size:0.75rem;"> · no e-mail address</span></td>
+            <td>{{ r.userName }}<span class="text-muted" *ngIf="!r.hasEmail" style="font-size:0.75rem;"> {{ '· no e-mail address' | translate }}</span></td>
             <td><span class="badge" [class.badge-danger]="r.status === 'NOTHING'" [class.badge-warning]="r.status !== 'NOTHING'">{{ statusLabel(r.status) }}</span></td>
-            <td class="text-end">{{ r.hoursLogged | number: '1.0-2' }} h</td><td class="text-end">{{ r.hoursNotSubmitted | number: '1.0-2' }} h</td><td class="text-end">{{ r.hoursSubmitted | number: '1.0-2' }} h</td>
-            <td><button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!r.hasEmail || sending" (click)="remind([r.userId])">Remind</button></td>
+            <td class="text-end">{{ '{p0} h' | translate: { p0: (r.hoursLogged | number: '1.0-2') } }}</td><td class="text-end">{{ '{p0} h' | translate: { p0: (r.hoursNotSubmitted | number: '1.0-2') } }}</td><td class="text-end">{{ '{p0} h' | translate: { p0: (r.hoursSubmitted | number: '1.0-2') } }}</td>
+            <td><button class="btn btn-sm btn-outline-primary" type="button" [disabled]="!r.hasEmail || sending" (click)="remind([r.userId])">{{ 'Remind' | translate }}</button></td>
           </tr></tbody>
         </table>
-        <p class="text-muted" *ngIf="missing && !missing.rows.length">Everyone who normally logs time has handed in this week.</p>
+        <p class="text-muted" *ngIf="missing && !missing.rows.length">{{ 'Everyone who normally logs time has handed in this week.' | translate }}</p>
       </ng-container>
 
       <ng-container *ngIf="!missingMode">
       <div class="flex gap-2 mb-3 align-center" style="flex-wrap:wrap;">
         <select class="form-select" style="width:auto;" name="st" [(ngModel)]="status" (ngModelChange)="load()">
-          <option value="SUBMITTED">Waiting for approval</option>
-          <option value="">All statuses</option>
-          <option value="DRAFT">Not yet submitted</option><option value="APPROVED">Approved</option>
-          <option value="REJECTED">Sent back</option><option value="INVOICED">Invoiced</option>
+          <option value="SUBMITTED">{{ 'Waiting for approval' | translate }}</option>
+          <option value="">{{ 'All statuses' | translate }}</option>
+          <option value="DRAFT">{{ 'Not yet submitted' | translate }}</option><option value="APPROVED">{{ 'Approved' | translate }}</option>
+          <option value="REJECTED">{{ 'Sent back' | translate }}</option><option value="INVOICED">{{ 'Invoiced' | translate }}</option>
         </select>
         <select class="form-select" style="width:auto;" name="us" [(ngModel)]="userId" (ngModelChange)="load()">
-          <option [ngValue]="null">Everyone</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.fullName }}</option>
+          <option [ngValue]="null">{{ 'Everyone' | translate }}</option><option *ngFor="let u of staff" [ngValue]="u.id">{{ u.fullName }}</option>
         </select>
         <select class="form-select" style="width:auto; max-width:14rem;" name="pr" [(ngModel)]="projectId" (ngModelChange)="load()">
-          <option [ngValue]="null">All projects</option><option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}</option>
+          <option [ngValue]="null">{{ 'All projects' | translate }}</option><option *ngFor="let p of projects" [ngValue]="p.id">{{ p.name }}</option>
         </select>
         <ng-container *ngIf="status !== 'SUBMITTED'">
           <app-date-picker name="f" [(ngModel)]="from" (ngModelChange)="load()"></app-date-picker>
-          <span>to</span>
+          <span>{{ 'to' | translate }}</span>
           <app-date-picker name="t" [(ngModel)]="to" (ngModelChange)="load()"></app-date-picker>
         </ng-container>
       </div>
 
       <div class="flex gap-2 mb-2 align-center" style="flex-wrap:wrap;" *ngIf="selectedIds().length">
-        <strong>{{ selectedIds().length }} selected</strong>
-        <button class="btn btn-success btn-sm" type="button" (click)="approve()">Approve</button>
-        <input class="form-control" style="width:16rem;" placeholder="Reason for sending back" name="rr" [(ngModel)]="reason" />
-        <button class="btn btn-outline-danger btn-sm" type="button" (click)="reject()">Send back</button>
+        <strong>{{ '{p0} selected' | translate: { p0: (selectedIds().length) } }}</strong>
+        <button class="btn btn-success btn-sm" type="button" (click)="approve()">{{ 'Approve' | translate }}</button>
+        <input class="form-control" style="width:16rem;" [placeholder]="'Reason for sending back' | translate" name="rr" [(ngModel)]="reason" />
+        <button class="btn btn-outline-danger btn-sm" type="button" (click)="reject()">{{ 'Send back' | translate }}</button>
       </div>
 
       <table class="table-sm">
         <thead><tr>
           <th style="width:2rem;"><input type="checkbox" [checked]="allChecked()" (change)="toggleAll($any($event.target).checked)" /></th>
-          <th>Date</th><th>Person</th><th>Project</th><th>What</th><th class="text-end">Time</th><th>Billable</th><th class="text-end">Rate</th><th class="text-end">Amount</th><th>Status</th><th></th>
+          <th>{{ 'Date' | translate }}</th><th>{{ 'Person' | translate }}</th><th>{{ 'Project' | translate }}</th><th>{{ 'What' | translate }}</th><th class="text-end">{{ 'Time' | translate }}</th><th>{{ 'Billable' | translate }}</th><th class="text-end">{{ 'Rate' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th>{{ 'Status' | translate }}</th><th></th>
         </tr></thead>
         <tbody>
           <ng-container *ngFor="let e of entries">
@@ -84,32 +85,32 @@ import { addDays, formatMinutes, mondayOf, parseDuration, today } from '../../co
               <td>{{ e.workDate }}</td>
               <td>{{ e.userName }}</td>
               <td>{{ e.projectName }}<span class="text-muted" *ngIf="e.taskName"> · {{ e.taskName }}</span></td>
-              <td>{{ e.description || '—' }}<div style="color:#c0392b; font-size:0.8rem;" *ngIf="e.rejectReason">Sent back: {{ e.rejectReason }}</div></td>
+              <td>{{ e.description || '—' }}<div style="color:#c0392b; font-size:0.8rem;" *ngIf="e.rejectReason">{{ 'Sent back: {p0}' | translate: { p0: (e.rejectReason) } }}</div></td>
               <td class="text-end">{{ fmt(e.minutes) }}</td>
-              <td>{{ e.billable ? 'Yes' : 'No' }}</td>
+              <td>{{ e.billable ? ('Yes' | translate) : ('No' | translate) }}</td>
               <td class="text-end">{{ e.hourlyRate | number: '1.0-2' }}</td>
               <td class="text-end">{{ e.billable ? (e.amount | number: '1.0-2') : '—' }}</td>
               <td><span class="badge" [class.badge-secondary]="e.status === 'DRAFT'" [class.badge-warning]="e.status === 'SUBMITTED'"
                   [class.badge-success]="e.status === 'APPROVED' || e.status === 'INVOICED'" [class.badge-danger]="e.status === 'REJECTED'">{{ e.status }}</span>
                 <a *ngIf="e.invoiceId" [routerLink]="['/admin/invoices', e.invoiceId]" style="margin-left:0.3rem;">{{ e.invoiceNumber }}</a></td>
-              <td><button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="e.status !== 'INVOICED'" (click)="startEdit(e)">Correct</button></td>
+              <td><button class="btn btn-sm btn-outline-secondary" type="button" *ngIf="e.status !== 'INVOICED'" (click)="startEdit(e)">{{ 'Correct' | translate }}</button></td>
             </tr>
             <tr *ngIf="editing === e.id">
               <td colspan="11" style="background:rgba(0,0,0,0.03);">
                 <div class="flex gap-2 align-center" style="flex-wrap:wrap;">
                   <input class="form-control" style="width:7rem;" name="eh" [(ngModel)]="editDuration" placeholder="1:30" />
-                  <input class="form-control" style="width:20rem;" name="ed" [(ngModel)]="editDescription" placeholder="Description" />
-                  <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="eb" [(ngModel)]="editBillable" /> Billable</label>
-                  <button class="btn btn-primary btn-sm" type="button" (click)="saveEdit(e)">Save</button>
-                  <button class="btn btn-outline-secondary btn-sm" type="button" (click)="editing = null">Cancel</button>
+                  <input class="form-control" style="width:20rem;" name="ed" [(ngModel)]="editDescription" [placeholder]="'Description' | translate" />
+                  <label style="display:flex; gap:0.3rem; align-items:center;"><input type="checkbox" name="eb" [(ngModel)]="editBillable" /> {{ 'Billable' | translate }}</label>
+                  <button class="btn btn-primary btn-sm" type="button" (click)="saveEdit(e)">{{ 'Save' | translate }}</button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" (click)="editing = null">{{ 'Cancel' | translate }}</button>
                 </div>
               </td>
             </tr>
           </ng-container>
         </tbody>
       </table>
-      <p class="text-muted" *ngIf="!entries.length">{{ status === 'SUBMITTED' ? 'Nothing is waiting for approval.' : 'No time found for these filters.' }}</p>
-      <p class="text-muted" *ngIf="entries.length">Total: {{ totalHours() | number: '1.0-2' }} h</p>
+      <p class="text-muted" *ngIf="!entries.length">{{ status === 'SUBMITTED' ? ('Nothing is waiting for approval.' | translate) : ('No time found for these filters.' | translate) }}</p>
+      <p class="text-muted" *ngIf="entries.length">{{ 'Total: {p0} h' | translate: { p0: (totalHours() | number: '1.0-2') } }}</p>
       </ng-container>
     </app-shell>
   `,

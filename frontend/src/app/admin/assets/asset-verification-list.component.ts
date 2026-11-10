@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,52 +13,51 @@ import { AssetApiService, AssetCategory, Verification } from '../../core/api/ass
 @Component({
   selector: 'app-asset-verification-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
-        <h3>Asset verification</h3>
+        <h3>{{ 'Asset verification' | translate }}</h3>
         <div class="flex gap-2">
-          <a class="btn btn-outline-primary" routerLink="/admin/assets/overview">Overview</a>
-          <a class="btn btn-outline-primary" routerLink="/admin/assets">Asset register</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets/overview">{{ 'Overview' | translate }}</a>
+          <a class="btn btn-outline-primary" routerLink="/admin/assets">{{ 'Asset register' | translate }}</a>
         </div>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <p class="text-muted">
-        A round lists the assets that should be in a branch, category or place. Walk around, mark each one found, missing or damaged, then close the round.
-        Missing assets can be written off from the round.
+        {{ 'A round lists the assets that should be in a branch, category or place. Walk around, mark each one found, missing or damaged, then close the round. Missing assets can be written off from the round.' | translate }}
       </p>
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="start()" *ngIf="canManage">
-        <strong class="mb-2">Start a round</strong>
+        <strong class="mb-2">{{ 'Start a round' | translate }}</strong>
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-end;">
-          <div class="form-group"><label class="form-label">Name</label><input class="form-control" name="name" [(ngModel)]="form.name" placeholder="e.g. Year-end count" required /></div>
-          <div class="form-group" *ngIf="branches.length > 1"><label class="form-label">Branch</label>
+          <div class="form-group"><label class="form-label">{{ 'Name' | translate }}</label><input class="form-control" name="name" [(ngModel)]="form.name" [placeholder]="'e.g. Year-end count' | translate" required /></div>
+          <div class="form-group" *ngIf="branches.length > 1"><label class="form-label">{{ 'Branch' | translate }}</label>
             <select class="form-select" name="branch" [(ngModel)]="form.branchId">
-              <option [ngValue]="null">All branches</option>
+              <option [ngValue]="null">{{ 'All branches' | translate }}</option>
               <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Category</label>
+          <div class="form-group"><label class="form-label">{{ 'Category' | translate }}</label>
             <select class="form-select" name="category" [(ngModel)]="form.categoryId">
-              <option [ngValue]="null">All categories</option>
+              <option [ngValue]="null">{{ 'All categories' | translate }}</option>
               <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
             </select></div>
-          <div class="form-group"><label class="form-label">Place</label><input class="form-control" name="location" [(ngModel)]="form.location" placeholder="all places" /></div>
-          <div class="form-group"><label class="form-label">Note</label><input class="form-control" name="note" [(ngModel)]="form.note" /></div>
-          <button class="btn btn-primary" type="submit" [disabled]="busy">Start</button>
+          <div class="form-group"><label class="form-label">{{ 'Place' | translate }}</label><input class="form-control" name="location" [(ngModel)]="form.location" [placeholder]="'all places' | translate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Note' | translate }}</label><input class="form-control" name="note" [(ngModel)]="form.note" /></div>
+          <button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Start' | translate }}</button>
         </div>
       </form>
       <table class="table-sm">
-        <thead><tr><th>Round</th><th>Covers</th><th>Started</th><th>Status</th><th class="text-end">Assets</th><th class="text-end">Found</th><th class="text-end">Missing</th><th class="text-end">Damaged</th><th class="text-end">To do</th><th></th></tr></thead>
+        <thead><tr><th>{{ 'Round' | translate }}</th><th>{{ 'Covers' | translate }}</th><th>{{ 'Started' | translate }}</th><th>{{ 'Status' | translate }}</th><th class="text-end">{{ 'Assets' | translate }}</th><th class="text-end">{{ 'Found' | translate }}</th><th class="text-end">{{ 'Missing' | translate }}</th><th class="text-end">{{ 'Damaged' | translate }}</th><th class="text-end">{{ 'To do' | translate }}</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let v of rounds">
             <td><a [routerLink]="['/admin/assets/verifications', v.id]">{{ v.name }}</a></td>
             <td>{{ cover(v) }}</td>
             <td>{{ v.startedOn }}</td>
-            <td><span class="badge" [class.badge-warning]="v.status === 'OPEN'" [class.badge-success]="v.status === 'CLOSED'">{{ v.status === 'OPEN' ? 'Open' : 'Closed ' + (v.closedOn || '') }}</span></td>
+            <td><span class="badge" [class.badge-warning]="v.status === 'OPEN'" [class.badge-success]="v.status === 'CLOSED'">{{ v.status === 'OPEN' ? ('Open' | translate) : (('Closed' | translate) + ' ' + (v.closedOn || '')) }}</span></td>
             <td class="text-end">{{ v.total }}</td><td class="text-end">{{ v.found }}</td><td class="text-end">{{ v.missing }}</td><td class="text-end">{{ v.damaged }}</td><td class="text-end">{{ v.pending }}</td>
-            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/assets/verifications', v.id]">Open</a></td>
+            <td><a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/assets/verifications', v.id]">{{ 'Open' | translate }}</a></td>
           </tr>
-          <tr *ngIf="!rounds.length"><td colspan="10" class="text-muted">No rounds yet.</td></tr>
+          <tr *ngIf="!rounds.length"><td colspan="10" class="text-muted">{{ 'No rounds yet.' | translate }}</td></tr>
         </tbody>
       </table>
     </app-shell>

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,18 +12,18 @@ import { DayCloseRow, EndOfDay } from '../core/models';
 @Component({
   selector: 'app-end-of-day',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:8px;">
-        <h3>End of day</h3>
+        <h3>{{ 'End of day' | translate }}</h3>
         <span class="flex gap-2 align-center" style="flex-wrap:wrap;">
           <input type="date" class="form-control eod-date" style="width:auto;" [(ngModel)]="date" name="eoddate" (change)="load()" />
-          <a class="btn btn-outline-secondary eod-print" [routerLink]="['/admin/restaurant/end-of-day/print', date]">Print</a>
-          <button class="btn btn-outline-secondary btn-sm eod-export-xlsx" (click)="download('xlsx')">Excel</button>
-          <button class="btn btn-outline-secondary btn-sm eod-export-pdf" (click)="download('pdf')">PDF</button>
-          <button class="btn btn-outline-secondary btn-sm eod-export-csv" (click)="download('csv')">CSV</button>
-          <a class="btn btn-outline-primary" routerLink="/admin/restaurant/analysis">Sales analysis</a>
+          <a class="btn btn-outline-secondary eod-print" [routerLink]="['/admin/restaurant/end-of-day/print', date]">{{ 'Print' | translate }}</a>
+          <button class="btn btn-outline-secondary btn-sm eod-export-xlsx" (click)="download('xlsx')">{{ 'Excel' | translate }}</button>
+          <button class="btn btn-outline-secondary btn-sm eod-export-pdf" (click)="download('pdf')">{{ 'PDF' | translate }}</button>
+          <button class="btn btn-outline-secondary btn-sm eod-export-csv" (click)="download('csv')">{{ 'CSV' | translate }}</button>
+          <a class="btn btn-outline-primary" routerLink="/admin/restaurant/analysis">{{ 'Sales analysis' | translate }}</a>
         </span>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -30,81 +31,81 @@ import { DayCloseRow, EndOfDay } from '../core/models';
 
       <ng-container *ngIf="e as r">
         <div class="alert alert-success eod-closed" *ngIf="r.closed">
-          <b>Closed as Z-{{ pad(r.zNumber) }}</b> by {{ r.closedBy }} on {{ r.closedAt | date: 'medium' }}.
-          <span *ngIf="r.notes"> Note: {{ r.notes }}</span>
-          <button class="btn btn-sm btn-outline-secondary eod-reopen ms-2" (click)="reopenOpen = !reopenOpen">Reopen…</button>
+          <b>{{ 'Closed as Z-{p0}' | translate: { p0: (pad(r.zNumber)) } }}</b> {{ 'by {p0} on {p1}.' | translate: { p0: (r.closedBy), p1: (r.closedAt | date: 'medium') } }}
+          <span *ngIf="r.notes"> {{ 'Note: {p0}' | translate: { p0: (r.notes) } }}</span>
+          <button class="btn btn-sm btn-outline-secondary eod-reopen ms-2" (click)="reopenOpen = !reopenOpen">{{ 'Reopen…' | translate }}</button>
           <div *ngIf="reopenOpen" class="flex gap-2 mt-2 eod-reopen-panel">
-            <input class="form-control eod-reopen-reason" placeholder="Why is the day being reopened?" [(ngModel)]="reopenReason" name="eodreopen" maxlength="200" />
-            <button class="btn btn-warning eod-reopen-go" (click)="reopen()" [disabled]="busy">Reopen the day</button>
+            <input class="form-control eod-reopen-reason" [placeholder]="'Why is the day being reopened?' | translate" [(ngModel)]="reopenReason" name="eodreopen" maxlength="200" />
+            <button class="btn btn-warning eod-reopen-go" (click)="reopen()" [disabled]="busy">{{ 'Reopen the day' | translate }}</button>
           </div>
         </div>
         <div class="alert alert-warning eod-changed" *ngIf="r.closed && r.changedSinceClose">
-          Something was paid or changed after this day was closed, so the figures below (frozen at closing) no longer match the books. Reopen the day and close it again to include it.
+          {{ 'Something was paid or changed after this day was closed, so the figures below (frozen at closing) no longer match the books. Reopen the day and close it again to include it.' | translate }}
         </div>
         <div class="alert alert-warning eod-open" *ngIf="!r.closed && r.openOrders.count > 0">
-          {{ r.openOrders.count }} order{{ r.openOrders.count === 1 ? ' is' : 's are' }} still open ({{ r.openOrders.labels.slice(0, 6).join(', ') }}{{ r.openOrders.labels.length > 6 ? '…' : '' }}), worth {{ r.openOrders.value | number: '1.2-2' }}. Settle or cancel them before closing.
+          {{ '{p0} order{p1} still open ({p2}{p3}), worth {p4}. Settle or cancel them before closing.' | translate: { p0: (r.openOrders.count), p1: (r.openOrders.count === 1 ? ' is' : 's are'), p2: (r.openOrders.labels.slice(0, 6).join(', ')), p3: (r.openOrders.labels.length > 6 ? '…' : ''), p4: (r.openOrders.value | number: '1.2-2') } }}
         </div>
 
         <div class="flex gap-3" style="flex-wrap:wrap; align-items:flex-start;">
           <!-- left: the numbers -->
           <div style="flex:1; min-width:340px;">
             <div class="card mb-3" style="padding:1rem;">
-              <h4 style="font-size:1rem;" class="mb-2">Sales</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Sales' | translate }}</h4>
               <table class="eod-sales">
-                <tr><td>Checks / parties / covers</td><td class="text-end eod-checks">{{ r.sales.checks }} / {{ r.sales.parties }} / {{ r.sales.covers }}</td></tr>
-                <tr><td>Items sold</td><td class="text-end">{{ r.sales.itemsSold }}</td></tr>
-                <tr><td>Gross sales</td><td class="text-end">{{ r.sales.gross | number: '1.2-2' }}</td></tr>
-                <tr><td>Discounts</td><td class="text-end">− {{ r.sales.discounts | number: '1.2-2' }}</td></tr>
-                <tr class="eod-strong"><td>Net sales</td><td class="text-end eod-net">{{ r.sales.netSales | number: '1.2-2' }}</td></tr>
-                <tr><td>Service charge</td><td class="text-end">{{ r.sales.serviceCharge | number: '1.2-2' }}</td></tr>
-                <tr><td>Tax</td><td class="text-end">{{ r.sales.tax | number: '1.2-2' }}</td></tr>
-                <tr *ngIf="r.sales.rounding !== 0"><td>Rounding</td><td class="text-end">{{ r.sales.rounding | number: '1.2-2' }}</td></tr>
-                <tr class="eod-strong"><td>Total billed</td><td class="text-end eod-billed">{{ r.sales.billed | number: '1.2-2' }}</td></tr>
-                <tr><td>Tips</td><td class="text-end eod-tips">{{ r.sales.tips | number: '1.2-2' }}</td></tr>
-                <tr class="eod-strong"><td>Collected (bills + tips)</td><td class="text-end eod-collected">{{ r.sales.collected | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ 'Checks / parties / covers' | translate }}</td><td class="text-end eod-checks">{{ r.sales.checks }} / {{ r.sales.parties }} / {{ r.sales.covers }}</td></tr>
+                <tr><td>{{ 'Items sold' | translate }}</td><td class="text-end">{{ r.sales.itemsSold }}</td></tr>
+                <tr><td>{{ 'Gross sales' | translate }}</td><td class="text-end">{{ r.sales.gross | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ 'Discounts' | translate }}</td><td class="text-end">− {{ r.sales.discounts | number: '1.2-2' }}</td></tr>
+                <tr class="eod-strong"><td>{{ 'Net sales' | translate }}</td><td class="text-end eod-net">{{ r.sales.netSales | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ 'Service charge' | translate }}</td><td class="text-end">{{ r.sales.serviceCharge | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ 'Tax' | translate }}</td><td class="text-end">{{ r.sales.tax | number: '1.2-2' }}</td></tr>
+                <tr *ngIf="r.sales.rounding !== 0"><td>{{ 'Rounding' | translate }}</td><td class="text-end">{{ r.sales.rounding | number: '1.2-2' }}</td></tr>
+                <tr class="eod-strong"><td>{{ 'Total billed' | translate }}</td><td class="text-end eod-billed">{{ r.sales.billed | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ 'Tips' | translate }}</td><td class="text-end eod-tips">{{ r.sales.tips | number: '1.2-2' }}</td></tr>
+                <tr class="eod-strong"><td>{{ 'Collected (bills + tips)' | translate }}</td><td class="text-end eod-collected">{{ r.sales.collected | number: '1.2-2' }}</td></tr>
               </table>
             </div>
 
             <div class="card mb-3" style="padding:1rem;">
-              <h4 style="font-size:1rem;" class="mb-2">How it was paid</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'How it was paid' | translate }}</h4>
               <table class="eod-payments">
                 <tr *ngFor="let p of r.payments" class="eod-pay-row">
-                  <td>{{ p.kind === 'DEPOSIT' ? 'Booking deposit paid earlier' : p.method }} <span class="text-muted" *ngIf="p.kind === 'CASH'">(cash)</span><span class="text-muted" *ngIf="p.kind === 'ROOM'">(charged to a room)</span></td>
-                  <td class="text-end">{{ p.checks }} check{{ p.checks === 1 ? '' : 's' }}</td>
+                  <td>{{ p.kind === 'DEPOSIT' ? ('Booking deposit paid earlier' | translate) : p.method }} <span class="text-muted" *ngIf="p.kind === 'CASH'">{{ '(cash)' | translate }}</span><span class="text-muted" *ngIf="p.kind === 'ROOM'">{{ '(charged to a room)' | translate }}</span></td>
+                  <td class="text-end">{{ '{p0} check{p1}' | translate: { p0: (p.checks), p1: (p.checks === 1 ? '' : 's') } }}</td>
                   <td class="text-end">{{ p.amount | number: '1.2-2' }}</td>
                 </tr>
               </table>
-              <p class="text-muted" *ngIf="r.payments.length === 0">No bills were paid.</p>
+              <p class="text-muted" *ngIf="r.payments.length === 0">{{ 'No bills were paid.' | translate }}</p>
             </div>
 
             <div class="card mb-3" style="padding:1rem;" *ngIf="r.types.length">
-              <h4 style="font-size:1rem;" class="mb-2">By order type</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'By order type' | translate }}</h4>
               <table>
                 <tr *ngFor="let t of r.types"><td>{{ pretty(t.type) }}</td><td class="text-end">{{ t.checks }}</td><td class="text-end">{{ t.netSales | number: '1.2-2' }}</td></tr>
               </table>
             </div>
 
             <div class="card mb-3" style="padding:1rem;" *ngIf="r.taxes.length">
-              <h4 style="font-size:1rem;" class="mb-2">Tax</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Tax' | translate }}</h4>
               <table class="eod-taxes">
-                <thead><tr><th></th><th class="text-end">On</th><th class="text-end">Tax</th></tr></thead>
+                <thead><tr><th></th><th class="text-end">{{ 'On' | translate }}</th><th class="text-end">{{ 'Tax' | translate }}</th></tr></thead>
                 <tr *ngFor="let t of r.taxes" class="eod-tax-row"><td>{{ t.label }}</td><td class="text-end">{{ t.base | number: '1.2-2' }}</td><td class="text-end">{{ t.tax | number: '1.2-2' }}</td></tr>
               </table>
             </div>
 
             <div class="card mb-3" style="padding:1rem;" *ngIf="r.tips.length">
-              <h4 style="font-size:1rem;" class="mb-2">Tips by server</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Tips by server' | translate }}</h4>
               <table class="eod-tip-table">
-                <tr *ngFor="let t of r.tips" class="eod-tip-row"><td>{{ t.server }}</td><td class="text-end">{{ t.checks }} check{{ t.checks === 1 ? '' : 's' }}</td><td class="text-end">{{ t.tips | number: '1.2-2' }}</td></tr>
+                <tr *ngFor="let t of r.tips" class="eod-tip-row"><td>{{ t.server }}</td><td class="text-end">{{ '{p0} check{p1}' | translate: { p0: (t.checks), p1: (t.checks === 1 ? '' : 's') } }}</td><td class="text-end">{{ t.tips | number: '1.2-2' }}</td></tr>
               </table>
             </div>
 
             <div class="card mb-3" style="padding:1rem;" *ngIf="r.deposits.length || r.controls.length">
-              <h4 style="font-size:1rem;" class="mb-2" *ngIf="r.deposits.length">Booking deposits today</h4>
+              <h4 style="font-size:1rem;" class="mb-2" *ngIf="r.deposits.length">{{ 'Booking deposits today' | translate }}</h4>
               <table *ngIf="r.deposits.length" class="eod-deposits">
                 <tr *ngFor="let d of r.deposits" class="eod-dep-row"><td>{{ depLabel(d.kind) }}</td><td class="text-end">{{ d.count }}</td><td class="text-end">{{ d.amount | number: '1.2-2' }}</td></tr>
               </table>
-              <h4 style="font-size:1rem;" class="mb-2 mt-3" *ngIf="r.controls.length">Voids, comps and cancelled orders</h4>
+              <h4 style="font-size:1rem;" class="mb-2 mt-3" *ngIf="r.controls.length">{{ 'Voids, comps and cancelled orders' | translate }}</h4>
               <table *ngIf="r.controls.length" class="eod-controls">
                 <tr *ngFor="let c of r.controls" class="eod-control-row"><td>{{ pretty(c.type) }}</td><td class="text-end">{{ c.count }}</td><td class="text-end">{{ c.type === 'REPRINT' ? '' : (c.amount | number: '1.2-2') }}</td></tr>
               </table>
@@ -114,74 +115,74 @@ import { DayCloseRow, EndOfDay } from '../core/models';
           <!-- right: the cash -->
           <div style="flex:1; min-width:340px;">
             <div class="card mb-3" style="padding:1rem;">
-              <h4 style="font-size:1rem;" class="mb-2">Cash in the drawer</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Cash in the drawer' | translate }}</h4>
               <table class="eod-cash">
                 <tr>
-                  <td>Cash left from the last close (opening float)</td>
+                  <td>{{ 'Cash left from the last close (opening float)' | translate }}</td>
                   <td class="text-end">
                     <input *ngIf="!r.closed" type="number" min="0" step="0.01" class="form-control eod-float" style="width:120px; display:inline-block; text-align:right;" [(ngModel)]="openingFloat" name="eodfloat" (change)="load(true)" />
                     <span *ngIf="r.closed">{{ r.cash.openingFloat | number: '1.2-2' }}</span>
                   </td>
                 </tr>
-                <tr><td>+ Cash sales</td><td class="text-end eod-cash-sales">{{ r.cash.cashSales | number: '1.2-2' }}</td></tr>
-                <tr><td>+ Deposits taken in cash</td><td class="text-end">{{ r.cash.depositsIn | number: '1.2-2' }}</td></tr>
-                <tr><td>− Deposits refunded in cash</td><td class="text-end">{{ r.cash.depositsOut | number: '1.2-2' }}</td></tr>
-                <tr><td>+ Paid in</td><td class="text-end">{{ r.cash.paidIn | number: '1.2-2' }}</td></tr>
-                <tr><td>− Paid out</td><td class="text-end">{{ r.cash.paidOut | number: '1.2-2' }}</td></tr>
-                <tr><td>− Tips paid out</td><td class="text-end">{{ r.cash.tipsPaid | number: '1.2-2' }}</td></tr>
-                <tr class="eod-strong"><td>Should be in the drawer</td><td class="text-end eod-expected">{{ r.cash.expected | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ '+ Cash sales' | translate }}</td><td class="text-end eod-cash-sales">{{ r.cash.cashSales | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ '+ Deposits taken in cash' | translate }}</td><td class="text-end">{{ r.cash.depositsIn | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ '− Deposits refunded in cash' | translate }}</td><td class="text-end">{{ r.cash.depositsOut | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ '+ Paid in' | translate }}</td><td class="text-end">{{ r.cash.paidIn | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ '− Paid out' | translate }}</td><td class="text-end">{{ r.cash.paidOut | number: '1.2-2' }}</td></tr>
+                <tr><td>{{ '− Tips paid out' | translate }}</td><td class="text-end">{{ r.cash.tipsPaid | number: '1.2-2' }}</td></tr>
+                <tr class="eod-strong"><td>{{ 'Should be in the drawer' | translate }}</td><td class="text-end eod-expected">{{ r.cash.expected | number: '1.2-2' }}</td></tr>
               </table>
 
               <div *ngIf="!r.closed" class="mt-3">
                 <div class="flex gap-2 align-center mb-2" style="flex-wrap:wrap;">
-                  <label style="min-width:170px;">Cash counted</label>
+                  <label style="min-width:170px;">{{ 'Cash counted' | translate }}</label>
                   <input type="number" min="0" step="0.01" class="form-control eod-counted" style="width:160px;" [(ngModel)]="counted" name="eodcounted" />
                   <span class="eod-variance" [class.text-danger]="variance !== null && variance !== 0" [class.text-success]="variance === 0">
-                    <ng-container *ngIf="variance !== null">{{ variance === 0 ? 'Balanced' : (variance > 0 ? 'Over by ' : 'Short by ') + (abs(variance) | number: '1.2-2') }}</ng-container>
+                    <ng-container *ngIf="variance !== null">{{ variance === 0 ? ('Balanced' | translate) : (variance > 0 ? ('Over by' | translate) : ('Short by' | translate)) + ' ' + (abs(variance) | number: '1.2-2') }}</ng-container>
                   </span>
                 </div>
                 <div class="flex gap-2 align-center mb-2" style="flex-wrap:wrap;">
-                  <label style="min-width:170px;">Leave in the drawer</label>
+                  <label style="min-width:170px;">{{ 'Leave in the drawer' | translate }}</label>
                   <input type="number" min="0" step="0.01" class="form-control eod-keep" style="width:160px;" [(ngModel)]="floatKept" name="eodkeep" placeholder="{{ defaultKeep() | number: '1.2-2' }}" />
-                  <span class="text-muted">Banked: <b class="eod-banked">{{ banked() | number: '1.2-2' }}</b></span>
+                  <span class="text-muted">{{ 'Banked:' | translate }} <b class="eod-banked">{{ banked() | number: '1.2-2' }}</b></span>
                 </div>
                 <div class="mb-2">
-                  <input class="form-control eod-notes" placeholder="Note (needed when the drawer is over or short)" [(ngModel)]="notes" name="eodnotes" maxlength="300" />
+                  <input class="form-control eod-notes" [placeholder]="'Note (needed when the drawer is over or short)' | translate" [(ngModel)]="notes" name="eodnotes" maxlength="300" />
                 </div>
-                <label *ngIf="r.openOrders.count > 0" class="mb-2" style="display:block;"><input type="checkbox" class="eod-force" [(ngModel)]="force" name="eodforce" /> Close anyway with {{ r.openOrders.count }} order(s) still open</label>
-                <button class="btn btn-primary eod-close" (click)="close()" [disabled]="busy || counted === null">Close the day</button>
+                <label *ngIf="r.openOrders.count > 0" class="mb-2" style="display:block;"><input type="checkbox" class="eod-force" [(ngModel)]="force" name="eodforce" /> {{ 'Close anyway with {p0} order(s) still open' | translate: { p0: (r.openOrders.count) } }}</label>
+                <button class="btn btn-primary eod-close" (click)="close()" [disabled]="busy || counted === null">{{ 'Close the day' | translate }}</button>
               </div>
 
               <div *ngIf="r.closed" class="mt-3">
                 <table class="eod-cash-closed">
-                  <tr><td>Cash counted</td><td class="text-end eod-c-counted">{{ r.cash.counted | number: '1.2-2' }}</td></tr>
-                  <tr><td>Difference</td><td class="text-end eod-c-variance" [class.text-danger]="(r.cash.variance ?? 0) !== 0">{{ r.cash.variance | number: '1.2-2' }}</td></tr>
-                  <tr><td>Left in the drawer</td><td class="text-end">{{ r.cash.floatKept | number: '1.2-2' }}</td></tr>
-                  <tr class="eod-strong"><td>Banked</td><td class="text-end">{{ r.cash.banked | number: '1.2-2' }}</td></tr>
+                  <tr><td>{{ 'Cash counted' | translate }}</td><td class="text-end eod-c-counted">{{ r.cash.counted | number: '1.2-2' }}</td></tr>
+                  <tr><td>{{ 'Difference' | translate }}</td><td class="text-end eod-c-variance" [class.text-danger]="(r.cash.variance ?? 0) !== 0">{{ r.cash.variance | number: '1.2-2' }}</td></tr>
+                  <tr><td>{{ 'Left in the drawer' | translate }}</td><td class="text-end">{{ r.cash.floatKept | number: '1.2-2' }}</td></tr>
+                  <tr class="eod-strong"><td>{{ 'Banked' | translate }}</td><td class="text-end">{{ r.cash.banked | number: '1.2-2' }}</td></tr>
                 </table>
               </div>
             </div>
 
             <div class="card mb-3" style="padding:1rem;">
-              <h4 style="font-size:1rem;" class="mb-2">Money in and out of the drawer</h4>
+              <h4 style="font-size:1rem;" class="mb-2">{{ 'Money in and out of the drawer' | translate }}</h4>
               <div class="flex gap-2 mb-2 eod-ce-form" style="flex-wrap:wrap;" *ngIf="!r.closed">
                 <select class="form-control eod-ce-kind" style="width:auto;" [(ngModel)]="ceKind" name="ecek">
-                  <option value="PAID_IN">Paid in</option>
-                  <option value="PAID_OUT">Paid out</option>
-                  <option value="TIPS_PAID">Tips paid out</option>
+                  <option value="PAID_IN">{{ 'Paid in' | translate }}</option>
+                  <option value="PAID_OUT">{{ 'Paid out' | translate }}</option>
+                  <option value="TIPS_PAID">{{ 'Tips paid out' | translate }}</option>
                 </select>
-                <input type="number" min="0" step="0.01" class="form-control eod-ce-amount" style="width:120px;" placeholder="Amount" [(ngModel)]="ceAmount" name="ecea" />
-                <input class="form-control eod-ce-reason" style="flex:1; min-width:160px;" placeholder="What for" [(ngModel)]="ceReason" name="eceR" maxlength="200" />
-                <button class="btn btn-outline-primary eod-ce-add" (click)="addCash()" [disabled]="busy">Add</button>
+                <input type="number" min="0" step="0.01" class="form-control eod-ce-amount" style="width:120px;" [placeholder]="'Amount' | translate" [(ngModel)]="ceAmount" name="ecea" />
+                <input class="form-control eod-ce-reason" style="flex:1; min-width:160px;" [placeholder]="'What for' | translate" [(ngModel)]="ceReason" name="eceR" maxlength="200" />
+                <button class="btn btn-outline-primary eod-ce-add" (click)="addCash()" [disabled]="busy">{{ 'Add' | translate }}</button>
               </div>
               <table class="eod-ce-table">
                 <tr *ngFor="let c of manualEvents()" class="eod-ce-row">
                   <td>{{ c.at | date: 'shortTime' }}</td><td>{{ c.label }}</td><td>{{ c.reason }}</td><td class="text-muted">{{ c.by }}</td>
                   <td class="text-end">{{ c.amount | number: '1.2-2' }}</td>
-                  <td class="text-end"><button *ngIf="!r.closed" class="btn btn-sm btn-outline-danger eod-ce-del" (click)="removeCash(c.id)" title="Remove this entry (manager)">×</button></td>
+                  <td class="text-end"><button *ngIf="!r.closed" class="btn btn-sm btn-outline-danger eod-ce-del" (click)="removeCash(c.id)" [title]="'Remove this entry (manager)' | translate">×</button></td>
                 </tr>
               </table>
-              <p class="text-muted" *ngIf="manualEvents().length === 0">Nothing yet. Record petty cash, change put in or tips handed to staff here so the drawer balances.</p>
+              <p class="text-muted" *ngIf="manualEvents().length === 0">{{ 'Nothing yet. Record petty cash, change put in or tips handed to staff here so the drawer balances.' | translate }}</p>
             </div>
           </div>
         </div>
@@ -189,19 +190,19 @@ import { DayCloseRow, EndOfDay } from '../core/models';
 
       <div class="card mt-3" style="padding:1rem;">
         <div class="flex justify-between align-center mb-2" style="flex-wrap:wrap; gap:8px;">
-          <h4 style="font-size:1rem;">Closed days</h4>
+          <h4 style="font-size:1rem;">{{ 'Closed days' | translate }}</h4>
           <span class="flex gap-2">
-            <button class="btn btn-sm btn-outline-secondary eod-h-xlsx" (click)="downloadHistory('xlsx')">Excel</button>
-            <button class="btn btn-sm btn-outline-secondary eod-h-csv" (click)="downloadHistory('csv')">CSV</button>
+            <button class="btn btn-sm btn-outline-secondary eod-h-xlsx" (click)="downloadHistory('xlsx')">{{ 'Excel' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary eod-h-csv" (click)="downloadHistory('csv')">{{ 'CSV' | translate }}</button>
           </span>
         </div>
         <table class="eod-history">
-          <thead><tr><th>Z</th><th>Date</th><th>Status</th><th class="text-end">Checks</th><th class="text-end">Billed</th><th class="text-end">Should be</th><th class="text-end">Counted</th><th class="text-end">Difference</th><th class="text-end">Banked</th><th>Closed by</th><th>Note</th></tr></thead>
+          <thead><tr><th>{{ 'Z' | translate }}</th><th>{{ 'Date' | translate }}</th><th>{{ 'Status' | translate }}</th><th class="text-end">{{ 'Checks' | translate }}</th><th class="text-end">{{ 'Billed' | translate }}</th><th class="text-end">{{ 'Should be' | translate }}</th><th class="text-end">{{ 'Counted' | translate }}</th><th class="text-end">{{ 'Difference' | translate }}</th><th class="text-end">{{ 'Banked' | translate }}</th><th>{{ 'Closed by' | translate }}</th><th>{{ 'Note' | translate }}</th></tr></thead>
           <tbody>
             <tr *ngFor="let h of history" class="eod-h-row" [class.text-muted]="h.status !== 'CLOSED'">
-              <td>Z-{{ pad(h.zNumber) }}</td>
+              <td>{{ 'Z-{p0}' | translate: { p0: (pad(h.zNumber)) } }}</td>
               <td><a href="javascript:void(0)" (click)="openDay(h.date)">{{ h.date }}</a></td>
-              <td>{{ h.status === 'CLOSED' ? 'Closed' : 'Reopened' }}<span *ngIf="h.reopenReason" class="text-muted"> — {{ h.reopenReason }}</span></td>
+              <td>{{ h.status === 'CLOSED' ? ('Closed' | translate) : ('Reopened' | translate) }}<span *ngIf="h.reopenReason" class="text-muted"> — {{ h.reopenReason }}</span></td>
               <td class="text-end">{{ h.checks }}</td><td class="text-end">{{ h.totalBilled | number: '1.2-2' }}</td>
               <td class="text-end">{{ h.cashExpected | number: '1.2-2' }}</td><td class="text-end">{{ h.cashCounted | number: '1.2-2' }}</td>
               <td class="text-end" [class.text-danger]="h.variance !== 0">{{ h.variance | number: '1.2-2' }}</td>
@@ -209,7 +210,7 @@ import { DayCloseRow, EndOfDay } from '../core/models';
             </tr>
           </tbody>
         </table>
-        <p class="text-muted" *ngIf="historyLoaded && history.length === 0">No day has been closed yet.</p>
+        <p class="text-muted" *ngIf="historyLoaded && history.length === 0">{{ 'No day has been closed yet.' | translate }}</p>
         <app-pager [page]="hPage" [size]="hSize" [total]="hTotal" (pageChange)="loadHistory($event)"></app-pager>
       </div>
     </app-shell>
