@@ -3011,7 +3011,8 @@
  ],
  "Sale order": [
   "src/app/admin/invoice-detail.component.ts",
-  "src/app/admin/sales-order-return-list.component.ts"
+  "src/app/admin/sales-order-return-list.component.ts",
+  "src/app/admin/invoice-list.component.ts"
  ],
  "Invoice date": [
   "src/app/admin/invoice-detail.component.ts"
@@ -5556,10 +5557,12 @@
   "src/app/pos/terminal.component.ts"
  ],
  "Set": [
-  "src/app/admin/user-list.component.ts"
+  "src/app/admin/user-list.component.ts",
+  "src/app/account/my-profile.component.ts"
  ],
  "Not set": [
-  "src/app/admin/user-list.component.ts"
+  "src/app/admin/user-list.component.ts",
+  "src/app/account/my-profile.component.ts"
  ],
  "Reset password": [
   "src/app/admin/user-list.component.ts",
@@ -5894,7 +5897,8 @@
   "src/app/portal/portal-accept.component.ts"
  ],
  "Confirm new password": [
-  "src/app/login/reset-password.component.ts"
+  "src/app/login/reset-password.component.ts",
+  "src/app/account/my-profile.component.ts"
  ],
  "Passwords don't match.": [
   "src/app/login/reset-password.component.ts"
@@ -22204,7 +22208,8 @@
   "src/app/portal/portal-home.component.ts"
  ],
  "Current password": [
-  "src/app/portal/portal-home.component.ts"
+  "src/app/portal/portal-home.component.ts",
+  "src/app/account/my-profile.component.ts"
  ],
  "At least 10 characters, with letters and numbers. You will have to sign in again.": [
   "src/app/portal/portal-home.component.ts"
@@ -22361,5 +22366,50 @@
  ],
  "Next →": [
   "src/app/realestate/public-listings.component.ts"
+ ],
+ "My profile": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Profile updated.": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Optional — needed to use \"Forgot password?\" on the login screen.": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Save profile": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Change password": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Password changed.": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Changing…": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Change PIN": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Used to identify yourself at the terminal — 4 to 6 digits.": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "PIN updated.": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "New PIN": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Confirm new PIN": [
+  "src/app/account/my-profile.component.ts"
+ ],
+ "Show every customer's invoices": [
+  "src/app/admin/invoice-list.component.ts"
+ ],
+ "+ New invoice": [
+  "src/app/admin/invoice-list.component.ts"
+ ],
+ "Search invoice no., customer, sale order…": [
+  "src/app/admin/invoice-list.component.ts"
  ]
 }

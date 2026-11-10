@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
@@ -16,56 +17,56 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-my-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, ShellComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell [narrow]="true">
-      <h3 class="mb-3">My profile</h3>
+      <h3 class="mb-3">{{ 'My profile' | translate }}</h3>
 
       <div class="card mb-3" style="padding:1rem;">
         <div class="alert alert-danger" *ngIf="profileError">{{ profileError }}</div>
-        <div class="alert alert-success" *ngIf="profileSaved">Profile updated.</div>
+        <div class="alert alert-success" *ngIf="profileSaved">{{ 'Profile updated.' | translate }}</div>
         <div class="form-group">
-          <label class="form-label">Username</label>
+          <label class="form-label">{{ 'Username' | translate }}</label>
           <input class="form-control" [value]="username" disabled />
         </div>
         <div class="form-group">
-          <label class="form-label">Role</label>
+          <label class="form-label">{{ 'Role' | translate }}</label>
           <input class="form-control" [value]="role" disabled />
         </div>
         <div class="form-group">
-          <label class="form-label">Full name</label>
+          <label class="form-label">{{ 'Full name' | translate }}</label>
           <input class="form-control" name="fullName" [(ngModel)]="fullName" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">{{ 'Email' | translate }}</label>
           <input class="form-control" type="email" name="email" [(ngModel)]="email" autocomplete="email" />
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            Optional — needed to use "Forgot password?" on the login screen.
+            {{ 'Optional — needed to use "Forgot password?" on the login screen.' | translate }}
           </div>
         </div>
         <button class="btn btn-primary" (click)="saveProfile()" [disabled]="savingProfile || !fullName.trim()">
-          {{ savingProfile ? 'Saving…' : 'Save profile' }}
+          {{ savingProfile ? ('Saving…' | translate) : ('Save profile' | translate) }}
         </button>
       </div>
 
       <div class="card" style="padding:1rem;">
-        <h4 class="mb-2" style="font-size:1rem;">Change password</h4>
+        <h4 class="mb-2" style="font-size:1rem;">{{ 'Change password' | translate }}</h4>
         <div class="alert alert-danger" *ngIf="passwordError">{{ passwordError }}</div>
-        <div class="alert alert-success" *ngIf="passwordSaved">Password changed.</div>
+        <div class="alert alert-success" *ngIf="passwordSaved">{{ 'Password changed.' | translate }}</div>
         <div class="form-group">
-          <label class="form-label">Current password</label>
+          <label class="form-label">{{ 'Current password' | translate }}</label>
           <input class="form-control" type="password" name="currentPassword" [(ngModel)]="currentPassword" required />
         </div>
         <div class="form-group">
-          <label class="form-label">New password</label>
+          <label class="form-label">{{ 'New password' | translate }}</label>
           <input class="form-control" type="password" name="newPassword" [(ngModel)]="newPassword" required minlength="6" />
         </div>
         <div class="form-group">
-          <label class="form-label">Confirm new password</label>
+          <label class="form-label">{{ 'Confirm new password' | translate }}</label>
           <input class="form-control" type="password" name="confirmPassword" [(ngModel)]="confirmPassword" required minlength="6" />
         </div>
         <button class="btn btn-primary" (click)="changePassword()" [disabled]="changingPassword || !canChangePassword()">
-          {{ changingPassword ? 'Changing…' : 'Change password' }}
+          {{ changingPassword ? ('Changing…' | translate) : ('Change password' | translate) }}
         </button>
       </div>
 
@@ -73,23 +74,23 @@ import { AuthService } from '../core/auth.service';
            terminal (see CashierSessionService), separate from the login password above. -->
       <div class="card" style="padding:1rem; margin-top:1rem;">
         <h4 class="mb-2" style="font-size:1rem;">
-          Change PIN
-          <span class="badge badge-success" *ngIf="hasPin">Set</span>
-          <span class="badge badge-secondary" *ngIf="!hasPin">Not set</span>
+          {{ 'Change PIN' | translate }}
+          <span class="badge badge-success" *ngIf="hasPin">{{ 'Set' | translate }}</span>
+          <span class="badge badge-secondary" *ngIf="!hasPin">{{ 'Not set' | translate }}</span>
         </h4>
-        <p class="text-muted" style="font-size:0.85rem;">Used to identify yourself at the terminal — 4 to 6 digits.</p>
+        <p class="text-muted" style="font-size:0.85rem;">{{ 'Used to identify yourself at the terminal — 4 to 6 digits.' | translate }}</p>
         <div class="alert alert-danger" *ngIf="pinError">{{ pinError }}</div>
-        <div class="alert alert-success" *ngIf="pinSaved">PIN updated.</div>
+        <div class="alert alert-success" *ngIf="pinSaved">{{ 'PIN updated.' | translate }}</div>
         <div class="form-group">
-          <label class="form-label">New PIN</label>
-          <input class="form-control" type="password" inputmode="numeric" name="newPin" [(ngModel)]="newPin" pattern="\\d{4,6}" maxlength="6" />
+          <label class="form-label">{{ 'New PIN' | translate }}</label>
+          <input class="form-control" type="password" inputmode="numeric" name="newPin" [(ngModel)]="newPin" pattern="[0-9]{4,6}" maxlength="6" />
         </div>
         <div class="form-group">
-          <label class="form-label">Confirm new PIN</label>
-          <input class="form-control" type="password" inputmode="numeric" name="confirmPin" [(ngModel)]="confirmPin" pattern="\\d{4,6}" maxlength="6" />
+          <label class="form-label">{{ 'Confirm new PIN' | translate }}</label>
+          <input class="form-control" type="password" inputmode="numeric" name="confirmPin" [(ngModel)]="confirmPin" pattern="[0-9]{4,6}" maxlength="6" />
         </div>
         <button class="btn btn-primary" (click)="changePin()" [disabled]="changingPin || !canChangePin()">
-          {{ changingPin ? 'Changing…' : 'Change PIN' }}
+          {{ changingPin ? ('Changing…' | translate) : ('Change PIN' | translate) }}
         </button>
       </div>
     </app-shell>

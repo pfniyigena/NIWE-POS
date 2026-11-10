@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -26,30 +27,30 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 @Component({
   selector: 'app-invoice-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, ListFilterComponent],
   template: `
     <app-shell [wide]="true">
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
       <div class="flex justify-between align-center mb-3">
         <div>
-          <h3 style="margin-bottom:0;">{{ customerName ? 'Invoices for ' + customerName : 'Invoices' }}</h3>
-          <a *ngIf="customerName" class="text-muted" routerLink="/admin/invoices" style="font-size:0.85rem;">Show every customer's invoices</a>
+          <h3 style="margin-bottom:0;">{{ customerName ? ('Invoices for {p0}' | translate: { p0: customerName }) : ('Invoices' | translate) }}</h3>
+          <a *ngIf="customerName" class="text-muted" routerLink="/admin/invoices" style="font-size:0.85rem;">{{ 'Show every customer\\'s invoices' | translate }}</a>
         </div>
-        <a class="btn btn-primary" routerLink="/admin/invoices/new">+ New invoice</a>
+        <a class="btn btn-primary" routerLink="/admin/invoices/new">{{ '+ New invoice' | translate }}</a>
       </div>
-      <app-list-filter exportKind="invoices" [exportExtra]="{ customerId: customerId }" placeholder="Search invoice no., customer, sale order…" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
+      <app-list-filter exportKind="invoices" [exportExtra]="{ customerId: customerId }" [placeholder]="'Search invoice no., customer, sale order…' | translate" [statuses]="statuses" statusAll="All statuses" [dates]="true" [branches]="branches" (filterChange)="list.apply($event)"></app-list-filter>
       <table>
         <thead>
           <tr>
-            <th>Invoice #</th>
-            <th>Sale order</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Due date</th>
-            <th>Status</th>
-            <th *ngIf="branches.length > 1">Branch</th>
-            <th class="text-end">Total</th>
-            <th class="text-end">Outstanding</th>
+            <th>{{ 'Invoice #' | translate }}</th>
+            <th>{{ 'Sale order' | translate }}</th>
+            <th>{{ 'Customer' | translate }}</th>
+            <th>{{ 'Date' | translate }}</th>
+            <th>{{ 'Due date' | translate }}</th>
+            <th>{{ 'Status' | translate }}</th>
+            <th *ngIf="branches.length > 1">{{ 'Branch' | translate }}</th>
+            <th class="text-end">{{ 'Total' | translate }}</th>
+            <th class="text-end">{{ 'Outstanding' | translate }}</th>
             <th></th>
           </tr>
         </thead>
@@ -65,11 +66,11 @@ import { branchNameOf, effectiveBranchId } from '../core/branch-util';
             <td class="text-end">{{ inv.totalAmount | number: '1.2-2' }}</td>
             <td class="text-end">{{ inv.status === 'ISSUED' ? (inv.amountOutstanding | number: '1.2-2') : '—' }}</td>
             <td>
-              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">View</a>
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/invoices', inv.id]">{{ 'View' | translate }}</a>
             </td>
           </tr>
           <tr *ngIf="list.loaded && list.rows.length === 0">
-            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">Nothing matches these filters.</ng-container><ng-template #nothingYet>{{ customerName ? 'No invoices for ' + customerName + ' yet.' : 'No invoices yet — generate one from a sale order\\'s detail page once it\\'s confirmed, or create one directly with "+ New invoice".' }}</ng-template></td>
+            <td colspan="9" class="text-muted"><ng-container *ngIf="list.filtered; else nothingYet">{{ 'Nothing matches these filters.' | translate }}</ng-container><ng-template #nothingYet>{{ customerName ? ('No invoices for {p0} yet.' | translate: { p0: customerName }) : ('No invoices yet — generate one from a sale order’s detail page once it’s confirmed, or create one directly with "+ New invoice".' | translate) }}</ng-template></td>
           </tr>
         </tbody>
       </table>
