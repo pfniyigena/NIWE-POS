@@ -128,7 +128,7 @@ export class ShopComponent implements OnInit {
   cartProducts: Record<number, ShopProduct> = {};
   items: ShopProduct[] = [];
   page = 0;
-  readonly size = 24;
+  readonly size = 16;
   total = 0;
   totalPages = 0;
   loading = false;

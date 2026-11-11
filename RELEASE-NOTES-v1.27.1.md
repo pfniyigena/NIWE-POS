@@ -4,7 +4,7 @@ The public shop (`/shop`) used to download every product on the shop in one go a
 
 ## Changed
 
-- **Pagination in the shop.** 24 products per page, with **Previous**, **Next**, "Page 2 of 9" and "Showing 25-48 of 210". Changing page scrolls back to the top of the products.
+- **Pagination in the shop.** 16 products per page, with **Previous**, **Next**, "Page 2 of 9" and "Showing 17-32 of 210". Changing page scrolls back to the top of the products.
 - **Search and categories are done by the server**, so they cover the whole catalogue, not only the page on screen. Typing waits a moment (0.3 s) before searching, and starting a search or choosing a category returns to page 1.
 - **The cart is kept** while the customer moves between pages, searches and categories.
 - Pictures are loaded for the products on the current page only.
@@ -12,7 +12,7 @@ The public shop (`/shop`) used to download every product on the shop in one go a
 
 ## Technical
 
-- New public endpoint `GET /api/public/store/products?page=0&size=24&q=&category=`. `page` starts at 0; `size` is at most 60 (default 24); `q` matches the product name or the shop title; `category` is a category name. It returns `{ items, page, size, total, totalPages }`.
+- New public endpoint `GET /api/public/store/products?page=0&size=16&q=&category=`. `page` starts at 0; `size` is at most 60 (default 16); `q` matches the product name or the shop title; `category` is a category name. It returns `{ items, page, size, total, totalPages }`.
 - `GET /api/public/store/shop` no longer contains `products`; it now has `categories` (the categories that have products on the shop).
 - The query is `OnlineListingRepository.findShopPage` (database paging, ordered by the shop order then id). Products without a category are included when no category is chosen.
 - One new French text: "Showing {p0}-{p1} of {p2}". No migration, no setting to change.

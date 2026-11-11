@@ -7,7 +7,7 @@ independently.
 
 ### Version 1.27.1 - The public shop shows its products a page at a time
 
-The shop at `/shop` now loads 24 products per page, with Previous / Next, instead of the whole catalogue at once. Search and categories are applied by the server, and the cart is kept while the customer moves between pages. Details in `RELEASE-NOTES-v1.27.1.md`.
+The shop at `/shop` now loads 16 products per page, with Previous / Next, instead of the whole catalogue at once. Search and categories are applied by the server, and the cart is kept while the customer moves between pages. Details in `RELEASE-NOTES-v1.27.1.md`.
 
 ### Version 1.27.0 - Online Store (phase 1)
 

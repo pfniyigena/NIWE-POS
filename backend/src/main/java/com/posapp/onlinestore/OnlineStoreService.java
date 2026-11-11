@@ -157,7 +157,7 @@ public class OnlineStoreService {
                 listingRepository.findShopCategories());
     }
 
-    static final int DEFAULT_PAGE_SIZE = 24;
+    static final int DEFAULT_PAGE_SIZE = 16;
     static final int MAX_PAGE_SIZE = 60;
 
     /** One page of the catalogue, searched and filtered in the database so a shop with many products never sends them all at once. */

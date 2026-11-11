@@ -54,7 +54,7 @@ public class PublicStoreController {
 
     /** The catalogue, a page at a time. page starts at 0; size is capped; q searches the name; category is a category name from the shop's list. */
     @GetMapping("/products")
-    public PublicProductPage products(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "24") int size,
+    public PublicProductPage products(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "16") int size,
                                       @RequestParam(required = false) String q, @RequestParam(required = false) String category) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
         return service.products(page, size, q, category);
