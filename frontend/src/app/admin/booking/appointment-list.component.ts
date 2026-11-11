@@ -8,6 +8,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Appointment, BookingApiService, BookingSummary, Option } from '../../core/api/booking-api.service';
 import { addDays, today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 /** Booking > Appointments: a filterable list across days (the calendar is the one-day view). */
 @Component({
   selector: 'app-appointment-list',
@@ -84,7 +85,7 @@ export class AppointmentListComponent implements OnInit {
     this.error = null;
     this.api.list({ from: this.from, to: this.to, staffId: this.staffId, status: this.status }).subscribe({
       next: (l) => (this.list = l),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the appointments'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the appointments')),
     });
   }
 

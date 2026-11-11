@@ -11,6 +11,7 @@ import { CustomerApiService } from '../core/api/customer-api.service';
 import { TaxRateApiService } from '../core/api/tax-rate-api.service';
 import { BillingInterval, Customer, SubscriptionPlan, TaxRateOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Subscriptions > New — enrolls a customer in an active SubscriptionPlan.
  *
@@ -387,11 +388,11 @@ export class SubscriptionFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.customerId || !this.planId) {
-      this.error = 'Pick a customer and a plan';
+      this.error = T('Pick a customer and a plan');
       return;
     }
     if (this.price == null || this.price <= 0) {
-      this.error = 'Enter a valid price';
+      this.error = T('Enter a valid price');
       return;
     }
     this.subscriptionApi
@@ -413,7 +414,7 @@ export class SubscriptionFormComponent implements OnInit {
       })
       .subscribe({
         next: (s) => this.router.navigate(['/admin/subscriptions', s.id]),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to create subscription'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to create subscription')),
       });
   }
 }

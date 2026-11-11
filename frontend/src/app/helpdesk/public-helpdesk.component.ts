@@ -7,6 +7,7 @@ import { PublicHelpDeskApiService } from '../core/api/public-helpdesk-api.servic
 import { PublicHelpDeskCategory, PublicHelpDeskTicketConfirmation, PublicHelpDeskTicketStatus } from '../core/models';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "Add Help Desk module (with its menu) should manage customer and internal support
  * requests from creation through resolution", then "Customer login is not necessary to create a
@@ -210,7 +211,7 @@ export class PublicHelpDeskComponent implements OnInit {
 
   submit(): void {
     if (!this.requesterName.trim() || !this.requesterEmail.trim() || !this.subject.trim() || !this.description.trim()) {
-      this.error = 'Please fill in your name, email, subject, and description.';
+      this.error = T('Please fill in your name, email, subject, and description.');
       return;
     }
     this.error = null;
@@ -231,14 +232,14 @@ export class PublicHelpDeskComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.error = err?.error?.message ?? 'Failed to submit — please try again';
+          this.error = err?.error?.message ?? T('Failed to submit — please try again');
         },
       });
   }
 
   lookup(): void {
     if (!this.lookupTicketNumber.trim() || !this.lookupEmail.trim()) {
-      this.error = 'Enter your ticket number and email.';
+      this.error = T('Enter your ticket number and email.');
       return;
     }
     this.error = null;
@@ -250,7 +251,7 @@ export class PublicHelpDeskComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'No ticket matches that ticket number and email';
+        this.error = err?.error?.message ?? T('No ticket matches that ticket number and email');
       },
     });
   }
@@ -271,7 +272,7 @@ export class PublicHelpDeskComponent implements OnInit {
     this.loading = true;
     this.publicHelpDeskApi.reply(this.lookupTicketNumber.trim(), this.lookupEmail.trim(), this.replyBody.trim()).subscribe({
       next: (s) => { this.replyBody = ''; this.applyStatus(s); },
-      error: (err) => this.fail(err, 'Could not send your reply'),
+      error: (err) => this.fail(err, T('Could not send your reply')),
     });
   }
 
@@ -291,7 +292,7 @@ export class PublicHelpDeskComponent implements OnInit {
         if (el) el.value = '';
         this.applyStatus(s);
       },
-      error: (err) => this.fail(err, 'Could not attach the file'),
+      error: (err) => this.fail(err, T('Could not attach the file')),
     });
   }
 
@@ -308,7 +309,7 @@ export class PublicHelpDeskComponent implements OnInit {
           window.open(url, '_blank');
         }
       },
-      error: (err) => this.fail(err, 'Could not open the file'),
+      error: (err) => this.fail(err, T('Could not open the file')),
     });
   }
 
@@ -318,7 +319,7 @@ export class PublicHelpDeskComponent implements OnInit {
     this.loading = true;
     this.publicHelpDeskApi.rate(this.lookupTicketNumber.trim(), this.lookupEmail.trim(), this.ratingChoice, this.ratingComment.trim() || null).subscribe({
       next: (s) => { this.ratingChoice = 0; this.ratingComment = ''; this.applyStatus(s); },
-      error: (err) => this.fail(err, 'Could not save your rating'),
+      error: (err) => this.fail(err, T('Could not save your rating')),
     });
   }
 

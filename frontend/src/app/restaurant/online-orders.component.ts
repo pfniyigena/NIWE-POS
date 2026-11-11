@@ -10,6 +10,7 @@ import { ListState, emptyFilter } from '../core/api/list-state';
 import { PagerComponent } from '../shared/pager.component';
 import { OnlineOrder } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant > Online orders: requests from the table QR codes and the ordering page. Accepting one puts it on a real bill and sends it to the kitchen;
  * rejecting needs a reason the guest will see. The list refreshes by itself so it can stay open on a counter screen.
@@ -145,7 +146,7 @@ export class OnlineOrdersComponent implements OnInit, OnDestroy {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not accept the order';
+        this.error = e?.error?.message ?? T('Could not accept the order');
         this.list.load();
       },
     });
@@ -161,7 +162,7 @@ export class OnlineOrdersComponent implements OnInit, OnDestroy {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not reject the order';
+        this.error = e?.error?.message ?? T('Could not reject the order');
       },
     });
   }

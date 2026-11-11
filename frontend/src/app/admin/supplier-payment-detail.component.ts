@@ -7,6 +7,7 @@ import { SupplierPaymentApiService } from '../core/api/supplier-payment-api.serv
 import { openPdfForPrint } from '../core/download-file';
 import { SupplierPayment } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "Add view details on supplier payments list" — the accounts-payable mirror of
  * CustomerPaymentDetailComponent: the store-wide Supplier Payments list already shows every
@@ -81,7 +82,7 @@ export class SupplierPaymentDetailComponent implements OnInit {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
     this.paymentApi.getReceipt(this.id).subscribe({
       next: (p) => (this.payment = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment')),
     });
   }
 
@@ -94,7 +95,7 @@ export class SupplierPaymentDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to open receipt PDF';
+        this.error = err?.error?.message ?? T('Failed to open receipt PDF');
       },
     });
   }

@@ -8,6 +8,7 @@ import { StatementsPanelComponent } from './statements-panel.component';
 import { OwnerDto, OwnerPayload, PM_PROPERTY_KINDS, PropertyMgmtApiService, pmLabel } from '../../core/api/propertymgmt-api.service';
 import { PmDocumentsPanelComponent } from './pm-documents-panel.component';
 
+import { T } from '../../core/i18n/t';
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 
 /** Property Management > an owner: contact and payout details, the fee, and their properties. */
@@ -105,7 +106,7 @@ export class OwnerDetailComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   private load(): void {
-    this.api.owner(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (o) => (this.o = o), error: (e) => (this.error = e?.error?.message ?? 'Could not load the owner') });
+    this.api.owner(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (o) => (this.o = o), error: (e) => (this.error = e?.error?.message ?? T('Could not load the owner')) });
   }
 
   kind(k: string): string { return pmLabel(PM_PROPERTY_KINDS, k); }
@@ -119,7 +120,7 @@ export class OwnerDetailComponent implements OnInit {
 
   save(): void {
     this.error = null;
-    if (!txt(this.f.name)) { this.error = 'Give the owner\'s name.'; return; }
+    if (!txt(this.f.name)) { this.error = T('Give the owner\'s name.'); return; }
     const hadFee = this.o!.feePercent != null;
     const hasFee = this.f.fee != null && String(this.f.fee) !== '';
     const p: OwnerPayload = { name: txt(this.f.name), phone: txt(this.f.phone), email: txt(this.f.email), idNumber: txt(this.f.idNumber), taxNumber: txt(this.f.taxNumber), address: txt(this.f.address),
@@ -129,7 +130,7 @@ export class OwnerDetailComponent implements OnInit {
     this.busy = true;
     this.api.updateOwner(this.o!.id, p).subscribe({
       next: (o) => { this.busy = false; this.o = o; this.editing = false; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the owner'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the owner'); },
     });
   }
 
@@ -138,17 +139,17 @@ export class OwnerDetailComponent implements OnInit {
     this.error = null;
     this.api.updateOwner(this.o!.id, { active: !this.o!.active }).subscribe({
       next: (o) => { this.busy = false; this.o = o; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not change the owner'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not change the owner'); },
     });
   }
 
   remove(): void {
-    if (!confirm(`Delete ${this.o!.name}?`)) return;
+    if (!confirm(T('Delete {p0}?', { p0: this.o!.name }))) return;
     this.busy = true;
     this.error = null;
     this.api.deleteOwner(this.o!.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/owners']),
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not delete the owner'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not delete the owner'); },
     });
   }
 }

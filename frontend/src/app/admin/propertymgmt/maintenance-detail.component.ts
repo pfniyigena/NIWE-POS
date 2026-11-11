@@ -11,6 +11,7 @@ import {
 } from '../../core/api/pm-maintenance-api.service';
 import { PmDocumentsPanelComponent } from './pm-documents-panel.component';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -144,7 +145,7 @@ export class MaintenanceDetailComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   private load(): void {
-    this.api.get(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (m) => (this.m = m), error: (e) => (this.error = e?.error?.message ?? 'Could not load the request') });
+    this.api.get(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (m) => (this.m = m), error: (e) => (this.error = e?.error?.message ?? T('Could not load the request')) });
   }
 
   active(): boolean { return maintenanceActive(this.status); }
@@ -163,7 +164,7 @@ export class MaintenanceDetailComponent implements OnInit {
     this.note = null;
     call.subscribe({
       next: (m) => { this.busy = false; this.m = m; this.panel = null; if (done) this.note = done; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 
@@ -183,23 +184,23 @@ export class MaintenanceDetailComponent implements OnInit {
   complete(): void {
     if (!this.m) return;
     const c = this.c;
-    if (!c.completedDate) { this.error = 'Give the date it was finished.'; return; }
+    if (!c.completedDate) { this.error = T('Give the date it was finished.'); return; }
     this.step(this.api.complete(this.m.request.id, { completedDate: c.completedDate, actualCost: num(c.actualCost), resolution: txt(c.resolution), costBearer: c.costBearer }), 'Marked as done.');
   }
 
   cancel(): void {
     if (!this.m) return;
-    if (!txt(this.reason)) { this.error = 'Say why it is cancelled.'; return; }
+    if (!txt(this.reason)) { this.error = T('Say why it is cancelled.'); return; }
     this.step(this.api.cancel(this.m.request.id, txt(this.reason)));
     this.reason = '';
   }
 
   remove(): void {
-    if (!this.m || !confirm('Delete this request? This cannot be undone.')) return;
+    if (!this.m || !confirm(T('Delete this request? This cannot be undone.'))) return;
     this.busy = true;
     this.api.remove(this.m.request.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/maintenance']),
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not delete the request'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not delete the request'); },
     });
   }
 }

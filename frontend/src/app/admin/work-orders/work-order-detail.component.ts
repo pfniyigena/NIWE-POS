@@ -19,6 +19,7 @@ import {
   InvoicePreview, PackageSummary, WoLinePayload, WorkOrderApiService, WorkOrderDetail, WorkOrderPayload,
 } from '../../core/api/work-order-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * Work Orders > one job. A manager creates and edits it; the person it is assigned to works it (checklist, parts, start, complete).
  * The same screen serves /admin/work-orders/:id and /work-orders/:id (the second is open to every signed-in user, for their own jobs).
@@ -357,7 +358,7 @@ export class WorkOrderDetailComponent implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam && idParam !== 'new') {
       this.id = Number(idParam);
-      this.api.get(this.id).subscribe({ next: (d) => this.show(d), error: (e) => (this.error = e?.error?.message ?? 'Could not load the work order') });
+      this.api.get(this.id).subscribe({ next: (d) => this.show(d), error: (e) => (this.error = e?.error?.message ?? T('Could not load the work order')) });
     } else {
       this.editing = true;
       this.loadPickers(true);
@@ -457,22 +458,22 @@ export class WorkOrderDetailComponent implements OnInit {
         this.editing = false;
         this.apply(d, 'Saved.');
       },
-      error: (e) => this.fail(e, 'Could not save'),
+      error: (e) => this.fail(e, T('Could not save')),
     });
   }
 
   remove(): void {
-    if (!this.id || !confirm('Delete this work order?')) return;
-    this.api.delete(this.id).subscribe({ next: () => this.router.navigate(['/admin/work-orders']), error: (e) => this.fail(e, 'Could not delete') });
+    if (!this.id || !confirm(T('Delete this work order?'))) return;
+    this.api.delete(this.id).subscribe({ next: () => this.router.navigate(['/admin/work-orders']), error: (e) => this.fail(e, T('Could not delete')) });
   }
 
   act(action: 'start' | 'hold' | 'reopen' | 'cancel'): void {
     if (!this.id) return;
-    if (action === 'cancel' && !confirm('Cancel this job?')) return;
-    if (action === 'reopen' && !confirm('Reopen this job? Parts are returned to stock and the cost posting is reversed.')) return;
+    if (action === 'cancel' && !confirm(T('Cancel this job?'))) return;
+    if (action === 'reopen' && !confirm(T('Reopen this job? Parts are returned to stock and the cost posting is reversed.'))) return;
     this.busy = true;
     const calls = { start: () => this.api.start(this.id!), hold: () => this.api.hold(this.id!), reopen: () => this.api.reopen(this.id!), cancel: () => this.api.cancel(this.id!) };
-    calls[action]().subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, 'Could not change the status') });
+    calls[action]().subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, T('Could not change the status')) });
   }
 
   complete(): void {
@@ -480,14 +481,14 @@ export class WorkOrderDetailComponent implements OnInit {
     this.busy = true;
     this.api.complete(this.id, this.completionNote.trim() || null, this.force).subscribe({
       next: (d) => { this.showComplete = false; this.apply(d, 'Job completed.'); },
-      error: (e) => this.fail(e, 'Could not complete the job'),
+      error: (e) => this.fail(e, T('Could not complete the job')),
     });
   }
 
   toggle(itemId: number): void {
     if (!this.id) return;
     this.busy = true;
-    this.api.toggle(this.id, itemId).subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, 'Could not update the step') });
+    this.api.toggle(this.id, itemId).subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, T('Could not update the step')) });
   }
 
   startSteps(): void {
@@ -500,7 +501,7 @@ export class WorkOrderDetailComponent implements OnInit {
     this.busy = true;
     this.api.saveChecklist(this.id, this.stepsText.split('\n').map((s) => s.trim()).filter((s) => s)).subscribe({
       next: (d) => { this.editSteps = false; this.apply(d, 'Checklist saved.'); },
-      error: (e) => this.fail(e, 'Could not save the checklist'),
+      error: (e) => this.fail(e, T('Could not save the checklist')),
     });
   }
 
@@ -521,7 +522,7 @@ export class WorkOrderDetailComponent implements OnInit {
     if (!this.id) return;
     this.busy = true;
     const lines: WoLinePayload[] = this.lineEdits.map((l) => ({ productId: l.productId, quantity: Number(l.quantity) || 1, unitPrice: l.unitPrice, included: l.included }));
-    this.api.saveLines(this.id, lines).subscribe({ next: (d) => this.apply(d, 'Parts saved.'), error: (e) => this.fail(e, 'Could not save the parts') });
+    this.api.saveLines(this.id, lines).subscribe({ next: (d) => this.apply(d, 'Parts saved.'), error: (e) => this.fail(e, T('Could not save the parts')) });
   }
 
   addCost(): void {
@@ -535,14 +536,14 @@ export class WorkOrderDetailComponent implements OnInit {
         this.cost = { costDate: null, description: '', supplierName: '', amount: null, chargeAmount: null, expenseAccountId: null };
         this.apply(d, 'Cost added.');
       },
-      error: (e) => this.fail(e, 'Could not add the cost'),
+      error: (e) => this.fail(e, T('Could not add the cost')),
     });
   }
 
   removeCost(costId: number): void {
-    if (!this.id || !confirm('Remove this cost?')) return;
+    if (!this.id || !confirm(T('Remove this cost?'))) return;
     this.busy = true;
-    this.api.deleteCost(this.id, costId).subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, 'Could not remove the cost') });
+    this.api.deleteCost(this.id, costId).subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, T('Could not remove the cost')) });
   }
 
   linkMo(): void {
@@ -550,14 +551,14 @@ export class WorkOrderDetailComponent implements OnInit {
     this.busy = true;
     this.api.linkManufacturing(this.id, this.mo.bomId, Number(this.mo.quantity) || 1, this.d?.scheduledDate ?? null).subscribe({
       next: (d) => this.apply(d, 'Manufacturing order created.'),
-      error: (e) => this.fail(e, 'Could not create the manufacturing order'),
+      error: (e) => this.fail(e, T('Could not create the manufacturing order')),
     });
   }
 
   unlinkMo(): void {
     if (!this.id) return;
     this.busy = true;
-    this.api.unlinkManufacturing(this.id).subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, 'Could not unlink') });
+    this.api.unlinkManufacturing(this.id).subscribe({ next: (d) => this.apply(d), error: (e) => this.fail(e, T('Could not unlink')) });
   }
 
   loadPreview(): void {
@@ -565,7 +566,7 @@ export class WorkOrderDetailComponent implements OnInit {
     this.busy = true;
     this.api.invoicePreview(this.id).subscribe({
       next: (p) => { this.busy = false; this.preview = p; },
-      error: (e) => this.fail(e, 'Could not build the invoice preview'),
+      error: (e) => this.fail(e, T('Could not build the invoice preview')),
     });
   }
 
@@ -576,13 +577,13 @@ export class WorkOrderDetailComponent implements OnInit {
       next: (r) => {
         this.api.get(this.id!).subscribe({ next: (d) => this.apply(d, 'Draft invoice ' + r.invoiceNumber + ' created.'), error: () => (this.busy = false) });
       },
-      error: (e) => this.fail(e, 'Could not create the invoice'),
+      error: (e) => this.fail(e, T('Could not create the invoice')),
     });
   }
 
   release(): void {
-    if (!this.id || !confirm('Release this job from its invoice so it can be billed again? Void or delete the invoice first if it is issued.')) return;
+    if (!this.id || !confirm(T('Release this job from its invoice so it can be billed again? Void or delete the invoice first if it is issued.'))) return;
     this.busy = true;
-    this.api.releaseInvoice(this.id).subscribe({ next: (d) => this.apply(d, 'Released.'), error: (e) => this.fail(e, 'Could not release the invoice') });
+    this.api.releaseInvoice(this.id).subscribe({ next: (d) => this.apply(d, 'Released.'), error: (e) => this.fail(e, T('Could not release the invoice')) });
   }
 }

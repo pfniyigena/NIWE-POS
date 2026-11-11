@@ -9,6 +9,7 @@ import {
   COST_BEARERS, CostBearer, MAINTENANCE_CATEGORIES, MAINTENANCE_PRIORITIES, MaintenanceCategory, MaintenanceDto, MaintenancePayload, MaintenancePriority, PmMaintenanceApiService,
 } from '../../core/api/pm-maintenance-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -102,14 +103,14 @@ export class MaintenanceFormComponent implements OnInit {
         next: (m) => {
           this.m = m;
           const r = m.request;
-          if (r.status === 'COMPLETED' || r.status === 'CANCELLED') this.error = 'A finished request cannot be changed. Reopen it first.';
+          if (r.status === 'COMPLETED' || r.status === 'CANCELLED') this.error = T('A finished request cannot be changed. Reopen it first.');
           this.f = {
             unitId: r.unitId, tenantId: r.tenantId, title: r.title, category: r.category, priority: r.priority, reportedDate: r.reportedDate, reportedBy: m.reportedBy ?? '', description: m.description ?? '',
             scheduledDate: r.scheduledDate ?? '', dueDate: r.dueDate ?? '', contractorName: r.contractorName ?? '', contractorPhone: m.contractorPhone ?? '', estimatedCost: r.estimatedCost,
             actualCost: r.actualCost, costBearer: r.costBearer,
           };
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the request'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the request')),
       });
     }
   }
@@ -121,11 +122,11 @@ export class MaintenanceFormComponent implements OnInit {
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!f.unitId) { this.error = 'Choose the unit.'; return; }
-    if (!txt(f.title)) { this.error = 'Say what needs doing.'; return; }
-    if (f.reportedDate && f.reportedDate > today()) { this.error = 'The report date cannot be in the future.'; return; }
-    if (f.dueDate && f.reportedDate && f.dueDate < f.reportedDate) { this.error = 'It cannot be due before it was reported.'; return; }
-    if (f.scheduledDate && f.reportedDate && f.scheduledDate < f.reportedDate) { this.error = 'It cannot be planned for before it was reported.'; return; }
+    if (!f.unitId) { this.error = T('Choose the unit.'); return; }
+    if (!txt(f.title)) { this.error = T('Say what needs doing.'); return; }
+    if (f.reportedDate && f.reportedDate > today()) { this.error = T('The report date cannot be in the future.'); return; }
+    if (f.dueDate && f.reportedDate && f.dueDate < f.reportedDate) { this.error = T('It cannot be due before it was reported.'); return; }
+    if (f.scheduledDate && f.reportedDate && f.scheduledDate < f.reportedDate) { this.error = T('It cannot be planned for before it was reported.'); return; }
     const p: MaintenancePayload = {
       title: txt(f.title), description: txt(f.description), category: f.category, priority: f.priority, reportedDate: f.reportedDate || null, reportedBy: txt(f.reportedBy),
       scheduledDate: f.scheduledDate || null, dueDate: f.dueDate || null, contractorName: txt(f.contractorName), contractorPhone: txt(f.contractorPhone), costBearer: f.costBearer,
@@ -147,7 +148,7 @@ export class MaintenanceFormComponent implements OnInit {
     const call = this.id ? this.api.update(this.id, p) : this.api.create(p);
     call.subscribe({
       next: (m) => { this.saving = false; this.router.navigate(['/admin/propertymgmt/maintenance', m.request.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the request'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the request'); },
     });
   }
 }

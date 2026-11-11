@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface OptionRow {
   name: string;
   values: string;
@@ -104,7 +105,7 @@ export class ProductVariantsComponent implements OnInit {
   ngOnInit(): void {
     this.catalogApi.getProduct(this.id).subscribe({
       next: (p) => (this.template = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the product'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the product')),
     });
     this.loadVariants();
   }
@@ -112,7 +113,7 @@ export class ProductVariantsComponent implements OnInit {
   private loadVariants(): void {
     this.catalogApi.listVariants(this.id).subscribe({
       next: (v) => (this.variants = v),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load variants'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load variants')),
     });
   }
 
@@ -137,12 +138,12 @@ export class ProductVariantsComponent implements OnInit {
       next: (r) => {
         this.busy = false;
         this.variants = r.variants;
-        this.message = `${r.created} variant${r.created === 1 ? '' : 's'} created${r.skipped ? `, ${r.skipped} already existed` : ''}.`;
+        this.message = T('{p0} variant{p1} created{p2}.', { p0: r.created, p1: r.created === 1 ? '' : 's', p2: r.skipped ? T(', {p0} already existed', { p0: r.skipped }) : '' });
         this.catalogApi.getProduct(this.id).subscribe((p) => (this.template = p));
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to generate variants';
+        this.error = err?.error?.message ?? T('Failed to generate variants');
       },
     });
   }

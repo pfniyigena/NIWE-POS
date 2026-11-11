@@ -9,6 +9,7 @@ import { KitchenApiService } from '../core/api/kitchen-api.service';
 import { MenuApiService } from '../core/api/menu-api.service';
 import { KitchenSummary, KitchenTicket, MenuItem } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant > Kitchen display (Fourier: "Kitchen Order Tickets / Kitchen Display"). Every dish
  * currently SENT/PREPARING/READY across every open order, oldest first. Each ticket runs a clock
@@ -170,7 +171,7 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
         this.tickets = t;
         this.error = null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load kitchen tickets'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load kitchen tickets')),
     });
     this.kitchenApi.summary().subscribe({ next: (s) => (this.summary = s), error: () => {} });
     if (this.showBoard) this.loadMenu();
@@ -229,7 +230,7 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     this.error = null;
     this.orderApi.setLineKitchenStatus(t.orderId, t.lineId, status).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update ticket'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update ticket')),
     });
   }
 
@@ -245,16 +246,16 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     this.error = null;
     this.kitchenApi.bump(t.orderId, t.station || 'Unassigned').subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to bump the order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to bump the order')),
     });
   }
 
   remake(t: KitchenTicket): void {
-    if (!confirm(`Make ${t.description} for ${t.tableName} again?`)) return;
+    if (!confirm(T('Make {p0} for {p1} again?', { p0: t.description, p1: t.tableName }))) return;
     this.error = null;
     this.kitchenApi.refire(t.orderId, t.lineId).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to send it back'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to send it back')),
     });
   }
 
@@ -287,7 +288,7 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
         this.boardReason = '';
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update the item'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update the item')),
     });
   }
 }

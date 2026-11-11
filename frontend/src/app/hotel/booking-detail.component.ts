@@ -12,6 +12,7 @@ import { PaymentMethodApiService } from '../core/api/payment-method-api.service'
 import { PaymentMethodOption } from '../core/models';
 import { addDays, errMsg, statusBadge, statusLabel, today } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 type Panel = 'checkin' | 'edit' | 'cancel' | 'noshow' | 'move' | 'extend' | 'charge' | 'payment' | 'checkout' | 'movecharge' | null;
 
 /** A booking and its bill (folio): arrival, in-house charges, payments, check-out. */
@@ -518,7 +519,7 @@ export class BookingDetailComponent implements OnInit {
 
   addBill(): void {
     const f = this.billForm!;
-    this.run(this.api.addBill(this.id, f.label.trim() || null, f.companyId), 'Bill added.', false);
+    this.run(this.api.addBill(this.id, f.label.trim() || null, f.companyId), T('Bill added.'), false);
     this.billForm = null;
   }
 
@@ -529,29 +530,29 @@ export class BookingDetailComponent implements OnInit {
 
   confirmBillTo(): void {
     const b = this.pickCompanyFor!;
-    this.run(this.api.updateBill(this.id, b.billNo, { companyId: this.pickCompanyId }), 'The bill will go on the company\'s account at check-out.', false);
+    this.run(this.api.updateBill(this.id, b.billNo, { companyId: this.pickCompanyId }), T('The bill will go on the company\'s account at check-out.'), false);
     this.pickCompanyFor = null;
   }
 
   billGroup(b: Bill): void {
-    this.run(this.api.updateBill(this.id, b.billNo, { toGroup: true }), 'The bill will go on the group\'s account at check-out.', false);
+    this.run(this.api.updateBill(this.id, b.billNo, { toGroup: true }), T('The bill will go on the group\'s account at check-out.'), false);
   }
 
   backToGuest(b: Bill): void {
-    this.run(this.api.updateBill(this.id, b.billNo, { clearCompany: true }), 'Bill back with the guest.', false);
+    this.run(this.api.updateBill(this.id, b.billNo, { clearCompany: true }), T('Bill back with the guest.'), false);
   }
 
   roomHere(b: Bill): void {
-    this.run(this.api.setRoomBill(this.id, b.billNo), 'Room nights moved to this bill.', false);
+    this.run(this.api.setRoomBill(this.id, b.billNo), T('Room nights moved to this bill.'), false);
   }
 
   removeBill(b: Bill): void {
-    this.run(this.api.deleteBill(this.id, b.billNo), 'Bill removed.', false);
+    this.run(this.api.deleteBill(this.id, b.billNo), T('Bill removed.'), false);
   }
 
   assign(c: FolioCharge, billNo: number): void {
     if (billNo === c.billNo) return;
-    this.run(this.api.assignCharge(this.id, c.id, billNo), 'Moved to ' + this.billLabel(billNo) + '.', false);
+    this.run(this.api.assignCharge(this.id, c.id, billNo), T('Moved to {p0}.', { p0: this.billLabel(billNo) }), false);
   }
 
   openMoveCharge(c: FolioCharge): void {
@@ -565,7 +566,7 @@ export class BookingDetailComponent implements OnInit {
 
   doMoveCharge(): void {
     if (!this.moveLine || !this.moveTarget) return;
-    this.run(this.api.moveCharge(this.id, this.moveLine.id, this.moveTarget, this.reason || null), 'Charge moved to the other guest.');
+    this.run(this.api.moveCharge(this.id, this.moveLine.id, this.moveTarget, this.reason || null), T('Charge moved to the other guest.'));
   }
 
   pdf(billNo: number): void {
@@ -584,7 +585,7 @@ export class BookingDetailComponent implements OnInit {
     this.error = null;
     this.message = null;
     this.api.sendConfirmationMail(this.id).subscribe({
-      next: () => (this.message = 'The confirmation is on its way to the guest.'),
+      next: () => (this.message = T('The confirmation is on its way to the guest.')),
       error: (e) => (this.error = errMsg(e, 'Could not send the e-mail')),
     });
   }
@@ -615,7 +616,7 @@ export class BookingDetailComponent implements OnInit {
   }
 
   doCheckIn(): void {
-    this.run(this.api.checkIn(this.id, this.roomId, this.allowNotReady), 'Guest checked in.');
+    this.run(this.api.checkIn(this.id, this.roomId, this.allowNotReady), T('Guest checked in.'));
   }
 
   doEdit(): void {
@@ -629,33 +630,33 @@ export class BookingDetailComponent implements OnInit {
       payload.checkInDate = e.checkInDate;
       if ((e.ratePlanId ?? null) !== (b.ratePlanId ?? null) && e.ratePlanId !== null) payload.ratePlanId = e.ratePlanId;
     }
-    this.run(this.api.updateBooking(this.id, payload), 'Booking updated.');
+    this.run(this.api.updateBooking(this.id, payload), T('Booking updated.'));
   }
 
   doMove(): void {
-    if (!this.roomId) return void (this.error = 'Choose the new room.');
-    this.run(this.api.moveRoom(this.id, this.roomId, this.reason || null), 'Guest moved.');
+    if (!this.roomId) return void (this.error = T('Choose the new room.'));
+    this.run(this.api.moveRoom(this.id, this.roomId, this.reason || null), T('Guest moved.'));
   }
 
   doExtend(): void {
-    this.run(this.api.extend(this.id, this.newDeparture), 'Departure date changed.');
+    this.run(this.api.extend(this.id, this.newDeparture), T('Departure date changed.'));
   }
 
   doCharge(): void {
     if (this.chargeAmount === null) return;
-    this.run(this.api.addCharge(this.id, this.chargeDesc, this.chargeAmount, this.chargeTaxable, this.folio!.bills.length > 1 ? this.chargeBill : null), 'Charge added.');
+    this.run(this.api.addCharge(this.id, this.chargeDesc, this.chargeAmount, this.chargeTaxable, this.folio!.bills.length > 1 ? this.chargeBill : null), T('Charge added.'));
   }
 
   doPayment(): void {
     if (!this.payAmount) return;
     const booked = this.folio!.booking.status === 'BOOKED';
-    this.run(this.api.addPayment(this.id, booked ? 'DEPOSIT' : 'PAYMENT', this.payMethod, this.payAmount, this.payRef || null, this.guestBills.length > 1 ? this.payBill : null), booked ? 'Deposit recorded.' : 'Payment recorded.');
+    this.run(this.api.addPayment(this.id, booked ? 'DEPOSIT' : 'PAYMENT', this.payMethod, this.payAmount, this.payRef || null, this.guestBills.length > 1 ? this.payBill : null), booked ? T('Deposit recorded.') : T('Payment recorded.'));
   }
 
   voidCharge(chargeId: number): void {
     const reason = prompt('Why is this charge being voided? (optional)');
     if (reason === null) return;
-    this.run(this.api.voidCharge(this.id, chargeId, reason || null), 'Charge voided.', false);
+    this.run(this.api.voidCharge(this.id, chargeId, reason || null), T('Charge voided.'), false);
   }
 
   doCheckout(): void {
@@ -680,6 +681,6 @@ export class BookingDetailComponent implements OnInit {
     const call = noShow
       ? this.api.noShow(this.id, this.reason || null, action, this.refundMethod || null, this.waiveFee)
       : this.api.cancel(this.id, this.reason || null, action, this.refundMethod || null, this.waiveFee);
-    this.run(call, noShow ? 'Marked as no-show.' : 'Booking cancelled.');
+    this.run(call, noShow ? T('Marked as no-show.') : T('Booking cancelled.'));
   }
 }

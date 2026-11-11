@@ -9,6 +9,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { Branch, Category, Warehouse } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Settings > Scheduled reports — pick a report, a format and a schedule, and it is emailed
  * automatically. Date-range reports cover the period that just ended (yesterday / the previous 7 days /
@@ -212,7 +213,7 @@ export class ReportScheduleListComponent implements OnInit {
         this.reports = r;
         this.groups = Array.from(new Set(r.map((x) => x.section)));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the report list'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the report list')),
     });
     this.catalogApi.listCategories().subscribe({ next: (c) => (this.categories = c), error: () => (this.categories = []) });
     this.warehouseApi.listAll().subscribe({ next: (w) => (this.warehouses = w), error: () => (this.warehouses = []) });
@@ -227,7 +228,7 @@ export class ReportScheduleListComponent implements OnInit {
   load(): void {
     this.api.list().subscribe({
       next: (s) => (this.schedules = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load schedules'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load schedules')),
     });
   }
 
@@ -287,7 +288,7 @@ export class ReportScheduleListComponent implements OnInit {
 
   save(): void {
     if (!this.name.trim() || !this.reportKey) {
-      this.error = 'Give the schedule a name and pick a report';
+      this.error = T('Give the schedule a name and pick a report');
       return;
     }
     const payload = {
@@ -312,13 +313,13 @@ export class ReportScheduleListComponent implements OnInit {
     call.subscribe({
       next: () => {
         this.busy = false;
-        this.notice = this.editingId ? 'Schedule saved.' : 'Schedule added.';
+        this.notice = this.editingId ? T('Schedule saved.') : T('Schedule added.');
         this.resetForm();
         this.load();
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to save the schedule';
+        this.error = err?.error?.message ?? T('Failed to save the schedule');
       },
     });
   }
@@ -336,19 +337,19 @@ export class ReportScheduleListComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to send the report';
+        this.error = err?.error?.message ?? T('Failed to send the report');
       },
     });
   }
 
   remove(s: ReportSchedule): void {
-    if (!confirm(`Delete the schedule "${s.name}"?`)) return;
+    if (!confirm(T('Delete the schedule "{p0}"?', { p0: s.name }))) return;
     this.api.delete(s.id).subscribe({
       next: () => {
         if (this.editingId === s.id) this.resetForm();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete the schedule'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete the schedule')),
     });
   }
 }

@@ -9,6 +9,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { ExpenseIncomeGroupBy, GroupedAmount } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * One component backs all sixteen "Expenses ..."/"Incomes ..." segmented+periodic report menu
  * items (by Category/Vendor/Staff/Client, and Daily/Weekly/Monthly/Yearly, for each direction) —
@@ -148,7 +149,7 @@ export class ExpenseIncomeReportComponent implements OnInit {
         : this.reportApi.incomesGrouped(this.from, this.to, this.groupBy);
     call.subscribe({
       next: (rows) => (this.rows = rows),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load report'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load report')),
     });
   }
 
@@ -183,7 +184,7 @@ export class ExpenseIncomeReportComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

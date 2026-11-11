@@ -8,6 +8,7 @@ import { StaffOption, TimeApiService } from '../../core/api/time-api.service';
 import { WorkOrderApiService, WorkOrderSummary } from '../../core/api/work-order-api.service';
 import { WorkOrderTabsComponent } from './work-order-tabs.component';
 
+import { T } from '../../core/i18n/t';
 interface Day { iso: string; label: string; today: boolean; }
 interface Lane { userId: number | null; name: string; }
 
@@ -118,7 +119,7 @@ export class WorkOrderCalendarComponent implements OnInit {
   load(): void {
     this.api.list({}).subscribe({
       next: (l) => { this.all = l.filter((w) => w.status !== 'CANCELLED'); this.build(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the work orders'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the work orders')),
     });
   }
 

@@ -11,6 +11,7 @@ import { ListState } from '../../core/api/list-state';
 import { downloadBlob } from '../../core/download-file';
 import { HrApiService, Remittance, RemittanceKindTotal, RemittancePayload, RemittanceRow } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Payroll > Tax & social security: what each approved payroll owes the tax authority and the social-security fund, what has been paid, and the monthly returns. */
 @Component({
   selector: 'app-payroll-remittances',
@@ -131,7 +132,7 @@ export class PayrollRemittancesComponent implements OnInit, OnDestroy {
         this.rows = s.rows;
         this.loaded = true;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load what is owed'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load what is owed')),
     });
   }
 
@@ -160,7 +161,7 @@ export class PayrollRemittancesComponent implements OnInit, OnDestroy {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not record the payment';
+        this.error = e?.error?.message ?? T('Could not record the payment');
       },
     });
   }
@@ -175,7 +176,7 @@ export class PayrollRemittancesComponent implements OnInit, OnDestroy {
         this.load();
         this.history.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not cancel the payment'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not cancel the payment')),
     });
   }
 
@@ -183,7 +184,7 @@ export class PayrollRemittancesComponent implements OnInit, OnDestroy {
     const kind = r.kind === 'PAYE' ? 'paye' : 'social-security';
     this.api.payrollReturn(r.runId, kind, format).subscribe({
       next: (blob) => downloadBlob(blob, `${kind}-return-${r.year}-${String(r.month).padStart(2, '0')}.${format}`),
-      error: () => (this.error = 'Could not create the return'),
+      error: () => (this.error = T('Could not create the return')),
     });
   }
 }

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "Add forget password feature where user will input the email and he/she can reset
  * the password" — step one: the user enters their email and, if it's registered, gets a reset
@@ -69,7 +70,7 @@ export class ForgotPasswordComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to send reset link';
+        this.error = err?.error?.message ?? T('Failed to send reset link');
       },
     });
   }

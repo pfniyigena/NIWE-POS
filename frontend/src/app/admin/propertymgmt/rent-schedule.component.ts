@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { PmReminderApiService } from '../../core/api/pm-reminder-api.service';
 import { PropertyMgmtApiService, RENT_STATUS_LABEL, RentChargeRow, RentSchedule, RentStatus, rentBadge } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** The rent of one lease, period by period: what is invoiced, paid or owed, with the steps to invoice, waive or restore a period. */
 @Component({
   selector: 'app-rent-schedule',
@@ -89,7 +90,7 @@ export class RentScheduleComponent implements OnChanges {
   ngOnChanges(): void { this.load(); }
 
   load(): void {
-    this.api.leaseRent(this.leaseId).subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the rent') });
+    this.api.leaseRent(this.leaseId).subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the rent')) });
   }
 
   badge(s: string): string { return rentBadge(s); }
@@ -118,7 +119,7 @@ export class RentScheduleComponent implements OnChanges {
         if (r.failed) this.error = r.problems.join(' ');
         this.done(r.invoiced ? `Invoiced ${r.invoiced} period${r.invoiced === 1 ? '' : 's'}.` : null);
       },
-      error: (e) => this.fail(e, 'Could not invoice the rent'),
+      error: (e) => this.fail(e, T('Could not invoice the rent')),
     });
   }
 
@@ -126,7 +127,7 @@ export class RentScheduleComponent implements OnChanges {
     this.busy = true;
     this.error = null;
     this.note = null;
-    this.api.invoiceCharge(c.id).subscribe({ next: () => this.done('Invoiced.'), error: (e) => this.fail(e, 'Could not invoice the rent') });
+    this.api.invoiceCharge(c.id).subscribe({ next: () => this.done('Invoiced.'), error: (e) => this.fail(e, T('Could not invoice the rent')) });
   }
 
   startWaive(c: RentChargeRow): void {
@@ -137,32 +138,32 @@ export class RentScheduleComponent implements OnChanges {
 
   waive(): void {
     if (!this.waiving) return;
-    if (!this.reason.trim()) { this.error = 'Say why the rent is waived.'; return; }
+    if (!this.reason.trim()) { this.error = T('Say why the rent is waived.'); return; }
     this.busy = true;
     this.error = null;
     this.note = null;
-    this.api.waiveCharge(this.waiving.id, this.reason.trim()).subscribe({ next: () => this.done('Waived.'), error: (e) => this.fail(e, 'Could not waive the rent') });
+    this.api.waiveCharge(this.waiving.id, this.reason.trim()).subscribe({ next: () => this.done('Waived.'), error: (e) => this.fail(e, T('Could not waive the rent')) });
   }
 
   restore(c: RentChargeRow): void {
     this.busy = true;
     this.error = null;
     this.note = null;
-    this.api.restoreCharge(c.id).subscribe({ next: () => this.done('Restored.'), error: (e) => this.fail(e, 'Could not restore the rent') });
+    this.api.restoreCharge(c.id).subscribe({ next: () => this.done('Restored.'), error: (e) => this.fail(e, T('Could not restore the rent')) });
   }
 
   remind(c: RentChargeRow): void {
     this.busy = true;
     this.error = null;
     this.note = null;
-    this.reminders.remind(c.id).subscribe({ next: (r) => this.done(`Reminder sent to ${r.sentTo}.`), error: (e) => this.fail(e, 'Could not send the reminder') });
+    this.reminders.remind(c.id).subscribe({ next: (r) => this.done(`Reminder sent to ${r.sentTo}.`), error: (e) => this.fail(e, T('Could not send the reminder')) });
   }
 
   chargeFee(c: RentChargeRow): void {
-    if (!confirm('Invoice a late fee to this tenant for ' + c.invoiceNumber + '?')) return;
+    if (!confirm(T('Invoice a late fee to this tenant for {p0}?', { p0: c.invoiceNumber }))) return;
     this.busy = true;
     this.error = null;
     this.note = null;
-    this.reminders.lateFee(c.id).subscribe({ next: (f) => this.done(`Late fee ${Math.round(f.amount).toLocaleString()} invoiced (${f.invoiceNumber}).`), error: (e) => this.fail(e, 'Could not charge the late fee') });
+    this.reminders.lateFee(c.id).subscribe({ next: (f) => this.done(`Late fee ${Math.round(f.amount).toLocaleString()} invoiced (${f.invoiceNumber}).`), error: (e) => this.fail(e, T('Could not charge the late fee')) });
   }
 }

@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { SubscriptionAutomationApiService, SubscriptionJobResult } from '../core/api/subscription-automation-api.service';
 import { SubscriptionApiService } from '../core/api/subscription-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Subscriptions > Job settings — the daily subscription job: bills due subscriptions, optionally
  * emails upcoming-billing reminders, pauses/cancels subscriptions whose invoice stays unpaid, and emails a
@@ -172,7 +173,7 @@ export class SubscriptionJobSettingsComponent implements OnInit {
         this.lastSummary = s.lastSummary;
         this.loaded = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the job settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the job settings')),
     });
   }
 
@@ -200,7 +201,7 @@ export class SubscriptionJobSettingsComponent implements OnInit {
         },
         error: (err) => {
           this.saving = false;
-          this.error = err?.error?.message ?? 'Failed to save the job settings';
+          this.error = err?.error?.message ?? T('Failed to save the job settings');
         },
       });
   }
@@ -217,7 +218,7 @@ export class SubscriptionJobSettingsComponent implements OnInit {
       },
       error: (err) => {
         this.running = false;
-        this.error = err?.error?.message ?? 'Failed to run the subscription job';
+        this.error = err?.error?.message ?? T('Failed to run the subscription job');
       },
     });
   }

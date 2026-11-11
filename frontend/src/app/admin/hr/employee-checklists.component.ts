@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { ChecklistTemplate, EmployeeChecklist, HrApiService } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Onboarding and offboarding task lists of one employee: start one from a template, tick tasks off, add your own. */
 @Component({
   selector: 'app-employee-checklists',
@@ -97,7 +98,7 @@ export class EmployeeChecklistsComponent implements OnChanges {
   load(): void {
     this.api.employeeChecklists(this.employeeId).subscribe({
       next: (l) => { this.lists = l; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the checklists'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the checklists'); },
     });
   }
 
@@ -111,14 +112,14 @@ export class EmployeeChecklistsComponent implements OnChanges {
     this.busy = true;
     this.api.startChecklist(this.employeeId, this.templateId, this.startDate || null).subscribe({
       next: () => { this.busy = false; this.showStart = false; this.templateId = null; this.startDate = ''; this.error = null; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not start the checklist'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not start the checklist'); },
     });
   }
 
   tick(taskId: number, done: boolean): void {
     this.api.setTaskDone(taskId, done, null).subscribe({
       next: (c) => this.replace(c),
-      error: (e) => { this.error = e?.error?.message ?? 'Could not change the task'; this.load(); },
+      error: (e) => { this.error = e?.error?.message ?? T('Could not change the task'); this.load(); },
     });
   }
 
@@ -126,22 +127,22 @@ export class EmployeeChecklistsComponent implements OnChanges {
     const d = this.draft(c.id);
     this.api.addChecklistTask(c.id, d.title.trim(), d.who.trim() || null, d.due || null).subscribe({
       next: (r) => { this.drafts[c.id] = { title: '', who: '', due: '' }; this.replace(r); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not add the task'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not add the task')),
     });
   }
 
   removeTask(taskId: number): void {
     this.api.deleteChecklistTask(taskId).subscribe({
       next: (c) => this.replace(c),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not remove the task'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not remove the task')),
     });
   }
 
   removeList(c: EmployeeChecklist): void {
-    if (!confirm(`Delete the checklist "${c.name}" with all its tasks?`)) return;
+    if (!confirm(T('Delete the checklist "{p0}" with all its tasks?', { p0: c.name }))) return;
     this.api.deleteChecklist(c.id).subscribe({
       next: () => this.load(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the checklist'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the checklist')),
     });
   }
 }

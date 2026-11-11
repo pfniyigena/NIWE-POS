@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE } from '../../core/constants';
 
+import { T } from '../../core/i18n/t';
 interface Rate { userId: number; name: string; hourlyCost: number | null; }
 
 /**
@@ -46,7 +47,7 @@ export class LawCostRatesComponent implements OnInit {
   ngOnInit(): void {
     this.http.get<Rate[]>(`${API_BASE}/law/cost-rates`).subscribe({
       next: (r) => (this.rates = r),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the costs'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the costs')),
     });
   }
 
@@ -58,7 +59,7 @@ export class LawCostRatesComponent implements OnInit {
     const rates = this.rates.map((r) => ({ userId: r.userId, hourlyCost: r.hourlyCost === null || (r.hourlyCost as unknown) === '' ? null : Number(r.hourlyCost) }));
     this.http.put<Rate[]>(`${API_BASE}/law/cost-rates`, { rates }).subscribe({
       next: (r) => { this.busy = false; this.saved = true; this.rates = r; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the costs'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the costs'); },
     });
   }
 }

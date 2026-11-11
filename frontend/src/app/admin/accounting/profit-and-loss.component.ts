@@ -9,6 +9,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Branch, ProfitAndLoss } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > Profit &amp; Loss — Revenue and Expense accounts, net of
  * debits/credits, for a date range. Each account row can be expanded to show every journal-entry
@@ -172,7 +173,7 @@ export class ProfitAndLossComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.profitAndLoss(this.from, this.to, this.branchId).subscribe({
       next: (r) => (this.report = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load profit & loss'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load profit & loss')),
     });
   }
 
@@ -199,7 +200,7 @@ export class ProfitAndLossComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

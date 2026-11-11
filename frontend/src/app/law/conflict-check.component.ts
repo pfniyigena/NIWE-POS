@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { ConflictLog, ConflictResult, LawApiService, PARTY_ROLE_LABEL } from '../core/api/law-api.service';
 
+import { T } from '../core/i18n/t';
 /** Law Firm > Conflict check: search a name, phone, ID or e-mail against every client and every outside contact before taking someone on. Every search is logged. */
 @Component({
   selector: 'app-law-conflict-check',
@@ -82,7 +83,7 @@ export class LawConflictCheckComponent implements OnInit {
     this.error = null;
     this.api.conflictSearch({ name: this.name.trim(), phone: this.phone.trim(), idNumber: this.idNumber.trim(), email: this.email.trim() }).subscribe({
       next: (r) => { this.result = r; this.busy = false; this.loadLog(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not run the check'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not run the check'); },
     });
   }
 }

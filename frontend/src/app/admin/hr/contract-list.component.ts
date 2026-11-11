@@ -12,6 +12,7 @@ import { Branch } from '../../core/models';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Contract, HrApiService } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Contracts > Contract list: every contract with the actions to activate, renew, terminate and delete. */
 @Component({
   selector: 'app-contract-list',
@@ -113,7 +114,7 @@ export class ContractListComponent implements OnInit {
   }
 
   activate(c: Contract): void {
-    this.api.activateContract(c.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not activate the contract') });
+    this.api.activateContract(c.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not activate the contract')) });
   }
 
   startAction(kind: 'terminate' | 'renew', c: Contract): void {
@@ -138,12 +139,12 @@ export class ContractListComponent implements OnInit {
         this.action = null;
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not complete that'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not complete that')),
     });
   }
 
   remove(c: Contract): void {
-    if (!confirm(`Delete draft contract ${c.contractNumber}?`)) return;
-    this.api.deleteContract(c.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the contract') });
+    if (!confirm(T('Delete draft contract {p0}?', { p0: c.contractNumber }))) return;
+    this.api.deleteContract(c.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the contract')) });
   }
 }

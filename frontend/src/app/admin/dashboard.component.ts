@@ -13,6 +13,7 @@ import { CatalogApiService } from '../core/api/catalog-api.service';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { Branch, DashboardSummary, Product, Warehouse, WarehouseLowStockRow } from '../core/models';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -324,7 +325,7 @@ export class AdminDashboardComponent implements OnInit {
           title: d.date + ': till ' + d.pos.toFixed(2) + ' (' + d.posCount + '), invoices ' + d.invoiced.toFixed(2) + ' (' + d.invoiceCount + ')',
         }));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the overview'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the overview')),
     });
   }
 
@@ -346,7 +347,7 @@ export class AdminDashboardComponent implements OnInit {
     this.loadOverview();
     this.dashboardApi.summary(this.selectedBranchId).subscribe({
       next: (s) => (this.summary = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load dashboard'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load dashboard')),
     });
   }
 

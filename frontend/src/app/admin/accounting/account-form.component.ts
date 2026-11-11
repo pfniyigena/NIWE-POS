@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AccountApiService } from '../../core/api/account-api.service';
 import { AccountType } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Chart of Accounts > New/Edit. Mirrors OverheadCostFormComponent's simple CRUD form pattern. */
 @Component({
   selector: 'app-account-form',
@@ -87,7 +88,7 @@ export class AccountFormComponent implements OnInit {
         this.active = a.active;
         this.systemAccount = a.systemAccount;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load account'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load account')),
     });
   }
 
@@ -97,7 +98,7 @@ export class AccountFormComponent implements OnInit {
     const call = this.id ? this.accountApi.update(this.id, payload) : this.accountApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/accounting/accounts']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save account'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save account')),
     });
   }
 }

@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { TaxRateApiService } from '../core/api/tax-rate-api.service';
 import { TaxRateOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Settings > Taxes (Task: "Add taxes menu under Settings Menu"). Replaces the old fixed
  * `app.pos.tax-rate` application property — each product now picks which rate applies to it (or
@@ -69,7 +70,7 @@ export class TaxRateListComponent implements OnInit {
   ngOnInit(): void {
     this.taxRateApi.listAll().subscribe({
       next: (t) => (this.taxRates = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load tax rates'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load tax rates')),
     });
   }
 }

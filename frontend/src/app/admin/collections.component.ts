@@ -16,6 +16,7 @@ import {
   CollectionCustomer, CollectionItem, CollectionLogRow, CollectionQuery, CollectionSettings, CollectionSummary, CollectionsApiService, ReminderItem, RemindResult,
 } from '../core/api/collections-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Sales > Collections: who owes the business money and how late it is. "By customer" is the working view (tick the customers, send one reminder
  * e-mail each, print or e-mail a statement); "Unpaid items" lists every invoice and credit sale with its age; "Reminders sent" is the log; admins can
@@ -216,8 +217,8 @@ export class CollectionsComponent implements OnInit {
     this.page = 0;
     this.done = null;
     this.error = null;
-    if (tab === 'log') this.api.log().subscribe({ next: (l) => (this.log = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load the log') });
-    else if (tab === 'settings') this.api.settings().subscribe({ next: (s) => (this.settings = s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    if (tab === 'log') this.api.log().subscribe({ next: (l) => (this.log = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load the log')) });
+    else if (tab === 'settings') this.api.settings().subscribe({ next: (s) => (this.settings = s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
     else this.reload();
   }
 
@@ -247,12 +248,12 @@ export class CollectionsComponent implements OnInit {
     if (this.tab === 'customers') {
       this.api.customers(this.query()).subscribe({
         next: (d) => { this.customers = d.rows; this.total = d.total; this.summary = d.summary; this.canRemind = d.canRemind; this.mailReady = d.mailReady; this.chosen = {}; this.loaded = true; this.error = null; },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the customers who owe'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the customers who owe')),
       });
     } else if (this.tab === 'items') {
       this.api.items(this.query()).subscribe({
         next: (d) => { this.items = d.rows; this.total = d.total; this.summary = d.summary; this.canRemind = d.canRemind; this.mailReady = d.mailReady; this.defaultTerm = d.defaultTermDays; this.loaded = true; this.error = null; },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the unpaid items'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the unpaid items')),
       });
     }
   }
@@ -283,7 +284,7 @@ export class CollectionsComponent implements OnInit {
         this.done = 'Sent ' + r.mails + ' e-mail' + (r.mails === 1 ? '' : 's') + ' for ' + r.items + ' item' + (r.items === 1 ? '' : 's') + (r.skipped ? '. Not sent: ' + bad.join('; ') : '') + '.';
         this.fetch();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the reminders'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the reminders'); },
     });
   }
 
@@ -296,7 +297,7 @@ export class CollectionsComponent implements OnInit {
     this.busy = true; this.error = null; this.done = null;
     this.api.emailStatement(c.customerId).subscribe({
       next: (x) => { this.busy = false; this.done = 'The statement was sent to ' + x.email + '.'; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the statement'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the statement'); },
     });
   }
 
@@ -305,7 +306,7 @@ export class CollectionsComponent implements OnInit {
     const kind = this.tab === 'items' ? 'collections' : 'collection-customers';
     this.api.export(kind, this.query(), format).subscribe({
       next: (b) => { this.busy = false; downloadBlob(b, (this.tab === 'items' ? 'overdue-payments.' : 'customers-who-owe.') + format); },
-      error: () => { this.busy = false; this.error = 'The export failed.'; },
+      error: () => { this.busy = false; this.error = T('The export failed.'); },
     });
   }
 
@@ -315,14 +316,14 @@ export class CollectionsComponent implements OnInit {
     const s = this.settings;
     this.api.saveSettings({ autoEnabled: s.autoEnabled, firstDays: s.firstDays, repeatDays: s.repeatDays, maxReminders: s.maxReminders, defaultTermDays: s.defaultTermDays }).subscribe({
       next: (r) => { this.busy = false; this.settings = r; this.done = 'Settings saved.'; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the settings'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the settings'); },
     });
   }
 
   loadPreview(): void {
     this.api.preview().subscribe({
       next: (p) => { this.preview = p; this.previewed = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not check who would be reminded'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not check who would be reminded')),
     });
   }
 
@@ -330,7 +331,7 @@ export class CollectionsComponent implements OnInit {
     this.busy = true; this.error = null; this.done = null;
     this.api.runNow().subscribe({
       next: (r) => { this.busy = false; this.done = 'Sent ' + r.mails + ' e-mail' + (r.mails === 1 ? '' : 's') + (r.skipped ? ', ' + r.skipped + ' not sent' : '') + '.'; this.loadPreview(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the reminders'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the reminders'); },
     });
   }
 }

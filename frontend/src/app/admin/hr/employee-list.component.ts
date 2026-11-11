@@ -13,6 +13,7 @@ import { Branch } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 import { Department, Employee, EmployeeLoginBulk, HrApiService } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Employees > Employee list: everyone who works for the business, with quick filters. */
 @Component({
   selector: 'app-employee-list',
@@ -99,7 +100,7 @@ export class EmployeeListComponent implements OnInit {
   }
 
   giveLogins(): void {
-    if (!confirm('Give a login to every employee who has none yet? Each gets a username (their employee number) and a first password.')) return;
+    if (!confirm(T('Give a login to every employee who has none yet? Each gets a username (their employee number) and a first password.'))) return;
     this.loginBusy = true;
     this.loginNote = null;
     this.api.createEmployeeLogins().subscribe({
@@ -111,7 +112,7 @@ export class EmployeeListComponent implements OnInit {
       },
       error: (e) => {
         this.loginBusy = false;
-        this.list.error = e?.error?.message ?? 'Could not create the logins';
+        this.list.error = e?.error?.message ?? T('Could not create the logins');
       },
     });
   }

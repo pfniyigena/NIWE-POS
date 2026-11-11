@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AuthService } from '../../core/auth.service';
 import { FollowUpBoard, INTEREST_LABEL, LeadRow, NoteKind, Option, RealEstateApiService } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 interface Section { key: string; title: string; hint: string; color: string; rows: LeadRow[]; }
 
 /** Real Estate > My follow-ups: the calls that are late, due today and coming up, and the leads that have gone quiet. Log a call or move the next call from the row. */
@@ -125,7 +126,7 @@ export class ReFollowUpsComponent implements OnInit {
     else if (this.who !== 'me') f.agentId = Number(this.who);
     this.api.followUps(f).subscribe({
       next: (b) => { this.board = b; this.secs = this.sections(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the follow-ups'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the follow-ups')),
     });
   }
 
@@ -188,12 +189,12 @@ export class ReFollowUpsComponent implements OnInit {
 
   save(l: LeadRow): void {
     if (!this.open) return;
-    if (!this.none && !this.next) { this.formError = 'Choose the next call date, or tick "No further call needed".'; return; }
+    if (!this.none && !this.next) { this.formError = T('Choose the next call date, or tick "No further call needed".'); return; }
     this.busy = true;
     this.formError = null;
     const day = this.none ? null : this.next;
     const done = () => { this.busy = false; this.load(); };
-    const fail = (e: { error?: { message?: string } }) => { this.busy = false; this.formError = e?.error?.message ?? 'Could not save'; };
+    const fail = (e: { error?: { message?: string } }) => { this.busy = false; this.formError = e?.error?.message ?? T('Could not save'); };
     if (this.open.mode === 'move') {
       this.api.setFollowUp(l.id, day).subscribe({ next: done, error: fail });
       return;

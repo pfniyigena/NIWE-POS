@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { HrApiService, StaffLoanDetail } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** One advance or loan: what is owed, every repayment so far, and the ways to settle the rest. */
 @Component({
   selector: 'app-staff-loan',
@@ -84,7 +85,7 @@ export class StaffLoanComponent implements OnInit {
   }
 
   load(): void {
-    this.api.loan(this.id).subscribe({ next: (d) => (this.d = d), error: (e) => (this.error = e?.error?.message ?? 'Could not load the loan') });
+    this.api.loan(this.id).subscribe({ next: (d) => (this.d = d), error: (e) => (this.error = e?.error?.message ?? T('Could not load the loan')) });
   }
 
   private done = {
@@ -97,7 +98,7 @@ export class StaffLoanComponent implements OnInit {
     },
     error: (e: any) => {
       this.busy = false;
-      this.error = e?.error?.message ?? 'Could not save';
+      this.error = e?.error?.message ?? T('Could not save');
     },
   };
 
@@ -109,14 +110,14 @@ export class StaffLoanComponent implements OnInit {
 
   writeOff(): void {
     this.error = null;
-    if (!confirm('Write off what is left of this loan as a cost?')) return;
+    if (!confirm(T('Write off what is left of this loan as a cost?'))) return;
     this.busy = true;
     this.api.writeOffLoan(this.id, this.woNote).subscribe(this.done);
   }
 
   cancel(): void {
     this.error = null;
-    if (!confirm('Cancel this loan? The cash given is put back.')) return;
+    if (!confirm(T('Cancel this loan? The cash given is put back.'))) return;
     this.busy = true;
     this.api.cancelLoan(this.id).subscribe({
       next: () => {
@@ -125,7 +126,7 @@ export class StaffLoanComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not cancel';
+        this.error = e?.error?.message ?? T('Could not cancel');
       },
     });
   }

@@ -15,6 +15,7 @@ import { ModuleApiService, ModuleKey } from '../../core/api/module-api.service';
 import { REPORT_DEFS, ReportColumn, ReportDef, reportListRouteForSection } from '../../core/report-defs';
 import { Branch, Category, Product, RegisterSummary, Warehouse } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * One generic viewer for all seven POS Reports — which report is picked by the `:key` route
  * param, looked up in REPORT_DEFS (see that file for why one component instead of seven).
@@ -215,7 +216,7 @@ export class ReportViewerComponent implements OnInit {
     const key = this.route.snapshot.paramMap.get('key');
     this.def = REPORT_DEFS.find((r) => r.key === key) ?? null;
     if (!this.def) {
-      this.error = 'Unknown report';
+      this.error = T('Unknown report');
       return;
     }
     this.backRoute = reportListRouteForSection(this.def.section);
@@ -228,7 +229,7 @@ export class ReportViewerComponent implements OnInit {
     if (moduleKey) {
       this.modules.whenLoaded().subscribe(() => {
         if (!this.modules.on(moduleKey)) {
-          this.error = `The ${moduleKey === 'POS' ? 'POS' : moduleKey === 'MANUFACTURING' ? 'Manufacturing' : moduleKey === 'SUBSCRIPTIONS' ? 'Subscriptions' : moduleKey === 'ASSETS' ? 'Assets Management' : moduleKey === 'EXPENSES' ? 'Expenses' : moduleKey === 'INSTALLMENTS' ? 'Installments' : moduleKey === 'TIME_TRACKING' ? 'Time Tracking' : moduleKey === 'WORK_ORDERS' ? 'Work Orders' : moduleKey === 'BOOKING' ? 'Booking' : moduleKey === 'LAW_FIRM' ? 'Law Firm' : moduleKey === 'REAL_ESTATE' ? 'Real Estate' : moduleKey === 'PROPERTY_MANAGEMENT' ? 'Property Management' : 'required HR'} module is not activated (Settings > Modules).`;
+          this.error = T('The {p0} module is not activated (Settings > Modules).', { p0: moduleKey === 'POS' ? 'POS' : moduleKey === 'MANUFACTURING' ? T('Manufacturing') : moduleKey === 'SUBSCRIPTIONS' ? T('Subscriptions') : moduleKey === 'ASSETS' ? T('Assets Management') : moduleKey === 'EXPENSES' ? T('Expenses') : moduleKey === 'INSTALLMENTS' ? T('Installments') : moduleKey === 'TIME_TRACKING' ? T('Time Tracking') : moduleKey === 'WORK_ORDERS' ? T('Work Orders') : moduleKey === 'BOOKING' ? T('Booking') : moduleKey === 'LAW_FIRM' ? T('Law Firm') : moduleKey === 'REAL_ESTATE' ? T('Real Estate') : moduleKey === 'PROPERTY_MANAGEMENT' ? T('Property Management') : T('required HR') });
           this.def = null;
         }
       });
@@ -337,7 +338,7 @@ export class ReportViewerComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to run report';
+        this.error = err?.error?.message ?? T('Failed to run report');
       },
     });
   }
@@ -360,7 +361,7 @@ export class ReportViewerComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

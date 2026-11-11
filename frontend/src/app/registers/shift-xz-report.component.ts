@@ -13,6 +13,7 @@ import { PrintService } from '../core/hardware/print.service';
 import { applyThermalPrintStyle } from '../core/hardware/thermal-css';
 import { ShiftReport, StoreSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * The X report (the shift so far; nothing is closed or cleared) at `/sessions/:id/x-report`, and the Z report (a closed shift, numbered and
  * frozen as it was when closed) at `/sessions/:id/z-report`. A printable page in the style of the receipts: no menu, a Print button, and
@@ -172,7 +173,7 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
           setTimeout(() => this.output(), 150);
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the report'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the report')),
     });
   }
 
@@ -226,7 +227,7 @@ export class ShiftXzReportComponent implements OnInit, OnDestroy {
   download(format: 'xlsx' | 'pdf' | 'csv'): void {
     this.http.get(`${API_BASE}/sessions/${this.id}/shift-report/export`, { params: { format }, responseType: 'blob' }).subscribe({
       next: (blob) => downloadBlob(blob, `${this.z ? 'z' : 'x'}-report-${this.id}.${format}`),
-      error: () => (this.error = 'The download failed'),
+      error: () => (this.error = T('The download failed')),
     });
   }
 }

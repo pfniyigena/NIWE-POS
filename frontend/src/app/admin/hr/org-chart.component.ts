@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { HrApiService, OrgChart } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Organizational Structure > Organization chart: departments, and who reports to whom. */
 @Component({
   selector: 'app-org-chart',
@@ -64,7 +65,7 @@ export class OrgChartComponent implements OnInit {
   constructor(private api: HrApiService) {}
 
   ngOnInit(): void {
-    this.api.orgChart().subscribe({ next: (c) => (this.chart = c), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the chart') });
+    this.api.orgChart().subscribe({ next: (c) => (this.chart = c), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the chart')) });
   }
 }
 

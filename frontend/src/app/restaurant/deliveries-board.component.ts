@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOrderApiService, StaffOption } from '../core/api/restaurant-order-api.service';
 import { RestaurantOrder } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin/staff > Restaurant > Deliveries board (Fourier: "Delivery & takeaway") — every still-open
  * DELIVERY order, so front-of-house can see at a glance who's still awaiting a driver and who's
@@ -99,7 +100,7 @@ export class DeliveriesBoardComponent implements OnInit, OnDestroy {
   load(): void {
     this.orderApi.listDeliveries().subscribe({
       next: (o) => (this.orders = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load deliveries'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load deliveries')),
     });
   }
 
@@ -108,7 +109,7 @@ export class DeliveriesBoardComponent implements OnInit, OnDestroy {
     this.error = null;
     this.orderApi.assignDriver(order.id, driverId).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to assign driver'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to assign driver')),
     });
   }
 
@@ -116,7 +117,7 @@ export class DeliveriesBoardComponent implements OnInit, OnDestroy {
     this.error = null;
     this.orderApi.setDeliveryStatus(order.id, status).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update delivery status'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update delivery status')),
     });
   }
 }

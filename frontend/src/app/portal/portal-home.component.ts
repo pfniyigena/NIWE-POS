@@ -7,6 +7,7 @@ import { PortalApiService, PortalMe } from '../core/api/portal-api.service';
 import { STATUS_LABEL } from '../core/api/law-api.service';
 import { PortalLayoutComponent } from './portal-layout.component';
 
+import { T } from '../core/i18n/t';
 /** The client's matters (only those the firm opened to the portal), and a place to change their own password. */
 @Component({
   selector: 'app-portal-home',
@@ -59,7 +60,7 @@ export class PortalHomeComponent implements OnInit {
       next: (m) => (this.me = m),
       error: (e) => {
         if (e?.status === 401 || e?.status === 403) { this.portal.signOut(); this.router.navigate(['/portal/login']); return; }
-        this.error = e?.error?.message ?? 'Could not load your matters';
+        this.error = e?.error?.message ?? T('Could not load your matters');
       },
     });
   }
@@ -71,7 +72,7 @@ export class PortalHomeComponent implements OnInit {
     this.pw.error = null;
     this.portal.changePassword(this.pw.current, this.pw.next).subscribe({
       next: () => { this.portal.signOut(); this.router.navigate(['/portal/login']); },
-      error: (e) => { this.pw.busy = false; this.pw.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.pw.busy = false; this.pw.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 }

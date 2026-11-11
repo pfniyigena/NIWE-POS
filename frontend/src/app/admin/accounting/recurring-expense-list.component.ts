@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { RecurringExpenseApiService } from '../../core/api/recurring-expense-api.service';
 import { RecurringExpenseTemplate } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Recurring expenses — Fourier: "Recurring expenses" (one of the four gaps
  * picked for this module). Each active, due template is turned into a new PENDING Expense by a
@@ -78,7 +79,7 @@ export class RecurringExpenseListComponent implements OnInit {
   load(): void {
     this.recurringApi.listAll().subscribe({
       next: (t) => (this.templates = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load recurring expense templates'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load recurring expense templates')),
     });
   }
 
@@ -86,7 +87,7 @@ export class RecurringExpenseListComponent implements OnInit {
     this.error = null;
     this.recurringApi.runNow(t.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to run template'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to run template')),
     });
   }
 
@@ -94,7 +95,7 @@ export class RecurringExpenseListComponent implements OnInit {
     this.error = null;
     this.recurringApi.setActive(t.id, !t.active).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update template'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update template')),
     });
   }
 }

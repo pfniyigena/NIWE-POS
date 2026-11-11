@@ -9,6 +9,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { JournalEntry } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Journals Reports > Journals Report — every journal entry in a date range,
  * same rows as the plain Journal Entries list but date-scoped for the reports menu. Each entry
@@ -120,7 +121,7 @@ export class JournalsReportComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.journals(this.from, this.to).subscribe({
       next: (entries) => (this.entries = entries),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load journals report'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load journals report')),
     });
   }
 
@@ -146,7 +147,7 @@ export class JournalsReportComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

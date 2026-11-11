@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { CostCenterApiService } from '../../core/api/cost-center-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Cost Centers > New/Edit. Mirrors AccountFormComponent's own simple CRUD form pattern. */
 @Component({
   selector: 'app-cost-center-form',
@@ -63,7 +64,7 @@ export class CostCenterFormComponent implements OnInit {
         this.name = c.name;
         this.active = c.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load cost center'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load cost center')),
     });
   }
 
@@ -73,7 +74,7 @@ export class CostCenterFormComponent implements OnInit {
     const call = this.id ? this.costCenterApi.update(this.id, payload) : this.costCenterApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/accounting/cost-centers']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save cost center'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save cost center')),
     });
   }
 }

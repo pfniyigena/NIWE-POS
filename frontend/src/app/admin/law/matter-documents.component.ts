@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { DOC_CATEGORY_LABEL, DocCategory, DocItem, DocList, DocTemplate, DocVersions, LawApiService } from '../../core/api/law-api.service';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * The Documents tab of a matter: the files kept on it, with version history, a check-out lock while someone edits, a confidential mark and
  * a "shared with the client" mark. Letters and contracts can also be made from a template that fills in the matter's details. The server
@@ -191,7 +192,7 @@ export class MatterDocumentsComponent implements OnChanges {
   load(): void {
     this.api.matterDocuments(this.matterId, this.showArchived).subscribe({
       next: (l) => { this.l = l; this.error = null; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the documents'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the documents')),
     });
   }
 
@@ -216,7 +217,7 @@ export class MatterDocumentsComponent implements OnChanges {
     }
   }
 
-  private fail(e: any): void { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; }
+  private fail(e: any): void { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); }
 
   upload(input: HTMLInputElement): void {
     if (!this.upFile) return;
@@ -230,7 +231,7 @@ export class MatterDocumentsComponent implements OnChanges {
     this.error = null;
     this.info = null;
     this.api.uploadDocument(this.matterId, fd).subscribe({
-      next: () => { this.busy = false; this.info = 'Document added.'; this.mode = null; this.upFile = null; input.value = ''; this.up = { name: '', category: 'OTHER', description: '', confidential: false }; this.load(); },
+      next: () => { this.busy = false; this.info = T('Document added.'); this.mode = null; this.upFile = null; input.value = ''; this.up = { name: '', category: 'OTHER', description: '', confidential: false }; this.load(); },
       error: (e) => this.fail(e),
     });
   }
@@ -241,7 +242,7 @@ export class MatterDocumentsComponent implements OnChanges {
     this.error = null;
     this.info = null;
     this.api.generateDocument(this.matterId, { templateId: this.gen.templateId, name: this.gen.name.trim() || null, confidential: this.gen.confidential }).subscribe({
-      next: (r) => { this.busy = false; this.mode = null; this.info = `"${r.document.name}" was made. Download it to check and edit it.`; this.unresolved = r.unresolved; this.gen = { templateId: null, name: '', confidential: false }; this.load(); },
+      next: (r) => { this.busy = false; this.mode = null; this.info = T('"{p0}" was made. Download it to check and edit it.', { p0: r.document.name }); this.unresolved = r.unresolved; this.gen = { templateId: null, name: '', confidential: false }; this.load(); },
       error: (e) => this.fail(e),
     });
   }
@@ -250,7 +251,7 @@ export class MatterDocumentsComponent implements OnChanges {
 
   downloadVersion(d: DocItem, version: number | null, fileName: string): void {
     this.error = null;
-    this.api.downloadDocument(d.id, version).subscribe({ next: (b) => downloadBlob(b, fileName), error: () => (this.error = 'Could not download the file') });
+    this.api.downloadDocument(d.id, version).subscribe({ next: (b) => downloadBlob(b, fileName), error: () => (this.error = T('Could not download the file')) });
   }
 
   versions(d: DocItem): void {
@@ -268,7 +269,7 @@ export class MatterDocumentsComponent implements OnChanges {
     this.error = null;
     this.info = null;
     this.api.newDocumentVersion(id, fd).subscribe({
-      next: () => { this.busy = false; this.info = 'New version saved.'; this.vFile = null; this.vnote = ''; if (this.vInput) this.vInput.value = ''; this.load(); this.api.documentVersions(id).subscribe((v) => (this.sel = v)); },
+      next: () => { this.busy = false; this.info = T('New version saved.'); this.vFile = null; this.vnote = ''; if (this.vInput) this.vInput.value = ''; this.load(); this.api.documentVersions(id).subscribe((v) => (this.sel = v)); },
       error: (e) => this.fail(e),
     });
   }

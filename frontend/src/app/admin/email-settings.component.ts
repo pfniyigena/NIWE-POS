@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Settings > Email settings (Fourier: "Configure smtp for sending email"). Edits the same
  * singleton settings row as BusinessDetailsComponent/SystemSettingsComponent — see
@@ -174,7 +175,7 @@ export class EmailSettingsComponent implements OnInit {
         // case (confirm your own "From" address can actually receive mail) needs no typing.
         this.testEmail = s.smtpFromEmail ?? (s.smtpUsername?.includes('@') ? s.smtpUsername : '') ?? '';
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load email settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load email settings')),
     });
   }
 
@@ -206,7 +207,7 @@ export class EmailSettingsComponent implements OnInit {
         },
         error: (err) => {
           this.saving = false;
-          this.error = err?.error?.message ?? 'Failed to save email settings';
+          this.error = err?.error?.message ?? T('Failed to save email settings');
         },
       });
   }

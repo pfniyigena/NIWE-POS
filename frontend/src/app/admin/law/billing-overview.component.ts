@@ -9,6 +9,7 @@ import { LawExportComponent } from './law-export.component';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { BILLING_LABEL, BillingOverviewRow, LawApiService } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /** What each matter has earned and still has to bill: approved time, costs and fixed-fee stages waiting, what is billed, paid and owed. */
 @Component({
   selector: 'app-law-billing-overview',
@@ -64,7 +65,7 @@ export class LawBillingOverviewComponent implements OnInit {
   load(): void {
     this.api.billingOverview(this.openOnly).subscribe({
       next: (r) => { this.rows = r; this.page = 0; this.slice(); this.error = null; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the billing overview'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the billing overview')),
     });
   }
 

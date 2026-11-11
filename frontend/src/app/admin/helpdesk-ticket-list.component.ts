@@ -9,6 +9,7 @@ import { UserApiService } from '../core/api/user-api.service';
 import { AppUser, HelpDeskCategory, HelpDeskPriority, HelpDeskStatus, HelpDeskTicket, HelpDeskTicketType } from '../core/models';
 import { hdDistance, hdPriorityClass, hdStatusClass, hdStatusLabel, hdWorstSla } from './helpdesk-ui';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Help Desk > Tickets — the unified list for both ticket types, with ready-made views
  * (active, mine, unassigned, overdue, due soon, waiting, unanswered), a tag filter, deadline
@@ -221,7 +222,7 @@ export class HelpDeskTicketListComponent implements OnInit {
           const ids = new Set(t.map((x) => x.id));
           this.selected.forEach((id) => { if (!ids.has(id)) this.selected.delete(id); });
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to load tickets'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to load tickets')),
       });
   }
 
@@ -277,7 +278,7 @@ export class HelpDeskTicketListComponent implements OnInit {
         },
         error: (err) => {
           this.busy = false;
-          this.error = err?.error?.message ?? 'Could not update the tickets';
+          this.error = err?.error?.message ?? T('Could not update the tickets');
         },
       });
   }

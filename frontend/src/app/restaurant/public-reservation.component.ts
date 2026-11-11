@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { PublicReservationApiService, PublicReservationConfirmation, PublicReservationInfo, PublicSlot, PublicTable } from '../core/api/public-reservation-api.service';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "Public be able to make reservation", then "Public reservations should show available
  * table for that day. The person then book table. Once Booked it can not be used by anyone. To
@@ -173,7 +174,7 @@ export class PublicReservationComponent implements OnInit {
       },
       error: (err) => {
         this.loadingSlots = false;
-        this.error = err?.error?.message ?? 'Failed to check availability';
+        this.error = err?.error?.message ?? T('Failed to check availability');
       },
     });
   }
@@ -191,18 +192,18 @@ export class PublicReservationComponent implements OnInit {
       },
       error: (err) => {
         this.loadingTables = false;
-        this.error = err?.error?.message ?? 'Failed to check table availability';
+        this.error = err?.error?.message ?? T('Failed to check table availability');
       },
     });
   }
 
   submit(): void {
     if (!this.slot || !this.tableId) {
-      this.error = 'Please choose a time and a table.';
+      this.error = T('Please choose a time and a table.');
       return;
     }
     if (!this.guestName.trim() || !this.guestPhone.trim()) {
-      this.error = 'Please fill in your name and phone number.';
+      this.error = T('Please fill in your name and phone number.');
       return;
     }
     this.error = null;
@@ -224,7 +225,7 @@ export class PublicReservationComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.error = err?.error?.message ?? 'Failed to book — please try again';
+          this.error = err?.error?.message ?? T('Failed to book — please try again');
         },
       });
   }

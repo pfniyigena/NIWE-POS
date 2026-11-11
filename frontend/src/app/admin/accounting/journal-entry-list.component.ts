@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { JournalEntryApiService } from '../../core/api/journal-entry-api.service';
 import { JournalEntry } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Journal Entries — every entry ever posted, automatic (from POS, Sales,
  * Purchasing, Manufacturing — see the backend AccountingService's class javadoc for the full
@@ -79,7 +80,7 @@ export class JournalEntryListComponent implements OnInit {
   ngOnInit(): void {
     this.journalEntryApi.listAll().subscribe({
       next: (entries) => (this.entries = entries),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load journal entries'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load journal entries')),
     });
   }
 

@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { HelpDeskCannedApiService, HelpDeskCategoryApiService } from '../core/api/helpdesk-api.service';
 import { HelpDeskCanned, HelpDeskCategory } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Help Desk > Saved replies — ready-made answers agents insert into a reply. {{requester}}, {{ticket}}, {{subject}} and {{agent}} are filled in when used. */
 @Component({
   selector: 'app-helpdesk-canned-list',
@@ -87,7 +88,7 @@ export class HelpDeskCannedListComponent implements OnInit {
   }
 
   load(): void {
-    this.api.list().subscribe({ next: (l) => (this.list = l), error: (err) => (this.error = err?.error?.message ?? 'Could not load the saved replies') });
+    this.api.list().subscribe({ next: (l) => (this.list = l), error: (err) => (this.error = err?.error?.message ?? T('Could not load the saved replies')) });
   }
 
   categoryName(id: number | null): string {
@@ -121,13 +122,13 @@ export class HelpDeskCannedListComponent implements OnInit {
     call.subscribe({
       next: () => {
         this.busy = false;
-        this.notice = this.editId ? 'Saved.' : 'Saved reply added.';
+        this.notice = this.editId ? T('Saved.') : T('Saved reply added.');
         this.reset();
         this.load();
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Could not save the reply';
+        this.error = err?.error?.message ?? T('Could not save the reply');
       },
     });
   }
@@ -137,11 +138,11 @@ export class HelpDeskCannedListComponent implements OnInit {
     this.notice = null;
     this.api.delete(r.id).subscribe({
       next: () => {
-        this.notice = 'Deleted.';
+        this.notice = T('Deleted.');
         if (this.editId === r.id) this.reset();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not delete the reply'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not delete the reply')),
     });
   }
 }

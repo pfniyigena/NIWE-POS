@@ -6,6 +6,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { downloadBlob } from '../../core/download-file';
 import { DOC_CATEGORIES, DocCategory, EmployeeDocument, HrApiService, docCategoryLabel } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** The documents kept for one employee: contract copies, ID, qualifications, permits. Files can carry an expiry date and be shared with the employee. */
 @Component({
   selector: 'app-employee-documents',
@@ -94,7 +95,7 @@ export class EmployeeDocumentsComponent implements OnChanges {
   load(): void {
     this.api.employeeDocuments(this.employeeId).subscribe({
       next: (d) => { this.docs = d; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the documents'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the documents'); },
     });
   }
 
@@ -116,21 +117,21 @@ export class EmployeeDocumentsComponent implements OnChanges {
         this.showForm = false;
         this.load();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'The document could not be saved'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('The document could not be saved'); },
     });
   }
 
   open(d: EmployeeDocument): void {
     this.api.documentFile(d.id).subscribe({
       next: (b) => window.open(URL.createObjectURL(b), '_blank'),
-      error: () => (this.error = 'Could not open the file'),
+      error: () => (this.error = T('Could not open the file')),
     });
   }
 
   download(d: EmployeeDocument): void {
     this.api.documentFile(d.id).subscribe({
       next: (b) => downloadBlob(b, d.fileName),
-      error: () => (this.error = 'Could not download the file'),
+      error: () => (this.error = T('Could not download the file')),
     });
   }
 
@@ -139,15 +140,15 @@ export class EmployeeDocumentsComponent implements OnChanges {
       name: d.name, category: d.category, description: d.description, expiryDate: d.expiryDate, clearExpiry: false, sharedWithEmployee: !d.sharedWithEmployee,
     }).subscribe({
       next: () => this.load(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not change the document'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not change the document')),
     });
   }
 
   remove(d: EmployeeDocument): void {
-    if (!confirm(`Delete "${d.name}"? The file is removed for good.`)) return;
+    if (!confirm(T('Delete "{p0}"? The file is removed for good.', { p0: d.name }))) return;
     this.api.deleteDocument(d.id).subscribe({
       next: () => this.load(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the document'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the document')),
     });
   }
 }

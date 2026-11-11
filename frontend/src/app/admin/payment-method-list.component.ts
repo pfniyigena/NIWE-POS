@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
 import { PaymentMethodOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-payment-method-list',
   standalone: true,
@@ -69,7 +70,7 @@ export class PaymentMethodListComponent implements OnInit {
   ngOnInit(): void {
     this.paymentMethodApi.listAll().subscribe({
       next: (m) => (this.methods = m),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment methods'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment methods')),
     });
   }
 }

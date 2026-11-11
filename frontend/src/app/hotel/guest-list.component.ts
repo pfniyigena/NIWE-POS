@@ -10,6 +10,7 @@ import { PagerComponent } from '../shared/pager.component';
 import { errMsg } from './hotel-util';
 import { GuestFormComponent } from './guest-form.component';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Guests: everyone who has booked or stayed, searchable by name, phone, email or ID number. */
 @Component({
   selector: 'app-guest-list',
@@ -77,7 +78,7 @@ export class GuestListComponent implements OnInit {
   }
 
   remove(g: Guest): void {
-    if (!confirm(`Delete ${g.fullName}?`)) return;
+    if (!confirm(T('Delete {p0}?', { p0: g.fullName }))) return;
     this.api.deleteGuest(g.id).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
   }
 }

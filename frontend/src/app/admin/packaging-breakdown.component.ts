@@ -9,6 +9,7 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 import { LocationChoice, LocationChoicesService } from '../core/api/location-choices.service';
 import { PackagingBreakdown, PackagingRule } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Breakdown stock — Fourier: "I want to add in the POS: Product Packaging &
  * Breakdown / Unit Conversion ... If not activated ignore packaging." Pick an active rule, say how
@@ -144,7 +145,7 @@ export class PackagingBreakdownComponent implements OnInit {
 
     this.settingsApi.get().subscribe({
       next: (s) => (this.productBreakdownEnabled = s.productBreakdownEnabled),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load inventory settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load inventory settings')),
     });
 
     this.packagingApi.listRules(true).subscribe({
@@ -157,7 +158,7 @@ export class PackagingBreakdownComponent implements OnInit {
         this.loaded = true;
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to load packaging rules';
+        this.error = err?.error?.message ?? T('Failed to load packaging rules');
         this.loaded = true;
       },
     });
@@ -168,7 +169,7 @@ export class PackagingBreakdownComponent implements OnInit {
   private loadHistory(): void {
     this.packagingApi.listBreakdowns(this.filterRuleId ?? undefined).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load breakdown history'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load breakdown history')),
     });
   }
 
@@ -180,7 +181,7 @@ export class PackagingBreakdownComponent implements OnInit {
   submit(): void {
     if (!this.selectedRule) return;
     if (!this.parentQuantity || this.parentQuantity < 1) {
-      this.error = 'Quantity must be a positive number';
+      this.error = T('Quantity must be a positive number');
       return;
     }
     this.error = null;
@@ -191,13 +192,13 @@ export class PackagingBreakdownComponent implements OnInit {
       .subscribe({
         next: (b) => {
           this.busy = false;
-          this.success = `Broke down ${b.parentQuantity} x ${b.parentProductName} into ${b.childQuantityProduced} x ${b.childProductName}.`;
+          this.success = T('Broke down {p0} x {p1} into {p2} x {p3}.', { p0: b.parentQuantity, p1: b.parentProductName, p2: b.childQuantityProduced, p3: b.childProductName });
           this.note = '';
           this.loadHistory();
         },
         error: (err) => {
           this.busy = false;
-          this.error = err?.error?.message ?? 'Failed to run breakdown';
+          this.error = err?.error?.message ?? T('Failed to run breakdown');
         },
       });
   }

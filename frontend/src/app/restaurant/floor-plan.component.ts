@@ -8,6 +8,7 @@ import { DiningTableApiService } from '../core/api/dining-table-api.service';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
 import { DiningTable } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin/staff > Restaurant > Tables — the floor-plan, Fourier's own "New dedicated screen" for
  * dine-in order-taking, kept entirely separate from the walk-up POS terminal. Tapping an
@@ -128,7 +129,7 @@ export class FloorPlanComponent implements OnInit {
   load(): void {
     this.tableApi.listAll().subscribe({
       next: (t) => (this.tables = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load tables'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load tables')),
     });
   }
 
@@ -150,7 +151,7 @@ export class FloorPlanComponent implements OnInit {
         this.openingTable = null;
         this.router.navigate(['/admin/restaurant/orders', order.id]);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to open order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to open order')),
     });
   }
 }

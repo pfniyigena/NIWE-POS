@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { SubscriptionPlanApiService } from '../core/api/subscription-plan-api.service';
 import { SubscriptionPlan } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Subscription plans — the fixed, admin-defined catalog customers subscribe to
  * (Fourier: "Subscriptions Module" — "subscribing to a fixed admin-defined plan", not tied to the
@@ -68,7 +69,7 @@ export class SubscriptionPlanListComponent implements OnInit {
   ngOnInit(): void {
     this.planApi.listAll().subscribe({
       next: (p) => (this.plans = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load subscription plans'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load subscription plans')),
     });
   }
 }

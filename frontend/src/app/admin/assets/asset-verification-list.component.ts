@@ -9,6 +9,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Branch } from '../../core/models';
 import { AssetApiService, AssetCategory, Verification } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Assets > Verification: counting rounds ("did we find everything?") by branch, category or place, newest first, and a form to start one. */
 @Component({
   selector: 'app-asset-verification-list',
@@ -84,7 +85,7 @@ export class AssetVerificationListComponent implements OnInit {
   }
 
   load(): void {
-    this.api.verifications().subscribe({ next: (r) => (this.rounds = r), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the rounds') });
+    this.api.verifications().subscribe({ next: (r) => (this.rounds = r), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the rounds')) });
   }
 
   cover(v: Verification): string {
@@ -104,7 +105,7 @@ export class AssetVerificationListComponent implements OnInit {
         next: (v) => this.router.navigate(['/admin/assets/verifications', v.id]),
         error: (e) => {
           this.busy = false;
-          this.error = e?.error?.message ?? 'Could not start the round';
+          this.error = e?.error?.message ?? T('Could not start the round');
         },
       });
   }

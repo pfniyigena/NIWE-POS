@@ -8,6 +8,7 @@ import { LawExportComponent } from '../admin/law/law-export.component';
 import { PAGE_SIZE } from '../core/api/paged';
 import { Contact, ContactPayload, ContactType, LawApiService } from '../core/api/law-api.service';
 
+import { T } from '../core/i18n/t';
 /** Law Firm > Contacts: the opposing parties, their lawyers, witnesses, experts and officials who appear on matters. Our clients are customers. */
 @Component({
   selector: 'app-law-contacts',
@@ -79,7 +80,7 @@ export class LawContactsComponent implements OnInit {
 
   load(resetPage = true): void {
     if (resetPage) this.page = 0;
-    this.api.contactsPage(this.q.trim(), { page: this.page, size: this.size }).subscribe({ next: (r) => { this.list = r.items; this.total = r.total; }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the contacts') });
+    this.api.contactsPage(this.q.trim(), { page: this.page, size: this.size }).subscribe({ next: (r) => { this.list = r.items; this.total = r.total; }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the contacts')) });
   }
 
   kind(t: string): string { return t === 'PERSON' ? 'Person' : t === 'COMPANY' ? 'Company' : 'Government / court'; }
@@ -104,12 +105,12 @@ export class LawContactsComponent implements OnInit {
     const call = this.editing ? this.api.updateContact(this.editing, p) : this.api.createContact(p);
     call.subscribe({
       next: () => { this.saving = false; this.reset(); this.load(false); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the contact'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the contact'); },
     });
   }
 
   remove(c: Contact): void {
-    if (!confirm(`Delete ${c.name}?`)) return;
-    this.api.deleteContact(c.id).subscribe({ next: () => this.load(false), error: (e) => (this.error = e?.error?.message ?? 'Could not delete this contact') });
+    if (!confirm(T('Delete {p0}?', { p0: c.name }))) return;
+    this.api.deleteContact(c.id).subscribe({ next: () => this.load(false), error: (e) => (this.error = e?.error?.message ?? T('Could not delete this contact')) });
   }
 }

@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { ExpenseApiService } from '../../core/api/expense-api.service';
 import { ExpenseSummary } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Expenses > Overview — this month against last, where the money goes, what waits for approval, and which bills are unpaid or late. */
 @Component({
   selector: 'app-expense-overview',
@@ -124,7 +125,7 @@ export class ExpenseOverviewComponent implements OnInit {
   ngOnInit(): void {
     this.api.summary().subscribe({
       next: (s) => (this.s = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the overview'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the overview')),
     });
   }
 

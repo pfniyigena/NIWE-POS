@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { HrApiService, HrSettings, PayrollRule, PayrollRulePayload, TaxBand } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Payroll > Rules: the income-tax bands and the statutory contributions (employee deductions and employer costs). */
 @Component({
   selector: 'app-payroll-rules',
@@ -112,7 +113,7 @@ export class PayrollRulesComponent implements OnInit {
   ngOnInit(): void {
     this.api.payrollSettings().subscribe({ next: (s) => (this.settings = s), error: () => {} });
     this.loadRules();
-    this.api.taxBands().subscribe({ next: (b) => (this.bands = b), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the tax bands') });
+    this.api.taxBands().subscribe({ next: (b) => (this.bands = b), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the tax bands')) });
   }
 
   private flash(msg: string): void {
@@ -121,16 +122,16 @@ export class PayrollRulesComponent implements OnInit {
   }
 
   loadRules(): void {
-    this.api.payrollRules().subscribe({ next: (r) => (this.rules = r), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the rules') });
+    this.api.payrollRules().subscribe({ next: (r) => (this.rules = r), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the rules')) });
   }
 
   setMode(annual: boolean): void {
     this.api.setTaxMode(annual).subscribe({
       next: (s) => {
         this.settings = s;
-        this.flash(annual ? 'Tax bands are now yearly amounts.' : 'Tax bands are now monthly amounts.');
+        this.flash(annual ? T('Tax bands are now yearly amounts.') : T('Tax bands are now monthly amounts.'));
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not change the mode'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not change the mode')),
     });
   }
 
@@ -145,9 +146,9 @@ export class PayrollRulesComponent implements OnInit {
     this.api.saveTaxBands(clean).subscribe({
       next: (b) => {
         this.bands = b;
-        this.flash('Tax bands saved.');
+        this.flash(T('Tax bands saved.'));
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the tax bands'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the tax bands')),
     });
   }
 
@@ -174,13 +175,13 @@ export class PayrollRulesComponent implements OnInit {
         this.resetRule();
         this.loadRules();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the rule'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the rule')),
     });
   }
 
   delRule(r: PayrollRule): void {
-    if (!confirm(`Delete rule ${r.name}? (Turn it off instead to keep it.)`)) return;
-    this.api.deletePayrollRule(r.id).subscribe({ next: () => this.loadRules(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the rule') });
+    if (!confirm(T('Delete rule {p0}? (Turn it off instead to keep it.)', { p0: r.name }))) return;
+    this.api.deletePayrollRule(r.id).subscribe({ next: () => this.loadRules(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the rule')) });
   }
 
   loadDefaults(): void {
@@ -188,9 +189,9 @@ export class PayrollRulesComponent implements OnInit {
       next: (r) => {
         this.rules = r;
         this.api.taxBands().subscribe((b) => (this.bands = b));
-        this.flash('Ready-made rules added.');
+        this.flash(T('Ready-made rules added.'));
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the ready-made rules'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the ready-made rules')),
     });
   }
 }

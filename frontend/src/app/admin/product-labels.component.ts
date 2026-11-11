@@ -8,6 +8,7 @@ import { CatalogApiService } from '../core/api/catalog-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { Product, StoreSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "barcode/label generation for products that don't already carry a manufacturer
  * barcode" — `/admin/products/labels?ids=1,2,3`, reached from a "Generate"/"Label" action on the
@@ -168,7 +169,7 @@ export class ProductLabelsComponent implements OnInit, AfterViewInit {
       .map((s) => Number(s.trim()))
       .filter((n) => Number.isFinite(n) && n > 0);
     if (ids.length === 0) {
-      this.error = 'No products were selected to print.';
+      this.error = T('No products were selected to print.');
       return;
     }
 
@@ -180,7 +181,7 @@ export class ProductLabelsComponent implements OnInit, AfterViewInit {
         // Barcodes render once the *ngFor creates the <svg> elements — see ngAfterViewInit below.
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to load the selected products';
+        this.error = err?.error?.message ?? T('Failed to load the selected products');
         this.loading = false;
       },
     });
@@ -219,7 +220,7 @@ export class ProductLabelsComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.generatingFor = null;
-        this.error = err?.error?.message ?? 'Failed to generate a barcode';
+        this.error = err?.error?.message ?? T('Failed to generate a barcode');
       },
     });
   }

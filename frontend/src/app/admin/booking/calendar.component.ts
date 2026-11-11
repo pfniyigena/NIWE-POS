@@ -8,6 +8,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Appointment, BookingApiService, BookingBlock, BookingSummary, DayView, Option } from '../../core/api/booking-api.service';
 import { addDays, today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 interface Col { id: number | null; name: string; }
 
 const ROW_H = 56; // pixels per hour
@@ -103,7 +104,7 @@ export class BookingCalendarComponent implements OnInit {
 
   load(): void {
     this.error = null;
-    this.api.day(this.date).subscribe({ next: (v) => (this.view = v), error: (e) => (this.error = e?.error?.message ?? 'Could not load the calendar') });
+    this.api.day(this.date).subscribe({ next: (v) => (this.view = v), error: (e) => (this.error = e?.error?.message ?? T('Could not load the calendar')) });
   }
 
   private minutes(t: string): number {
@@ -210,7 +211,7 @@ export class BookingCalendarComponent implements OnInit {
       (rows ? `<table><thead><tr><th>Time</th><th>Guest</th><th>Service</th><th>With</th><th>Status</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>` : '<p>Nothing booked on this day.</p>') +
       `</body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { this.error = 'Allow pop-ups for this site to print the day sheet.'; return; }
+    if (!w) { this.error = T('Allow pop-ups for this site to print the day sheet.'); return; }
     w.document.write(html);
     w.document.close();
     w.focus();

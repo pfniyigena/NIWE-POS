@@ -8,6 +8,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { FinancialTransaction } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Journals Reports > Financial Transactions — every journal entry line across every account in a date range, flattened. See backend AccountingReportService.financialTransactions. */
 @Component({
   selector: 'app-financial-transactions',
@@ -84,7 +85,7 @@ export class FinancialTransactionsComponent implements OnInit {
   load(): void {
     this.reportApi.financialTransactions(this.from, this.to).subscribe({
       next: (rows) => (this.rows = rows),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load financial transactions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load financial transactions')),
     });
   }
 
@@ -101,7 +102,7 @@ export class FinancialTransactionsComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

@@ -13,6 +13,7 @@ import { InstallmentPreview } from '../../core/api/installment-api.service';
 import { PaymentMethodOption } from '../../core/models';
 import { RealEstateApiService, UNIT_SALE_STAGE_LABEL, UnitPlanPayload, UnitSaleDto } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const today = (): string => new Date().toISOString().slice(0, 10);
 
@@ -239,7 +240,7 @@ export class UnitSaleDetailComponent implements OnInit {
   private id(): number { return Number(this.route.snapshot.paramMap.get('id')); }
 
   load(): void {
-    this.api.unitSale(this.id()).subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the sale') });
+    this.api.unitSale(this.id()).subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the sale')) });
   }
 
   stageName(st: string): string { return (UNIT_SALE_STAGE_LABEL as Record<string, string>)[st] ?? st; }
@@ -264,10 +265,10 @@ export class UnitSaleDetailComponent implements OnInit {
   saveEdit(): void {
     const e = this.e;
     this.run(this.api.updateUnitSale(this.s!.id, { buyerName: e.buyerName, buyerPhone: e.buyerPhone, agreedPrice: num(e.agreedPrice), reservationExpiry: e.reservationExpiry || null, notes: e.notes }),
-      () => { this.editOpen = false; this.notice = 'Saved.'; });
+      () => { this.editOpen = false; this.notice = T('Saved.'); });
   }
 
-  agree(): void { this.run(this.api.unitSaleAgreement(this.s!.id, this.agreementDate || null), () => (this.notice = 'Agreement recorded and the invoice issued. Choose how the buyer pays.')); }
+  agree(): void { this.run(this.api.unitSaleAgreement(this.s!.id, this.agreementDate || null), () => (this.notice = T('Agreement recorded and the invoice issued. Choose how the buyer pays.'))); }
 
   private planBody(): UnitPlanPayload | null {
     const p = this.plan;
@@ -292,10 +293,10 @@ export class UnitSaleDetailComponent implements OnInit {
   makePlan(): void {
     const body = this.planBody();
     if (!body) return;
-    this.run(this.api.unitSalePlan(this.s!.id, body), () => { this.planOpen = false; this.preview = null; this.notice = 'Payment plan created.'; });
+    this.run(this.api.unitSalePlan(this.s!.id, body), () => { this.planOpen = false; this.preview = null; this.notice = T('Payment plan created.'); });
   }
 
-  complete(force: boolean): void { this.run(this.api.completeUnitSale(this.s!.id, force, this.completedDate || null), () => (this.notice = 'The sale is paid in full.')); }
+  complete(force: boolean): void { this.run(this.api.completeUnitSale(this.s!.id, force, this.completedDate || null), () => (this.notice = T('The sale is paid in full.'))); }
 
   cancel(): void {
     if (!this.cancelReason.trim()) { this.actionError = 'Say why the sale is cancelled.'; return; }
@@ -303,7 +304,7 @@ export class UnitSaleDetailComponent implements OnInit {
   }
 
   remove(): void {
-    if (!confirm('Delete sale ' + this.s!.code + '?')) return;
+    if (!confirm(T('Delete sale {p0}?', { p0: this.s!.code }))) return;
     this.api.deleteUnitSale(this.s!.id).subscribe({ next: () => this.router.navigate(['/admin/realestate/unit-sales']), error: (e) => (this.actionError = e?.error?.message ?? 'Could not delete the sale') });
   }
 }

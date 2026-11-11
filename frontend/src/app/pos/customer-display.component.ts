@@ -7,6 +7,7 @@ import { OrderApiService } from '../core/api/order-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { Order, StoreSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * A second, read-only, customer-facing screen (Task: "Add customer-facing double screen") —
  * opened from the terminal's **📺 Customer display** button, either as a second window dragged
@@ -302,8 +303,6 @@ export class CustomerDisplayComponent implements OnInit, OnDestroy {
     }
     this.view = 'error';
     this.errorMessage =
-      err?.status === 403
-        ? "You're not signed in as the cashier working this till (or an admin) — log into this device with that account to use it as a customer display."
-        : err?.error?.message ?? 'This session could not be found.';
+      err?.status === 403 ? T('You\'re not signed in as the cashier working this till (or an admin) — log into this device with that account to use it as a customer display.') : err?.error?.message ?? T('This session could not be found.');
   }
 }

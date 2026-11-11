@@ -11,6 +11,7 @@ import { SupplierApiService } from '../core/api/supplier-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { PurchaseRequisition, Supplier } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface ConvertRow {
   lineId: number;
   productId: number | null;
@@ -232,7 +233,7 @@ export class PurchaseRequisitionDetailComponent implements OnInit {
         }));
         this.prefillUnitCosts();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load purchase requisition'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load purchase requisition')),
     });
   }
 
@@ -295,7 +296,7 @@ export class PurchaseRequisitionDetailComponent implements OnInit {
     this.error = null;
     this.requisitionApi.submit(this.r.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to submit purchase requisition'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to submit purchase requisition')),
     });
   }
 
@@ -304,7 +305,7 @@ export class PurchaseRequisitionDetailComponent implements OnInit {
     this.error = null;
     this.requisitionApi.approve(this.r.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to approve purchase requisition'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to approve purchase requisition')),
     });
   }
 
@@ -314,17 +315,17 @@ export class PurchaseRequisitionDetailComponent implements OnInit {
     this.error = null;
     this.requisitionApi.reject(this.r.id, reason || null).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to reject purchase requisition'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to reject purchase requisition')),
     });
   }
 
   cancel(): void {
     if (!this.r) return;
-    if (!confirm(`Cancel purchase requisition ${this.r.requisitionNumber}?`)) return;
+    if (!confirm(T('Cancel purchase requisition {p0}?', { p0: this.r.requisitionNumber }))) return;
     this.error = null;
     this.requisitionApi.cancel(this.r.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to cancel purchase requisition'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to cancel purchase requisition')),
     });
   }
 

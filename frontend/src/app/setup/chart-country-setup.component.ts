@@ -7,6 +7,7 @@ import { AuthService } from '../core/auth.service';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { ChartSetupApiService, ChartCountryOption } from '../core/api/chart-setup-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "The Config app.accounting.chart-country can be forgotten easily, what if we add this
  * on the screen then at first time a user select the country?" — the first-run, full-page setup
@@ -98,7 +99,7 @@ export class ChartCountrySetupComponent {
       },
       error: (err) => {
         this.saving = false;
-        this.error = err?.error?.message ?? 'Could not set up the chart of accounts';
+        this.error = err?.error?.message ?? T('Could not set up the chart of accounts');
       },
     });
   }

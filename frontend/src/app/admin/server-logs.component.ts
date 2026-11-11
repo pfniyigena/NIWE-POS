@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { ServerLogApiService, ServerLogFile, ServerLogTail } from '../core/api/server-log-api.service';
 import { downloadBlob } from '../core/download-file';
 
+import { T } from '../core/i18n/t';
 /**
  * v1.14.0: Admin > Server logs — read the end of the server's own log files without logging in to the server: the application log,
  * the errors-only log and the request (access) log. Filter by level or text, auto-refresh, or download the whole file.
@@ -96,7 +97,7 @@ export class ServerLogsComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.filesLoading = false;
-        this.error = err?.error?.message ?? 'Failed to list the log files';
+        this.error = err?.error?.message ?? T('Failed to list the log files');
       },
     });
   }
@@ -111,7 +112,7 @@ export class ServerLogsComponent implements OnInit, OnDestroy {
     this.error = null;
     this.api.tail(this.selected, this.lines, this.level, this.search).subscribe({
       next: (t) => (this.tail = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to read the log file'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to read the log file')),
     });
   }
 
@@ -138,7 +139,7 @@ export class ServerLogsComponent implements OnInit, OnDestroy {
     const name = this.selected;
     this.api.download(name).subscribe({
       next: (blob) => downloadBlob(blob, name),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to download the log file'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to download the log file')),
     });
   }
 

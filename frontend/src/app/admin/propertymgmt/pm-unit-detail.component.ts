@@ -8,6 +8,7 @@ import { MaintenancePanelComponent } from './maintenance-panel.component';
 import { LEASE_STATE_LABEL, OCCUPANCY_LABEL, PM_UNIT_KINDS, PmUnitKind, PropertyMgmtApiService, UnitDto, UnitPayload, leaseBadge, occupancyBadge, pmLabel } from '../../core/api/propertymgmt-api.service';
 import { PmDocumentsPanelComponent } from './pm-documents-panel.component';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 
@@ -117,7 +118,7 @@ export class PmUnitDetailComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   private load(): void {
-    this.api.unit(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (d) => (this.d = d), error: (e) => (this.error = e?.error?.message ?? 'Could not load the unit') });
+    this.api.unit(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (d) => (this.d = d), error: (e) => (this.error = e?.error?.message ?? T('Could not load the unit')) });
   }
 
   kind(k: string): string { return pmLabel(PM_UNIT_KINDS, k); }
@@ -136,7 +137,7 @@ export class PmUnitDetailComponent implements OnInit {
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!txt(f.unitNo)) { this.error = 'Give the unit a number.'; return; }
+    if (!txt(f.unitNo)) { this.error = T('Give the unit a number.'); return; }
     // 0 clears an optional amount on the server, so an emptied box is sent as 0.
     const p: UnitPayload = { unitNo: txt(f.unitNo), kind: f.kind, floor: txt(f.floor), sizeSqm: num(f.sizeSqm) ?? 0, marketRent: num(f.marketRent) ?? 0, defaultDeposit: num(f.defaultDeposit) ?? 0,
       offMarket: f.offMarket, offMarketNote: f.offMarket ? txt(f.offMarketNote) : '', notes: txt(f.notes) };
@@ -145,18 +146,18 @@ export class PmUnitDetailComponent implements OnInit {
     this.busy = true;
     this.api.updateUnit(this.d!.unit.id, p).subscribe({
       next: () => { this.busy = false; this.editing = false; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the unit'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the unit'); },
     });
   }
 
   remove(): void {
-    if (!confirm(`Delete unit ${this.d!.unit.unitNo}?`)) return;
+    if (!confirm(T('Delete unit {p0}?', { p0: this.d!.unit.unitNo }))) return;
     const pid = this.d!.unit.propertyId;
     this.busy = true;
     this.error = null;
     this.api.deleteUnit(this.d!.unit.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/properties', pid]),
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not delete the unit'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not delete the unit'); },
     });
   }
 }

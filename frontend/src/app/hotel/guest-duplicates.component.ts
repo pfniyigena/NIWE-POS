@@ -7,6 +7,7 @@ import { AuthService } from '../core/auth.service';
 import { DuplicateCluster, DuplicateGuest, HotelApiService } from '../core/api/hotel-api.service';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Guests > Find duplicates: guests who share an ID number, phone, e-mail or name, with one click to merge them. */
 @Component({
   selector: 'app-guest-duplicates',
@@ -66,13 +67,13 @@ export class GuestDuplicatesComponent implements OnInit {
 
   mergeOthers(c: DuplicateCluster, keeper: DuplicateGuest): void {
     const others = c.guests.filter((g) => g.id !== keeper.id);
-    if (!confirm(`Keep ${keeper.fullName} and merge ${others.map((o) => o.fullName).join(', ')} into it? This cannot be undone.`)) return;
+    if (!confirm(T('Keep {p0} and merge {p1} into it? This cannot be undone.', { p0: keeper.fullName, p1: others.map((o) => o.fullName).join(', ') }))) return;
     this.busy = true;
     this.error = this.message = null;
     const run = (i: number, moved: number): void => {
       if (i >= others.length) {
         this.busy = false;
-        this.message = `Merged ${others.length} record${others.length === 1 ? '' : 's'} into ${keeper.fullName} (${moved} booking${moved === 1 ? '' : 's'} moved).`;
+        this.message = T('Merged {p0} record{p1} into {p2} ({p3} booking{p4} moved).', { p0: others.length, p1: others.length === 1 ? '' : 's', p2: keeper.fullName, p3: moved, p4: moved === 1 ? '' : 's' });
         this.load();
         return;
       }

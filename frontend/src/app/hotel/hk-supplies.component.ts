@@ -6,6 +6,7 @@ import { AuthService } from '../core/auth.service';
 import { HotelApiService, LinenBalance, LinenEntry, MinibarItem, Room } from '../core/api/hotel-api.service';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Housekeeping > Minibar & linen: charge minibar use to the room's guest; count linen sent to and back from the laundry. */
 @Component({
   selector: 'app-hk-supplies',
@@ -131,8 +132,8 @@ export class HkSuppliesComponent implements OnInit {
     this.busy = true;
     this.error = this.message = null;
     this.api.useMinibar(this.mbRoomId, lines).subscribe({
-      next: (r) => { this.busy = false; this.qty = {}; this.message = `Charged ${r.total.toFixed(2)} to room ${r.roomNumber} (${r.guestName}, ${r.bookingNumber}).`; },
-      error: (e) => this.fail(e, 'Could not charge the minibar'),
+      next: (r) => { this.busy = false; this.qty = {}; this.message = T('Charged {p0} to room {p1} ({p2}, {p3}).', { p0: r.total.toFixed(2), p1: r.roomNumber, p2: r.guestName, p3: r.bookingNumber }); },
+      error: (e) => this.fail(e, T('Could not charge the minibar')),
     });
   }
 
@@ -151,13 +152,13 @@ export class HkSuppliesComponent implements OnInit {
     this.error = this.message = null;
     this.api.saveMinibarItem(this.itemId, this.itemForm).subscribe({
       next: () => { this.busy = false; this.resetItem(); this.api.minibarItems(true).subscribe((i) => (this.items = i)); },
-      error: (e) => this.fail(e, 'Could not save the item'),
+      error: (e) => this.fail(e, T('Could not save the item')),
     });
   }
 
   removeItem(i: MinibarItem): void {
-    if (!confirm(`Delete ${i.name}?`)) return;
-    this.api.deleteMinibarItem(i.id).subscribe({ next: () => this.api.minibarItems(true).subscribe((x) => (this.items = x)), error: (e) => this.fail(e, 'Could not delete the item') });
+    if (!confirm(T('Delete {p0}?', { p0: i.name }))) return;
+    this.api.deleteMinibarItem(i.id).subscribe({ next: () => this.api.minibarItems(true).subscribe((x) => (this.items = x)), error: (e) => this.fail(e, T('Could not delete the item')) });
   }
 
   saveLinen(): void {
@@ -165,12 +166,12 @@ export class HkSuppliesComponent implements OnInit {
     this.error = this.message = null;
     this.api.addLinen(this.linenForm).subscribe({
       next: () => { this.busy = false; this.linenForm = { item: '', sent: null, returned: null, damaged: null, notes: null }; this.loadLinen(); },
-      error: (e) => this.fail(e, 'Could not record the linen'),
+      error: (e) => this.fail(e, T('Could not record the linen')),
     });
   }
 
   removeLinen(l: LinenEntry): void {
-    if (!confirm('Delete this linen entry?')) return;
-    this.api.deleteLinen(l.id).subscribe({ next: () => this.loadLinen(), error: (e) => this.fail(e, 'Could not delete the entry') });
+    if (!confirm(T('Delete this linen entry?'))) return;
+    this.api.deleteLinen(l.id).subscribe({ next: () => this.loadLinen(), error: (e) => this.fail(e, T('Could not delete the entry')) });
   }
 }

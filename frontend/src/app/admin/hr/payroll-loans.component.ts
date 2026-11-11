@@ -9,6 +9,7 @@ import { ListFilterComponent } from '../../shared/list-filter.component';
 import { ListState } from '../../core/api/list-state';
 import { Employee, HrApiService, LoanPayload, StaffLoan } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Payroll > Advances & loans: money given to staff and taken back from their pay, month by month. */
 @Component({
   selector: 'app-payroll-loans',
@@ -126,7 +127,7 @@ export class PayrollLoansComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not record it';
+        this.error = e?.error?.message ?? T('Could not record it');
       },
     });
   }

@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Brands > New/Edit. Mirrors CategoryFormComponent's own simple CRUD form pattern, minus the color field. */
 @Component({
   selector: 'app-brand-form',
@@ -50,7 +51,7 @@ export class BrandFormComponent implements OnInit {
           this.name = found.name;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load brand'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load brand')),
     });
   }
 
@@ -62,7 +63,7 @@ export class BrandFormComponent implements OnInit {
       : this.catalogApi.createBrand(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/brands']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save brand'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save brand')),
     });
   }
 }

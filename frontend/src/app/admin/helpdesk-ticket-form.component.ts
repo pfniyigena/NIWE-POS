@@ -9,6 +9,7 @@ import { CustomerApiService } from '../core/api/customer-api.service';
 import { UserApiService } from '../core/api/user-api.service';
 import { AppUser, Customer, HelpDeskCategory, HelpDeskPriority, HelpDeskTicketType } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Help Desk > Tickets > New/Edit — staff-created ("authenticated") half of ticket
  * creation (Fourier, via AskUserQuestion: "Staff-created vs. public form"). Picking an existing
@@ -153,7 +154,7 @@ export class HelpDeskTicketFormComponent implements OnInit {
         this.priority = t.priority;
         this.assignedToUserId = t.assignedToUserId;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load ticket'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load ticket')),
     });
   }
 
@@ -170,7 +171,7 @@ export class HelpDeskTicketFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.subject.trim() || !this.description.trim()) {
-      this.error = 'Subject and description are required';
+      this.error = T('Subject and description are required');
       return;
     }
     const payload = {
@@ -188,7 +189,7 @@ export class HelpDeskTicketFormComponent implements OnInit {
     const call = this.id ? this.ticketApi.update(this.id, payload) : this.ticketApi.create(payload);
     call.subscribe({
       next: (t) => this.router.navigate(['/admin/helpdesk/tickets', t.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save ticket'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save ticket')),
     });
   }
 }

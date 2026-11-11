@@ -6,6 +6,7 @@ import { DatePickerComponent } from '../shared/date-picker.component';
 import { ShellComponent } from '../shared/shell.component';
 import { LoginEvent, LoginLogApiService, LoginLogSummary } from '../core/api/login-log-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * v1.14.0: Admin > Sign-in log — who signed in, and who tried and failed (wrong password, switched-off or locked account, unknown name),
  * with the address and device each attempt came from. Passwords are never recorded.
@@ -129,7 +130,7 @@ export class LoginLogComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to load the sign-in log';
+        this.error = err?.error?.message ?? T('Failed to load the sign-in log');
         this.loading = false;
       },
     });

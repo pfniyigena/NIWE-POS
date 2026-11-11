@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth.service';
 import { DOC_CATEGORY_LABEL, DocCategory, DocPlaceholder, DocTemplate, LawApiService, TemplateKind } from '../../core/api/law-api.service';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Law Firm > Templates: the letters and contracts a matter's documents can be made from. A template is either typed text or a Word (.docx)
  * file; {{placeholders}} such as {{client.name}} or {{matter.number}} are replaced with the matter's details when a document is made.
@@ -103,7 +104,7 @@ export class LawTemplatesComponent implements OnInit {
   load(): void {
     this.api.docTemplates(false).subscribe({
       next: (r) => { this.rows = r; this.loaded = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the templates'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the templates')),
     });
   }
 
@@ -128,11 +129,11 @@ export class LawTemplatesComponent implements OnInit {
     this.api.saveDocTemplate(f.id, { name: f.name, category: f.category, description: f.description.trim() || null, kind: f.kind, body: f.kind === 'TEXT' ? f.body : null, active: f.active }).subscribe({
       next: (t) => {
         this.busy = false;
-        this.info = f.kind === 'DOCX' && !f.id ? 'Saved. Now upload its Word file.' : 'Saved.';
+        this.info = f.kind === 'DOCX' && !f.id ? T('Saved. Now upload its Word file.') : T('Saved.');
         this.f = f.kind === 'DOCX' ? { ...f, id: t.id, fileName: t.fileName } : null;
         this.load();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 
@@ -145,17 +146,17 @@ export class LawTemplatesComponent implements OnInit {
     this.busy = true;
     this.error = null;
     this.api.uploadTemplateFile(this.f.id, fd).subscribe({
-      next: (t) => { this.busy = false; this.info = 'Word file uploaded.'; if (this.f) this.f.fileName = t.fileName; input.value = ''; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; input.value = ''; },
+      next: (t) => { this.busy = false; this.info = T('Word file uploaded.'); if (this.f) this.f.fileName = t.fileName; input.value = ''; this.load(); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); input.value = ''; },
     });
   }
 
   downloadFile(t: DocTemplate): void {
-    this.api.downloadTemplateFile(t.id).subscribe({ next: (b) => downloadBlob(b, t.fileName ?? 'template.docx'), error: () => (this.error = 'Could not download the file') });
+    this.api.downloadTemplateFile(t.id).subscribe({ next: (b) => downloadBlob(b, t.fileName ?? 'template.docx'), error: () => (this.error = T('Could not download the file')) });
   }
 
   remove(t: DocTemplate): void {
-    if (!confirm(`Delete the template "${t.name}"?`)) return;
-    this.api.deleteDocTemplate(t.id).subscribe({ next: () => { this.info = 'Deleted.'; this.load(); }, error: (e) => (this.error = e?.error?.message ?? 'That did not work') });
+    if (!confirm(T('Delete the template "{p0}"?', { p0: t.name }))) return;
+    this.api.deleteDocTemplate(t.id).subscribe({ next: () => { this.info = T('Deleted.'); this.load(); }, error: (e) => (this.error = e?.error?.message ?? T('That did not work')) });
   }
 }

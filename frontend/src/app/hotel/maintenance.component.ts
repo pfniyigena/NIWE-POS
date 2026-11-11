@@ -10,6 +10,7 @@ import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Maintenance: faults and repairs. A request that "takes the room out of service" blocks bookings and check-in until it is done. */
 @Component({
   selector: 'app-maintenance',
@@ -127,7 +128,7 @@ export class MaintenanceComponent implements OnInit {
   }
 
   remove(m: Maintenance): void {
-    if (!confirm('Delete this request?')) return;
+    if (!confirm(T('Delete this request?'))) return;
     this.api.deleteMaintenance(m.id).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
   }
 }

@@ -9,6 +9,7 @@ import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 import { errMsg, today } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Housekeeping > Lost & found: what was left behind, where, and who it went back to. */
 @Component({
   selector: 'app-hk-lost-found',
@@ -119,7 +120,7 @@ export class HkLostFoundComponent implements OnInit {
     this.error = null;
     const call = this.editingId ? this.api.updateLostFound(this.editingId, this.form) : this.api.createLostFound(this.form);
     call.subscribe({
-      next: (i) => { this.busy = false; this.form = null; this.message = `${i.itemNo} saved.`; this.list.load(); },
+      next: (i) => { this.busy = false; this.form = null; this.message = T('{p0} saved.', { p0: i.itemNo }); this.list.load(); },
       error: (e) => { this.busy = false; this.error = errMsg(e, 'Could not save the item'); },
     });
   }
@@ -136,7 +137,7 @@ export class HkLostFoundComponent implements OnInit {
     if (!this.claiming) return;
     this.busy = true;
     this.api.claimLostFound(this.claiming.id, this.claimBy, null, this.claimNotes || null).subscribe({
-      next: (i) => { this.busy = false; this.claiming = null; this.message = `${i.itemNo} handed over.`; this.list.load(); },
+      next: (i) => { this.busy = false; this.claiming = null; this.message = T('{p0} handed over.', { p0: i.itemNo }); this.list.load(); },
       error: (e) => { this.busy = false; this.error = errMsg(e, 'Could not hand the item over'); },
     });
   }
@@ -144,11 +145,11 @@ export class HkLostFoundComponent implements OnInit {
   dispose(i: LostFound): void {
     const why = prompt(`Dispose of ${i.itemNo}? Note (optional):`, '');
     if (why === null) return;
-    this.api.disposeLostFound(i.id, why || null).subscribe({ next: () => { this.message = `${i.itemNo} disposed.`; this.list.load(); }, error: (e) => (this.error = errMsg(e, 'Could not dispose of the item')) });
+    this.api.disposeLostFound(i.id, why || null).subscribe({ next: () => { this.message = T('{p0} disposed.', { p0: i.itemNo }); this.list.load(); }, error: (e) => (this.error = errMsg(e, 'Could not dispose of the item')) });
   }
 
   remove(i: LostFound): void {
-    if (!confirm(`Delete ${i.itemNo}?`)) return;
-    this.api.deleteLostFound(i.id).subscribe({ next: () => { this.message = `${i.itemNo} deleted.`; this.list.load(); }, error: (e) => (this.error = errMsg(e, 'Could not delete the item')) });
+    if (!confirm(T('Delete {p0}?', { p0: i.itemNo }))) return;
+    this.api.deleteLostFound(i.id).subscribe({ next: () => { this.message = T('{p0} deleted.', { p0: i.itemNo }); this.list.load(); }, error: (e) => (this.error = errMsg(e, 'Could not delete the item')) });
   }
 }

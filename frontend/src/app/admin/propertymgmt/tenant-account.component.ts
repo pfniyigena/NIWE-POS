@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { PmAccountApiService, TenantAccount } from '../../core/api/pm-account-api.service';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /** A tenant's account statement: what was charged and paid over a period, with the balance, to download as a PDF or e-mail to the tenant. */
 @Component({
   selector: 'app-tenant-account',
@@ -80,7 +81,7 @@ export class TenantAccountComponent implements OnChanges {
     this.error = null;
     this.api.account(this.tenantId, this.from || undefined, this.to || undefined).subscribe({
       next: (r) => { this.busy = false; this.a = r; if (!this.from) this.from = r.from; if (!this.to) this.to = r.to; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not load the statement'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not load the statement'); },
     });
   }
 
@@ -90,7 +91,7 @@ export class TenantAccountComponent implements OnChanges {
     this.error = null;
     this.api.accountPdf(this.tenantId, this.from || undefined, this.to || undefined).subscribe({
       next: (b) => { this.busy = false; downloadBlob(b, `tenant-statement-${this.a!.tenantCode.toLowerCase()}.pdf`); },
-      error: () => { this.busy = false; this.error = 'Could not make the statement'; },
+      error: () => { this.busy = false; this.error = T('Could not make the statement'); },
     });
   }
 
@@ -103,7 +104,7 @@ export class TenantAccountComponent implements OnChanges {
     if (this.message.trim()) body.message = this.message.trim();
     this.api.emailAccount(this.tenantId, body).subscribe({
       next: (r) => { this.busy = false; this.sending = false; this.note = `Statement sent to ${r.sentTo}.`; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the statement'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the statement'); },
     });
   }
 }

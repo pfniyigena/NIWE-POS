@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { WoSettings, WorkOrderApiService } from '../../core/api/work-order-api.service';
 import { WorkOrderTabsComponent } from './work-order-tabs.component';
 
+import { T } from '../../core/i18n/t';
 /** Work Orders > Settings: whether new customer jobs need the customer's approval, and whether the customer is e-mailed when a job is done. */
 @Component({
   selector: 'app-work-order-settings',
@@ -42,15 +43,15 @@ export class WorkOrderSettingsComponent implements OnInit {
   constructor(private api: WorkOrderApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
   }
 
   save(): void {
     if (!this.s) return;
     this.busy = true;
     this.api.saveSettings(this.s).subscribe({
-      next: (s) => { this.busy = false; this.s = s; this.error = null; this.notice = 'Saved.'; },
-      error: (e) => { this.busy = false; this.notice = null; this.error = e?.error?.message ?? 'Could not save'; },
+      next: (s) => { this.busy = false; this.s = s; this.error = null; this.notice = T('Saved.'); },
+      error: (e) => { this.busy = false; this.notice = null; this.error = e?.error?.message ?? T('Could not save'); },
     });
   }
 }

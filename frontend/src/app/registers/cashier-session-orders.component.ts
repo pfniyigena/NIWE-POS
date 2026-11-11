@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { OrderApiService } from '../core/api/order-api.service';
 import { Order } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * One cashier session's full order history — every status (open tabs, completed sales, voided
  * carts), not just what's currently open at the terminal. Reached from the "Sessions" screen
@@ -78,7 +79,7 @@ export class CashierSessionOrdersComponent implements OnInit {
     this.cashierSessionId = Number(this.route.snapshot.paramMap.get('id'));
     this.orderApi.listAllForCashierSession(this.cashierSessionId).subscribe({
       next: (o) => (this.orders = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load orders'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load orders')),
     });
   }
 }

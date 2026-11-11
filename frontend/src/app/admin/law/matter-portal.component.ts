@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LawApiService, PortalAdmin, PortalInviteResult } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * The Client portal tab of a matter: whether the client can see this matter in the portal and what they may see and do, who at the client
  * may sign in, the short progress note, which deadlines the client sees, and the messages. The server decides who may change what; the
@@ -139,7 +140,7 @@ export class MatterPortalComponent implements OnChanges {
   }
 
   load(): void {
-    this.api.matterPortal(this.matterId).subscribe({ next: (p) => { this.apply(p); this.error = null; }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the client portal') });
+    this.api.matterPortal(this.matterId).subscribe({ next: (p) => { this.apply(p); this.error = null; }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the client portal')) });
   }
 
   private run(call: import('rxjs').Observable<PortalAdmin>, done: string | null): void {
@@ -148,20 +149,20 @@ export class MatterPortalComponent implements OnChanges {
     this.info = null;
     call.subscribe({
       next: (p) => { this.busy = false; this.apply(p); this.info = done; this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; this.load(); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); this.load(); },
     });
   }
 
-  saveSettings(): void { this.invite = null; this.run(this.api.saveMatterPortal(this.matterId, this.f), 'Saved.'); }
-  postUpdate(): void { this.run(this.api.postPortalUpdate(this.matterId, this.note), 'Saved.'); }
+  saveSettings(): void { this.invite = null; this.run(this.api.saveMatterPortal(this.matterId, this.f), T('Saved.')); }
+  postUpdate(): void { this.run(this.api.postPortalUpdate(this.matterId, this.note), T('Saved.')); }
   setVisible(deadlineId: number, visible: boolean): void { this.run(this.api.setDeadlinePortal(deadlineId, visible), null); }
-  setActive(accountId: number, active: boolean): void { this.invite = null; this.run(this.api.setPortalAccountActive(this.matterId, accountId, active), active ? 'Switched on.' : 'Switched off. Their sessions have ended.'); }
+  setActive(accountId: number, active: boolean): void { this.invite = null; this.run(this.api.setPortalAccountActive(this.matterId, accountId, active), active ? T('Switched on.') : T('Switched off. Their sessions have ended.')); }
   markRead(): void { this.run(this.api.readPortalMessages(this.matterId), null); }
 
   reply(): void {
     const text = this.replyText.trim();
     if (!text) return;
-    this.run(this.api.replyPortal(this.matterId, text), 'Sent.');
+    this.run(this.api.replyPortal(this.matterId, text), T('Sent.'));
     this.replyText = '';
   }
 
@@ -171,7 +172,7 @@ export class MatterPortalComponent implements OnChanges {
     this.info = null;
     call.subscribe({
       next: (r) => { this.busy = false; this.invite = r; this.inv = { name: '', email: '' }; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 

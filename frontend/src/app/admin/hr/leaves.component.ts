@@ -12,6 +12,7 @@ import { Branch } from '../../core/models';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Employee, HrApiService, LeaveBalance, LeaveRequest, LeaveType } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Attendance & Leaves > Leave: requests (with approve / reject), and the balance of each employee. */
 @Component({
   selector: 'app-leaves',
@@ -139,7 +140,7 @@ export class LeavesComponent implements OnInit {
   }
 
   loadBalances(): void {
-    this.api.leaveBalances(this.year).subscribe({ next: (b) => (this.balances = b), error: (e) => (this.error = e?.error?.message ?? 'Failed to load balances') });
+    this.api.leaveBalances(this.year).subscribe({ next: (b) => (this.balances = b), error: (e) => (this.error = e?.error?.message ?? T('Failed to load balances')) });
   }
 
   countDays(): void {
@@ -152,7 +153,7 @@ export class LeavesComponent implements OnInit {
 
   request(): void {
     if (!this.form.employeeId || !this.form.leaveTypeId) {
-      this.error = 'Choose the employee and the leave type.';
+      this.error = T('Choose the employee and the leave type.');
       return;
     }
     this.api.requestLeave({ ...this.form, reason: this.form.reason || null }).subscribe({
@@ -161,7 +162,7 @@ export class LeavesComponent implements OnInit {
         this.form.reason = null;
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not submit the request'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not submit the request')),
     });
   }
 
@@ -175,7 +176,7 @@ export class LeavesComponent implements OnInit {
         this.error = null;
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not update the request'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not update the request')),
     });
   }
 }

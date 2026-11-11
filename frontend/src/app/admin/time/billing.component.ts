@@ -9,6 +9,7 @@ import { CustomerApiService } from '../../core/api/customer-api.service';
 import { Customer } from '../../core/models';
 import { BillingPreview, ProjectSummary, TimeApiService } from '../../core/api/time-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Time Tracking > Billing: approved billable time, per project, turned into a draft invoice. */
 @Component({
   selector: 'app-time-billing',
@@ -95,7 +96,7 @@ export class TimeBillingComponent implements OnInit {
   }
 
   private load(): void {
-    this.api.ready().subscribe({ next: (r) => (this.ready = r), error: (e) => (this.error = e?.error?.message ?? 'Could not load') });
+    this.api.ready().subscribe({ next: (r) => (this.ready = r), error: (e) => (this.error = e?.error?.message ?? T('Could not load')) });
     this.api.entries({ status: 'INVOICED', from: '2000-01-01', to: '2999-12-31' }).subscribe({
       next: (list) => {
         const map = new Map<number, { id: number; number: string; count: number }>();
@@ -126,7 +127,7 @@ export class TimeBillingComponent implements OnInit {
     this.error = null;
     this.api.preview({ projectId: this.current.id, customerId: this.customerId, from: this.from || null, to: this.to || null }).subscribe({
       next: (p) => (this.preview = p),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not prepare the invoice'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not prepare the invoice')),
     });
   }
 
@@ -144,13 +145,13 @@ export class TimeBillingComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not create the invoice';
+        this.error = e?.error?.message ?? T('Could not create the invoice');
       },
     });
   }
 
   release(invoiceId: number): void {
     this.error = null;
-    this.api.release(invoiceId).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not release the time') });
+    this.api.release(invoiceId).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not release the time')) });
   }
 }

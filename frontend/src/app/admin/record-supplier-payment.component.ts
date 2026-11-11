@@ -8,6 +8,7 @@ import { SupplierApiService } from '../core/api/supplier-api.service';
 import { SupplierPaymentApiService } from '../core/api/supplier-payment-api.service';
 import { Supplier, OutstandingPurchaseOrder, SupplierPayment } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface AllocationRow {
   order: OutstandingPurchaseOrder;
   amount: number | null;
@@ -211,11 +212,11 @@ export class RecordSupplierPaymentComponent implements OnInit {
   private loadAll(): void {
     this.paymentApi.outstandingOrders(this.supplierId).subscribe({
       next: (orders) => (this.allocationRows = orders.map((order) => ({ order, amount: null }))),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load outstanding purchase orders'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load outstanding purchase orders')),
     });
     this.paymentApi.paymentHistory(this.supplierId).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment history'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment history')),
     });
   }
 
@@ -253,7 +254,7 @@ export class RecordSupplierPaymentComponent implements OnInit {
       .filter((r) => (r.amount ?? 0) > 0)
       .map((r) => ({ purchaseOrderId: r.order.purchaseOrderId, payableType: r.order.payableType, amount: r.amount as number }));
     if (allocations.length === 0 || !this.amount) {
-      this.error = 'Enter a payment amount and allocate it to at least one purchase order.';
+      this.error = T('Enter a payment amount and allocate it to at least one purchase order.');
       return;
     }
     this.submitting = true;
@@ -265,7 +266,7 @@ export class RecordSupplierPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.submitting = false;
-        this.error = err?.error?.message ?? 'Failed to record payment';
+        this.error = err?.error?.message ?? T('Failed to record payment');
       },
     });
   }

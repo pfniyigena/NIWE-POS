@@ -8,6 +8,7 @@ import { ReportApiService, ReportFilter } from '../core/api/report-api.service';
 import { SupplierApiService } from '../core/api/supplier-api.service';
 import { Supplier } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface SupplierStatementRow {
   orderId: number;
   orderNumber: string;
@@ -148,7 +149,7 @@ export class SupplierStatementComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to run statement';
+        this.error = err?.error?.message ?? T('Failed to run statement');
       },
     });
   }
@@ -169,7 +170,7 @@ export class SupplierStatementComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

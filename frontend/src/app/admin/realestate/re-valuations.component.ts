@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { VALUATION_METHODS, VALUATION_PURPOSES, ValuationDto, ValuationMethod, ValuationPurpose, RealEstateApiService } from '../../core/api/realestate-api.service';
 import { ReDocumentsComponent } from './re-documents.component';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 
 /** The valuations of one property (newest first); the newest one still valid is the current valuation. Each valuation can carry its report as a document. */
@@ -107,7 +108,7 @@ export class ReValuationsComponent implements OnChanges {
   private load(): void {
     this.api.valuations({ propertyId: this.propertyId }).subscribe({
       next: (l) => { this.list = l; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the valuations'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the valuations'); },
     });
   }
 
@@ -128,9 +129,9 @@ export class ReValuationsComponent implements OnChanges {
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!f.valuationDate) { this.error = 'Give the valuation date.'; return; }
-    if (!f.valuerName.trim()) { this.error = 'Give the valuer\'s name.'; return; }
-    if (!num(f.marketValue)) { this.error = 'Enter the market value.'; return; }
+    if (!f.valuationDate) { this.error = T('Give the valuation date.'); return; }
+    if (!f.valuerName.trim()) { this.error = T('Give the valuer\'s name.'); return; }
+    if (!num(f.marketValue)) { this.error = T('Enter the market value.'); return; }
     const edit = this.editId != null;
     const p = {
       valuationDate: f.valuationDate, valuerName: f.valuerName.trim(), valuerFirm: f.valuerFirm, purpose: f.purpose, method: f.method, marketValue: num(f.marketValue),
@@ -142,7 +143,7 @@ export class ReValuationsComponent implements OnChanges {
     const call = edit ? this.api.updateValuation(this.editId!, p) : this.api.createValuation({ ...p, propertyId: this.propertyId });
     call.subscribe({
       next: () => { this.busy = false; this.formOpen = false; this.load(); this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the valuation'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the valuation'); },
     });
   }
 
@@ -155,8 +156,8 @@ export class ReValuationsComponent implements OnChanges {
   }
 
   remove(v: ValuationDto): void {
-    if (!confirm('Delete this valuation and its documents?')) return;
+    if (!confirm(T('Delete this valuation and its documents?'))) return;
     this.error = null;
-    this.api.deleteValuation(v.id).subscribe({ next: () => { this.load(); this.changed.emit(); }, error: (e) => (this.error = e?.error?.message ?? 'Could not delete the valuation') });
+    this.api.deleteValuation(v.id).subscribe({ next: () => { this.load(); this.changed.emit(); }, error: (e) => (this.error = e?.error?.message ?? T('Could not delete the valuation')) });
   }
 }

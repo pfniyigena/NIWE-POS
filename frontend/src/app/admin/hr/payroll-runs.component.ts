@@ -10,6 +10,7 @@ import { ListState } from '../../core/api/list-state';
 import { downloadBlob } from '../../core/download-file';
 import { HrApiService, PayrollRun } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Payroll > Payroll runs: one per month. Generate works out everybody's pay; the run is then reviewed, approved and paid. */
 @Component({
   selector: 'app-payroll-runs',
@@ -97,7 +98,7 @@ export class PayrollRunsComponent implements OnInit {
     this.error = null;
     this.api.payrollAnnualSummary(this.summaryYear, format).subscribe({
       next: (blob) => downloadBlob(blob, `payroll-summary-${this.summaryYear}.${format}`),
-      error: () => (this.error = 'Could not create the summary'),
+      error: () => (this.error = T('Could not create the summary')),
     });
   }
 
@@ -121,7 +122,7 @@ export class PayrollRunsComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not generate the payroll';
+        this.error = e?.error?.message ?? T('Could not generate the payroll');
       },
     });
   }

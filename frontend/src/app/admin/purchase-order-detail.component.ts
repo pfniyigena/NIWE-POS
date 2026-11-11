@@ -11,6 +11,7 @@ import { BillApiService } from '../core/api/bill-api.service';
 import { Bill, PurchaseOrder, PurchaseReturn } from '../core/models';
 
 import { q4 } from '../core/qty';
+import { T } from '../core/i18n/t';
 interface ReceiveRow {
   lineId: number;
   productName: string;
@@ -337,7 +338,7 @@ export class PurchaseOrderDetailComponent implements OnInit {
           error: () => (this.bill = null), // extra display only — never blocks the rest of the page
         });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load purchase order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load purchase order')),
     });
   }
 
@@ -353,7 +354,7 @@ export class PurchaseOrderDetailComponent implements OnInit {
       },
       error: (err) => {
         this.generatingBill = false;
-        this.error = err?.error?.message ?? 'Failed to generate bill';
+        this.error = err?.error?.message ?? T('Failed to generate bill');
       },
     });
   }
@@ -363,17 +364,17 @@ export class PurchaseOrderDetailComponent implements OnInit {
     this.error = null;
     this.purchaseOrderApi.send(this.po.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to send purchase order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to send purchase order')),
     });
   }
 
   cancel(): void {
     if (!this.po) return;
-    if (!confirm(`Cancel purchase order ${this.po.orderNumber}?`)) return;
+    if (!confirm(T('Cancel purchase order {p0}?', { p0: this.po.orderNumber }))) return;
     this.error = null;
     this.purchaseOrderApi.cancel(this.po.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to cancel purchase order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to cancel purchase order')),
     });
   }
 

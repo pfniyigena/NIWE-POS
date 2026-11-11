@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { SalesSettingsApiService } from '../core/api/sales-settings-api.service';
 import { ModuleApiService } from '../core/api/module-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Settings — Fourier: "Every time invoice is ISSUED send try to send email to
  * customer and to configured emails. (Add invoices receiver emails in sales settings)." One
@@ -68,7 +69,7 @@ export class SalesSettingsComponent implements OnInit {
         this.giftCardsEnabled = s.giftCardsEnabled;
         this.loyaltyEnabled = s.loyaltyEnabled;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load settings')),
     });
   }
 
@@ -89,7 +90,7 @@ export class SalesSettingsComponent implements OnInit {
       },
       error: (err) => {
         this.saving = false;
-        this.error = err?.error?.message ?? 'Failed to save settings';
+        this.error = err?.error?.message ?? T('Failed to save settings');
       },
     });
   }

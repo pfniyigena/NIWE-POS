@@ -8,6 +8,7 @@ import { StoreSettingsApiService } from '../../core/api/store-settings-api.servi
 import { StoreSettings } from '../../core/models';
 import { HrApiService, Payslip } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** A printable payslip for one employee and month. */
 @Component({
   selector: 'app-payslip',
@@ -114,7 +115,7 @@ export class PayslipComponent implements OnInit {
     this.runId = Number(this.route.snapshot.paramMap.get('id'));
     const lineId = (this.lineId = Number(this.route.snapshot.paramMap.get('lineId')));
     this.storeApi.get().subscribe({ next: (s) => (this.settings = s), error: () => (this.settings = null) });
-    this.api.payslip(this.runId, lineId).subscribe({ next: (p) => (this.p = p), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the payslip') });
+    this.api.payslip(this.runId, lineId).subscribe({ next: (p) => (this.p = p), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the payslip')) });
   }
 
   monthName(): string {
@@ -128,12 +129,12 @@ export class PayslipComponent implements OnInit {
     this.api.emailPayslips(this.runId, this.lineId).subscribe({
       next: (r) => {
         this.emailing = false;
-        if (r.sent) this.info = 'Payslip emailed.';
-        else this.error = r.noEmail.length ? 'This employee has no email address.' : r.failed.join('; ') || 'Not sent.';
+        if (r.sent) this.info = T('Payslip emailed.');
+        else this.error = r.noEmail.length ? T('This employee has no email address.') : r.failed.join('; ') || T('Not sent.');
       },
       error: (e) => {
         this.emailing = false;
-        this.error = e?.error?.message ?? 'Could not send the payslip';
+        this.error = e?.error?.message ?? T('Could not send the payslip');
       },
     });
   }

@@ -9,6 +9,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Branch } from '../../core/models';
 import { Department, HrApiService, LeaveCalendar, LeaveCalendarDay, LeaveCalendarEntry } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 interface CalendarRowView {
   employeeId: number;
   employeeName: string;
@@ -146,7 +147,7 @@ export class LeaveCalendarComponent implements OnInit, OnDestroy {
           return { employeeId: r.employeeId, employeeName: r.employeeName, departmentName: r.departmentName, cells, total };
         });
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the calendar'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the calendar')),
     });
   }
 }

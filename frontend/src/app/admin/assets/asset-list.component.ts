@@ -14,6 +14,7 @@ import {
   AssetApiService, AssetBulkRequest, AssetCategory, AssetFilter, AssetStatus, AssetSummary, Custodian, DepreciationRunResult, FixedAsset,
 } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * Assets > Asset register: every fixed asset with search, filters and quick views (held, nobody holding, warranty or insurance ending,
  * ending soon), several at once (move, hand out, take back, print tags), a download of what is on screen, and the "Run depreciation"
@@ -271,7 +272,7 @@ export class AssetListComponent implements OnInit {
       },
       error: (e) => {
         this.loading = false;
-        this.error = e?.error?.message ?? 'Failed to load assets';
+        this.error = e?.error?.message ?? T('Failed to load assets');
       },
     });
     this.api.summary(this.branchId).subscribe({ next: (s) => (this.summary = s), error: () => {} });
@@ -306,14 +307,14 @@ export class AssetListComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not complete that';
+        this.error = e?.error?.message ?? T('Could not complete that');
       },
     });
   }
 
   bulkMove(): void {
     if (!this.bulkLocation.trim() && !this.bulkBranch) {
-      this.error = 'Choose a branch or type the new place.';
+      this.error = T('Choose a branch or type the new place.');
       return;
     }
     this.send({ action: 'TRANSFER', ids: this.selectedIds(), toBranchId: this.bulkBranch, toLocation: this.bulkLocation.trim() || null, date: this.bulkDate, reason: this.bulkReason.trim() || null }, 'moved');
@@ -321,14 +322,14 @@ export class AssetListComponent implements OnInit {
 
   bulkOut(): void {
     if (!this.bulkUser && !this.bulkName.trim()) {
-      this.error = 'Choose a user or type a name.';
+      this.error = T('Choose a user or type a name.');
       return;
     }
     this.send({ action: 'CHECK_OUT', ids: this.selectedIds(), custodianUserId: this.bulkUser, custodianName: this.bulkUser ? null : this.bulkName.trim(), date: this.bulkDate }, 'handed out');
   }
 
   bulkIn(): void {
-    if (!confirm('Take back ' + this.selectedCount + ' asset(s) from whoever holds them?')) return;
+    if (!confirm(T('Take back {p0} asset(s) from whoever holds them?', { p0: this.selectedCount }))) return;
     this.send({ action: 'CHECK_IN', ids: this.selectedIds(), date: this.bulkDate }, 'taken back');
   }
 
@@ -345,7 +346,7 @@ export class AssetListComponent implements OnInit {
       },
       error: () => {
         this.busy = false;
-        this.error = 'Could not download the register';
+        this.error = T('Could not download the register');
       },
     });
   }
@@ -363,7 +364,7 @@ export class AssetListComponent implements OnInit {
       },
       error: (e) => {
         this.running = false;
-        this.error = e?.error?.message ?? 'Could not run depreciation';
+        this.error = e?.error?.message ?? T('Could not run depreciation');
       },
     });
   }

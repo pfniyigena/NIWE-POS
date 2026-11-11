@@ -11,6 +11,7 @@ import { ReportApiService, ReportFilter } from '../core/api/report-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { Product, ProductStockByLocation } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** One row of the Stock Movement History report (see the backend's ReportService.StockMovementRow) — only the columns worth repeating here, since Product/SKU/Category are already this one product. */
 interface StockMovementRow {
   occurredAt: string;
@@ -281,7 +282,7 @@ export class ProductDetailComponent implements OnInit {
           this.trackingApi.serials(this.id).subscribe({ next: (rows) => (this.serials = rows), error: () => (this.serials = []) });
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load product'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load product')),
     });
 
     this.warehouseApi.stockByLocation(this.id).subscribe({
@@ -302,7 +303,7 @@ export class ProductDetailComponent implements OnInit {
       },
       error: (err) => {
         this.loadingMovements = false;
-        this.error = err?.error?.message ?? 'Failed to load stock movement history';
+        this.error = err?.error?.message ?? T('Failed to load stock movement history');
       },
     });
   }

@@ -10,6 +10,7 @@ import { PaymentMethodApiService } from '../core/api/payment-method-api.service'
 import { openPdfForPrint } from '../core/download-file';
 import { Customer, CreditSummary, OutstandingOrder, CustomerPayment, PaymentMethodOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface AllocationRow {
   order: OutstandingOrder;
   amount: number | null;
@@ -225,18 +226,18 @@ export class RecordPaymentComponent implements OnInit {
   private loadAll(): void {
     this.creditApi.creditSummary(this.customerId).subscribe({
       next: (s) => (this.summary = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load credit summary'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load credit summary')),
     });
     // Fourier: "Let record payment per invoice not per customer (all outstanding invoices)" — an
     // Invoice row is paid from its own dedicated screen now (InvoiceRecordPaymentComponent), so
     // this table only ever offers POS credit sales, even though the backend still returns both.
     this.creditApi.outstandingOrders(this.customerId).subscribe({
       next: (orders) => (this.allocationRows = orders.filter((o) => o.orderType === 'POS_SALE').map((order) => ({ order, amount: null }))),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load outstanding orders'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load outstanding orders')),
     });
     this.creditApi.paymentHistory(this.customerId).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment history'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment history')),
     });
   }
 
@@ -278,11 +279,11 @@ export class RecordPaymentComponent implements OnInit {
       .filter((r) => (r.amount ?? 0) > 0)
       .map((r) => ({ orderId: r.order.orderId, orderType: r.order.orderType, amount: r.amount as number }));
     if (allocations.length === 0 || !this.amount) {
-      this.error = 'Enter a payment amount and allocate it to at least one order.';
+      this.error = T('Enter a payment amount and allocate it to at least one order.');
       return;
     }
     if (!this.method) {
-      this.error = 'Select a payment method.';
+      this.error = T('Select a payment method.');
       return;
     }
     this.submitting = true;
@@ -294,7 +295,7 @@ export class RecordPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.submitting = false;
-        this.error = err?.error?.message ?? 'Failed to record payment';
+        this.error = err?.error?.message ?? T('Failed to record payment');
       },
     });
   }
@@ -315,7 +316,7 @@ export class RecordPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to open receipt PDF';
+        this.error = err?.error?.message ?? T('Failed to open receipt PDF');
       },
     });
   }

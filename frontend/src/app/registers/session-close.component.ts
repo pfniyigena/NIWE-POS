@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { CashSummary, Denomination, PosSettings, RegisterSession, SessionReport } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Closing a shift: the drawer is counted, either as one typed total or note by note and coin by coin, and compared with what it should hold
  * (float + cash sales - cash refunds + paid in - paid out - safe drops). A difference needs a note when the rules in POS settings say so.
@@ -157,7 +158,7 @@ export class SessionCloseComponent implements OnInit {
       // Task: "Add print session report (Z-report) same we print receipt" — auto-opens the print
       // dialog on arrival, same ?autoPrint=1 convention checkout/return-form already use.
       next: () => this.router.navigate(['/sessions', this.sessionId, 'z-report'], { queryParams: { autoPrint: '1' } }),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to close session'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to close session')),
     });
   }
 }

@@ -7,6 +7,7 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 import { LocationChoice, LocationChoicesService } from '../core/api/location-choices.service';
 import { StockAutomationApiService, StockAutomationResult } from '../core/api/stock-automation-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Settings (Task: "Inventory Setting (Example: allow negative stock)").
  * Edits the same singleton settings row as BusinessDetailsComponent/SystemSettingsComponent —
@@ -158,7 +159,7 @@ export class InventorySettingsComponent implements OnInit {
         this.stockJobLastRun = s.stockJobLastRun ?? null;
         this.loaded = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load inventory settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load inventory settings')),
     });
   }
 
@@ -184,7 +185,7 @@ export class InventorySettingsComponent implements OnInit {
         },
         error: (err) => {
           this.saving = false;
-          this.error = err?.error?.message ?? 'Failed to save inventory settings';
+          this.error = err?.error?.message ?? T('Failed to save inventory settings');
         },
       });
   }
@@ -200,7 +201,7 @@ export class InventorySettingsComponent implements OnInit {
       },
       error: (err) => {
         this.running = false;
-        this.error = err?.error?.message ?? 'Failed to run the stock jobs';
+        this.error = err?.error?.message ?? T('Failed to run the stock jobs');
       },
     });
   }

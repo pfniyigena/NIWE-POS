@@ -7,6 +7,7 @@ import { CustomerApiService } from '../core/api/customer-api.service';
 import { Customer } from '../core/models';
 import { AuthService } from '../core/auth.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Customers > detail — Fourier: "Better add one button (View) on customer then put all
  * others buttons on view form". Previously every one of these actions (Edit, Invoices, Payments,
@@ -102,7 +103,7 @@ export class CustomerDetailComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.customerApi.getById(id).subscribe({
       next: (c) => (this.customer = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load customer'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load customer')),
     });
   }
 }

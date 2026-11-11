@@ -8,6 +8,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { downloadBlob } from '../../core/download-file';
 import { DOC_CATEGORIES, DocumentSummary, EmployeeDocument, HrApiService, docCategoryLabel } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Employees > Documents: every employee document in one place, with a warning for the ones that have expired or are about to. */
 @Component({
   selector: 'app-hr-documents',
@@ -101,15 +102,15 @@ export class HrDocumentsComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
     this.sub = this.api.allDocuments({ q: this.q.trim(), category: this.category, state: this.state }).subscribe({
       next: (r) => { this.rows = r; this.loaded = true; this.error = null; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the documents'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the documents'); },
     });
   }
 
   open(d: EmployeeDocument): void {
-    this.api.documentFile(d.id).subscribe({ next: (b) => window.open(URL.createObjectURL(b), '_blank'), error: () => (this.error = 'Could not open the file') });
+    this.api.documentFile(d.id).subscribe({ next: (b) => window.open(URL.createObjectURL(b), '_blank'), error: () => (this.error = T('Could not open the file')) });
   }
 
   download(d: EmployeeDocument): void {
-    this.api.documentFile(d.id).subscribe({ next: (b) => downloadBlob(b, d.fileName), error: () => (this.error = 'Could not download the file') });
+    this.api.documentFile(d.id).subscribe({ next: (b) => downloadBlob(b, d.fileName), error: () => (this.error = T('Could not download the file')) });
   }
 }

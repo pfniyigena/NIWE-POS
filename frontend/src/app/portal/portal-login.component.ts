@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { PortalApiService } from '../core/api/portal-api.service';
 import { PortalLayoutComponent } from './portal-layout.component';
 
+import { T } from '../core/i18n/t';
 /** Client portal sign-in. The same answer is given for a wrong e-mail, a wrong password and a locked account. */
 @Component({
   selector: 'app-portal-login',
@@ -40,7 +41,7 @@ export class PortalLoginComponent {
     this.error = null;
     this.portal.login(this.email, this.password).subscribe({
       next: () => { this.busy = false; this.router.navigate(['/portal']); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not sign in'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not sign in'); },
     });
   }
 }

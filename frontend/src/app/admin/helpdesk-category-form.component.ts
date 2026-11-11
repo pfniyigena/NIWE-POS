@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { HelpDeskCategoryApiService } from '../core/api/helpdesk-api.service';
 
+import { T } from '../core/i18n/t';
 /** Admin > Help Desk > Categories > New/Edit — see HelpDeskCategoryListComponent's own javadoc. */
 @Component({
   selector: 'app-helpdesk-category-form',
@@ -57,28 +58,28 @@ export class HelpDeskCategoryFormComponent implements OnInit {
       next: (categories) => {
         const c = categories.find((x) => x.id === this.id);
         if (!c) {
-          this.error = 'Category not found';
+          this.error = T('Category not found');
           return;
         }
         this.name = c.name;
         this.description = c.description;
         this.active = c.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load category')),
     });
   }
 
   submit(): void {
     this.error = null;
     if (!this.name.trim()) {
-      this.error = 'Name is required';
+      this.error = T('Name is required');
       return;
     }
     const payload = { name: this.name.trim(), description: this.description || null, active: this.active };
     const call = this.id ? this.categoryApi.update(this.id, payload) : this.categoryApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/helpdesk/categories']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save category')),
     });
   }
 }

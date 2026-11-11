@@ -7,6 +7,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { Warehouse } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Warehouses — Fourier: "multi-location/multi-warehouse tracking ..." Every
  * sale, stock adjustment, and purchase receipt implicitly targets whichever warehouse is flagged
@@ -83,7 +84,7 @@ export class WarehouseListComponent implements OnInit {
   private load(): void {
     this.warehouseApi.listAll().subscribe({
       next: (w) => (this.warehouses = w),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load warehouses'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load warehouses')),
     });
   }
 
@@ -91,7 +92,7 @@ export class WarehouseListComponent implements OnInit {
     this.error = null;
     this.warehouseApi.setActive(w.id, true).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to activate warehouse'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to activate warehouse')),
     });
   }
 
@@ -99,7 +100,7 @@ export class WarehouseListComponent implements OnInit {
     this.error = null;
     this.warehouseApi.setActive(w.id, false).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to deactivate warehouse'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to deactivate warehouse')),
     });
   }
 }

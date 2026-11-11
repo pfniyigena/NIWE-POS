@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
 import { BookingApiService, BookingSettings } from '../../core/api/booking-api.service';
 
+import { T } from '../../core/i18n/t';
 const DAYS = [
   { key: 'MON', label: 'Mon' }, { key: 'TUE', label: 'Tue' }, { key: 'WED', label: 'Wed' }, { key: 'THU', label: 'Thu' },
   { key: 'FRI', label: 'Fri' }, { key: 'SAT', label: 'Sat' }, { key: 'SUN', label: 'Sun' },
@@ -78,7 +79,7 @@ export class BookingSettingsComponent implements OnInit {
   constructor(private api: BookingApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => this.apply(s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    this.api.settings().subscribe({ next: (s) => this.apply(s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
   }
 
   private apply(s: BookingSettings): void {
@@ -108,7 +109,7 @@ export class BookingSettingsComponent implements OnInit {
     this.error = null;
     this.api.updateSettings({ ...this.s, publicTitle: this.title.trim() || null, publicIntro: this.intro.trim() || null, paymentInstructions: this.pay.trim() || null }).subscribe({
       next: (s) => { this.apply(s); this.saving = false; this.saved = true; },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the settings'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the settings'); },
     });
   }
 }

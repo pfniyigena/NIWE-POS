@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { HelpDeskSettingsApiService } from '../core/api/helpdesk-api.service';
 import { HelpDeskSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Help Desk > Settings — the public page switch, the notification e-mail list (one address per
  * line), the deadline (SLA) hours per priority with warnings and escalation, e-mailed replies, public
@@ -95,7 +96,7 @@ export class HelpDeskSettingsComponent implements OnInit {
         this.apply(s);
         this.loaded = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load settings')),
     });
   }
 
@@ -121,7 +122,7 @@ export class HelpDeskSettingsComponent implements OnInit {
       },
       error: (err) => {
         this.saving = false;
-        this.error = err?.error?.message ?? 'Failed to save settings';
+        this.error = err?.error?.message ?? T('Failed to save settings');
       },
     });
   }

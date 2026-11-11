@@ -9,6 +9,7 @@ import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product, RestaurantWastageReason } from '../core/models';
 
 import { q4 } from '../core/qty';
+import { T } from '../core/i18n/t';
 /**
  * Admin > Restaurant > Wastage > New — Fourier: "Restaurants need a dedicated wastage module."
  * Mirrors StockAdjustmentFormComponent's own product-search-to-select pattern, but quantity here
@@ -152,11 +153,11 @@ export class RestaurantWastageFormComponent {
 
   submit(): void {
     if (!this.selectedProduct) {
-      this.error = 'Select a product';
+      this.error = T('Select a product');
       return;
     }
     if (!this.quantity || this.quantity <= 0) {
-      this.error = 'Enter a quantity greater than zero';
+      this.error = T('Enter a quantity greater than zero');
       return;
     }
     this.error = null;
@@ -164,7 +165,7 @@ export class RestaurantWastageFormComponent {
       .create({ productId: this.selectedProduct.id, quantity: this.quantity, reason: this.reason, note: this.note || null })
       .subscribe({
         next: () => this.router.navigate(['/admin/restaurant/wastage']),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to save wastage record'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to save wastage record')),
       });
   }
 }

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { INSPECTION_KIND_LABEL, InspectionKind, InspectionRow, PmDepositApiService } from '../../core/api/pm-deposit-api.service';
 
+import { T } from '../../core/i18n/t';
 /** The inspections of one lease (move-in, move-out and visits), with the buttons that start them. */
 @Component({
   selector: 'app-pm-inspections-panel',
@@ -55,7 +56,7 @@ export class PmInspectionsPanelComponent implements OnChanges {
   ngOnChanges(): void { if (this.leaseId) this.load(); }
 
   load(): void {
-    this.api.inspections({ leaseId: this.leaseId }).subscribe({ next: (r) => { this.rows = r.items; this.loaded = true; }, error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the inspections'; } });
+    this.api.inspections({ leaseId: this.leaseId }).subscribe({ next: (r) => { this.rows = r.items; this.loaded = true; }, error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the inspections'); } });
   }
 
   has(k: InspectionKind): boolean { return this.rows.some((r) => r.kind === k); }
@@ -66,7 +67,7 @@ export class PmInspectionsPanelComponent implements OnChanges {
     this.error = null;
     this.api.startInspection(this.leaseId, { kind }).subscribe({
       next: (i) => { this.busy = false; this.router.navigate(['/admin/propertymgmt/inspections', i.id]); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not start the inspection'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not start the inspection'); },
     });
   }
 }

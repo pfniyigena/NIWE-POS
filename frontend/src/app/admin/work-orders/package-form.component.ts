@@ -8,6 +8,7 @@ import { CatalogApiService } from '../../core/api/catalog-api.service';
 import { Product } from '../../core/models';
 import { PackagePayload, WorkOrderApiService } from '../../core/api/work-order-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Work Orders > a service package: name and price, the checklist steps and the usual parts. */
 @Component({
   selector: 'app-service-package-form',
@@ -90,7 +91,7 @@ export class ServicePackageFormComponent implements OnInit {
           p.parts.forEach((x) => (this.names[x.productId] = x.productName));
           this.steps = p.items.map((i) => i.text).join('\n');
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the package'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the package')),
       });
     }
   }
@@ -122,12 +123,12 @@ export class ServicePackageFormComponent implements OnInit {
         }
         this.saved = true;
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save'); },
     });
   }
 
   remove(): void {
-    if (!this.id || !confirm('Delete this package? Packages already used on work orders can only be made inactive.')) return;
-    this.api.deletePackage(this.id).subscribe({ next: () => this.router.navigate(['/admin/work-orders/packages']), error: (e) => (this.error = e?.error?.message ?? 'Could not delete') });
+    if (!this.id || !confirm(T('Delete this package? Packages already used on work orders can only be made inactive.'))) return;
+    this.api.deletePackage(this.id).subscribe({ next: () => this.router.navigate(['/admin/work-orders/packages']), error: (e) => (this.error = e?.error?.message ?? T('Could not delete')) });
   }
 }

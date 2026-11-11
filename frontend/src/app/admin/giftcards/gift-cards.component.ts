@@ -11,6 +11,7 @@ import { PaymentMethodApiService } from '../../core/api/payment-method-api.servi
 import { CustomerApiService } from '../../core/api/customer-api.service';
 import { Customer, PaymentMethodOption } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Sales > Gift cards. A card is sold for money that is still owed back in goods, so it sits in the books as a liability until it is spent. Here: sell or give cards, add money, block, set expiry, see every movement. */
 @Component({
   selector: 'app-gift-cards',
@@ -196,7 +197,7 @@ export class GiftCardsComponent implements OnInit {
         this.rows = r.items;
         this.total = r.total;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the gift cards'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the gift cards')),
     });
     this.api.summary().subscribe({ next: (s) => (this.summary = s), error: () => (this.summary = null) });
   }
@@ -236,7 +237,7 @@ export class GiftCardsComponent implements OnInit {
           this.selling = false;
           this.load();
         },
-        error: (err) => this.fail(err, 'Could not sell the gift card'),
+        error: (err) => this.fail(err, T('Could not sell the gift card')),
       });
   }
 
@@ -259,7 +260,7 @@ export class GiftCardsComponent implements OnInit {
         this.topUpCard = null;
         this.load();
       },
-      error: (err) => this.fail(err, 'Could not add money'),
+      error: (err) => this.fail(err, T('Could not add money')),
     });
   }
 
@@ -282,7 +283,7 @@ export class GiftCardsComponent implements OnInit {
         this.expiryCard = null;
         this.load();
       },
-      error: (err) => this.fail(err, 'Could not change the expiry date'),
+      error: (err) => this.fail(err, T('Could not change the expiry date')),
     });
   }
 
@@ -294,25 +295,25 @@ export class GiftCardsComponent implements OnInit {
         this.done = r.code + (blocked ? ' is blocked.' : ' is unblocked.');
         this.load();
       },
-      error: (err) => this.fail(err, 'Could not change the card'),
+      error: (err) => this.fail(err, T('Could not change the card')),
     });
   }
 
   openHistory(c: GiftCardRow): void {
     this.error = null;
-    this.api.detail(c.id).subscribe({ next: (d) => (this.detail = d), error: (err) => this.fail(err, 'Could not load the history') });
+    this.api.detail(c.id).subscribe({ next: (d) => (this.detail = d), error: (err) => this.fail(err, T('Could not load the history')) });
   }
 
   release(): void {
     this.error = null;
     this.done = null;
-    if (!confirm('Move the money left on every expired gift card out of what you owe and into income? This cannot be undone.')) return;
+    if (!confirm(T('Move the money left on every expired gift card out of what you owe and into income? This cannot be undone.'))) return;
     this.api.releaseExpired().subscribe({
       next: (r) => {
         this.done = 'Released ' + r.amount + ' from ' + r.cards + ' expired card(s).';
         this.load();
       },
-      error: (err) => this.fail(err, 'Could not release the expired cards'),
+      error: (err) => this.fail(err, T('Could not release the expired cards')),
     });
   }
 }

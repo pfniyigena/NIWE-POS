@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Holiday, HrApiService, HrSettings, LeaveType, LeaveTypePayload } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Attendance & Leaves > Settings: working hours and days, leave types and public holidays. */
 @Component({
   selector: 'app-leave-settings',
@@ -110,7 +111,7 @@ export class LeaveSettingsComponent implements OnInit {
   constructor(private api: HrApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => (this.settings = { ...s, workStart: s.workStart.slice(0, 5) }), error: (e) => (this.error = e?.error?.message ?? 'Failed to load settings') });
+    this.api.settings().subscribe({ next: (s) => (this.settings = { ...s, workStart: s.workStart.slice(0, 5) }), error: (e) => (this.error = e?.error?.message ?? T('Failed to load settings')) });
     this.loadTypes();
     this.loadHolidays();
   }
@@ -136,12 +137,12 @@ export class LeaveSettingsComponent implements OnInit {
         this.saved = 'Settings saved.';
         setTimeout(() => (this.saved = null), 3000);
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the settings'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the settings')),
     });
   }
 
   loadTypes(): void {
-    this.api.leaveTypes().subscribe({ next: (t) => (this.types = t), error: (e) => (this.error = e?.error?.message ?? 'Failed to load leave types') });
+    this.api.leaveTypes().subscribe({ next: (t) => (this.types = t), error: (e) => (this.error = e?.error?.message ?? T('Failed to load leave types')) });
   }
 
   editType(t: LeaveType): void {
@@ -162,13 +163,13 @@ export class LeaveSettingsComponent implements OnInit {
         this.resetType();
         this.loadTypes();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the leave type'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the leave type')),
     });
   }
 
   delType(t: LeaveType): void {
-    if (!confirm(`Delete leave type ${t.name}?`)) return;
-    this.api.deleteLeaveType(t.id).subscribe({ next: () => this.loadTypes(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the leave type') });
+    if (!confirm(T('Delete leave type {p0}?', { p0: t.name }))) return;
+    this.api.deleteLeaveType(t.id).subscribe({ next: () => this.loadTypes(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the leave type')) });
   }
 
   loadHolidays(): void {
@@ -182,11 +183,11 @@ export class LeaveSettingsComponent implements OnInit {
         this.holiday.name = '';
         this.loadHolidays();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not add the holiday'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not add the holiday')),
     });
   }
 
   delHoliday(h: Holiday): void {
-    this.api.deleteHoliday(h.id).subscribe({ next: () => this.loadHolidays(), error: (e) => (this.error = e?.error?.message ?? 'Could not remove the holiday') });
+    this.api.deleteHoliday(h.id).subscribe({ next: () => this.loadHolidays(), error: (e) => (this.error = e?.error?.message ?? T('Could not remove the holiday')) });
   }
 }

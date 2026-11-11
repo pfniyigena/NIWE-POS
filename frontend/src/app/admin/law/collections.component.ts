@@ -8,6 +8,7 @@ import { LawExportComponent } from './law-export.component';
 import { CollectionRow, Collections, LawApiService, RemindResult } from '../../core/api/law-api.service';
 import { showPdf } from '../../core/open-pdf';
 
+import { T } from '../../core/i18n/t';
 /** Law Firm > Fee collections: invoices clients have not paid yet, how late they are, reminders by e-mail and the client statement. */
 @Component({
   selector: 'app-law-collections',
@@ -98,7 +99,7 @@ export class LawCollectionsComponent implements OnInit {
   load(): void {
     this.api.collections({ overdueOnly: this.overdueOnly, q: this.q }).subscribe({
       next: (d) => { this.data = d; this.rows = d.rows; this.chosen = {}; this.error = null; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the unpaid fees'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the unpaid fees')),
     });
   }
 
@@ -123,7 +124,7 @@ export class LawCollectionsComponent implements OnInit {
         this.done = 'Sent ' + r.mails + ' e-mail' + (r.mails === 1 ? '' : 's') + ' for ' + r.invoices + ' invoice' + (r.invoices === 1 ? '' : 's') + (r.skipped ? '. Not sent: ' + bad.join('; ') : '') + '.';
         this.load();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the reminders'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the reminders'); },
     });
   }
 
@@ -136,7 +137,7 @@ export class LawCollectionsComponent implements OnInit {
     this.busy = true; this.error = null; this.done = null;
     this.api.emailClientStatement(r.clientId).subscribe({
       next: (x) => { this.busy = false; this.done = 'The statement was sent to ' + x.sentTo + '.'; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the statement'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the statement'); },
     });
   }
 }

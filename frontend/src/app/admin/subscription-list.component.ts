@@ -9,6 +9,7 @@ import { SubscriptionAutomationApiService } from '../core/api/subscription-autom
 import { Subscription, SubscriptionPlan } from '../core/models';
 import { SubscriptionPlanApiService } from '../core/api/subscription-plan-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Subscriptions — one customer's own enrollment in a SubscriptionPlan. Billing is
  * automatic (daily sweep auto-generates an ISSUED invoice on each due date — see backend
@@ -147,7 +148,7 @@ export class SubscriptionListComponent implements OnInit {
   reload(): void {
     this.subscriptionApi.listAll(this.customerId ?? undefined, { status: this.status, planId: this.planId, search: this.search, view: this.view === 'all' ? '' : this.view }).subscribe({
       next: (s) => (this.subscriptions = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load subscriptions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load subscriptions')),
     });
   }
 

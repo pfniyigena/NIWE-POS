@@ -7,6 +7,7 @@ import { DigestResult, RealEstateApiService, ReminderResult, ReSettings } from '
 import { AccountApiService } from '../../core/api/account-api.service';
 import { Account } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Settings (admin): the list of areas, how long a viewing lasts, when a lead counts as quiet, the commission, and the public website. */
 @Component({
   selector: 'app-re-settings',
@@ -138,7 +139,7 @@ export class ReSettingsComponent implements OnInit {
     this.accountApi.listActiveByType('EXPENSE').subscribe({ next: (a) => (this.accounts = a), error: () => (this.accounts = []) });
     this.api.settings().subscribe({
       next: (s) => this.fill(s),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')),
     });
   }
 
@@ -197,7 +198,7 @@ export class ReSettingsComponent implements OnInit {
       websiteIntro: this.websiteIntro, websitePhone: this.websitePhone, websiteEmail: this.websiteEmail, enquiriesPerPhonePerDay: this.enquiriesPerDay,
       defaultCommissionPercent: this.commissionPercent ?? 0, commissionAccountId: this.commissionAccountId ?? 0, followUpEmailEnabled: this.followUpEmail, viewingReminderEnabled: this.reminderOn, viewingReminderHours: this.reminderHours, offerTerms: this.offerTerms, reservationTerms: this.reservationTerms, agreementTerms: this.agreementTerms }).subscribe({
       next: (s) => { this.saving = false; this.saved = true; this.fill(s); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the settings'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the settings'); },
     });
   }
 }

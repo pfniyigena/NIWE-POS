@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { BookingApiService, Option, PaymentMode, ServicePayload } from '../../core/api/booking-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Booking > Services > one service (new or edit). */
 @Component({
   selector: 'app-booking-service-form',
@@ -78,7 +79,7 @@ export class BookingServiceFormComponent implements OnInit {
           this.resourceKind = s.resourceKind ?? '';
           this.color = s.color || '#2f6fb3';
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the service'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the service')),
       });
     }
   }
@@ -94,7 +95,7 @@ export class BookingServiceFormComponent implements OnInit {
     const call = this.id ? this.api.updateService(this.id, p) : this.api.createService(p);
     call.subscribe({
       next: () => this.router.navigate(['/admin/booking/services']),
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the service'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the service'); },
     });
   }
 }

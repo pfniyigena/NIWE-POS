@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { Appointment, BookingApiService } from '../core/api/booking-api.service';
 
+import { T } from '../core/i18n/t';
 /** Booking > My appointments: what is booked with me (any login that can be given appointments). */
 @Component({
   selector: 'app-my-appointments',
@@ -36,6 +37,6 @@ export class MyAppointmentsComponent implements OnInit {
   error: string | null = null;
   constructor(private api: BookingApiService) {}
   ngOnInit(): void {
-    this.api.mine().subscribe({ next: (l) => (this.list = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load your appointments') });
+    this.api.mine().subscribe({ next: (l) => (this.list = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load your appointments')) });
   }
 }

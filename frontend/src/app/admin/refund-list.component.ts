@@ -10,6 +10,7 @@ import { BillApiService } from '../core/api/bill-api.service';
 import { Bill } from '../core/models';
 import { openPdfForPrint } from '../core/download-file';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Purchases > Refunds — Fourier: "Refunds equivalent with Credit note." Every voided bill,
  * store-wide, newest-voided first. A refund is not a separate document type in this app: it's the
@@ -83,7 +84,7 @@ export class RefundListComponent implements OnInit {
       },
       error: (err) => {
         this.printingId = null;
-        this.error = err?.error?.message ?? 'Failed to open refund PDF';
+        this.error = err?.error?.message ?? T('Failed to open refund PDF');
       },
     });
   }

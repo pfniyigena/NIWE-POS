@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LeadRow, Option, PropertyRow, RealEstateApiService, ViewingDto } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * Books a viewing (or moves one). Either the property or the lead (or both) can be fixed by the page it is shown on; the other is picked from a list.
  * When the agent already has a viewing at that time the server answers 409 and the form offers to keep both.
@@ -106,8 +107,8 @@ export class ViewingFormComponent implements OnInit {
 
   save(force: boolean): void {
     this.error = null;
-    if (!this.start) { this.error = 'Choose the date and time.'; return; }
-    if (!this.existing && (!this.propertyId || !this.leadId)) { this.error = 'Choose the property and who is viewing.'; return; }
+    if (!this.start) { this.error = T('Choose the date and time.'); return; }
+    if (!this.existing && (!this.propertyId || !this.leadId)) { this.error = T('Choose the property and who is viewing.'); return; }
     const startAt = new Date(this.start).toISOString();
     const endAt = this.end ? new Date(this.end).toISOString() : null;
     this.saving = true;
@@ -118,7 +119,7 @@ export class ViewingFormComponent implements OnInit {
       error: (e) => {
         this.saving = false;
         if (e?.status === 409) { this.clash = e?.error?.message ?? 'The agent is busy at that time.'; this.error = null; }
-        else { this.clash = null; this.error = e?.error?.message ?? 'Could not save the viewing'; }
+        else { this.clash = null; this.error = e?.error?.message ?? T('Could not save the viewing'); }
       },
     });
   }

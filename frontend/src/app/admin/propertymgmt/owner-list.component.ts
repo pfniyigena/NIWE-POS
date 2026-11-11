@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { PmExportComponent } from './pm-export.component';
 import { OwnerPayload, OwnerRow, PropertyMgmtApiService } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 const txt = (v: string | null | undefined): string | undefined => { const t = (v ?? '').trim(); return t ? t : undefined; };
 
 /** Property Management > Owners: the landlords whose properties we manage, with their portfolio. */
@@ -80,19 +81,19 @@ export class OwnerListComponent implements OnInit {
     if (resetPage) this.page = 0;
     this.api.ownersPage({ q: this.q.trim(), activeOnly: this.activeOnly, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the owners'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the owners'); },
     });
   }
 
   create(): void {
     this.error = null;
-    if (!txt(this.f.name)) { this.error = 'Give the owner\'s name.'; return; }
+    if (!txt(this.f.name)) { this.error = T('Give the owner\'s name.'); return; }
     const p: OwnerPayload = { name: txt(this.f.name), phone: txt(this.f.phone), email: txt(this.f.email) };
     if (this.f.fee != null && String(this.f.fee) !== '') p.feePercent = Number(this.f.fee);
     this.saving = true;
     this.api.createOwner(p).subscribe({
       next: (o) => { this.saving = false; this.router.navigate(['/admin/propertymgmt/owners', o.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the owner'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the owner'); },
     });
   }
 }

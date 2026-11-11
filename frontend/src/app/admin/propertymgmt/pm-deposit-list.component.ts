@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { DEPOSIT_STATE_LABEL, DepositRow, DepositState, DepositTotals, PmDepositApiService, depositBadge } from '../../core/api/pm-deposit-api.service';
 import { PropertyMgmtApiService, PropertyRow } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Deposits: the security deposit of every lease, with what is held and what has to be refunded. */
 @Component({
   selector: 'app-pm-deposit-list',
@@ -89,7 +90,7 @@ export class PmDepositListComponent implements OnInit {
     this.error = null;
     this.api.deposits({ q: this.q.trim(), state: this.state, propertyId: this.propertyId, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the deposits'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the deposits'); },
     });
   }
 }

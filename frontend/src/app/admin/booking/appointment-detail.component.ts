@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Appointment, BookingApiService, Slot } from '../../core/api/booking-api.service';
 
+import { T } from '../../core/i18n/t';
 /** One appointment: who, when, payment, and the actions that move it along. Serves /admin/booking/appointments/:id and /booking/appointments/:id (any login). */
 @Component({
   selector: 'app-appointment-detail',
@@ -142,7 +143,7 @@ export class AppointmentDetailComponent implements OnInit {
   private reload(): void {
     this.api.get(Number(this.route.snapshot.paramMap.get('id'))).subscribe({
       next: (a) => { this.a = a; this.notes = a.notes ?? ''; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the appointment'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the appointment')),
     });
   }
 
@@ -156,19 +157,19 @@ export class AppointmentDetailComponent implements OnInit {
     this.info = null;
     call.subscribe({
       next: (a: Appointment) => { this.a = a; this.notes = a.notes ?? ''; this.busy = false; this.info = message; this.cancelOpen = false; this.moving = false; },
-      error: (e: any) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e: any) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 
   act(kind: 'confirm' | 'complete' | 'noShow'): void {
     if (!this.a) return;
     const id = this.a.id;
-    if (kind === 'confirm') this.run(this.api.confirm(id), 'Confirmed.');
-    else if (kind === 'complete') this.run(this.api.complete(id), 'Marked as done.');
-    else this.run(this.api.noShow(id), 'Marked as a no-show.');
+    if (kind === 'confirm') this.run(this.api.confirm(id), T('Confirmed.'));
+    else if (kind === 'complete') this.run(this.api.complete(id), T('Marked as done.'));
+    else this.run(this.api.noShow(id), T('Marked as a no-show.'));
   }
 
-  remind(): void { if (this.a) this.run(this.api.remind(this.a.id), 'Reminder sent.'); }
+  remind(): void { if (this.a) this.run(this.api.remind(this.a.id), T('Reminder sent.')); }
 
   downloadIcs(): void {
     if (!this.a) return;
@@ -182,13 +183,13 @@ export class AppointmentDetailComponent implements OnInit {
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 2000);
       },
-      error: () => (this.error = 'Could not download the calendar file'),
+      error: () => (this.error = T('Could not download the calendar file')),
     });
   }
 
-  cancelNow(): void { if (this.a) this.run(this.api.cancel(this.a.id, this.cancelReason.trim() || null), 'Cancelled.'); }
-  invoice(): void { if (this.a) this.run(this.api.invoice(this.a.id), 'Invoice created.'); }
-  saveNotes(): void { if (this.a) this.run(this.api.saveNotes(this.a.id, this.notes.trim() || null), 'Notes saved.'); }
+  cancelNow(): void { if (this.a) this.run(this.api.cancel(this.a.id, this.cancelReason.trim() || null), T('Cancelled.')); }
+  invoice(): void { if (this.a) this.run(this.api.invoice(this.a.id), T('Invoice created.')); }
+  saveNotes(): void { if (this.a) this.run(this.api.saveNotes(this.a.id, this.notes.trim() || null), T('Notes saved.')); }
 
   startReschedule(): void {
     this.moving = !this.moving;
@@ -204,12 +205,12 @@ export class AppointmentDetailComponent implements OnInit {
     this.slotsLoaded = false;
     this.api.slots(this.a.serviceId, this.rdate, null, this.a.id).subscribe({
       next: (l) => { this.slots = l; this.slotsLoaded = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not check availability'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not check availability')),
     });
   }
 
   reschedule(): void {
     if (!this.a || !this.rtime) return;
-    this.run(this.api.reschedule(this.a.id, `${this.rdate}T${this.rtime}`, this.a.staffUserId, this.a.resourceId), 'Moved.');
+    this.run(this.api.reschedule(this.a.id, `${this.rdate}T${this.rtime}`, this.a.staffUserId, this.a.resourceId), T('Moved.'));
   }
 }

@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { WorkOrderApiService, WorkOrderSummary, WorkOrderSummaryCounts } from '../../core/api/work-order-api.service';
 import { WorkOrderTabsComponent } from './work-order-tabs.component';
 
+import { T } from '../../core/i18n/t';
 /** Work Orders > Work orders: every job with its status, assignee, due date and what is waiting to be invoiced. */
 @Component({
   selector: 'app-work-order-list',
@@ -98,7 +99,7 @@ export class WorkOrderListComponent implements OnInit {
     this.error = null;
     this.api.list({ status: this.status, type: this.type, assetId: this.assetId, overdue: this.overdueOnly, q: this.q.trim() }).subscribe({
       next: (l) => (this.list = l),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the work orders'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the work orders')),
     });
   }
 

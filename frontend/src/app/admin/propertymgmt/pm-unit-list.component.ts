@@ -8,6 +8,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { OCCUPANCY_LABEL, Occupancy, PM_UNIT_KINDS, PropertyMgmtApiService, PropertyRow, UnitRow, occupancyBadge, pmLabel } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Units: every unit of every property, with who is in it, filtered by status. */
 @Component({
   selector: 'app-pm-unit-list',
@@ -82,7 +83,7 @@ export class PmUnitListComponent implements OnInit {
     this.error = null;
     this.api.unitsPage({ q: this.q.trim(), propertyId: this.propertyId, occupancy: this.occupancy, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the units'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the units'); },
     });
   }
 }

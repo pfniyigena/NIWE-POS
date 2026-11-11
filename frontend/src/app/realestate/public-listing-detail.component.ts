@@ -8,6 +8,7 @@ import { PublicSettingsApiService } from '../core/api/public-settings-api.servic
 import { PURPOSE_LABEL, typeLabel } from '../core/api/realestate-api.service';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
+import { T } from '../core/i18n/t';
 /** One property on the public website (/listings/:id): photos, details and an enquiry form that becomes a lead for the agent. Needs no login. */
 @Component({
   selector: 'app-public-listing-detail',
@@ -133,7 +134,7 @@ export class PublicListingDetailComponent implements OnInit {
     this.api.info().subscribe({ next: (i) => (this.info = i), error: () => {} });
     this.api.detail(Number(this.route.snapshot.paramMap.get('id'))).subscribe({
       next: (d) => (this.d = d),
-      error: (e) => (this.error = e?.status === 404 ? 'This property is no longer listed.' : e?.error?.message ?? 'Could not load the property.'),
+      error: (e) => (this.error = e?.status === 404 ? T('This property is no longer listed.') : e?.error?.message ?? T('Could not load the property.')),
     });
   }
 
@@ -152,12 +153,12 @@ export class PublicListingDetailComponent implements OnInit {
   send(): void {
     this.formError = null;
     const f = this.f;
-    if (!f.name.trim()) { this.formError = 'Please tell us your name.'; return; }
-    if (!f.phone.trim() && !f.email.trim()) { this.formError = 'Give a phone number or an e-mail so we can reach you.'; return; }
+    if (!f.name.trim()) { this.formError = T('Please tell us your name.'); return; }
+    if (!f.phone.trim() && !f.email.trim()) { this.formError = T('Give a phone number or an e-mail so we can reach you.'); return; }
     this.sending = true;
     this.api.enquire(this.d!.id, { name: f.name.trim(), phone: f.phone.trim() || null, email: f.email.trim() || null, message: f.message.trim() || null, website: f.website }).subscribe({
       next: (r) => { this.sending = false; this.sent = true; this.thanksText = r.message; },
-      error: (e) => { this.sending = false; this.formError = e?.error?.message ?? 'Could not send your enquiry. Please try again.'; },
+      error: (e) => { this.sending = false; this.formError = e?.error?.message ?? T('Could not send your enquiry. Please try again.'); },
     });
   }
 }

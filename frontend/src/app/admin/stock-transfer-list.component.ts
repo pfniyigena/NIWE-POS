@@ -10,6 +10,7 @@ import { StockTransfer } from '../core/models';
 import { AuthService } from '../core/auth.service';
 
 import { q4 } from '../core/qty';
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Stock Transfers — Fourier: "multi-location/multi-warehouse tracking ...
  * Stock Transfers", then later: "User can make stock transfer to any location." Same
@@ -114,13 +115,13 @@ export class StockTransferListComponent implements OnInit {
   load(): void {
     this.stockTransferApi.listAll().subscribe({
       next: (t) => (this.transfers = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load stock transfers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load stock transfers')),
     });
   }
 
   confirm(t: StockTransfer): void {
-    const action = t.interBranch ? 'Dispatch' : 'Confirm';
-    if (!confirm(`${action} this transfer of ${t.quantity} x ${t.productName} from "${t.fromWarehouseName} / ${t.fromLocationName}" to "${t.toWarehouseName} / ${t.toLocationName}"? ${t.interBranch ? 'The stock leaves the source now and stays in transit until the other branch receives it.' : 'This will move the stock.'}`)) return;
+    const action = t.interBranch ? T('Dispatch') : T('Confirm');
+    if (!confirm(T('{p0} this transfer of {p1} x {p2} from "{p3} / {p4}" to "{p5} / {p6}"? {p7}', { p0: action, p1: t.quantity, p2: t.productName, p3: t.fromWarehouseName, p4: t.fromLocationName, p5: t.toWarehouseName, p6: t.toLocationName, p7: t.interBranch ? T('The stock leaves the source now and stays in transit until the other branch receives it.') : T('This will move the stock.') }))) return;
     this.error = null;
     this.busyId = t.id;
     this.stockTransferApi.confirm(t.id).subscribe({
@@ -130,7 +131,7 @@ export class StockTransferListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to confirm transfer';
+        this.error = err?.error?.message ?? T('Failed to confirm transfer');
       },
     });
   }
@@ -144,10 +145,10 @@ export class StockTransferListComponent implements OnInit {
   receive(t: StockTransfer): void {
     const qty = Number(this.receivedQty);
     if (!(qty >= 0) || qty > t.quantity) {
-      this.error = `Enter how many arrived (0 to ${t.quantity})`;
+      this.error = T('Enter how many arrived (0 to {p0})', { p0: t.quantity });
       return;
     }
-    if (qty < t.quantity && !confirm(`${q4(t.quantity - qty)} unit(s) will be written off as lost in transit. Continue?`)) return;
+    if (qty < t.quantity && !confirm(T('{p0} unit(s) will be written off as lost in transit. Continue?', { p0: q4(t.quantity - qty) }))) return;
     this.error = null;
     this.busyId = t.id;
     this.stockTransferApi.receive(t.id, qty, this.receiveNote.trim() || null).subscribe({
@@ -158,7 +159,7 @@ export class StockTransferListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to receive transfer';
+        this.error = err?.error?.message ?? T('Failed to receive transfer');
       },
     });
   }
@@ -177,7 +178,7 @@ export class StockTransferListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to reject transfer';
+        this.error = err?.error?.message ?? T('Failed to reject transfer');
       },
     });
   }

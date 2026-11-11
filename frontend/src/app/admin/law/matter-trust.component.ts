@@ -6,6 +6,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { showPdf } from '../../core/open-pdf';
 import { LawApiService, MatterTrust, TRUST_TYPE_LABEL, TrustTx } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * The Client money tab of a matter: the money the firm holds for this client in its trust account, and every movement of it. Money in is
  * recorded at once; a payout or a fee transfer to an issued invoice is asked for here and approved by another person (the lead lawyer or an
@@ -181,7 +182,7 @@ export class MatterTrustComponent implements OnChanges {
   load(): void {
     this.api.matterTrust(this.matterId).subscribe({
       next: (t) => { this.t = t; this.error = null; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the client money'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the client money')),
     });
   }
 
@@ -202,7 +203,7 @@ export class MatterTrustComponent implements OnChanges {
     this.info = null;
     this.api.trustEmailStatement(this.matterId).subscribe({
       next: (r) => { this.busy = false; this.info = r.message; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'The statement could not be sent'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('The statement could not be sent'); },
     });
   }
 
@@ -226,31 +227,31 @@ export class MatterTrustComponent implements OnChanges {
     this.info = null;
     call.subscribe({
       next: (t) => { this.busy = false; this.t = t; this.info = done; this.mode = null; this.deciding = null; this.decisionNote = ''; after?.(); this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 
   deposit(): void {
     this.run(this.api.trustDeposit(this.matterId, { amount: this.dep.amount, date: this.dep.date, method: this.dep.method, reference: this.dep.reference.trim() || null,
-      payerName: this.dep.payerName.trim() || null, purpose: this.dep.purpose.trim() || null }), 'Deposit recorded.', () => (this.dep = this.blankDeposit()));
+      payerName: this.dep.payerName.trim() || null, purpose: this.dep.purpose.trim() || null }), T('Deposit recorded.'), () => (this.dep = this.blankDeposit()));
   }
   payout(): void {
     this.run(this.api.trustPayout(this.matterId, { amount: this.pay.amount, date: this.pay.date, method: this.pay.method, reference: this.pay.reference.trim() || null,
-      payeeName: this.pay.payeeName.trim(), purpose: this.pay.purpose.trim() }), 'Sent for approval. The money stays in the trust account until another person approves.', () => (this.pay = this.blankPayout()));
+      payeeName: this.pay.payeeName.trim(), purpose: this.pay.purpose.trim() }), T('Sent for approval. The money stays in the trust account until another person approves.'), () => (this.pay = this.blankPayout()));
   }
   fee(): void {
     if (!this.ft.invoiceId) return;
     this.run(this.api.trustFeeTransfer(this.matterId, { invoiceId: this.ft.invoiceId, amount: this.ft.amount, purpose: null }),
-      'Sent for approval. The invoice is paid when another person approves.', () => (this.ft = { invoiceId: null, amount: null }));
+      T('Sent for approval. The invoice is paid when another person approves.'), () => (this.ft = { invoiceId: null, amount: null }));
   }
   ask(tx: TrustTx, kind: 'approve' | 'reject' | 'reverse'): void { this.deciding = { tx, kind }; this.decisionNote = ''; this.mode = null; this.info = null; this.error = null; }
   decide(): void {
     if (!this.deciding) return;
     const { tx, kind } = this.deciding;
     const note = this.decisionNote.trim();
-    if (kind === 'approve') this.run(this.api.trustApprove(tx.id, note || null), `${tx.number} approved and paid.`);
-    else if (kind === 'reject') this.run(this.api.trustReject(tx.id, note), `${tx.number} rejected.`);
-    else this.run(this.api.trustReverse(tx.id, note), `${tx.number} taken back.`);
+    if (kind === 'approve') this.run(this.api.trustApprove(tx.id, note || null), T('{p0} approved and paid.', { p0: tx.number }));
+    else if (kind === 'reject') this.run(this.api.trustReject(tx.id, note), T('{p0} rejected.', { p0: tx.number }));
+    else this.run(this.api.trustReverse(tx.id, note), T('{p0} taken back.', { p0: tx.number }));
   }
-  cancel(tx: TrustTx): void { if (confirm('Cancel this request?')) this.run(this.api.trustCancel(tx.id), `${tx.number} cancelled.`); }
+  cancel(tx: TrustTx): void { if (confirm(T('Cancel this request?'))) this.run(this.api.trustCancel(tx.id), T('{p0} cancelled.', { p0: tx.number })); }
 }

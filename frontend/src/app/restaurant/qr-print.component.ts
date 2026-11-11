@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import * as QRCode from 'qrcode';
 import { RestaurantOnlineApiService } from '../core/api/restaurant-online-api.service';
 
+import { T } from '../core/i18n/t';
 interface Card { title: string; sub: string; url: string; image: string }
 
 /** A sheet of QR cards for printing: one per table, or one poster for the takeaway and delivery page. Standalone (no side menu) so it prints cleanly. */
@@ -45,7 +46,7 @@ export class QrPrintComponent implements OnInit {
     }
     this.api.qr().subscribe({
       next: (list) => this.make(list.filter((t) => t.active).map((t) => ({ title: 'Table ' + t.name, sub: 'Scan to see the menu and order', url: origin + t.path }))),
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the QR codes'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the QR codes')),
     });
   }
 

@@ -10,6 +10,7 @@ import { Customer } from '../../core/models';
 import { QuickCustomerComponent } from '../../shared/quick-customer.component';
 import { ProjectDetail, ProjectPayload, ProjectStatus, StaffOption, TimeApiService } from '../../core/api/time-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Time Tracking > a project: its details, budget and rates, tasks and per-person rates. */
 @Component({
   selector: 'app-time-project-form',
@@ -164,7 +165,7 @@ export class TimeProjectFormComponent implements OnInit {
     this.saved = false;
     this.api.setTeam(this.id!, this.team.map((m) => m.userId), this.restrict).subscribe({
       next: (d) => { this.show(d); this.saved = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the team'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the team')),
     });
   }
 
@@ -188,7 +189,7 @@ export class TimeProjectFormComponent implements OnInit {
   private reload(): void {
     this.api.project(this.id!).subscribe({
       next: (d) => this.show(d),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the project'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the project')),
     });
   }
 
@@ -221,16 +222,16 @@ export class TimeProjectFormComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not save';
+        this.error = e?.error?.message ?? T('Could not save');
       },
     });
   }
 
   remove(): void {
-    if (!confirm('Delete this project? Only possible while no time is logged on it.')) return;
+    if (!confirm(T('Delete this project? Only possible while no time is logged on it.'))) return;
     this.api.deleteProject(this.id!).subscribe({
       next: () => this.router.navigate(['/admin/time/projects']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete')),
     });
   }
 
@@ -241,16 +242,16 @@ export class TimeProjectFormComponent implements OnInit {
         this.newTaskHours = null;
         this.reload();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not add the task'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not add the task')),
     });
   }
 
   toggleTask(t: { id: number; name: string; estimatedHours: number | null; active: boolean }): void {
-    this.api.updateTask(t.id, { name: t.name, estimatedHours: t.estimatedHours, active: !t.active }).subscribe({ next: () => this.reload(), error: (e) => (this.error = e?.error?.message ?? 'Could not change the task') });
+    this.api.updateTask(t.id, { name: t.name, estimatedHours: t.estimatedHours, active: !t.active }).subscribe({ next: () => this.reload(), error: (e) => (this.error = e?.error?.message ?? T('Could not change the task')) });
   }
 
   removeTask(taskId: number): void {
-    this.api.deleteTask(taskId).subscribe({ next: () => this.reload(), error: (e) => (this.error = e?.error?.message ?? 'Could not remove the task') });
+    this.api.deleteTask(taskId).subscribe({ next: () => this.reload(), error: (e) => (this.error = e?.error?.message ?? T('Could not remove the task')) });
   }
 
   addRate(): void {
@@ -260,11 +261,11 @@ export class TimeProjectFormComponent implements OnInit {
         this.rateValue = null;
         this.reload();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not set the rate'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not set the rate')),
     });
   }
 
   removeRate(userId: number): void {
-    this.api.removeRate(this.id!, userId).subscribe({ next: () => this.reload(), error: (e) => (this.error = e?.error?.message ?? 'Could not remove the rate') });
+    this.api.removeRate(this.id!, userId).subscribe({ next: () => this.reload(), error: (e) => (this.error = e?.error?.message ?? T('Could not remove the rate')) });
   }
 }

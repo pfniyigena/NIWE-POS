@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { ExpenseApiService } from '../../core/api/expense-api.service';
 import { ExpenseSettings } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Expenses > Settings — who may approve what, and when bills fall due. Administrators only. */
 @Component({
   selector: 'app-expense-settings',
@@ -57,7 +58,7 @@ export class ExpenseSettingsComponent implements OnInit {
   constructor(private api: ExpenseApiService) {}
 
   ngOnInit(): void {
-    this.api.getSettings().subscribe({ next: (s) => (this.s = s), error: (err) => (this.error = err?.error?.message ?? 'Could not load the settings') });
+    this.api.getSettings().subscribe({ next: (s) => (this.s = s), error: (err) => (this.error = err?.error?.message ?? T('Could not load the settings')) });
   }
 
   save(): void {
@@ -69,7 +70,7 @@ export class ExpenseSettingsComponent implements OnInit {
         this.s = s;
         this.saved = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save')),
     });
   }
 }

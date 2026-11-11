@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { DEADLINE_TYPE_LABEL, LawApiService, Mine } from '../core/api/law-api.service';
 
+import { T } from '../core/i18n/t';
 /** Law Firm > My work: my deadlines (overdue and the next 30 days), my tasks and my open matters. Open to any login; the server shows only the person's own. */
 @Component({
   selector: 'app-law-my-work',
@@ -80,16 +81,16 @@ export class LawMyWorkComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    this.api.mine().subscribe({ next: (m) => (this.m = m), error: (e) => (this.error = e?.error?.message ?? 'Could not load your work') });
+    this.api.mine().subscribe({ next: (m) => (this.m = m), error: (e) => (this.error = e?.error?.message ?? T('Could not load your work')) });
   }
 
   typeLabel(t: string): string { return (DEADLINE_TYPE_LABEL as Record<string, string>)[t] ?? t; }
 
   done(id: number): void {
-    this.api.deadlineDone(id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not update the deadline') });
+    this.api.deadlineDone(id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not update the deadline')) });
   }
 
   finish(id: number): void {
-    this.api.taskStatus(id, 'DONE').subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not update the task') });
+    this.api.taskStatus(id, 'DONE').subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not update the task')) });
   }
 }

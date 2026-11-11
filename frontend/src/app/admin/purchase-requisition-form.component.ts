@@ -8,6 +8,7 @@ import { PurchaseRequisitionApiService } from '../core/api/purchase-requisition-
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface DraftLine {
   productId: number;
   productName: string;
@@ -134,7 +135,7 @@ export class PurchaseRequisitionFormComponent implements OnInit {
       this.requisitionApi.getById(this.id).subscribe({
         next: (r) => {
           if (r.status !== 'DRAFT') {
-            this.error = `${r.requisitionNumber} is ${r.status.replace('_', ' ').toLowerCase()} — only a draft can be edited.`;
+            this.error = T('{p0} is {p1} — only a draft can be edited.', { p0: r.requisitionNumber, p1: r.status.replace('_', ' ').toLowerCase() });
             return;
           }
           this.notes = r.notes ?? '';
@@ -145,7 +146,7 @@ export class PurchaseRequisitionFormComponent implements OnInit {
             note: l.note ?? '',
           }));
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to load purchase requisition'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to load purchase requisition')),
       });
     }
   }
@@ -182,7 +183,7 @@ export class PurchaseRequisitionFormComponent implements OnInit {
 
   submit(): void {
     if (this.lines.length === 0) {
-      this.error = 'Add at least one line item';
+      this.error = T('Add at least one line item');
       return;
     }
     this.error = null;
@@ -193,7 +194,7 @@ export class PurchaseRequisitionFormComponent implements OnInit {
     const call = this.id ? this.requisitionApi.update(this.id, payload) : this.requisitionApi.create(payload);
     call.subscribe({
       next: (r) => this.router.navigate(['/admin/purchase-requisitions', r.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save purchase requisition'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save purchase requisition')),
     });
   }
 }

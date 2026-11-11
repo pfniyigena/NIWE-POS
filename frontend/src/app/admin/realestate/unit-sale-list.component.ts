@@ -9,6 +9,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { ProjectRow, RealEstateApiService, UNIT_SALE_STAGE_LABEL, UnitSaleRow, UnitSaleStage } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Unit sales: every reservation and sale of a project unit, with what the buyer has paid. */
 @Component({
   selector: 'app-unit-sale-list',
@@ -84,7 +85,7 @@ export class UnitSaleListComponent implements OnInit {
     this.error = null;
     this.api.unitSalesPage({ q: this.q.trim(), stage: this.stage, projectId: this.projectId, openOnly: this.openOnly, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the sales'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the sales'); },
     });
   }
 

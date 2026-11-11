@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { PROJECT_STATUS_LABEL, ProjectDto, ProjectPayload, ProjectStatus, RealEstateApiService } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Projects > new project, or change one. */
 @Component({
   selector: 'app-project-form',
@@ -57,14 +58,14 @@ export class ProjectFormComponent implements OnInit {
         this.project = p;
         this.f = { name: p.name, area: p.area ?? '', address: p.address ?? '', developerName: p.developerName ?? '', status: p.status, launchDate: p.launchDate ?? '', handoverDate: p.handoverDate ?? '', description: p.description ?? '' };
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the project'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the project')),
     });
   }
 
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!f.name.trim()) { this.error = 'Give the project a name.'; return; }
+    if (!f.name.trim()) { this.error = T('Give the project a name.'); return; }
     const payload: ProjectPayload = {
       name: f.name.trim(), area: f.area, address: f.address, developerName: f.developerName, status: f.status, description: f.description,
       launchDate: f.launchDate || null, handoverDate: f.handoverDate || null,
@@ -73,7 +74,7 @@ export class ProjectFormComponent implements OnInit {
     const call = this.id ? this.api.updateProject(this.id, payload) : this.api.createProject(payload);
     call.subscribe({
       next: (p) => { this.saving = false; this.router.navigate(['/admin/realestate/projects', p.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the project'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the project'); },
     });
   }
 }

@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { FEE_INVOICE_STATUS_LABEL, FeeInvoiceRow, FeeInvoiceTotals, PmFeeInvoiceApiService, feeInvoiceBadge } from '../../core/api/pm-fee-invoice-api.service';
 import { OwnerRow, PropertyMgmtApiService } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Fee invoices: the invoices sent to owners for the management fee, with what they add up to (for the VAT return). */
 @Component({
   selector: 'app-pm-fee-invoice-list',
@@ -95,12 +96,12 @@ export class PmFeeInvoiceListComponent implements OnInit {
     this.api.totals(f).subscribe({ next: (t) => (this.totals = t), error: () => undefined });
     this.api.list({ ...f, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the invoices'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the invoices'); },
     });
   }
 
   download(r: FeeInvoiceRow): void {
     this.busy = true;
-    this.api.pdf(r.id, r.number).subscribe({ next: () => (this.busy = false), error: () => { this.busy = false; this.error = 'Could not make the file'; } });
+    this.api.pdf(r.id, r.number).subscribe({ next: () => (this.busy = false), error: () => { this.busy = false; this.error = T('Could not make the file'); } });
   }
 }

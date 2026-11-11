@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { Department, DepartmentPayload, Employee, HrApiService, Position, PositionPayload } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Organizational Structure > Departments and positions. */
 @Component({
   selector: 'app-org-setup',
@@ -123,8 +124,8 @@ export class OrgSetupComponent implements OnInit {
   }
 
   load(): void {
-    this.api.departments().subscribe({ next: (d) => (this.departments = d), error: (e) => (this.error = e?.error?.message ?? 'Failed to load departments') });
-    this.api.positions().subscribe({ next: (p) => (this.positions = p), error: (e) => (this.error = e?.error?.message ?? 'Failed to load positions') });
+    this.api.departments().subscribe({ next: (d) => (this.departments = d), error: (e) => (this.error = e?.error?.message ?? T('Failed to load departments')) });
+    this.api.positions().subscribe({ next: (p) => (this.positions = p), error: (e) => (this.error = e?.error?.message ?? T('Failed to load positions')) });
   }
 
   editDept(d: Department): void {
@@ -145,13 +146,13 @@ export class OrgSetupComponent implements OnInit {
         this.resetDept();
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the department'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the department')),
     });
   }
 
   delDept(d: Department): void {
-    if (!confirm(`Delete department ${d.name}?`)) return;
-    this.api.deleteDepartment(d.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the department') });
+    if (!confirm(T('Delete department {p0}?', { p0: d.name }))) return;
+    this.api.deleteDepartment(d.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the department')) });
   }
 
   editPos(p: Position): void {
@@ -172,12 +173,12 @@ export class OrgSetupComponent implements OnInit {
         this.resetPos();
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the position'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the position')),
     });
   }
 
   delPos(p: Position): void {
-    if (!confirm(`Delete position ${p.title}?`)) return;
-    this.api.deletePosition(p.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the position') });
+    if (!confirm(T('Delete position {p0}?', { p0: p.title }))) return;
+    this.api.deletePosition(p.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the position')) });
   }
 }

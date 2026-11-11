@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { InstallmentSummaryComponent } from './installment-summary.component';
 import { InstallmentApiService, InstallmentPlanSummary } from '../../core/api/installment-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Installments > Agreements: every instalment plan with its progress, plus the headline figures. */
 @Component({
   selector: 'app-installment-plan-list',
@@ -70,7 +71,7 @@ export class InstallmentPlanListComponent implements OnInit {
         this.plans = p;
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the plans'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the plans')),
     });
   }
 

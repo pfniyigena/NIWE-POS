@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Collections, CollectionItem, FollowUpKind, InstallmentApiService } from '../../core/api/installment-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Installments > Collections: who to chase today — overdue plans, oldest first — with the last contact and any promise to pay, and a quick way to log a call. */
 @Component({
   selector: 'app-installment-collections',
@@ -117,7 +118,7 @@ export class InstallmentCollectionsComponent implements OnInit {
         this.data = d;
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the list'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the list')),
     });
   }
 
@@ -142,12 +143,12 @@ export class InstallmentCollectionsComponent implements OnInit {
         next: () => {
           this.busy = false;
           this.logging = null;
-          this.info = 'Saved to the collections log.';
+          this.info = T('Saved to the collections log.');
           this.load();
         },
         error: (e) => {
           this.busy = false;
-          this.error = e?.error?.message ?? 'Could not save';
+          this.error = e?.error?.message ?? T('Could not save');
         },
       });
   }

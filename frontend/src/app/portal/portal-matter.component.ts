@@ -8,6 +8,7 @@ import { STATUS_LABEL } from '../core/api/law-api.service';
 import { downloadBlob } from '../core/download-file';
 import { PortalLayoutComponent } from './portal-layout.component';
 
+import { T } from '../core/i18n/t';
 /** One matter in the client portal: progress note, dates, shared documents, what the client sent, invoices, money held, and messages. Only what the firm switched on is shown. */
 @Component({
   selector: 'app-portal-matter',
@@ -136,7 +137,7 @@ export class PortalMatterComponent implements OnInit {
   private fail(e: any): void {
     this.busy = false;
     if (e?.status === 401 || e?.status === 403) { this.portal.signOut(); this.router.navigate(['/portal/login']); return; }
-    this.error = e?.error?.message ?? 'That did not work';
+    this.error = e?.error?.message ?? T('That did not work');
   }
 
   load(markRead = false): void {
@@ -161,7 +162,7 @@ export class PortalMatterComponent implements OnInit {
 
   download(id: number, fileName: string): void {
     this.error = null;
-    this.portal.download(id).subscribe({ next: (b) => downloadBlob(b, fileName), error: () => (this.error = 'Could not download the file') });
+    this.portal.download(id).subscribe({ next: (b) => downloadBlob(b, fileName), error: () => (this.error = T('Could not download the file')) });
   }
 
   upload(input: HTMLInputElement): void {
@@ -173,7 +174,7 @@ export class PortalMatterComponent implements OnInit {
     this.error = null;
     this.info = null;
     this.portal.upload(this.id, fd).subscribe({
-      next: () => { this.busy = false; this.info = 'Sent. A lawyer will look at it.'; this.file = null; this.uploadName = ''; input.value = ''; this.load(); },
+      next: () => { this.busy = false; this.info = T('Sent. A lawyer will look at it.'); this.file = null; this.uploadName = ''; input.value = ''; this.load(); },
       error: (e) => { input.value = ''; this.file = null; this.fail(e); },
     });
   }

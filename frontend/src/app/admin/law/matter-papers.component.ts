@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { LawApiService, PaperChecks, PaperKind, PaperRequest } from '../../core/api/law-api.service';
 import { showPdf } from '../../core/open-pdf';
 
+import { T } from '../../core/i18n/t';
 /** A matter's Papers tab: the file cover sheet, the engagement and fee letter and the closing letter. Print them, keep a copy in the documents, or e-mail the letters to the client. */
 @Component({
   selector: 'app-law-matter-papers',
@@ -99,7 +100,7 @@ export class MatterPapersComponent implements OnInit {
         if (c.trustEnabled && c.trustHeld > 0) w.push('Client money of ' + c.trustHeld.toLocaleString('en', { minimumFractionDigits: 2 }) + ' is still held.');
         this.warnings = w;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load this tab'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load this tab')),
     });
   }
 
@@ -125,7 +126,7 @@ export class MatterPapersComponent implements OnInit {
     this.error = null; this.info = null; this.busy = true;
     this.api.paperSave(this.matterId, kind, this.body(kind)).subscribe({
       next: (r) => { this.busy = false; this.info = r.message + ' (' + r.name + ')'; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not keep the paper'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not keep the paper'); },
     });
   }
 
@@ -133,7 +134,7 @@ export class MatterPapersComponent implements OnInit {
     this.error = null; this.info = null; this.busy = true;
     this.api.paperEmail(this.matterId, kind, this.body(kind)).subscribe({
       next: (r) => { this.busy = false; this.info = r.message; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'The e-mail could not be sent'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('The e-mail could not be sent'); },
     });
   }
 }

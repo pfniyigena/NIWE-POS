@@ -13,6 +13,7 @@ import { showPdf } from '../core/open-pdf';
 import { addDays, errMsg, today } from './hotel-util';
 import { billingLabel, groupBadge } from './group-list.component';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Groups > one group (also "new group"): dates and billing, room blocks with release dates, the rooming list, and the master account. */
 @Component({
   selector: 'app-group-detail',
@@ -352,7 +353,7 @@ export class GroupDetailComponent implements OnInit {
   saveGroup(): void {
     const payload = { ...this.form, contactName: this.form.contactName || null, contactPhone: this.form.contactPhone || null, contactEmail: this.form.contactEmail || null, notes: this.form.notes || null };
     if (this.g) {
-      this.run(() => this.api.updateGroup(this.g!.id, payload), () => { this.editing = false; this.message = 'Group saved.'; }, 'Could not save the group');
+      this.run(() => this.api.updateGroup(this.g!.id, payload), () => { this.editing = false; this.message = T('Group saved.'); }, T('Could not save the group'));
     } else {
       this.busy = true;
       this.error = null;
@@ -364,15 +365,15 @@ export class GroupDetailComponent implements OnInit {
   }
 
   confirm(): void {
-    this.run(() => this.api.confirmGroup(this.g!.id), () => (this.message = 'Group confirmed.'), 'Could not confirm the group');
+    this.run(() => this.api.confirmGroup(this.g!.id), () => (this.message = T('Group confirmed.')), T('Could not confirm the group'));
   }
 
   complete(): void {
-    this.run(() => this.api.completeGroup(this.g!.id), () => (this.message = 'Group completed.'), 'Could not complete the group');
+    this.run(() => this.api.completeGroup(this.g!.id), () => (this.message = T('Group completed.')), T('Could not complete the group'));
   }
 
   cancelGroup(): void {
-    this.run(() => this.api.cancelGroup(this.g!.id, this.cancelReason || null, this.cancelWaive), () => { this.cancelOpen = false; this.message = 'Group cancelled.'; }, 'Could not cancel the group');
+    this.run(() => this.api.cancelGroup(this.g!.id, this.cancelReason || null, this.cancelWaive), () => { this.cancelOpen = false; this.message = T('Group cancelled.'); }, T('Could not cancel the group'));
   }
 
   statement(): void {
@@ -397,23 +398,23 @@ export class GroupDetailComponent implements OnInit {
     this.run(() => (id ? this.api.updateGroupBlock(this.g!.id, id, payload) : this.api.addGroupBlock(this.g!.id, payload)), () => {
       this.blockId = null;
       this.resetBlock();
-      this.message = id ? 'Block saved.' : 'Rooms are now held for the group.';
-    }, 'Could not hold the rooms');
+      this.message = id ? T('Block saved.') : T('Rooms are now held for the group.');
+    }, T('Could not hold the rooms'));
   }
 
   release(b: GroupBlock): void {
-    this.run(() => this.api.releaseGroupBlock(this.g!.id, b.id), () => (this.message = `The unbooked ${b.roomTypeName} rooms are back on sale.`), 'Could not release the block');
+    this.run(() => this.api.releaseGroupBlock(this.g!.id, b.id), () => (this.message = T('The unbooked {p0} rooms are back on sale.', { p0: b.roomTypeName })), T('Could not release the block'));
   }
 
   removeBlock(b: GroupBlock): void {
-    this.run(() => this.api.deleteGroupBlock(this.g!.id, b.id), () => (this.message = 'Block removed.'), 'Could not remove the block');
+    this.run(() => this.api.deleteGroupBlock(this.g!.id, b.id), () => (this.message = T('Block removed.')), T('Could not remove the block'));
   }
 
   // ---- rooming
   addRooms(): void {
     if (!this.add.roomTypeId) return;
     const count = this.add.count ?? 1;
-    this.run(() => this.api.addGroupRooms(this.g!.id, { roomTypeId: this.add.roomTypeId!, count, names: null, adults: this.add.adults, children: null, checkInDate: null, checkOutDate: null, nightlyRate: this.add.nightlyRate }), () => (this.message = `${count} room${count === 1 ? '' : 's'} added.`), 'Could not add the rooms');
+    this.run(() => this.api.addGroupRooms(this.g!.id, { roomTypeId: this.add.roomTypeId!, count, names: null, adults: this.add.adults, children: null, checkInDate: null, checkOutDate: null, nightlyRate: this.add.nightlyRate }), () => (this.message = T('{p0} room{p1} added.', { p0: count, p1: count === 1 ? '' : 's' })), T('Could not add the rooms'));
   }
 
   applyNames(): void {
@@ -445,13 +446,13 @@ export class GroupDetailComponent implements OnInit {
     if (this.roomEdit.name.trim() && (this.roomEdit.name.trim() !== r.guestName || (this.roomEdit.phone || null) !== r.guestPhone)) {
       body.guest = { fullName: this.roomEdit.name.trim(), phone: this.roomEdit.phone || null };
     }
-    this.run(() => this.api.updateGroupRoom(this.g!.id, r.bookingId, body), () => { this.editRoom = null; this.message = 'Room updated.'; }, 'Could not update the room');
+    this.run(() => this.api.updateGroupRoom(this.g!.id, r.bookingId, body), () => { this.editRoom = null; this.message = T('Room updated.'); }, T('Could not update the room'));
   }
 
   exportRooming(format: 'xlsx' | 'pdf' | 'csv'): void {
     this.api.roomingExport(this.g!.id, format).subscribe({
       next: (b) => downloadBlob(b, `rooming-${this.g!.groupCode}.${format}`),
-      error: () => (this.error = 'The export failed.'),
+      error: () => (this.error = T('The export failed.')),
     });
   }
 
@@ -466,6 +467,6 @@ export class GroupDetailComponent implements OnInit {
     if (!this.money.amount || !this.moneyKind) return;
     const kind = this.moneyKind;
     const payload = { method: this.money.method, amount: this.money.amount, reference: this.money.reference || null, note: null };
-    this.run(() => this.api.groupMoney(this.g!.id, kind, payload), () => { this.moneyKind = null; this.message = 'Recorded.'; }, 'Could not record the money');
+    this.run(() => this.api.groupMoney(this.g!.id, kind, payload), () => { this.moneyKind = null; this.message = T('Recorded.'); }, T('Could not record the money'));
   }
 }

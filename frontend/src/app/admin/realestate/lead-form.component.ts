@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { LeadInterest, LeadPayload, LeadSource, Option, PROPERTY_TYPES, PropertyRow, PropertyType, RealEstateApiService, SOURCE_LABEL } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string | null => { const t = (v ?? '').trim(); return t ? t : null; };
 
@@ -89,7 +90,7 @@ export class LeadFormComponent implements OnInit {
           budgetMin: l.budgetMin, budgetMax: l.budgetMax, preferredArea: l.preferredArea ?? '', preferredType: l.preferredType, minBedrooms: l.minBedrooms,
           propertyId: l.propertyId, requirements: l.requirements ?? '',
         }),
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the lead'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the lead')),
       });
     } else {
       const pid = this.route.snapshot.queryParamMap.get('propertyId');
@@ -101,8 +102,8 @@ export class LeadFormComponent implements OnInit {
     this.error = null;
     if (!force) this.duplicate = null;
     const f = this.f;
-    if (!f.name.trim()) { this.error = 'Enter the lead\'s name.'; return; }
-    if (!f.phone.trim() && !f.email.trim()) { this.error = 'Give a phone number or an e-mail so the lead can be reached.'; return; }
+    if (!f.name.trim()) { this.error = T('Enter the lead\'s name.'); return; }
+    if (!f.phone.trim() && !f.email.trim()) { this.error = T('Give a phone number or an e-mail so the lead can be reached.'); return; }
     const body: LeadPayload = {
       name: f.name.trim(), phone: txt(f.phone), email: txt(f.email), interest: f.interest, source: f.source, budgetMin: num(f.budgetMin), budgetMax: num(f.budgetMax),
       preferredArea: txt(f.preferredArea), preferredType: f.preferredType, minBedrooms: num(f.minBedrooms), requirements: txt(f.requirements), propertyId: f.propertyId,
@@ -115,7 +116,7 @@ export class LeadFormComponent implements OnInit {
       error: (e) => {
         this.saving = false;
         if (e?.status === 409) { this.duplicate = e?.error?.message ?? 'There is already a lead with this phone number.'; this.error = null; }
-        else { this.duplicate = null; this.error = e?.error?.message ?? 'Could not save the lead'; }
+        else { this.duplicate = null; this.error = e?.error?.message ?? T('Could not save the lead'); }
       },
     });
   }

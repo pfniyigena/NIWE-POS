@@ -7,6 +7,7 @@ import { HotelApiService, RoomType } from '../core/api/hotel-api.service';
 import { HotelExportComponent } from './hotel-export.component';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Room types: one nightly rate per type (plus an optional charge for each guest above the included number). */
 @Component({
   selector: 'app-room-type-list',
@@ -107,7 +108,7 @@ export class RoomTypeListComponent implements OnInit {
   }
 
   remove(t: RoomType): void {
-    if (!confirm(`Delete "${t.name}"?`)) return;
+    if (!confirm(T('Delete "{p0}"?', { p0: t.name }))) return;
     this.error = null;
     this.api.deleteRoomType(t.id).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
   }

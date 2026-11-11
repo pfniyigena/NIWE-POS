@@ -12,6 +12,7 @@ import {
   maintenancePriorityBadge, maintenanceStatusBadge,
 } from '../../core/api/pm-maintenance-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Maintenance: repair requests for all units, by what needs doing (open, overdue, done), with their cost and who pays. */
 @Component({
   selector: 'app-maintenance-list',
@@ -121,7 +122,7 @@ export class MaintenanceListComponent implements OnInit {
     else if (this.tab) f.status = this.tab;
     this.api.list(f).subscribe({
       next: (l) => { this.list = l; this.loaded = true; this.error = null; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the maintenance requests'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the maintenance requests'); },
     });
   }
 }

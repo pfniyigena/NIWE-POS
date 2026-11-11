@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { WorkstationApiService } from '../../core/api/workstation-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Workstations > New/Edit. Mirrors PaymentMethodFormComponent's simple CRUD form pattern. */
 @Component({
   selector: 'app-workstation-form',
@@ -78,7 +79,7 @@ export class WorkstationFormComponent implements OnInit {
         this.hourlyRate = w.hourlyRate;
         this.active = w.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load workstation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load workstation')),
     });
   }
 
@@ -94,7 +95,7 @@ export class WorkstationFormComponent implements OnInit {
     const call = this.id ? this.workstationApi.update(this.id, payload) : this.workstationApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/manufacturing/workstations']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save workstation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save workstation')),
     });
   }
 }

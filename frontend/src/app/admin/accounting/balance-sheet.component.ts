@@ -8,6 +8,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { BalanceSheet } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > Balance Sheet — a snapshot as of one date. `currentEarnings` is
  * a live "retained earnings not yet closed to Owner's Equity" figure (see the backend
@@ -190,7 +191,7 @@ export class BalanceSheetComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.balanceSheet(this.asOf).subscribe({
       next: (r) => (this.report = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load balance sheet'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load balance sheet')),
     });
   }
 
@@ -215,7 +216,7 @@ export class BalanceSheetComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

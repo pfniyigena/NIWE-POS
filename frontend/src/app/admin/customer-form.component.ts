@@ -8,6 +8,7 @@ import { CustomerApiService } from '../core/api/customer-api.service';
 import { AuthService } from '../core/auth.service';
 import { GroupRow, PricingApiService } from '../core/api/pricing-api.service';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-customer-form',
   standalone: true,
@@ -122,7 +123,7 @@ export class CustomerFormComponent implements OnInit {
           this.originalGroupId = this.customerGroupId;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load customer'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load customer')),
     });
   }
 
@@ -145,13 +146,13 @@ export class CustomerFormComponent implements OnInit {
         if (this.isAdmin && this.customerGroupId !== this.originalGroupId) {
           this.pricingApi.assign([saved.id], this.customerGroupId).subscribe({
             next: () => this.router.navigate(['/admin/customers']),
-            error: (err) => (this.error = err?.error?.message ?? 'The customer was saved, but the group could not be set'),
+            error: (err) => (this.error = err?.error?.message ?? T('The customer was saved, but the group could not be set')),
           });
         } else {
           this.router.navigate(['/admin/customers']);
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save customer'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save customer')),
     });
   }
 }

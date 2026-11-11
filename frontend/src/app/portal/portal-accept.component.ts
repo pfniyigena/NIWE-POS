@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PortalApiService, PortalInviteInfo } from '../core/api/portal-api.service';
 import { PortalLayoutComponent } from './portal-layout.component';
 
+import { T } from '../core/i18n/t';
 /** The page an invitation (or a reset) link opens: the person chooses their password, once, and is signed in. */
 @Component({
   selector: 'app-portal-accept',
@@ -43,7 +44,7 @@ export class PortalAcceptComponent implements OnInit {
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token');
     if (!this.token) return;
-    this.portal.inviteInfo(this.token).subscribe({ next: (i) => (this.info = i), error: (e) => (this.error = e?.error?.message ?? 'This link is not valid') });
+    this.portal.inviteInfo(this.token).subscribe({ next: (i) => (this.info = i), error: (e) => (this.error = e?.error?.message ?? T('This link is not valid')) });
   }
 
   submit(): void {
@@ -52,7 +53,7 @@ export class PortalAcceptComponent implements OnInit {
     this.error = null;
     this.portal.accept(this.token, this.p1).subscribe({
       next: () => { this.busy = false; this.router.navigate(['/portal']); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 }

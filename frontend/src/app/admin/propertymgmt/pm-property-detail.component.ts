@@ -9,6 +9,7 @@ import { BulkUnitsPayload, OCCUPANCY_LABEL, PM_PROPERTY_KINDS, PM_UNIT_KINDS, Pm
 import { PmDocumentsPanelComponent } from './pm-documents-panel.component';
 import { PmOwnershipPanelComponent } from './pm-ownership-panel.component';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 
@@ -146,7 +147,7 @@ export class PmPropertyDetailComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    this.api.property(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (p) => (this.p = p), error: (e) => (this.error = e?.error?.message ?? 'Could not load the property') });
+    this.api.property(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (p) => (this.p = p), error: (e) => (this.error = e?.error?.message ?? T('Could not load the property')) });
   }
 
   kind(k: string): string { return pmLabel(PM_PROPERTY_KINDS, k); }
@@ -166,22 +167,22 @@ export class PmPropertyDetailComponent implements OnInit {
 
   addOne(): void {
     this.error = null;
-    if (!txt(this.nf.unitNo)) { this.error = 'Give the unit a number.'; return; }
+    if (!txt(this.nf.unitNo)) { this.error = T('Give the unit a number.'); return; }
     this.busy = true;
     this.api.addUnit(this.p!.id, { ...this.payload(this.nf), unitNo: txt(this.nf.unitNo) }).subscribe({
       next: () => { this.busy = false; this.nf = this.blank(); this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not add the unit'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not add the unit'); },
     });
   }
 
   addMany(): void {
     this.error = null;
-    if (num(this.bf.from) == null || num(this.bf.to) == null) { this.error = 'Give the first and last number.'; return; }
+    if (num(this.bf.from) == null || num(this.bf.to) == null) { this.error = T('Give the first and last number.'); return; }
     const body: BulkUnitsPayload = { ...this.payload(this.bf), prefix: txt(this.bf.prefix), from: num(this.bf.from)!, to: num(this.bf.to)!, pad: num(this.bf.pad) ?? 0 };
     this.busy = true;
     this.api.addUnitsBulk(this.p!.id, body).subscribe({
       next: () => { this.busy = false; this.mode = null; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not make the units'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not make the units'); },
     });
   }
 
@@ -190,17 +191,17 @@ export class PmPropertyDetailComponent implements OnInit {
     this.error = null;
     this.api.updateProperty(this.p!.id, { active: !this.p!.active }).subscribe({
       next: (p) => { this.busy = false; this.p = p; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not change the property'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not change the property'); },
     });
   }
 
   remove(): void {
-    if (!confirm(`Delete ${this.p!.name} and its units?`)) return;
+    if (!confirm(T('Delete {p0} and its units?', { p0: this.p!.name }))) return;
     this.busy = true;
     this.error = null;
     this.api.deleteProperty(this.p!.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/properties']),
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not delete the property'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not delete the property'); },
     });
   }
 }

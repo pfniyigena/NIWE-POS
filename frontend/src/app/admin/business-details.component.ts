@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Settings > Business Details (Task: "Under Settings menu add Business Details menu" /
  * "Add Business Details like name, address, contact, TAX ID, logo, etc"). Edits the same
@@ -91,7 +92,7 @@ export class BusinessDetailsComponent implements OnInit {
         this.logoDataUrl = s.logoDataUrl;
         this.loaded = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load business details'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load business details')),
     });
   }
 
@@ -135,7 +136,7 @@ export class BusinessDetailsComponent implements OnInit {
         },
         error: (err) => {
           this.saving = false;
-          this.error = err?.error?.message ?? 'Failed to save business details';
+          this.error = err?.error?.message ?? T('Failed to save business details');
         },
       });
   }

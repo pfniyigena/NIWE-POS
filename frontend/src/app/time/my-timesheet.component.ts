@@ -9,6 +9,7 @@ import {
 } from '../core/api/time-api.service';
 import { addDays, formatClock, formatMinutes, mondayOf, parseDuration, parseIso, today } from '../core/time-util';
 
+import { T } from '../core/i18n/t';
 /** Time Tracking > My time: the stopwatch, this week's entries, and submitting the week for approval. Open to every signed-in user. */
 @Component({
   selector: 'app-my-timesheet',
@@ -158,7 +159,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   constructor(private api: TimeApiService) {}
 
   ngOnInit(): void {
-    this.api.projectChoices().subscribe({ next: (p) => (this.projects = p), error: (e) => this.fail(e, 'Could not load the projects') });
+    this.api.projectChoices().subscribe({ next: (p) => (this.projects = p), error: (e) => this.fail(e, T('Could not load the projects')) });
     this.loadTimer();
     this.reload();
     this.tick = setInterval(() => this.updateClock(), 1000);
@@ -208,11 +209,11 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.api.copyWeek(this.from).subscribe({
       next: (r) => {
         this.busy = false;
-        this.notice = r.copied ? `${r.copied} entr${r.copied === 1 ? 'y' : 'ies'} copied from the week before as drafts.` : 'Nothing to copy from the week before.';
+        this.notice = r.copied ? T('{p0} entr{p1} copied from the week before as drafts.', { p0: r.copied, p1: r.copied === 1 ? 'y' : 'ies' }) : T('Nothing to copy from the week before.');
         if (r.skipped) this.notice += ` ${r.skipped} skipped${r.notes?.length ? ': ' + r.notes.slice(0, 3).join('; ') : ''}.`;
         this.reload();
       },
-      error: (e) => this.fail(e, 'Could not copy'),
+      error: (e) => this.fail(e, T('Could not copy')),
     });
   }
 
@@ -223,7 +224,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
 
   reload(): void {
     const to = addDays(this.from, 6);
-    this.api.myWeek(this.from, to).subscribe({ next: (w) => (this.week = w), error: (e) => this.fail(e, 'Could not load your time') });
+    this.api.myWeek(this.from, to).subscribe({ next: (w) => (this.week = w), error: (e) => this.fail(e, T('Could not load your time')) });
     this.api.mySummary().subscribe({ next: (s) => (this.summary = s), error: () => {} });
   }
 
@@ -266,8 +267,8 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.error = null;
     this.notice = null;
     const minutes = parseDuration(this.form.duration);
-    if (!this.form.projectId) { this.error = 'Choose a project.'; return; }
-    if (minutes == null || minutes < 1) { this.error = 'Enter the time as 1:30, 1.5, 90m or 2h.'; return; }
+    if (!this.form.projectId) { this.error = T('Choose a project.'); return; }
+    if (minutes == null || minutes < 1) { this.error = T('Enter the time as 1:30, 1.5, 90m or 2h.'); return; }
     const payload: EntryPayload = {
       projectId: this.form.projectId, taskId: this.form.taskId, workDate: this.form.workDate, minutes,
       description: this.form.description, billable: this.form.billable,
@@ -284,7 +285,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.from = mondayOf(keepDate);
         this.reload();
       },
-      error: (e) => this.fail(e, 'Could not save'),
+      error: (e) => this.fail(e, T('Could not save')),
     });
   }
 
@@ -300,8 +301,8 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
   }
 
   remove(e: TimeEntry): void {
-    if (!confirm('Delete this entry?')) return;
-    this.api.deleteEntry(e.id).subscribe({ next: () => this.reload(), error: (x) => this.fail(x, 'Could not delete') });
+    if (!confirm(T('Delete this entry?'))) return;
+    this.api.deleteEntry(e.id).subscribe({ next: () => this.reload(), error: (x) => this.fail(x, T('Could not delete')) });
   }
 
   submitWeek(): void {
@@ -311,10 +312,10 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
     this.api.submit(ids).subscribe({
       next: (r) => {
         this.busy = false;
-        this.notice = `${r.submitted} entr${r.submitted === 1 ? 'y' : 'ies'} handed in.`;
+        this.notice = T('{p0} entr{p1} handed in.', { p0: r.submitted, p1: r.submitted === 1 ? 'y' : 'ies' });
         this.reload();
       },
-      error: (e) => this.fail(e, 'Could not submit'),
+      error: (e) => this.fail(e, T('Could not submit')),
     });
   }
 
@@ -346,7 +347,7 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.updateClock();
         this.reload();
       },
-      error: (e) => this.fail(e, 'Could not start the timer'),
+      error: (e) => this.fail(e, T('Could not start the timer')),
     });
   }
 
@@ -357,24 +358,24 @@ export class MyTimesheetComponent implements OnInit, OnDestroy {
         this.timer = null;
         this.startedMs = 0;
         this.stopNote = '';
-        this.notice = `Saved ${formatMinutes(e.minutes)} on ${e.projectName}.`;
+        this.notice = T('Saved {p0} on {p1}.', { p0: formatMinutes(e.minutes), p1: e.projectName });
         this.updateClock();
         this.from = mondayOf(e.workDate);
         this.reload();
       },
-      error: (e) => this.fail(e, 'Could not stop the timer'),
+      error: (e) => this.fail(e, T('Could not stop the timer')),
     });
   }
 
   discard(): void {
-    if (!confirm('Throw away the time on this timer?')) return;
+    if (!confirm(T('Throw away the time on this timer?'))) return;
     this.api.discardTimer().subscribe({
       next: () => {
         this.timer = null;
         this.startedMs = 0;
         this.updateClock();
       },
-      error: (e) => this.fail(e, 'Could not discard the timer'),
+      error: (e) => this.fail(e, T('Could not discard the timer')),
     });
   }
 }

@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { Count, LEAD_STATUS_LABEL, LeadStatus, PROPERTY_STATUS_LABEL, PropertyStatus, RealEstateApiService, ReOverview, SOURCE_LABEL, LeadSource, VIEWING_STATUS_LABEL } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Overview: stock, leads, today's viewings and the leads that need a call. Every number comes from GET /api/realestate/overview. */
 @Component({
   selector: 'app-re-overview',
@@ -114,7 +115,7 @@ export class ReOverviewComponent implements OnInit {
   constructor(private api: RealEstateApiService) {}
 
   ngOnInit(): void {
-    this.api.overview().subscribe({ next: (o) => (this.o = o), error: (e) => (this.error = e?.error?.message ?? 'Could not load the overview') });
+    this.api.overview().subscribe({ next: (o) => (this.o = o), error: (e) => (this.error = e?.error?.message ?? T('Could not load the overview')) });
   }
 
   max(list: Count[]): number { return list.reduce((m, s) => Math.max(m, s.value), 0); }

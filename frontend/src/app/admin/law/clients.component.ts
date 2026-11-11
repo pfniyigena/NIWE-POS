@@ -10,6 +10,7 @@ import { AuthService } from '../../core/auth.service';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { ClientRow, LawApiService } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Law Firm > Clients: customers who have at least one matter. A client is an ordinary customer, so invoices and statements work as usual. */
 @Component({
   selector: 'app-law-clients',
@@ -58,6 +59,6 @@ export class LawClientsComponent implements OnInit {
   ngOnInit(): void { this.load(); }
   goPage(p: number): void { this.page = p; this.load(); }
   load(): void {
-    this.api.clientsPage({ page: this.page, size: this.size }).subscribe({ next: (r) => { this.list = r.items; this.total = r.total; }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the clients') });
+    this.api.clientsPage({ page: this.page, size: this.size }).subscribe({ next: (r) => { this.list = r.items; this.total = r.total; }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the clients')) });
   }
 }

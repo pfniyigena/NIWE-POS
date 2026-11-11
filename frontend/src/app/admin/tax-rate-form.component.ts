@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { TaxRateApiService } from '../core/api/tax-rate-api.service';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-tax-rate-form',
   standalone: true,
@@ -81,7 +82,7 @@ export class TaxRateFormComponent implements OnInit {
           this.inclusive = found.inclusive;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load tax rate'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load tax rate')),
     });
   }
 
@@ -103,7 +104,7 @@ export class TaxRateFormComponent implements OnInit {
         });
     call.subscribe({
       next: () => this.router.navigate(['/admin/settings/taxes']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save tax rate'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save tax rate')),
     });
   }
 }

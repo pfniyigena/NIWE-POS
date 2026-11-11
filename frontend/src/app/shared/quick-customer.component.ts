@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { CustomerApiService } from '../core/api/customer-api.service';
 import { Customer } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * "+ New customer" link that opens a small inline panel (name, phone, email, tax ID), creates the customer and emits it so the
  * form it sits in can add it to its picker and select it. Same fields as the sale-order form's own quick-add. Its inputs are
@@ -57,14 +58,14 @@ export class QuickCustomerComponent {
 
   save(): void {
     if (!this.name.trim()) {
-      this.error = 'Name is required';
+      this.error = T('Name is required');
       return;
     }
     this.saving = true;
     this.error = null;
     this.api.create({ name: this.name.trim(), phone: this.phone.trim() || null, email: this.email.trim() || null, taxId: this.taxId.trim() || null }).subscribe({
       next: (c) => { this.saving = false; this.created.emit(c); this.cancel(); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Failed to save customer'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Failed to save customer'); },
     });
   }
 }

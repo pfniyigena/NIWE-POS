@@ -10,6 +10,7 @@ import { CustomerCreditApiService } from '../core/api/customer-credit-api.servic
 import { openPdfForPrint } from '../core/download-file';
 import { Invoice, CustomerPayment, PaymentMethodOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Invoices > detail > Record payment — `/admin/invoices/:id/record-payment`. Fourier:
  * "Let record payment per invoice not per customer (all outstanding invoices)" — replaces the old
@@ -149,11 +150,11 @@ export class InvoiceRecordPaymentComponent implements OnInit {
         this.inv = inv;
         this.amount = inv.amountOutstanding > 0 ? inv.amountOutstanding : null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load invoice')),
     });
     this.invoiceApi.paymentHistory(this.invoiceId).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment history'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment history')),
     });
   }
 
@@ -164,7 +165,7 @@ export class InvoiceRecordPaymentComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.canSubmit() || !this.amount) {
-      this.error = 'Enter a valid payment amount, up to the outstanding balance, and a payment method.';
+      this.error = T('Enter a valid payment amount, up to the outstanding balance, and a payment method.');
       return;
     }
     this.submitting = true;
@@ -176,7 +177,7 @@ export class InvoiceRecordPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.submitting = false;
-        this.error = err?.error?.message ?? 'Failed to record payment';
+        this.error = err?.error?.message ?? T('Failed to record payment');
       },
     });
   }
@@ -197,7 +198,7 @@ export class InvoiceRecordPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to open receipt PDF';
+        this.error = err?.error?.message ?? T('Failed to open receipt PDF');
       },
     });
   }

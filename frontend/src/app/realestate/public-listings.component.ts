@@ -7,6 +7,7 @@ import { PublicRealEstateApiService, PublicCard, PublicInfo } from '../core/api/
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { PROPERTY_TYPES, typeLabel } from '../core/api/realestate-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * The public listings page (/listings): no login. Cards for every property marked "Show on the public website" that is Available, with filters and paging.
  * Owner details, street addresses and map positions never reach this page (the server leaves them out).
@@ -134,7 +135,7 @@ export class PublicListingsComponent implements OnInit {
     this.error = null;
     this.api.list({ purpose: this.purpose, type: this.type, area: this.area, bedrooms: this.bedrooms, minPrice: this.minPrice, maxPrice: this.maxPrice, q: this.q.trim(), page: p, size: 12 }).subscribe({
       next: (r) => { this.cards = r.items; this.page = { total: r.total, page: r.page, size: r.size }; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the properties'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the properties')),
     });
   }
 

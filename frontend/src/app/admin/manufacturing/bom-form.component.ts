@@ -9,6 +9,7 @@ import { RoutingApiService } from '../../core/api/routing-api.service';
 import { CatalogApiService } from '../../core/api/catalog-api.service';
 import { Bom, Product, Routing } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 interface DraftByProduct {
   productId: number;
   productName: string;
@@ -239,7 +240,7 @@ export class BomFormComponent implements OnInit {
   ngOnInit(): void {
     this.routingApi.listActive().subscribe({
       next: (r) => (this.routings = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load routings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load routings')),
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -255,7 +256,7 @@ export class BomFormComponent implements OnInit {
         this.byProducts = (b.byProducts ?? []).map((x) => ({ productId: x.productId, productName: x.productName, quantityPerUnit: x.quantityPerUnit, costSharePercent: x.costSharePercent }));
         this.lines = b.lines.map((l) => ({ componentId: l.componentId, componentName: l.componentName, quantityPerUnit: l.quantityPerUnit }));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load bill of materials'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load bill of materials')),
     });
   }
 
@@ -297,7 +298,7 @@ export class BomFormComponent implements OnInit {
 
   addLine(p: Product): void {
     if (this.selectedProduct && p.id === this.selectedProduct.id) {
-      this.error = "A product cannot be a component of its own bill of materials";
+      this.error = T('A product cannot be a component of its own bill of materials');
       this.componentSearch = '';
       this.componentResults = [];
       return;
@@ -331,11 +332,11 @@ export class BomFormComponent implements OnInit {
     this.byProductSearch = '';
     this.byProductResults = [];
     if (this.selectedProduct && p.id === this.selectedProduct.id) {
-      this.error = 'A product cannot be its own by-product';
+      this.error = T('A product cannot be its own by-product');
       return;
     }
     if (this.lines.some((l) => l.componentId === p.id)) {
-      this.error = 'A product cannot be both a component and a by-product of the same recipe';
+      this.error = T('A product cannot be both a component and a by-product of the same recipe');
       return;
     }
     if (!this.byProducts.some((b) => b.productId === p.id)) {
@@ -353,11 +354,11 @@ export class BomFormComponent implements OnInit {
 
   submit(): void {
     if (!this.selectedProduct) {
-      this.error = 'Select a finished-good product';
+      this.error = T('Select a finished-good product');
       return;
     }
     if (this.lines.length === 0) {
-      this.error = 'Add at least one component line';
+      this.error = T('Add at least one component line');
       return;
     }
     this.error = null;
@@ -372,7 +373,7 @@ export class BomFormComponent implements OnInit {
     const call = this.id ? this.bomApi.update(this.id, payload) : this.bomApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/manufacturing/boms']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save bill of materials'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save bill of materials')),
     });
   }
 }

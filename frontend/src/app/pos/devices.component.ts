@@ -9,6 +9,7 @@ import { DeviceSettings, PrinterMode } from '../core/hardware/device-settings';
 import { PoleDisplayService } from '../core/hardware/pole-display.service';
 import { PrintService } from '../core/hardware/print.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Devices of this PC: thermal receipt / kitchen / bar printers (Epson ESC/POS) and the COM customer display.
  * Kept per browser, because each till has its own hardware.
@@ -281,7 +282,7 @@ export class DevicesComponent implements OnInit {
       if (mode === 'usb') await this.devices.pairUsb(slot);
       else await this.devices.pairSerial(slot, this.serialBaud(slot), this.serialFlow(slot) as 'none' | 'hardware');
       this.refresh();
-      this.message = 'Device saved. Print a test page to check it.';
+      this.message = T('Device saved. Print a test page to check it.');
     });
   }
 
@@ -290,7 +291,7 @@ export class DevicesComponent implements OnInit {
       this.devices.save(this.s!);
       await this.devices.pairDisplay();
       this.refresh();
-      this.message = 'COM port saved. Send a test message to check it.';
+      this.message = T('COM port saved. Send a test message to check it.');
     });
   }
 
@@ -304,13 +305,13 @@ export class DevicesComponent implements OnInit {
     this.run(async () => {
       this.devices.save(this.s!);
       if (!this.devices.isDirect(slot)) {
-        this.message = 'This printer uses the Windows driver: the test page opens the print dialog.';
+        this.message = T('This printer uses the Windows driver: the test page opens the print dialog.');
         this.devices.printTextViaDriver('NIWE POS\nPRINTER TEST\n' + new Date().toLocaleString() + '\n0123456789012345678901234567890123456789\n', this.devices.layout(this.serverPaper).paper, 'Test');
         return;
       }
       const r = await this.prints.testPage(slot, this.serverPaper);
-      if (r.ok) this.message = 'Test page sent.';
-      else this.error = r.error || 'Could not print.';
+      if (r.ok) this.message = T('Test page sent.');
+      else this.error = r.error || T('Could not print.');
     });
   }
 
@@ -318,8 +319,8 @@ export class DevicesComponent implements OnInit {
     this.run(async () => {
       this.devices.save(this.s!);
       const r = await this.devices.openDrawer();
-      if (r.ok) this.message = 'Drawer pulse sent.';
-      else this.error = r.error || 'Could not open the drawer.';
+      if (r.ok) this.message = T('Drawer pulse sent.');
+      else this.error = r.error || T('Could not open the drawer.');
     });
   }
 
@@ -329,21 +330,21 @@ export class DevicesComponent implements OnInit {
       await this.pole.close();
       const err = await this.pole.test();
       if (err) this.error = err;
-      else this.message = 'Test message sent to the display.';
+      else this.message = T('Test message sent to the display.');
     });
   }
 
   save(): void {
     this.devices.save(this.s!);
     this.refresh();
-    this.message = 'Saved on this PC.';
+    this.message = T('Saved on this PC.');
     this.error = null;
   }
 
   reset(): void {
-    if (!confirm('Reset the devices of this PC to the defaults?')) return;
+    if (!confirm(T('Reset the devices of this PC to the defaults?'))) return;
     this.devices.reset();
     this.refresh();
-    this.message = 'Reset.';
+    this.message = T('Reset.');
   }
 }

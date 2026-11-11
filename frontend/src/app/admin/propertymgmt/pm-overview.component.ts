@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { MaintenanceAttentionComponent } from './maintenance-attention.component';
 import { LEASE_STATE_LABEL, PmOverview, PropertyMgmtApiService } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Overview: occupancy, the rent roll, vacancies and the leases that need attention. Every number comes from GET /api/propertymgmt/overview. */
 @Component({
   selector: 'app-pm-overview',
@@ -77,7 +78,7 @@ export class PmOverviewComponent implements OnInit {
   constructor(private api: PropertyMgmtApiService) {}
 
   ngOnInit(): void {
-    this.api.overview().subscribe({ next: (o) => (this.o = o), error: (e) => (this.error = e?.error?.message ?? 'Could not load the overview') });
+    this.api.overview().subscribe({ next: (o) => (this.o = o), error: (e) => (this.error = e?.error?.message ?? T('Could not load the overview')) });
   }
 
   stateName(s: string): string { return (LEASE_STATE_LABEL as Record<string, string>)[s] ?? s; }

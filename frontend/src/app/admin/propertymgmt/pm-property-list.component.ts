@@ -8,6 +8,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { OwnerRow, PM_PROPERTY_KINDS, PropertyMgmtApiService, PropertyRow, pmLabel } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Properties: the buildings and houses we manage, with occupancy and rent. */
 @Component({
   selector: 'app-pm-property-list',
@@ -77,7 +78,7 @@ export class PmPropertyListComponent implements OnInit {
     this.error = null;
     this.api.propertiesPage({ q: this.q.trim(), ownerId: this.ownerId, activeOnly: this.activeOnly, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the properties'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the properties'); },
     });
   }
 }

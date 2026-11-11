@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { API_BASE } from '../../core/constants';
 
+import { T } from '../../core/i18n/t';
 interface Slice { label: string; value: number; }
 interface Attention { kind: 'DEADLINE' | 'UPLOAD' | 'MESSAGE' | 'CONFLICT'; matterId: number; matterNumber: string; text: string; date: string | null; }
 interface LawOverview {
@@ -122,7 +123,7 @@ export class LawOverviewComponent implements OnInit {
   ngOnInit(): void {
     this.http.get<LawOverview>(`${API_BASE}/law/overview`).subscribe({
       next: (o) => (this.o = o),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the overview'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the overview')),
     });
   }
 

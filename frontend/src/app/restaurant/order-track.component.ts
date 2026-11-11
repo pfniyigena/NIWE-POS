@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantOnlineApiService } from '../core/api/restaurant-online-api.service';
 import { OnlineTrack } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Where a guest follows an online or QR order by its code. Refreshes by itself. */
 @Component({
   selector: 'app-order-track',
@@ -79,7 +80,7 @@ export class OrderTrackComponent implements OnInit, OnDestroy {
         this.t = t;
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'We could not find that order.'),
+      error: (e) => (this.error = e?.error?.message ?? T('We could not find that order.')),
     });
   }
 
@@ -120,7 +121,7 @@ export class OrderTrackComponent implements OnInit, OnDestroy {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not cancel the order.';
+        this.error = e?.error?.message ?? T('Could not cancel the order.');
       },
     });
   }

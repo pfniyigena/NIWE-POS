@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FeeInvoice, FEE_INVOICE_STATUS_LABEL, PmFeeInvoiceApiService, feeInvoiceBadge } from '../../core/api/pm-fee-invoice-api.service';
 
+import { T } from '../../core/i18n/t';
 /** On an agreed owner statement: the invoice to the owner for the management fee (number, amounts, PDF), and a button to make it when an older statement has none. */
 @Component({
   selector: 'app-pm-fee-invoice-panel',
@@ -67,7 +68,7 @@ export class PmFeeInvoicePanelComponent implements OnChanges {
     this.error = null;
     this.api.issue(this.statementId).subscribe({
       next: (v) => { this.busy = false; this.inv = v; this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not make the invoice'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not make the invoice'); },
     });
   }
 
@@ -76,7 +77,7 @@ export class PmFeeInvoicePanelComponent implements OnChanges {
     this.busy = true;
     this.api.pdf(this.inv.invoice.id, this.inv.invoice.number).subscribe({
       next: () => (this.busy = false),
-      error: () => { this.busy = false; this.error = 'Could not make the file'; },
+      error: () => { this.busy = false; this.error = T('Could not make the file'); },
     });
   }
 }

@@ -10,6 +10,7 @@ import { PmPaymentsPanelComponent } from './pm-payments-panel.component';
 import { LEASE_STATE_LABEL, PropertyMgmtApiService, TenantDto, TenantKind, TenantPayload, leaseBadge, Arrears } from '../../core/api/propertymgmt-api.service';
 import { PmDocumentsPanelComponent } from './pm-documents-panel.component';
 
+import { T } from '../../core/i18n/t';
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 
 /** Property Management > a tenant: contact and emergency details, the customer record, and every lease. */
@@ -125,7 +126,7 @@ export class TenantDetailComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   private load(): void {
-    this.api.tenant(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (t) => { this.t = t; this.api.arrears({ tenantId: t.id }).subscribe({ next: (a) => (this.ar = a), error: () => (this.ar = null) }); }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the tenant') });
+    this.api.tenant(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (t) => { this.t = t; this.api.arrears({ tenantId: t.id }).subscribe({ next: (a) => (this.ar = a), error: () => (this.ar = null) }); }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the tenant')) });
   }
 
   lbadge(s: string): string { return leaseBadge(s); }
@@ -141,13 +142,13 @@ export class TenantDetailComponent implements OnInit {
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!txt(f.name)) { this.error = 'Give the tenant\'s name.'; return; }
+    if (!txt(f.name)) { this.error = T('Give the tenant\'s name.'); return; }
     const p: TenantPayload = { kind: f.kind, name: txt(f.name), contactPerson: txt(f.contactPerson), phone: txt(f.phone), email: txt(f.email), idNumber: txt(f.idNumber), address: txt(f.address),
       employer: txt(f.employer), emergencyName: txt(f.emergencyName), emergencyPhone: txt(f.emergencyPhone), notes: txt(f.notes) };
     this.busy = true;
     this.api.updateTenant(this.t!.id, p).subscribe({
       next: (t) => { this.busy = false; this.t = t; this.editing = false; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the tenant'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the tenant'); },
     });
   }
 
@@ -156,17 +157,17 @@ export class TenantDetailComponent implements OnInit {
     this.error = null;
     this.api.updateTenant(this.t!.id, { active: !this.t!.active }).subscribe({
       next: (t) => { this.busy = false; this.t = t; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not change the tenant'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not change the tenant'); },
     });
   }
 
   remove(): void {
-    if (!confirm(`Delete ${this.t!.name}?`)) return;
+    if (!confirm(T('Delete {p0}?', { p0: this.t!.name }))) return;
     this.busy = true;
     this.error = null;
     this.api.deleteTenant(this.t!.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/tenants']),
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not delete the tenant'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not delete the tenant'); },
     });
   }
 }

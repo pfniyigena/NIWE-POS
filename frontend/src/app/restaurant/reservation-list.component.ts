@@ -13,6 +13,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin/staff > Restaurant > Reservations (Fourier: "Reservations"). List + a booking form with a
  * time picker that shows what is still free, deposits, no-shows and reminders.
@@ -375,7 +376,7 @@ export class ReservationListComponent implements OnInit {
 
   save(): void {
     if (!this.guestName.trim() || !this.reservedForLocal) {
-      this.error = 'Guest name and date/time are required';
+      this.error = T('Guest name and date/time are required');
       return;
     }
     this.error = null;
@@ -402,7 +403,7 @@ export class ReservationListComponent implements OnInit {
       },
       error: (err) => {
         this.saving = false;
-        this.error = err?.error?.message ?? 'Failed to save reservation';
+        this.error = err?.error?.message ?? T('Failed to save reservation');
       },
     });
   }
@@ -411,7 +412,7 @@ export class ReservationListComponent implements OnInit {
     this.error = null;
     this.reservationApi.seat(r.id, r.tableId).subscribe({
       next: (order) => this.router.navigate(['/admin/restaurant/orders', order.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to seat reservation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to seat reservation')),
     });
   }
 
@@ -424,7 +425,7 @@ export class ReservationListComponent implements OnInit {
     this.cancelDeposit = '';
     this.reminder = null;
     if (mode === 'remind') {
-      this.reservationApi.reminder(r.id, false).subscribe({ next: (x) => (this.reminder = x), error: (err) => (this.error = err?.error?.message ?? 'Could not prepare the reminder') });
+      this.reservationApi.reminder(r.id, false).subscribe({ next: (x) => (this.reminder = x), error: (err) => (this.error = err?.error?.message ?? T('Could not prepare the reminder')) });
     }
   }
 
@@ -432,10 +433,10 @@ export class ReservationListComponent implements OnInit {
     this.reservationApi.takeDeposit(r.id, this.panelMethod).subscribe({
       next: () => {
         this.panelId = null;
-        this.notice = 'Deposit taken.';
+        this.notice = T('Deposit taken.');
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not take the deposit'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not take the deposit')),
     });
   }
 
@@ -444,10 +445,10 @@ export class ReservationListComponent implements OnInit {
     this.reservationApi.cancel(r.id, this.cancelReason.trim(), this.cancelDeposit).subscribe({
       next: (x) => {
         this.panelId = null;
-        this.notice = x.depositStatus === 'REFUNDED' ? 'Cancelled. The deposit was refunded.' : x.depositStatus === 'FORFEITED' ? 'Cancelled. The deposit was kept.' : 'Cancelled.';
+        this.notice = x.depositStatus === 'REFUNDED' ? T('Cancelled. The deposit was refunded.') : x.depositStatus === 'FORFEITED' ? T('Cancelled. The deposit was kept.') : T('Cancelled.');
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to cancel reservation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to cancel reservation')),
     });
   }
 
@@ -456,10 +457,10 @@ export class ReservationListComponent implements OnInit {
     this.notice = null;
     this.reservationApi.noShow(r.id).subscribe({
       next: (x) => {
-        this.notice = x.depositStatus === 'FORFEITED' ? `${r.guestName} did not come. The deposit was kept.` : `${r.guestName} marked as a no-show.`;
+        this.notice = x.depositStatus === 'FORFEITED' ? T('{p0} did not come. The deposit was kept.', { p0: r.guestName }) : T('{p0} marked as a no-show.', { p0: r.guestName });
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not mark a no-show'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not mark a no-show')),
     });
   }
 
@@ -467,10 +468,10 @@ export class ReservationListComponent implements OnInit {
     this.error = null;
     this.reservationApi.markNoShows().subscribe({
       next: (x) => {
-        this.notice = x.marked === 0 ? 'No overdue bookings.' : `${x.marked} overdue booking${x.marked === 1 ? '' : 's'} marked as no-show.`;
+        this.notice = x.marked === 0 ? T('No overdue bookings.') : T('{p0} overdue booking{p1} marked as no-show.', { p0: x.marked, p1: x.marked === 1 ? '' : 's' });
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not mark the no-shows'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not mark the no-shows')),
     });
   }
 
@@ -484,7 +485,7 @@ export class ReservationListComponent implements OnInit {
           this.load();
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not send the reminder'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not send the reminder')),
     });
   }
 
@@ -492,10 +493,10 @@ export class ReservationListComponent implements OnInit {
     this.reservationApi.markReminded(r.id).subscribe({
       next: () => {
         this.panelId = null;
-        this.notice = 'Marked as reminded.';
+        this.notice = T('Marked as reminded.');
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not mark the reminder'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not mark the reminder')),
     });
   }
 
@@ -512,7 +513,7 @@ export class ReservationListComponent implements OnInit {
       },
       error: (err) => {
         this.seating = false;
-        this.error = err?.error?.message ?? 'Failed to seat that reservation number';
+        this.error = err?.error?.message ?? T('Failed to seat that reservation number');
       },
     });
   }

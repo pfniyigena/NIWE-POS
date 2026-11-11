@@ -7,6 +7,7 @@ import { UserApiService } from '../core/api/user-api.service';
 import { AppUser } from '../core/models';
 import { AuthService } from '../core/auth.service';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-user-list',
   standalone: true,
@@ -83,7 +84,7 @@ export class UserListComponent implements OnInit {
   load(): void {
     this.userApi.list().subscribe({
       next: (u) => (this.users = u),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff accounts'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load staff accounts')),
     });
   }
 
@@ -92,8 +93,8 @@ export class UserListComponent implements OnInit {
     if (!newPassword) return;
     this.error = null;
     this.userApi.resetPassword(u.id, newPassword).subscribe({
-      next: () => alert(`Password reset for "${u.username}".`),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to reset password'),
+      next: () => alert(T('Password reset for "{p0}".', { p0: u.username })),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to reset password')),
     });
   }
 
@@ -120,9 +121,9 @@ export class UserListComponent implements OnInit {
     this.userApi.setPin(u.id, pin).subscribe({
       next: (updated) => {
         this.users = this.users.map((existing) => (existing.id === updated.id ? updated : existing));
-        alert(`PIN set for "${u.username}".`);
+        alert(T('PIN set for "{p0}".', { p0: u.username }));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to set PIN'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to set PIN')),
     });
   }
 }

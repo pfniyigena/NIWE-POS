@@ -13,6 +13,7 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 import { Branch, Product, Customer } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 
+import { T } from '../core/i18n/t';
 /** How much of a brand-new product's optional fields this quick-add panel bothers asking for — Fourier: "On Add Invoice Form I need to add product in case new product is not exists." */
 const QUICK_ADD_DEFAULTS = { costPrice: 0, stockQuantity: 0, active: true, categoryId: null, taxRateId: null };
 
@@ -348,7 +349,7 @@ export class InvoiceFormComponent implements OnInit {
     });
     this.customerApi.list().subscribe({
       next: (c) => (this.customers = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load customers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load customers')),
     });
     this.storeSettingsApi.get().subscribe({
       next: (s) => (this.discountMode = s.discountMode),
@@ -361,7 +362,7 @@ export class InvoiceFormComponent implements OnInit {
       this.invoiceApi.getById(this.id).subscribe({
         next: (inv) => {
           if (inv.status !== 'DRAFT') {
-            this.error = `${inv.invoiceNumber} is ${inv.status.toLowerCase()} — only a draft can be edited.`;
+            this.error = T('{p0} is {p1} — only a draft can be edited.', { p0: inv.invoiceNumber, p1: inv.status.toLowerCase() });
             return;
           }
           this.customerId = inv.customerId;
@@ -383,7 +384,7 @@ export class InvoiceFormComponent implements OnInit {
             taxInclusive: l.taxInclusive,
           }));
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to load invoice'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to load invoice')),
       });
     }
   }
@@ -614,11 +615,11 @@ export class InvoiceFormComponent implements OnInit {
 
   submit(): void {
     if (!this.customerId) {
-      this.error = 'Select a customer';
+      this.error = T('Select a customer');
       return;
     }
     if (this.lines.length === 0) {
-      this.error = 'Add at least one line item';
+      this.error = T('Add at least one line item');
       return;
     }
     this.error = null;
@@ -651,7 +652,7 @@ export class InvoiceFormComponent implements OnInit {
     const call = this.id ? this.invoiceApi.update(this.id, payload) : this.invoiceApi.create(payload);
     call.subscribe({
       next: (inv) => this.router.navigate(['/admin/invoices', inv.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save invoice')),
     });
   }
 }

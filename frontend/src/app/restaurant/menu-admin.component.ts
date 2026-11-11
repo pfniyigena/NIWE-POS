@@ -8,6 +8,7 @@ import { MenuApiService } from '../core/api/menu-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { MenuCategory, MenuItem, OptionGroup, Product } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Restaurant > Menu (Fourier: "Menu & menu categories," reusing existing products — the
  * user's own choice when asked, over a separate menu-item concept). One screen: categories on the
@@ -228,7 +229,7 @@ export class MenuAdminComponent implements OnInit {
   loadCategories(): void {
     this.menuApi.listCategories().subscribe({
       next: (c) => (this.categories = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load menu categories'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load menu categories')),
     });
   }
 
@@ -241,7 +242,7 @@ export class MenuAdminComponent implements OnInit {
     if (!this.selectedCategory) return;
     this.menuApi.listItems(this.selectedCategory.id).subscribe({
       next: (i) => (this.items = i),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load menu items'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load menu items')),
     });
   }
 
@@ -258,12 +259,12 @@ export class MenuAdminComponent implements OnInit {
         this.editingCategory = false;
         this.loadCategories();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save category')),
     });
   }
 
   deleteCategory(c: MenuCategory): void {
-    if (!confirm(`Delete menu category "${c.name}"?`)) return;
+    if (!confirm(T('Delete menu category "{p0}"?', { p0: c.name }))) return;
     this.error = null;
     this.menuApi.deleteCategory(c.id).subscribe({
       next: () => {
@@ -273,7 +274,7 @@ export class MenuAdminComponent implements OnInit {
         }
         this.loadCategories();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete category')),
     });
   }
 
@@ -303,7 +304,7 @@ export class MenuAdminComponent implements OnInit {
           this.productResults = [];
           this.loadItems();
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to add item'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to add item')),
       });
   }
 
@@ -321,7 +322,7 @@ export class MenuAdminComponent implements OnInit {
       })
       .subscribe({
         next: () => this.loadItems(),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to update price'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to update price')),
       });
   }
 
@@ -344,7 +345,7 @@ export class MenuAdminComponent implements OnInit {
         })
         .subscribe({
           next: () => this.loadItems(),
-          error: (err) => (this.error = err?.error?.message ?? 'Failed to update station'),
+          error: (err) => (this.error = err?.error?.message ?? T('Failed to update station')),
         });
     }, 400);
   }
@@ -378,7 +379,7 @@ export class MenuAdminComponent implements OnInit {
     this.menuApi.updateItem(item.id, this.payloadFor(item, { prepMinutes: minutes })).subscribe({
       next: () => this.loadItems(),
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to update the preparation time';
+        this.error = err?.error?.message ?? T('Failed to update the preparation time');
         this.loadItems();
       },
     });
@@ -390,7 +391,7 @@ export class MenuAdminComponent implements OnInit {
     const reason = next ? (window.prompt('Why is it sold out? (optional)', '') ?? '') : '';
     this.menuApi.setSoldOut(item.id, next, reason).subscribe({
       next: () => this.loadItems(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update the item'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update the item')),
     });
   }
 
@@ -399,7 +400,7 @@ export class MenuAdminComponent implements OnInit {
     this.error = null;
     this.menuApi.updateItem(item.id, this.payloadFor(item, { defaultCourse: course })).subscribe({
       next: () => this.loadItems(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update the course'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update the course')),
     });
   }
 
@@ -421,7 +422,7 @@ export class MenuAdminComponent implements OnInit {
     const chosen = this.allergenList.filter((a) => this.alSel[a]).join(',');
     this.menuApi.updateItem(item.id, this.payloadFor(item, { allergens: chosen })).subscribe({
       next: () => this.loadItems(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save the allergens'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save the allergens')),
     });
   }
 
@@ -436,7 +437,7 @@ export class MenuAdminComponent implements OnInit {
         this.editGroups = JSON.parse(JSON.stringify(groups));
         this.loadItems();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save the choices'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save the choices')),
     });
   }
 
@@ -444,7 +445,7 @@ export class MenuAdminComponent implements OnInit {
     this.error = null;
     this.menuApi.removeItem(item.id).subscribe({
       next: () => this.loadItems(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to remove item'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to remove item')),
     });
   }
 }

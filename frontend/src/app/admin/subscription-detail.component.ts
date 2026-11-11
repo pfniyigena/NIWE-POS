@@ -11,6 +11,7 @@ import { SubscriptionApiService, SubscriptionChangeQuote, SubscriptionEvent } fr
 import { openPdfForPrint } from '../core/download-file';
 import { BillingInterval, Invoice, Subscription, SubscriptionPlan, TaxRateOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Subscriptions > detail — `/admin/subscriptions/:id`. Shows the subscription's
  * own state plus every invoice the daily billing sweep (or a manual "Bill now") has generated for
@@ -230,11 +231,11 @@ export class SubscriptionDetailComponent implements OnInit {
   private loadAll(): void {
     this.subscriptionApi.getById(this.id).subscribe({
       next: (s) => (this.sub = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load subscription'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load subscription')),
     });
     this.subscriptionApi.billingHistory(this.id).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load billing history'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load billing history')),
     });
     this.subscriptionApi.events(this.id).subscribe({ next: (e) => (this.events = e), error: () => (this.events = []) });
   }
@@ -303,7 +304,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.update(this.id, { ...this.ed, termCycles: this.ed.termCycles ? this.ed.termCycles : 0, notes: this.ed.notes }).subscribe({
       next: (s) => this.done('Terms saved. They apply from the next bill.', s),
-      error: (err) => this.fail(err, 'Failed to save the terms'),
+      error: (err) => this.fail(err, T('Failed to save the terms')),
     });
   }
 
@@ -312,7 +313,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.changePlan(this.id, this.cp as any).subscribe({
       next: (s) => this.done('Plan changed.', s),
-      error: (err) => this.fail(err, 'Failed to change the plan'),
+      error: (err) => this.fail(err, T('Failed to change the plan')),
     });
   }
 
@@ -321,7 +322,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.billNow(this.id).subscribe({
       next: () => this.done('Billed.'),
-      error: (err) => this.fail(err, 'Failed to bill subscription'),
+      error: (err) => this.fail(err, T('Failed to bill subscription')),
     });
   }
 
@@ -330,7 +331,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.pause(this.id, this.pauseReason, this.pauseResumeOn).subscribe({
       next: (s) => { this.pauseReason = ''; this.pauseResumeOn = ''; this.done('Paused.', s); },
-      error: (err) => this.fail(err, 'Failed to pause subscription'),
+      error: (err) => this.fail(err, T('Failed to pause subscription')),
     });
   }
 
@@ -339,7 +340,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.resume(this.id).subscribe({
       next: (s) => this.done('Resumed.', s),
-      error: (err) => this.fail(err, 'Failed to resume subscription'),
+      error: (err) => this.fail(err, T('Failed to resume subscription')),
     });
   }
 
@@ -348,7 +349,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.skipNext(this.id).subscribe({
       next: (s) => this.done('The next billing was skipped.', s),
-      error: (err) => this.fail(err, 'Failed to skip the billing'),
+      error: (err) => this.fail(err, T('Failed to skip the billing')),
     });
   }
 
@@ -358,7 +359,7 @@ export class SubscriptionDetailComponent implements OnInit {
     const atEnd = this.cancelAtEnd && this.sub?.status === 'ACTIVE';
     this.subscriptionApi.cancel(this.id, this.cancelReason || null, atEnd).subscribe({
       next: (s) => this.done(atEnd ? 'Cancellation scheduled.' : 'Subscription cancelled.', s),
-      error: (err) => this.fail(err, 'Failed to cancel subscription'),
+      error: (err) => this.fail(err, T('Failed to cancel subscription')),
     });
   }
 
@@ -367,7 +368,7 @@ export class SubscriptionDetailComponent implements OnInit {
     this.busy = true;
     this.subscriptionApi.undoCancel(this.id).subscribe({
       next: (s) => this.done('The scheduled cancellation was withdrawn.', s),
-      error: (err) => this.fail(err, 'Failed to withdraw the cancellation'),
+      error: (err) => this.fail(err, T('Failed to withdraw the cancellation')),
     });
   }
 
@@ -380,7 +381,7 @@ export class SubscriptionDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to open subscription PDF';
+        this.error = err?.error?.message ?? T('Failed to open subscription PDF');
       },
     });
   }

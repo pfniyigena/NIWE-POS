@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RecurringInvoiceApiService } from '../core/api/recurring-invoice-api.service';
 import { RecurringInvoiceTemplate } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Recurring invoices (Fourier: "Add Recurring Invoice") — a saved template with
  * real invoice line items that auto-generates a brand-new, already-ISSUED invoice on a schedule
@@ -80,7 +81,7 @@ export class RecurringInvoiceListComponent implements OnInit {
     }
     this.recurringInvoiceApi.listAll(this.customerId ?? undefined).subscribe({
       next: (t) => (this.templates = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load recurring invoices'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load recurring invoices')),
     });
   }
 }

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { downloadBlob } from '../../core/download-file';
 import { ImportResult, LawApiService } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Bring clients or open matters in from an Excel or CSV file: download the template, choose the filled-in file, read what the check says, then import. The check saves nothing. */
 @Component({
   selector: 'app-law-import',
@@ -87,7 +88,7 @@ export class LawImportComponent {
     this.error = null;
     this.api.importTemplate(this.kind, format).subscribe({
       next: (b) => downloadBlob(b, `${this.kind}-import-template.${format}`),
-      error: () => (this.error = 'Could not download the template'),
+      error: () => (this.error = T('Could not download the template')),
     });
   }
 
@@ -106,7 +107,7 @@ export class LawImportComponent {
     this.error = null;
     this.api.importFile(this.kind, this.file, true, this.createClients, this.clearConflicts).subscribe({
       next: (r) => { this.busy = false; this.result = r; },
-      error: (e) => { this.busy = false; this.result = null; this.error = e?.error?.message ?? 'The file could not be checked'; },
+      error: (e) => { this.busy = false; this.result = null; this.error = e?.error?.message ?? T('The file could not be checked'); },
     });
   }
 
@@ -123,7 +124,7 @@ export class LawImportComponent {
         if (this.picker) this.picker.nativeElement.value = '';
         this.imported.emit();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'The import failed'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('The import failed'); },
     });
   }
 }

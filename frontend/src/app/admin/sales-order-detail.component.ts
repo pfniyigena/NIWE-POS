@@ -16,6 +16,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { q4 } from '../core/qty';
+import { T } from '../core/i18n/t';
 interface LocationOption {
   id: number;
   label: string;
@@ -397,7 +398,7 @@ export class SalesOrderDetailComponent implements OnInit {
           error: () => (this.invoice = null), // extra display only — never blocks the rest of the page
         });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load sale order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load sale order')),
     });
   }
 
@@ -406,7 +407,7 @@ export class SalesOrderDetailComponent implements OnInit {
     this.error = null;
     this.invoiceApi.generate(this.so.id).subscribe({
       next: (inv) => (this.invoice = inv),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to generate invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to generate invoice')),
     });
   }
 
@@ -422,7 +423,7 @@ export class SalesOrderDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to generate the sale order PDF';
+        this.error = err?.error?.message ?? T('Failed to generate the sale order PDF');
       },
     });
   }
@@ -435,23 +436,23 @@ export class SalesOrderDetailComponent implements OnInit {
       error: (err) => {
         // 409 = not enough unreserved stock: warn, and let an admin confirm (reserve) anyway.
         if (err?.status === 409 && !override) {
-          if (confirm(`${err?.error?.message ?? 'Not enough unreserved stock.'}\n\nConfirm and reserve anyway?`)) {
+          if (confirm(T('{p0}\n\nConfirm and reserve anyway?', { p0: err?.error?.message ?? T('Not enough unreserved stock.') }))) {
             this.confirm(true);
           }
           return;
         }
-        this.error = err?.error?.message ?? 'Failed to confirm sale order';
+        this.error = err?.error?.message ?? T('Failed to confirm sale order');
       },
     });
   }
 
   cancel(): void {
     if (!this.so) return;
-    if (!confirm(`Cancel sale order ${this.so.orderNumber}?`)) return;
+    if (!confirm(T('Cancel sale order {p0}?', { p0: this.so.orderNumber }))) return;
     this.error = null;
     this.salesOrderApi.cancel(this.so.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to cancel sale order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to cancel sale order')),
     });
   }
 

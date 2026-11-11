@@ -9,6 +9,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Branch } from '../../core/models';
 import { AcquisitionFunding, AssetApiService, AssetCategory, DepreciationMethod, FixedAsset } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * Assets > New / Edit asset. Method, useful life and salvage value start from the chosen category and can be changed
  * for this asset. Once depreciation or the purchase has been posted, cost, dates and depreciation terms are locked.
@@ -167,7 +168,7 @@ export class AssetFormComponent implements OnInit {
         this.categories = c.filter((x) => x.active);
         if (idParam) this.loadAsset(Number(idParam), c);
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load categories'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load categories')),
     });
   }
 
@@ -188,7 +189,7 @@ export class AssetFormComponent implements OnInit {
           warrantyExpiresOn: a.warrantyExpiresOn, insuranceExpiresOn: a.insuranceExpiresOn, insurancePolicy: a.insurancePolicy,
         };
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the asset'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the asset')),
     });
   }
 
@@ -206,7 +207,7 @@ export class AssetFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.f.categoryId || !this.f.cost) {
-      this.error = 'Choose a category and enter the cost.';
+      this.error = T('Choose a category and enter the cost.');
       return;
     }
     const payload = {
@@ -238,7 +239,7 @@ export class AssetFormComponent implements OnInit {
       next: (a) => this.router.navigate(['/admin/assets', a.id]),
       error: (e) => {
         this.saving = false;
-        this.error = e?.error?.message ?? 'Could not save the asset';
+        this.error = e?.error?.message ?? T('Could not save the asset');
       },
     });
   }

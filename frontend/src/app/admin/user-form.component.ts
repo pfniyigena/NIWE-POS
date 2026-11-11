@@ -9,6 +9,7 @@ import { Branch, Permission } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { CustomRole, RoleApiService } from '../core/api/role-api.service';
 
+import { T } from '../core/i18n/t';
 /** One checklist row — see this component's own PERMISSION_OPTIONS for the fixed set. */
 interface PermissionOption {
   value: Permission;
@@ -158,7 +159,7 @@ export class UserFormComponent implements OnInit {
           this.customRoleId = found.customRoleId ?? null;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff account'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load staff account')),
     });
   }
 
@@ -197,7 +198,7 @@ export class UserFormComponent implements OnInit {
         .update(this.id, { fullName: this.fullName, email: this.email || null, role: this.role, active: this.active, permissions: this.permissions, branchIds: this.effectiveBranchIds(), customRoleId: this.effectiveCustomRoleId(), customRoleProvided: true })
         .subscribe({
           next: () => this.router.navigate(['/admin/staff']),
-          error: (err) => (this.error = err?.error?.message ?? 'Failed to save staff account'),
+          error: (err) => (this.error = err?.error?.message ?? T('Failed to save staff account')),
         });
     } else {
       this.userApi
@@ -213,7 +214,7 @@ export class UserFormComponent implements OnInit {
         })
         .subscribe({
           next: () => this.router.navigate(['/admin/staff']),
-          error: (err) => (this.error = err?.error?.message ?? 'Failed to create staff account'),
+          error: (err) => (this.error = err?.error?.message ?? T('Failed to create staff account')),
         });
     }
   }

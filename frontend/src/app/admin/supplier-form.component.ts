@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { SupplierApiService } from '../core/api/supplier-api.service';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-supplier-form',
   standalone: true,
@@ -92,7 +93,7 @@ export class SupplierFormComponent implements OnInit {
           this.active = found.active;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load supplier'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load supplier')),
     });
   }
 
@@ -111,7 +112,7 @@ export class SupplierFormComponent implements OnInit {
     const call = this.id ? this.supplierApi.update(this.id, payload) : this.supplierApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/suppliers']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save supplier'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save supplier')),
     });
   }
 }

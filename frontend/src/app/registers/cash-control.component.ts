@@ -8,6 +8,7 @@ import { RegisterApiService } from '../core/api/register-api.service';
 import { CashMovement, CashSummary, Denomination } from '../core/models';
 import { AuthService } from '../core/auth.service';
 
+import { T } from '../core/i18n/t';
 /**
  * The cash drawer of one shift: where it stands (float, cash sales, refunds, paid in, paid out, drops, expected cash), a form to record money
  * paid in or out, a drop into the safe, or a count made during the shift, and the list of what has been recorded. A manager can void a mistake.
@@ -134,7 +135,7 @@ export class CashControlComponent implements OnInit {
   reload(): void {
     this.registerApi.cashSummary(this.sessionId).subscribe({
       next: (s) => (this.sum = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the drawer'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the drawer')),
     });
   }
 
@@ -190,7 +191,7 @@ export class CashControlComponent implements OnInit {
       },
       error: (err) => {
         this.saving = false;
-        this.error = err?.error?.message ?? 'Could not record that';
+        this.error = err?.error?.message ?? T('Could not record that');
       },
     });
   }
@@ -201,7 +202,7 @@ export class CashControlComponent implements OnInit {
     this.error = null;
     this.registerApi.voidCash(m.id, reason).subscribe({
       next: () => this.reload(),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not void that'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not void that')),
     });
   }
 }

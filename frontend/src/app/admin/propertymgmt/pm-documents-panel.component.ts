@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PM_DOC_CATEGORIES, PmDocCategory, PmDocSubject, PmDocument, PmDocumentsApiService, pmDocCategoryLabel } from '../../core/api/pm-documents-api.service';
 
+import { T } from '../../core/i18n/t';
 /** The documents of one Property Management record (a property, unit, owner, tenant, lease or repair request): upload, download, change details, delete. */
 @Component({
   selector: 'app-pm-documents-panel',
@@ -106,7 +107,7 @@ export class PmDocumentsPanelComponent implements OnChanges {
     if (this.subjectId == null) return;
     this.api.list({ subjectType: this.subjectType, subjectId: this.subjectId }).subscribe({
       next: (l) => { this.list = l; this.loaded = true; this.changed.emit(l.length); },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the documents'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the documents'); },
     });
   }
 
@@ -131,19 +132,19 @@ export class PmDocumentsPanelComponent implements OnChanges {
 
   upload(): void {
     this.error = null;
-    if (!this.file) { this.error = 'Choose a file.'; return; }
+    if (!this.file) { this.error = T('Choose a file.'); return; }
     this.busy = true;
     this.api.upload(this.subjectType, this.subjectId, this.file, {
       name: this.f.name.trim() || null, category: this.f.category, description: this.f.description.trim() || null, expiryDate: this.f.expiryDate || null,
     }).subscribe({
       next: () => { this.busy = false; this.adding = false; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not upload the file'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not upload the file'); },
     });
   }
 
   download(d: PmDocument): void {
     this.error = null;
-    this.api.download(d).subscribe({ error: (e) => (this.error = e?.error?.message ?? 'Could not download the file') });
+    this.api.download(d).subscribe({ error: (e) => (this.error = e?.error?.message ?? T('Could not download the file')) });
   }
 
   startEdit(d: PmDocument): void {
@@ -160,13 +161,13 @@ export class PmDocumentsPanelComponent implements OnChanges {
       name: this.e.name.trim() || null, category: this.e.category, description: this.e.description, expiryDate: this.e.expiryDate || null, clearExpiry: had && !this.e.expiryDate,
     }).subscribe({
       next: () => { this.busy = false; this.editing = null; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the changes'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the changes'); },
     });
   }
 
   remove(d: PmDocument): void {
-    if (!confirm('Delete "' + d.name + '"? The file is removed for good.')) return;
+    if (!confirm(T('Delete "{p0}"? The file is removed for good.', { p0: d.name }))) return;
     this.error = null;
-    this.api.remove(d.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the document') });
+    this.api.remove(d.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the document')) });
   }
 }

@@ -10,6 +10,7 @@ import { AuthService } from '../../core/auth.service';
 import { downloadBlob } from '../../core/download-file';
 import { HrApiService, PayrollEvent, PayrollRunDetail } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Payroll > one payroll run: every employee's pay for the month, with approve (posts to Accounting) and pay. */
 @Component({
   selector: 'app-payroll-run',
@@ -148,7 +149,7 @@ export class PayrollRunComponent implements OnInit {
         this.d = { ...d, warnings: d.warnings.length ? d.warnings : warnings };
         this.loadHistory();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the payroll'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the payroll')),
     });
   }
 
@@ -173,12 +174,10 @@ export class PayrollRunComponent implements OnInit {
         if (this.d) this.d = { ...this.d, run: r, warnings: [] };
         this.correction = null;
         this.error = null;
-        this.info = kind === 'reopen'
-          ? 'The payroll is a draft again. Change what needs changing, then Recalculate and approve it.'
-          : 'The payment was cancelled. The payroll is approved and waiting to be paid.';
+        this.info = kind === 'reopen' ? T('The payroll is a draft again. Change what needs changing, then Recalculate and approve it.') : T('The payment was cancelled. The payroll is approved and waiting to be paid.');
         this.loadHistory();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not do that'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not do that')),
     });
   }
 
@@ -191,7 +190,7 @@ export class PayrollRunComponent implements OnInit {
     const period = `${this.d.run.periodYear}-${String(this.d.run.periodMonth).padStart(2, '0')}`;
     this.api.bankFile(this.d.run.id, format).subscribe({
       next: (blob) => downloadBlob(blob, `bank-transfers-${period}.${format}`),
-      error: () => (this.error = 'Could not create the bank file'),
+      error: () => (this.error = T('Could not create the bank file')),
     });
   }
 
@@ -200,7 +199,7 @@ export class PayrollRunComponent implements OnInit {
     const period = `${this.d.run.periodYear}-${String(this.d.run.periodMonth).padStart(2, '0')}`;
     this.api.payrollRegister(this.d.run.id, format).subscribe({
       next: (blob) => downloadBlob(blob, `payroll-register-${period}.${format}`),
-      error: () => (this.error = 'Could not create the register'),
+      error: () => (this.error = T('Could not create the register')),
     });
   }
 
@@ -209,12 +208,12 @@ export class PayrollRunComponent implements OnInit {
     const period = `${this.d.run.periodYear}-${String(this.d.run.periodMonth).padStart(2, '0')}`;
     this.api.payrollReturn(this.d.run.id, kind, format).subscribe({
       next: (blob) => downloadBlob(blob, `${kind}-return-${period}.${format}`),
-      error: () => (this.error = 'Could not create the return'),
+      error: () => (this.error = T('Could not create the return')),
     });
   }
 
   emailAll(): void {
-    if (!this.d || !confirm('Email every employee their payslip?')) return;
+    if (!this.d || !confirm(T('Email every employee their payslip?'))) return;
     this.emailing = true;
     this.info = null;
     this.error = null;
@@ -225,7 +224,7 @@ export class PayrollRunComponent implements OnInit {
       },
       error: (e) => {
         this.emailing = false;
-        this.error = e?.error?.message ?? 'Could not send the payslips';
+        this.error = e?.error?.message ?? T('Could not send the payslips');
       },
     });
   }
@@ -241,37 +240,37 @@ export class PayrollRunComponent implements OnInit {
         this.d = d;
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not recalculate'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not recalculate')),
     });
   }
 
   approve(): void {
-    if (!this.d || !confirm('Approve this payroll? It is posted to Accounting and can no longer be changed.')) return;
+    if (!this.d || !confirm(T('Approve this payroll? It is posted to Accounting and can no longer be changed.'))) return;
     this.api.approvePayroll(this.d.run.id).subscribe({
       next: (r) => {
         if (this.d) this.d = { ...this.d, run: r, warnings: [] };
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not approve the payroll'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not approve the payroll')),
     });
   }
 
   pay(): void {
-    if (!this.d || !confirm('Record that the net salaries have been paid? This posts the payment to Accounting.')) return;
+    if (!this.d || !confirm(T('Record that the net salaries have been paid? This posts the payment to Accounting.'))) return;
     this.api.payPayroll(this.d.run.id, this.paidDate).subscribe({
       next: (r) => {
         if (this.d) this.d = { ...this.d, run: r };
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not record the payment'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not record the payment')),
     });
   }
 
   remove(): void {
-    if (!this.d || !confirm('Delete this draft payroll?')) return;
+    if (!this.d || !confirm(T('Delete this draft payroll?'))) return;
     this.api.deletePayroll(this.d.run.id).subscribe({
       next: () => this.router.navigate(['/admin/hr/payroll/runs']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the payroll'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the payroll')),
     });
   }
 }

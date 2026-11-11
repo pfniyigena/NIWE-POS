@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { Arrears, PropertyMgmtApiService, PropertyRow } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Arrears: tenants with rent past its due date, how old it is (1 to 30, 31 to 60, 61 to 90, over 90 days), and the invoices behind it. */
 @Component({
   selector: 'app-pm-arrears',
@@ -85,7 +86,7 @@ export class PmArrearsComponent implements OnInit {
   }
 
   load(): void {
-    this.api.arrears({ propertyId: this.propertyId }).subscribe({ next: (a) => (this.a = a), error: (e) => (this.error = e?.error?.message ?? 'Could not load the arrears') });
+    this.api.arrears({ propertyId: this.propertyId }).subscribe({ next: (a) => (this.a = a), error: (e) => (this.error = e?.error?.message ?? T('Could not load the arrears')) });
   }
 
   toggle(id: number): void { this.open = this.open === id ? null : id; }

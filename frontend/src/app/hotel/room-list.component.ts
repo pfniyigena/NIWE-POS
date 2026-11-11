@@ -10,6 +10,7 @@ import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Rooms: the physical rooms, each with a type (rate comes from the type unless the room has its own). */
 @Component({
   selector: 'app-room-list',
@@ -138,7 +139,7 @@ export class RoomListComponent implements OnInit {
   }
 
   remove(r: Room): void {
-    if (!confirm(`Delete room ${r.number}?`)) return;
+    if (!confirm(T('Delete room {p0}?', { p0: r.number }))) return;
     this.error = null;
     this.api.deleteRoom(r.id).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
   }

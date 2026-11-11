@@ -9,6 +9,7 @@ import { downloadBlob } from '../../core/download-file';
 import { ComponentAvailability, ManufacturingOrder } from '../../core/models';
 
 import { q4 } from '../../core/qty';
+import { T } from '../../core/i18n/t';
 /**
  * Manufacturing > Manufacturing orders > detail — where a DRAFT is confirmed or cancelled, and
  * where a CONFIRMED/PARTIALLY_PRODUCED order is actually produced against. Mirrors
@@ -306,7 +307,7 @@ export class ManufacturingOrderDetailComponent implements OnInit {
         this.produceQuantity = this.remaining();
         this.manufacturingOrderApi.availability(id).subscribe({ next: (a) => (this.avail = a), error: () => (this.avail = null) });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load manufacturing order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load manufacturing order')),
     });
   }
 
@@ -319,7 +320,7 @@ export class ManufacturingOrderDetailComponent implements OnInit {
     this.error = null;
     this.manufacturingOrderApi.confirm(this.mo.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to confirm manufacturing order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to confirm manufacturing order')),
     });
   }
 
@@ -330,7 +331,7 @@ export class ManufacturingOrderDetailComponent implements OnInit {
         const w = window.open(URL.createObjectURL(blob), '_blank');
         if (!w) downloadBlob(blob, `job-card-${this.mo?.orderNumber}.pdf`);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to build the job card'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to build the job card')),
     });
   }
 
@@ -338,17 +339,17 @@ export class ManufacturingOrderDetailComponent implements OnInit {
     if (!this.mo) return;
     this.manufacturingOrderApi.copy(this.mo.id).subscribe({
       next: (n) => this.router.navigate(['/admin/manufacturing/orders', n.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to copy the manufacturing order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to copy the manufacturing order')),
     });
   }
 
   cancel(): void {
     if (!this.mo) return;
-    if (!confirm(`Cancel manufacturing order ${this.mo.orderNumber}?`)) return;
+    if (!confirm(T('Cancel manufacturing order {p0}?', { p0: this.mo.orderNumber }))) return;
     this.error = null;
     this.manufacturingOrderApi.cancel(this.mo.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to cancel manufacturing order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to cancel manufacturing order')),
     });
   }
 

@@ -10,6 +10,7 @@ import { PaymentMethodApiService } from '../core/api/payment-method-api.service'
 import { RegisterApiService } from '../core/api/register-api.service';
 import { Order, PaymentMethodOption, PosSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface ReturnRow {
   lineId: number;
   description: string;
@@ -174,7 +175,7 @@ export class ReturnFormComponent implements OnInit {
     if (!this.order) return;
     const lines = this.rows.filter((r) => r.returnQty > 0).map((r) => ({ orderLineId: r.lineId, quantity: r.returnQty }));
     if (lines.length === 0) {
-      this.error = 'Enter a return quantity for at least one item';
+      this.error = T('Enter a return quantity for at least one item');
       return;
     }
     this.error = null;
@@ -185,7 +186,7 @@ export class ReturnFormComponent implements OnInit {
         // same convention as checkout.component.ts navigating to receipt.component.ts after a sale.
         next: (r) => this.router.navigate(['/returns', r.id, 'receipt'], { queryParams: { autoPrint: '1' } }),
         error: (err) => {
-          this.error = err?.error?.message ?? 'Failed to process return';
+          this.error = err?.error?.message ?? T('Failed to process return');
           if (this.error?.includes('Manager approval needed')) this.needPin = true;
         },
       });

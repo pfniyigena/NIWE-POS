@@ -11,6 +11,7 @@ import { AuthService } from '../../core/auth.service';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { BILLING_LABEL, LawApiService, LawSummary, MatterRow, Option, STATUS_LABEL } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Law Firm > Matters: every matter the person can see, with what is overdue and what still needs a conflict check. */
 @Component({
   selector: 'app-law-matter-list',
@@ -115,7 +116,7 @@ export class LawMatterListComponent implements OnInit {
     this.error = null;
     this.api.mattersPage({ status: this.status, q: this.q.trim(), practiceArea: this.practiceArea, leadId: this.leadId, clientId: this.clientId, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the matters'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the matters')),
     });
   }
 

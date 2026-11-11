@@ -13,6 +13,7 @@ import { branchNameOf } from '../core/branch-util';
 import { ModuleApiService } from '../core/api/module-api.service';
 import { InstallmentApiService, InstallmentPlanSummary } from '../core/api/installment-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Invoices > detail — `/admin/invoices/:id`, reached from the invoice list or
  * from a Sales Order's own "View invoice" link. Fourier: "View Invoice Button contain should look
@@ -295,7 +296,7 @@ export class InvoiceDetailComponent implements OnInit {
           if (this.modules.on('INSTALLMENTS')) this.installmentApi.forInvoice(inv.id).subscribe({ next: (p) => (this.plans = p), error: () => (this.plans = []) });
         });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load invoice')),
     });
   }
 
@@ -311,7 +312,7 @@ export class InvoiceDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to generate the invoice PDF';
+        this.error = err?.error?.message ?? T('Failed to generate the invoice PDF');
       },
     });
   }
@@ -325,7 +326,7 @@ export class InvoiceDetailComponent implements OnInit {
         this.showVoidForm = false;
         this.voidReason = '';
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to void invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to void invoice')),
     });
   }
 
@@ -359,7 +360,7 @@ export class InvoiceDetailComponent implements OnInit {
         },
         error: (err) => {
           this.cancellingPaid = false;
-          this.error = err?.error?.message ?? 'Failed to cancel invoice';
+          this.error = err?.error?.message ?? T('Failed to cancel invoice');
         },
       });
   }
@@ -369,17 +370,17 @@ export class InvoiceDetailComponent implements OnInit {
     this.error = null;
     this.invoiceApi.issue(this.inv.id).subscribe({
       next: (inv) => (this.inv = inv),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to issue invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to issue invoice')),
     });
   }
 
   deleteDraft(): void {
     if (!this.inv) return;
-    if (!confirm(`Delete draft invoice ${this.inv.invoiceNumber}? This cannot be undone.`)) return;
+    if (!confirm(T('Delete draft invoice {p0}? This cannot be undone.', { p0: this.inv.invoiceNumber }))) return;
     this.error = null;
     this.invoiceApi.deleteDraft(this.inv.id).subscribe({
       next: () => this.router.navigate(['/admin/invoices']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete draft'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete draft')),
     });
   }
 
@@ -389,7 +390,7 @@ export class InvoiceDetailComponent implements OnInit {
     if (entered === null) return; // cancelled
     const email = entered.trim() || null;
     if (!email) {
-      this.error = 'Enter an email address to send to';
+      this.error = T('Enter an email address to send to');
       return;
     }
     this.error = null;
@@ -403,7 +404,7 @@ export class InvoiceDetailComponent implements OnInit {
       },
       error: (err) => {
         this.emailing = false;
-        this.error = err?.error?.message ?? 'Failed to email invoice';
+        this.error = err?.error?.message ?? T('Failed to email invoice');
       },
     });
   }

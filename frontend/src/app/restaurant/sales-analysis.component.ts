@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantReportApiService } from '../core/api/restaurant-report-api.service';
 import { AnalysisHour, AnalysisItem, RestaurantAnalysis } from '../core/models';
 
+import { T } from '../core/i18n/t';
 type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
 
 /** Admin > Restaurant > Sales analysis: when the money comes in, what sells and what earns, who sells it and how tables turn. */
@@ -298,7 +299,7 @@ export class SalesAnalysisComponent implements OnInit {
       },
       error: (e) => {
         this.loading = false;
-        this.error = e?.error?.message || 'Could not load the analysis';
+        this.error = e?.error?.message || T('Could not load the analysis');
       },
     });
   }

@@ -13,6 +13,7 @@ import { PmDepositPanelComponent } from './pm-deposit-panel.component';
 import { PmLeaseChargesPanelComponent } from './pm-lease-charges-panel.component';
 import { PmInspectionsPanelComponent } from './pm-inspections-panel.component';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -139,7 +140,7 @@ export class LeaseDetailComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   private load(): void {
-    this.api.lease(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (l) => (this.l = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load the lease') });
+    this.api.lease(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (l) => (this.l = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load the lease')) });
   }
 
   badge(s: string): string { return leaseBadge(s); }
@@ -173,7 +174,7 @@ export class LeaseDetailComponent implements OnInit {
   sign(): void {
     this.busy = true;
     this.error = null;
-    this.api.activateLease(this.l!.id, this.signedOn || null, this.billFrom || null).subscribe({ next: (l) => this.done(l), error: (e) => this.fail(e, 'Could not sign the lease') });
+    this.api.activateLease(this.l!.id, this.signedOn || null, this.billFrom || null).subscribe({ next: (l) => this.done(l), error: (e) => this.fail(e, T('Could not sign the lease')) });
   }
 
   renew(): void {
@@ -185,31 +186,31 @@ export class LeaseDetailComponent implements OnInit {
     if (num(this.rn.rent)) p.rent = num(this.rn.rent);
     this.api.renewLease(this.l!.id, p).subscribe({
       next: (n) => { this.busy = false; this.panel = null; this.router.navigate(['/admin/propertymgmt/leases', n.id]); },
-      error: (e) => this.fail(e, 'Could not renew the lease'),
+      error: (e) => this.fail(e, T('Could not renew the lease')),
     });
   }
 
   terminate(): void {
     this.error = null;
-    if (!txt(this.tReason)) { this.error = 'Say why the lease is ending early.'; return; }
+    if (!txt(this.tReason)) { this.error = T('Say why the lease is ending early.'); return; }
     this.busy = true;
-    this.api.terminateLease(this.l!.id, this.tDate || null, txt(this.tReason)).subscribe({ next: (l) => this.done(l), error: (e) => this.fail(e, 'Could not terminate the lease') });
+    this.api.terminateLease(this.l!.id, this.tDate || null, txt(this.tReason)).subscribe({ next: (l) => this.done(l), error: (e) => this.fail(e, T('Could not terminate the lease')) });
   }
 
   end(force: boolean): void {
-    if (force && !confirm('End this lease now, before its end date? Use "Terminate early" instead if the tenant is leaving.')) return;
+    if (force && !confirm(T('End this lease now, before its end date? Use "Terminate early" instead if the tenant is leaving.'))) return;
     this.busy = true;
     this.error = null;
-    this.api.endLease(this.l!.id, force).subscribe({ next: (l) => this.done(l), error: (e) => this.fail(e, 'Could not end the lease') });
+    this.api.endLease(this.l!.id, force).subscribe({ next: (l) => this.done(l), error: (e) => this.fail(e, T('Could not end the lease')) });
   }
 
   remove(): void {
-    if (!confirm(`Delete draft lease ${this.l!.code}?`)) return;
+    if (!confirm(T('Delete draft lease {p0}?', { p0: this.l!.code }))) return;
     this.busy = true;
     this.error = null;
     this.api.deleteLease(this.l!.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/leases']),
-      error: (e) => this.fail(e, 'Could not delete the lease'),
+      error: (e) => this.fail(e, T('Could not delete the lease')),
     });
   }
 }

@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { PurchaseRequisitionApiService } from '../core/api/purchase-requisition-api.service';
 import { PurchaseRequisition } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Purchase Requisitions — Fourier: "Add ... the purchase-requisition approval gate ... without touching warehousing." */
 @Component({
   selector: 'app-purchase-requisition-list',
@@ -57,7 +58,7 @@ export class PurchaseRequisitionListComponent implements OnInit {
   ngOnInit(): void {
     this.requisitionApi.listAll().subscribe({
       next: (r) => (this.requisitions = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load purchase requisitions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load purchase requisitions')),
     });
   }
 

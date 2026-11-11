@@ -12,6 +12,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { PriceEntry, PriceListRow, PricingApiService } from '../../core/api/pricing-api.service';
 import { Product } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** One price list: its prices (a product can have several quantity steps), adding and removing them, and loading or saving the whole list as a CSV file. */
 @Component({
   selector: 'app-price-list-detail',
@@ -130,7 +131,7 @@ export class PriceListDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
-    this.api.list(this.id).subscribe({ next: (l) => (this.list = l), error: (err) => (this.error = err?.error?.message ?? 'Could not load the price list') });
+    this.api.list(this.id).subscribe({ next: (l) => (this.list = l), error: (err) => (this.error = err?.error?.message ?? T('Could not load the price list')) });
     this.reload(false);
   }
 
@@ -152,7 +153,7 @@ export class PriceListDetailComponent implements OnInit {
         this.entries = r.items;
         this.total = r.total;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the prices'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the prices')),
     });
   }
 
@@ -193,7 +194,7 @@ export class PriceListDetailComponent implements OnInit {
         this.reload(false);
         this.api.list(this.id).subscribe((l) => (this.list = l));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save the price'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save the price')),
     });
   }
 
@@ -206,7 +207,7 @@ export class PriceListDetailComponent implements OnInit {
         this.reload(false);
         this.api.list(this.id).subscribe((l) => (this.list = l));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not remove the price'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not remove the price')),
     });
   }
 

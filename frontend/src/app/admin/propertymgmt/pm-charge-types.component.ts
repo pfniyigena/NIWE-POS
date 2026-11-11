@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { CHARGE_KIND_LABEL, ChargeKind, ChargeType, PmChargeApiService } from '../../core/api/pm-charge-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 
 /** Property Management > Charges: the kinds of charge that can be put on a lease and billed on its rent invoice (Service charge, Garbage, Water, Electricity...). */
@@ -70,7 +71,7 @@ export class PmChargeTypesComponent implements OnInit {
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    this.api.types().subscribe({ next: (l) => { this.list = l; this.loaded = true; }, error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the charge types'; } });
+    this.api.types().subscribe({ next: (l) => { this.list = l; this.loaded = true; }, error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the charge types'); } });
   }
 
   openNew(): void { this.error = null; this.form = { id: null, original: '', name: '', kind: 'FIXED', unit: '', amount: null, kindLocked: false }; }
@@ -79,26 +80,26 @@ export class PmChargeTypesComponent implements OnInit {
   save(): void {
     const f = this.form;
     if (!f) return;
-    if (!f.name.trim()) { this.error = 'Give the charge a name.'; return; }
-    if (f.kind === 'METERED' && !f.unit.trim()) { this.error = 'Say what the meter counts (for example m3 or kWh).'; return; }
+    if (!f.name.trim()) { this.error = T('Give the charge a name.'); return; }
+    if (f.kind === 'METERED' && !f.unit.trim()) { this.error = T('Say what the meter counts (for example m3 or kWh).'); return; }
     const amount = num(f.amount);
     this.busy = true;
     this.error = null;
     const body = { name: f.name.trim(), kind: f.kind, unitLabel: f.kind === 'METERED' ? f.unit.trim() : undefined, defaultAmount: amount };
     const call = f.id === null ? this.api.createType(body) : this.api.updateType(f.id, { ...body, clearDefaultAmount: amount === null });
-    call.subscribe({ next: () => { this.busy = false; this.form = null; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save'; } });
+    call.subscribe({ next: () => { this.busy = false; this.form = null; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save'); } });
   }
 
   toggle(t: ChargeType): void {
     this.busy = true;
     this.error = null;
-    this.api.updateType(t.id, { active: !t.active }).subscribe({ next: () => { this.busy = false; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; } });
+    this.api.updateType(t.id, { active: !t.active }).subscribe({ next: () => { this.busy = false; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); } });
   }
 
   remove(t: ChargeType): void {
-    if (!confirm(`Delete the charge type ${t.name}?`)) return;
+    if (!confirm(T('Delete the charge type {p0}?', { p0: t.name }))) return;
     this.busy = true;
     this.error = null;
-    this.api.deleteType(t.id).subscribe({ next: () => { this.busy = false; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; } });
+    this.api.deleteType(t.id).subscribe({ next: () => { this.busy = false; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); } });
   }
 }

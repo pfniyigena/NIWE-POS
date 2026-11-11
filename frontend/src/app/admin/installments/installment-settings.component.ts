@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../../shared/shell.component';
 import { InstallmentApiService, InstallmentSettings } from '../../core/api/installment-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Installments > Settings: reminder timing and the starting values offered on a new plan. */
 @Component({
   selector: 'app-installment-settings',
@@ -53,7 +54,7 @@ export class InstallmentSettingsComponent implements OnInit {
   constructor(private api: InstallmentApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
   }
 
   save(): void {
@@ -65,7 +66,7 @@ export class InstallmentSettingsComponent implements OnInit {
         this.error = null;
         this.saved = true;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save')),
     });
   }
 }

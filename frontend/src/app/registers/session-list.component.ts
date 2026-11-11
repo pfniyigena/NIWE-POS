@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { CashierSessionApiService } from '../core/api/cashier-session-api.service';
 import { CashierSession } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Every individual cashier session, not one row per shift — a shift (RegisterSession) can have
  * several cashiers working it at once (see CashierSession's doc comment in models.ts). Open to any
@@ -87,7 +88,7 @@ export class SessionListComponent implements OnInit {
   private load(): void {
     this.cashierSessionApi.listAll().subscribe({
       next: (s) => (this.sessions = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load sessions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load sessions')),
     });
   }
 
@@ -99,11 +100,11 @@ export class SessionListComponent implements OnInit {
   /** Ends this one cashier's session — discards any cart they never checked out, same as the terminal's own "End my session". */
   closeSession(cs: CashierSession): void {
     if (!cs.registerSessionId) return;
-    if (!confirm(`End ${cs.cashierName}'s session? Any unfinished cart will be discarded.`)) return;
+    if (!confirm(T('End {p0}\'s session? Any unfinished cart will be discarded.', { p0: cs.cashierName }))) return;
     this.error = null;
     this.cashierSessionApi.close(cs.registerSessionId, cs.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to close session'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to close session')),
     });
   }
 }

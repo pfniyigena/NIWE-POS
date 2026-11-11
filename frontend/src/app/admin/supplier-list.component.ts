@@ -9,6 +9,7 @@ import { ListState } from '../core/api/list-state';
 import { SupplierApiService } from '../core/api/supplier-api.service';
 import { Supplier } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Suppliers — Task: "Inventory depth ... purchase orders and supplier records." */
 @Component({
   selector: 'app-supplier-list',
@@ -82,11 +83,11 @@ export class SupplierListComponent implements OnInit {
 
   /** Backend either hard-deletes (no PO history) or falls back to deactivating (see SupplierService.delete) — either way this just reloads to show whichever happened. */
   remove(s: Supplier): void {
-    if (!confirm(`Remove supplier "${s.name}"? If it's referenced by a purchase order it will be deactivated instead of deleted.`)) return;
+    if (!confirm(T('Remove supplier "{p0}"? If it\'s referenced by a purchase order it will be deactivated instead of deleted.', { p0: s.name }))) return;
     this.error = null;
     this.supplierApi.delete(s.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to remove supplier'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to remove supplier')),
     });
   }
 }

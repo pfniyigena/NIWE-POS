@@ -10,6 +10,7 @@ import {
   LeadRow, Option, RealEstateApiService, UNIT_KINDS, UNIT_SALE_STAGE_LABEL, UNIT_STATUS_LABEL, UnitDto, UnitKind, UnitPayload, UnitSalePayload, unitKindLabel,
 } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string | null => { const t = (v ?? '').trim(); return t ? t : null; };
 
@@ -163,7 +164,7 @@ export class UnitDetailComponent implements OnInit {
   load(): void {
     this.api.unit(this.id()).subscribe({
       next: (u) => { this.u = u; this.r.agreedPrice = this.r.agreedPrice ?? u.listPrice; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the unit'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the unit')),
     });
   }
 
@@ -192,13 +193,13 @@ export class UnitDetailComponent implements OnInit {
     }
     this.busy = true;
     this.api.updateUnit(u.id, body).subscribe({
-      next: (x) => { this.busy = false; this.u = x; this.editing = false; this.notice = 'Saved.'; },
+      next: (x) => { this.busy = false; this.u = x; this.editing = false; this.notice = T('Saved.'); },
       error: (e) => { this.busy = false; this.actionError = e?.error?.message ?? 'Could not save the unit'; },
     });
   }
 
   remove(): void {
-    if (!confirm('Delete unit ' + this.u!.unitNo + '?')) return;
+    if (!confirm(T('Delete unit {p0}?', { p0: this.u!.unitNo }))) return;
     const pid = this.u!.projectId;
     this.api.deleteUnit(this.u!.id).subscribe({ next: () => this.router.navigate(['/admin/realestate/projects', pid]), error: (e) => (this.actionError = e?.error?.message ?? 'Could not delete the unit') });
   }

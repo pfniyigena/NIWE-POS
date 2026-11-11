@@ -9,6 +9,7 @@ import { ReportApiService, ReportFilter } from '../core/api/report-api.service';
 import { CustomerApiService } from '../core/api/customer-api.service';
 import { Customer } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface CustomerStatementRow {
   orderId: number;
   invoiceNumber: string | null;
@@ -178,7 +179,7 @@ export class CustomerStatementComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to run statement';
+        this.error = err?.error?.message ?? T('Failed to run statement');
       },
     });
   }
@@ -199,7 +200,7 @@ export class CustomerStatementComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

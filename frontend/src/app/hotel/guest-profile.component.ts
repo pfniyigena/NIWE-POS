@@ -10,6 +10,7 @@ import { downloadBlob } from '../core/download-file';
 import { GuestFormComponent } from './guest-form.component';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Guests > one guest: stays and lifetime spend, preferences, ID documents, and merging a duplicate into this guest. */
 @Component({
   selector: 'app-guest-profile',
@@ -169,7 +170,7 @@ export class GuestProfileComponent implements OnInit {
     this.api.uploadGuestDocument(this.id, this.file, this.docType, this.docName, this.docNumber, this.docExpiry).subscribe({
       next: (d) => {
         this.busy = false;
-        this.message = `${d.name} added.`;
+        this.message = T('{p0} added.', { p0: d.name });
         this.file = null;
         this.docName = this.docNumber = this.docExpiry = '';
         const input = document.querySelector('.doc-file') as HTMLInputElement | null;
@@ -181,12 +182,12 @@ export class GuestProfileComponent implements OnInit {
   }
 
   download(d: GuestDocument): void {
-    this.api.guestDocumentFile(d.id).subscribe({ next: (b) => downloadBlob(b, d.fileName), error: () => (this.error = 'Could not download the file.') });
+    this.api.guestDocumentFile(d.id).subscribe({ next: (b) => downloadBlob(b, d.fileName), error: () => (this.error = T('Could not download the file.')) });
   }
 
   removeDoc(d: GuestDocument): void {
-    if (!confirm(`Delete ${d.name}?`)) return;
-    this.api.deleteGuestDocument(d.id).subscribe({ next: () => { this.message = 'Document deleted.'; this.load(); }, error: (e) => (this.error = errMsg(e, 'Could not delete the document')) });
+    if (!confirm(T('Delete {p0}?', { p0: d.name }))) return;
+    this.api.deleteGuestDocument(d.id).subscribe({ next: () => { this.message = T('Document deleted.'); this.load(); }, error: (e) => (this.error = errMsg(e, 'Could not delete the document')) });
   }
 
   searchMerge(): void {
@@ -198,13 +199,13 @@ export class GuestProfileComponent implements OnInit {
   merge(): void {
     const other = this.mergeOptions.find((o) => o.id === this.mergeId);
     if (!other || !this.p) return;
-    if (!confirm(`Merge ${other.fullName} into ${this.p.guest.fullName}? This cannot be undone.`)) return;
+    if (!confirm(T('Merge {p0} into {p1}? This cannot be undone.', { p0: other.fullName, p1: this.p.guest.fullName }))) return;
     this.busy = true;
     this.error = this.message = null;
     this.api.mergeGuests(this.id, other.id).subscribe({
       next: (r) => {
         this.busy = false;
-        this.message = `Merged ${other.fullName}: ${r.bookingsMoved} booking${r.bookingsMoved === 1 ? '' : 's'} and ${r.documentsMoved} document${r.documentsMoved === 1 ? '' : 's'} moved.`;
+        this.message = T('Merged {p0}: {p1} booking{p2} and {p3} document{p4} moved.', { p0: other.fullName, p1: r.bookingsMoved, p2: r.bookingsMoved === 1 ? '' : 's', p3: r.documentsMoved, p4: r.documentsMoved === 1 ? '' : 's' });
         this.mergeQuery = '';
         this.mergeOptions = [];
         this.mergeId = null;

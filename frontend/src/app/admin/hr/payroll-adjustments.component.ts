@@ -9,6 +9,7 @@ import { ListFilterComponent } from '../../shared/list-filter.component';
 import { ListState } from '../../core/api/list-state';
 import { AdjustmentPayload, Employee, HrApiService, PayrollAdjustment } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Payroll > Adjustments: a bonus, back pay or an allowance added to one employee's pay for one month, or a deduction taken from it. */
 @Component({
   selector: 'app-payroll-adjustments',
@@ -165,17 +166,17 @@ export class PayrollAdjustmentsComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not save the adjustment';
+        this.error = e?.error?.message ?? T('Could not save the adjustment');
       },
     });
   }
 
   remove(a: PayrollAdjustment): void {
-    if (!confirm(`Remove "${a.name}" for ${a.employeeName}?`)) return;
+    if (!confirm(T('Remove "{p0}" for {p1}?', { p0: a.name, p1: a.employeeName }))) return;
     this.error = null;
     this.api.deleteAdjustment(a.id).subscribe({
       next: () => this.list.load(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not remove the adjustment'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not remove the adjustment')),
     });
   }
 }

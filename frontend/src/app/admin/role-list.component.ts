@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { AccessAreaInfo, CustomRole, RoleApiService } from '../core/api/role-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Staff > Roles: the custom roles an admin has built. A role is a named set of access areas (Sales, Inventory,
  * Accounting, Reports...) at View or Manage level; assign one to a Cashier account on the staff form to give them
@@ -74,7 +75,7 @@ export class RoleListComponent implements OnInit {
   private load(): void {
     this.api.list().subscribe({
       next: (r) => (this.roles = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load roles'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load roles')),
     });
   }
 
@@ -89,10 +90,10 @@ export class RoleListComponent implements OnInit {
   }
 
   remove(role: CustomRole): void {
-    if (!confirm(`Delete the role "${role.name}"?`)) return;
+    if (!confirm(T('Delete the role "{p0}"?', { p0: role.name }))) return;
     this.api.remove(role.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete role'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete role')),
     });
   }
 }

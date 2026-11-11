@@ -15,6 +15,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Account, AppUser, Branch, CostCenter, Customer, ExpensePaymentAccount, PayeeType, Supplier } from '../../core/models';
 import { forkJoin } from 'rxjs';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Expenses > New/Edit — Fourier's own scoping choice for this batch of work
  * ("Add new Expense & Income entry screens", later extended with "Approval workflow before
@@ -225,7 +226,7 @@ export class ExpenseFormComponent implements OnInit {
       this.expenseApi.getById(this.id).subscribe({
         next: (e) => {
           if (e.status !== 'PENDING') {
-            this.error = `This expense is ${e.status.toLowerCase()} — only a pending one can be edited.`;
+            this.error = T('This expense is {p0} — only a pending one can be edited.', { p0: e.status.toLowerCase() });
             return;
           }
           this.expenseDate = e.expenseDate.slice(0, 10);
@@ -244,7 +245,7 @@ export class ExpenseFormComponent implements OnInit {
           this.paidFromAccountId = e.paidFromAccountId;
           this.dueDate = e.dueDate ?? '';
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to load expense'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to load expense')),
       });
     }
   }
@@ -285,11 +286,11 @@ export class ExpenseFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.accountId || this.amount == null) {
-      this.error = 'Category and amount are required';
+      this.error = T('Category and amount are required');
       return;
     }
     if (this.payeeType !== 'OTHER' && (!this.payeeId || !this.payeeName)) {
-      this.error = 'Pick a payee';
+      this.error = T('Pick a payee');
       return;
     }
     const payload = {
@@ -322,7 +323,7 @@ export class ExpenseFormComponent implements OnInit {
           error: () => this.router.navigate(['/admin/accounting/expenses', e.id]),
         });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save expense'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save expense')),
     });
   }
 }

@@ -10,6 +10,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { AuthService } from '../../core/auth.service';
 import { PROJECT_STATUS_LABEL, ProjectRow, ProjectStatus, RealEstateApiService } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Projects: the developments we sell units in, with how many units are left. */
 @Component({
   selector: 'app-project-list',
@@ -81,7 +82,7 @@ export class ProjectListComponent implements OnInit {
     this.error = null;
     this.api.projectsPage({ q: this.q.trim(), status: this.status, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the projects'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the projects'); },
     });
   }
 

@@ -7,6 +7,7 @@ import { BillingType, LawApiService } from '../../core/api/law-api.service';
 import { LawCostRatesComponent } from './law-cost-rates.component';
 import { EscalationItem, EscalationResult, ReminderItem, RemindResult } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Law Firm > Settings (admin): practice areas, jurisdictions, reminders and the defaults for a new matter. */
 @Component({
   selector: 'app-law-settings',
@@ -161,7 +162,7 @@ export class LawSettingsComponent implements OnInit {
         this.collectionsMax = s.collectionsMax;
         this.defaultTermDays = s.defaultTermDays;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')),
     });
   }
 
@@ -174,7 +175,7 @@ export class LawSettingsComponent implements OnInit {
       escalationEnabled: this.escalationEnabled, escalationDays: this.escalationDays,
       collectionsEnabled: this.collectionsEnabled, collectionsFirstDays: this.collectionsFirstDays, collectionsRepeatDays: this.collectionsRepeatDays, collectionsMax: this.collectionsMax, defaultTermDays: this.defaultTermDays }).subscribe({
       next: () => { this.saving = false; this.saved = true; },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the settings'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the settings'); },
     });
   }
 

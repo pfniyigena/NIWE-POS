@@ -8,6 +8,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { AssetsReport } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > Assets — a simple listing of Asset-type accounts and their
  * as-of-date balances (Fourier's own scoping choice over a full fixed-asset register with
@@ -100,7 +101,7 @@ export class AssetsReportComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.assets(this.asOf).subscribe({
       next: (r) => (this.report = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load assets report'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load assets report')),
     });
   }
 
@@ -125,7 +126,7 @@ export class AssetsReportComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

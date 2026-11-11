@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { AuthService } from '../../core/auth.service';
 import { LawApiService, TRUST_TYPE_LABEL, TrustOverview } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Law Firm > Client money: what the firm holds for each client, and the payouts and fee transfers waiting for someone to approve them. */
 @Component({
   selector: 'app-law-trust-overview',
@@ -92,7 +93,7 @@ export class LawTrustOverviewComponent implements OnInit {
 
   ngOnInit(): void {
     this.canReconcile = this.auth.canAccessPath('/admin/law/trust/reconcile');
-    this.api.trustOverview().subscribe({ next: (o) => { this.o = o; this.page = 0; this.slice(); }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the client money') });
+    this.api.trustOverview().subscribe({ next: (o) => { this.o = o; this.page = 0; this.slice(); }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the client money')) });
   }
 
   goPage(p: number): void { this.page = p; this.slice(); }

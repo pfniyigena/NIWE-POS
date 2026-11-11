@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { ListingPurpose, Option, PROPERTY_TYPES, PropertyPayload, PropertyType, RealEstateApiService } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string | null => { const t = (v ?? '').trim(); return t ? t : null; };
 
@@ -109,14 +110,14 @@ export class PropertyFormComponent implements OnInit {
             description: p.description ?? '', ownerName: p.ownerName ?? '', ownerPhone: p.ownerPhone ?? '', ownerEmail: p.ownerEmail ?? '',
           });
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the property'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the property')),
       });
     }
   }
 
   save(): void {
     this.error = null;
-    if (!this.f.title.trim()) { this.error = 'Enter a title for the listing.'; return; }
+    if (!this.f.title.trim()) { this.error = T('Enter a title for the listing.'); return; }
     const f = this.f;
     const body: PropertyPayload = {
       title: f.title.trim(), type: f.type, purpose: f.purpose, description: txt(f.description), area: txt(f.area), address: txt(f.address), titleReference: txt(f.titleReference),
@@ -129,7 +130,7 @@ export class PropertyFormComponent implements OnInit {
     const call = this.id ? this.api.updateProperty(this.id, body) : this.api.createProperty(body);
     call.subscribe({
       next: (p) => this.router.navigate(['/admin/realestate/properties', p.id]),
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the property'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the property'); },
     });
   }
 }

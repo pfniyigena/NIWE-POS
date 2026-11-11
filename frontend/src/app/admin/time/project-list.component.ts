@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { ProjectSummary, TimeApiService, TimeSummary } from '../../core/api/time-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Time Tracking > Projects: every project with its hours against budget and the time waiting to be billed. */
 @Component({
   selector: 'app-time-project-list',
@@ -84,7 +85,7 @@ export class TimeProjectListComponent implements OnInit {
   load(): void {
     this.api.projects(this.status || undefined, this.status === 'ARCHIVED').subscribe({
       next: (p) => (this.projects = p),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the projects'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the projects')),
     });
   }
 

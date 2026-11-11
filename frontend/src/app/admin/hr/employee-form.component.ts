@@ -9,6 +9,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Branch } from '../../core/models';
 import { Department, Employee, EmployeePayload, HrApiService, Position, StaffLogin } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Employees > New employee / Edit employee. */
 @Component({
   selector: 'app-employee-form',
@@ -135,7 +136,7 @@ export class EmployeeFormComponent implements OnInit {
           };
           this.managers = this.managers.filter((m) => m.id !== e.id);
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Failed to load the employee'),
+        error: (e) => (this.error = e?.error?.message ?? T('Failed to load the employee')),
       });
     }
   }
@@ -148,7 +149,7 @@ export class EmployeeFormComponent implements OnInit {
       next: (e) => this.router.navigate(['/admin/hr/employees', e.id]),
       error: (e) => {
         this.saving = false;
-        this.error = e?.error?.message ?? 'Could not save the employee';
+        this.error = e?.error?.message ?? T('Could not save the employee');
       },
     });
   }

@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { PosSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** POS > Settings: the rules for cash at the till (allowed difference, notes, counts, paid-out approval, safe-drop reminder). */
 @Component({
   selector: 'app-pos-settings',
@@ -100,7 +101,7 @@ export class PosSettingsComponent implements OnInit {
   constructor(private registerApi: RegisterApiService) {}
 
   ngOnInit(): void {
-    this.registerApi.posSettings().subscribe({ next: (s) => (this.s = s), error: (err) => (this.error = err?.error?.message ?? 'Failed to load the settings') });
+    this.registerApi.posSettings().subscribe({ next: (s) => (this.s = s), error: (err) => (this.error = err?.error?.message ?? T('Failed to load the settings')) });
   }
 
   save(): void {
@@ -112,7 +113,7 @@ export class PosSettingsComponent implements OnInit {
         this.s = s;
         this.saved = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save')),
     });
   }
 }

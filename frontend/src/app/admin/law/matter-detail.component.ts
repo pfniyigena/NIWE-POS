@@ -20,6 +20,7 @@ import {
 } from '../../core/api/law-api.service';
 import { today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 type Tab = 'deadlines' | 'tasks' | 'parties' | 'team' | 'diary' | 'documents' | 'billing' | 'trust' | 'papers' | 'portal' | 'conflicts';
 
 /**
@@ -417,7 +418,7 @@ export class LawMatterDetailComponent implements OnInit {
   load(): void {
     this.api.matter(Number(this.route.snapshot.paramMap.get('id'))).subscribe({
       next: (m) => { this.matter = m; if (!m.conflictCleared && m.canWork && this.tab === 'deadlines' && !m.deadlines.length) this.tab = 'conflicts'; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the matter'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the matter')),
     });
   }
 
@@ -449,7 +450,7 @@ export class LawMatterDetailComponent implements OnInit {
     this.info = null;
     call.subscribe({
       next: (m) => { this.matter = m; this.busy = false; if (message) this.info = message; if (after) after(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; if (e?.status === 409 && this.closeOpen) this.needForce = true; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); if (e?.status === 409 && this.closeOpen) this.needForce = true; },
     });
   }
 
@@ -478,25 +479,25 @@ export class LawMatterDetailComponent implements OnInit {
     if (this.isNew) {
       this.api.open(p).subscribe({
         next: (m) => { this.saving = false; this.router.navigate(['/law/matters', m.id]); },
-        error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not open the matter'; },
+        error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not open the matter'); },
       });
     } else {
       this.api.update(this.matter!.id, p).subscribe({
-        next: (m) => { this.saving = false; this.matter = m; this.editing = false; this.info = 'Saved.'; },
-        error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the matter'; },
+        next: (m) => { this.saving = false; this.matter = m; this.editing = false; this.info = T('Saved.'); },
+        error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the matter'); },
       });
     }
   }
 
-  setStatus(s: 'OPEN' | 'ON_HOLD'): void { this.run(this.api.setStatus(this.matter!.id, s, null, false), s === 'ON_HOLD' ? 'Put on hold.' : 'Open again.'); }
+  setStatus(s: 'OPEN' | 'ON_HOLD'): void { this.run(this.api.setStatus(this.matter!.id, s, null, false), s === 'ON_HOLD' ? T('Put on hold.') : T('Open again.')); }
 
   close(force: boolean): void {
-    this.run(this.api.setStatus(this.matter!.id, 'CLOSED', this.outcome.trim() || null, force), 'Matter closed.', () => { this.closeOpen = false; this.needForce = false; });
+    this.run(this.api.setStatus(this.matter!.id, 'CLOSED', this.outcome.trim() || null, force), T('Matter closed.'), () => { this.closeOpen = false; this.needForce = false; });
   }
 
   remove(): void {
-    if (!confirm('Delete this matter? This cannot be undone.')) return;
-    this.api.deleteMatter(this.matter!.id).subscribe({ next: () => this.router.navigate(['/admin/law/matters']), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the matter') });
+    if (!confirm(T('Delete this matter? This cannot be undone.'))) return;
+    this.api.deleteMatter(this.matter!.id).subscribe({ next: () => this.router.navigate(['/admin/law/matters']), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the matter')) });
   }
 
   // ---- deadlines
@@ -508,15 +509,15 @@ export class LawMatterDetailComponent implements OnInit {
   }
 
   saveDeadline(): void {
-    if (!this.dl.dueDate) { this.error = 'Choose the date.'; return; }
+    if (!this.dl.dueDate) { this.error = T('Choose the date.'); return; }
     const p = { title: this.dl.title.trim(), type: this.dl.type, dueDate: this.dl.dueDate, dueTime: this.dl.dueTime || null, assignedToUserId: this.dl.assignedToUserId, notes: this.dl.notes.trim() || null };
     const call = this.dlEditing ? this.api.updateDeadline(this.dlEditing, p) : this.api.addDeadline(this.matter!.id, p);
-    this.run(call, this.dlEditing ? 'Deadline saved.' : 'Deadline added.', () => this.resetDeadline());
+    this.run(call, this.dlEditing ? T('Deadline saved.') : T('Deadline added.'), () => this.resetDeadline());
   }
 
   deadlineDone(id: number): void { this.run(this.api.deadlineDone(id)); }
   deadlineReopen(id: number): void { this.run(this.api.deadlineReopen(id)); }
-  deleteDeadline(id: number): void { if (confirm('Delete this deadline?')) this.run(this.api.deleteDeadline(id)); }
+  deleteDeadline(id: number): void { if (confirm(T('Delete this deadline?'))) this.run(this.api.deleteDeadline(id)); }
 
   // ---- tasks
   resetTask(): void { this.tk = this.blankTask(); this.tkEditing = null; }
@@ -529,17 +530,17 @@ export class LawMatterDetailComponent implements OnInit {
   saveTask(): void {
     const p = { title: this.tk.title.trim(), description: this.tk.description.trim() || null, dueDate: this.tk.dueDate || null, assignedToUserId: this.tk.assignedToUserId, priority: this.tk.priority };
     const call = this.tkEditing ? this.api.updateTask(this.tkEditing, p) : this.api.addTask(this.matter!.id, p);
-    this.run(call, this.tkEditing ? 'Task saved.' : 'Task added.', () => this.resetTask());
+    this.run(call, this.tkEditing ? T('Task saved.') : T('Task added.'), () => this.resetTask());
   }
 
   toggleTask(id: number, status: string): void { this.run(this.api.taskStatus(id, status === 'DONE' ? 'TODO' : 'DONE')); }
   startTask(id: number): void { this.run(this.api.taskStatus(id, 'IN_PROGRESS')); }
-  deleteTask(id: number): void { if (confirm('Delete this task?')) this.run(this.api.deleteTask(id)); }
+  deleteTask(id: number): void { if (confirm(T('Delete this task?'))) this.run(this.api.deleteTask(id)); }
 
   // ---- parties
   addParty(): void {
     if (!this.pty.contactId) return;
-    this.run(this.api.addParty(this.matter!.id, this.pty.contactId, this.pty.role, this.pty.note.trim() || null), 'Party added. Run the conflict check again.', () => {
+    this.run(this.api.addParty(this.matter!.id, this.pty.contactId, this.pty.role, this.pty.note.trim() || null), T('Party added. Run the conflict check again.'), () => {
       this.pty = { contactId: null, role: 'OPPOSING_PARTY', note: '' };
       this.check = null;
     });
@@ -555,7 +556,7 @@ export class LawMatterDetailComponent implements OnInit {
         this.newContactOpen = false;
         this.nc = { name: '', type: 'PERSON', phone: '', idNumber: '' };
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the contact'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the contact')),
     });
   }
 
@@ -570,14 +571,14 @@ export class LawMatterDetailComponent implements OnInit {
     if (first) this.teamEdit.push({ userId: first.id, role: 'ASSOCIATE' });
   }
 
-  saveTeam(): void { this.run(this.api.setTeam(this.matter!.id, this.teamEdit), 'Team saved.', () => (this.teamEditing = false)); }
+  saveTeam(): void { this.run(this.api.setTeam(this.matter!.id, this.teamEdit), T('Team saved.'), () => (this.teamEditing = false)); }
 
   // ---- diary
   addNote(): void {
     this.run(this.api.addNote(this.matter!.id, this.nt.kind, this.nt.text.trim()), undefined, () => (this.nt = { kind: 'NOTE', text: '' }));
   }
 
-  deleteNote(id: number): void { if (confirm('Delete this diary entry?')) this.run(this.api.deleteNote(this.matter!.id, id)); }
+  deleteNote(id: number): void { if (confirm(T('Delete this diary entry?'))) this.run(this.api.deleteNote(this.matter!.id, id)); }
 
   // ---- conflicts
   runCheck(): void {
@@ -585,11 +586,11 @@ export class LawMatterDetailComponent implements OnInit {
     this.error = null;
     this.api.conflictCheck(this.matter!.id).subscribe({
       next: (r) => { this.check = r; this.checking = false; },
-      error: (e) => { this.checking = false; this.error = e?.error?.message ?? 'Could not run the check'; },
+      error: (e) => { this.checking = false; this.error = e?.error?.message ?? T('Could not run the check'); },
     });
   }
 
   clear(): void {
-    this.run(this.api.conflictClear(this.matter!.id, this.clearNote.trim() || null), 'Conflicts cleared.', () => (this.clearNote = ''));
+    this.run(this.api.conflictClear(this.matter!.id, this.clearNote.trim() || null), T('Conflicts cleared.'), () => (this.clearNote = ''));
   }
 }

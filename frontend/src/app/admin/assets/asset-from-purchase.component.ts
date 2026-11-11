@@ -6,6 +6,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { AssetApiService, AssetCategory, PurchaseLine } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * Assets > From purchases: turn goods received on a purchase order into fixed assets. The receipt already put the cost into
  * Inventory, so registering moves it to Fixed Assets (nothing is counted twice). One asset is created per unit.
@@ -90,7 +91,7 @@ export class AssetFromPurchaseComponent implements OnInit {
   ngOnInit(): void {
     this.api.purchaseLines().subscribe({
       next: (l) => (this.lines = l),
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load purchase lines'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load purchase lines')),
     });
     this.api.categories().subscribe({ next: (c) => (this.categories = c.filter((x) => x.active)), error: () => {} });
   }
@@ -111,7 +112,7 @@ export class AssetFromPurchaseComponent implements OnInit {
 
   register(): void {
     if (!this.picked || !this.f.categoryId) {
-      this.error = 'Choose a category.';
+      this.error = T('Choose a category.');
       return;
     }
     this.error = null;
@@ -132,7 +133,7 @@ export class AssetFromPurchaseComponent implements OnInit {
         next: () => this.router.navigate(['/admin/assets']),
         error: (e) => {
           this.busy = false;
-          this.error = e?.error?.message ?? 'Could not register the assets';
+          this.error = e?.error?.message ?? T('Could not register the assets');
         },
       });
   }

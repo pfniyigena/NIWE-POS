@@ -11,6 +11,7 @@ import { Branch } from '../../core/models';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { Attendance, AttendancePayload, AttendanceSummary, Department, Employee, HrApiService, TodayStatus } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Attendance & Leaves > Attendance: clock in / out, the daily records, manual entries and a summary per employee. */
 @Component({
   selector: 'app-attendance',
@@ -164,13 +165,13 @@ export class AttendanceComponent implements OnInit {
         this.api.today().subscribe((t) => (this.today = t));
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not record that'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not record that')),
     });
   }
 
   saveEntry(): void {
     if (!this.entry.employeeId) {
-      this.error = 'Choose the employee.';
+      this.error = T('Choose the employee.');
       return;
     }
     const payload: AttendancePayload = { ...this.entry, clockIn: this.entry.clockIn || null, clockOut: this.entry.clockOut || null };
@@ -180,12 +181,12 @@ export class AttendanceComponent implements OnInit {
         this.entry = AttendanceComponent.blank();
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the record'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the record')),
     });
   }
 
   remove(a: Attendance): void {
-    if (!confirm(`Delete the record of ${a.employeeName} on ${a.workDate}?`)) return;
-    this.api.deleteAttendance(a.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete the record') });
+    if (!confirm(T('Delete the record of {p0} on {p1}?', { p0: a.employeeName, p1: a.workDate }))) return;
+    this.api.deleteAttendance(a.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete the record')) });
   }
 }

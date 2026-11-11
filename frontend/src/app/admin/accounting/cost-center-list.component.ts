@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { CostCenterApiService } from '../../core/api/cost-center-api.service';
 import { CostCenter } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Cost Centers — the flat lookup list an admin manages before tagging any
  * journal line, manual entry, Expense, or Income with one. See the backend CostCenter's own
@@ -61,7 +62,7 @@ export class CostCenterListComponent implements OnInit {
   ngOnInit(): void {
     this.costCenterApi.listAll().subscribe({
       next: (c) => (this.costCenters = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load cost centers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load cost centers')),
     });
   }
 }

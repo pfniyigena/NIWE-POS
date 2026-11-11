@@ -18,6 +18,7 @@ import { PrintService } from '../core/hardware/print.service';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { StoreSettings } from '../core/models';
+import { T } from '../core/i18n/t';
 interface PaymentRow {
   method: string;
   amount: number;
@@ -567,7 +568,7 @@ export class TableOrderComponent implements OnInit {
         this.categories = c;
         if (c.length > 0) this.selectCategory(c[0]);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load menu categories'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load menu categories')),
     });
     this.menuApi.listItems().subscribe({ next: (i) => (this.allItems = i), error: () => (this.allItems = []) });
     this.menuApi.allergens().subscribe({ next: (a) => (this.allergenList = a), error: () => (this.allergenList = []) });
@@ -597,7 +598,7 @@ export class TableOrderComponent implements OnInit {
         if (o.roomBookingId && !this.roomBookingId) this.roomBookingId = o.roomBookingId;
         this.loadSiblings();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load order')),
     });
   }
 
@@ -656,7 +657,7 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.autoTickets(o, waiting);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to fire the course'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to fire the course')),
     });
   }
 
@@ -677,17 +678,17 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.showAllergy = false;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save the allergies'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save the allergies')),
     });
   }
 
   /** The dish has to be made again: back to the kitchen with a fresh clock. */
   sendBack(line: { id: number; description: string }): void {
-    if (!confirm(`Send ${line.description} back to the kitchen to be made again?`)) return;
+    if (!confirm(T('Send {p0} back to the kitchen to be made again?', { p0: line.description }))) return;
     this.error = null;
     this.kitchenApi.refire(this.orderId, line.id).subscribe({
       next: (o) => (this.order = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not send it back'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not send it back')),
     });
   }
 
@@ -798,7 +799,7 @@ export class TableOrderComponent implements OnInit {
     this.error = null;
     this.orderApi.addLine(this.orderId, { menuItemId: item.id, quantity: 1 }).subscribe({
       next: (o) => (this.order = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to add item'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to add item')),
     });
   }
 
@@ -811,7 +812,7 @@ export class TableOrderComponent implements OnInit {
     }
     this.orderApi.updateLine(this.orderId, line.id, { quantity: newQty }).subscribe({
       next: (o) => (this.order = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update line'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update line')),
     });
   }
 
@@ -844,7 +845,7 @@ export class TableOrderComponent implements OnInit {
 
   confirmVoid(line: RestaurantOrder['lines'][number]): void {
     if (!this.voidReason.trim()) {
-      this.error = 'Say why the item is being voided';
+      this.error = T('Say why the item is being voided');
       return;
     }
     this.error = null;
@@ -853,7 +854,7 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.voidLineId = null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to void the item'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to void the item')),
     });
   }
 
@@ -865,7 +866,7 @@ export class TableOrderComponent implements OnInit {
 
   confirmComp(line: RestaurantOrder['lines'][number]): void {
     if (!this.compReason.trim()) {
-      this.error = 'Say why the item is given free';
+      this.error = T('Say why the item is given free');
       return;
     }
     this.error = null;
@@ -874,7 +875,7 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.compLineId = null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to comp the item'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to comp the item')),
     });
   }
 
@@ -882,7 +883,7 @@ export class TableOrderComponent implements OnInit {
     this.error = null;
     this.orderApi.uncompLine(this.orderId, line.id).subscribe({
       next: (o) => (this.order = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to charge the item again'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to charge the item again')),
     });
   }
 
@@ -935,7 +936,7 @@ export class TableOrderComponent implements OnInit {
   doMove(): void {
     const lines = Object.entries(this.mvPick).map(([id, q]) => ({ lineId: Number(id), quantity: Number(q) }));
     if (lines.length === 0) {
-      this.error = 'Tick the items to move';
+      this.error = T('Tick the items to move');
       return;
     }
     this.error = null;
@@ -946,7 +947,7 @@ export class TableOrderComponent implements OnInit {
           this.moveInfo = `${created.checkLabel ?? 'A new check'} created — open it from the checks bar to take payment.`;
           this.loadOrder();
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to split the bill'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to split the bill')),
       });
     } else {
       const target = Number(this.mvDest);
@@ -962,7 +963,7 @@ export class TableOrderComponent implements OnInit {
             error: () => this.loadOrder(),
           });
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to move the items'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to move the items')),
       });
     }
   }
@@ -987,7 +988,7 @@ export class TableOrderComponent implements OnInit {
         this.moveInfo = `Moved to table ${o.tableName}.`;
         this.loadSiblings();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to move the bill'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to move the bill')),
     });
   }
 
@@ -995,7 +996,7 @@ export class TableOrderComponent implements OnInit {
     this.error = null;
     this.orderApi.removeLine(this.orderId, line.id).subscribe({
       next: (o) => (this.order = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to remove line'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to remove line')),
     });
   }
 
@@ -1007,7 +1008,7 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.autoTickets(o, waiting);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to send to kitchen'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to send to kitchen')),
     });
   }
 
@@ -1156,7 +1157,7 @@ export class TableOrderComponent implements OnInit {
       shareAmounts[share - 1] += line.lineGrandTotal;
     }
     if (unassigned > 0) {
-      this.error = `${unassigned} item${unassigned === 1 ? '' : 's'} still need a share assigned before applying.`;
+      this.error = T('{p0} item{p1} still need a share assigned before applying.', { p0: unassigned, p1: unassigned === 1 ? '' : 's' });
       return;
     }
     // The lines add up to the bill before service charge and rounding (and any tip): spread those over the shares in proportion.
@@ -1180,7 +1181,7 @@ export class TableOrderComponent implements OnInit {
     if (!this.order) return;
     if (this.paymentRows.length === 0) this.addPaymentRow();
     if (this.roomRowSelected() && !this.roomBookingId) {
-      this.error = 'Choose the guest whose room this is charged to.';
+      this.error = T('Choose the guest whose room this is charged to.');
       return;
     }
     this.error = null;
@@ -1195,7 +1196,7 @@ export class TableOrderComponent implements OnInit {
       },
       error: (err) => {
         this.checkingOut = false;
-        this.error = err?.error?.message ?? 'Failed to check out';
+        this.error = err?.error?.message ?? T('Failed to check out');
       },
     });
   }
@@ -1216,7 +1217,7 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.discountLineId = null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not apply the discount'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not apply the discount')),
     });
   }
 
@@ -1242,7 +1243,7 @@ export class TableOrderComponent implements OnInit {
           this.showDiscount = false;
           this.refreshPaymentRows();
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Could not apply the discount'),
+        error: (err) => (this.error = err?.error?.message ?? T('Could not apply the discount')),
       });
   }
 
@@ -1254,7 +1255,7 @@ export class TableOrderComponent implements OnInit {
         this.showDiscount = false;
         this.refreshPaymentRows();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not remove the discount'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not remove the discount')),
     });
   }
 
@@ -1266,7 +1267,7 @@ export class TableOrderComponent implements OnInit {
         this.order = o;
         this.refreshPaymentRows();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not change the service charge'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not change the service charge')),
     });
   }
 
@@ -1283,13 +1284,13 @@ export class TableOrderComponent implements OnInit {
 
   doCancel(): void {
     if (this.hasSent() && !this.cancelReason.trim()) {
-      this.error = 'Say why the order is being cancelled';
+      this.error = T('Say why the order is being cancelled');
       return;
     }
     this.error = null;
     this.orderApi.cancel(this.orderId, this.cancelReason.trim() || null).subscribe({
       next: () => this.router.navigate([this.order?.orderType === 'DINE_IN' ? '/admin/restaurant/tables/floor-plan' : '/admin/restaurant/orders']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to cancel order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to cancel order')),
     });
   }
 
@@ -1308,7 +1309,7 @@ export class TableOrderComponent implements OnInit {
     this.error = null;
     this.orderApi.merge(this.orderId, this.mergeTargetId).subscribe({
       next: () => this.router.navigate(['/admin/restaurant/orders', this.mergeTargetId]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to merge orders'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to merge orders')),
     });
   }
 }

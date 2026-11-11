@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { ContractComponent, ContractPayload, Employee, HrApiService } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Contracts > New contract / Edit contract: type, dates, monthly salary and allowances or fixed deductions. */
 @Component({
   selector: 'app-contract-form',
@@ -81,7 +82,7 @@ export class ContractFormComponent implements OnInit {
           this.onEmployee();
         }
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load employees'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load employees')),
     });
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
@@ -96,7 +97,7 @@ export class ContractFormComponent implements OnInit {
             this.employees = [...this.employees, { id: c.employeeId, fullName: c.employeeName, employeeNumber: c.employeeNumber } as Employee];
           }
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Failed to load the contract'),
+        error: (e) => (this.error = e?.error?.message ?? T('Failed to load the contract')),
       });
     }
   }
@@ -112,7 +113,7 @@ export class ContractFormComponent implements OnInit {
 
   save(): void {
     if (!this.f.employeeId) {
-      this.error = 'Choose the employee.';
+      this.error = T('Choose the employee.');
       return;
     }
     this.error = null;
@@ -127,7 +128,7 @@ export class ContractFormComponent implements OnInit {
       next: () => this.router.navigate(['/admin/hr/contracts']),
       error: (e) => {
         this.saving = false;
-        this.error = e?.error?.message ?? 'Could not save the contract';
+        this.error = e?.error?.message ?? T('Could not save the contract');
       },
     });
   }

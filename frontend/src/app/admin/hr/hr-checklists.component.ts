@@ -8,6 +8,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AuthService } from '../../core/auth.service';
 import { ChecklistKind, ChecklistTemplate, HrApiService, OpenTask } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 interface DraftItem { title: string; responsible: string; dueOffsetDays: number; }
 interface Draft { id: number | null; name: string; kind: ChecklistKind; description: string; active: boolean; items: DraftItem[]; }
 
@@ -134,21 +135,21 @@ export class HrChecklistsComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
     this.sub = this.api.openTasks({ responsible: this.who.trim(), kind: this.kind, overdueOnly: this.overdueOnly }).subscribe({
       next: (t) => { this.tasks = t; this.loaded = true; this.error = null; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the tasks'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the tasks'); },
     });
   }
 
   loadTemplates(): void {
     this.api.checklistTemplates().subscribe({
       next: (t) => { this.templates = t; this.loadedTemplates = true; },
-      error: (e) => { this.loadedTemplates = true; this.error = e?.error?.message ?? 'Could not load the templates'; },
+      error: (e) => { this.loadedTemplates = true; this.error = e?.error?.message ?? T('Could not load the templates'); },
     });
   }
 
   done(t: OpenTask): void {
     this.api.setTaskDone(t.itemId, true, null).subscribe({
       next: () => this.loadTasks(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not change the task'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not change the task')),
     });
   }
 
@@ -181,15 +182,15 @@ export class HrChecklistsComponent implements OnInit, OnDestroy {
     const call = d.id ? this.api.updateChecklistTemplate(d.id, payload) : this.api.createChecklistTemplate(payload);
     call.subscribe({
       next: () => { this.draft = null; this.error = null; this.loadTemplates(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the template'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the template')),
     });
   }
 
   remove(t: ChecklistTemplate): void {
-    if (!confirm(`Delete the template "${t.name}"? Checklists already started from it stay as they are.`)) return;
+    if (!confirm(T('Delete the template "{p0}"? Checklists already started from it stay as they are.', { p0: t.name }))) return;
     this.api.deleteChecklistTemplate(t.id).subscribe({
       next: () => this.loadTemplates(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the template'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the template')),
     });
   }
 }

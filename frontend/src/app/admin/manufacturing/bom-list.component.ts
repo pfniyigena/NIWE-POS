@@ -10,6 +10,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { BomApiService } from '../../core/api/bom-api.service';
 import { Bom } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Bill of Materials: search (code, name, product, component), active/inactive, pages and Excel / PDF / CSV. */
 @Component({
   selector: 'app-bom-list',
@@ -76,15 +77,15 @@ export class BomListComponent implements OnInit {
   copy(b: Bom): void {
     this.bomApi.copy(b.id).subscribe({
       next: (n) => this.router.navigate(['/admin/manufacturing/boms', n.id, 'edit']),
-      error: (err) => (this.list.error = err?.error?.message ?? 'Failed to copy the bill of materials'),
+      error: (err) => (this.list.error = err?.error?.message ?? T('Failed to copy the bill of materials')),
     });
   }
 
   activate(b: Bom): void {
-    if (!confirm(`Make version ${b.version} of ${b.productName} the active recipe? The product's other versions will be switched off. Orders already made keep the recipe they were made with.`)) return;
+    if (!confirm(T('Make version {p0} of {p1} the active recipe? The product\'s other versions will be switched off. Orders already made keep the recipe they were made with.', { p0: b.version, p1: b.productName }))) return;
     this.bomApi.activate(b.id).subscribe({
       next: () => this.list.load(),
-      error: (err) => (this.list.error = err?.error?.message ?? 'Failed to activate the bill of materials'),
+      error: (err) => (this.list.error = err?.error?.message ?? T('Failed to activate the bill of materials')),
     });
   }
 

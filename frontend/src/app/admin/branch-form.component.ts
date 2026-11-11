@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { BranchApiService } from '../core/api/branch-api.service';
 
+import { T } from '../core/i18n/t';
 /** Admin > Branches > New/Edit — see BranchListComponent's own javadoc. */
 @Component({
   selector: 'app-branch-form',
@@ -104,7 +105,7 @@ export class BranchFormComponent implements OnInit {
       next: (branches) => {
         const b = branches.find((x) => x.id === this.id);
         if (!b) {
-          this.error = 'Branch not found';
+          this.error = T('Branch not found');
           return;
         }
         this.code = b.code;
@@ -119,14 +120,14 @@ export class BranchFormComponent implements OnInit {
         this.active = b.active;
         this.headquarters = b.headquarters;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load branch'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load branch')),
     });
   }
 
   submit(): void {
     this.error = null;
     if (!this.code.trim() || !this.name.trim()) {
-      this.error = 'Code and name are required';
+      this.error = T('Code and name are required');
       return;
     }
     const payload = {
@@ -144,7 +145,7 @@ export class BranchFormComponent implements OnInit {
     const call = this.id ? this.branchApi.update(this.id, payload) : this.branchApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/branches']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save branch'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save branch')),
     });
   }
 }

@@ -8,6 +8,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { CashFlow } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > Cash Flow Report — direct method (Fourier's own scoping choice
  * over the indirect method, which would need non-cash adjustments like depreciation this app
@@ -120,7 +121,7 @@ export class CashFlowComponent implements OnInit {
   load(): void {
     this.reportApi.cashFlow(this.from, this.to).subscribe({
       next: (r) => (this.report = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load cash flow report'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load cash flow report')),
     });
   }
 
@@ -137,7 +138,7 @@ export class CashFlowComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

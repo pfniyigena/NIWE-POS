@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
 import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin/staff > Restaurant > New order (Fourier: "Delivery & takeaway") — the off-premise
  * counterpart to tapping a table on the floor plan: there's no table to tap for a walk-in
@@ -97,7 +98,7 @@ export class OrderIntakeComponent {
   openOrder(): void {
     if (this.type === 'ROOM_SERVICE') {
       if (!this.bookingId) {
-        this.error = "Choose the guest's room";
+        this.error = T('Choose the guest\'s room');
         return;
       }
       this.error = null;
@@ -106,17 +107,17 @@ export class OrderIntakeComponent {
         next: (order) => this.router.navigate(['/admin/restaurant/orders', order.id]),
         error: (err) => {
           this.submitting = false;
-          this.error = err?.error?.message ?? 'Failed to open order';
+          this.error = err?.error?.message ?? T('Failed to open order');
         },
       });
       return;
     }
     if (!this.customerName.trim()) {
-      this.error = 'Customer name is required';
+      this.error = T('Customer name is required');
       return;
     }
     if (this.type === 'DELIVERY' && !this.customerAddress.trim()) {
-      this.error = 'A delivery address is required';
+      this.error = T('A delivery address is required');
       return;
     }
     this.error = null;
@@ -133,7 +134,7 @@ export class OrderIntakeComponent {
       next: (order) => this.router.navigate(['/admin/restaurant/orders', order.id]),
       error: (err) => {
         this.submitting = false;
-        this.error = err?.error?.message ?? 'Failed to open order';
+        this.error = err?.error?.message ?? T('Failed to open order');
       },
     });
   }

@@ -8,6 +8,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { LawApiService, TrustReconciliationView } from '../../core/api/law-api.service';
 import { showPdf } from '../../core/open-pdf';
 
+import { T } from '../../core/i18n/t';
 /**
  * Law Firm > Client money > Reconcile: the three figures that must agree - the bank statement (after deposits in transit and payments not yet
  * cleared), the client ledgers added together, and what the general ledger says (trust bank account and client money held).
@@ -86,7 +87,7 @@ export class LawTrustReconcileComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.api.trustReconciliation().subscribe({ next: (v) => (this.v = v), error: (e) => (this.error = e?.error?.message ?? 'Could not load the reconciliation') });
+    this.api.trustReconciliation().subscribe({ next: (v) => (this.v = v), error: (e) => (this.error = e?.error?.message ?? T('Could not load the reconciliation')) });
   }
 
   adjusted(): number { return (this.f.statementBalance ?? 0) + (this.f.depositsInTransit ?? 0) - (this.f.outstandingPayments ?? 0); }
@@ -98,7 +99,7 @@ export class LawTrustReconcileComponent implements OnInit {
     this.api.trustReconcile({ asOfDate: this.f.asOfDate, statementBalance: this.f.statementBalance, depositsInTransit: this.f.depositsInTransit, outstandingPayments: this.f.outstandingPayments,
       note: this.f.note.trim() || null }).subscribe({
       next: (v) => { this.busy = false; this.v = v; this.f = { asOfDate: null, statementBalance: null, depositsInTransit: null, outstandingPayments: null, note: '' }; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the reconciliation'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the reconciliation'); },
     });
   }
 }

@@ -7,6 +7,7 @@ import { AuthService } from '../core/auth.service';
 import { HotelApiService, RateCalendar, RatePlan, RateRule, RateRulePayload, RoomType } from '../core/api/hotel-api.service';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 const DAYS = [
   { code: 'MON', label: 'Mon' }, { code: 'TUE', label: 'Tue' }, { code: 'WED', label: 'Wed' }, { code: 'THU', label: 'Thu' },
   { code: 'FRI', label: 'Fri' }, { code: 'SAT', label: 'Sat' }, { code: 'SUN', label: 'Sun' },
@@ -187,13 +188,13 @@ export class HotelRatesComponent implements OnInit {
     this.busy = true; this.error = null; this.notice = null;
     const payload: RateRulePayload = { name: r.name, roomTypeId: r.roomTypeId, startDate: r.startDate, endDate: r.endDate || null, daysOfWeek: r.daysOfWeek, mode: r.mode, value: Number(r.value), minNights: Number(r.minNights) || 1, priority: Number(r.priority) || 0, active: r.active };
     this.api.saveRateRule(r.id ?? null, payload).subscribe({
-      next: () => { this.busy = false; this.rule = null; this.notice = 'Rule saved. Existing bookings keep their price.'; this.reload(); },
+      next: () => { this.busy = false; this.rule = null; this.notice = T('Rule saved. Existing bookings keep their price.'); this.reload(); },
       error: (e) => { this.busy = false; this.error = errMsg(e, 'Failed to save the rule'); },
     });
   }
   removeRule(r: RateRule): void {
-    if (!confirm(`Delete the rule "${r.name}"?`)) return;
-    this.api.deleteRateRule(r.id).subscribe({ next: () => { this.notice = 'Rule deleted.'; this.reload(); }, error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
+    if (!confirm(T('Delete the rule "{p0}"?', { p0: r.name }))) return;
+    this.api.deleteRateRule(r.id).subscribe({ next: () => { this.notice = T('Rule deleted.'); this.reload(); }, error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
   }
 
   // ---- plans
@@ -208,13 +209,13 @@ export class HotelRatesComponent implements OnInit {
     this.busy = true; this.error = null; this.notice = null;
     const payload = { name: p.name, description: p.description || null, adjustPercent: Number(p.adjustPercent) || 0, adjustAmount: Number(p.adjustAmount) || 0, minNights: Number(p.minNights) || 1, active: p.active };
     this.api.saveRatePlan(p.id ?? null, payload).subscribe({
-      next: () => { this.busy = false; this.plan = null; this.notice = 'Plan saved.'; this.reload(); },
+      next: () => { this.busy = false; this.plan = null; this.notice = T('Plan saved.'); this.reload(); },
       error: (e) => { this.busy = false; this.error = errMsg(e, 'Failed to save the plan'); },
     });
   }
   removePlan(p: RatePlan): void {
-    if (!confirm(`Delete the plan "${p.name}"?`)) return;
-    this.api.deleteRatePlan(p.id).subscribe({ next: () => { this.notice = 'Plan deleted.'; this.reload(); }, error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
+    if (!confirm(T('Delete the plan "{p0}"?', { p0: p.name }))) return;
+    this.api.deleteRatePlan(p.id).subscribe({ next: () => { this.notice = T('Plan deleted.'); this.reload(); }, error: (e) => (this.error = errMsg(e, 'Failed to delete')) });
   }
 
   // ---- calendar

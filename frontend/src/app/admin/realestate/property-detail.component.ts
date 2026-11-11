@@ -12,6 +12,7 @@ import {
   DEAL_STAGE_LABEL, DealRow, INTEREST_LABEL, LEAD_STATUS_LABEL, PROPERTY_STATUS_LABEL, PropertyDto, PropertyStatus, PURPOSE_LABEL, RealEstateApiService, typeLabel, ViewingDto, VIEWING_STATUS_LABEL, ViewingStatus,
 } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Properties > one property: photos, details, the owner, the status, who has asked about it and the viewings. */
 @Component({
   selector: 'app-property-detail',
@@ -180,7 +181,7 @@ export class PropertyDetailComponent implements OnInit {
   private reload(): void {
     this.api.property(Number(this.route.snapshot.paramMap.get('id'))).subscribe({
       next: (p) => this.show(p),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the property'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the property')),
     });
   }
 
@@ -241,7 +242,7 @@ export class PropertyDetailComponent implements OnInit {
   }
 
   removePhoto(photoId: number): void {
-    if (!confirm('Delete this photo?')) return;
+    if (!confirm(T('Delete this photo?'))) return;
     this.api.deletePhoto(this.p!.id, photoId).subscribe({ next: (p) => this.show(p), error: (e) => (this.photoError = e?.error?.message ?? 'Could not delete the photo') });
   }
 
@@ -261,10 +262,10 @@ export class PropertyDetailComponent implements OnInit {
   }
 
   remove(): void {
-    if (!this.p || !confirm(`Delete ${this.p.code}? This cannot be undone.`)) return;
+    if (!this.p || !confirm(T('Delete {p0}? This cannot be undone.', { p0: this.p.code }))) return;
     this.api.deleteProperty(this.p.id).subscribe({
       next: () => this.router.navigate(['/admin/realestate/properties']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the property'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the property')),
     });
   }
 }

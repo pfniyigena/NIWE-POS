@@ -13,6 +13,7 @@ import { Customer } from '../../core/models';
 import { MaintenanceSchedule, PackageSummary, SchedulePayload, WorkOrderApiService } from '../../core/api/work-order-api.service';
 import { WorkOrderTabsComponent } from './work-order-tabs.component';
 
+import { T } from '../../core/i18n/t';
 /**
  * Work Orders > Planned maintenance: jobs that repeat (service the generator every 3 months, a monthly visit for a contract customer).
  * A daily check creates each job when it is due; "Run now" makes one straight away.
@@ -153,7 +154,7 @@ export class MaintenanceScheduleListComponent implements OnInit {
   load(): void {
     this.api.schedules().subscribe({
       next: (l) => { this.list = l; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the schedules'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the schedules'); },
     });
   }
 
@@ -190,8 +191,8 @@ export class MaintenanceScheduleListComponent implements OnInit {
     const p: SchedulePayload = { ...this.f, intervalCount: Number(this.f.intervalCount), leadDays: Number(this.f.leadDays) || 0, dueAfterDays: Number(this.f.dueAfterDays) || 0 };
     const call = this.editId ? this.api.updateSchedule(this.editId, p) : this.api.createSchedule(p);
     call.subscribe({
-      next: () => { this.busy = false; this.f = null; this.notice = 'Schedule saved.'; this.load(); },
-      error: (e) => this.fail(e, 'Could not save the schedule'),
+      next: () => { this.busy = false; this.f = null; this.notice = T('Schedule saved.'); this.load(); },
+      error: (e) => this.fail(e, T('Could not save the schedule')),
     });
   }
 
@@ -199,16 +200,16 @@ export class MaintenanceScheduleListComponent implements OnInit {
     this.busy = true;
     (s.active ? this.api.pauseSchedule(s.id) : this.api.resumeSchedule(s.id)).subscribe({
       next: () => { this.busy = false; this.error = null; this.load(); },
-      error: (e) => this.fail(e, 'Could not change the schedule'),
+      error: (e) => this.fail(e, T('Could not change the schedule')),
     });
   }
 
   remove(s: MaintenanceSchedule): void {
-    if (!confirm('Delete the schedule "' + s.title + '"? Jobs it already made are kept.')) return;
+    if (!confirm(T('Delete the schedule "{p0}"? Jobs it already made are kept.', { p0: s.title }))) return;
     this.busy = true;
     this.api.deleteSchedule(s.id).subscribe({
-      next: () => { this.busy = false; this.error = null; this.notice = 'Schedule deleted.'; this.load(); },
-      error: (e) => this.fail(e, 'Could not delete the schedule'),
+      next: () => { this.busy = false; this.error = null; this.notice = T('Schedule deleted.'); this.load(); },
+      error: (e) => this.fail(e, T('Could not delete the schedule')),
     });
   }
 
@@ -216,7 +217,7 @@ export class MaintenanceScheduleListComponent implements OnInit {
     this.busy = true;
     this.api.runSchedule(s.id).subscribe({
       next: (r) => { this.busy = false; this.error = null; this.notice = this.describe(r); this.load(); },
-      error: (e) => this.fail(e, 'Could not create the job'),
+      error: (e) => this.fail(e, T('Could not create the job')),
     });
   }
 
@@ -224,7 +225,7 @@ export class MaintenanceScheduleListComponent implements OnInit {
     this.busy = true;
     this.api.runDueSchedules().subscribe({
       next: (r) => { this.busy = false; this.error = null; this.notice = this.describe(r); this.load(); },
-      error: (e) => this.fail(e, 'Could not run the schedules'),
+      error: (e) => this.fail(e, T('Could not run the schedules')),
     });
   }
 

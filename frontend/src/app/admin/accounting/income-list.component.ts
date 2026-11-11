@@ -9,6 +9,7 @@ import { Branch, Income } from '../../core/models';
 import { BranchApiService } from '../../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../../core/branch-util';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Incomes — ExpenseListComponent's mirror image for money received outside the POS/Sale Order checkout flow. Read-only, same as ExpenseListComponent (see its own javadoc). */
 @Component({
   selector: 'app-income-list',
@@ -82,7 +83,7 @@ export class IncomeListComponent implements OnInit {
     this.branchApi.loadChoices().subscribe((b) => (this.branches = b));
     this.incomeApi.listAll().subscribe({
       next: (i) => (this.incomes = i),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load incomes'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load incomes')),
     });
   }
 }

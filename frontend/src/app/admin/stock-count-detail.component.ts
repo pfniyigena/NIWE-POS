@@ -12,6 +12,7 @@ import { AuthService } from '../core/auth.service';
 import { Product, StockCount, StockCountLine, WarehouseLocation } from '../core/models';
 
 import { q4 } from '../core/qty';
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Stock counts > one count. While IN_PROGRESS the counted column is editable
  * (saved in bulk), products can be added to the sheet (e.g. items the system shows at zero) and
@@ -155,7 +156,7 @@ export class StockCountDetailComponent implements OnInit {
           },
         });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the count'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the count')),
     });
   }
 
@@ -200,7 +201,7 @@ export class StockCountDetailComponent implements OnInit {
 
   save(): void {
     if (!this.count) return;
-    this.run(() => this.api.saveCounts(this.count!.id, this.entries()), 'Failed to save counts');
+    this.run(() => this.api.saveCounts(this.count!.id, this.entries()), T('Failed to save counts'));
   }
 
   submit(): void {
@@ -211,33 +212,33 @@ export class StockCountDetailComponent implements OnInit {
     this.api.saveCounts(id, this.entries()).subscribe({
       next: () => {
         this.busy = false;
-        this.run(() => this.api.submit(id), 'Failed to submit the count');
+        this.run(() => this.api.submit(id), T('Failed to submit the count'));
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to save counts';
+        this.error = err?.error?.message ?? T('Failed to save counts');
       },
     });
   }
 
   reopen(): void {
-    if (this.count) this.run(() => this.api.reopen(this.count!.id), 'Failed to reopen the count');
+    if (this.count) this.run(() => this.api.reopen(this.count!.id), T('Failed to reopen the count'));
   }
 
   approve(): void {
     if (!this.count) return;
-    if (!confirm(`Approve ${this.count.countNumber}? Every counted difference will be posted as a stock adjustment (stock and accounting) and cannot be undone.`)) return;
-    this.run(() => this.api.approve(this.count!.id), 'Failed to approve the count');
+    if (!confirm(T('Approve {p0}? Every counted difference will be posted as a stock adjustment (stock and accounting) and cannot be undone.', { p0: this.count.countNumber }))) return;
+    this.run(() => this.api.approve(this.count!.id), T('Failed to approve the count'));
   }
 
   cancel(): void {
     if (!this.count) return;
-    if (!confirm(`Cancel ${this.count.countNumber}? Nothing will be posted.`)) return;
-    this.run(() => this.api.cancel(this.count!.id), 'Failed to cancel the count');
+    if (!confirm(T('Cancel {p0}? Nothing will be posted.', { p0: this.count.countNumber }))) return;
+    this.run(() => this.api.cancel(this.count!.id), T('Failed to cancel the count'));
   }
 
   removeLine(l: StockCountLine): void {
-    if (this.count) this.run(() => this.api.removeLine(this.count!.id, l.id), 'Failed to remove the line');
+    if (this.count) this.run(() => this.api.removeLine(this.count!.id, l.id), T('Failed to remove the line'));
   }
 
   onProductSearch(): void {
@@ -257,7 +258,7 @@ export class StockCountDetailComponent implements OnInit {
 
   addProduct(p: Product): void {
     if (!this.count || !this.addLocationId) {
-      this.error = 'Pick a location to add the product to';
+      this.error = T('Pick a location to add the product to');
       return;
     }
     const entered = this.edits; // keep unsaved entries across the reload
@@ -273,7 +274,7 @@ export class StockCountDetailComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to add the product';
+        this.error = err?.error?.message ?? T('Failed to add the product');
       },
     });
   }
@@ -287,7 +288,7 @@ export class StockCountDetailComponent implements OnInit {
       .join('');
     const w = window.open('', '_blank');
     if (!w) {
-      this.error = 'Allow pop-ups to print the count sheet';
+      this.error = T('Allow pop-ups to print the count sheet');
       return;
     }
     w.document.write(`<!doctype html><html><head><title>${esc(c.countNumber)}</title><style>

@@ -10,6 +10,7 @@ import {
   Estimate, WoAttachment, WoDocKind, WoHistory, WoNote, WorkOrderApiService, WorkOrderDetail,
 } from '../../core/api/work-order-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * v1.15.0 - the extra panels of one job: documents to print, the customer estimate and its approval, the timer, notes, photos and files,
  * the history, the completion e-mail and re-scheduling. Sits on the work order screen; the screen passes the job in and listens for changes.
@@ -281,7 +282,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
         this.ok(r.message);
         this.api.get(this.d!.id).subscribe({ next: (d) => this.changed.emit(d), error: () => {} });
       },
-      error: (e) => this.fail(e, 'Could not e-mail the completion note'),
+      error: (e) => this.fail(e, T('Could not e-mail the completion note')),
     });
   }
 
@@ -313,7 +314,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     this.sentMessage = null;
     this.api.saveEstimateSettings(this.d.id, this.reqApproval, this.estHours == null || (this.estHours as any) === '' ? null : Number(this.estHours)).subscribe({
       next: (e) => this.afterEstimate(e, 'Saved.'),
-      error: (e) => this.fail(e, 'Could not save'),
+      error: (e) => this.fail(e, T('Could not save')),
     });
   }
 
@@ -326,7 +327,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
         this.afterEstimate(e, 'Estimate recorded as sent.');
         this.sentMessage = e.emailNote;
       },
-      error: (e) => this.fail(e, 'Could not send the estimate'),
+      error: (e) => this.fail(e, T('Could not send the estimate')),
     });
   }
 
@@ -336,7 +337,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     this.sentMessage = null;
     this.api.approveEstimate(this.d.id, this.answerName.trim(), this.answerNote.trim() || null).subscribe({
       next: (e) => { this.answerName = ''; this.answerNote = ''; this.afterEstimate(e, 'Approval recorded. The job can be started.'); },
-      error: (e) => this.fail(e, 'Could not record the approval'),
+      error: (e) => this.fail(e, T('Could not record the approval')),
     });
   }
 
@@ -346,7 +347,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     this.sentMessage = null;
     this.api.rejectEstimate(this.d.id, this.answerName.trim() || null, this.answerNote.trim() || null).subscribe({
       next: (e) => { this.answerName = ''; this.answerNote = ''; this.afterEstimate(e, 'Recorded as declined.'); },
-      error: (e) => this.fail(e, 'Could not record the answer'),
+      error: (e) => this.fail(e, T('Could not record the answer')),
     });
   }
 
@@ -361,13 +362,13 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     this.busy = true;
     this.api.addNote(this.d.id, this.noteText.trim()).subscribe({
       next: () => { this.noteText = ''; this.ok('Note added.'); this.loadNotes(); if (this.showHistory) this.loadHistory(); },
-      error: (e) => this.fail(e, 'Could not add the note'),
+      error: (e) => this.fail(e, T('Could not add the note')),
     });
   }
 
   deleteNote(n: WoNote): void {
-    if (!this.d || !confirm('Delete this note?')) return;
-    this.api.deleteNote(this.d.id, n.id).subscribe({ next: () => { this.loadNotes(); if (this.showHistory) this.loadHistory(); }, error: (e) => this.fail(e, 'Could not delete the note') });
+    if (!this.d || !confirm(T('Delete this note?'))) return;
+    this.api.deleteNote(this.d.id, n.id).subscribe({ next: () => { this.loadNotes(); if (this.showHistory) this.loadHistory(); }, error: (e) => this.fail(e, T('Could not delete the note')) });
   }
 
   // ---- photos and files
@@ -407,7 +408,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
         this.loadFiles();
         if (this.showHistory) this.loadHistory();
       },
-      error: (e) => this.fail(e, 'Could not upload the file'),
+      error: (e) => this.fail(e, T('Could not upload the file')),
     });
   }
 
@@ -415,12 +416,12 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     if (!this.d) return;
     this.api.attachmentBlob(this.d.id, a.id).subscribe({
       next: (b) => (a.contentType === 'text/plain' ? downloadBlob(b, a.fileName) : openPdfForPrint(b)),
-      error: (e) => this.fail(e, 'Could not open the file'),
+      error: (e) => this.fail(e, T('Could not open the file')),
     });
   }
 
   deleteFile(a: WoAttachment): void {
-    if (!this.d || !confirm('Remove this file?')) return;
+    if (!this.d || !confirm(T('Remove this file?'))) return;
     this.api.deleteAttachment(this.d.id, a.id).subscribe({
       next: () => {
         const u = this.thumbs[a.id];
@@ -431,7 +432,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
         this.loadFiles();
         if (this.showHistory) this.loadHistory();
       },
-      error: (e) => this.fail(e, 'Could not remove the file'),
+      error: (e) => this.fail(e, T('Could not remove the file')),
     });
   }
 
@@ -476,7 +477,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     this.busy = true;
     this.timeApi.startTimer({ projectId: this.d.timeProjectId, description: this.d.number + ' ' + this.d.title }).subscribe({
       next: (t) => { this.busy = false; this.error = null; this.notice = null; this.setTimer(t); },
-      error: (e) => this.fail(e, 'Could not start the timer'),
+      error: (e) => this.fail(e, T('Could not start the timer')),
     });
   }
 
@@ -488,7 +489,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
         this.loadTimer();
         this.api.get(this.d!.id).subscribe({ next: (d) => this.changed.emit(d), error: () => {} });
       },
-      error: (e) => this.fail(e, 'Could not stop the timer'),
+      error: (e) => this.fail(e, T('Could not stop the timer')),
     });
   }
 
@@ -499,7 +500,7 @@ export class WorkOrderExtrasComponent implements OnChanges, OnDestroy {
     const assigneeChanged = this.move.assignedToUserId !== this.d.assignedToUserId;
     this.api.reschedule(this.d.id, this.move.scheduledDate, this.move.dueDate, this.move.assignedToUserId, assigneeChanged).subscribe({
       next: (d) => { this.ok('Schedule saved.'); this.showMove = false; this.changed.emit(d); if (this.showHistory) this.loadHistory(); },
-      error: (e) => this.fail(e, 'Could not change the schedule'),
+      error: (e) => this.fail(e, T('Could not change the schedule')),
     });
   }
 }

@@ -8,6 +8,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { CostCenterActivity } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Journals Reports > Cost Centers — each cost center's own total
  * debit/credit/net activity in a date range. Distinct from the plain CRUD list under Admin >
@@ -114,7 +115,7 @@ export class CostCenterActivityComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.costCenterActivity(this.from, this.to).subscribe({
       next: (rows) => (this.rows = rows),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load cost center activity'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load cost center activity')),
     });
   }
 
@@ -140,7 +141,7 @@ export class CostCenterActivityComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

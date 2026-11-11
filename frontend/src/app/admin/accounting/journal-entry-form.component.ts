@@ -10,6 +10,7 @@ import { AccountApiService } from '../../core/api/account-api.service';
 import { CostCenterApiService } from '../../core/api/cost-center-api.service';
 import { Account, CostCenter } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 interface DraftLine {
   accountId: number | null;
   debit: number;
@@ -141,7 +142,7 @@ export class JournalEntryFormComponent implements OnInit {
   ngOnInit(): void {
     this.accountApi.listActive().subscribe({
       next: (accounts) => (this.accounts = accounts),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load chart of accounts'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load chart of accounts')),
     });
     this.costCenterApi.listActive().subscribe({ next: (c) => (this.costCenters = c) });
   }
@@ -166,11 +167,11 @@ export class JournalEntryFormComponent implements OnInit {
     this.error = null;
     const usableLines = this.lines.filter((l) => l.accountId != null && ((Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0));
     if (usableLines.length < 2) {
-      this.error = 'Add at least two lines, each with an account and either a debit or a credit amount';
+      this.error = T('Add at least two lines, each with an account and either a debit or a credit amount');
       return;
     }
     if (this.totalDebit() !== this.totalCredit()) {
-      this.error = 'Debits and credits must add up to exactly the same total';
+      this.error = T('Debits and credits must add up to exactly the same total');
       return;
     }
     const payload = {
@@ -186,7 +187,7 @@ export class JournalEntryFormComponent implements OnInit {
     };
     this.journalEntryApi.createManual(payload).subscribe({
       next: (e) => this.router.navigate(['/admin/accounting/journal-entries', e.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save journal entry'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save journal entry')),
     });
   }
 }

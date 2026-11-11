@@ -7,6 +7,7 @@ import { BackupApiService, BackupFile } from '../core/api/backup-api.service';
 import { DataImportExportApiService, ImportKind, ImportResult } from '../core/api/data-import-export-api.service';
 import { downloadBlob } from '../core/download-file';
 
+import { T } from '../core/i18n/t';
 interface ImportInfo {
   kind: ImportKind;
   label: string;
@@ -317,7 +318,7 @@ export class DataManagementComponent implements OnInit {
   }
 
   deleteBackup(b: BackupFile): void {
-    if (!confirm(`Delete backup "${b.filename}"? This cannot be undone.`)) return;
+    if (!confirm(T('Delete backup "{p0}"? This cannot be undone.', { p0: b.filename }))) return;
     this.backupError = null;
     this.backupApi.delete(b.filename).subscribe({
       next: () => this.loadBackups(),

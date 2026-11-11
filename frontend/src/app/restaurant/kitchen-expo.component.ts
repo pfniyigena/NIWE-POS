@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { KitchenApiService } from '../core/api/kitchen-api.service';
 import { ExpoOrder } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant > Expo: the pass. One card per order showing every dish the kitchen is making for it,
  * which stations are still cooking, and which dishes are ready to go out. A complete order is
@@ -121,23 +122,23 @@ export class KitchenExpoComponent implements OnInit, OnDestroy {
         this.loaded = true;
         this.error = null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the expo screen'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the expo screen')),
     });
   }
 
   serve(o: ExpoOrder): void {
     this.error = null;
-    this.api.serveReady(o.orderId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? 'Failed to serve') });
+    this.api.serveReady(o.orderId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? T('Failed to serve')) });
   }
 
   bump(o: ExpoOrder): void {
     this.error = null;
-    this.api.bump(o.orderId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? 'Failed to update the order') });
+    this.api.bump(o.orderId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? T('Failed to update the order')) });
   }
 
   remake(o: ExpoOrder, lineId: number, name: string): void {
-    if (!confirm(`Make ${name} for ${o.label} again?`)) return;
+    if (!confirm(T('Make {p0} for {p1} again?', { p0: name, p1: o.label }))) return;
     this.error = null;
-    this.api.refire(o.orderId, lineId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? 'Failed to send it back') });
+    this.api.refire(o.orderId, lineId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? T('Failed to send it back')) });
   }
 }

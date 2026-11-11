@@ -13,6 +13,7 @@ import { HotelApiService, InHouseGuest } from '../core/api/hotel-api.service';
 import { GiftCardRow, GiftCardsApiService } from '../core/api/giftcards-api.service';
 import { LoyaltyApiService, LoyaltyBalance } from '../core/api/loyalty-api.service';
 
+import { T } from '../core/i18n/t';
 /** A gift card put on this sale: the card and how much of it is being spent. */
 interface CardPayment {
   code: string;
@@ -460,7 +461,7 @@ export class CheckoutComponent implements OnInit {
     // setCustomer call never landed) rather than letting the request reach the backend and come
     // back as a raw error — the backend enforces this too either way (OrderService.checkout).
     if (!this.order.customerId) {
-      this.error = 'This sale has no customer — go back to the cart and select or add a customer before checking out.';
+      this.error = T('This sale has no customer — go back to the cart and select or add a customer before checking out.');
       return;
     }
     const payments: CheckoutPaymentEntry[] = this.paymentRows
@@ -474,12 +475,12 @@ export class CheckoutComponent implements OnInit {
     }
 
     if (payments.length === 0) {
-      this.error = 'Select a payment method and enter an amount';
+      this.error = T('Select a payment method and enter an amount');
       return;
     }
 
     if (this.roomRowSelected() && !this.roomBookingId) {
-      this.error = 'Choose the guest whose room this is charged to.';
+      this.error = T('Choose the guest whose room this is charged to.');
       return;
     }
     this.error = null;
@@ -496,7 +497,7 @@ export class CheckoutComponent implements OnInit {
       },
       error: (err) => {
         this.submitting = false;
-        this.error = err?.error?.message ?? 'Checkout failed';
+        this.error = err?.error?.message ?? T('Checkout failed');
       },
     });
   }

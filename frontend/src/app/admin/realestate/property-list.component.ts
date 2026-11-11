@@ -12,6 +12,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { RePhotoComponent } from './re-photo.component';
 import { Option, PROPERTY_STATUS_LABEL, PROPERTY_TYPES, PropertyRow, PURPOSE_LABEL, RealEstateApiService, typeLabel } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Properties: every listing with its cover photo, price, agent and how many leads and viewings it has. */
 @Component({
   selector: 'app-property-list',
@@ -122,7 +123,7 @@ export class PropertyListComponent implements OnInit {
     this.api.propertiesPage({ q: this.q.trim(), status: this.status, type: this.type, purpose: this.purpose, area: this.area, agentId: this.agentId, bedrooms: this.bedrooms,
       minPrice: this.minPrice, maxPrice: this.maxPrice, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the properties'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the properties')),
     });
   }
 

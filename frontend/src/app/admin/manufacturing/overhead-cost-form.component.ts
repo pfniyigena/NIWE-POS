@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { OverheadCostApiService } from '../../core/api/overhead-cost-api.service';
 import { OverheadAllocationMethod } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Indirect Costs > New/Edit. Mirrors PaymentMethodFormComponent's simple CRUD form pattern. */
 @Component({
   selector: 'app-overhead-cost-form',
@@ -83,7 +84,7 @@ export class OverheadCostFormComponent implements OnInit {
         this.rate = o.rate;
         this.active = o.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load indirect cost'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load indirect cost')),
     });
   }
 
@@ -112,7 +113,7 @@ export class OverheadCostFormComponent implements OnInit {
     const call = this.id ? this.overheadCostApi.update(this.id, payload) : this.overheadCostApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/manufacturing/overhead-costs']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save indirect cost'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save indirect cost')),
     });
   }
 }

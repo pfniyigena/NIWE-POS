@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { SubscriptionApiService, SubscriptionSummary } from '../core/api/subscription-api.service';
 
+import { T } from '../core/i18n/t';
 /** Subscriptions > Overview — recurring revenue, churn, what bills soon and what is unpaid. Amounts are before tax. */
 @Component({
   selector: 'app-subscription-overview',
@@ -80,6 +81,6 @@ export class SubscriptionOverviewComponent implements OnInit {
   constructor(private api: SubscriptionApiService) {}
 
   ngOnInit(): void {
-    this.api.summary().subscribe({ next: (r) => (this.s = r), error: (err) => (this.error = err?.error?.message ?? 'Failed to load the overview') });
+    this.api.summary().subscribe({ next: (r) => (this.s = r), error: (err) => (this.error = err?.error?.message ?? T('Failed to load the overview')) });
   }
 }

@@ -7,6 +7,7 @@ import {
   DEPOSIT_KIND_LABEL, DEPOSIT_METHODS, DEPOSIT_REASONS, DEPOSIT_STATE_LABEL, DepositReason, DepositTxn, DepositView, PmDepositApiService, depositBadge,
 } from '../../core/api/pm-deposit-api.service';
 
+import { T } from '../../core/i18n/t';
 type Mode = 'receive' | 'keep' | 'refund' | 'move' | null;
 
 /** The security deposit of one lease: what was agreed, what is held, every movement, and the forms to take it in, keep part of it, refund it or move it to a renewal. */
@@ -130,7 +131,7 @@ export class PmDepositPanelComponent implements OnChanges {
   ngOnChanges(): void { if (this.leaseId) this.load(); }
 
   load(): void {
-    this.api.deposit(this.leaseId).subscribe({ next: (d) => { this.v = d; }, error: (e) => { this.error = e?.error?.message ?? 'Could not load the deposit'; } });
+    this.api.deposit(this.leaseId).subscribe({ next: (d) => { this.v = d; }, error: (e) => { this.error = e?.error?.message ?? T('Could not load the deposit'); } });
   }
 
   badge(s: string): string { return depositBadge(s); }
@@ -174,24 +175,24 @@ export class PmDepositPanelComponent implements OnChanges {
   save(): void {
     if (!this.v || !this.mode) return;
     const amount = Number(this.f.amount);
-    if (!(amount > 0)) { this.error = 'Enter the amount.'; return; }
+    if (!(amount > 0)) { this.error = T('Enter the amount.'); return; }
     const date = this.f.date || null;
     const note = this.f.note.trim();
     let call;
     if (this.mode === 'receive') call = this.api.receive(this.leaseId, { amount, date, method: this.f.method, note });
     else if (this.mode === 'refund') call = this.api.refund(this.leaseId, { amount, date, method: this.f.method, note });
     else if (this.mode === 'keep') {
-      if (this.f.reason === 'UNPAID_RENT' && !this.f.invoiceId) { this.error = 'Choose the rent invoice to settle.'; return; }
+      if (this.f.reason === 'UNPAID_RENT' && !this.f.invoiceId) { this.error = T('Choose the rent invoice to settle.'); return; }
       call = this.api.deduct(this.leaseId, { amount, date, reason: this.f.reason, invoiceId: this.f.reason === 'UNPAID_RENT' ? this.f.invoiceId : null, note });
     } else {
-      if (!this.f.toLeaseId) { this.error = 'Choose the lease to move the deposit to.'; return; }
+      if (!this.f.toLeaseId) { this.error = T('Choose the lease to move the deposit to.'); return; }
       call = this.api.transfer(this.leaseId, { toLeaseId: this.f.toLeaseId, amount, date, note });
     }
     this.busy = true;
     this.error = null;
     call.subscribe({
       next: (d) => { this.v = d; this.busy = false; this.mode = null; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save'); },
     });
   }
 
@@ -200,7 +201,7 @@ export class PmDepositPanelComponent implements OnChanges {
     this.error = null;
     this.api.voidEntry(t.id, this.voidReason.trim()).subscribe({
       next: (d) => { this.v = d; this.busy = false; this.voiding = null; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not void'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not void'); },
     });
   }
 }

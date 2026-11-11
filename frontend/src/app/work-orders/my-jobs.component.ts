@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { WorkOrderApiService, WorkOrderSummary } from '../core/api/work-order-api.service';
 
+import { T } from '../core/i18n/t';
 /** Work Orders > My jobs: the jobs assigned to the signed-in person. Open to every signed-in user. */
 @Component({
   selector: 'app-my-jobs',
@@ -46,7 +47,7 @@ export class MyJobsComponent implements OnInit {
   ngOnInit(): void {
     this.api.mine().subscribe({
       next: (l) => { this.all = l; this.loaded = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load your jobs'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load your jobs')),
     });
   }
 

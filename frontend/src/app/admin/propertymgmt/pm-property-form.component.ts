@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { OwnerRow, PM_PROPERTY_KINDS, PmPropertyKind, PropertyDto, PropertyMgmtApiService, PropertyPayload } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 
 /** Property Management > Properties > add or change a managed property. */
@@ -76,7 +77,7 @@ export class PmPropertyFormComponent implements OnInit {
           this.property = p;
           this.f = { name: p.name, kind: p.kind, ownerId: p.ownerId, area: p.area ?? '', address: p.address ?? '', titleReference: p.titleReference ?? '', managedFrom: p.managedFrom ?? '', fee: p.feePercent, notes: p.notes ?? '' };
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the property'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the property')),
       });
     }
   }
@@ -84,8 +85,8 @@ export class PmPropertyFormComponent implements OnInit {
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!txt(f.name)) { this.error = 'Give the property a name.'; return; }
-    if (!f.ownerId) { this.error = 'Choose the owner.'; return; }
+    if (!txt(f.name)) { this.error = T('Give the property a name.'); return; }
+    if (!f.ownerId) { this.error = T('Choose the owner.'); return; }
     const hasFee = f.fee != null && String(f.fee) !== '';
     const p: PropertyPayload = { name: txt(f.name), kind: f.kind, ownerId: f.ownerId, area: txt(f.area), address: txt(f.address), titleReference: txt(f.titleReference), notes: txt(f.notes) };
     if (f.managedFrom) p.managedFrom = f.managedFrom;
@@ -96,7 +97,7 @@ export class PmPropertyFormComponent implements OnInit {
     const call = this.id ? this.api.updateProperty(this.id, p) : this.api.createProperty(p);
     call.subscribe({
       next: (r) => { this.saving = false; this.router.navigate(['/admin/propertymgmt/properties', r.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the property'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the property'); },
     });
   }
 }

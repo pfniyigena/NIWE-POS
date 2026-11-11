@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { CHARGE_SOURCE_LABEL, ChargeType, Extra, LeaseCharge, LeaseChargesView, PmChargeApiService } from '../../core/api/pm-charge-api.service';
 
+import { T } from '../../core/i18n/t';
 type Mode = 'charge' | 'reading' | 'extra' | 'edit' | null;
 const pad = (n: number): string => String(n).padStart(2, '0');
 const todayStr = (): string => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -183,37 +184,37 @@ export class PmLeaseChargesPanelComponent implements OnChanges {
     this.error = null;
     call.subscribe({
       next: (v) => { this.busy = false; this.v = v; this.close(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 
   saveCharge(): void {
     const t = this.chosen();
-    if (!t) { this.error = 'Choose the charge.'; return; }
+    if (!t) { this.error = T('Choose the charge.'); return; }
     const amount = num(this.f.amount);
-    if (!amount || amount <= 0) { this.error = t.kind === 'METERED' ? 'Give the rate per ' + t.unitLabel + '.' : 'Give the amount per month.'; return; }
-    if (t.kind === 'METERED' && num(this.f.opening) === null) { this.error = 'Give the meter reading as it is now.'; return; }
+    if (!amount || amount <= 0) { this.error = t.kind === 'METERED' ? T('Give the rate per {p0}.', { p0: t.unitLabel }) : T('Give the amount per month.'); return; }
+    if (t.kind === 'METERED' && num(this.f.opening) === null) { this.error = T('Give the meter reading as it is now.'); return; }
     this.act(this.api.addCharge(this.leaseId, { chargeTypeId: t.id, amount, startDate: this.f.start || null, endDate: this.f.end || null, openingReading: t.kind === 'METERED' ? num(this.f.opening) : null, note: this.f.note.trim() }));
   }
 
   saveEdit(): void {
     if (!this.editing) return;
     const amount = num(this.f.amount);
-    if (!amount || amount <= 0) { this.error = 'The amount must be more than zero.'; return; }
+    if (!amount || amount <= 0) { this.error = T('The amount must be more than zero.'); return; }
     this.act(this.api.updateCharge(this.editing.id, { amount, startDate: this.f.start || null, endDate: this.f.end || null, clearEndDate: !this.f.end }));
   }
 
   saveReading(): void {
     if (!this.editing) return;
     const reading = num(this.f.reading);
-    if (reading === null) { this.error = 'Give the meter reading.'; return; }
+    if (reading === null) { this.error = T('Give the meter reading.'); return; }
     this.act(this.api.addReading(this.editing.id, { reading, date: this.f.date || null, note: this.f.note.trim() }));
   }
 
   saveExtra(): void {
     const amount = num(this.f.amount);
-    if (!this.f.desc.trim()) { this.error = 'Say what the charge is for.'; return; }
-    if (!amount || amount <= 0) { this.error = 'The amount must be more than zero.'; return; }
+    if (!this.f.desc.trim()) { this.error = T('Say what the charge is for.'); return; }
+    if (!amount || amount <= 0) { this.error = T('The amount must be more than zero.'); return; }
     this.act(this.api.addExtra(this.leaseId, { description: this.f.desc.trim(), amount, chargeTypeId: this.f.typeId }));
   }
 }

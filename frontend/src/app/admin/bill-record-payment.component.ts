@@ -8,6 +8,7 @@ import { BillApiService } from '../core/api/bill-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
 import { Bill, SupplierPayment, PaymentMethodOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Bills > detail > Record payment — `/admin/bills/:id/record-payment`. Fourier: "The
  * Purchase order should flow same workflow as Sale order" — the accounts-payable mirror of
@@ -141,11 +142,11 @@ export class BillRecordPaymentComponent implements OnInit {
         this.bill = b;
         this.amount = b.amountOutstanding > 0 ? b.amountOutstanding : null;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load bill'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load bill')),
     });
     this.billApi.paymentHistory(this.billId).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment history'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment history')),
     });
   }
 
@@ -156,7 +157,7 @@ export class BillRecordPaymentComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.canSubmit() || !this.amount) {
-      this.error = 'Enter a valid payment amount, up to the outstanding balance, and a payment method.';
+      this.error = T('Enter a valid payment amount, up to the outstanding balance, and a payment method.');
       return;
     }
     this.submitting = true;
@@ -168,7 +169,7 @@ export class BillRecordPaymentComponent implements OnInit {
       },
       error: (err) => {
         this.submitting = false;
-        this.error = err?.error?.message ?? 'Failed to record payment';
+        this.error = err?.error?.message ?? T('Failed to record payment');
       },
     });
   }

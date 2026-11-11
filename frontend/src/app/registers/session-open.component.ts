@@ -8,6 +8,7 @@ import { RegisterApiService } from '../core/api/register-api.service';
 import { UserApiService } from '../core/api/user-api.service';
 import { AppUser, DeviceStatus } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * ADMIN-only (Change 3). The admin opening the shift usually isn't the one who'll ring sales on
  * it, so they pick which active staff member this shift's first cashier session is assigned to
@@ -74,13 +75,13 @@ export class SessionOpenComponent implements OnInit {
         this.maxFloat = r.maxFloat;
         this.allowedIds = r.allowedCashierIds ?? [];
         if (r.defaultFloat !== null && r.defaultFloat !== undefined) this.openingFloat = r.defaultFloat;
-        if (!r.active) this.error = 'This register is switched off, so a shift cannot be opened on it.';
+        if (!r.active) this.error = T('This register is switched off, so a shift cannot be opened on it.');
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the register'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the register')),
     });
     this.userApi.list().subscribe({
       next: (users) => (this.activeStaff = users.filter((u) => u.active)),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff list'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load staff list')),
     });
   }
 
@@ -98,7 +99,7 @@ export class SessionOpenComponent implements OnInit {
       // assigned staff member reaches it themselves from the register list, or via "Switch
       // cashier" at the terminal with their PIN.
       next: () => this.router.navigate(['/registers']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to open session'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to open session')),
     });
   }
 }

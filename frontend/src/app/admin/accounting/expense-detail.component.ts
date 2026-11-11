@@ -9,6 +9,7 @@ import { AuthService } from '../../core/auth.service';
 import { downloadBlob, openPdfForPrint } from '../../core/download-file';
 import { Expense, ExpenseEvent, ExpenseFile, ExpensePayment, ExpensePaymentAccount } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Expenses > detail — where a pending expense is approved, rejected, edited or deleted, where an approved one is
  * voided or its bill is paid (in full or in parts), and where its files, payments and history are kept.
@@ -177,7 +178,7 @@ export class ExpenseDetailComponent implements OnInit {
         this.expenseApi.events(e.id).subscribe({ next: (v) => (this.events = v), error: () => {} });
         this.loadFiles();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load expense'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load expense')),
     });
   }
 
@@ -218,7 +219,7 @@ export class ExpenseDetailComponent implements OnInit {
       },
       error: (err) => {
         this.overBudgetBlocked = (err?.error?.message ?? '').startsWith('Over budget');
-        this.fail(err, 'Failed to approve expense');
+        this.fail(err, T('Failed to approve expense'));
       },
     });
   }
@@ -233,14 +234,14 @@ export class ExpenseDetailComponent implements OnInit {
         this.busy = false;
         this.load();
       },
-      error: (err) => this.fail(err, 'Failed to reject expense'),
+      error: (err) => this.fail(err, T('Failed to reject expense')),
     });
   }
 
   voidIt(): void {
     if (!this.expense) return;
     const reason = prompt('Reason for voiding this expense (optional):') ?? '';
-    if (!confirm('Void this expense? This reverses its posted entry — it cannot be undone.')) return;
+    if (!confirm(T('Void this expense? This reverses its posted entry — it cannot be undone.'))) return;
     this.error = null;
     this.busy = true;
     this.expenseApi.voidExpense(this.expense.id, reason || null).subscribe({
@@ -248,17 +249,17 @@ export class ExpenseDetailComponent implements OnInit {
         this.busy = false;
         this.load();
       },
-      error: (err) => this.fail(err, 'Failed to void expense'),
+      error: (err) => this.fail(err, T('Failed to void expense')),
     });
   }
 
   remove(): void {
     if (!this.expense) return;
-    if (!confirm('Delete this ' + this.expense.status.toLowerCase() + ' expense? Nothing was posted for it. This cannot be undone.')) return;
+    if (!confirm(T('Delete this {p0} expense? Nothing was posted for it. This cannot be undone.', { p0: this.expense.status.toLowerCase() }))) return;
     this.busy = true;
     this.expenseApi.delete(this.expense.id).subscribe({
       next: () => this.router.navigate(['/admin/accounting/expenses']),
-      error: (err) => this.fail(err, 'Failed to delete expense'),
+      error: (err) => this.fail(err, T('Failed to delete expense')),
     });
   }
 
@@ -270,11 +271,11 @@ export class ExpenseDetailComponent implements OnInit {
     this.expenseApi.pay(this.expense.id, { amount: this.payAmount, paidOn: this.payDate || null, paidFromAccountId: this.payFrom, note: this.payNote || null }).subscribe({
       next: (e) => {
         this.busy = false;
-        this.notice = e.settledAt ? 'The bill is now paid off.' : 'Payment recorded. ' + e.balance.toFixed(2) + ' is still owed.';
+        this.notice = e.settledAt ? T('The bill is now paid off.') : T('Payment recorded. {p0} is still owed.', { p0: e.balance.toFixed(2) });
         this.payNote = '';
         this.load();
       },
-      error: (err) => this.fail(err, 'Failed to record the payment'),
+      error: (err) => this.fail(err, T('Failed to record the payment')),
     });
   }
 
@@ -291,7 +292,7 @@ export class ExpenseDetailComponent implements OnInit {
           if (--pending === 0) this.load();
         },
         error: (err) => {
-          this.error = err?.error?.message ?? 'Could not add ' + f.name;
+          this.error = err?.error?.message ?? T('Could not add {p0}', { p0: f.name });
           if (--pending === 0) this.load();
         },
       })
@@ -301,15 +302,15 @@ export class ExpenseDetailComponent implements OnInit {
   openFile(f: ExpenseFile): void {
     this.expenseApi.fileBlob(this.id, f.id).subscribe({
       next: (b) => (f.contentType === 'text/plain' ? downloadBlob(b, f.fileName) : openPdfForPrint(b)),
-      error: (err) => this.fail(err, 'Could not open the file'),
+      error: (err) => this.fail(err, T('Could not open the file')),
     });
   }
 
   removeFile(f: ExpenseFile): void {
-    if (!confirm('Remove ' + f.fileName + '?')) return;
+    if (!confirm(T('Remove {p0}?', { p0: f.fileName }))) return;
     this.expenseApi.deleteFile(this.id, f.id).subscribe({
       next: () => this.load(),
-      error: (err) => this.fail(err, 'Could not remove the file'),
+      error: (err) => this.fail(err, T('Could not remove the file')),
     });
   }
 

@@ -8,6 +8,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { MissingList, ProjectSummary, StaffOption, TimeApiService, TimeEntry } from '../../core/api/time-api.service';
 import { addDays, formatMinutes, mondayOf, parseDuration, today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 /** Time Tracking > Approvals: time waiting for a decision, and everyone's time over a period. */
 @Component({
   selector: 'app-time-approvals',
@@ -155,7 +156,7 @@ export class TimeApprovalsComponent implements OnInit {
 
   loadMissing(): void {
     this.missing = null;
-    this.api.missing(this.missingWeek).subscribe({ next: (m) => (this.missing = m), error: (e) => (this.error = e?.error?.message ?? 'Could not load the list') });
+    this.api.missing(this.missingWeek).subscribe({ next: (m) => (this.missing = m), error: (e) => (this.error = e?.error?.message ?? T('Could not load the list')) });
   }
 
   remind(userIds: number[] | null): void {
@@ -170,7 +171,7 @@ export class TimeApprovalsComponent implements OnInit {
         if (r.failed) parts.push(`${r.failed} failed`);
         this.notice = parts.join(', ') + '.' + (r.notes?.length ? ' ' + r.notes.join(' ') : '');
       },
-      error: (e) => { this.sending = false; this.error = e?.error?.message ?? 'Could not send the reminders'; },
+      error: (e) => { this.sending = false; this.error = e?.error?.message ?? T('Could not send the reminders'); },
     });
   }
 
@@ -188,7 +189,7 @@ export class TimeApprovalsComponent implements OnInit {
     const call = this.status === 'SUBMITTED' && !this.userId && !this.projectId
       ? this.api.approvals()
       : this.api.entries({ status: this.status, userId: this.userId, projectId: this.projectId, from: this.status === 'SUBMITTED' ? '2000-01-01' : this.from, to: this.status === 'SUBMITTED' ? today() : this.to });
-    call.subscribe({ next: (e) => (this.entries = e), error: (e) => (this.error = e?.error?.message ?? 'Could not load the time') });
+    call.subscribe({ next: (e) => (this.entries = e), error: (e) => (this.error = e?.error?.message ?? T('Could not load the time')) });
   }
 
   fmt(m: number): string {
@@ -221,26 +222,26 @@ export class TimeApprovalsComponent implements OnInit {
     this.error = null;
     this.api.approve(this.selectedIds()).subscribe({
       next: (r) => {
-        this.notice = `${r.approved} approved.`;
+        this.notice = T('{p0} approved.', { p0: r.approved });
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not approve'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not approve')),
     });
   }
 
   reject(): void {
     this.error = null;
     if (!this.reason.trim()) {
-      this.error = 'Say why the time is sent back.';
+      this.error = T('Say why the time is sent back.');
       return;
     }
     this.api.reject(this.selectedIds(), this.reason).subscribe({
       next: (r) => {
-        this.notice = `${r.rejected} sent back.`;
+        this.notice = T('{p0} sent back.', { p0: r.rejected });
         this.reason = '';
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not send back'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not send back')),
     });
   }
 
@@ -254,15 +255,15 @@ export class TimeApprovalsComponent implements OnInit {
   saveEdit(e: TimeEntry): void {
     const minutes = parseDuration(this.editDuration);
     if (minutes == null || minutes < 1) {
-      this.error = 'Enter the time as 1:30, 1.5, 90m or 2h.';
+      this.error = T('Enter the time as 1:30, 1.5, 90m or 2h.');
       return;
     }
     this.api.correct(e.id, { projectId: e.projectId, taskId: e.taskId, workDate: e.workDate, minutes, description: this.editDescription, billable: this.editBillable }).subscribe({
       next: () => {
-        this.notice = 'Corrected.';
+        this.notice = T('Corrected.');
         this.load();
       },
-      error: (x) => (this.error = x?.error?.message ?? 'Could not correct'),
+      error: (x) => (this.error = x?.error?.message ?? T('Could not correct')),
     });
   }
 }

@@ -11,6 +11,7 @@ import { AppUser, HelpDeskAttachment, HelpDeskCanned, HelpDeskComment, HelpDeskE
 import { downloadBlob, openPdfForPrint } from '../core/download-file';
 import { HD_EVENT_LABELS, hdDistance, hdPriorityClass, hdSlaClass, hdSlaLabel, hdStatusClass, hdStatusLabel } from './helpdesk-ui';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Help Desk > Tickets > detail — everything for one ticket on one screen: who has it,
  * where it stands against its deadlines, the conversation (internal notes and replies the
@@ -279,7 +280,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
   private loadAll(): void {
     this.ticketApi.getById(this.id).subscribe({
       next: (t) => this.setTicket(t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load ticket'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load ticket')),
     });
     this.loadComments();
     this.loadEvents();
@@ -297,7 +298,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
   private loadComments(): void {
     this.ticketApi.listComments(this.id).subscribe({
       next: (c) => (this.comments = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load updates'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load updates')),
     });
   }
 
@@ -333,7 +334,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
     this.busy = true;
     this.ticketApi.assign(this.id, this.assignedToUserId).subscribe({
       next: (t) => { this.busy = false; this.setTicket(t); this.loadEvents(); },
-      error: (err) => this.fail(err, 'Failed to assign ticket'),
+      error: (err) => this.fail(err, T('Failed to assign ticket')),
     });
   }
 
@@ -342,7 +343,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
     this.busy = true;
     this.ticketApi.setTags(this.id, tags).subscribe({
       next: (t) => { this.setTicket(t); this.ok('Tags saved.'); this.loadEvents(); },
-      error: (err) => this.fail(err, 'Could not save the tags'),
+      error: (err) => this.fail(err, T('Could not save the tags')),
     });
   }
 
@@ -350,7 +351,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
     this.busy = true;
     this.ticketApi.setLinks(this.id, this.linkInvoice.trim() || null, this.linkWo.trim() || null).subscribe({
       next: (t) => { this.setTicket(t); this.ok('Links saved.'); this.loadEvents(); },
-      error: (err) => this.fail(err, 'Could not save the links'),
+      error: (err) => this.fail(err, T('Could not save the links')),
     });
   }
 
@@ -361,7 +362,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
     this.printing = true;
     this.ticketApi.pdf(this.ticket.id).subscribe({
       next: (blob) => { this.printing = false; openPdfForPrint(blob); },
-      error: (err) => { this.printing = false; this.error = err?.error?.message ?? 'Failed to generate the ticket PDF'; },
+      error: (err) => { this.printing = false; this.error = err?.error?.message ?? T('Failed to generate the ticket PDF'); },
     });
   }
 
@@ -388,7 +389,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
         this.replyMode = 'reply';
         this.newCommentBody = this.newCommentBody.trim() ? this.newCommentBody.trimEnd() + '\n\n' + r.body : r.body;
       },
-      error: (err) => this.fail(err, 'Could not load the saved reply'),
+      error: (err) => this.fail(err, T('Could not load the saved reply')),
     });
   }
 
@@ -406,7 +407,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
         this.loadEvents();
         this.ticketApi.getById(this.id).subscribe({ next: (t) => this.setTicket(t) });
       },
-      error: (err) => this.fail(err, 'Failed to add update'),
+      error: (err) => this.fail(err, T('Failed to add update')),
     });
   }
 
@@ -427,14 +428,14 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
         this.loadFiles();
         this.loadEvents();
       },
-      error: (err) => this.fail(err, 'Could not upload the file'),
+      error: (err) => this.fail(err, T('Could not upload the file')),
     });
   }
 
   openFile(a: HelpDeskAttachment): void {
     this.ticketApi.attachmentBlob(this.id, a.id).subscribe({
       next: (b) => (a.contentType === 'text/plain' ? downloadBlob(b, a.fileName) : openPdfForPrint(b)),
-      error: (err) => this.fail(err, 'Could not open the file'),
+      error: (err) => this.fail(err, T('Could not open the file')),
     });
   }
 
@@ -442,7 +443,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
     const value = (ev.target as HTMLInputElement).checked;
     this.ticketApi.setAttachmentVisible(this.id, a.id, value).subscribe({
       next: () => { a.visibleToRequester = value; },
-      error: (err) => { (ev.target as HTMLInputElement).checked = !value; this.fail(err, 'Could not change who can see the file'); },
+      error: (err) => { (ev.target as HTMLInputElement).checked = !value; this.fail(err, T('Could not change who can see the file')); },
     });
   }
 
@@ -457,7 +458,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
         this.files = this.files.filter((x) => x.id !== a.id);
         this.ok('File removed.');
       },
-      error: (err) => this.fail(err, 'Could not remove the file'),
+      error: (err) => this.fail(err, T('Could not remove the file')),
     });
   }
 
@@ -469,7 +470,7 @@ export class HelpDeskTicketDetailComponent implements OnInit, OnDestroy {
         this.mergeTargetId = null;
         this.mergeSearched = true;
       },
-      error: (err) => this.fail(err, 'Could not search tickets'),
+      error: (err) => this.fail(err, T('Could not search tickets')),
     });
   }
 

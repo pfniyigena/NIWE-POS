@@ -10,6 +10,7 @@ import { Bill, Branch } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf } from '../core/branch-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Purchases > Bills > detail — `/admin/bills/:id`, reached from the bill list or from a
  * Purchase Order's own "View bill" link. Fourier: "The Purchase order should flow same workflow as
@@ -165,7 +166,7 @@ export class BillDetailComponent implements OnInit {
   load(id: number): void {
     this.billApi.getById(id).subscribe({
       next: (b) => (this.bill = b),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load bill'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load bill')),
     });
   }
 
@@ -180,7 +181,7 @@ export class BillDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to generate the bill PDF';
+        this.error = err?.error?.message ?? T('Failed to generate the bill PDF');
       },
     });
   }
@@ -194,7 +195,7 @@ export class BillDetailComponent implements OnInit {
         this.showVoidForm = false;
         this.voidReason = '';
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to void bill'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to void bill')),
     });
   }
 
@@ -203,17 +204,17 @@ export class BillDetailComponent implements OnInit {
     this.error = null;
     this.billApi.issue(this.bill.id).subscribe({
       next: (b) => (this.bill = b),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to issue bill'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to issue bill')),
     });
   }
 
   deleteDraft(): void {
     if (!this.bill) return;
-    if (!confirm(`Delete draft bill ${this.bill.billNumber}? This cannot be undone.`)) return;
+    if (!confirm(T('Delete draft bill {p0}? This cannot be undone.', { p0: this.bill.billNumber }))) return;
     this.error = null;
     this.billApi.deleteDraft(this.bill.id).subscribe({
       next: () => this.router.navigate(['/admin/bills']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete draft'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete draft')),
     });
   }
 

@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { BookableService, BookingApiService } from '../../core/api/booking-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Booking > Services: what can be booked, how long it takes, what it costs and who can do it. */
 @Component({
   selector: 'app-booking-service-list',
@@ -43,11 +44,11 @@ export class BookingServiceListComponent implements OnInit {
   constructor(private api: BookingApiService) {}
   ngOnInit(): void { this.load(); }
   load(): void {
-    this.api.services().subscribe({ next: (l) => (this.list = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load the services') });
+    this.api.services().subscribe({ next: (l) => (this.list = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load the services')) });
   }
   names(s: BookableService): string { return s.staff.length ? s.staff.map((p) => p.name).join(', ') : 'Anyone'; }
   remove(s: BookableService): void {
-    if (!confirm(`Delete "${s.name}"?`)) return;
-    this.api.deleteService(s.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete this service') });
+    if (!confirm(T('Delete "{p0}"?', { p0: s.name }))) return;
+    this.api.deleteService(s.id).subscribe({ next: () => this.load(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete this service')) });
   }
 }

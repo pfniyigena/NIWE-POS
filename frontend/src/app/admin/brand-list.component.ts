@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Brand } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Brands (Fourier: "Add product brands") — same simple CRUD shape as Categories, minus the color swatch. */
 @Component({
   selector: 'app-brand-list',
@@ -54,16 +55,16 @@ export class BrandListComponent implements OnInit {
   load(): void {
     this.catalogApi.listBrands().subscribe({
       next: (b) => (this.brands = b),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load brands'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load brands')),
     });
   }
 
   remove(b: Brand): void {
-    if (!confirm(`Delete brand "${b.name}"?`)) return;
+    if (!confirm(T('Delete brand "{p0}"?', { p0: b.name }))) return;
     this.error = null;
     this.catalogApi.deleteBrand(b.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete brand'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete brand')),
     });
   }
 }

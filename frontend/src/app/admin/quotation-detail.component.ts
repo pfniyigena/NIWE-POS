@@ -9,6 +9,7 @@ import { Branch, Quotation } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf } from '../core/branch-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Quotations > detail — where a DRAFT is sent, a SENT quote is accepted/
  * rejected/marked expired, and where an ACCEPTED quote is converted into a real Sales Order
@@ -153,7 +154,7 @@ export class QuotationDetailComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.quotationApi.getById(id).subscribe({
       next: (q) => (this.q = q),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load quotation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load quotation')),
     });
   }
 
@@ -162,7 +163,7 @@ export class QuotationDetailComponent implements OnInit {
     this.error = null;
     this.quotationApi.send(this.q.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to send quotation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to send quotation')),
     });
   }
 
@@ -171,17 +172,17 @@ export class QuotationDetailComponent implements OnInit {
     this.error = null;
     this.quotationApi.accept(this.q.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to accept quotation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to accept quotation')),
     });
   }
 
   reject(): void {
     if (!this.q) return;
-    if (!confirm(`Reject quotation ${this.q.quoteNumber}?`)) return;
+    if (!confirm(T('Reject quotation {p0}?', { p0: this.q.quoteNumber }))) return;
     this.error = null;
     this.quotationApi.reject(this.q.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to reject quotation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to reject quotation')),
     });
   }
 
@@ -190,7 +191,7 @@ export class QuotationDetailComponent implements OnInit {
     this.error = null;
     this.quotationApi.expire(this.q.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to mark quotation expired'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to mark quotation expired')),
     });
   }
 
@@ -199,7 +200,7 @@ export class QuotationDetailComponent implements OnInit {
     this.error = null;
     this.quotationApi.convert(this.q.id).subscribe({
       next: (so) => this.router.navigate(['/admin/sales-orders', so.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to convert quotation'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to convert quotation')),
     });
   }
 
@@ -210,7 +211,7 @@ export class QuotationDetailComponent implements OnInit {
     if (entered === null) return; // cancelled
     email = entered.trim() || null;
     if (!email) {
-      this.error = 'Enter an email address to send to';
+      this.error = T('Enter an email address to send to');
       return;
     }
     this.error = null;
@@ -224,7 +225,7 @@ export class QuotationDetailComponent implements OnInit {
       },
       error: (err) => {
         this.emailing = false;
-        this.error = err?.error?.message ?? 'Failed to email quotation';
+        this.error = err?.error?.message ?? T('Failed to email quotation');
       },
     });
   }
@@ -241,7 +242,7 @@ export class QuotationDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to generate the quotation PDF';
+        this.error = err?.error?.message ?? T('Failed to generate the quotation PDF');
       },
     });
   }

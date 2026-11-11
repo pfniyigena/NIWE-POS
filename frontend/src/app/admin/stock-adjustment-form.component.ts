@@ -11,6 +11,7 @@ import { Product, ProductStockByLocation, StockAdjustmentReason, Warehouse, Ware
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { T } from '../core/i18n/t';
 interface LocationOption {
   id: number;
   label: string;
@@ -243,18 +244,18 @@ export class StockAdjustmentFormComponent {
 
   submit(): void {
     if (!this.selectedProduct) {
-      this.error = 'Select a product';
+      this.error = T('Select a product');
       return;
     }
     if (!this.quantityDelta) {
-      this.error = 'Enter a nonzero quantity change';
+      this.error = T('Enter a nonzero quantity change');
       return;
     }
     this.error = null;
     const mode = this.selectedProduct.trackingMode ?? 'NONE';
     const serials = mode === 'SERIAL' ? this.parseSerials(this.serialText) : [];
     if (mode === 'SERIAL' && serials.length > 0 && serials.length !== Math.abs(this.quantityDelta)) {
-      this.error = `Enter ${Math.abs(this.quantityDelta)} serial number(s) to match the quantity, or none (${serials.length} entered)`;
+      this.error = T('Enter {p0} serial number(s) to match the quantity, or none ({p1} entered)', { p0: Math.abs(this.quantityDelta), p1: serials.length });
       return;
     }
     this.stockAdjustmentApi
@@ -270,7 +271,7 @@ export class StockAdjustmentFormComponent {
       })
       .subscribe({
         next: () => this.router.navigate(['/admin/stock-adjustments']),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to save adjustment'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to save adjustment')),
       });
   }
 }

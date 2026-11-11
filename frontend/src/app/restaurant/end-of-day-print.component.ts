@@ -6,6 +6,7 @@ import { RestaurantReportApiService } from '../core/api/restaurant-report-api.se
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { EndOfDay, StoreSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** The printable Z-report of one day (no menus around it, like the receipt). */
 @Component({
   selector: 'app-end-of-day-print',
@@ -104,7 +105,7 @@ export class EndOfDayPrintComponent implements OnInit {
     this.storeApi.get().subscribe({ next: (s) => (this.settings = s), error: () => (this.settings = null) });
     this.api.endOfDay(date).subscribe({
       next: (r) => (this.e = r),
-      error: (er) => (this.error = er?.error?.message || 'Could not load the report'),
+      error: (er) => (this.error = er?.error?.message || T('Could not load the report')),
     });
   }
 

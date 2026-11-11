@@ -11,6 +11,7 @@ import {
   PriceAdjustResult, PROJECT_STATUS_LABEL, ProjectDto, RealEstateApiService, UNIT_KINDS, UNIT_STATUS_LABEL, UnitKind, UnitRow, UnitStatus, unitKindLabel,
 } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 
 /** Real Estate > Projects > one project: its figures, its units and price list, and the tools to add units and move prices. */
@@ -192,7 +193,7 @@ export class ProjectDetailComponent implements OnInit {
   private id(): number { return Number(this.route.snapshot.paramMap.get('id')); }
 
   load(): void {
-    this.api.project(this.id()).subscribe({ next: (p) => (this.p = p), error: (e) => (this.error = e?.error?.message ?? 'Could not load the project') });
+    this.api.project(this.id()).subscribe({ next: (p) => (this.p = p), error: (e) => (this.error = e?.error?.message ?? T('Could not load the project')) });
   }
 
   statusName(s: string): string { return (PROJECT_STATUS_LABEL as Record<string, string>)[s] ?? s; }
@@ -222,10 +223,10 @@ export class ProjectDetailComponent implements OnInit {
     });
   }
 
-  setStatus(s: 'SELLING'): void { this.run(this.api.updateProject(this.p!.id, { status: s }), () => (this.notice = 'The project is now selling: units can be reserved.')); }
+  setStatus(s: 'SELLING'): void { this.run(this.api.updateProject(this.p!.id, { status: s }), () => (this.notice = T('The project is now selling: units can be reserved.'))); }
 
   remove(): void {
-    if (!confirm('Delete this project?')) return;
+    if (!confirm(T('Delete this project?'))) return;
     this.api.deleteProject(this.p!.id).subscribe({ next: () => this.router.navigate(['/admin/realestate/projects']), error: (e) => (this.actionError = e?.error?.message ?? 'Could not delete it') });
   }
 
@@ -234,7 +235,7 @@ export class ProjectDetailComponent implements OnInit {
     if (!o.unitNo.trim()) { this.actionError = 'Give the unit a number.'; return; }
     if (!num(o.listPrice)) { this.actionError = 'Enter the list price.'; return; }
     this.run(this.api.addUnit(this.p!.id, { unitNo: o.unitNo.trim(), block: o.block, kind: o.kind, floor: num(o.floor), bedrooms: num(o.bedrooms), bathrooms: num(o.bathrooms), sizeSqm: num(o.sizeSqm), listPrice: num(o.listPrice) }),
-      () => { this.one.unitNo = ''; this.notice = 'Unit added.'; });
+      () => { this.one.unitNo = ''; this.notice = T('Unit added.'); });
   }
 
   addMany(): void {
@@ -242,7 +243,7 @@ export class ProjectDetailComponent implements OnInit {
     if (m.from == null || m.to == null) { this.actionError = 'Give the first and the last number.'; return; }
     if (!num(m.listPrice)) { this.actionError = 'Enter the list price.'; return; }
     this.run(this.api.addUnitsBulk(this.p!.id, { prefix: m.prefix, from: num(m.from), to: num(m.to), padding: num(m.padding), block: m.block, kind: m.kind, floor: null, bedrooms: null, bathrooms: null, sizeSqm: num(m.sizeSqm), listPrice: num(m.listPrice) }),
-      () => { this.panel = ''; this.notice = 'Units created.'; });
+      () => { this.panel = ''; this.notice = T('Units created.'); });
   }
 
   adjust(preview: boolean): void {

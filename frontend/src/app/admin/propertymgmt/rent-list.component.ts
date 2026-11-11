@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { PmReminderApiService } from '../../core/api/pm-reminder-api.service';
 import { InvoiceRun, PropertyMgmtApiService, PropertyRow, RENT_STATUS_LABEL, RentChargeRow, RentStatus, rentBadge } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Rent: the rent of all leases, by what needs doing (to invoice, overdue, open, paid, waived), with the button that invoices the rent that is ready. */
 @Component({
   selector: 'app-rent-list',
@@ -103,7 +104,7 @@ export class RentListComponent implements OnInit {
     this.page = 0;
     this.api.rent({ status: this.status, propertyId: this.propertyId }).subscribe({
       next: (l) => { this.list = l; this.loaded = true; this.error = null; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the rent'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the rent'); },
     });
   }
 
@@ -131,7 +132,7 @@ export class RentListComponent implements OnInit {
         this.note = r.invoiced ? `Invoiced ${r.invoiced} rent charge${r.invoiced === 1 ? '' : 's'} (${Math.round(r.amount).toLocaleString()}).` : 'Nothing was ready to invoice.';
         this.load();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not invoice the rent'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not invoice the rent'); },
     });
   }
 
@@ -139,7 +140,7 @@ export class RentListComponent implements OnInit {
     this.busy = true;
     this.error = null;
     this.note = null;
-    this.api.invoiceCharge(c.id).subscribe({ next: () => { this.busy = false; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not invoice the rent'; } });
+    this.api.invoiceCharge(c.id).subscribe({ next: () => { this.busy = false; this.load(); }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not invoice the rent'); } });
   }
 
   remind(c: RentChargeRow): void {
@@ -148,18 +149,18 @@ export class RentListComponent implements OnInit {
     this.note = null;
     this.reminders.remind(c.id).subscribe({
       next: (r) => { this.busy = false; this.note = `Reminder sent to ${r.sentTo}.`; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the reminder'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the reminder'); },
     });
   }
 
   chargeFee(c: RentChargeRow): void {
-    if (!confirm('Invoice a late fee to this tenant for ' + c.invoiceNumber + '?')) return;
+    if (!confirm(T('Invoice a late fee to this tenant for {p0}?', { p0: c.invoiceNumber }))) return;
     this.busy = true;
     this.error = null;
     this.note = null;
     this.reminders.lateFee(c.id).subscribe({
       next: (f) => { this.busy = false; this.note = `Late fee ${Math.round(f.amount).toLocaleString()} invoiced (${f.invoiceNumber}).`; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not charge the late fee'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not charge the late fee'); },
     });
   }
 }

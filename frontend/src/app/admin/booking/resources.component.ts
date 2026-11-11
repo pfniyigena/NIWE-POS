@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { BlockTarget, BookableResource, BookingApiService, BookingBlock, Option } from '../../core/api/booking-api.service';
 import { today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 /** Booking > Rooms & equipment, plus blocked time (holidays, maintenance, someone away). */
 @Component({
   selector: 'app-booking-resources',
@@ -97,11 +98,11 @@ export class BookingResourcesComponent implements OnInit {
   }
 
   loadResources(): void {
-    this.api.resources().subscribe({ next: (l) => (this.resources = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load the rooms') });
+    this.api.resources().subscribe({ next: (l) => (this.resources = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load the rooms')) });
   }
 
   loadBlocks(): void {
-    this.api.blocks(today()).subscribe({ next: (l) => (this.blocks = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load the blocked time') });
+    this.api.blocks(today()).subscribe({ next: (l) => (this.blocks = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load the blocked time')) });
   }
 
   edit(x: BookableResource): void {
@@ -118,23 +119,23 @@ export class BookingResourcesComponent implements OnInit {
     this.error = null;
     const p = { name: this.r.name.trim(), kind: this.r.kind.trim(), capacity: this.r.capacity, notes: this.r.notes.trim() || null, active: this.r.active };
     const call = this.editing ? this.api.updateResource(this.editing, p) : this.api.createResource(p);
-    call.subscribe({ next: () => { this.resetResource(); this.loadResources(); }, error: (e) => (this.error = e?.error?.message ?? 'Could not save') });
+    call.subscribe({ next: () => { this.resetResource(); this.loadResources(); }, error: (e) => (this.error = e?.error?.message ?? T('Could not save')) });
   }
 
   removeResource(x: BookableResource): void {
-    if (!confirm(`Delete "${x.name}"?`)) return;
-    this.api.deleteResource(x.id).subscribe({ next: () => this.loadResources(), error: (e) => (this.error = e?.error?.message ?? 'Could not delete') });
+    if (!confirm(T('Delete "{p0}"?', { p0: x.name }))) return;
+    this.api.deleteResource(x.id).subscribe({ next: () => this.loadResources(), error: (e) => (this.error = e?.error?.message ?? T('Could not delete')) });
   }
 
   addBlock(): void {
     this.error = null;
     this.api.addBlock({ targetType: this.b.targetType, targetId: this.b.targetType === 'ALL' ? null : this.b.targetId, startAt: this.b.startAt, endAt: this.b.endAt, reason: this.b.reason.trim() || null }).subscribe({
       next: () => { this.b = { targetType: 'ALL', targetId: null, startAt: '', endAt: '', reason: '' }; this.loadBlocks(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not block this time'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not block this time')),
     });
   }
 
   removeBlock(k: BookingBlock): void {
-    this.api.deleteBlock(k.id).subscribe({ next: () => this.loadBlocks(), error: (e) => (this.error = e?.error?.message ?? 'Could not remove') });
+    this.api.deleteBlock(k.id).subscribe({ next: () => this.loadBlocks(), error: (e) => (this.error = e?.error?.message ?? T('Could not remove')) });
   }
 }

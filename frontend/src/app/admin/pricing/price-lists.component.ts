@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AuthService } from '../../core/auth.service';
 import { PriceListPayload, PriceListRow, PricingApiService } from '../../core/api/pricing-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Sales > Price lists. A price list is a set of prices a customer group buys at; the screen to name one, set its dates and across-the-board adjustment, and open it to set the prices. */
 @Component({
   selector: 'app-price-lists',
@@ -87,7 +88,7 @@ export class PriceListsComponent implements OnInit {
   load(): void {
     this.api.lists().subscribe({
       next: (r) => (this.rows = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the price lists'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the price lists')),
     });
   }
 
@@ -134,20 +135,20 @@ export class PriceListsComponent implements OnInit {
         this.editing = false;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save the price list'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save the price list')),
     });
   }
 
   remove(l: PriceListRow): void {
     this.error = null;
     this.done = null;
-    if (!confirm('Delete the price list "' + l.name + '" and its ' + l.entries + ' price(s)?')) return;
+    if (!confirm(T('Delete the price list "{p0}" and its {p1} price(s)?', { p0: l.name, p1: l.entries }))) return;
     this.api.deleteList(l.id).subscribe({
       next: () => {
         this.done = 'Deleted "' + l.name + '".';
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not delete the price list'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not delete the price list')),
     });
   }
 }

@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AccountApiService } from '../../core/api/account-api.service';
 import { Account, AccountType } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Chart of Accounts. Fourier: "Seed a standard starter chart" — the list an
  * admin sees the moment Accounting is turned on (Admin > Accounting > Settings), grouped by
@@ -83,7 +84,7 @@ export class AccountListComponent implements OnInit {
           this.grouped[key].sort((x, y) => x.code.localeCompare(y.code));
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load chart of accounts'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load chart of accounts')),
     });
   }
 

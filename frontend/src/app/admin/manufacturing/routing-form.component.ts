@@ -8,6 +8,7 @@ import { RoutingApiService } from '../../core/api/routing-api.service';
 import { WorkstationApiService } from '../../core/api/workstation-api.service';
 import { Workstation } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 interface DraftOperation {
   sequence: number;
   name: string;
@@ -119,7 +120,7 @@ export class RoutingFormComponent implements OnInit {
   ngOnInit(): void {
     this.workstationApi.listActive().subscribe({
       next: (w) => (this.workstations = w),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load workstations'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load workstations')),
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -141,7 +142,7 @@ export class RoutingFormComponent implements OnInit {
           labourHourlyRate: op.labourHourlyRate ?? 0,
         }));
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load routing'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load routing')),
     });
   }
 
@@ -156,11 +157,11 @@ export class RoutingFormComponent implements OnInit {
 
   submit(): void {
     if (!this.name.trim()) {
-      this.error = 'Name is required';
+      this.error = T('Name is required');
       return;
     }
     if (this.operations.length === 0 || this.operations.some((o) => !o.name.trim())) {
-      this.error = 'Every operation needs a name — add at least one operation';
+      this.error = T('Every operation needs a name — add at least one operation');
       return;
     }
     this.error = null;
@@ -179,7 +180,7 @@ export class RoutingFormComponent implements OnInit {
     const call = this.id ? this.routingApi.update(this.id, payload) : this.routingApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/manufacturing/routings']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save routing'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save routing')),
     });
   }
 }

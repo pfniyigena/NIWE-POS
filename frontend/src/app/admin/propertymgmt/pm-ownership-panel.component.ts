@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { OwnerSplit, OwnershipView, PmOwnershipApiService } from '../../core/api/pm-ownership-api.service';
 import { OwnerRow, PropertyMgmtApiService } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 const pad = (n: number): string => String(n).padStart(2, '0');
 const todayStr = (): string => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
@@ -100,7 +101,7 @@ export class PmOwnershipPanelComponent implements OnChanges {
   }
 
   load(): void {
-    this.api.get(this.propertyId).subscribe({ next: (v) => (this.v = v), error: (e) => (this.error = e?.error?.message ?? 'Could not load the owners') });
+    this.api.get(this.propertyId).subscribe({ next: (v) => (this.v = v), error: (e) => (this.error = e?.error?.message ?? T('Could not load the owners')) });
   }
 
   current(): OwnerSplit | null {
@@ -148,10 +149,10 @@ export class PmOwnershipPanelComponent implements OnChanges {
 
   save(): void {
     this.error = null;
-    if (this.rows.some((r) => !r.ownerId)) { this.error = 'Choose the owner on every line.'; return; }
-    if (this.rows.some((r) => !(num(r.percent) && (num(r.percent) as number) > 0))) { this.error = 'Give every owner a percentage above 0.'; return; }
+    if (this.rows.some((r) => !r.ownerId)) { this.error = T('Choose the owner on every line.'); return; }
+    if (this.rows.some((r) => !(num(r.percent) && (num(r.percent) as number) > 0))) { this.error = T('Give every owner a percentage above 0.'); return; }
     const ids = this.rows.map((r) => r.ownerId);
-    if (new Set(ids).size !== ids.length) { this.error = 'An owner is on the list twice.'; return; }
+    if (new Set(ids).size !== ids.length) { this.error = T('An owner is on the list twice.'); return; }
     this.busy = true;
     this.api.set(this.propertyId, {
       validFrom: this.from || null,
@@ -159,17 +160,17 @@ export class PmOwnershipPanelComponent implements OnChanges {
       leadOwnerId: this.rows[this.leadIndex]?.ownerId ?? null,
     }).subscribe({
       next: (v) => { this.busy = false; this.v = v; this.editing = false; this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the owners'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the owners'); },
     });
   }
 
   remove(sp: OwnerSplit): void {
-    if (!confirm('Remove the owners split that starts ' + (sp.validFrom ? 'on ' + sp.validFrom : 'at the beginning') + '? Rent paid from that day is then shared by the split before it.')) return;
+    if (!confirm(T('Remove the owners split that starts {p0}? Rent paid from that day is then shared by the split before it.', { p0: (sp.validFrom ? T('on {p0}', { p0: sp.validFrom }) : T('at the beginning')) }))) return;
     this.error = null;
     this.busy = true;
     this.api.remove(this.propertyId, sp.key).subscribe({
       next: (v) => { this.busy = false; this.v = v; this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not remove it'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not remove it'); },
     });
   }
 }

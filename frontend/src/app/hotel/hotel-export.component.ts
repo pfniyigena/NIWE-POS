@@ -5,6 +5,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { API_BASE } from '../core/constants';
 import { downloadBlob } from '../core/download-file';
 
+import { T } from '../core/i18n/t';
 /** Excel, PDF and CSV buttons for a Hotel screen that has no search bar (front desk lists, room types, the occupancy report). */
 @Component({
   selector: 'app-hotel-export',
@@ -42,7 +43,7 @@ export class HotelExportComponent {
     }
     this.http.get(`${API_BASE}${this.path}`, { params, responseType: 'blob' }).subscribe({
       next: (b) => { this.busy = false; downloadBlob(b, `${this.name}.${format}`); },
-      error: () => { this.busy = false; this.error = 'Could not prepare the file'; },
+      error: () => { this.busy = false; this.error = T('Could not prepare the file'); },
     });
   }
 }

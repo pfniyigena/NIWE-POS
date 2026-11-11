@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOnlineApiService } from '../core/api/restaurant-online-api.service';
 import { DeliveryZone, TableQr } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Restaurant > Online orders > setup: delivery areas with their fees, and the QR code of every table. */
 @Component({
   selector: 'app-online-setup',
@@ -84,11 +85,11 @@ export class OnlineSetupComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadZones();
-    this.api.qr().subscribe({ next: (q) => (this.qr = q), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the QR codes') });
+    this.api.qr().subscribe({ next: (q) => (this.qr = q), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the QR codes')) });
   }
 
   loadZones(): void {
-    this.api.zones().subscribe({ next: (z) => (this.zones = z), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the delivery areas') });
+    this.api.zones().subscribe({ next: (z) => (this.zones = z), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the delivery areas')) });
   }
 
   addZone(): void {
@@ -98,25 +99,25 @@ export class OnlineSetupComponent implements OnInit {
         this.nz = { name: '', fee: 0, minOrder: 0, extraMinutes: 0 };
         this.loadZones();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not add the area'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not add the area')),
     });
   }
 
   saveZone(z: DeliveryZone): void {
     this.error = null;
-    this.api.saveZone(z.id, z).subscribe({ next: () => this.loadZones(), error: (e) => (this.error = e?.error?.message ?? 'Could not save the area') });
+    this.api.saveZone(z.id, z).subscribe({ next: () => this.loadZones(), error: (e) => (this.error = e?.error?.message ?? T('Could not save the area')) });
   }
 
   removeZone(z: DeliveryZone): void {
-    if (!confirm(`Remove the area ${z.name}? If orders used it, it is only switched off.`)) return;
-    this.api.deleteZone(z.id).subscribe({ next: () => this.loadZones(), error: (e) => (this.error = e?.error?.message ?? 'Could not remove the area') });
+    if (!confirm(T('Remove the area {p0}? If orders used it, it is only switched off.', { p0: z.name }))) return;
+    this.api.deleteZone(z.id).subscribe({ next: () => this.loadZones(), error: (e) => (this.error = e?.error?.message ?? T('Could not remove the area')) });
   }
 
   renew(t: TableQr): void {
-    if (!confirm(`Make a new QR code for table ${t.name}? The printed one will stop working.`)) return;
+    if (!confirm(T('Make a new QR code for table {p0}? The printed one will stop working.', { p0: t.name }))) return;
     this.api.regenerateQr(t.tableId).subscribe({
       next: (n) => (this.qr = this.qr.map((x) => (x.tableId === n.tableId ? n : x))),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not make a new code'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not make a new code')),
     });
   }
 }

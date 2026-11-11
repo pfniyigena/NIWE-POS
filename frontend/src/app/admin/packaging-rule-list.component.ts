@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { PackagingApiService } from '../core/api/packaging-api.service';
 import { PackagingRule } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Packaging rules — Fourier: "Product Packaging & Breakdown / Unit
  * Conversion". The recipe list (e.g. "1 x Whiskey 750ml bottle -> 25 x Whiskey shot"); actually
@@ -76,21 +77,21 @@ export class PackagingRuleListComponent implements OnInit {
   private load(): void {
     this.packagingApi.listRules().subscribe({
       next: (r) => (this.rules = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load packaging rules'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load packaging rules')),
     });
   }
 
   pause(r: PackagingRule): void {
     this.packagingApi.setRuleActive(r.id, false).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to pause packaging rule'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to pause packaging rule')),
     });
   }
 
   resume(r: PackagingRule): void {
     this.packagingApi.setRuleActive(r.id, true).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to resume packaging rule'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to resume packaging rule')),
     });
   }
 }

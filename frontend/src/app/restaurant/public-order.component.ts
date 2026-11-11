@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { RestaurantOnlineApiService } from '../core/api/restaurant-online-api.service';
 import { PublicItem, PublicMenu, PublicOrderLine } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface CartLine {
   item: PublicItem;
   quantity: number;
@@ -186,7 +187,7 @@ export class PublicOrderComponent implements OnInit {
         this.catId = m.categories[0]?.id ?? null;
         this.mode = m.tableOrdering ? 'TABLE' : m.takeaway ? 'TAKEAWAY' : 'DELIVERY';
       },
-      error: (e) => (this.error = e?.error?.message ?? 'This page is not available right now.'),
+      error: (e) => (this.error = e?.error?.message ?? T('This page is not available right now.')),
     });
   }
 

@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Category } from '../core/models';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-category-list',
   standalone: true,
@@ -55,16 +56,16 @@ export class CategoryListComponent implements OnInit {
   load(): void {
     this.catalogApi.listCategories().subscribe({
       next: (c) => (this.categories = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load categories'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load categories')),
     });
   }
 
   remove(c: Category): void {
-    if (!confirm(`Delete category "${c.name}"?`)) return;
+    if (!confirm(T('Delete category "{p0}"?', { p0: c.name }))) return;
     this.error = null;
     this.catalogApi.deleteCategory(c.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete category')),
     });
   }
 }

@@ -9,6 +9,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Category, Warehouse } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Stock counts > Start. Picks the warehouse (and optionally one category); the
  * server snapshots every tracked product's quantity at each active location onto the count sheet.
@@ -76,14 +77,14 @@ export class StockCountFormComponent implements OnInit {
         this.warehouses = w.filter((x) => x.active);
         if (this.warehouses.length === 1) this.warehouseId = this.warehouses[0].id;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load warehouses'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load warehouses')),
     });
     this.catalogApi.listCategories().subscribe({ next: (c) => (this.categories = c), error: () => (this.categories = []) });
   }
 
   start(): void {
     if (!this.warehouseId) {
-      this.error = 'Select a warehouse';
+      this.error = T('Select a warehouse');
       return;
     }
     this.error = null;
@@ -92,7 +93,7 @@ export class StockCountFormComponent implements OnInit {
       next: (c) => this.router.navigate(['/admin/stock-counts', c.id]),
       error: (err) => {
         this.saving = false;
-        this.error = err?.error?.message ?? 'Failed to start the count';
+        this.error = err?.error?.message ?? T('Failed to start the count');
       },
     });
   }

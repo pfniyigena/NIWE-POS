@@ -13,6 +13,7 @@ import { UserApiService } from '../../core/api/user-api.service';
 import { CustomerApiService } from '../../core/api/customer-api.service';
 import { Account, AppUser, CostCenter, Customer, PayeeType, RecurrenceFrequency, Supplier } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Recurring expenses > New/Edit — a template the daily scheduled sweep turns
  * into a new PENDING Expense on or after {@link nextRunDate}, which then advances by one week or
@@ -182,7 +183,7 @@ export class RecurringExpenseFormComponent implements OnInit {
         this.nextRunDate = t.nextRunDate.slice(0, 10);
         this.active = t.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load template'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load template')),
     });
   }
 
@@ -199,11 +200,11 @@ export class RecurringExpenseFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.accountId || this.amount == null) {
-      this.error = 'Category and amount are required';
+      this.error = T('Category and amount are required');
       return;
     }
     if (this.payeeType !== 'OTHER' && (!this.payeeId || !this.payeeName)) {
-      this.error = 'Pick a payee';
+      this.error = T('Pick a payee');
       return;
     }
     const payload = {
@@ -223,7 +224,7 @@ export class RecurringExpenseFormComponent implements OnInit {
     const call = this.id ? this.recurringApi.update(this.id, payload) : this.recurringApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/accounting/recurring-expenses']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save template'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save template')),
     });
   }
 }

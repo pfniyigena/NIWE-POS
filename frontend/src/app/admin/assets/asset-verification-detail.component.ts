@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AuthService } from '../../core/auth.service';
 import { AssetApiService, Verification, VerificationLine } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Assets > Verification > one round: mark every asset found, missing or damaged, close the round, and write off what is missing. */
 @Component({
   selector: 'app-asset-verification-detail',
@@ -127,7 +128,7 @@ export class AssetVerificationDetailComponent implements OnInit {
         this.v = v;
         if (v.status === 'CLOSED' && this.filter === 'PENDING') this.filter = '';
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the round'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the round')),
     });
     this.api.verificationLines(this.id).subscribe({
       next: (l) => {
@@ -136,7 +137,7 @@ export class AssetVerificationDetailComponent implements OnInit {
           if (!this.edit[x.id]) this.edit[x.id] = { place: x.foundLocation ?? '', note: x.note ?? '' };
         });
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the assets'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the assets')),
     });
   }
 
@@ -158,12 +159,12 @@ export class AssetVerificationDetailComponent implements OnInit {
     const e = this.edit[l.id];
     this.api.markLine(this.id, l.id, { result, foundLocation: e.place.trim() || null, note: e.note.trim() || null }).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save that'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save that')),
     });
   }
 
   rest(result: string): void {
-    if (!confirm(`Mark every asset not yet checked as ${result === 'FOUND' ? 'found' : 'missing'}?`)) return;
+    if (!confirm(T('Mark every asset not yet checked as {p0}?', { p0: result === 'FOUND' ? T('found') : T('missing') }))) return;
     this.busy = true;
     this.api.markRest(this.id, result).subscribe({
       next: () => {
@@ -172,29 +173,29 @@ export class AssetVerificationDetailComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not save that';
+        this.error = e?.error?.message ?? T('Could not save that');
       },
     });
   }
 
   close(): void {
-    if (!confirm('Close this round? It can no longer be changed.')) return;
+    if (!confirm(T('Close this round? It can no longer be changed.'))) return;
     this.busy = true;
     this.api.closeVerification(this.id, this.applyLocations).subscribe({
       next: () => {
         this.busy = false;
-        this.notice = 'The round is closed.';
+        this.notice = T('The round is closed.');
         this.load();
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not close the round';
+        this.error = e?.error?.message ?? T('Could not close the round');
       },
     });
   }
 
   writeOff(l: VerificationLine): void {
-    if (!confirm(`Write off ${l.assetCode} — ${l.assetName}? It is disposed of today with no proceeds and Accounting books the loss.`)) return;
+    if (!confirm(T('Write off {p0} — {p1}? It is disposed of today with no proceeds and Accounting books the loss.', { p0: l.assetCode, p1: l.assetName }))) return;
     this.busy = true;
     this.error = this.notice = null;
     this.api.writeOffLine(this.id, l.id).subscribe({
@@ -205,16 +206,16 @@ export class AssetVerificationDetailComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not write it off';
+        this.error = e?.error?.message ?? T('Could not write it off');
       },
     });
   }
 
   remove(): void {
-    if (!confirm('Delete this round?')) return;
+    if (!confirm(T('Delete this round?'))) return;
     this.api.deleteVerification(this.id).subscribe({
       next: () => this.router.navigate(['/admin/assets/verifications']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the round'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the round')),
     });
   }
 }

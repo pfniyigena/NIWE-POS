@@ -15,6 +15,7 @@ import {
   DepreciationEntry, DepreciationMethod, FixedAsset,
 } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 type Panel = '' | 'transfer' | 'dispose' | 'improve' | 'impair' | 'terms' | 'out' | 'in' | 'back' | 'undo';
 
 /**
@@ -397,7 +398,7 @@ export class AssetDetailComponent implements OnInit {
     const id = this.id;
     this.api.get(id).subscribe({
       next: (a) => (this.asset = a),
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the asset'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the asset')),
     });
     this.api.depreciation(id).subscribe({ next: (d) => (this.entries = d), error: () => {} });
     this.api.transfers(id).subscribe({ next: (t) => (this.transfers = t), error: () => {} });
@@ -467,19 +468,19 @@ export class AssetDetailComponent implements OnInit {
 
   dispose(): void {
     if (!this.asset) return;
-    if (!confirm(`Dispose of ${this.asset.code} — ${this.asset.name}? This posts to Accounting. An administrator can undo it later.`)) return;
+    if (!confirm(T('Dispose of {p0} — {p1}? This posts to Accounting. An administrator can undo it later.', { p0: this.asset.code, p1: this.asset.name }))) return;
     this.act(this.api.dispose(this.asset.id, { disposalDate: this.disposal.date, proceeds: this.disposal.proceeds ?? 0, note: this.disposal.note || null }), 'The asset was disposed of.', 'Could not dispose of the asset');
   }
 
   undo(): void {
-    if (!this.asset || !confirm(`Undo the disposal of ${this.asset.code}? Accounting gets a reversing entry.`)) return;
+    if (!this.asset || !confirm(T('Undo the disposal of {p0}? Accounting gets a reversing entry.', { p0: this.asset.code }))) return;
     this.act(this.api.undoDisposal(this.asset.id, this.reason.trim() || null), 'The disposal was undone.', 'Could not undo the disposal');
   }
 
   improve(): void {
     if (!this.asset) return;
     if (!this.imp.amount || this.imp.amount <= 0) {
-      this.error = 'Enter the amount of the improvement.';
+      this.error = T('Enter the amount of the improvement.');
       return;
     }
     this.act(
@@ -491,7 +492,7 @@ export class AssetDetailComponent implements OnInit {
   impair(): void {
     if (!this.asset) return;
     if (!this.imr.amount || this.imr.amount <= 0 || !this.imr.note.trim()) {
-      this.error = 'Enter the amount and say why the value is lower.';
+      this.error = T('Enter the amount and say why the value is lower.');
       return;
     }
     this.act(
@@ -503,7 +504,7 @@ export class AssetDetailComponent implements OnInit {
   terms(): void {
     if (!this.asset) return;
     if (!this.trm.remainingLifeMonths || this.trm.remainingLifeMonths < 1) {
-      this.error = 'Enter the remaining life in months.';
+      this.error = T('Enter the remaining life in months.');
       return;
     }
     this.act(
@@ -513,14 +514,14 @@ export class AssetDetailComponent implements OnInit {
   }
 
   takeBack(): void {
-    if (!this.asset || !confirm(`Take back the depreciation charged for ${this.asset.lastDepreciatedThrough}?`)) return;
+    if (!this.asset || !confirm(T('Take back the depreciation charged for {p0}?', { p0: this.asset.lastDepreciatedThrough }))) return;
     this.act(this.api.reverseDepreciation(this.asset.id, this.reason.trim() || null), 'The last month of depreciation was taken back.', 'Could not take back the depreciation');
   }
 
   checkOut(): void {
     if (!this.asset) return;
     if (!this.out.userId && !this.out.name.trim()) {
-      this.error = 'Choose a user or type a name.';
+      this.error = T('Choose a user or type a name.');
       return;
     }
     this.act(
@@ -540,7 +541,7 @@ export class AssetDetailComponent implements OnInit {
     if (!this.asset) return;
     this.api.handoverPdf(this.asset.id).subscribe({
       next: (b) => openPdfForPrint(b),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not make the handover sheet'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not make the handover sheet')),
     });
   }
 
@@ -557,7 +558,7 @@ export class AssetDetailComponent implements OnInit {
           if (--pending === 0) this.load();
         },
         error: (err) => {
-          this.error = err?.error?.message ?? 'Could not add ' + f.name;
+          this.error = err?.error?.message ?? T('Could not add {p0}', { p0: f.name });
           if (--pending === 0) this.load();
         },
       })
@@ -567,23 +568,23 @@ export class AssetDetailComponent implements OnInit {
   openFile(f: AssetFile): void {
     this.api.fileBlob(this.id, f.id).subscribe({
       next: (b) => (f.contentType === 'text/plain' ? downloadBlob(b, f.fileName) : openPdfForPrint(b)),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not open the file'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not open the file')),
     });
   }
 
   removeFile(f: AssetFile): void {
-    if (!confirm('Remove ' + f.fileName + '?')) return;
+    if (!confirm(T('Remove {p0}?', { p0: f.fileName }))) return;
     this.api.deleteFile(this.id, f.id).subscribe({
       next: () => this.load(),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not remove the file'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not remove the file')),
     });
   }
 
   remove(): void {
-    if (!this.asset || !confirm(`Delete ${this.asset.code} — ${this.asset.name}?`)) return;
+    if (!this.asset || !confirm(T('Delete {p0} — {p1}?', { p0: this.asset.code, p1: this.asset.name }))) return;
     this.api.delete(this.asset.id).subscribe({
       next: () => this.router.navigate(['/admin/assets']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the asset'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the asset')),
     });
   }
 }

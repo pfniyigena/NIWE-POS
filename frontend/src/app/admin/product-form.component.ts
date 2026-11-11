@@ -9,6 +9,7 @@ import { TaxRateApiService } from '../core/api/tax-rate-api.service';
 import { AppsApiService } from '../core/api/apps-api.service';
 import { Brand, Category, TaxRateOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-product-form',
   standalone: true,
@@ -303,7 +304,7 @@ export class ProductFormComponent implements OnInit {
         this.trackStock = found.trackStock;
         this.active = found.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load product'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load product')),
     });
   }
 
@@ -371,7 +372,7 @@ export class ProductFormComponent implements OnInit {
       : this.catalogApi.createProduct(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/products']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save product'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save product')),
     });
   }
 }

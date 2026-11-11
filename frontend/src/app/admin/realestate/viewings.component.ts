@@ -8,6 +8,7 @@ import { ReExportComponent } from './re-export.component';
 import { ViewingFormComponent } from './viewing-form.component';
 import { Option, RealEstateApiService, ViewingDto, VIEWING_STATUS_LABEL, ViewingStatus } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 interface Day { date: string; label: string; today: boolean; items: ViewingDto[]; }
 
 /** Real Estate > Viewings: the diary as a list by day or as a week calendar, for a chosen period and agent. Reminders go to the lead from the row. */
@@ -213,7 +214,7 @@ export class ReViewingsComponent implements OnInit {
         if (this.picked) this.picked = l.find((x) => x.id === this.picked!.id) ?? null;
         this.loaded = true;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the viewings'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the viewings')),
     });
   }
 
@@ -229,7 +230,7 @@ export class ReViewingsComponent implements OnInit {
     this.error = null;
     this.api.remindViewing(v.id).subscribe({
       next: (r) => { this.busy = false; if (r.status === 'SENT') this.notice = r.message; else this.error = r.message; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the reminder'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the reminder'); },
     });
   }
 

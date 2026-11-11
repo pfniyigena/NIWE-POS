@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { OwnerRow, PropertyMgmtApiService } from '../../core/api/propertymgmt-api.service';
 import { EmailAllResult, GenerateAllResult, PmStatementApiService, STATEMENT_STATUS_LABEL, StatementRow, statementBadge } from '../../core/api/pm-statement-api.service';
 
+import { T } from '../../core/i18n/t';
 const pad = (n: number): string => String(n).padStart(2, '0');
 const ymd = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -147,7 +148,7 @@ export class StatementListComponent implements OnInit {
     this.page = 0;
     this.api.list({ ownerId: this.ownerId, status: this.tab }).subscribe({
       next: (l) => { this.list = l; this.loaded = true; this.error = null; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the statements'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the statements'); },
     });
   }
 
@@ -164,7 +165,7 @@ export class StatementListComponent implements OnInit {
         this.note = r.sent ? `E-mailed ${r.sent} statement${r.sent === 1 ? '' : 's'}.` + (r.failed ? ` ${r.failed} could not be sent.` : '') : r.failed ? `Nothing was sent: ${r.failed} could not be sent.` : 'Nothing to send: every agreed statement has been e-mailed already, or has no address to send to.';
         this.load();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the statements'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the statements'); },
     });
   }
 
@@ -172,12 +173,12 @@ export class StatementListComponent implements OnInit {
     this.error = null;
     this.note = null;
     this.run = null;
-    if (!this.from || !this.to) { this.error = 'Give the first and last day of the period.'; return; }
+    if (!this.from || !this.to) { this.error = T('Give the first and last day of the period.'); return; }
     this.busy = true;
     if (this.makeOwner) {
       this.api.generate(this.makeOwner, this.from, this.to).subscribe({
         next: (d) => { this.busy = false; this.router.navigate(['/admin/propertymgmt/statements', d.statement.id]); },
-        error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not make the statement'; },
+        error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not make the statement'); },
       });
     } else {
       this.api.generateAll(this.from, this.to).subscribe({
@@ -188,7 +189,7 @@ export class StatementListComponent implements OnInit {
           this.tab = 'DRAFT';
           this.load();
         },
-        error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not make the statements'; },
+        error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not make the statements'); },
       });
     }
   }

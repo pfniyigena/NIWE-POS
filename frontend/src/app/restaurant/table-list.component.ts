@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { DiningTableApiService } from '../core/api/dining-table-api.service';
 import { DiningTable } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Restaurant > Tables. */
 @Component({
   selector: 'app-table-list',
@@ -110,7 +111,7 @@ export class TableListComponent implements OnInit {
   load(): void {
     this.tableApi.listAll().subscribe({
       next: (t) => (this.tables = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load tables'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load tables')),
     });
   }
 
@@ -145,7 +146,7 @@ export class TableListComponent implements OnInit {
         this.editing = false;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save table'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save table')),
     });
   }
 
@@ -153,7 +154,7 @@ export class TableListComponent implements OnInit {
     this.error = null;
     this.tableApi.setStatus(t.id, status).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update table status'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update table status')),
     });
   }
 }

@@ -10,6 +10,7 @@ import { CatalogApiService } from '../core/api/catalog-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { Product, Warehouse } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** One flattened, pickable row — a location, labeled with its own warehouse so two same-named locations under different warehouses stay distinguishable. */
 interface LocationOption {
   id: number;
@@ -140,7 +141,7 @@ export class StockTransferFormComponent implements OnInit {
   ngOnInit(): void {
     this.warehouseApi.listAll().subscribe({
       next: (warehouses) => this.loadLocationOptions(warehouses.filter((w) => w.active)),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load warehouses'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load warehouses')),
     });
   }
 
@@ -163,7 +164,7 @@ export class StockTransferFormComponent implements OnInit {
           locations.filter((loc) => loc.active).map((loc) => ({ id: loc.id, label: `${warehouses[i].name} / ${loc.name} (${loc.type ?? '—'})` }))
         );
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load locations'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load locations')),
     });
   }
 
@@ -194,19 +195,19 @@ export class StockTransferFormComponent implements OnInit {
 
   submit(): void {
     if (!this.selectedProduct) {
-      this.error = 'Select a product';
+      this.error = T('Select a product');
       return;
     }
     if (!this.fromLocationId || !this.toLocationId) {
-      this.error = 'Select both a source and destination location';
+      this.error = T('Select both a source and destination location');
       return;
     }
     if (this.fromLocationId === this.toLocationId) {
-      this.error = 'Source and destination location must be different';
+      this.error = T('Source and destination location must be different');
       return;
     }
     if (!this.quantity || this.quantity <= 0) {
-      this.error = 'Enter a quantity greater than zero';
+      this.error = T('Enter a quantity greater than zero');
       return;
     }
     this.error = null;
@@ -220,7 +221,7 @@ export class StockTransferFormComponent implements OnInit {
       })
       .subscribe({
         next: () => this.router.navigate(['/admin/stock-transfers']),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to save transfer'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to save transfer')),
       });
   }
 }

@@ -11,6 +11,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant > Waiting list: the line at the door. Add a walk-in party with a quoted wait, tell
  * them when their table is ready, and seat them (which opens their order). The list refreshes by
@@ -161,7 +162,7 @@ export class WaitlistComponent implements OnInit, OnDestroy {
 
   add(): void {
     if (!this.guestName.trim()) {
-      this.error = 'Enter the guest name';
+      this.error = T('Enter the guest name');
       return;
     }
     this.error = null;
@@ -180,14 +181,14 @@ export class WaitlistComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.busy = false;
-          this.error = err?.error?.message ?? 'Could not add them to the list';
+          this.error = err?.error?.message ?? T('Could not add them to the list');
         },
       });
   }
 
   notify(w: WaitlistEntry): void {
     this.error = null;
-    this.api.notify(w.id).subscribe({ next: () => this.list.load(), error: (err) => (this.error = err?.error?.message ?? 'Failed') });
+    this.api.notify(w.id).subscribe({ next: () => this.list.load(), error: (err) => (this.error = err?.error?.message ?? T('Failed')) });
   }
 
   openSeat(w: WaitlistEntry): void {
@@ -201,12 +202,12 @@ export class WaitlistComponent implements OnInit, OnDestroy {
     this.error = null;
     this.api.seat(w.id, this.seatTableId).subscribe({
       next: (order) => this.router.navigate(['/admin/restaurant/orders', order.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not seat them'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not seat them')),
     });
   }
 
   leave(w: WaitlistEntry): void {
     this.error = null;
-    this.api.leave(w.id).subscribe({ next: () => this.list.load(), error: (err) => (this.error = err?.error?.message ?? 'Failed') });
+    this.api.leave(w.id).subscribe({ next: () => this.list.load(), error: (err) => (this.error = err?.error?.message ?? T('Failed')) });
   }
 }

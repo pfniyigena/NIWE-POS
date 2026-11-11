@@ -7,6 +7,7 @@ import { HotelApiService, HotelSettings, PostingMode } from '../core/api/hotel-a
 import { ModuleApiService } from '../core/api/module-api.service';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Settings (admin): switch the module on, choose how room revenue reaches Accounting, tax, times, night audit. */
 @Component({
   selector: 'app-hotel-settings',
@@ -152,7 +153,7 @@ export class HotelSettingsComponent implements OnInit {
           this.s = s;
           this.activated = s.enabled;
           this.saving = false;
-          this.message = 'Hotel settings saved.';
+          this.message = T('Hotel settings saved.');
           // Activating Hotel also activates POS and Restaurant — refresh the module state used by the sidebar.
           this.modules.list().subscribe({ error: () => {} });
         },

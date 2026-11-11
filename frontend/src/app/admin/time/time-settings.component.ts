@@ -9,6 +9,7 @@ import { TimeApiService, TimeSettings } from '../../core/api/time-api.service';
 import { DatePickerComponent } from '../../shared/date-picker.component';
 import { addDays, today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 /** Time Tracking > Settings (admin): approval, timer rounding, default rate, daily limits and the product billed time is invoiced under. */
 @Component({
   selector: 'app-time-settings',
@@ -82,7 +83,7 @@ export class TimeSettingsComponent implements OnInit {
   constructor(private api: TimeApiService, private catalog: CatalogApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => { this.s = s; this.lockDate = s.lockedThrough; }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    this.api.settings().subscribe({ next: (s) => { this.s = s; this.lockDate = s.lockedThrough; }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
     this.catalog.listAllProducts(null, 0, 500).subscribe({ next: (p) => (this.services = p.content.filter((x) => x.service && x.active)), error: () => {} });
   }
 
@@ -96,8 +97,8 @@ export class TimeSettingsComponent implements OnInit {
   stopNow(): void {
     this.error = null;
     this.api.autoStopNow().subscribe({
-      next: (r) => { this.saved = false; this.error = null; this.info = r.stopped ? `${r.stopped} forgotten timer${r.stopped === 1 ? '' : 's'} stopped.` : 'No timer has been running too long.'; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not run it'),
+      next: (r) => { this.saved = false; this.error = null; this.info = r.stopped ? T('{p0} forgotten timer{p1} stopped.', { p0: r.stopped, p1: r.stopped === 1 ? '' : 's' }) : T('No timer has been running too long.'); },
+      error: (e) => (this.error = e?.error?.message ?? T('Could not run it')),
     });
   }
 
@@ -112,7 +113,7 @@ export class TimeSettingsComponent implements OnInit {
         this.error = null;
         this.saved = true;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save')),
     });
   }
 }

@@ -9,6 +9,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { TrialBalanceRow } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > Trial Balance / Trial Nets / Trial Balance &amp; Nets — all
  * three menu items read this exact same {@code /accounting/reports/trial-balance} endpoint (see
@@ -133,7 +134,7 @@ export class TrialBalanceComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.trialBalance(this.from, this.to).subscribe({
       next: (rows) => (this.rows = rows),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load trial balance'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load trial balance')),
     });
   }
 
@@ -167,7 +168,7 @@ export class TrialBalanceComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

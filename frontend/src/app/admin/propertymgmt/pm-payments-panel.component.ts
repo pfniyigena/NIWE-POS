@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { PaymentRow, PmAccountApiService } from '../../core/api/pm-account-api.service';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /** The rent payments received (of one lease or one tenant), each with its receipt to download or e-mail to the tenant. */
 @Component({
   selector: 'app-pm-payments-panel',
@@ -63,7 +64,7 @@ export class PmPaymentsPanelComponent implements OnChanges {
   ngOnChanges(): void {
     this.api.payments({ leaseId: this.leaseId ?? undefined, tenantId: this.tenantId ?? undefined }).subscribe({
       next: (l) => { this.rows = l; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the payments'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the payments'); },
     });
   }
 
@@ -72,7 +73,7 @@ export class PmPaymentsPanelComponent implements OnChanges {
     this.error = null;
     this.api.receiptPdf(p.paymentId).subscribe({
       next: (b) => { this.busy = false; downloadBlob(b, `receipt-${p.receiptNumber ?? p.paymentId}.pdf`); },
-      error: (e) => { this.busy = false; this.error = 'Could not make the receipt'; },
+      error: (e) => { this.busy = false; this.error = T('Could not make the receipt'); },
     });
   }
 
@@ -88,7 +89,7 @@ export class PmPaymentsPanelComponent implements OnChanges {
     if (this.message.trim()) body.message = this.message.trim();
     this.api.emailReceipt(this.sending.paymentId, body).subscribe({
       next: (r) => { this.busy = false; this.sending = null; this.note = `Receipt sent to ${r.sentTo}.`; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not send the receipt'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not send the receipt'); },
     });
   }
 }

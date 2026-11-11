@@ -8,6 +8,7 @@ import { Branch, Invoice, RecurringInvoiceTemplate } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf } from '../core/branch-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Recurring invoices > detail — `/admin/recurring-invoices/:id`. Shows the
  * template's own configuration plus every invoice the daily sweep (or a manual "Run now") has
@@ -124,11 +125,11 @@ export class RecurringInvoiceDetailComponent implements OnInit {
   private loadAll(): void {
     this.recurringInvoiceApi.getById(this.id).subscribe({
       next: (t) => (this.template = t),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load recurring invoice'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load recurring invoice')),
     });
     this.recurringInvoiceApi.generatedInvoices(this.id).subscribe({
       next: (h) => (this.history = h),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load generated invoices'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load generated invoices')),
     });
   }
 
@@ -146,7 +147,7 @@ export class RecurringInvoiceDetailComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to run recurring invoice';
+        this.error = err?.error?.message ?? T('Failed to run recurring invoice');
       },
     });
   }
@@ -161,7 +162,7 @@ export class RecurringInvoiceDetailComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to pause recurring invoice';
+        this.error = err?.error?.message ?? T('Failed to pause recurring invoice');
       },
     });
   }
@@ -176,7 +177,7 @@ export class RecurringInvoiceDetailComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to resume recurring invoice';
+        this.error = err?.error?.message ?? T('Failed to resume recurring invoice');
       },
     });
   }

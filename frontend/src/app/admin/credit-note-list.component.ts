@@ -10,6 +10,7 @@ import { InvoiceApiService } from '../core/api/invoice-api.service';
 import { Invoice } from '../core/models';
 import { openPdfForPrint } from '../core/download-file';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Credit notes — Fourier: "Add credit note Menu (Void) Where we can printout them".
  * Every voided invoice, store-wide, newest-voided first. A credit note is not a separate document
@@ -83,7 +84,7 @@ export class CreditNoteListComponent implements OnInit {
       },
       error: (err) => {
         this.printingId = null;
-        this.error = err?.error?.message ?? 'Failed to open credit note PDF';
+        this.error = err?.error?.message ?? T('Failed to open credit note PDF');
       },
     });
   }

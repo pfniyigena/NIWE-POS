@@ -8,6 +8,7 @@ import { BranchApiService } from '../../core/api/branch-api.service';
 import { Branch } from '../../core/models';
 import { AssetApiService, AssetOverview, AttentionItem } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Assets > Overview: what the assets are worth, what depreciation will charge next, and what needs attention. */
 @Component({
   selector: 'app-asset-overview',
@@ -117,7 +118,7 @@ export class AssetOverviewComponent implements OnInit {
   load(): void {
     this.api.overview(this.branchId).subscribe({
       next: (o) => (this.o = o),
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the overview'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the overview')),
     });
   }
 }

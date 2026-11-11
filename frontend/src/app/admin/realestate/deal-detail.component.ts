@@ -14,6 +14,7 @@ import {
   CommissionBasis, CommissionDto, DEAL_STAGE_LABEL, DealDto, MILESTONE_KIND_LABEL, MILESTONE_STATUS_LABEL, MilestoneDto, MilestoneKind, Option, PayeeKind, RealEstateApiService,
 } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const today = (): string => new Date().toISOString().slice(0, 10);
 
@@ -324,7 +325,7 @@ export class DealDetailComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.deal(id).subscribe({
       next: (d) => this.show(d),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the deal'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the deal')),
     });
   }
 
@@ -364,7 +365,7 @@ export class DealDetailComponent implements OnInit {
   agreement(): void { if (this.d) this.run(this.api.dealAgreement(this.d.id, { agreementDate: this.agreementDate || null, expectedCompletion: null })); }
   complete(force: boolean): void {
     if (!this.d) return;
-    if (force && !confirm('Complete this sale although the buyer has not paid everything? The property will be marked sold.')) return;
+    if (force && !confirm(T('Complete this sale although the buyer has not paid everything? The property will be marked sold.'))) return;
     this.run(this.api.completeDeal(this.d.id, force, this.completedDate || null));
   }
   cancel(): void {
@@ -373,7 +374,7 @@ export class DealDetailComponent implements OnInit {
     this.run(this.api.cancelDeal(this.d.id, this.cancelReason.trim()), () => { this.cancelOpen = false; this.cancelReason = ''; });
   }
   remove(): void {
-    if (!this.d || !confirm('Delete this deal? This cannot be undone.')) return;
+    if (!this.d || !confirm(T('Delete this deal? This cannot be undone.'))) return;
     this.api.deleteDeal(this.d.id).subscribe({ next: () => this.router.navigate(['/admin/realestate/deals']), error: (e) => (this.actionError = e?.error?.message ?? 'Could not delete the deal') });
   }
 
@@ -396,7 +397,7 @@ export class DealDetailComponent implements OnInit {
     this.run(this.api.updateMilestone(this.d.id, m.id, { label: this.mEdit.label, amount: num(this.mEdit.amount) ?? undefined, dueDate: this.mEdit.dueDate || null }), () => (this.mEditId = null));
   }
   removeM(m: MilestoneDto): void {
-    if (!this.d || !confirm('Remove the payment "' + m.label + '"?')) return;
+    if (!this.d || !confirm(T('Remove the payment "{p0}"?', { p0: m.label }))) return;
     this.run(this.api.deleteMilestone(this.d.id, m.id));
   }
   invoice(m: MilestoneDto, issue: boolean): void { if (this.d) this.run(this.api.invoiceMilestone(this.d.id, m.id, issue)); }
@@ -422,7 +423,7 @@ export class DealDetailComponent implements OnInit {
     this.run(call, () => (this.cOpen = false));
   }
   removeC(x: CommissionDto): void {
-    if (!this.d || !confirm('Remove the share for ' + x.payeeName + '?')) return;
+    if (!this.d || !confirm(T('Remove the share for {p0}?', { p0: x.payeeName }))) return;
     this.run(this.api.deleteCommission(this.d.id, x.id));
   }
   post(x: CommissionDto): void { if (this.d) this.run(this.api.postCommission(this.d.id, x.id, this.postAccountId)); }

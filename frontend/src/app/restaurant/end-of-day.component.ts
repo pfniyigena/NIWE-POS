@@ -8,6 +8,7 @@ import { PagerComponent } from '../shared/pager.component';
 import { RestaurantReportApiService } from '../core/api/restaurant-report-api.service';
 import { DayCloseRow, EndOfDay } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Restaurant > End of day: the day's takings, the cash count against what the drawer should hold, and closing the day (Z-report). */
 @Component({
   selector: 'app-end-of-day',
@@ -263,7 +264,7 @@ export class EndOfDayComponent implements OnInit {
           this.counted = null;
         }
       },
-      error: (er) => (this.error = er?.error?.message || 'Could not load the day'),
+      error: (er) => (this.error = er?.error?.message || T('Could not load the day')),
     });
   }
 
@@ -305,7 +306,7 @@ export class EndOfDayComponent implements OnInit {
         next: (r) => {
           this.busy = false;
           this.e = r;
-          this.info = `The day is closed as Z-${this.pad(r.zNumber)}.`;
+          this.info = T('The day is closed as Z-{p0}.', { p0: this.pad(r.zNumber) });
           this.counted = null;
           this.floatKept = null;
           this.notes = '';
@@ -314,7 +315,7 @@ export class EndOfDayComponent implements OnInit {
         },
         error: (er) => {
           this.busy = false;
-          this.error = er?.error?.message || 'Could not close the day';
+          this.error = er?.error?.message || T('Could not close the day');
         },
       });
   }
@@ -328,13 +329,13 @@ export class EndOfDayComponent implements OnInit {
         this.e = r;
         this.reopenOpen = false;
         this.reopenReason = '';
-        this.info = 'The day is open again.';
+        this.info = T('The day is open again.');
         this.openingFloat = r.cash.openingFloat;
         this.loadHistory(0);
       },
       error: (er) => {
         this.busy = false;
-        this.error = er?.error?.message || 'Could not reopen the day';
+        this.error = er?.error?.message || T('Could not reopen the day');
       },
     });
   }
@@ -356,16 +357,16 @@ export class EndOfDayComponent implements OnInit {
       },
       error: (er) => {
         this.busy = false;
-        this.error = er?.error?.message || 'Could not save the entry';
+        this.error = er?.error?.message || T('Could not save the entry');
       },
     });
   }
 
   removeCash(id: number): void {
-    if (!confirm('Remove this entry?')) return;
+    if (!confirm(T('Remove this entry?'))) return;
     this.api.removeCash(id).subscribe({
       next: () => this.load(true),
-      error: (er) => (this.error = er?.error?.message || 'Could not remove the entry'),
+      error: (er) => (this.error = er?.error?.message || T('Could not remove the entry')),
     });
   }
 
@@ -390,13 +391,13 @@ export class EndOfDayComponent implements OnInit {
 
   download(format: 'xlsx' | 'pdf' | 'csv'): void {
     this.api.download('end-of-day', { date: this.date, openingFloat: this.e && !this.e.closed ? String(this.openingFloat ?? '') : '' }, format, (err) => {
-      if (err) this.error = 'The export failed.';
+      if (err) this.error = T('The export failed.');
     });
   }
 
   downloadHistory(format: 'xlsx' | 'pdf' | 'csv'): void {
     this.api.download('history', {}, format, (err) => {
-      if (err) this.error = 'The export failed.';
+      if (err) this.error = T('The export failed.');
     });
   }
 

@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Products (Task: "check the loading of 100000 products"). Used to load every product
  * in one request and render every row in one unbounded *ngFor — fine at a few dozen products,
@@ -182,7 +183,7 @@ export class ProductListComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to load products';
+        this.error = err?.error?.message ?? T('Failed to load products');
         this.loading = false;
       },
     });
@@ -209,11 +210,11 @@ export class ProductListComponent implements OnInit {
   }
 
   deactivate(p: Product): void {
-    if (!confirm(`Deactivate "${p.name}"? It will no longer appear on the terminal.`)) return;
+    if (!confirm(T('Deactivate "{p0}"? It will no longer appear on the terminal.', { p0: p.name }))) return;
     this.error = null;
     this.catalogApi.deactivateProduct(p.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to deactivate product'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to deactivate product')),
     });
   }
 
@@ -249,7 +250,7 @@ export class ProductListComponent implements OnInit {
       },
       error: (err) => {
         this.generatingFor = null;
-        this.error = err?.error?.message ?? 'Failed to generate a barcode';
+        this.error = err?.error?.message ?? T('Failed to generate a barcode');
       },
     });
   }

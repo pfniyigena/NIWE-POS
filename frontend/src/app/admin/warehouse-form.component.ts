@@ -8,6 +8,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { Branch, LocationType, WarehouseLocation } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Warehouses > New/Edit — see WarehouseListComponent's own javadoc. */
 @Component({
   selector: 'app-warehouse-form',
@@ -162,7 +163,7 @@ export class WarehouseFormComponent implements OnInit {
       next: (warehouses) => {
         const w = warehouses.find((x) => x.id === this.id);
         if (!w) {
-          this.error = 'Warehouse not found';
+          this.error = T('Warehouse not found');
           return;
         }
         this.name = w.name;
@@ -172,7 +173,7 @@ export class WarehouseFormComponent implements OnInit {
         this.primary = w.primary;
         this.branchId = w.branchId ?? this.branchId;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load warehouse'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load warehouse')),
     });
     this.loadLocations();
   }
@@ -180,14 +181,14 @@ export class WarehouseFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.name.trim()) {
-      this.error = 'Name is required';
+      this.error = T('Name is required');
       return;
     }
     const payload = { name: this.name.trim(), address: this.address || null, active: this.primary ? true : this.active, lowStockThreshold: this.lowStockThreshold ?? null, branchId: this.branchId };
     const call = this.id ? this.warehouseApi.update(this.id, payload) : this.warehouseApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/warehouses']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save warehouse'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save warehouse')),
     });
   }
 

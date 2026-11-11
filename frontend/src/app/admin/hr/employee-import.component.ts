@@ -7,6 +7,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { downloadBlob } from '../../core/download-file';
 import { EmployeeImportResult, HrApiService } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Employees > Import: bring staff in from an Excel or CSV file. The file is checked first and nothing is saved until you press Import. */
 @Component({
   selector: 'app-employee-import',
@@ -81,7 +82,7 @@ export class EmployeeImportComponent {
     this.error = null;
     this.api.importEmployeesTemplate(format).subscribe({
       next: (b) => downloadBlob(b, `employees-import-template.${format}`),
-      error: () => (this.error = 'Could not download the template'),
+      error: () => (this.error = T('Could not download the template')),
     });
   }
 
@@ -100,7 +101,7 @@ export class EmployeeImportComponent {
     this.error = null;
     this.api.importEmployees(this.file, true, this.createDepartments).subscribe({
       next: (r) => { this.busy = false; this.result = r; },
-      error: (e) => { this.busy = false; this.result = null; this.error = e?.error?.message ?? 'The file could not be checked'; },
+      error: (e) => { this.busy = false; this.result = null; this.error = e?.error?.message ?? T('The file could not be checked'); },
     });
   }
 
@@ -116,7 +117,7 @@ export class EmployeeImportComponent {
         this.file = null;
         if (this.picker) this.picker.nativeElement.value = '';
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'The import failed'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('The import failed'); },
     });
   }
 }

@@ -9,6 +9,7 @@ import { PricingApiService, GroupRow } from '../../core/api/pricing-api.service'
 import { PromotionPayload, PromotionRow, PromotionScope, PromotionType, PromotionUse, PromotionsApiService } from '../../core/api/promotions-api.service';
 import { Category, Product } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Sales > Promotions. A promotion takes a percent or an amount off a product, a category or the whole cart, or gives items free (buy 2, get 1). With a coupon code it only works when the cashier types the code at the till. */
 @Component({
   selector: 'app-promotions',
@@ -177,7 +178,7 @@ export class PromotionsComponent implements OnInit {
   load(): void {
     this.api.list().subscribe({
       next: (r) => (this.rows = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the promotions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the promotions')),
     });
   }
 
@@ -280,26 +281,26 @@ export class PromotionsComponent implements OnInit {
         this.editing = false;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save the promotion'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save the promotion')),
     });
   }
 
   remove(p: PromotionRow): void {
     this.error = null;
     this.done = null;
-    if (!confirm('Delete the promotion "' + p.name + '"?')) return;
+    if (!confirm(T('Delete the promotion "{p0}"?', { p0: p.name }))) return;
     this.api.remove(p.id).subscribe({
       next: () => {
         this.done = 'Deleted "' + p.name + '".';
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not delete the promotion'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not delete the promotion')),
     });
   }
 
   showUses(p: PromotionRow): void {
     this.usesFor = p;
     this.useRows = [];
-    this.api.uses(p.id).subscribe({ next: (u) => (this.useRows = u), error: (err) => (this.error = err?.error?.message ?? 'Could not load the sales') });
+    this.api.uses(p.id).subscribe({ next: (u) => (this.useRows = u), error: (err) => (this.error = err?.error?.message ?? T('Could not load the sales')) });
   }
 }

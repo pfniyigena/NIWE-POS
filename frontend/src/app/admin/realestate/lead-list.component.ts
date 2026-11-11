@@ -11,6 +11,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { INTEREST_LABEL, LEAD_STATUS_LABEL, LeadRow, Option, RealEstateApiService, SOURCE_LABEL } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Leads: everyone who has asked about a property, with who looks after them and when the next call is due. */
 @Component({
   selector: 'app-lead-list',
@@ -101,7 +102,7 @@ export class LeadListComponent implements OnInit {
     this.error = null;
     this.api.leadsPage({ q: this.q.trim(), status: this.status, interest: this.interest, assignedId: this.assignedId, openOnly: this.openOnly, dueOnly: this.dueOnly, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the leads'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the leads')),
     });
   }
 

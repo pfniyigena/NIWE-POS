@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { HotelPublicApiService, HotelPublicAvailability, HotelPublicBooking, HotelPublicInfo, HotelPublicOffer } from '../core/api/hotel-public-api.service';
 import { addDays, today } from '../core/time-util';
 
+import { T } from '../core/i18n/t';
 /**
  * The hotel's public booking page (/stay): no login. Pick dates and guests, see the rooms that are really free with the full price (tax
  * included), choose one and leave a name and phone. The confirmation shows the booking code the guest needs, with their phone number, to
@@ -182,7 +183,7 @@ export class PublicHotelComponent implements OnInit {
       error: (e) => {
         this.searching = false;
         this.result = null;
-        this.error = e?.error?.message || 'Could not check availability.';
+        this.error = e?.error?.message || T('Could not check availability.');
       },
     });
   }
@@ -206,7 +207,7 @@ export class PublicHotelComponent implements OnInit {
       },
       error: (e) => {
         this.saving = false;
-        this.error = e?.error?.message || 'Could not make the booking.';
+        this.error = e?.error?.message || T('Could not make the booking.');
       },
     });
   }
@@ -231,7 +232,7 @@ export class PublicHotelComponent implements OnInit {
       },
       error: (e) => {
         this.saving = false;
-        this.error = e?.error?.message || 'Could not cancel.';
+        this.error = e?.error?.message || T('Could not cancel.');
       },
     });
   }

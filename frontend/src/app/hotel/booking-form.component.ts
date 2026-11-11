@@ -10,6 +10,7 @@ import { PaymentMethodApiService } from '../core/api/payment-method-api.service'
 import { PaymentMethodOption } from '../core/models';
 import { addDays, errMsg, nightsBetween, today } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Hotel > Bookings > New booking, and (with data.walkIn) Hotel > Walk-in: a guest with no booking who is
  * given a room and checked in straight away.
@@ -245,10 +246,10 @@ export class BookingFormComponent implements OnInit {
 
   submit(): void {
     this.error = null;
-    if (!this.newGuest && !this.guestId) return void (this.error = 'Choose a guest, or switch to "New guest".');
-    if (this.newGuest && !this.guest.fullName.trim()) return void (this.error = "Enter the guest's name.");
-    if (this.walkIn && !this.roomId) return void (this.error = 'Choose a room for the guest.');
-    if (this.agree && (this.rate === null || this.rate < 0)) return void (this.error = 'Enter the agreed nightly rate, or untick "Agree a different price".');
+    if (!this.newGuest && !this.guestId) return void (this.error = T('Choose a guest, or switch to "New guest".'));
+    if (this.newGuest && !this.guest.fullName.trim()) return void (this.error = T('Enter the guest\'s name.'));
+    if (this.walkIn && !this.roomId) return void (this.error = T('Choose a room for the guest.'));
+    if (this.agree && (this.rate === null || this.rate < 0)) return void (this.error = T('Enter the agreed nightly rate, or untick "Agree a different price".'));
     const guestId = this.newGuest ? null : this.guestId;
     const guest = this.newGuest ? this.guest : null;
     const depositAmount = this.deposit && this.deposit > 0 ? this.deposit : null;

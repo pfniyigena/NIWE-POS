@@ -14,6 +14,7 @@ import { CustomerApiService } from '../../core/api/customer-api.service';
 import { Account, AppUser, Branch, CostCenter, Customer, PayeeType, Supplier } from '../../core/models';
 import { BranchApiService } from '../../core/api/branch-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Incomes > New — ExpenseFormComponent's mirror image, against REVENUE-type accounts. See backend AccountingService.postIncome. */
 @Component({
   selector: 'app-income-form',
@@ -168,11 +169,11 @@ export class IncomeFormComponent implements OnInit {
   submit(): void {
     this.error = null;
     if (!this.accountId || this.amount == null) {
-      this.error = 'Category and amount are required';
+      this.error = T('Category and amount are required');
       return;
     }
     if (this.payeeType !== 'OTHER' && (!this.payeeId || !this.payeeName)) {
-      this.error = 'Pick a payer';
+      this.error = T('Pick a payer');
       return;
     }
     const payload = {
@@ -189,7 +190,7 @@ export class IncomeFormComponent implements OnInit {
     };
     this.incomeApi.create(payload).subscribe({
       next: () => this.router.navigate(['/admin/accounting/incomes']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save income'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save income')),
     });
   }
 }

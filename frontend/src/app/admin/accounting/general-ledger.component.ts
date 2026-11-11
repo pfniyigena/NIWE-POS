@@ -9,6 +9,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { GeneralLedgerAccount } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > General Ledger (Fourier: "General ledger ... add them") — every
  * account's own ledger, back to back, for the chosen date range. Distinct from the "Ledger" entry
@@ -112,7 +113,7 @@ export class GeneralLedgerComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to load general ledger';
+        this.error = err?.error?.message ?? T('Failed to load general ledger');
         this.loading = false;
       },
     });
@@ -131,7 +132,7 @@ export class GeneralLedgerComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

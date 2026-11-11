@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 
+import { T } from '../core/i18n/t';
 /** One entry of the currency picker — picking a code fills in its usual symbol, still editable afterward. */
 interface CurrencyOption {
   code: string;
@@ -200,7 +201,7 @@ export class SystemSettingsComponent implements OnInit {
         this.discountMode = s.discountMode;
         this.loaded = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load system settings'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load system settings')),
     });
   }
 
@@ -233,7 +234,7 @@ export class SystemSettingsComponent implements OnInit {
         },
         error: (err) => {
           this.saving = false;
-          this.error = err?.error?.message ?? 'Failed to save system settings';
+          this.error = err?.error?.message ?? T('Failed to save system settings');
         },
       });
   }

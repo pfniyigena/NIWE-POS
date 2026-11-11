@@ -8,6 +8,7 @@ import { AccountingReportApiService } from '../../core/api/accounting-report-api
 import { TaxSummary } from '../../core/models';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Reports > Tax Report / Tax Declaration — both menu items open this exact
  * same screen (Fourier's own scoping choice: a general tax-collected-vs-paid summary by
@@ -150,7 +151,7 @@ export class TaxReportComponent implements OnInit {
     this.expandedRows.clear();
     this.reportApi.taxSummary(this.from, this.to).subscribe({
       next: (r) => (this.report = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load tax report'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load tax report')),
     });
   }
 
@@ -176,7 +177,7 @@ export class TaxReportComponent implements OnInit {
       },
       error: (err) => {
         this.exporting = false;
-        this.error = err?.error?.message ?? 'Export failed';
+        this.error = err?.error?.message ?? T('Export failed');
       },
     });
   }

@@ -8,6 +8,7 @@ import { SubscriptionPlanApiService } from '../core/api/subscription-plan-api.se
 import { TaxRateApiService } from '../core/api/tax-rate-api.service';
 import { BillingInterval, TaxRateOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Sales > Subscription plans > New/Edit — see SubscriptionPlanListComponent's javadoc. */
 @Component({
   selector: 'app-subscription-plan-form',
@@ -106,14 +107,14 @@ export class SubscriptionPlanFormComponent implements OnInit {
         this.discountPercent = p.discountPercent;
         this.active = p.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load plan'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load plan')),
     });
   }
 
   submit(): void {
     this.error = null;
     if (!this.name || this.price == null) {
-      this.error = 'Name and price are required';
+      this.error = T('Name and price are required');
       return;
     }
     const payload = {
@@ -128,7 +129,7 @@ export class SubscriptionPlanFormComponent implements OnInit {
     const call = this.id ? this.planApi.update(this.id, payload) : this.planApi.create(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/subscription-plans']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save plan'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save plan')),
     });
   }
 }

@@ -12,6 +12,7 @@ import { downloadBlob } from '../../core/download-file';
 import { branchNameOf } from '../../core/branch-util';
 import { Account, Branch, Expense } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Accounting > Expenses — every expense with search, filters and quick views (pending, unpaid, overdue, due soon, mine),
  * approve or reject several at once, and a download of what is on screen. Each row opens its detail page for the single-expense actions.
@@ -247,7 +248,7 @@ export class ExpenseListComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.error = err?.error?.message ?? 'Failed to load expenses';
+          this.error = err?.error?.message ?? T('Failed to load expenses');
         },
       });
   }
@@ -270,7 +271,7 @@ export class ExpenseListComponent implements OnInit {
     if (action === 'REJECT') {
       reason = prompt('Reason for rejecting these ' + ids.length + ' expense(s) (optional):');
       if (reason === null) return;
-    } else if (!confirm('Approve ' + ids.length + ' expense(s)? Each one is posted to the accounts.')) {
+    } else if (!confirm(T('Approve {p0} expense(s)? Each one is posted to the accounts.', { p0: ids.length }))) {
       return;
     }
     this.busy = true;
@@ -285,7 +286,7 @@ export class ExpenseListComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Could not complete that';
+        this.error = err?.error?.message ?? T('Could not complete that');
       },
     });
   }
@@ -302,7 +303,7 @@ export class ExpenseListComponent implements OnInit {
       },
       error: () => {
         this.busy = false;
-        this.error = 'Could not download the register';
+        this.error = T('Could not download the register');
       },
     });
   }

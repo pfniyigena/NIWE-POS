@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AppsApiService } from '../../core/api/apps-api.service';
 import { AppSummary } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Settings > Apps (Task: "This will work as a plugin (or apps) to be installed and
  * configured"). A fixed, code-defined catalog (see the backend's AppCatalog — currently just
@@ -99,7 +100,7 @@ export class AppListComponent implements OnInit {
   private load(): void {
     this.appsApi.list().subscribe({
       next: (apps) => (this.apps = apps),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load apps'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load apps')),
     });
   }
 
@@ -112,7 +113,7 @@ export class AppListComponent implements OnInit {
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Failed to install app';
+        this.error = err?.error?.message ?? T('Failed to install app');
       },
     });
   }
@@ -126,7 +127,7 @@ export class AppListComponent implements OnInit {
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Failed to enable app';
+        this.error = err?.error?.message ?? T('Failed to enable app');
       },
     });
   }
@@ -140,13 +141,13 @@ export class AppListComponent implements OnInit {
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Failed to disable app';
+        this.error = err?.error?.message ?? T('Failed to disable app');
       },
     });
   }
 
   uninstall(app: AppSummary): void {
-    if (!confirm(`Uninstall ${app.name}? This removes all of its saved configuration and cannot be undone.`)) return;
+    if (!confirm(T('Uninstall {p0}? This removes all of its saved configuration and cannot be undone.', { p0: app.name }))) return;
     this.busyKey = app.key;
     this.appsApi.uninstall(app.key).subscribe({
       next: () => {
@@ -155,7 +156,7 @@ export class AppListComponent implements OnInit {
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Failed to uninstall app';
+        this.error = err?.error?.message ?? T('Failed to uninstall app');
       },
     });
   }

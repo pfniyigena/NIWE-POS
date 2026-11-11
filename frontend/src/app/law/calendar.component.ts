@@ -10,6 +10,7 @@ import { API_BASE } from '../core/constants';
 import { downloadBlob } from '../core/download-file';
 import { CalendarEntry, DEADLINE_TYPE_LABEL, DeadlineType, LawApiService } from '../core/api/law-api.service';
 
+import { T } from '../core/i18n/t';
 interface Cell { date: string; day: number; inMonth: boolean; today: boolean; entries: CalendarEntry[]; shown: CalendarEntry[]; more: number; }
 
 const pad = (n: number): string => (n < 10 ? '0' : '') + n;
@@ -209,7 +210,7 @@ export class LawCalendarComponent implements OnInit {
     this.api.calendar({ mine: this.mine, from: ymd(from), to: ymd(to), includeDone: this.includeDone, tasks: this.tasks }).subscribe({
       next: (list) => this.build(from, to, list, select),
       error: (e) => {
-        this.error = e?.error?.message ?? 'Could not load the calendar';
+        this.error = e?.error?.message ?? T('Could not load the calendar');
         if (e?.status === 403 && !this.mine) this.mine = true;
       },
     });

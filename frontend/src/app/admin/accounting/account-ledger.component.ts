@@ -8,6 +8,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { AccountApiService } from '../../core/api/account-api.service';
 import { Account, LedgerLine } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Chart of Accounts > (an account) > Ledger — one account's own dated, running-balance history. */
 @Component({
   selector: 'app-account-ledger',
@@ -83,7 +84,7 @@ export class AccountLedgerComponent implements OnInit {
 
     this.accountApi.getById(this.accountId).subscribe({
       next: (a) => (this.account = a),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load account'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load account')),
     });
     this.load();
   }
@@ -91,7 +92,7 @@ export class AccountLedgerComponent implements OnInit {
   load(): void {
     this.accountApi.ledger(this.accountId, this.from, this.to).subscribe({
       next: (lines) => (this.lines = lines),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load ledger'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load ledger')),
     });
   }
 }

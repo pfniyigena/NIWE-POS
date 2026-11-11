@@ -6,6 +6,7 @@ import { AuthService } from '../core/auth.service';
 import { ChecklistItem, HkStaff, HotelApiService, Productivity } from '../core/api/hotel-api.service';
 import { addDays, errMsg, today } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Housekeeping > Setup: housekeepers, the inspection checklist and how the team is doing. */
 @Component({
   selector: 'app-hk-setup',
@@ -96,7 +97,7 @@ export class HkSetupComponent implements OnInit {
   }
 
   removeStaff(s: HkStaff): void {
-    if (!confirm(`Delete ${s.name}?`)) return;
+    if (!confirm(T('Delete {p0}?', { p0: s.name }))) return;
     this.error = null;
     this.api.hkDeleteStaff(s.id).subscribe({ next: () => this.loadStaff(), error: (e) => (this.error = errMsg(e, 'Could not delete the housekeeper')) });
   }
@@ -104,7 +105,7 @@ export class HkSetupComponent implements OnInit {
   saveChecklist(): void {
     this.error = this.message = null;
     this.api.hkSaveChecklist(this.checklist.filter((c) => c.label.trim()).map((c) => ({ label: c.label.trim(), active: c.active }))).subscribe({
-      next: (c) => { this.checklist = c; this.message = 'Checklist saved.'; },
+      next: (c) => { this.checklist = c; this.message = T('Checklist saved.'); },
       error: (e) => (this.error = errMsg(e, 'Could not save the checklist')),
     });
   }

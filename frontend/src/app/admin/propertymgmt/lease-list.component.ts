@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { PmExportComponent } from './pm-export.component';
 import { LEASE_STATE_LABEL, LeaseRow, LeaseState, PropertyMgmtApiService, PropertyRow, RENT_FREQUENCIES, leaseBadge, pmLabel } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Leases: every lease with its state, filtered by state, property or tenant. */
 @Component({
   selector: 'app-lease-list',
@@ -89,7 +90,7 @@ export class LeaseListComponent implements OnInit {
     this.error = null;
     this.api.leasesPage({ q: this.q.trim(), state: this.state, propertyId: this.propertyId, expiringOnly: this.expiringOnly, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the leases'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the leases'); },
     });
   }
 }

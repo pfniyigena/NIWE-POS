@@ -9,6 +9,7 @@ import { PAGE_SIZE } from '../../core/api/paged';
 import { PmExportComponent } from './pm-export.component';
 import { PropertyMgmtApiService, TenantKind, TenantPayload, TenantRow } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 const txt = (v: string | null | undefined): string | undefined => { const t = (v ?? '').trim(); return t ? t : undefined; };
 
 /** Property Management > Tenants: people and companies that rent or want to rent. */
@@ -86,18 +87,18 @@ export class TenantListComponent implements OnInit {
     if (resetPage) this.page = 0;
     this.api.tenantsPage({ q: this.q.trim(), activeOnly: this.activeOnly, withLeaseOnly: this.withLease, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the tenants'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the tenants'); },
     });
   }
 
   create(): void {
     this.error = null;
-    if (!txt(this.f.name)) { this.error = 'Give the tenant\'s name.'; return; }
+    if (!txt(this.f.name)) { this.error = T('Give the tenant\'s name.'); return; }
     const p: TenantPayload = { kind: this.f.kind, name: txt(this.f.name), phone: txt(this.f.phone), email: txt(this.f.email), idNumber: txt(this.f.idNumber) };
     this.saving = true;
     this.api.createTenant(p).subscribe({
       next: (t) => { this.saving = false; this.router.navigate(['/admin/propertymgmt/tenants', t.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the tenant'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the tenant'); },
     });
   }
 }

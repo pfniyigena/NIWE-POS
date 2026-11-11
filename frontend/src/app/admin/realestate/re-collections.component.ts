@@ -8,6 +8,7 @@ import { AuthService } from '../../core/auth.service';
 import { ReExportComponent } from './re-export.component';
 import { CollectionBoard, CollectionRow, Option, ProjectRow, RealEstateApiService, SaleNoteKind } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 interface Section { key: 'overdue' | 'dueSoon' | 'unscheduled'; title: string; hint: string; color: string; total: number; rows: CollectionRow[]; }
 
 /** Real Estate > Collections: the buyers who owe money. Late payers first, then what falls due soon, then sales with no payment schedule. Log a call or a promise, remind the buyer, or send the statement from the row. */
@@ -140,7 +141,7 @@ export class ReCollectionsComponent implements OnInit {
     this.open = null;
     this.api.collections({ projectId: this.projectId, agentId: this.agentId, days: this.days }).subscribe({
       next: (b) => { this.board = b; this.secs = this.sections(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the collections'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the collections')),
     });
   }
 
@@ -179,13 +180,13 @@ export class ReCollectionsComponent implements OnInit {
   }
 
   save(r: CollectionRow): void {
-    if (!this.text.trim()) { this.formError = 'Write what was said.'; return; }
-    if (this.kind === 'PROMISE' && !this.promise) { this.formError = 'Choose the date the buyer promised to pay.'; return; }
+    if (!this.text.trim()) { this.formError = T('Write what was said.'); return; }
+    if (this.kind === 'PROMISE' && !this.promise) { this.formError = T('Choose the date the buyer promised to pay.'); return; }
     this.busy = true;
     this.formError = null;
     this.api.addSaleNote(r.saleId, { kind: this.kind, text: this.text.trim(), promiseDate: this.kind === 'PROMISE' ? this.promise : null }).subscribe({
-      next: () => { this.busy = false; this.notice = 'Saved for ' + r.buyerName + '.'; this.load(true); },
-      error: (e) => { this.busy = false; this.formError = e?.error?.message ?? 'Could not save'; },
+      next: () => { this.busy = false; this.notice = T('Saved for {p0}.', { p0: r.buyerName }); this.load(true); },
+      error: (e) => { this.busy = false; this.formError = e?.error?.message ?? T('Could not save'); },
     });
   }
 
@@ -202,7 +203,7 @@ export class ReCollectionsComponent implements OnInit {
     this.actionError = null;
     this.notice = null;
     call.subscribe({
-      next: (m) => { this.busy = false; this.notice = m.message || 'Sent to ' + m.sentTo; this.load(true); },
+      next: (m) => { this.busy = false; this.notice = m.message || T('Sent to {p0}', { p0: m.sentTo }); this.load(true); },
       error: (e) => { this.busy = false; this.actionError = r.buyerName + ': ' + (e?.error?.message ?? 'That did not work'); },
     });
   }

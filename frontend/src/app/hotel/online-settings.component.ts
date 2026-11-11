@@ -7,6 +7,7 @@ import { AuthService } from '../core/auth.service';
 import { HotelApiService, OnlineRoomType, OnlineSettings } from '../core/api/hotel-api.service';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Hotel > Online booking: whether the public booking page is open, what it asks of the guest (deposit, how long a room is held), the guest
  * e-mails (confirmation, pre-arrival reminder, thank-you), which room types are offered, and the calendar (iCal) feed of each room type.
@@ -129,30 +130,30 @@ export class OnlineSettingsComponent implements OnInit {
   }
 
   load(): void {
-    this.api.onlineSettings().subscribe({ next: (s) => (this.s = s), error: (e) => this.fail(e, 'Failed to load the settings') });
-    this.api.onlineRoomTypes().subscribe({ next: (t) => (this.types = t), error: (e) => this.fail(e, 'Failed to load the room types') });
+    this.api.onlineSettings().subscribe({ next: (s) => (this.s = s), error: (e) => this.fail(e, T('Failed to load the settings')) });
+    this.api.onlineRoomTypes().subscribe({ next: (t) => (this.types = t), error: (e) => this.fail(e, T('Failed to load the room types')) });
   }
 
   save(): void {
     if (!this.s) return;
     const { mailReady, ...payload } = this.s;
     this.api.saveOnlineSettings(payload).subscribe({
-      next: (s) => { this.s = s; this.flash('Saved.'); },
-      error: (e) => this.fail(e, 'Could not save'),
+      next: (s) => { this.s = s; this.flash(T('Saved.')); },
+      error: (e) => this.fail(e, T('Could not save')),
     });
   }
 
   runMails(): void {
     this.api.sendDueMails().subscribe({
-      next: (r) => this.flash(r.sent === 0 ? 'No e-mails were due.' : r.sent + ' e-mail' + (r.sent === 1 ? ' is' : 's are') + ' on the way.'),
-      error: (e) => this.fail(e, 'Could not send'),
+      next: (r) => this.flash(r.sent === 0 ? T('No e-mails were due.') : r.sent + ' e-mail' + (r.sent === 1 ? ' is' : 's are') + ' on the way.'),
+      error: (e) => this.fail(e, T('Could not send')),
     });
   }
 
   release(): void {
     this.api.releaseUnpaid().subscribe({
-      next: (r) => this.flash(r.released === 0 ? 'No online booking was waiting past its deadline.' : r.released + ' unpaid booking' + (r.released === 1 ? ' was' : 's were') + ' released.'),
-      error: (e) => this.fail(e, 'Could not release'),
+      next: (r) => this.flash(r.released === 0 ? T('No online booking was waiting past its deadline.') : r.released + ' unpaid booking' + (r.released === 1 ? ' was' : 's were') + ' released.'),
+      error: (e) => this.fail(e, T('Could not release')),
     });
   }
 
@@ -163,30 +164,30 @@ export class OnlineSettingsComponent implements OnInit {
   saveType(t: OnlineRoomType): void {
     this.api.updateOnlineRoomType(t.id, { onlineVisible: t.onlineVisible, description: t.description ?? '' }).subscribe({
       next: (x) => { this.replace(x); this.flash(t.name + ' saved.'); },
-      error: (e) => this.fail(e, 'Could not save'),
+      error: (e) => this.fail(e, T('Could not save')),
     });
   }
 
   newFeed(t: OnlineRoomType): void {
     this.api.newFeed(t.id).subscribe({
-      next: (x) => { this.replace(x); this.flash('Calendar address ready for ' + t.name + '.'); },
-      error: (e) => this.fail(e, 'Could not make the address'),
+      next: (x) => { this.replace(x); this.flash(T('Calendar address ready for {p0}.', { p0: t.name })); },
+      error: (e) => this.fail(e, T('Could not make the address')),
     });
   }
 
   removeFeed(t: OnlineRoomType): void {
-    if (!confirm('Switch off the calendar address of ' + t.name + '? Anything using it will stop seeing the calendar.')) return;
+    if (!confirm(T('Switch off the calendar address of {p0}? Anything using it will stop seeing the calendar.', { p0: t.name }))) return;
     this.api.removeFeed(t.id).subscribe({
-      next: (x) => { this.replace(x); this.flash('Calendar address switched off.'); },
-      error: (e) => this.fail(e, 'Could not switch off'),
+      next: (x) => { this.replace(x); this.flash(T('Calendar address switched off.')); },
+      error: (e) => this.fail(e, T('Could not switch off')),
     });
   }
 
   copy(text: string): void {
     try {
-      navigator.clipboard.writeText(text).then(() => this.flash('Copied.'), () => this.flash('Select the address and copy it.'));
+      navigator.clipboard.writeText(text).then(() => this.flash(T('Copied.')), () => this.flash(T('Select the address and copy it.')));
     } catch {
-      this.flash('Select the address and copy it.');
+      this.flash(T('Select the address and copy it.'));
     }
   }
 }

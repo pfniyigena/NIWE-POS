@@ -8,6 +8,7 @@ import { SupplierApiService } from '../core/api/supplier-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product, Supplier, SupplierPrice } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Suppliers > Supplier prices — what each supplier charges per product (net of tax), optionally for
  * a date range. New purchase orders prefill their unit cost from the price in force today.
@@ -133,7 +134,7 @@ export class SupplierPriceListComponent implements OnInit {
   load(): void {
     this.api.list(this.filterSupplierId).subscribe({
       next: (p) => (this.prices = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load supplier prices'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load supplier prices')),
     });
   }
 
@@ -183,7 +184,7 @@ export class SupplierPriceListComponent implements OnInit {
 
   save(): void {
     if (!this.supplierId || !this.productId || this.unitCost === null || (this.unitCost as unknown) === '') {
-      this.error = 'Pick a supplier and a product, and enter the unit cost';
+      this.error = T('Pick a supplier and a product, and enter the unit cost');
       return;
     }
     const payload = {
@@ -205,16 +206,16 @@ export class SupplierPriceListComponent implements OnInit {
       },
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to save the price';
+        this.error = err?.error?.message ?? T('Failed to save the price');
       },
     });
   }
 
   remove(p: SupplierPrice): void {
-    if (!confirm(`Delete ${p.supplierName}'s price for ${p.productName}?`)) return;
+    if (!confirm(T('Delete {p0}\'s price for {p1}?', { p0: p.supplierName, p1: p.productName }))) return;
     this.api.delete(p.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete the price'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete the price')),
     });
   }
 }

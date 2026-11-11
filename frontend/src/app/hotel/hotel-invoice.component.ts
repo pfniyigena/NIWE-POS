@@ -6,6 +6,7 @@ import { Folio, HotelApiService } from '../core/api/hotel-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { StoreSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** The guest's printable bill (folio) — also what is handed over at check-out. */
 @Component({
   selector: 'app-hotel-invoice',
@@ -83,7 +84,7 @@ export class HotelInvoiceComponent implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.storeApi.get().subscribe({ next: (s) => (this.settings = s), error: () => (this.settings = null) });
-    this.api.folio(id).subscribe({ next: (f) => (this.folio = f), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the invoice') });
+    this.api.folio(id).subscribe({ next: (f) => (this.folio = f), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the invoice')) });
   }
 
   print(): void {

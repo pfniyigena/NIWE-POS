@@ -12,6 +12,7 @@ import { EmployeeFinalPayComponent } from './employee-final-pay.component';
 import { EmployeeChecklistsComponent } from './employee-checklists.component';
 import { Contract, Employee, EmployeeLoginCreated, HrApiService, LeaveBalance, LeaveRequest } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Employees > one employee: details, leave balances and requests, contracts and the actions (edit, leave of absence, left the company). */
 @Component({
   selector: 'app-employee-detail',
@@ -167,7 +168,7 @@ export class EmployeeDetailComponent implements OnInit {
           this.api.contracts({ employeeId: id }).subscribe({ next: (c) => (this.contracts = c), error: () => {} });
         }
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the employee'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the employee')),
     });
   }
 
@@ -186,7 +187,7 @@ export class EmployeeDetailComponent implements OnInit {
         this.e = e;
         this.error = null;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not change the status'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not change the status')),
     });
   }
 
@@ -198,38 +199,38 @@ export class EmployeeDetailComponent implements OnInit {
         this.error = null;
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not record that the employee left'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not record that the employee left')),
     });
   }
 
   giveLogin(): void {
-    if (!this.e || !confirm('Give ' + this.e.fullName + ' a login? A username and a first password are made for them.')) return;
+    if (!this.e || !confirm(T('Give {p0} a login? A username and a first password are made for them.', { p0: this.e.fullName }))) return;
     this.api.createEmployeeLogin(this.e.id).subscribe({
       next: (r) => {
         this.login = r;
         this.error = null;
         this.load();
       },
-      error: (x) => (this.error = x?.error?.message ?? 'Could not create the login'),
+      error: (x) => (this.error = x?.error?.message ?? T('Could not create the login')),
     });
   }
 
   resetLogin(): void {
-    if (!this.e || !confirm('Make a new password for ' + this.e.fullName + '? The old one stops working.')) return;
+    if (!this.e || !confirm(T('Make a new password for {p0}? The old one stops working.', { p0: this.e.fullName }))) return;
     this.api.resetEmployeeLoginPassword(this.e.id).subscribe({
       next: (r) => {
         this.login = r;
         this.error = null;
       },
-      error: (x) => (this.error = x?.error?.message ?? 'Could not reset the password'),
+      error: (x) => (this.error = x?.error?.message ?? T('Could not reset the password')),
     });
   }
 
   remove(): void {
-    if (!this.e || !confirm(`Delete ${this.e.fullName}? This only works when they have no contracts, leave or attendance records.`)) return;
+    if (!this.e || !confirm(T('Delete {p0}? This only works when they have no contracts, leave or attendance records.', { p0: this.e.fullName }))) return;
     this.api.deleteEmployee(this.e.id).subscribe({
       next: () => this.router.navigate(['/admin/hr/employees']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the employee'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the employee')),
     });
   }
 }

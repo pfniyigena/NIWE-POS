@@ -7,6 +7,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { BookingApiService, BookingSettings, DayHours, Schedule } from '../../core/api/booking-api.service';
 import { today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 interface Row { key: string; label: string; open: boolean; on: boolean; start: string; end: string; }
 interface Card { s: Schedule; custom: boolean; rows: Row[]; from: string; to: string; reason: string; msg: string | null; err: string | null; }
 
@@ -76,7 +77,7 @@ export class BookingStaffSchedulesComponent implements OnInit {
   constructor(private api: BookingApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => { this.settings = s; this.load(); }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    this.api.settings().subscribe({ next: (s) => { this.settings = s; this.load(); }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
   }
 
   private openDays(): Set<string> {
@@ -100,7 +101,7 @@ export class BookingStaffSchedulesComponent implements OnInit {
   load(): void {
     this.api.schedules().subscribe({
       next: (l) => { this.cards = l.map((s) => this.card(s)); this.loaded = true; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the schedules'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the schedules')),
     });
   }
 
@@ -118,7 +119,7 @@ export class BookingStaffSchedulesComponent implements OnInit {
       // switching back to the opening hours is saved straight away
       this.api.saveSchedule(c.s.userId, false, []).subscribe({
         next: (s) => this.replace(c, s, 'Now follows the business opening hours.'),
-        error: (e) => { c.err = e?.error?.message ?? 'Could not save'; c.custom = true; },
+        error: (e) => { c.err = e?.error?.message ?? T('Could not save'); c.custom = true; },
       });
     }
   }
@@ -129,7 +130,7 @@ export class BookingStaffSchedulesComponent implements OnInit {
     const days: DayHours[] = c.rows.filter((r) => r.open && r.on).map((r) => ({ day: r.key, start: r.start, end: r.end }));
     this.api.saveSchedule(c.s.userId, true, days).subscribe({
       next: (s) => this.replace(c, s, 'Working hours saved.'),
-      error: (e) => (c.err = e?.error?.message ?? 'Could not save'),
+      error: (e) => (c.err = e?.error?.message ?? T('Could not save')),
     });
   }
 
@@ -144,10 +145,10 @@ export class BookingStaffSchedulesComponent implements OnInit {
         const n = this.card(s, { ...c, from: '', to: '', reason: '' } as Card);
         n.custom = c.custom;
         n.rows = c.rows;
-        n.msg = 'Leave added.' + warn;
+        n.msg = T('Leave added.{p0}', { p0: warn });
         if (i >= 0) this.cards[i] = n;
       },
-      error: (e) => (c.err = e?.error?.message ?? 'Could not add the leave'),
+      error: (e) => (c.err = e?.error?.message ?? T('Could not add the leave')),
     });
   }
 
@@ -156,9 +157,9 @@ export class BookingStaffSchedulesComponent implements OnInit {
     this.api.deleteLeave(id).subscribe({
       next: () => {
         c.s = { ...c.s, leave: c.s.leave.filter((l) => l.id !== id) };
-        c.msg = 'Leave removed.';
+        c.msg = T('Leave removed.');
       },
-      error: (e) => (c.err = e?.error?.message ?? 'Could not remove the leave'),
+      error: (e) => (c.err = e?.error?.message ?? T('Could not remove the leave')),
     });
   }
 }

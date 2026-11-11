@@ -13,6 +13,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { SupplierPriceApiService } from '../core/api/supplier-price-api.service';
 import { Product, Supplier, Warehouse } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface DraftLine {
   productId: number;
   productName: string;
@@ -310,7 +311,7 @@ export class PurchaseOrderFormComponent implements OnInit {
   ngOnInit(): void {
     this.supplierApi.listActive().subscribe({
       next: (s) => (this.suppliers = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load suppliers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load suppliers')),
     });
     this.warehouseApi.listAll().subscribe({
       next: (all) => {
@@ -334,7 +335,7 @@ export class PurchaseOrderFormComponent implements OnInit {
       this.purchaseOrderApi.getById(this.id).subscribe({
         next: (po) => {
           if (po.status !== 'DRAFT') {
-            this.error = `${po.orderNumber} is ${po.status.replace('_', ' ').toLowerCase()} — only a draft can be edited.`;
+            this.error = T('{p0} is {p1} — only a draft can be edited.', { p0: po.orderNumber, p1: po.status.replace('_', ' ').toLowerCase() });
             return;
           }
           this.supplierId = po.supplierId;
@@ -356,7 +357,7 @@ export class PurchaseOrderFormComponent implements OnInit {
             taxInclusive: l.taxInclusive,
           }));
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to load purchase order'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to load purchase order')),
       });
       return;
     }
@@ -564,11 +565,11 @@ export class PurchaseOrderFormComponent implements OnInit {
 
   submit(): void {
     if (!this.supplierId) {
-      this.error = 'Select a supplier';
+      this.error = T('Select a supplier');
       return;
     }
     if (this.lines.length === 0) {
-      this.error = 'Add at least one line item';
+      this.error = T('Add at least one line item');
       return;
     }
     this.error = null;
@@ -601,7 +602,7 @@ export class PurchaseOrderFormComponent implements OnInit {
     const call = this.id ? this.purchaseOrderApi.update(this.id, payload) : this.purchaseOrderApi.create(payload);
     call.subscribe({
       next: (po) => this.router.navigate(['/admin/purchase-orders', po.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save purchase order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save purchase order')),
     });
   }
 }

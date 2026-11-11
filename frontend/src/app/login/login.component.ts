@@ -8,6 +8,7 @@ import { AuthService } from '../core/auth.service';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
 import { LanguageSwitcherComponent } from '../shared/language-switcher.component';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -71,7 +72,7 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Login failed';
+        this.error = err?.error?.message ?? T('Login failed');
       },
     });
   }

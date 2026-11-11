@@ -8,6 +8,7 @@ import { StaffOption, TimeApiService } from '../../core/api/time-api.service';
 import { WorkOrderApiService, WorkOrderStatus, WorkOrderSummary } from '../../core/api/work-order-api.service';
 import { WorkOrderTabsComponent } from './work-order-tabs.component';
 
+import { T } from '../../core/i18n/t';
 interface Column { status: WorkOrderStatus; title: string; items: WorkOrderSummary[]; }
 
 /** Work Orders > Board: jobs in columns by status. Drag a card to start it or put it on hold; open it to complete it. */
@@ -94,7 +95,7 @@ export class WorkOrderBoardComponent implements OnInit {
   load(): void {
     this.api.list({}).subscribe({
       next: (l) => { this.all = l.filter((w) => w.status !== 'CANCELLED'); this.rebuild(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the work orders'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the work orders')),
     });
   }
 
@@ -136,8 +137,8 @@ export class WorkOrderBoardComponent implements OnInit {
   move(w: WorkOrderSummary, to: WorkOrderStatus): void {
     this.error = null;
     this.notice = null;
-    if (to === 'OPEN') { this.notice = 'A job cannot go back to Open from here.'; return; }
-    if (to === 'COMPLETED') { this.notice = 'Open ' + w.number + ' to complete it — the checklist, parts and a note are checked there.'; return; }
+    if (to === 'OPEN') { this.notice = T('A job cannot go back to Open from here.'); return; }
+    if (to === 'COMPLETED') { this.notice = T('Open {p0} to complete it — the checklist, parts and a note are checked there.', { p0: w.number }); return; }
     const call = to === 'IN_PROGRESS' ? this.api.start(w.id) : this.api.hold(w.id);
     call.subscribe({
       next: (d) => {

@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { AssetApiService, AssetSettings } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Assets > Settings: how early expiry warnings start, what counts as "ending soon", and the disposal approval limit. */
 @Component({
   selector: 'app-asset-settings',
@@ -49,7 +50,7 @@ export class AssetSettingsComponent implements OnInit {
   constructor(private api: AssetApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the settings') });
+    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the settings')) });
   }
 
   save(): void {
@@ -65,7 +66,7 @@ export class AssetSettingsComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not save the settings';
+        this.error = e?.error?.message ?? T('Could not save the settings');
       },
     });
   }

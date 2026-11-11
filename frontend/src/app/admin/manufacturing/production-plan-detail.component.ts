@@ -9,6 +9,7 @@ import { ProductionPlanApiService } from '../../core/api/production-plan-api.ser
 import { OverheadCostApiService } from '../../core/api/overhead-cost-api.service';
 import { OverheadCost, ProductionPlan, ProductionPlanLine } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Manufacturing > Production plans > detail — a stored MRP snapshot. Every line shows demand
  * breakdown and today's live component shortfalls (see ProductionPlanDto's own javadoc for why
@@ -136,7 +137,7 @@ export class ProductionPlanDetailComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.productionPlanApi.getById(id).subscribe({
       next: (p) => (this.plan = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load production plan'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load production plan')),
     });
   }
 

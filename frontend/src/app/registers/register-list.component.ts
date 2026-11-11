@@ -8,6 +8,7 @@ import { AuthService } from '../core/auth.service';
 import { DeviceStatus, RegisterSummary } from '../core/models';
 import { FormsModule } from '@angular/forms';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-register-list',
   standalone: true,
@@ -111,7 +112,7 @@ export class RegisterListComponent implements OnInit {
         this.registers = r;
         for (const x of r) if (x.deviceBound) this.registerApi.deviceStatus(x.id).subscribe({ next: (st) => (this.status[x.id] = st), error: () => {} });
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load registers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load registers')),
     });
   }
 
@@ -133,7 +134,7 @@ export class RegisterListComponent implements OnInit {
     this.error = null;
     this.registerApi.bindDevice(r.id, this.bindName.trim(), this.bindIp).subscribe({
       next: () => { this.busy = false; this.binding = null; this.status = {}; this.load(); },
-      error: (err) => { this.busy = false; this.error = err?.error?.message ?? 'Could not bind the register'; },
+      error: (err) => { this.busy = false; this.error = err?.error?.message ?? T('Could not bind the register'); },
     });
   }
 
@@ -141,7 +142,7 @@ export class RegisterListComponent implements OnInit {
     this.error = null;
     this.registerApi.unbindDevice(r.id).subscribe({
       next: () => { this.binding = null; this.status = {}; this.load(); },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not unbind the register'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not unbind the register')),
     });
   }
 }

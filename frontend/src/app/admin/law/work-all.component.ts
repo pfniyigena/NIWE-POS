@@ -11,6 +11,7 @@ import { DatePickerComponent } from '../../shared/date-picker.component';
 import { DEADLINE_TYPE_LABEL, Deadline, LawApiService, Option, Task } from '../../core/api/law-api.service';
 import { addDays, today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 /** Law Firm > Deadlines & tasks: everyone's open deadlines and tasks across matters, with the overdue ones on top. */
 @Component({
   selector: 'app-law-work-all',
@@ -105,13 +106,13 @@ export class LawWorkAllComponent implements OnInit {
 
   private loadDeadlines(): void {
     this.api.deadlinesPage({ assigneeId: this.assigneeId, from: this.from, to: this.to, includeDone: this.includeDone, page: this.deadlinePage, size: this.size }).subscribe({
-      next: (r) => { this.deadlines = r.items; this.deadlineTotal = r.total; }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the deadlines'),
+      next: (r) => { this.deadlines = r.items; this.deadlineTotal = r.total; }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the deadlines')),
     });
   }
 
   private loadTasks(): void {
     this.api.tasksPage({ assigneeId: this.assigneeId, includeDone: this.includeDone, page: this.taskPage, size: this.size }).subscribe({
-      next: (r) => { this.tasks = r.items; this.taskTotal = r.total; }, error: (e) => (this.error = e?.error?.message ?? 'Could not load the tasks'),
+      next: (r) => { this.tasks = r.items; this.taskTotal = r.total; }, error: (e) => (this.error = e?.error?.message ?? T('Could not load the tasks')),
     });
   }
 }

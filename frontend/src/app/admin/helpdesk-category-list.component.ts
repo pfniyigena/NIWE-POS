@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { HelpDeskCategoryApiService } from '../core/api/helpdesk-api.service';
 import { HelpDeskCategory } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Help Desk > Categories — the configurable list tickets route through (Fourier, via
  * AskUserQuestion: "Configurable categories/departments ... that you can manage"). Toggled
@@ -68,16 +69,16 @@ export class HelpDeskCategoryListComponent implements OnInit {
   load(): void {
     this.categoryApi.listAll().subscribe({
       next: (c) => (this.categories = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load categories'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load categories')),
     });
   }
 
   remove(c: HelpDeskCategory): void {
-    if (!confirm(`Delete category "${c.name}"?`)) return;
+    if (!confirm(T('Delete category "{p0}"?', { p0: c.name }))) return;
     this.error = null;
     this.categoryApi.delete(c.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to delete category — mark it inactive instead if tickets still use it'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to delete category — mark it inactive instead if tickets still use it')),
     });
   }
 }

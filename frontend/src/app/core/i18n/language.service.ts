@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE } from '../constants';
+import { setTranslateService } from './t';
 
 export type Lang = 'en' | 'fr';
 export const LANGUAGES: { code: Lang; label: string }[] = [
@@ -23,7 +24,9 @@ function isLang(v: unknown): v is Lang {
 export class LanguageService {
   current: Lang = 'en';
 
-  constructor(private translate: TranslateService) {}
+  constructor(private translate: TranslateService) {
+    setTranslateService(translate);
+  }
 
   private personal(): Lang | null {
     try {

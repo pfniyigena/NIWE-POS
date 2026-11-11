@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { Branch } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Branches — Fourier: "How business branches can be introduced?" A branch is a trading
  * location (outlet) that owns one or more warehouses (set on the warehouse itself) and, through a
@@ -74,7 +75,7 @@ export class BranchListComponent implements OnInit {
   private load(): void {
     this.branchApi.listAll().subscribe({
       next: (b) => (this.branches = b),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load branches'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load branches')),
     });
   }
 
@@ -82,7 +83,7 @@ export class BranchListComponent implements OnInit {
     this.error = null;
     this.branchApi.setActive(b.id, active).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to update branch'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to update branch')),
     });
   }
 }

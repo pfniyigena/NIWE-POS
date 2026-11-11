@@ -10,6 +10,7 @@ import { FollowUp, FollowUpKind, InstallmentApiService, InstallmentPlanDetail, P
 import { openPdfForPrint } from '../../core/download-file';
 import { PaymentMethodOption } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Installments > a plan: the schedule, what's paid, record a payment, pay off early, reverse a payment, remind or e-mail the customer, log contacts, default / write off, cancel. */
 @Component({
   selector: 'app-installment-plan-detail',
@@ -252,7 +253,7 @@ export class InstallmentPlanDetailComponent implements OnInit {
       this.methods = m;
       this.method = m[0]?.code ?? '';
     });
-    this.api.plan(this.id).subscribe({ next: (d) => this.set(d), error: (e) => (this.error = e?.error?.message ?? 'Could not load the plan') });
+    this.api.plan(this.id).subscribe({ next: (d) => this.set(d), error: (e) => (this.error = e?.error?.message ?? T('Could not load the plan')) });
     this.loadFollowUps();
   }
 
@@ -279,7 +280,7 @@ export class InstallmentPlanDetailComponent implements OnInit {
         this.reason = '';
       },
       error: (e) => {
-        this.error = e?.error?.message ?? 'That did not work';
+        this.error = e?.error?.message ?? T('That did not work');
         this.busy = false;
       },
     });
@@ -321,20 +322,20 @@ export class InstallmentPlanDetailComponent implements OnInit {
         this.rebatePct = q.rebatePercent;
         this.showPayoff = true;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not work out the payoff'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not work out the payoff')),
     });
   }
 
   refreshQuote(): void {
     if (this.rebatePct === null || this.rebatePct < 0 || this.rebatePct > 100) return;
-    this.api.payoffQuote(this.id, this.rebatePct).subscribe({ next: (q) => (this.quote = q), error: (e) => (this.error = e?.error?.message ?? 'Could not work out the payoff') });
+    this.api.payoffQuote(this.id, this.rebatePct).subscribe({ next: (q) => (this.quote = q), error: (e) => (this.error = e?.error?.message ?? T('Could not work out the payoff')) });
   }
 
   payoff(): void {
     if (!this.quote) return;
     this.run(
       this.api.payoff(this.id, { method: this.method, note: this.note || null, rebatePercent: this.rebatePct, expectedAmount: this.quote.amountToSettle }),
-      'The plan has been paid off.'
+      T('The plan has been paid off.')
     );
     this.note = '';
   }
@@ -345,20 +346,20 @@ export class InstallmentPlanDetailComponent implements OnInit {
   }
 
   reverse(paymentId: number): void {
-    this.run(this.api.reversePayment(this.id, paymentId, this.reverseReason.trim()), 'Payment reversed.');
+    this.run(this.api.reversePayment(this.id, paymentId, this.reverseReason.trim()), T('Payment reversed.'));
   }
 
   markDefaulted(): void {
-    this.run(this.api.markDefaulted(this.id, this.reason.trim() || null), 'The plan is marked as defaulted.');
+    this.run(this.api.markDefaulted(this.id, this.reason.trim() || null), T('The plan is marked as defaulted.'));
   }
 
   restore(): void {
-    this.run(this.api.restore(this.id), 'The plan is active again.');
+    this.run(this.api.restore(this.id), T('The plan is active again.'));
   }
 
   writeOff(): void {
-    if (!confirm(`Write off ${this.unpaidPrincipal()} as a bad debt?`)) return;
-    this.run(this.api.writeOff(this.id, this.reason.trim()), 'The balance was written off.');
+    if (!confirm(T('Write off {p0} as a bad debt?', { p0: this.unpaidPrincipal() }))) return;
+    this.run(this.api.writeOff(this.id, this.reason.trim()), T('The balance was written off.'));
   }
 
   addFollowUp(): void {
@@ -379,18 +380,18 @@ export class InstallmentPlanDetailComponent implements OnInit {
           this.busy = false;
         },
         error: (e) => {
-          this.error = e?.error?.message ?? 'Could not save the note';
+          this.error = e?.error?.message ?? T('Could not save the note');
           this.busy = false;
         },
       });
   }
 
   statementPdf(): void {
-    this.api.statementPdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = 'Could not create the statement') });
+    this.api.statementPdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = T('Could not create the statement')) });
   }
 
   agreementPdf(): void {
-    this.api.agreementPdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = 'Could not create the agreement') });
+    this.api.agreementPdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = T('Could not create the agreement')) });
   }
 
   emailStatement(): void {
@@ -399,13 +400,13 @@ export class InstallmentPlanDetailComponent implements OnInit {
     this.info = null;
     this.api.emailStatement(this.id, this.includeAgreement).subscribe({
       next: (r) => {
-        this.info = `Statement sent to ${r.sentTo}.`;
+        this.info = T('Statement sent to {p0}.', { p0: r.sentTo });
         this.busy = false;
         this.showEmail = false;
         this.loadFollowUps();
       },
       error: (e) => {
-        this.error = e?.error?.message ?? 'Could not send the statement';
+        this.error = e?.error?.message ?? T('Could not send the statement');
         this.busy = false;
       },
     });
@@ -419,7 +420,7 @@ export class InstallmentPlanDetailComponent implements OnInit {
     let first = 0;
     while (first < rows.length && rows[first].state === 'PAID') first++;
     if (first >= rows.length) {
-      this.error = 'Every instalment is already paid.';
+      this.error = T('Every instalment is already paid.');
       return;
     }
     const open = rows.slice(first);
@@ -477,7 +478,7 @@ export class InstallmentPlanDetailComponent implements OnInit {
         this.id,
         this.edit.map((r) => ({ dueDate: r.dueDate, principalDue: Number(r.principalDue) || 0, interestDue: Number(r.interestDue) || 0 }))
       ),
-      'Schedule saved.'
+      T('Schedule saved.')
     );
     this.edit = null;
   }
@@ -488,17 +489,17 @@ export class InstallmentPlanDetailComponent implements OnInit {
 
   pay(): void {
     if (!this.amount) return;
-    this.run(this.api.pay(this.id, { amount: this.amount, method: this.method, note: this.note || null }), 'Payment recorded.');
+    this.run(this.api.pay(this.id, { amount: this.amount, method: this.method, note: this.note || null }), T('Payment recorded.'));
     this.note = '';
   }
 
   waive(seq: number): void {
-    if (!confirm(`Waive the late fee on instalment ${seq}?`)) return;
-    this.run(this.api.waiveFee(this.id, seq), 'Late fee waived.');
+    if (!confirm(T('Waive the late fee on instalment {p0}?', { p0: seq }))) return;
+    this.run(this.api.waiveFee(this.id, seq), T('Late fee waived.'));
   }
 
   cancel(): void {
-    this.run(this.api.cancel(this.id, this.cancelReason || null), 'Plan cancelled.');
+    this.run(this.api.cancel(this.id, this.cancelReason || null), T('Plan cancelled.'));
   }
 
   remind(): void {
@@ -507,19 +508,19 @@ export class InstallmentPlanDetailComponent implements OnInit {
     this.info = null;
     this.api.remind(this.id).subscribe({
       next: (r) => {
-        this.info = `Reminder sent to ${r.sentTo}.`;
+        this.info = T('Reminder sent to {p0}.', { p0: r.sentTo });
         this.busy = false;
         this.loadFollowUps();
       },
       error: (e) => {
-        this.error = e?.error?.message ?? 'Could not send the reminder';
+        this.error = e?.error?.message ?? T('Could not send the reminder');
         this.busy = false;
       },
     });
   }
 
   pdf(): void {
-    this.api.schedulePdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = 'Could not create the PDF') });
+    this.api.schedulePdf(this.id).subscribe({ next: (b) => openPdfForPrint(b), error: () => (this.error = T('Could not create the PDF')) });
   }
 
   freq(f: string): string {

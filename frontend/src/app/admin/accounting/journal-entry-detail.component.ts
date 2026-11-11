@@ -6,6 +6,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { JournalEntryApiService } from '../../core/api/journal-entry-api.service';
 import { JournalEntry } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Admin > Accounting > Journal Entries > (an entry) — one entry's own lines, always balanced (debits == credits), see the backend AccountingService.post's own javadoc. */
 @Component({
   selector: 'app-journal-entry-detail',
@@ -65,7 +66,7 @@ export class JournalEntryDetailComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.journalEntryApi.getById(id).subscribe({
       next: (e) => (this.entry = e),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load journal entry'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load journal entry')),
     });
   }
 }

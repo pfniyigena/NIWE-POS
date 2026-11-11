@@ -9,6 +9,7 @@ import { CatalogApiService } from '../core/api/catalog-api.service';
 import { TaxRateApiService } from '../core/api/tax-rate-api.service';
 import { Product, TaxRateOption } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Same minimal quick-add field set InvoiceFormComponent's/RecurringInvoiceFormComponent's own "+ New product" panel uses. */
 const QUICK_ADD_DEFAULTS = { costPrice: 0, stockQuantity: 0, active: true, categoryId: null, taxRateId: null };
 
@@ -199,7 +200,7 @@ export class PackagingRuleFormComponent implements OnInit {
         this.notes = r.notes ?? '';
         this.active = r.active;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load packaging rule'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load packaging rule')),
     });
   }
 
@@ -288,19 +289,19 @@ export class PackagingRuleFormComponent implements OnInit {
 
   submit(): void {
     if (!this.selectedParent) {
-      this.error = 'Select a parent product';
+      this.error = T('Select a parent product');
       return;
     }
     if (!this.selectedChild) {
-      this.error = 'Select a child product';
+      this.error = T('Select a child product');
       return;
     }
     if (this.selectedParent.id === this.selectedChild.id) {
-      this.error = 'A product cannot be broken down into itself';
+      this.error = T('A product cannot be broken down into itself');
       return;
     }
     if (!this.unitsPerParent || this.unitsPerParent < 1) {
-      this.error = 'Units per parent must be a positive number';
+      this.error = T('Units per parent must be a positive number');
       return;
     }
     this.error = null;
@@ -314,7 +315,7 @@ export class PackagingRuleFormComponent implements OnInit {
     const call = this.id ? this.packagingApi.updateRule(this.id, payload) : this.packagingApi.createRule(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/packaging/rules']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save packaging rule'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save packaging rule')),
     });
   }
 }

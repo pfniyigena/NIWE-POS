@@ -12,6 +12,7 @@ import { PaymentMethodOption } from '../../core/models';
 import { PropertyMgmtApiService, PropertyRow } from '../../core/api/propertymgmt-api.service';
 import { PmStatementApiService, STATEMENT_STATUS_LABEL, StatementDto, statementBadge } from '../../core/api/pm-statement-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 const pad = (n: number): string => String(n).padStart(2, '0');
@@ -166,7 +167,7 @@ export class StatementDetailComponent implements OnInit {
   ngOnInit(): void {
     this.api.get(Number(this.route.snapshot.paramMap.get('id'))).subscribe({
       next: (d) => { this.set(d); this.pm.properties({ ownerId: d.statement.ownerId }).subscribe({ next: (p) => (this.ownerProps = p), error: () => undefined }); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the statement'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the statement')),
     });
     this.methodApi.listActive().subscribe({ next: (m) => { this.methods = m; if (m.length && !this.pay.method) this.pay.method = m[0].code; }, error: () => undefined });
   }
@@ -185,7 +186,7 @@ export class StatementDetailComponent implements OnInit {
     this.note = null;
     call.subscribe({
       next: (d) => { this.busy = false; this.set(d); this.panel = null; if (done) this.note = done; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 
@@ -201,7 +202,7 @@ export class StatementDetailComponent implements OnInit {
   sendEmail(): void {
     if (!this.d) return;
     const to = txt(this.mail.to);
-    if (!to && !this.d.ownerEmail) { this.error = 'Type an e-mail address for the owner.'; return; }
+    if (!to && !this.d.ownerEmail) { this.error = T('Type an e-mail address for the owner.'); return; }
     this.act(this.api.email(this.d.statement.id, { to, message: txt(this.mail.message) }), 'E-mailed to the owner.');
   }
 
@@ -212,15 +213,15 @@ export class StatementDetailComponent implements OnInit {
 
   doPay(): void {
     if (!this.d) return;
-    if (this.d.statement.netPayable > 0 && !this.pay.method) { this.error = 'Choose how the owner was paid.'; return; }
+    if (this.d.statement.netPayable > 0 && !this.pay.method) { this.error = T('Choose how the owner was paid.'); return; }
     this.act(this.api.pay(this.d.statement.id, { paidDate: this.pay.paidDate || null, method: this.d.statement.netPayable > 0 ? this.pay.method : null, reference: txt(this.pay.reference) }), 'Recorded as paid.');
   }
 
   addLine(): void {
     if (!this.d) return;
     const amount = num(this.adj.amount);
-    if (!txt(this.adj.description)) { this.error = 'Say what the line is for.'; return; }
-    if (!amount) { this.error = 'Enter the amount (negative takes from the owner).'; return; }
+    if (!txt(this.adj.description)) { this.error = T('Say what the line is for.'); return; }
+    if (!amount) { this.error = T('Enter the amount (negative takes from the owner).'); return; }
     this.act(this.api.addLine(this.d.statement.id, { description: txt(this.adj.description), amount, propertyId: this.adj.propertyId, date: this.adj.date || null }));
     this.adj = { description: '', amount: null, propertyId: null, date: '' };
   }
@@ -230,16 +231,16 @@ export class StatementDetailComponent implements OnInit {
     this.busy = true;
     this.api.file(this.d.statement.id, format).subscribe({
       next: (blob) => { this.busy = false; downloadBlob(blob, `${this.d!.statement.code}.${format}`); },
-      error: () => { this.busy = false; this.error = 'Could not make the file'; },
+      error: () => { this.busy = false; this.error = T('Could not make the file'); },
     });
   }
 
   remove(): void {
-    if (!this.d || !confirm(`Delete ${this.d.statement.code}? The period becomes free to make again.`)) return;
+    if (!this.d || !confirm(T('Delete {p0}? The period becomes free to make again.', { p0: this.d.statement.code }))) return;
     this.busy = true;
     this.api.remove(this.d.statement.id).subscribe({
       next: () => this.router.navigate(['/admin/propertymgmt/statements']),
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not delete the statement'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not delete the statement'); },
     });
   }
 }

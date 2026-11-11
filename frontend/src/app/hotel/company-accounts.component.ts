@@ -14,6 +14,7 @@ import { PagerComponent } from '../shared/pager.component';
 import { showPdf } from '../core/open-pdf';
 import { errMsg, today } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Company accounts: what companies owe for stays billed to them, and the money received against it. */
 @Component({
   selector: 'app-company-accounts',
@@ -177,7 +178,7 @@ export class CompanyAccountsComponent implements OnInit {
     this.api.receiveFromCompany(b.id, { method: this.recMethod, amount: this.recAmount, reference: this.recRef || null, receivedOn: this.recDate || null }).subscribe({
       next: (d) => {
         this.busy = false;
-        this.message = `Recorded ${this.recAmount} from ${b.companyName} against ${b.billNumber}.`;
+        this.message = T('Recorded {p0} from {p1} against {p2}.', { p0: this.recAmount, p1: b.companyName, p2: b.billNumber });
         this.receiveFor = null;
         this.detail = d;
         this.reload();

@@ -7,6 +7,7 @@ import { StockAdjustmentApiService } from '../core/api/stock-adjustment-api.serv
 import { StockAdjustment } from '../core/models';
 import { AuthService } from '../core/auth.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Inventory > Stock Adjustments — Task: "Inventory depth ... stock adjustments/write-offs
  * with a reason code." Admin-only, same as before (see StockAdjustmentController's own javadoc).
@@ -94,12 +95,12 @@ export class StockAdjustmentListComponent implements OnInit {
   load(): void {
     this.stockAdjustmentApi.listAll().subscribe({
       next: (a) => (this.adjustments = a),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load stock adjustments'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load stock adjustments')),
     });
   }
 
   confirm(a: StockAdjustment): void {
-    if (!confirm(`Confirm this adjustment to ${a.productName}? This will apply the stock change and post to Accounting.`)) return;
+    if (!confirm(T('Confirm this adjustment to {p0}? This will apply the stock change and post to Accounting.', { p0: a.productName }))) return;
     this.error = null;
     this.busyId = a.id;
     this.stockAdjustmentApi.confirm(a.id).subscribe({
@@ -109,13 +110,13 @@ export class StockAdjustmentListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to confirm adjustment';
+        this.error = err?.error?.message ?? T('Failed to confirm adjustment');
       },
     });
   }
 
   reject(a: StockAdjustment): void {
-    if (!confirm(`Reject this logged adjustment to ${a.productName}? No stock/accounting impact will be made.`)) return;
+    if (!confirm(T('Reject this logged adjustment to {p0}? No stock/accounting impact will be made.', { p0: a.productName }))) return;
     this.error = null;
     this.busyId = a.id;
     this.stockAdjustmentApi.reject(a.id).subscribe({
@@ -125,7 +126,7 @@ export class StockAdjustmentListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to reject adjustment';
+        this.error = err?.error?.message ?? T('Failed to reject adjustment');
       },
     });
   }

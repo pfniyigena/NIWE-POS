@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-payment-method-form',
   standalone: true,
@@ -95,7 +96,7 @@ export class PaymentMethodFormComponent implements OnInit {
           this.sortOrder = found.sortOrder;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment method'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment method')),
     });
   }
 
@@ -106,7 +107,7 @@ export class PaymentMethodFormComponent implements OnInit {
       : this.paymentMethodApi.create({ code: this.code, name: this.name, cash: this.cash, credit: this.credit, roomCharge: this.roomCharge, sortOrder: this.sortOrder });
     call.subscribe({
       next: () => this.router.navigate(['/admin/payment-methods']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save payment method'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save payment method')),
     });
   }
 }

@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-category-form',
   standalone: true,
@@ -58,7 +59,7 @@ export class CategoryFormComponent implements OnInit {
           this.colorHex = found.colorHex;
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load category')),
     });
   }
 
@@ -70,7 +71,7 @@ export class CategoryFormComponent implements OnInit {
       : this.catalogApi.createCategory(payload);
     call.subscribe({
       next: () => this.router.navigate(['/admin/categories']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save category'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save category')),
     });
   }
 }

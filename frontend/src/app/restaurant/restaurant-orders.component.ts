@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
 import { RestaurantOrder } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant Orders — every currently open order (dine-in, takeaway, delivery) in one list.
  * Fourier pointed out there was no screen for this: the floor plan only shows dine-in tables (as
@@ -77,7 +78,7 @@ export class RestaurantOrdersComponent implements OnInit, OnDestroy {
   load(): void {
     this.orderApi.listOpen().subscribe({
       next: (o) => (this.orders = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load orders'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load orders')),
     });
   }
 }

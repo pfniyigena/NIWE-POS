@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Guest, GuestPayload, HotelApiService } from '../core/api/hotel-api.service';
 import { errMsg } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Add or edit a guest: contact and ID details, date of birth, preferences, and the VIP / blacklist flags. */
 @Component({
   selector: 'app-guest-form',
@@ -78,7 +79,7 @@ export class GuestFormComponent implements OnChanges {
   save(): void {
     this.error = null;
     if (this.blacklisted && !this.reason.trim()) {
-      this.error = 'Say why this guest is being blacklisted.';
+      this.error = T('Say why this guest is being blacklisted.');
       return;
     }
     this.busy = true;

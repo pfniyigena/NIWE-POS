@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlanRow, PmReminderApiService, ReminderRun, ReminderSettings, ReminderSettingsPayload } from '../../core/api/pm-reminder-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Settings of the rent reminders and late fees, with a look at what would go out today and a button to run it now. */
 @Component({
   selector: 'app-pm-reminder-settings',
@@ -97,7 +98,7 @@ export class PmReminderSettingsComponent implements OnInit {
   constructor(private api: PmReminderApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => this.fill(s), error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the reminder settings'; } });
+    this.api.settings().subscribe({ next: (s) => this.fill(s), error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the reminder settings'); } });
   }
 
   private fill(s: ReminderSettings): void {
@@ -132,14 +133,14 @@ export class PmReminderSettingsComponent implements OnInit {
     else if (this.hadMax) p.clearLateFeeMax = true;
     this.api.saveSettings(p).subscribe({
       next: (s) => { this.saving = false; this.saved = true; this.fill(s); this.plan = null; },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the settings'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the settings'); },
     });
   }
 
   preview(): void {
     this.busy = true;
     this.error = null;
-    this.api.due().subscribe({ next: (p) => { this.busy = false; this.plan = p; }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not work out what is due'; } });
+    this.api.due().subscribe({ next: (p) => { this.busy = false; this.plan = p; }, error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not work out what is due'); } });
   }
 
   runNow(): void {
@@ -153,7 +154,7 @@ export class PmReminderSettingsComponent implements OnInit {
         this.api.settings().subscribe((s) => this.fill(s));
         this.api.due().subscribe((p) => (this.plan = p));
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not run it'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not run it'); },
     });
   }
 }

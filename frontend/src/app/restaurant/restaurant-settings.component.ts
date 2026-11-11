@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { RestaurantOrderApiService } from '../core/api/restaurant-order-api.service';
 import { RestaurantSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Restaurant > Settings: the service charge, the discount limit, tips and bill rounding. */
 @Component({
   selector: 'app-restaurant-settings',
@@ -147,7 +148,7 @@ export class RestaurantSettingsComponent implements OnInit {
   constructor(private api: RestaurantOrderApiService) {}
 
   ngOnInit(): void {
-    this.api.getSettings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? 'Failed to load the settings') });
+    this.api.getSettings().subscribe({ next: (s) => (this.s = s), error: (e) => (this.error = e?.error?.message ?? T('Failed to load the settings')) });
   }
 
   save(): void {
@@ -163,7 +164,7 @@ export class RestaurantSettingsComponent implements OnInit {
       },
       error: (e) => {
         this.busy = false;
-        this.error = e?.error?.message ?? 'Could not save the settings';
+        this.error = e?.error?.message ?? T('Could not save the settings');
       },
     });
   }

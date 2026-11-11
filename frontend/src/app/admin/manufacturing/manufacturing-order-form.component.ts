@@ -11,6 +11,7 @@ import { OverheadCostApiService } from '../../core/api/overhead-cost-api.service
 import { LocationChoice, LocationChoicesService } from '../../core/api/location-choices.service';
 import { Bom, ManufacturingOrder, OverheadCost } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Manufacturing orders > New — always creates a DRAFT; confirm/produce/cancel all happen on the detail screen. */
 @Component({
   selector: 'app-manufacturing-order-form',
@@ -110,7 +111,7 @@ export class ManufacturingOrderFormComponent implements OnInit {
       next: (b) => {
         this.boms = b.filter((bom) => bom.active || bom.id === this.bomId);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load bills of materials'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load bills of materials')),
     });
     if (idParam) {
       this.editing = true;
@@ -126,7 +127,7 @@ export class ManufacturingOrderFormComponent implements OnInit {
           // the recipe of an order may have been switched off since: keep it selectable
           this.bomApi.listAll().subscribe((b) => (this.boms = b.filter((bom) => bom.active || bom.id === this.bomId)));
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to load the manufacturing order'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to load the manufacturing order')),
       });
     }
     this.overheadCostApi.listActive().subscribe({
@@ -158,7 +159,7 @@ export class ManufacturingOrderFormComponent implements OnInit {
 
   submit(): void {
     if (!this.bomId) {
-      this.error = 'Select a bill of materials';
+      this.error = T('Select a bill of materials');
       return;
     }
     this.error = null;
@@ -180,13 +181,13 @@ export class ManufacturingOrderFormComponent implements OnInit {
       };
       this.manufacturingOrderApi.update(this.existing.id, update).subscribe({
         next: (mo) => this.router.navigate(['/admin/manufacturing/orders', mo.id]),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to save the manufacturing order'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to save the manufacturing order')),
       });
       return;
     }
     this.manufacturingOrderApi.create(payload).subscribe({
       next: (mo) => this.router.navigate(['/admin/manufacturing/orders', mo.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to create manufacturing order'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to create manufacturing order')),
     });
   }
 }

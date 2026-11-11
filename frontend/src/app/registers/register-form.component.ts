@@ -9,6 +9,7 @@ import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { UserApiService } from '../core/api/user-api.service';
 import { AppUser, Warehouse, WarehouseLocation } from '../core/models';
 
+import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-register-form',
   standalone: true,
@@ -113,11 +114,11 @@ export class RegisterFormComponent implements OnInit {
   ngOnInit(): void {
     this.warehouseApi.listAll().subscribe({
       next: (w) => (this.warehouses = w.filter((x) => x.active)),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load warehouses'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load warehouses')),
     });
     this.userApi.list().subscribe({
       next: (u) => (this.staff = u.filter((x) => x.active)),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff list'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load staff list')),
     });
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) return;
@@ -137,7 +138,7 @@ export class RegisterFormComponent implements OnInit {
           this.loadLocations();
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load register'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load register')),
     });
   }
 
@@ -161,7 +162,7 @@ export class RegisterFormComponent implements OnInit {
     // RECEIVING/STORAGE/DAMAGED locations never even show up in this picker.
     this.warehouseApi.listLocations(this.warehouseId).subscribe({
       next: (locs) => (this.locations = locs.filter((l) => l.active && l.type === 'SALES')),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load locations'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load locations')),
     });
   }
 
@@ -180,12 +181,12 @@ export class RegisterFormComponent implements OnInit {
     if (this.id) {
       this.registerApi.updateRegister(this.id, payload).subscribe({
         next: () => this.router.navigate(['/registers']),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to save register'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to save register')),
       });
     } else {
       this.registerApi.createRegister(payload).subscribe({
         next: () => this.router.navigate(['/registers']),
-        error: (err) => (this.error = err?.error?.message ?? 'Failed to create register'),
+        error: (err) => (this.error = err?.error?.message ?? T('Failed to create register')),
       });
     }
   }

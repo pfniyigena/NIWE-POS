@@ -11,6 +11,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Restaurant > Wastage — Fourier: "Restaurants need a dedicated wastage module." Mirrors
  * StockAdjustmentListComponent's own layout, but open to any logged-in staff (see
@@ -116,7 +117,7 @@ export class RestaurantWastageListComponent implements OnInit {
   }
 
   confirm(w: RestaurantWastage): void {
-    if (!confirm(`Confirm ${w.quantity} ${w.productName} wasted? This will decrement stock and post to Accounting.`)) return;
+    if (!confirm(T('Confirm {p0} {p1} wasted? This will decrement stock and post to Accounting.', { p0: w.quantity, p1: w.productName }))) return;
     this.error = null;
     this.busyId = w.id;
     this.wastageApi.confirm(w.id).subscribe({
@@ -126,13 +127,13 @@ export class RestaurantWastageListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to confirm wastage entry';
+        this.error = err?.error?.message ?? T('Failed to confirm wastage entry');
       },
     });
   }
 
   reject(w: RestaurantWastage): void {
-    if (!confirm(`Reject the logged wastage of ${w.quantity} ${w.productName}? No stock/accounting impact will be made.`)) return;
+    if (!confirm(T('Reject the logged wastage of {p0} {p1}? No stock/accounting impact will be made.', { p0: w.quantity, p1: w.productName }))) return;
     this.error = null;
     this.busyId = w.id;
     this.wastageApi.reject(w.id).subscribe({
@@ -142,7 +143,7 @@ export class RestaurantWastageListComponent implements OnInit {
       },
       error: (err) => {
         this.busyId = null;
-        this.error = err?.error?.message ?? 'Failed to reject wastage entry';
+        this.error = err?.error?.message ?? T('Failed to reject wastage entry');
       },
     });
   }

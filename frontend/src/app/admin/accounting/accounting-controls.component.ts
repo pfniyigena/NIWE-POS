@@ -11,6 +11,7 @@ import {
   AccountingControlsApiService, LockState, MoneyAccount, OpeningLinePayload, OpeningState, ReconDetail, ReconRow,
 } from '../../core/api/accounting-controls-api.service';
 
+import { T } from '../../core/i18n/t';
 interface OpeningDraftLine { accountId: number | null; debit: number | null; credit: number | null; }
 
 /**
@@ -321,14 +322,14 @@ export class AccountingControlsComponent implements OnInit {
 
   load(): void {
     if (this.tab === 'lock') {
-      this.api.lock().subscribe({ next: (s) => (this.lock = s), error: (e) => this.fail(e, 'Could not load the closing date') });
+      this.api.lock().subscribe({ next: (s) => (this.lock = s), error: (e) => this.fail(e, T('Could not load the closing date')) });
     } else if (this.tab === 'bank') {
-      this.api.moneyAccounts().subscribe({ next: (a) => (this.moneyAccounts = a), error: (e) => this.fail(e, 'Could not load the accounts') });
+      this.api.moneyAccounts().subscribe({ next: (a) => (this.moneyAccounts = a), error: (e) => this.fail(e, T('Could not load the accounts')) });
       this.accounts.listActive().subscribe({ next: (a) => (this.allAccounts = a) });
       this.loadRecs();
     } else {
       this.accounts.listActive().subscribe({ next: (a) => (this.allAccounts = a) });
-      this.api.opening().subscribe({ next: (s) => (this.opening = s), error: (e) => this.fail(e, 'Could not load the opening balances') });
+      this.api.opening().subscribe({ next: (s) => (this.opening = s), error: (e) => this.fail(e, T('Could not load the opening balances')) });
     }
   }
 
@@ -346,14 +347,14 @@ export class AccountingControlsComponent implements OnInit {
         this.lockDate = '';
         this.done = s.lockDate ? `The books are now closed up to ${s.lockDate}.` : 'The books are open again.';
       },
-      error: (e) => this.fail(e, 'Could not change the closing date'),
+      error: (e) => this.fail(e, T('Could not change the closing date')),
     });
   }
 
   // ---- bank reconciliation ----
 
   loadRecs(): void {
-    this.api.reconciliations().subscribe({ next: (r) => (this.recs = r), error: (e) => this.fail(e, 'Could not load the reconciliations') });
+    this.api.reconciliations().subscribe({ next: (r) => (this.recs = r), error: (e) => this.fail(e, T('Could not load the reconciliations')) });
   }
 
   start(): void {
@@ -369,7 +370,7 @@ export class AccountingControlsComponent implements OnInit {
         this.newDate = '';
         this.newBalance = null;
       },
-      error: (e) => this.fail(e, 'Could not start the reconciliation'),
+      error: (e) => this.fail(e, T('Could not start the reconciliation')),
     });
   }
 
@@ -377,7 +378,7 @@ export class AccountingControlsComponent implements OnInit {
     this.error = null;
     this.done = null;
     this.fromDate = '';
-    this.api.reconciliation(id, null).subscribe({ next: (d) => this.setRec(d), error: (e) => this.fail(e, 'Could not open the reconciliation') });
+    this.api.reconciliation(id, null).subscribe({ next: (d) => this.setRec(d), error: (e) => this.fail(e, T('Could not open the reconciliation')) });
   }
 
   private setRec(d: ReconDetail): void {
@@ -395,7 +396,7 @@ export class AccountingControlsComponent implements OnInit {
 
   reloadRec(): void {
     if (!this.rec) return;
-    this.api.reconciliation(this.rec.header.id, this.fromDate || null).subscribe({ next: (d) => (this.rec = d), error: (e) => this.fail(e, 'Could not reload') });
+    this.api.reconciliation(this.rec.header.id, this.fromDate || null).subscribe({ next: (d) => (this.rec = d), error: (e) => this.fail(e, T('Could not reload')) });
   }
 
   private apply(call: import('rxjs').Observable<ReconDetail>, message: string | null): void {
@@ -409,7 +410,7 @@ export class AccountingControlsComponent implements OnInit {
         if (message) this.done = message;
       },
       error: (e) => {
-        this.fail(e, 'That did not work');
+        this.fail(e, T('That did not work'));
         this.reloadRec();
       },
     });
@@ -444,7 +445,7 @@ export class AccountingControlsComponent implements OnInit {
         this.adjMemo = '';
         this.done = 'Posted to the ledger and ticked.';
       },
-      error: (e) => this.fail(e, 'Could not post that'),
+      error: (e) => this.fail(e, T('Could not post that')),
     });
   }
 
@@ -454,7 +455,7 @@ export class AccountingControlsComponent implements OnInit {
   }
 
   cancelRec(): void {
-    if (!this.rec || !confirm('Cancel this reconciliation? The ticks are discarded. Bank charges you posted from here stay in the ledger.')) return;
+    if (!this.rec || !confirm(T('Cancel this reconciliation? The ticks are discarded. Bank charges you posted from here stay in the ledger.'))) return;
     this.busy = true;
     this.api.cancel(this.rec.header.id).subscribe({
       next: () => {
@@ -462,12 +463,12 @@ export class AccountingControlsComponent implements OnInit {
         this.closeRec();
         this.done = 'Cancelled.';
       },
-      error: (e) => this.fail(e, 'Could not cancel'),
+      error: (e) => this.fail(e, T('Could not cancel')),
     });
   }
 
   undoRec(r: ReconRow): void {
-    if (!confirm(`Undo ${r.reconciliationNumber}? Its lines become unmatched again.`)) return;
+    if (!confirm(T('Undo {p0}? Its lines become unmatched again.', { p0: r.reconciliationNumber }))) return;
     this.busy = true;
     this.api.undo(r.id).subscribe({
       next: () => {
@@ -475,7 +476,7 @@ export class AccountingControlsComponent implements OnInit {
         this.done = `${r.reconciliationNumber} undone.`;
         this.loadRecs();
       },
-      error: (e) => this.fail(e, 'Could not undo'),
+      error: (e) => this.fail(e, T('Could not undo')),
     });
   }
 
@@ -514,12 +515,12 @@ export class AccountingControlsComponent implements OnInit {
         this.opening = s;
         this.done = 'Opening balances recorded.';
       },
-      error: (e) => this.fail(e, 'Could not record the opening balances'),
+      error: (e) => this.fail(e, T('Could not record the opening balances')),
     });
   }
 
   reverseOpening(): void {
-    if (!confirm('Reverse the opening balances? An equal and opposite entry is posted so you can enter them again.')) return;
+    if (!confirm(T('Reverse the opening balances? An equal and opposite entry is posted so you can enter them again.'))) return;
     this.busy = true;
     this.api.reverseOpening().subscribe({
       next: (s) => {
@@ -527,7 +528,7 @@ export class AccountingControlsComponent implements OnInit {
         this.opening = s;
         this.done = 'Opening balances reversed. You can enter them again.';
       },
-      error: (e) => this.fail(e, 'Could not reverse'),
+      error: (e) => this.fail(e, T('Could not reverse')),
     });
   }
 }

@@ -8,6 +8,7 @@ import { PaperButtonComponent } from '../shared/paper-button.component';
 import { ModuleApiService, ModuleInfo } from '../core/api/module-api.service';
 import { LicenseApiService, LicenseStatus, ModuleRequestInfo, RequestResult } from '../core/api/license-api.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Settings > Modules (admin only). A module is usable when it is in the license NIWE issued for this installation AND an admin has activated it.
  * Modules that are not in the license are shown locked with a Request button: the request goes to NIWE, who send a new license file that is
@@ -164,11 +165,11 @@ export class ModulesComponent implements OnInit {
   private reload(): void {
     this.modulesApi.list().subscribe({
       next: (m) => (this.modules = m),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load modules'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load modules')),
     });
     this.licenseApi.status().subscribe({
       next: (s) => (this.lic = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load the license'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load the license')),
     });
   }
 
@@ -186,7 +187,7 @@ export class ModulesComponent implements OnInit {
   activate(m: ModuleInfo): void {
     const together = m.requires.filter((k) => !this.modules.find((x) => x.key === k)?.enabled);
     const extra = together.length ? ` This also activates ${this.names(together)}.` : '';
-    if (!confirm(`Activate ${m.name}? Activation is permanent — once activated, a module can't be deactivated.${extra}`)) {
+    if (!confirm(T('Activate {p0}? Activation is permanent — once activated, a module can\'t be deactivated.{p1}', { p0: m.name, p1: extra }))) {
       return;
     }
     this.error = null;
@@ -203,7 +204,7 @@ export class ModulesComponent implements OnInit {
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Could not activate the module';
+        this.error = err?.error?.message ?? T('Could not activate the module');
       },
     });
   }
@@ -227,13 +228,13 @@ export class ModulesComponent implements OnInit {
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Could not send the request';
+        this.error = err?.error?.message ?? T('Could not send the request');
       },
     });
   }
 
   withdraw(m: ModuleInfo): void {
-    if (!confirm(`Withdraw the request for ${m.name}?`)) return;
+    if (!confirm(T('Withdraw the request for {p0}?', { p0: m.name }))) return;
     this.error = null;
     this.lastRequest = null;
     this.busyKey = m.key;
@@ -252,13 +253,13 @@ export class ModulesComponent implements OnInit {
           },
           error: (err) => {
             this.busyKey = null;
-            this.error = err?.error?.message ?? 'Could not withdraw the request';
+            this.error = err?.error?.message ?? T('Could not withdraw the request');
           },
         });
       },
       error: (err) => {
         this.busyKey = null;
-        this.error = err?.error?.message ?? 'Could not load the requests';
+        this.error = err?.error?.message ?? T('Could not load the requests');
       },
     });
   }
@@ -282,12 +283,12 @@ export class ModulesComponent implements OnInit {
         },
         error: (err) => {
           this.installing = false;
-          this.error = err?.error?.message ?? 'The license could not be installed';
+          this.error = err?.error?.message ?? T('The license could not be installed');
         },
       });
     } catch {
       this.installing = false;
-      this.error = 'The file could not be read';
+      this.error = T('The file could not be read');
     }
   }
 

@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { MailedBuyer, RealEstateApiService, SaleNote, SaleNoteKind } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** On a sold unit: tell the buyer what is owed (reminder, statement by e-mail) and keep a log of calls and promises. */
 @Component({
   selector: 'app-re-sale-collection',
@@ -86,12 +87,12 @@ export class ReSaleCollectionComponent implements OnInit, OnChanges {
     if (this.saleId == null) return;
     this.error = null;
     this.notice = null;
-    if (!this.text.trim()) { this.error = 'Write what was said.'; return; }
-    if (this.kind === 'PROMISE' && !this.promise) { this.error = 'Choose the date the buyer promised to pay.'; return; }
+    if (!this.text.trim()) { this.error = T('Write what was said.'); return; }
+    if (this.kind === 'PROMISE' && !this.promise) { this.error = T('Choose the date the buyer promised to pay.'); return; }
     this.busy = true;
     this.api.addSaleNote(this.saleId, { kind: this.kind, text: this.text.trim(), promiseDate: this.kind === 'PROMISE' ? this.promise : null }).subscribe({
-      next: () => { this.busy = false; this.text = ''; this.promise = ''; this.notice = 'Saved.'; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save'; },
+      next: () => { this.busy = false; this.text = ''; this.promise = ''; this.notice = T('Saved.'); this.load(); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save'); },
     });
   }
 
@@ -102,8 +103,8 @@ export class ReSaleCollectionComponent implements OnInit, OnChanges {
     this.busy = true;
     const call: Observable<MailedBuyer> = what === 'remind' ? this.api.remindBuyer(this.saleId) : this.api.emailStatement(this.saleId);
     call.subscribe({
-      next: (m) => { this.busy = false; this.notice = m.message || 'Sent to ' + m.sentTo; this.load(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'That did not work'; },
+      next: (m) => { this.busy = false; this.notice = m.message || T('Sent to {p0}', { p0: m.sentTo }); this.load(); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
   }
 }

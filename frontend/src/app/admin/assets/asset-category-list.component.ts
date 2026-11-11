@@ -8,6 +8,7 @@ import { AccountApiService } from '../../core/api/account-api.service';
 import { Account } from '../../core/models';
 import { AssetApiService, AssetCategory, DepreciationMethod } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Assets > Categories: the kinds of asset and the depreciation terms new assets of that kind start with. */
 @Component({
   selector: 'app-asset-category-list',
@@ -113,7 +114,7 @@ export class AssetCategoryListComponent implements OnInit {
   load(): void {
     this.api.categories().subscribe({
       next: (c) => (this.categories = c),
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load categories'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load categories')),
     });
   }
 
@@ -140,7 +141,7 @@ export class AssetCategoryListComponent implements OnInit {
         this.reset();
         this.load();
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not save the category'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not save the category')),
     });
   }
 }

@@ -11,6 +11,7 @@ import {
   BILLING_LABEL, BillPreview, BillRequestPayload, BillResult, FeeTermsPayload, LawApiService, MatterBilling, Option,
 } from '../../core/api/law-api.service';
 
+import { T } from '../../core/i18n/t';
 /**
  * The Billing tab of a matter: fee terms and rates, hours (approval), costs paid for the client, fixed-fee stages, and turning it all into a
  * draft invoice. The server decides who may do what; the buttons follow the flags it sends (canTerms, canBill, canWork, canApprove).
@@ -290,7 +291,7 @@ export class MatterBillingComponent implements OnChanges {
   load(): void {
     this.api.billing(this.matterId).subscribe({
       next: (x) => this.show(x),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the billing'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the billing')),
     });
   }
 
@@ -312,7 +313,7 @@ export class MatterBillingComponent implements OnChanges {
     this.lastInvoiceId = null;
     call.subscribe({
       next: (x) => { this.busy = false; this.show(x); if (message) this.info = message; if (after) after(); this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Something went wrong'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Something went wrong'); },
     });
   }
 
@@ -325,34 +326,34 @@ export class MatterBillingComponent implements OnChanges {
     this.editTerms = true;
   }
   saveTerms(): void {
-    this.run(this.api.saveTerms(this.matterId, { ...this.tf, billingNote: this.termsNote.trim() || null }), 'Fee terms saved.', () => (this.editTerms = false));
+    this.run(this.api.saveTerms(this.matterId, { ...this.tf, billingNote: this.termsNote.trim() || null }), T('Fee terms saved.'), () => (this.editTerms = false));
   }
   saveRate(): void {
     if (!this.rate.userId || this.rate.hourlyRate == null) return;
-    this.run(this.api.setRate(this.matterId, this.rate.userId, this.rate.hourlyRate), 'Rate saved.', () => (this.rate = { userId: null, hourlyRate: null }));
+    this.run(this.api.setRate(this.matterId, this.rate.userId, this.rate.hourlyRate), T('Rate saved.'), () => (this.rate = { userId: null, hourlyRate: null }));
   }
-  removeRate(userId: number): void { this.run(this.api.removeRate(this.matterId, userId), 'Rate removed.'); }
+  removeRate(userId: number): void { this.run(this.api.removeRate(this.matterId, userId), T('Rate removed.')); }
 
   // ---- hours
   toggle(id: number): void { if (!this.selected.delete(id)) this.selected.add(id); }
   selectWaiting(): void { this.selected = new Set(this.waiting().map((e) => e.id)); }
-  approve(): void { this.run(this.api.approveTime(this.matterId, [...this.selected]), 'Time approved.', () => (this.selected = new Set())); }
-  reject(): void { this.run(this.api.rejectTime(this.matterId, [...this.selected], this.rejectReason.trim()), 'Time sent back.', () => { this.selected = new Set(); this.rejectReason = ''; }); }
+  approve(): void { this.run(this.api.approveTime(this.matterId, [...this.selected]), T('Time approved.'), () => (this.selected = new Set())); }
+  reject(): void { this.run(this.api.rejectTime(this.matterId, [...this.selected], this.rejectReason.trim()), T('Time sent back.'), () => { this.selected = new Set(); this.rejectReason = ''; }); }
 
   // ---- costs
   costChargeDefault(): void { if (!this.chargeTouched) this.cost.chargeAmount = this.cost.amount; }
   addCost(): void {
-    this.run(this.api.addCost(this.matterId, { ...this.cost, description: this.cost.description.trim(), supplierName: this.cost.supplierName.trim() || null }), 'Cost added.',
+    this.run(this.api.addCost(this.matterId, { ...this.cost, description: this.cost.description.trim(), supplierName: this.cost.supplierName.trim() || null }), T('Cost added.'),
       () => { this.cost = { expenseDate: null, description: '', supplierName: '', amount: null, chargeAmount: null, expenseAccountId: null }; this.chargeTouched = false; });
   }
-  deleteCost(id: number): void { if (confirm('Delete this cost?')) this.run(this.api.deleteCost(this.matterId, id), 'Cost deleted.'); }
+  deleteCost(id: number): void { if (confirm(T('Delete this cost?'))) this.run(this.api.deleteCost(this.matterId, id), T('Cost deleted.')); }
 
   // ---- stages
   addStage(): void {
-    this.run(this.api.addStage(this.matterId, { description: this.stage.description.trim(), amount: this.stage.amount, dueDate: this.stage.dueDate }), 'Stage added.',
+    this.run(this.api.addStage(this.matterId, { description: this.stage.description.trim(), amount: this.stage.amount, dueDate: this.stage.dueDate }), T('Stage added.'),
       () => (this.stage = { description: '', amount: null, dueDate: null }));
   }
-  deleteStage(id: number): void { if (confirm('Delete this stage?')) this.run(this.api.deleteStage(this.matterId, id), 'Stage deleted.'); }
+  deleteStage(id: number): void { if (confirm(T('Delete this stage?'))) this.run(this.api.deleteStage(this.matterId, id), T('Stage deleted.')); }
   toggleStage(id: number): void { if (!this.stageSel.delete(id)) this.stageSel.add(id); this.preview = null; }
   toggleCost(id: number): void { if (!this.costSel.delete(id)) this.costSel.add(id); this.preview = null; }
 
@@ -368,7 +369,7 @@ export class MatterBillingComponent implements OnChanges {
     this.error = null;
     this.api.previewBill(this.matterId, this.billBody()).subscribe({
       next: (p) => { this.busy = false; this.preview = p; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not prepare the invoice'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not prepare the invoice'); },
     });
   }
   doBill(): void {
@@ -381,11 +382,11 @@ export class MatterBillingComponent implements OnChanges {
         this.costSel = new Set();
         this.bill.recoveredAmount = null;
         this.load();
-        this.info = r.invoiceNumber ? `Draft invoice ${r.invoiceNumber} created.` : 'Billed against the retainer.';
+        this.info = r.invoiceNumber ? T('Draft invoice {p0} created.', { p0: r.invoiceNumber }) : T('Billed against the retainer.');
         this.lastInvoiceId = r.invoiceId;
         this.changed.emit();
       },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not create the invoice'; },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not create the invoice'); },
     });
   }
   askRetainer(): void {
@@ -393,12 +394,12 @@ export class MatterBillingComponent implements OnChanges {
     this.busy = true;
     this.error = null;
     this.api.requestRetainer(this.matterId, { amount: this.retainerAmount, dueDate: this.bill.dueDate, notes: null }).subscribe({
-      next: (r: BillResult) => { this.busy = false; this.load(); this.info = `Retainer invoice ${r.invoiceNumber} created.`; this.lastInvoiceId = r.invoiceId; this.changed.emit(); },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not create the retainer invoice'; },
+      next: (r: BillResult) => { this.busy = false; this.load(); this.info = T('Retainer invoice {p0} created.', { p0: r.invoiceNumber }); this.lastInvoiceId = r.invoiceId; this.changed.emit(); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not create the retainer invoice'); },
     });
   }
   release(billId: number, stale: boolean): void {
     const q = stale ? 'Free the hours, costs and stages of this bill so they can be billed again?' : 'Take this bill back? Its draft invoice is deleted and the work can be billed again.';
-    if (confirm(q)) this.run(this.api.releaseBill(this.matterId, billId), 'Bill taken back.');
+    if (confirm(q)) this.run(this.api.releaseBill(this.matterId, billId), T('Bill taken back.'));
   }
 }

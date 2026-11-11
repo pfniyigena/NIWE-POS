@@ -12,6 +12,7 @@ import {
   VIEWING_STATUS_LABEL, ViewingStatus,
 } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Leads > one lead: contact details, what they want, the diary of calls, viewings, and the properties that suit them. */
 @Component({
   selector: 'app-lead-detail',
@@ -183,7 +184,7 @@ export class LeadDetailComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.api.lead(id).subscribe({
       next: (l) => { this.l = l; this.loadMatches(); },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the lead'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the lead')),
     });
   }
 
@@ -262,7 +263,7 @@ export class LeadDetailComponent implements OnInit {
   }
 
   removeNote(noteId: number): void {
-    if (!this.l || !confirm('Remove this entry from the diary?')) return;
+    if (!this.l || !confirm(T('Remove this entry from the diary?'))) return;
     this.api.deleteNote(this.l.id, noteId).subscribe({ next: (l) => (this.l = l), error: (e) => (this.stageError = e?.error?.message ?? 'Could not remove the entry') });
   }
 
@@ -289,10 +290,10 @@ export class LeadDetailComponent implements OnInit {
   }
 
   remove(): void {
-    if (!this.l || !confirm('Delete this lead? This cannot be undone.')) return;
+    if (!this.l || !confirm(T('Delete this lead? This cannot be undone.'))) return;
     this.api.deleteLead(this.l.id).subscribe({
       next: () => this.router.navigate(['/admin/realestate/leads']),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not delete the lead'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not delete the lead')),
     });
   }
 }

@@ -7,6 +7,7 @@ import { PmSettings, PmSettingsPayload, PropertyMgmtApiService } from '../../cor
 import { AutoRunResult, PmStatementApiService } from '../../core/api/pm-statement-api.service';
 import { PmReminderSettingsComponent } from './pm-reminder-settings.component';
 
+import { T } from '../../core/i18n/t';
 /** Property Management > Settings (admin): areas, when a lease counts as ending soon, the usual rent due day, and the usual management fee. */
 @Component({
   selector: 'app-pm-settings',
@@ -76,7 +77,7 @@ export class PmSettingsComponent implements OnInit {
   constructor(private api: PropertyMgmtApiService, private statementApi: PmStatementApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => this.fill(s), error: (e) => (this.error = e?.error?.message ?? 'Could not load the settings') });
+    this.api.settings().subscribe({ next: (s) => this.fill(s), error: (e) => (this.error = e?.error?.message ?? T('Could not load the settings')) });
   }
 
   private fill(s: PmSettings): void {
@@ -101,7 +102,7 @@ export class PmSettingsComponent implements OnInit {
     this.ranResult = null;
     this.statementApi.autoRun(true).subscribe({
       next: (r) => { this.running = false; this.ranResult = r; this.through = r.periodTo; },
-      error: (e) => { this.running = false; this.error = e?.error?.message ?? 'Could not make the statements'; },
+      error: (e) => { this.running = false; this.error = e?.error?.message ?? T('Could not make the statements'); },
     });
   }
 
@@ -120,7 +121,7 @@ export class PmSettingsComponent implements OnInit {
     else if (this.hadFeeVat) p.clearFeeVat = true;
     this.api.saveSettings(p).subscribe({
       next: (s) => { this.saving = false; this.saved = true; this.fill(s); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the settings'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the settings'); },
     });
   }
 }

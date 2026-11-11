@@ -10,6 +10,7 @@ import { CostCenterApiService } from '../../core/api/cost-center-api.service';
 import { AuthService } from '../../core/auth.service';
 import { Account, CostCenter, ExpenseBudget, ExpenseBudgetStatus } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Expenses > Budgets — a monthly allowance per expense category or cost center, and how much of it is used in the month shown. */
 @Component({
   selector: 'app-expense-budgets',
@@ -128,7 +129,7 @@ export class ExpenseBudgetsComponent implements OnInit {
     this.api.budgets(this.year).subscribe({ next: (b) => (this.budgets = b), error: () => {} });
     this.api.budgetStatus(this.year, this.month).subscribe({
       next: (r) => (this.rows = r),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the budgets'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the budgets')),
     });
   }
 
@@ -148,19 +149,19 @@ export class ExpenseBudgetsComponent implements OnInit {
         this.editId = null;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save the budget'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save the budget')),
     });
   }
 
   remove(r: ExpenseBudgetStatus): void {
-    if (!confirm('Remove the budget for ' + r.label + '?')) return;
-    this.api.deleteBudget(r.budgetId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? 'Could not remove it') });
+    if (!confirm(T('Remove the budget for {p0}?', { p0: r.label }))) return;
+    this.api.deleteBudget(r.budgetId).subscribe({ next: () => this.load(), error: (err) => (this.error = err?.error?.message ?? T('Could not remove it')) });
   }
 
   add(): void {
     this.error = null;
     if (!this.newAmount) {
-      this.error = 'Enter the monthly budget.';
+      this.error = T('Enter the monthly budget.');
       return;
     }
     const body = {
@@ -178,7 +179,7 @@ export class ExpenseBudgetsComponent implements OnInit {
         this.newCostCenterId = null;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not add the budget'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not add the budget')),
     });
   }
 }

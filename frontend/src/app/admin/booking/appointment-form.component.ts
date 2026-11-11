@@ -10,6 +10,7 @@ import { CustomerApiService } from '../../core/api/customer-api.service';
 import { Customer } from '../../core/models';
 import { today } from '../../core/time-util';
 
+import { T } from '../../core/i18n/t';
 /** Booking > New appointment (staff): pick a service and a day, see only the times that really are free, then who it is for. */
 @Component({
   selector: 'app-appointment-form',
@@ -150,7 +151,7 @@ export class AppointmentFormComponent implements OnInit {
           this.onServiceChange();
         }
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the services'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the services')),
     });
     this.customersApi.list().subscribe({ next: (l) => (this.customers = l), error: () => {} });
   }
@@ -169,7 +170,7 @@ export class AppointmentFormComponent implements OnInit {
     this.loadingSlots = true;
     this.api.slots(this.serviceId, this.date, this.staffId).subscribe({
       next: (l) => { this.slots = l; this.loadingSlots = false; this.slotsLoaded = true; },
-      error: (e) => { this.loadingSlots = false; this.error = e?.error?.message ?? 'Could not check availability'; },
+      error: (e) => { this.loadingSlots = false; this.error = e?.error?.message ?? T('Could not check availability'); },
     });
   }
 
@@ -199,7 +200,7 @@ export class AppointmentFormComponent implements OnInit {
       guestEmail: this.guestEmail.trim() || null, notes: this.notes.trim() || null, skipPayment: this.skipPayment,
     }).subscribe({
       next: (a) => this.router.navigate(['/admin/booking/appointments', a.id]),
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not book this appointment'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not book this appointment'); },
     });
   }
 }

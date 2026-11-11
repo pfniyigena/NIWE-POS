@@ -6,6 +6,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { StockCountApiService } from '../core/api/stock-count-api.service';
 import { StockCount } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Stock counts — physical stocktakes, newest first. */
 @Component({
   selector: 'app-stock-count-list',
@@ -61,7 +62,7 @@ export class StockCountListComponent implements OnInit {
   ngOnInit(): void {
     this.api.listAll().subscribe({
       next: (c) => (this.counts = c),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load stock counts'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load stock counts')),
     });
   }
 }

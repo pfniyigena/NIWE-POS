@@ -7,6 +7,7 @@ import { ChecklistItem, HkBoard, HkStaff, HkTask, HotelApiService } from '../cor
 import { downloadBlob } from '../core/download-file';
 import { errMsg, today } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Housekeeping > Today's board: the day's cleaning tasks, who does them, how long they took, and the supervisor's inspection. */
 @Component({
   selector: 'app-hk-board',
@@ -168,24 +169,24 @@ export class HkBoardComponent implements OnInit {
   prepare(): void {
     this.busy = true;
     this.error = this.message = null;
-    this.api.hkGenerate().subscribe({ next: (b) => { this.busy = false; this.b = b; this.message = `Board ready: ${b.summary.total} room${b.summary.total === 1 ? '' : 's'} to clean.`; }, error: (e) => this.fail(e, 'Could not prepare the board') });
+    this.api.hkGenerate().subscribe({ next: (b) => { this.busy = false; this.b = b; this.message = T('Board ready: {p0} room{p1} to clean.', { p0: b.summary.total, p1: b.summary.total === 1 ? '' : 's' }); }, error: (e) => this.fail(e, T('Could not prepare the board')) });
   }
 
   autoAssign(): void {
     this.busy = true;
     this.error = this.message = null;
-    this.api.hkAutoAssign().subscribe({ next: (b) => { this.busy = false; this.b = b; this.message = 'Work shared out between the housekeepers.'; }, error: (e) => this.fail(e, 'Could not share out the work') });
+    this.api.hkAutoAssign().subscribe({ next: (b) => { this.busy = false; this.b = b; this.message = T('Work shared out between the housekeepers.'); }, error: (e) => this.fail(e, T('Could not share out the work')) });
   }
 
   assign(t: HkTask, staffId: number | null): void {
     this.error = this.message = null;
-    this.api.hkAssign(t.id, staffId).subscribe({ next: (r) => this.apply(r), error: (e) => this.fail(e, 'Could not assign the room') });
+    this.api.hkAssign(t.id, staffId).subscribe({ next: (r) => this.apply(r), error: (e) => this.fail(e, T('Could not assign the room')) });
   }
 
   act(t: HkTask, action: 'start' | 'finish' | 'reopen'): void {
     this.busy = true;
     this.error = this.message = null;
-    this.api.hkAct(t.id, action).subscribe({ next: (r) => { this.busy = false; this.apply(r); }, error: (e) => this.fail(e, 'Could not update the room') });
+    this.api.hkAct(t.id, action).subscribe({ next: (r) => { this.busy = false; this.apply(r); }, error: (e) => this.fail(e, T('Could not update the room')) });
   }
 
   skip(t: HkTask): void {
@@ -193,13 +194,13 @@ export class HkBoardComponent implements OnInit {
     if (reason === null) return;
     this.busy = true;
     this.error = this.message = null;
-    this.api.hkAct(t.id, 'skip', { reason }).subscribe({ next: (r) => { this.busy = false; this.apply(r); }, error: (e) => this.fail(e, 'Could not skip the room') });
+    this.api.hkAct(t.id, 'skip', { reason }).subscribe({ next: (r) => { this.busy = false; this.apply(r); }, error: (e) => this.fail(e, T('Could not skip the room')) });
   }
 
   dnd(t: HkTask): void {
     this.busy = true;
     this.error = this.message = null;
-    this.api.hkDnd(t.roomId, !t.dnd).subscribe({ next: (b) => { this.busy = false; this.b = b; }, error: (e) => this.fail(e, 'Could not change do-not-disturb') });
+    this.api.hkDnd(t.roomId, !t.dnd).subscribe({ next: (b) => { this.busy = false; this.b = b; }, error: (e) => this.fail(e, T('Could not change do-not-disturb')) });
   }
 
   openInspect(t: HkTask): void {
@@ -216,14 +217,14 @@ export class HkBoardComponent implements OnInit {
       next: (r) => {
         this.busy = false;
         this.inspecting = null;
-        this.message = r.inspectionResult === 'PASS' ? `Room ${t.roomNumber} passed inspection.` : `Room ${t.roomNumber} sent back for re-cleaning.`;
+        this.message = r.inspectionResult === 'PASS' ? T('Room {p0} passed inspection.', { p0: t.roomNumber }) : T('Room {p0} sent back for re-cleaning.', { p0: t.roomNumber });
         this.apply(r);
       },
-      error: (e) => this.fail(e, 'Could not record the inspection'),
+      error: (e) => this.fail(e, T('Could not record the inspection')),
     });
   }
 
   exportBoard(format: 'xlsx' | 'pdf' | 'csv'): void {
-    this.api.hkBoardExport(this.date, format).subscribe({ next: (blob) => downloadBlob(blob, `housekeeping-${this.date}.${format}`), error: () => (this.error = 'The export failed.') });
+    this.api.hkBoardExport(this.date, format).subscribe({ next: (blob) => downloadBlob(blob, `housekeeping-${this.date}.${format}`), error: () => (this.error = T('The export failed.')) });
   }
 }

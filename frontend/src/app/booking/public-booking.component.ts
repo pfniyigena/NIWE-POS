@@ -7,6 +7,7 @@ import { PublicBookingApiService, PublicConfirmation, PublicInfo, PublicService 
 import { addDays, today } from '../core/time-util';
 import { NiweFooterComponent } from '../shared/niwe-footer.component';
 
+import { T } from '../core/i18n/t';
 /**
  * The public booking page (/book): no login. Pick a service, optionally a person, a day, then one of the times that
  * are really free, and leave a name and phone. The confirmation shows the code the guest needs to look up or cancel
@@ -190,7 +191,7 @@ export class PublicBookingComponent implements OnInit {
     this.loading = true;
     this.api.slots(this.serviceId, this.date, this.staffId).subscribe({
       next: (l) => { this.slots = l; this.loading = false; this.loaded = true; },
-      error: (e) => { this.loading = false; this.error = e?.error?.message ?? 'Could not check availability'; },
+      error: (e) => { this.loading = false; this.error = e?.error?.message ?? T('Could not check availability'); },
     });
   }
 
@@ -203,7 +204,7 @@ export class PublicBookingComponent implements OnInit {
       email: this.email.trim() || null, notes: this.notes.trim() || null, website: this.website,
     }).subscribe({
       next: (c) => { this.confirmation = c; this.saving = false; },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not complete the booking. Please try another time.'; this.loadSlots(); },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not complete the booking. Please try another time.'); this.loadSlots(); },
     });
   }
 
@@ -218,12 +219,12 @@ export class PublicBookingComponent implements OnInit {
   cancel(): void {
     if (!this.confirmation) return;
     const phone = this.phone || this.lookupPhone;
-    if (!confirm('Cancel this booking?')) return;
+    if (!confirm(T('Cancel this booking?'))) return;
     this.saving = true;
     this.error = null;
     this.api.cancel(this.confirmation.confirmationCode, phone.trim()).subscribe({
       next: (c) => { this.confirmation = c; this.saving = false; },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not cancel this booking.'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not cancel this booking.'); },
     });
   }
 
@@ -248,7 +249,7 @@ export class PublicBookingComponent implements OnInit {
     this.mloading = true;
     this.api.rescheduleSlots(this.confirmation.confirmationCode, this.contactPhone(), this.mdate).subscribe({
       next: (l) => { this.mslots = l; this.mloading = false; this.mloaded = true; },
-      error: (e) => { this.mloading = false; this.error = e?.error?.message ?? 'Could not check availability'; },
+      error: (e) => { this.mloading = false; this.error = e?.error?.message ?? T('Could not check availability'); },
     });
   }
 
@@ -258,7 +259,7 @@ export class PublicBookingComponent implements OnInit {
     this.error = null;
     this.api.reschedule(this.confirmation.confirmationCode, this.contactPhone(), this.mdate, this.mtime).subscribe({
       next: (c) => { this.confirmation = c; this.saving = false; this.moving = false; this.moved = true; },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not move this booking.'; this.loadMoveSlots(); },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not move this booking.'); this.loadMoveSlots(); },
     });
   }
 
@@ -274,7 +275,7 @@ export class PublicBookingComponent implements OnInit {
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 2000);
       },
-      error: () => (this.error = 'Could not create the calendar file.'),
+      error: () => (this.error = T('Could not create the calendar file.')),
     });
   }
 

@@ -9,6 +9,7 @@ import { EfrisApiService } from '../../core/api/efris-api.service';
 import { EfrisChadApiService } from '../../core/api/efris-chad-api.service';
 import { AppSummary, EfrisChadTerminal, EfrisTerminal } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Admin > Settings > Apps > Configure (`/admin/apps/:key`) — Task: "This will work as a plugin
  * (or apps) to be installed and configured."
@@ -279,10 +280,10 @@ export class AppSettingsComponent implements OnInit {
       next: (apps) => {
         this.app = apps.find((a) => a.key === this.key) ?? null;
         if (!this.app?.installed) {
-          this.error = 'This app is not installed — go back to Apps and install it first.';
+          this.error = T('This app is not installed — go back to Apps and install it first.');
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load app'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load app')),
     });
     if (this.key === 'EFRIS_RW') {
       this.loadTerminals();
@@ -359,7 +360,7 @@ export class AppSettingsComponent implements OnInit {
    * EFRIS Chad instead. Confirms first since, unlike Save, this is destructive.
    */
   clearTerminalSettings(terminal: EfrisTerminal): void {
-    if (!confirm(`Clear EFRIS Rwanda settings for ${terminal.registerName}? This removes its URL/DB/UID/password and logos.`)) return;
+    if (!confirm(T('Clear EFRIS Rwanda settings for {p0}? This removes its URL/DB/UID/password and logos.', { p0: terminal.registerName }))) return;
     this.clearingTerminalId = terminal.registerId;
     this.terminalsError = null;
     this.efrisApi.clearTerminalSettings(terminal.registerId).subscribe({
@@ -431,7 +432,7 @@ export class AppSettingsComponent implements OnInit {
    * unmapped or free to be mapped to EFRIS Rwanda instead.
    */
   clearChadTerminalSettings(terminal: EfrisChadTerminal): void {
-    if (!confirm(`Clear EFRIS Chad settings for ${terminal.registerName}? This removes its URL/credentials, fiscal identifiers, and logos.`)) return;
+    if (!confirm(T('Clear EFRIS Chad settings for {p0}? This removes its URL/credentials, fiscal identifiers, and logos.', { p0: terminal.registerName }))) return;
     this.clearingChadTerminalId = terminal.registerId;
     this.chadTerminalsError = null;
     this.efrisChadApi.clearTerminalSettings(terminal.registerId).subscribe({
@@ -450,14 +451,14 @@ export class AppSettingsComponent implements OnInit {
   enable(): void {
     this.appsApi.enable(this.key).subscribe({
       next: (a) => (this.app = a),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to enable app'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to enable app')),
     });
   }
 
   disable(): void {
     this.appsApi.disable(this.key).subscribe({
       next: (a) => (this.app = a),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to disable app'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to disable app')),
     });
   }
 }

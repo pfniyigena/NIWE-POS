@@ -10,6 +10,7 @@ import { applyThermalPrintStyle } from '../core/hardware/thermal-css';
 import { RegisterApiService } from '../core/api/register-api.service';
 import { RestaurantOrder, StoreSettings } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant order receipt — lookup + reprint (Restaurant Receipts' "View / Reprint" link), the
  * simplified restaurant counterpart to `checkout/receipt.component.ts`. Deliberately light/
@@ -182,7 +183,7 @@ export class RestaurantReceiptComponent implements OnInit, OnDestroy {
     });
     this.orderApi.getById(orderId).subscribe({
       next: (o) => (this.order = o),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load receipt'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load receipt')),
     });
   }
 

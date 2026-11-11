@@ -10,6 +10,7 @@ import { PaymentMethodApiService } from '../../core/api/payment-method-api.servi
 import { InstallmentApiService, InstallmentPlanRequest, InstallmentPreview } from '../../core/api/installment-api.service';
 import { Invoice, PaymentMethodOption } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Installments > New plan: pick an issued invoice, set the terms, preview the schedule, create. */
 @Component({
   selector: 'app-installment-plan-form',
@@ -129,7 +130,7 @@ export class InstallmentPlanFormComponent implements OnInit {
         this.invoices = all.filter((i) => i.status === 'ISSUED' && i.customerId && i.amountOutstanding > 0);
         if (wanted && this.invoices.some((i) => i.id === wanted)) this.req.invoiceId = wanted;
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the invoices'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the invoices')),
     });
   }
 
@@ -146,7 +147,7 @@ export class InstallmentPlanFormComponent implements OnInit {
         this.busy = false;
       },
       error: (e) => {
-        this.error = e?.error?.message ?? 'Could not work out the schedule';
+        this.error = e?.error?.message ?? T('Could not work out the schedule');
         this.preview = null;
         this.busy = false;
       },
@@ -159,7 +160,7 @@ export class InstallmentPlanFormComponent implements OnInit {
     this.api.create(this.req).subscribe({
       next: (d) => this.router.navigate(['/admin/installments', d.plan.id]),
       error: (e) => {
-        this.error = e?.error?.message ?? 'Could not create the plan';
+        this.error = e?.error?.message ?? T('Could not create the plan');
         this.busy = false;
       },
     });

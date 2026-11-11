@@ -7,6 +7,7 @@ import { forkJoin } from 'rxjs';
 import { ShellComponent } from '../../shared/shell.component';
 import { DealDto, DealPayload, LeadRow, Option, PropertyRow, RealEstateApiService } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string | null => { const t = (v ?? '').trim(); return t ? t : null; };
 
@@ -90,7 +91,7 @@ export class DealFormComponent implements OnInit {
       this.id = Number(idParam);
       this.api.deal(this.id).subscribe({
         next: (d) => { this.deal = d; this.fill(d); },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the deal'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the deal')),
       });
       return;
     }
@@ -105,7 +106,7 @@ export class DealFormComponent implements OnInit {
         if (pid && this.properties.some((p) => p.id === pid)) { this.f.propertyId = pid; this.propertyPicked(); }
         if (lid && this.leads.some((x) => x.id === lid)) { this.f.leadId = lid; this.leadPicked(); }
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the properties'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the properties')),
     });
   }
 
@@ -136,14 +137,14 @@ export class DealFormComponent implements OnInit {
   save(): void {
     this.error = null;
     const f = this.f;
-    if (!this.id && !f.propertyId) { this.error = 'Choose the property.'; return; }
-    if (!txt(f.buyerName)) { this.error = 'Give the buyer\'s name.'; return; }
+    if (!this.id && !f.propertyId) { this.error = T('Choose the property.'); return; }
+    if (!txt(f.buyerName)) { this.error = T('Give the buyer\'s name.'); return; }
     const payload: DealPayload = {
       buyerName: txt(f.buyerName), buyerPhone: txt(f.buyerPhone) ?? '', buyerEmail: txt(f.buyerEmail) ?? '', offerDate: f.offerDate || null, offerValidUntil: f.offerValidUntil || null,
       expectedCompletion: f.expectedCompletion || null, agentUserId: f.agentUserId, commissionPercent: num(f.commissionPercent), notes: f.notes,
     };
     if (!this.id) {
-      if (!num(f.offerAmount)) { this.error = 'Enter the amount offered.'; return; }
+      if (!num(f.offerAmount)) { this.error = T('Enter the amount offered.'); return; }
       payload.propertyId = f.propertyId;
       payload.leadId = f.leadId;
       payload.offerAmount = num(f.offerAmount);
@@ -161,7 +162,7 @@ export class DealFormComponent implements OnInit {
     const call = this.id ? this.api.updateDeal(this.id, payload) : this.api.createDeal(payload);
     call.subscribe({
       next: (d) => { this.saving = false; this.router.navigate(['/admin/realestate/deals', d.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the deal'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the deal'); },
     });
   }
 }

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FinalPay, HrApiService } from '../../core/api/hr-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Final pay of an employee who left: unused leave paid out, notice paid or recovered, loans taken back. It reaches the payroll of the last month as adjustments. */
 @Component({
   selector: 'app-employee-final-pay',
@@ -99,7 +100,7 @@ export class EmployeeFinalPayComponent implements OnChanges {
   load(): void {
     this.api.finalPay(this.employeeId).subscribe({
       next: (f) => this.show(f),
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the final pay'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the final pay')),
     });
   }
 
@@ -111,19 +112,19 @@ export class EmployeeFinalPayComponent implements OnChanges {
       leaveDays: Number(this.leaveDays) || 0, noticePayDays: Number(this.noticePayDays) || 0, noticeRecoverDays: Number(this.noticeRecoverDays) || 0,
       settleLoans: this.settleLoans, note: this.note.trim() || null,
     }).subscribe({
-      next: (f) => { this.busy = false; this.show(f); this.info = 'Saved. It is on the ' + this.monthLabel() + ' payroll.'; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not save the final pay'; },
+      next: (f) => { this.busy = false; this.show(f); this.info = T('Saved. It is on the {p0} payroll.', { p0: this.monthLabel() }); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not save the final pay'); },
     });
   }
 
   remove(): void {
-    if (!confirm('Take the final pay off the payroll?')) return;
+    if (!confirm(T('Take the final pay off the payroll?'))) return;
     this.busy = true;
     this.error = null;
     this.info = null;
     this.api.removeFinalPay(this.employeeId).subscribe({
-      next: (f) => { this.busy = false; this.show(f); this.info = 'Removed from the payroll.'; },
-      error: (e) => { this.busy = false; this.error = e?.error?.message ?? 'Could not remove the final pay'; },
+      next: (f) => { this.busy = false; this.show(f); this.info = T('Removed from the payroll.'); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('Could not remove the final pay'); },
     });
   }
 }

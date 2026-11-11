@@ -26,6 +26,7 @@ import { DeviceService } from '../core/hardware/device.service';
 import { PoleDisplayService } from '../core/hardware/pole-display.service';
 import { CashierSession, Category, CreditSummary, Customer, Order, OrderLine, PaymentMethodOption, PosSettings, Product, RegisterSession } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** One offline payment-method row — same shape as checkout.component.ts's PaymentRow, for the inline offline payment step. */
 interface OfflinePaymentRow {
   method: string;
@@ -1221,7 +1222,7 @@ export class TerminalComponent implements OnInit {
    */
   endMySession(): void {
     if (!this.cashierSession) return;
-    if (!confirm('End your session on this shift? Any unfinished carts will be discarded.')) return;
+    if (!confirm(T('End your session on this shift? Any unfinished carts will be discarded.'))) return;
     this.cashierSessionApi.close(this.sessionId, this.cashierSession.id).subscribe({
       next: () => {
         this.terminalSession.clear(this.sessionId);
@@ -1400,10 +1401,10 @@ export class TerminalComponent implements OnInit {
       // a clear reason rather than the generic message below.
       this.connectivity.reportNetworkFailure();
       this.error =
-        "Connection lost. This cart will be here once you're back online — use the offline cart below to keep selling in the meantime.";
+        T('Connection lost. This cart will be here once you\'re back online — use the offline cart below to keep selling in the meantime.');
       return;
     }
-    this.error = err?.error?.message ?? 'Something went wrong';
+    this.error = err?.error?.message ?? T('Something went wrong');
   }
 
   addProduct(product: Product): void {
@@ -1506,7 +1507,7 @@ export class TerminalComponent implements OnInit {
     if (!p || !order) return;
     const n = Number(p.value);
     if (isNaN(n) || n < 0) {
-      p.error = 'Enter a number';
+      p.error = T('Enter a number');
       return;
     }
     p.busy = true;
@@ -1672,7 +1673,7 @@ export class TerminalComponent implements OnInit {
   /** Cancels the current tab outright — never touches stock, since checkout never ran for it. */
   discard(): void {
     if (!this.currentOrder) return;
-    if (!confirm('Discard this order? This cannot be undone.')) return;
+    if (!confirm(T('Discard this order? This cannot be undone.'))) return;
     const discardedId = this.currentOrder.id;
     this.orderApi.discard(discardedId).subscribe({
       next: () => {
@@ -1756,7 +1757,7 @@ export class TerminalComponent implements OnInit {
 
   discardOfflineCart(): void {
     if (this.offlineCart.length === 0) return;
-    if (!confirm('Discard this offline sale? This cannot be undone.')) return;
+    if (!confirm(T('Discard this offline sale? This cannot be undone.'))) return;
     this.offlineCart = [];
     this.offlineCheckoutOpen = false;
     this.offlineError = null;
@@ -1867,7 +1868,7 @@ export class TerminalComponent implements OnInit {
   }
 
   discardQueuedSale(sale: QueuedOfflineSale): void {
-    if (!confirm('Discard this offline sale permanently? It will never be recorded, and this cannot be undone.')) return;
+    if (!confirm(T('Discard this offline sale permanently? It will never be recorded, and this cannot be undone.'))) return;
     this.offlineSync.discardQueuedSale(sale.clientTempId);
   }
 }

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "Add forget password feature ... he/she can reset the password" — step two: the link
  * from the forgot-password email lands here with a `?token=` query param (see
@@ -81,7 +82,7 @@ export class ResetPasswordComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to reset password';
+        this.error = err?.error?.message ?? T('Failed to reset password');
       },
     });
   }

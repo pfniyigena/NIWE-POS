@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { LeaseDto, LeasePayload, PropertyMgmtApiService, RENT_FREQUENCIES, RentFrequency, TenantRow, UnitRow } from '../../core/api/propertymgmt-api.service';
 
+import { T } from '../../core/i18n/t';
 const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
 const txt = (v: string | null | undefined): string => (v ?? '').trim();
 const MONTHS: Record<RentFrequency, number> = { MONTHLY: 1, QUARTERLY: 3, HALF_YEARLY: 6, ANNUAL: 12 };
@@ -93,11 +94,11 @@ export class LeaseFormComponent implements OnInit {
         next: (l) => {
           this.lease = l;
           this.locked = l.status !== 'DRAFT';
-          if (l.status !== 'DRAFT' && l.status !== 'ACTIVE') this.error = 'A lease that has ended cannot be changed.';
+          if (l.status !== 'DRAFT' && l.status !== 'ACTIVE') this.error = T('A lease that has ended cannot be changed.');
           this.f = { unitId: l.unitId, tenantId: l.tenantId, startDate: l.startDate, endDate: l.endDate, rent: l.rent, frequency: l.frequency, dueDay: l.dueDay, deposit: l.deposit,
             escalation: l.escalationPercent, noticeDays: l.noticeDays, terms: l.terms ?? '' };
         },
-        error: (e) => (this.error = e?.error?.message ?? 'Could not load the lease'),
+        error: (e) => (this.error = e?.error?.message ?? T('Could not load the lease')),
       });
     } else {
       this.api.settings().subscribe({ next: (s) => (this.f.dueDay = s.defaultDueDay), error: () => {} });
@@ -130,11 +131,11 @@ export class LeaseFormComponent implements OnInit {
     this.error = null;
     const f = this.f;
     if (!this.locked) {
-      if (!f.unitId) { this.error = 'Choose the unit.'; return; }
-      if (!f.tenantId) { this.error = 'Choose the tenant.'; return; }
-      if (!f.startDate || !f.endDate) { this.error = 'Give the start and end dates.'; return; }
-      if (f.endDate < f.startDate) { this.error = 'The lease cannot end before it starts.'; return; }
-      if (!num(f.rent)) { this.error = 'Enter the rent.'; return; }
+      if (!f.unitId) { this.error = T('Choose the unit.'); return; }
+      if (!f.tenantId) { this.error = T('Choose the tenant.'); return; }
+      if (!f.startDate || !f.endDate) { this.error = T('Give the start and end dates.'); return; }
+      if (f.endDate < f.startDate) { this.error = T('The lease cannot end before it starts.'); return; }
+      if (!num(f.rent)) { this.error = T('Enter the rent.'); return; }
     }
     // 0 clears the deposit and the yearly increase on the server.
     const p: LeasePayload = { dueDay: num(f.dueDay), escalationPercent: num(f.escalation) ?? 0, noticeDays: num(f.noticeDays), terms: txt(f.terms) };
@@ -145,7 +146,7 @@ export class LeaseFormComponent implements OnInit {
     const call = this.id ? this.api.updateLease(this.id, p) : this.api.createLease(p);
     call.subscribe({
       next: (l) => { this.saving = false; this.router.navigate(['/admin/propertymgmt/leases', l.id]); },
-      error: (e) => { this.saving = false; this.error = e?.error?.message ?? 'Could not save the lease'; },
+      error: (e) => { this.saving = false; this.error = e?.error?.message ?? T('Could not save the lease'); },
     });
   }
 }

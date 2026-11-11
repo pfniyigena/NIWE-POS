@@ -11,6 +11,7 @@ import { CustomerApiService } from '../../core/api/customer-api.service';
 import { Customer } from '../../core/models';
 import { LoyaltyApiService, LoyaltyCustomerDetail, LoyaltyCustomerRow, LoyaltySettings, LoyaltySummary } from '../../core/api/loyalty-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Sales > Loyalty points. Customers earn points on what they spend and spend them at the till. Set the rules here, see who has points, and correct a balance by hand. */
 @Component({
   selector: 'app-loyalty',
@@ -118,7 +119,7 @@ export class LoyaltyComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (err) => (this.error = err?.error?.message ?? 'Could not load the rules') });
+    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (err) => (this.error = err?.error?.message ?? T('Could not load the rules')) });
     this.customerApi.list().subscribe({ next: (c) => (this.customers = c.filter((x) => !x.walkIn)), error: () => (this.customers = []) });
     this.reload();
   }
@@ -143,7 +144,7 @@ export class LoyaltyComponent implements OnInit {
         this.rows = r.items;
         this.total = r.total;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the customers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the customers')),
     });
     this.api.summary().subscribe({ next: (x) => (this.summary = x), error: () => (this.summary = null) });
   }
@@ -174,13 +175,13 @@ export class LoyaltyComponent implements OnInit {
           this.done = r.enabled ? 'Saved. Loyalty points are on.' : 'Saved. Loyalty points are off.';
           this.load();
         },
-        error: (err) => (this.error = err?.error?.message ?? 'Could not save the rules'),
+        error: (err) => (this.error = err?.error?.message ?? T('Could not save the rules')),
       });
   }
 
   open(customerId: number): void {
     this.error = null;
-    this.api.detail(customerId).subscribe({ next: (d) => (this.detail = d), error: (err) => (this.error = err?.error?.message ?? 'Could not load the history') });
+    this.api.detail(customerId).subscribe({ next: (d) => (this.detail = d), error: (err) => (this.error = err?.error?.message ?? T('Could not load the history')) });
   }
 
   adjust(): void {
@@ -195,7 +196,7 @@ export class LoyaltyComponent implements OnInit {
         this.adjNote = '';
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not change the balance'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not change the balance')),
     });
   }
 }

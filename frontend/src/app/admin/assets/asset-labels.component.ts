@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import * as QRCode from 'qrcode';
 import { AssetApiService } from '../../core/api/asset-api.service';
 
+import { T } from '../../core/i18n/t';
 interface Tag { id: number; code: string; name: string; place: string; image: string }
 
 /**
@@ -62,7 +63,7 @@ export class AssetLabelsComponent implements OnInit {
           }))
         ).then((t) => (this.tags = t));
       },
-      error: (e) => (this.error = e?.error?.message ?? 'Failed to load the assets'),
+      error: (e) => (this.error = e?.error?.message ?? T('Failed to load the assets')),
     });
   }
 

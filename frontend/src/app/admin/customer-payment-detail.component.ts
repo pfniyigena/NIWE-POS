@@ -7,6 +7,7 @@ import { CustomerCreditApiService } from '../core/api/customer-credit-api.servic
 import { openPdfForPrint } from '../core/download-file';
 import { CustomerPayment } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Fourier: "Add view details on Customer payments" — the store-wide Customer Payments list
  * (CustomerPaymentListComponent) already shows every column inline per row, but there was no way
@@ -86,7 +87,7 @@ export class CustomerPaymentDetailComponent implements OnInit {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
     this.creditApi.getReceipt(this.id).subscribe({
       next: (p) => (this.payment = p),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load payment'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load payment')),
     });
   }
 
@@ -99,7 +100,7 @@ export class CustomerPaymentDetailComponent implements OnInit {
       },
       error: (err) => {
         this.printing = false;
-        this.error = err?.error?.message ?? 'Failed to open receipt PDF';
+        this.error = err?.error?.message ?? T('Failed to open receipt PDF');
       },
     });
   }

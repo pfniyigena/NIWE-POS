@@ -9,6 +9,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { PAGE_SIZE } from '../../core/api/paged';
 import { DEAL_STAGE_LABEL, DealRow, DealStage, Option, RealEstateApiService } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Real Estate > Deals: offers, reservations and sales, with what the buyer has paid so far. */
 @Component({
   selector: 'app-deal-list',
@@ -84,7 +85,7 @@ export class DealListComponent implements OnInit {
     this.error = null;
     this.api.dealsPage({ q: this.q.trim(), stage: this.stage, agentId: this.agentId, openOnly: this.openOnly, page: this.page, size: this.size }).subscribe({
       next: (r) => { this.list = r.items; this.total = r.total; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? 'Could not load the deals'; },
+      error: (e) => { this.loaded = true; this.error = e?.error?.message ?? T('Could not load the deals'); },
     });
   }
 

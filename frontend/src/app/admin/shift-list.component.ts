@@ -12,6 +12,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin-only oversight of every till shift (register session) across the store — the plain
  * "Sessions" screen shows the same rows to any cashier for opening/closing their own till; this
@@ -163,7 +164,7 @@ export class ShiftListComponent implements OnInit {
     this.registerApi.listRegisters().subscribe({ next: (r) => (this.registers = r), error: () => {} });
     this.userApi.list().subscribe({
       next: (users) => (this.activeStaff = users.filter((u) => u.active)),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load staff list'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load staff list')),
     });
   }
 
@@ -192,7 +193,7 @@ export class ShiftListComponent implements OnInit {
   private loadCashierSessions(shiftId: number): void {
     this.cashierSessionApi.listForShift(shiftId).subscribe({
       next: (sessions) => (this.cashierSessionsByShift = { ...this.cashierSessionsByShift, [shiftId]: sessions }),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load cashier sessions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load cashier sessions')),
     });
   }
 
@@ -214,17 +215,17 @@ export class ShiftListComponent implements OnInit {
         this.addCashierId[shiftId] = null;
         this.loadCashierSessions(shiftId);
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to add cashier'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to add cashier')),
     });
   }
 
   /** Admin bulk action: ends every open cashier session on this shift — the shift (till) itself stays open. */
   closeAllSessions(shiftId: number): void {
-    if (!confirm('End every open cashier session on this shift? Any unfinished carts will be discarded.')) return;
+    if (!confirm(T('End every open cashier session on this shift? Any unfinished carts will be discarded.'))) return;
     this.error = null;
     this.cashierSessionApi.closeAllForShift(shiftId).subscribe({
       next: () => this.loadCashierSessions(shiftId),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to close sessions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to close sessions')),
     });
   }
 }

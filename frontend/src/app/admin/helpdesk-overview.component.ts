@@ -7,6 +7,7 @@ import { HelpDeskTicketApiService } from '../core/api/helpdesk-api.service';
 import { HelpDeskSummary } from '../core/models';
 import { hdDistance, hdPriorityClass, hdStatusLabel } from './helpdesk-ui';
 
+import { T } from '../core/i18n/t';
 /** Help Desk > Overview — what needs attention right now, workload per agent, how fast and how well the desk is answering. */
 @Component({
   selector: 'app-helpdesk-overview',
@@ -95,7 +96,7 @@ export class HelpDeskOverviewComponent implements OnInit {
   ngOnInit(): void {
     this.api.summary().subscribe({
       next: (s) => (this.s = s),
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the overview'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the overview')),
     });
   }
 

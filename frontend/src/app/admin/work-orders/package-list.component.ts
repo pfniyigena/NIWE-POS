@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../../shared/shell.component';
 import { PackageSummary, WorkOrderApiService } from '../../core/api/work-order-api.service';
 
+import { T } from '../../core/i18n/t';
 /** Work Orders > Service packages: standard services with a checklist, usual parts and a fixed price. */
 @Component({
   selector: 'app-service-package-list',
@@ -41,6 +42,6 @@ export class ServicePackageListComponent implements OnInit {
   constructor(private api: WorkOrderApiService) {}
 
   ngOnInit(): void {
-    this.api.packages().subscribe({ next: (l) => (this.list = l), error: (e) => (this.error = e?.error?.message ?? 'Could not load the packages') });
+    this.api.packages().subscribe({ next: (l) => (this.list = l), error: (e) => (this.error = e?.error?.message ?? T('Could not load the packages')) });
   }
 }

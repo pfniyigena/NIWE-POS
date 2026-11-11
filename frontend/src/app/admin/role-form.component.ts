@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
 import { AccessAreaInfo, RoleApiService } from '../core/api/role-api.service';
 
+import { T } from '../core/i18n/t';
 type Level = 'NONE' | 'VIEW' | 'MANAGE';
 
 /** Create or edit a custom role: pick None / View / Manage for each access area. */
@@ -77,7 +78,7 @@ export class RoleFormComponent implements OnInit {
         for (const a of areas) this.levels[a.code] = 'NONE';
         if (this.id) this.loadRole();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load access areas'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load access areas')),
     });
   }
 
@@ -86,7 +87,7 @@ export class RoleFormComponent implements OnInit {
       next: (roles) => {
         const role = roles.find((r) => r.id === this.id);
         if (!role) {
-          this.error = 'Role not found';
+          this.error = T('Role not found');
           return;
         }
         this.name = role.name;
@@ -96,7 +97,7 @@ export class RoleFormComponent implements OnInit {
           this.levels[a.code] = role.grants.includes(a.code + '_MANAGE') ? 'MANAGE' : role.grants.includes(a.code + '_VIEW') ? 'VIEW' : 'NONE';
         }
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load role'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load role')),
     });
   }
 
@@ -110,7 +111,7 @@ export class RoleFormComponent implements OnInit {
     const request = this.id ? this.api.update(this.id, payload) : this.api.create(payload);
     request.subscribe({
       next: () => this.router.navigate(['/admin/staff/roles']),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to save role'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to save role')),
     });
   }
 }

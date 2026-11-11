@@ -5,6 +5,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { API_BASE } from '../../core/constants';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 /** Excel, PDF and CSV buttons for a list: downloads every row that matches the list filters, not just the page on screen. */
 @Component({
   selector: 'app-re-export',
@@ -40,7 +41,7 @@ export class ReExportComponent {
     }
     this.http.get(`${API_BASE}/realestate/export/${this.kind}`, { params, responseType: 'blob' }).subscribe({
       next: (b) => { this.busy = false; downloadBlob(b, `${this.kind}.${format}`); },
-      error: () => { this.busy = false; this.error = 'Could not prepare the file'; },
+      error: () => { this.busy = false; this.error = T('Could not prepare the file'); },
     });
   }
 }

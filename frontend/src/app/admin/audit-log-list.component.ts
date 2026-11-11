@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { AuditLogApiService } from '../core/api/audit-log-api.service';
 import { AuditLogEntry } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Audit Log (Task: "Implement an audit log of who did what and when") — a searchable/
  * filterable table of every {@code AuditLogEntry} the backend has recorded, same server-side
@@ -127,7 +128,7 @@ export class AuditLogListComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Failed to load the audit log';
+        this.error = err?.error?.message ?? T('Failed to load the audit log');
         this.loading = false;
       },
     });

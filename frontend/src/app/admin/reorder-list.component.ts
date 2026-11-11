@@ -7,6 +7,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { ReorderApiService } from '../core/api/reorder-api.service';
 import { ReorderSuggestion } from '../core/models';
 
+import { T } from '../core/i18n/t';
 interface Row extends ReorderSuggestion {
   selected: boolean;
   quantity: number;
@@ -88,7 +89,7 @@ export class ReorderListComponent implements OnInit {
         this.rows = s.map((x) => ({ ...x, selected: true, quantity: x.suggestedQuantity }));
         this.loaded = true;
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to load reorder suggestions'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to load reorder suggestions')),
     });
   }
 
@@ -99,7 +100,7 @@ export class ReorderListComponent implements OnInit {
   createRequisition(): void {
     const lines = this.rows.filter((r) => r.selected).map((r) => ({ productId: r.productId, quantity: Number(r.quantity) }));
     if (lines.some((l) => !(l.quantity > 0))) {
-      this.error = 'Every selected product needs an order quantity above zero';
+      this.error = T('Every selected product needs an order quantity above zero');
       return;
     }
     this.error = null;
@@ -108,7 +109,7 @@ export class ReorderListComponent implements OnInit {
       next: (pr) => this.router.navigate(['/admin/purchase-requisitions', pr.id]),
       error: (err) => {
         this.busy = false;
-        this.error = err?.error?.message ?? 'Failed to create the requisition';
+        this.error = err?.error?.message ?? T('Failed to create the requisition');
       },
     });
   }

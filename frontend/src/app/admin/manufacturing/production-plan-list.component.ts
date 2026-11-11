@@ -10,6 +10,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { ProductionPlanApiService } from '../../core/api/production-plan-api.service';
 import { ProductionPlan } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /**
  * Manufacturing > Production plans (Fourier's own list, item 2; full MRP-style per "I need full
  * features"). Generating a new plan is right here at the top — each generation is itself a stored,
@@ -93,7 +94,7 @@ export class ProductionPlanListComponent implements OnInit {
     this.error = null;
     this.productionPlanApi.generate({ lowStockThreshold: this.lowStockThreshold, note: this.note || null }).subscribe({
       next: (plan) => this.router.navigate(['/admin/manufacturing/production-plans', plan.id]),
-      error: (err) => (this.error = err?.error?.message ?? 'Failed to generate production plan'),
+      error: (err) => (this.error = err?.error?.message ?? T('Failed to generate production plan')),
     });
   }
 }

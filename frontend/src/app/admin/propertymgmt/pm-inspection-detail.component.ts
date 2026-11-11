@@ -8,6 +8,7 @@ import { ShellComponent } from '../../shared/shell.component';
 import { CONDITIONS, INSPECTION_KIND_LABEL, Inspection, InspectionItem, ItemCondition, PmDepositApiService, conditionBadge, conditionLabel } from '../../core/api/pm-deposit-api.service';
 import { PmDocumentsPanelComponent } from './pm-documents-panel.component';
 
+import { T } from '../../core/i18n/t';
 interface RoomGroup { room: string; items: InspectionItem[]; }
 
 /** Property Management > an inspection: room by room, item by item, what condition it is in; photos; sign-off with the tenant; a printed copy. */
@@ -133,7 +134,7 @@ export class PmInspectionDetailComponent implements OnInit {
   get untouched(): number { return this.ins ? this.ins.items.filter((i) => !i.condition).length : 0; }
 
   ngOnInit(): void {
-    this.api.inspection(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (i) => this.set(i, true), error: (e) => (this.error = e?.error?.message ?? 'Could not load the inspection') });
+    this.api.inspection(Number(this.route.snapshot.paramMap.get('id'))).subscribe({ next: (i) => this.set(i, true), error: (e) => (this.error = e?.error?.message ?? T('Could not load the inspection')) });
   }
 
   private set(i: Inspection, header: boolean): void {
@@ -155,7 +156,7 @@ export class PmInspectionDetailComponent implements OnInit {
   private run(call: ReturnType<PmDepositApiService['inspection']>, header = false): void {
     this.busy = true;
     this.error = null;
-    call.subscribe({ next: (i) => { this.busy = false; this.set(i, header); }, error: (e) => this.fail(e, 'Could not save') });
+    call.subscribe({ next: (i) => { this.busy = false; this.set(i, header); }, error: (e) => this.fail(e, T('Could not save')) });
   }
 
   saveHeader(): void {
@@ -184,8 +185,8 @@ export class PmInspectionDetailComponent implements OnInit {
     this.busy = true;
     this.error = null;
     forkJoin(todo.map((i) => this.api.updateItem(id, i.id, { condition: 'GOOD' }))).subscribe({
-      next: () => this.api.inspection(id).subscribe({ next: (i) => { this.busy = false; this.set(i, false); }, error: (e) => this.fail(e, 'Could not reload') }),
-      error: (e) => this.fail(e, 'Could not save'),
+      next: () => this.api.inspection(id).subscribe({ next: (i) => { this.busy = false; this.set(i, false); }, error: (e) => this.fail(e, T('Could not reload')) }),
+      error: (e) => this.fail(e, T('Could not save')),
     });
   }
 
@@ -194,28 +195,28 @@ export class PmInspectionDetailComponent implements OnInit {
     const room = this.add.room.trim(), item = this.add.item.trim();
     this.busy = true;
     this.error = null;
-    this.api.addItem(this.ins.id, { room, item }).subscribe({ next: (i) => { this.busy = false; this.add.item = ''; this.set(i, false); }, error: (e) => this.fail(e, 'Could not add') });
+    this.api.addItem(this.ins.id, { room, item }).subscribe({ next: (i) => { this.busy = false; this.add.item = ''; this.set(i, false); }, error: (e) => this.fail(e, T('Could not add')) });
   }
 
-  removeItem(it: InspectionItem): void { if (this.ins && confirm('Remove ' + it.item + ' from ' + it.room + '?')) this.run(this.api.deleteItem(this.ins.id, it.id)); }
+  removeItem(it: InspectionItem): void { if (this.ins && confirm(T('Remove {p0} from {p1}?', { p0: it.item, p1: it.room }))) this.run(this.api.deleteItem(this.ins.id, it.id)); }
 
   signOff(): void {
     if (!this.ins) return;
-    if (this.sign.ack && !this.sign.name.trim()) { this.error = 'Enter the name of the person who signed for the tenant.'; return; }
+    if (this.sign.ack && !this.sign.name.trim()) { this.error = T('Enter the name of the person who signed for the tenant.'); return; }
     this.run(this.api.signOff(this.ins.id, { tenantAcknowledged: this.sign.ack, tenantSignedName: this.sign.name.trim() }));
   }
 
-  reopen(): void { if (this.ins && confirm('Reopen this inspection so it can be changed?')) this.run(this.api.reopen(this.ins.id)); }
+  reopen(): void { if (this.ins && confirm(T('Reopen this inspection so it can be changed?'))) this.run(this.api.reopen(this.ins.id)); }
 
   remove(): void {
-    if (!this.ins || !confirm('Delete this inspection and its list?')) return;
+    if (!this.ins || !confirm(T('Delete this inspection and its list?'))) return;
     const leaseId = this.ins.leaseId;
     this.busy = true;
-    this.api.deleteInspection(this.ins.id).subscribe({ next: () => this.router.navigate(['/admin/propertymgmt/leases', leaseId]), error: (e) => this.fail(e, 'Could not delete') });
+    this.api.deleteInspection(this.ins.id).subscribe({ next: () => this.router.navigate(['/admin/propertymgmt/leases', leaseId]), error: (e) => this.fail(e, T('Could not delete')) });
   }
 
   print(format: 'pdf' | 'xlsx'): void {
     if (!this.ins) return;
-    this.api.print(this.ins.id, this.ins.code, format).subscribe({ error: (e) => this.fail(e, 'Could not print') });
+    this.api.print(this.ins.id, this.ins.code, format).subscribe({ error: (e) => this.fail(e, T('Could not print')) });
   }
 }

@@ -11,6 +11,7 @@ import { downloadBlob } from '../../core/download-file';
 import { ReExportComponent } from './re-export.component';
 import { PayeeStatement, PayoutBoard, PayoutFilter, PayoutState, RealEstateApiService, ShareLine } from '../../core/api/realestate-api.service';
 
+import { T } from '../../core/i18n/t';
 const iso = (d: Date): string => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
 /** Real Estate > Commissions: what each agent (or referrer) has earned on completed sales, what has gone to Expenses, and what has been paid out. Print or e-mail a statement for each. */
@@ -135,7 +136,7 @@ export class ReCommissionsComponent implements OnInit {
     if (!keepMessages) { this.actionError = null; this.notice = null; this.problems = []; }
     this.api.payouts(this.filter()).subscribe({
       next: (b) => { this.board = b; if (!this.payee) this.options = b.payeeOptions; },
-      error: (e) => (this.error = e?.error?.message ?? 'Could not load the commissions'),
+      error: (e) => (this.error = e?.error?.message ?? T('Could not load the commissions')),
     });
   }
 

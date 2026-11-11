@@ -10,6 +10,7 @@ import {
   Attendance, EmployeeDocument, HrApiService, docCategoryLabel, LeaveBalance, LeaveRequest, LeaveType, MyContactPayload, MyOverview, MyPayslip, MyPayslipRow,
 } from '../core/api/hr-api.service';
 
+import { T } from '../core/i18n/t';
 type Tab = 'overview' | 'payslips' | 'leave' | 'attendance' | 'documents' | 'contact';
 
 /** My HR: employee self-service — own payslips, leave, attendance and contact details. Open to every signed-in user. */
@@ -260,7 +261,7 @@ export class MyHrComponent implements OnInit {
           };
         }
       },
-      error: (e) => this.fail(e, 'Failed to load your HR page'),
+      error: (e) => this.fail(e, T('Failed to load your HR page')),
     });
   }
 
@@ -280,16 +281,16 @@ export class MyHrComponent implements OnInit {
   loadDocuments(): void {
     this.api.myDocuments().subscribe({
       next: (d) => { this.documents = d; this.loaded = true; },
-      error: (e) => { this.loaded = true; this.fail(e, 'Failed to load your documents'); },
+      error: (e) => { this.loaded = true; this.fail(e, T('Failed to load your documents')); },
     });
   }
 
   openDoc(d: EmployeeDocument): void {
-    this.api.myDocumentFile(d.id).subscribe({ next: (b) => window.open(URL.createObjectURL(b), '_blank'), error: (e) => this.fail(e, 'Could not open the file') });
+    this.api.myDocumentFile(d.id).subscribe({ next: (b) => window.open(URL.createObjectURL(b), '_blank'), error: (e) => this.fail(e, T('Could not open the file')) });
   }
 
   downloadDoc(d: EmployeeDocument): void {
-    this.api.myDocumentFile(d.id).subscribe({ next: (b) => downloadBlob(b, d.fileName), error: (e) => this.fail(e, 'Could not download the file') });
+    this.api.myDocumentFile(d.id).subscribe({ next: (b) => downloadBlob(b, d.fileName), error: (e) => this.fail(e, T('Could not download the file')) });
   }
 
   clock(dir: 'in' | 'out'): void {
@@ -298,7 +299,7 @@ export class MyHrComponent implements OnInit {
         this.error = null;
         this.loadOverview();
       },
-      error: (e) => this.fail(e, 'Could not record the time'),
+      error: (e) => this.fail(e, T('Could not record the time')),
     });
   }
 
@@ -311,7 +312,7 @@ export class MyHrComponent implements OnInit {
         this.loaded = true;
         this.error = null;
       },
-      error: (e) => this.fail(e, 'Failed to load your payslips'),
+      error: (e) => this.fail(e, T('Failed to load your payslips')),
     });
   }
 
@@ -320,7 +321,7 @@ export class MyHrComponent implements OnInit {
       this.detail = null;
       return;
     }
-    this.api.myPayslip(p.runId).subscribe({ next: (d) => (this.detail = d), error: (e) => this.fail(e, 'Could not open the payslip') });
+    this.api.myPayslip(p.runId).subscribe({ next: (d) => (this.detail = d), error: (e) => this.fail(e, T('Could not open the payslip')) });
   }
 
   // leave
@@ -331,7 +332,7 @@ export class MyHrComponent implements OnInit {
         this.leaves = l;
         this.loaded = true;
       },
-      error: (e) => this.fail(e, 'Failed to load your leave'),
+      error: (e) => this.fail(e, T('Failed to load your leave')),
     });
     this.api.myLeaveBalances(this.year).subscribe({ next: (b) => (this.balances = b), error: () => {} });
     this.countDays();
@@ -350,18 +351,18 @@ export class MyHrComponent implements OnInit {
 
   requestLeave(): void {
     if (!this.form.leaveTypeId) {
-      this.error = 'Choose the leave type.';
+      this.error = T('Choose the leave type.');
       return;
     }
     this.api.myRequestLeave({ employeeId: null, ...this.form, reason: this.form.reason || null }).subscribe({
       next: () => {
         this.error = null;
-        this.info = 'Your request was sent to HR.';
+        this.info = T('Your request was sent to HR.');
         this.form.reason = null;
         this.loadLeave();
         this.loadOverview();
       },
-      error: (e) => this.fail(e, 'Could not send the request'),
+      error: (e) => this.fail(e, T('Could not send the request')),
     });
   }
 
@@ -369,11 +370,11 @@ export class MyHrComponent implements OnInit {
     this.api.myCancelLeave(l.id, null).subscribe({
       next: () => {
         this.error = null;
-        this.info = 'Your request was withdrawn.';
+        this.info = T('Your request was withdrawn.');
         this.loadLeave();
         this.loadOverview();
       },
-      error: (e) => this.fail(e, 'Could not withdraw the request'),
+      error: (e) => this.fail(e, T('Could not withdraw the request')),
     });
   }
 
@@ -390,7 +391,7 @@ export class MyHrComponent implements OnInit {
         this.loaded = true;
         this.error = null;
       },
-      error: (e) => this.fail(e, 'Failed to load your attendance'),
+      error: (e) => this.fail(e, T('Failed to load your attendance')),
     });
   }
 
@@ -399,10 +400,10 @@ export class MyHrComponent implements OnInit {
     this.api.myUpdateContact(this.contact).subscribe({
       next: () => {
         this.error = null;
-        this.info = 'Your details were saved.';
+        this.info = T('Your details were saved.');
         this.loadOverview();
       },
-      error: (e) => this.fail(e, 'Could not save your details'),
+      error: (e) => this.fail(e, T('Could not save your details')),
     });
   }
 }

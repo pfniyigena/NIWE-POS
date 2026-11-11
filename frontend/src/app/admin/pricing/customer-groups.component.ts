@@ -9,6 +9,7 @@ import { CustomerApiService } from '../../core/api/customer-api.service';
 import { GroupRow, PriceListRow, PricingApiService } from '../../core/api/pricing-api.service';
 import { Customer } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Sales > Customer groups. A group (Wholesale, Staff, VIP) shares one price list; customers are put in a group here, or on the customer's own form. */
 @Component({
   selector: 'app-customer-groups',
@@ -106,7 +107,7 @@ export class CustomerGroupsComponent implements OnInit {
   }
 
   load(): void {
-    this.api.groups().subscribe({ next: (g) => (this.rows = g), error: (err) => (this.error = err?.error?.message ?? 'Could not load the groups') });
+    this.api.groups().subscribe({ next: (g) => (this.rows = g), error: (err) => (this.error = err?.error?.message ?? T('Could not load the groups')) });
   }
 
   groupName(id: number): string {
@@ -145,20 +146,20 @@ export class CustomerGroupsComponent implements OnInit {
         this.editing = false;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not save the group'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not save the group')),
     });
   }
 
   remove(g: GroupRow): void {
     this.error = null;
     this.done = null;
-    if (!confirm('Delete the group "' + g.name + '"?')) return;
+    if (!confirm(T('Delete the group "{p0}"?', { p0: g.name }))) return;
     this.api.deleteGroup(g.id).subscribe({
       next: () => {
         this.done = 'Deleted "' + g.name + '".';
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not delete the group'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not delete the group')),
     });
   }
 
@@ -171,7 +172,7 @@ export class CustomerGroupsComponent implements OnInit {
         this.customers = c.filter((x) => !x.walkIn);
         this.filterCustomers();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not load the customers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not load the customers')),
     });
   }
 
@@ -197,7 +198,7 @@ export class CustomerGroupsComponent implements OnInit {
         this.assignGroup = null;
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message ?? 'Could not change the customers'),
+      error: (err) => (this.error = err?.error?.message ?? T('Could not change the customers')),
     });
   }
 }
