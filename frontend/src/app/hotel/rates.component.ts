@@ -9,8 +9,8 @@ import { errMsg } from './hotel-util';
 
 import { T } from '../core/i18n/t';
 const DAYS = [
-  { code: 'MON', label: 'Mon' }, { code: 'TUE', label: 'Tue' }, { code: 'WED', label: 'Wed' }, { code: 'THU', label: 'Thu' },
-  { code: 'FRI', label: 'Fri' }, { code: 'SAT', label: 'Sat' }, { code: 'SUN', label: 'Sun' },
+  { code: 'MON', get label() { return T('Mon'); } }, { code: 'TUE', get label() { return T('Tue'); } }, { code: 'WED', get label() { return T('Wed'); } }, { code: 'THU', get label() { return T('Thu'); } },
+  { code: 'FRI', get label() { return T('Fri'); } }, { code: 'SAT', get label() { return T('Sat'); } }, { code: 'SUN', get label() { return T('Sun'); } },
 ];
 
 /** Hotel > Rates: seasonal rules (dates, weekdays, room type, min stay), rate plans (discounts) and a price calendar preview. */

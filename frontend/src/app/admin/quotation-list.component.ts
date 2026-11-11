@@ -12,6 +12,7 @@ import { Branch, Quotation } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 
+import { T } from '../core/i18n/t';
 /** Admin > Sales > Quotations — Fourier: "Add Quotation ... without touching warehousing." */
 @Component({
   selector: 'app-quotation-list',
@@ -74,7 +75,7 @@ export class QuotationListComponent implements OnInit {
   error: string | null = null;
 
   list = new ListState<Quotation>((f, p, sz) => this.quotationApi.page(f, p, sz), 'Failed to load quotations');
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'SENT', label: 'Sent' }, { value: 'ACCEPTED', label: 'Accepted' }, { value: 'REJECTED', label: 'Rejected' }, { value: 'EXPIRED', label: 'Expired' }, { value: 'CONVERTED', label: 'Converted' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'SENT', label: T('Sent') }, { value: 'ACCEPTED', label: T('Accepted') }, { value: 'REJECTED', label: T('Rejected') }, { value: 'EXPIRED', label: T('Expired') }, { value: 'CONVERTED', label: T('Converted') }];
   constructor(private quotationApi: QuotationApiService, private branchApi: BranchApiService) {}
 
   ngOnInit(): void {

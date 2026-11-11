@@ -79,7 +79,7 @@ export class MaintenanceComponent implements OnInit {
   rooms: Room[] = [];
   priority = '';
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'OPEN', label: 'Open' }, { value: 'IN_PROGRESS', label: 'In progress' }, { value: 'DONE', label: 'Done' }];
+  statuses = [{ value: 'OPEN', label: T('Open') }, { value: 'IN_PROGRESS', label: T('In progress') }, { value: 'DONE', label: T('Done') }];
   list = new ListState<Maintenance>((f, p, sz) => this.api.page<Maintenance>('maintenance', f, p, sz, { priority: this.priority }), 'Failed to load maintenance');
   adding = false;
   form: any = { roomId: null, title: '', description: '', priority: 'NORMAL', blocksRoom: false, blockFrom: '', blockUntil: '' };

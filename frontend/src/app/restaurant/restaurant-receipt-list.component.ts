@@ -10,6 +10,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Restaurant Receipts — recent checked-out orders (dine-in, takeaway, delivery) with lookup +
  * reprint, the Restaurant module's own counterpart to the POS terminal's Receipts screen (see
@@ -70,7 +71,7 @@ import { PagerComponent } from '../shared/pager.component';
   `,
 })
 export class RestaurantReceiptListComponent implements OnInit {
-  statuses = [{ value: 'CANCELLED', label: 'Cancelled orders' }, { value: 'ALL', label: 'Paid and cancelled' }];
+  statuses = [{ value: 'CANCELLED', label: T('Cancelled orders') }, { value: 'ALL', label: T('Paid and cancelled') }];
   type = '';
   extra: Record<string, string | number | null | undefined> = {};
   list = new ListState<RestaurantOrder>((f, p, sz) => this.orderApi.closedPage(f, p, sz, { type: this.type }), 'Failed to load receipts');

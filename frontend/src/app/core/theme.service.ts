@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
 import { API_BASE } from './constants';
 
+import { T } from './i18n/t';
 export interface ThemeOption {
   id: string;
   label: string;
@@ -13,17 +14,17 @@ export interface ThemeOption {
 
 /** The ready-made themes. 'navy' is the original look and the default; the rest are defined in styles.scss. */
 export const THEMES: ThemeOption[] = [
-  { id: 'navy', label: 'Navy (default)', dark: true, swatch: ['#12151f', '#1b2030', '#232a3d'] },
-  { id: 'charcoal', label: 'Charcoal', dark: true, swatch: ['#121212', '#1c1c1e', '#262628'] },
-  { id: 'black', label: 'True black', dark: true, swatch: ['#000000', '#0d0d0f', '#17171a'] },
-  { id: 'slate', label: 'Slate', dark: true, swatch: ['#0f172a', '#1e293b', '#273449'] },
-  { id: 'forest', label: 'Forest', dark: true, swatch: ['#0f1a15', '#16251e', '#1e3228'] },
-  { id: 'plum', label: 'Plum', dark: true, swatch: ['#17121f', '#211a2c', '#2b2238'] },
-  { id: 'warm', label: 'Warm brown', dark: true, swatch: ['#1a1512', '#251e19', '#30271f'] },
-  { id: 'white', label: 'Clean white', dark: false, swatch: ['#f5f6f8', '#ffffff', '#eef0f4'] },
-  { id: 'paper', label: 'Warm paper', dark: false, swatch: ['#faf7f2', '#ffffff', '#f1ece3'] },
-  { id: 'grey', label: 'Soft grey', dark: false, swatch: ['#e9ecf1', '#f7f8fa', '#dde1e8'] },
-  { id: 'sky', label: 'Sky blue', dark: false, swatch: ['#e3f2fc', '#ffffff', '#d3e9f8'] },
+  { id: 'navy', get label() { return T('Navy (default)'); }, dark: true, swatch: ['#12151f', '#1b2030', '#232a3d'] },
+  { id: 'charcoal', get label() { return T('Charcoal'); }, dark: true, swatch: ['#121212', '#1c1c1e', '#262628'] },
+  { id: 'black', get label() { return T('True black'); }, dark: true, swatch: ['#000000', '#0d0d0f', '#17171a'] },
+  { id: 'slate', get label() { return T('Slate'); }, dark: true, swatch: ['#0f172a', '#1e293b', '#273449'] },
+  { id: 'forest', get label() { return T('Forest'); }, dark: true, swatch: ['#0f1a15', '#16251e', '#1e3228'] },
+  { id: 'plum', get label() { return T('Plum'); }, dark: true, swatch: ['#17121f', '#211a2c', '#2b2238'] },
+  { id: 'warm', get label() { return T('Warm brown'); }, dark: true, swatch: ['#1a1512', '#251e19', '#30271f'] },
+  { id: 'white', get label() { return T('Clean white'); }, dark: false, swatch: ['#f5f6f8', '#ffffff', '#eef0f4'] },
+  { id: 'paper', get label() { return T('Warm paper'); }, dark: false, swatch: ['#faf7f2', '#ffffff', '#f1ece3'] },
+  { id: 'grey', get label() { return T('Soft grey'); }, dark: false, swatch: ['#e9ecf1', '#f7f8fa', '#dde1e8'] },
+  { id: 'sky', get label() { return T('Sky blue'); }, dark: false, swatch: ['#e3f2fc', '#ffffff', '#d3e9f8'] },
 ];
 
 /** The user's own colours for the "Custom" theme: a page background and an accent (buttons, links, highlights). */

@@ -72,7 +72,7 @@ export class MaintenanceListComponent implements OnInit {
   page = 0;
   readonly size = PAGE_SIZE;
   properties: PropertyRow[] = [];
-  tabs = [{ value: 'OPEN', label: 'Open' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'COMPLETED', label: 'Done' }, { value: 'CANCELLED', label: 'Cancelled' }, { value: '', label: 'All' }];
+  tabs = [{ value: 'OPEN', label: T('Open') }, { value: 'OVERDUE', label: T('Overdue') }, { value: 'COMPLETED', label: T('Done') }, { value: 'CANCELLED', label: T('Cancelled') }, { value: '', label: T('All') }];
   priorities = MAINTENANCE_PRIORITIES;
   categories = MAINTENANCE_CATEGORIES;
   tab = 'OPEN';

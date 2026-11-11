@@ -12,6 +12,7 @@ import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 import { Branch, PurchaseOrder } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Inventory > Purchase Orders — Task: "Inventory depth ... purchase orders ... a stock-receiving flow." */
 @Component({
   selector: 'app-purchase-order-list',
@@ -72,7 +73,7 @@ export class PurchaseOrderListComponent implements OnInit {
   branches: Branch[] = [];
 
   list = new ListState<PurchaseOrder>((f, p, sz) => this.purchaseOrderApi.page(f, p, sz), 'Failed to load purchase orders');
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'SENT', label: 'Sent' }, { value: 'PARTIALLY_RECEIVED', label: 'Partially received' }, { value: 'RECEIVED', label: 'Received' }, { value: 'CANCELLED', label: 'Cancelled' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'SENT', label: T('Sent') }, { value: 'PARTIALLY_RECEIVED', label: T('Partially received') }, { value: 'RECEIVED', label: T('Received') }, { value: 'CANCELLED', label: T('Cancelled') }];
   constructor(private purchaseOrderApi: PurchaseOrderApiService, private branchApi: BranchApiService) {}
 
 

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { API_BASE } from '../../core/constants';
 import { downloadBlob } from '../../core/download-file';
 
+import { T } from '../../core/i18n/t';
 interface PrintItem { label: string; path: string; file: string; enabled: boolean; hint: string; }
 export interface PaymentRow { id: number; paidAt: string; amount: number; method: string | null; receiptNumber: string | null; what: string; }
 
@@ -61,23 +62,23 @@ export class RePrintComponent implements OnChanges {
     if (this.id == null || s === 'CANCELLED') { this.items = []; return; }
     if (this.kind === 'deal') {
       this.items = [
-        { label: 'Offer letter', path: `${base}/offer`, file: 'offer.pdf', enabled: true, hint: '' },
-        { label: 'Reservation letter', path: `${base}/reservation`, file: 'reservation.pdf', enabled: s !== 'OFFER', hint: 'Reserve the property first' },
-        { label: 'Sale agreement', path: `${base}/agreement`, file: 'sale-agreement.pdf', enabled: s === 'AGREEMENT' || s === 'COMPLETED', hint: 'Available once the agreement is recorded on the deal' },
+        { label: T('Offer letter'), path: `${base}/offer`, file: 'offer.pdf', enabled: true, hint: '' },
+        { label: T('Reservation letter'), path: `${base}/reservation`, file: 'reservation.pdf', enabled: s !== 'OFFER', hint: T('Reserve the property first') },
+        { label: T('Sale agreement'), path: `${base}/agreement`, file: 'sale-agreement.pdf', enabled: s === 'AGREEMENT' || s === 'COMPLETED', hint: T('Available once the agreement is recorded on the deal') },
       ];
     } else if (this.kind === 'sale') {
       this.items = [
-        { label: 'Reservation letter', path: `${base}/reservation`, file: 'reservation.pdf', enabled: true, hint: '' },
-        { label: 'Sale agreement', path: `${base}/agreement`, file: 'sale-agreement.pdf', enabled: s === 'SOLD' || s === 'COMPLETED', hint: 'Available once the agreement is signed and the unit is sold' },
-        { label: 'Buyer statement', path: `${base}/statement`, file: 'statement.pdf', enabled: s === 'SOLD' || s === 'COMPLETED', hint: 'Available once the unit is sold' },
+        { label: T('Reservation letter'), path: `${base}/reservation`, file: 'reservation.pdf', enabled: true, hint: '' },
+        { label: T('Sale agreement'), path: `${base}/agreement`, file: 'sale-agreement.pdf', enabled: s === 'SOLD' || s === 'COMPLETED', hint: T('Available once the agreement is signed and the unit is sold') },
+        { label: T('Buyer statement'), path: `${base}/statement`, file: 'statement.pdf', enabled: s === 'SOLD' || s === 'COMPLETED', hint: T('Available once the unit is sold') },
       ];
     } else if (this.kind === 'project') {
       this.items = [
-        { label: 'Price list (available units)', path: `${base}/price-list`, file: 'price-list.pdf', enabled: true, hint: '' },
-        { label: 'Price list (all units)', path: `${base}/price-list?all=true`, file: 'price-list-all.pdf', enabled: true, hint: '' },
+        { label: T('Price list (available units)'), path: `${base}/price-list`, file: 'price-list.pdf', enabled: true, hint: '' },
+        { label: T('Price list (all units)'), path: `${base}/price-list?all=true`, file: 'price-list-all.pdf', enabled: true, hint: '' },
       ];
     } else {
-      this.items = [{ label: 'Flyer', path: `${base}/flyer`, file: 'flyer.pdf', enabled: true, hint: '' }];
+      this.items = [{ label: T('Flyer'), path: `${base}/flyer`, file: 'flyer.pdf', enabled: true, hint: '' }];
     }
   }
 

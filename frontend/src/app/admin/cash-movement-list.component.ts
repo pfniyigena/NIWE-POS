@@ -10,6 +10,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /** Every cash movement across shifts: money paid in, paid out, drops into the safe and counts, with search, filters, pages and Excel / PDF / CSV. */
 @Component({
   selector: 'app-cash-movement-list',
@@ -50,11 +51,11 @@ import { PagerComponent } from '../shared/pager.component';
 })
 export class CashMovementListComponent implements OnInit {
   kinds = [
-    { value: 'PAID_IN', label: 'Paid in' },
-    { value: 'PAID_OUT', label: 'Paid out' },
-    { value: 'DROP', label: 'Drops to safe' },
-    { value: 'COUNT', label: 'Counts' },
-    { value: 'VOIDED', label: 'Voided' },
+    { value: 'PAID_IN', label: T('Paid in') },
+    { value: 'PAID_OUT', label: T('Paid out') },
+    { value: 'DROP', label: T('Drops to safe') },
+    { value: 'COUNT', label: T('Counts') },
+    { value: 'VOIDED', label: T('Voided') },
   ];
   registers: RegisterSummary[] = [];
   registerId = '';

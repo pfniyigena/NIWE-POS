@@ -70,7 +70,7 @@ export class SupplierListComponent implements OnInit {
   error: string | null = null;
 
   list = new ListState<Supplier>((f, p, sz) => this.supplierApi.page(f, p, sz, f.status === '' ? null : f.status === 'true'), 'Failed to load suppliers');
-  statuses = [{ value: 'true', label: 'Active only' }, { value: 'false', label: 'Inactive only' }];
+  statuses = [{ value: 'true', label: T('Active only') }, { value: 'false', label: T('Inactive only') }];
   constructor(private supplierApi: SupplierApiService) {}
 
   ngOnInit(): void {

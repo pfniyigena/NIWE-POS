@@ -5,6 +5,7 @@ import { API_BASE } from '../constants';
 import { MaintenanceRow } from './pm-maintenance-api.service';
 import { PageParams, PageResult, getPaged } from './paged';
 
+import { T } from '../i18n/t';
 export type PmPropertyKind = 'HOUSE' | 'APARTMENT_BLOCK' | 'COMMERCIAL' | 'MIXED_USE' | 'LAND' | 'OTHER';
 export type PmUnitKind = 'APARTMENT' | 'ROOM' | 'HOUSE' | 'SHOP' | 'OFFICE' | 'WAREHOUSE' | 'STORE' | 'PARKING' | 'OTHER';
 export type TenantKind = 'INDIVIDUAL' | 'COMPANY';
@@ -14,15 +15,15 @@ export type LeaseState = 'DRAFT' | 'UPCOMING' | 'CURRENT' | 'EXPIRING' | 'EXPIRE
 export type Occupancy = 'OCCUPIED' | 'UPCOMING' | 'VACANT' | 'OFF_MARKET';
 
 export const PM_PROPERTY_KINDS: { value: PmPropertyKind; label: string }[] = [
-  { value: 'APARTMENT_BLOCK', label: 'Apartment block' }, { value: 'HOUSE', label: 'House' }, { value: 'COMMERCIAL', label: 'Commercial building' },
-  { value: 'MIXED_USE', label: 'Mixed use' }, { value: 'LAND', label: 'Land' }, { value: 'OTHER', label: 'Other' },
+  { value: 'APARTMENT_BLOCK', get label() { return T('Apartment block'); } }, { value: 'HOUSE', get label() { return T('House'); } }, { value: 'COMMERCIAL', get label() { return T('Commercial building'); } },
+  { value: 'MIXED_USE', get label() { return T('Mixed use'); } }, { value: 'LAND', get label() { return T('Land'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const PM_UNIT_KINDS: { value: PmUnitKind; label: string }[] = [
-  { value: 'APARTMENT', label: 'Apartment' }, { value: 'ROOM', label: 'Room' }, { value: 'HOUSE', label: 'House' }, { value: 'SHOP', label: 'Shop' }, { value: 'OFFICE', label: 'Office' },
-  { value: 'WAREHOUSE', label: 'Warehouse' }, { value: 'STORE', label: 'Store' }, { value: 'PARKING', label: 'Parking' }, { value: 'OTHER', label: 'Other' },
+  { value: 'APARTMENT', get label() { return T('Apartment'); } }, { value: 'ROOM', get label() { return T('Room'); } }, { value: 'HOUSE', get label() { return T('House'); } }, { value: 'SHOP', get label() { return T('Shop'); } }, { value: 'OFFICE', get label() { return T('Office'); } },
+  { value: 'WAREHOUSE', get label() { return T('Warehouse'); } }, { value: 'STORE', get label() { return T('Store'); } }, { value: 'PARKING', get label() { return T('Parking'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const RENT_FREQUENCIES: { value: RentFrequency; label: string }[] = [
-  { value: 'MONTHLY', label: 'Monthly' }, { value: 'QUARTERLY', label: 'Every 3 months' }, { value: 'HALF_YEARLY', label: 'Every 6 months' }, { value: 'ANNUAL', label: 'Yearly' },
+  { value: 'MONTHLY', get label() { return T('Monthly'); } }, { value: 'QUARTERLY', get label() { return T('Every 3 months'); } }, { value: 'HALF_YEARLY', get label() { return T('Every 6 months'); } }, { value: 'ANNUAL', get label() { return T('Yearly'); } },
 ];
 export const LEASE_STATE_LABEL: Record<LeaseState, string> = {
   DRAFT: 'Draft', UPCOMING: 'Signed, not started', CURRENT: 'In force', EXPIRING: 'Ending soon', EXPIRED: 'Past its end date', RENEWED: 'Renewed', ENDED: 'Ended', TERMINATED: 'Terminated early',

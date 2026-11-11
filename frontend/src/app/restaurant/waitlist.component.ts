@@ -98,7 +98,7 @@ import { T } from '../core/i18n/t';
   `,
 })
 export class WaitlistComponent implements OnInit, OnDestroy {
-  statuses = [{ value: 'ALL', label: 'Everyone' }, { value: 'SEATED', label: 'Seated' }, { value: 'LEFT', label: 'Left' }];
+  statuses = [{ value: 'ALL', label: T('Everyone') }, { value: 'SEATED', label: T('Seated') }, { value: 'LEFT', label: T('Left') }];
   list = new ListState<WaitlistEntry>((f, p, sz) => this.api.page(f, p, sz), 'Failed to load the waiting list');
   tables: DiningTable[] = [];
   error: string | null = null;

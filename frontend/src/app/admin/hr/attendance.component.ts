@@ -108,7 +108,7 @@ export class AttendanceComponent implements OnInit {
   today: TodayStatus | null = null;
   branches: Branch[] = [];
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'PRESENT', label: 'Present' }, { value: 'LATE', label: 'Late' }, { value: 'ABSENT', label: 'Absent' }];
+  statuses = [{ value: 'PRESENT', label: T('Present') }, { value: 'LATE', label: T('Late') }, { value: 'ABSENT', label: T('Absent') }];
   list = new ListState<Attendance>((f, p, sz) => this.api.page<Attendance>('attendance', f, p, sz, this.rangeParams()), 'Failed to load attendance');
   summary: AttendanceSummary[] = [];
   employees: Employee[] = [];

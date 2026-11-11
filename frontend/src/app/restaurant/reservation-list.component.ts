@@ -221,7 +221,7 @@ import { T } from '../core/i18n/t';
   `,
 })
 export class ReservationListComponent implements OnInit {
-  statuses = [{ value: 'BOOKED', label: 'Booked' }, { value: 'SEATED', label: 'Seated' }, { value: 'CANCELLED', label: 'Cancelled' }, { value: 'NO_SHOW', label: 'No-show' }];
+  statuses = [{ value: 'BOOKED', label: T('Booked') }, { value: 'SEATED', label: T('Seated') }, { value: 'CANCELLED', label: T('Cancelled') }, { value: 'NO_SHOW', label: T('No-show') }];
   list = new ListState<Reservation>((f, p, sz) => this.reservationApi.page(f, p, sz), 'Failed to load reservations');
   tables: DiningTable[] = [];
   tableChoices: DiningTable[] = [];

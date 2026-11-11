@@ -5,6 +5,7 @@ import { API_BASE } from '../constants';
 import { downloadBlob } from '../download-file';
 import { PageParams, PageResult, getPaged } from './paged';
 
+import { T } from '../i18n/t';
 export type DepositKind = 'RECEIVED' | 'TRANSFER_IN' | 'DEDUCTION' | 'REFUND' | 'TRANSFER_OUT';
 export type DepositReason = 'UNPAID_RENT' | 'DAMAGE' | 'CLEANING' | 'UTILITIES' | 'OTHER';
 export type DepositState = 'NONE' | 'DUE' | 'PART_PAID' | 'HELD' | 'REFUND_DUE' | 'SETTLED';
@@ -15,14 +16,14 @@ export type ItemCondition = 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED' | 'MISSING' | '
 export const DEPOSIT_STATE_LABEL: Record<DepositState, string> = { NONE: 'No deposit', DUE: 'To collect', PART_PAID: 'Part paid', HELD: 'Held', REFUND_DUE: 'Refund due', SETTLED: 'Settled' };
 export const DEPOSIT_KIND_LABEL: Record<DepositKind, string> = { RECEIVED: 'Received', TRANSFER_IN: 'Moved in', DEDUCTION: 'Kept', REFUND: 'Refunded', TRANSFER_OUT: 'Moved out' };
 export const DEPOSIT_REASONS: { value: DepositReason; label: string }[] = [
-  { value: 'UNPAID_RENT', label: 'Unpaid rent' }, { value: 'DAMAGE', label: 'Damage' }, { value: 'CLEANING', label: 'Cleaning' }, { value: 'UTILITIES', label: 'Utilities' }, { value: 'OTHER', label: 'Other' },
+  { value: 'UNPAID_RENT', get label() { return T('Unpaid rent'); } }, { value: 'DAMAGE', get label() { return T('Damage'); } }, { value: 'CLEANING', get label() { return T('Cleaning'); } }, { value: 'UTILITIES', get label() { return T('Utilities'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const DEPOSIT_METHODS: { value: string; label: string }[] = [
-  { value: 'CASH', label: 'Cash' }, { value: 'BANK', label: 'Bank' }, { value: 'MOBILE_MONEY', label: 'Mobile money' }, { value: 'CHEQUE', label: 'Cheque' }, { value: 'CARD', label: 'Card' }, { value: 'OTHER', label: 'Other' },
+  { value: 'CASH', get label() { return T('Cash'); } }, { value: 'BANK', get label() { return T('Bank'); } }, { value: 'MOBILE_MONEY', get label() { return T('Mobile money'); } }, { value: 'CHEQUE', get label() { return T('Cheque'); } }, { value: 'CARD', get label() { return T('Card'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const INSPECTION_KIND_LABEL: Record<InspectionKind, string> = { MOVE_IN: 'Move-in', MOVE_OUT: 'Move-out', PERIODIC: 'Visit' };
 export const CONDITIONS: { value: ItemCondition; label: string }[] = [
-  { value: 'GOOD', label: 'Good' }, { value: 'FAIR', label: 'Fair' }, { value: 'POOR', label: 'Poor' }, { value: 'DAMAGED', label: 'Damaged' }, { value: 'MISSING', label: 'Missing' }, { value: 'NA', label: 'Not applicable' },
+  { value: 'GOOD', get label() { return T('Good'); } }, { value: 'FAIR', get label() { return T('Fair'); } }, { value: 'POOR', get label() { return T('Poor'); } }, { value: 'DAMAGED', get label() { return T('Damaged'); } }, { value: 'MISSING', get label() { return T('Missing'); } }, { value: 'NA', get label() { return T('Not applicable'); } },
 ];
 export function conditionLabel(c: string | null | undefined): string { return c ? (CONDITIONS.find((x) => x.value === c)?.label ?? c) : '—'; }
 export function depositBadge(s: string): string {

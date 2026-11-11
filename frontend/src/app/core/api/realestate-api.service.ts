@@ -6,6 +6,7 @@ import { map, tap } from 'rxjs/operators';
 import { API_BASE } from '../constants';
 import { InstallmentFrequency, InstallmentPlanDetail, InstallmentPreview, InterestMethod } from './installment-api.service';
 
+import { T } from '../i18n/t';
 export type PropertyType = 'HOUSE' | 'APARTMENT' | 'VILLA' | 'LAND' | 'COMMERCIAL' | 'OFFICE' | 'WAREHOUSE' | 'OTHER';
 export type ListingPurpose = 'SALE' | 'RENT' | 'BOTH';
 export type PropertyStatus = 'DRAFT' | 'AVAILABLE' | 'RESERVED' | 'SOLD' | 'LET' | 'WITHDRAWN';
@@ -21,8 +22,8 @@ export type CommissionStatus = 'PLANNED' | 'POSTED' | 'CANCELLED';
 export type PayeeKind = 'STAFF' | 'EXTERNAL';
 
 export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
-  { value: 'HOUSE', label: 'House' }, { value: 'APARTMENT', label: 'Apartment' }, { value: 'VILLA', label: 'Villa' }, { value: 'LAND', label: 'Land / plot' },
-  { value: 'COMMERCIAL', label: 'Commercial' }, { value: 'OFFICE', label: 'Office' }, { value: 'WAREHOUSE', label: 'Warehouse' }, { value: 'OTHER', label: 'Other' },
+  { value: 'HOUSE', get label() { return T('House'); } }, { value: 'APARTMENT', get label() { return T('Apartment'); } }, { value: 'VILLA', get label() { return T('Villa'); } }, { value: 'LAND', get label() { return T('Land / plot'); } },
+  { value: 'COMMERCIAL', get label() { return T('Commercial'); } }, { value: 'OFFICE', get label() { return T('Office'); } }, { value: 'WAREHOUSE', get label() { return T('Warehouse'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const PURPOSE_LABEL: Record<ListingPurpose, string> = { SALE: 'For sale', RENT: 'For rent', BOTH: 'Sale or rent' };
 export const PROPERTY_STATUS_LABEL: Record<PropertyStatus, string> = { DRAFT: 'Draft', AVAILABLE: 'Available', RESERVED: 'Reserved', SOLD: 'Sold', LET: 'Let', WITHDRAWN: 'Withdrawn' };
@@ -45,14 +46,14 @@ export type ReDocCategory = 'TITLE_DEED' | 'SALE_AGREEMENT' | 'SURVEY' | 'PERMIT
 export type ValuationPurpose = 'SALE' | 'MORTGAGE' | 'INSURANCE' | 'REVIEW' | 'OTHER';
 export type ValuationMethod = 'COMPARABLE' | 'INCOME' | 'COST' | 'OTHER';
 export const DOC_CATEGORIES: { value: ReDocCategory; label: string }[] = [
-  { value: 'TITLE_DEED', label: 'Title deed' }, { value: 'SALE_AGREEMENT', label: 'Sale agreement' }, { value: 'SURVEY', label: 'Survey / plan' }, { value: 'PERMIT', label: 'Permit / licence' },
-  { value: 'ID_DOCUMENT', label: 'ID document' }, { value: 'VALUATION_REPORT', label: 'Valuation report' }, { value: 'FLOOR_PLAN', label: 'Floor plan' }, { value: 'OTHER', label: 'Other' },
+  { value: 'TITLE_DEED', get label() { return T('Title deed'); } }, { value: 'SALE_AGREEMENT', get label() { return T('Sale agreement'); } }, { value: 'SURVEY', get label() { return T('Survey / plan'); } }, { value: 'PERMIT', get label() { return T('Permit / licence'); } },
+  { value: 'ID_DOCUMENT', get label() { return T('ID document'); } }, { value: 'VALUATION_REPORT', get label() { return T('Valuation report'); } }, { value: 'FLOOR_PLAN', get label() { return T('Floor plan'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const VALUATION_PURPOSES: { value: ValuationPurpose; label: string }[] = [
-  { value: 'SALE', label: 'Sale' }, { value: 'MORTGAGE', label: 'Mortgage' }, { value: 'INSURANCE', label: 'Insurance' }, { value: 'REVIEW', label: 'Review' }, { value: 'OTHER', label: 'Other' },
+  { value: 'SALE', get label() { return T('Sale'); } }, { value: 'MORTGAGE', get label() { return T('Mortgage'); } }, { value: 'INSURANCE', get label() { return T('Insurance'); } }, { value: 'REVIEW', get label() { return T('Review'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const VALUATION_METHODS: { value: ValuationMethod; label: string }[] = [
-  { value: 'COMPARABLE', label: 'Comparable sales' }, { value: 'INCOME', label: 'Income' }, { value: 'COST', label: 'Cost' }, { value: 'OTHER', label: 'Other' },
+  { value: 'COMPARABLE', get label() { return T('Comparable sales'); } }, { value: 'INCOME', get label() { return T('Income'); } }, { value: 'COST', get label() { return T('Cost'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export function docCategoryLabel(c: string): string { return DOC_CATEGORIES.find((x) => x.value === c)?.label ?? c; }
 
@@ -233,8 +234,8 @@ export type UnitStatus = 'AVAILABLE' | 'RESERVED' | 'SOLD' | 'WITHHELD';
 export type UnitSaleStage = 'RESERVED' | 'SOLD' | 'COMPLETED' | 'CANCELLED';
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = { PLANNING: 'Planning', SELLING: 'Selling', COMPLETED: 'Completed', ARCHIVED: 'Archived' };
 export const UNIT_KINDS: { value: UnitKind; label: string }[] = [
-  { value: 'PLOT', label: 'Plot' }, { value: 'APARTMENT', label: 'Apartment' }, { value: 'TOWNHOUSE', label: 'Townhouse' }, { value: 'VILLA', label: 'Villa' },
-  { value: 'SHOP', label: 'Shop' }, { value: 'OFFICE', label: 'Office' }, { value: 'OTHER', label: 'Other' },
+  { value: 'PLOT', get label() { return T('Plot'); } }, { value: 'APARTMENT', get label() { return T('Apartment'); } }, { value: 'TOWNHOUSE', get label() { return T('Townhouse'); } }, { value: 'VILLA', get label() { return T('Villa'); } },
+  { value: 'SHOP', get label() { return T('Shop'); } }, { value: 'OFFICE', get label() { return T('Office'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = { AVAILABLE: 'Available', RESERVED: 'Reserved', SOLD: 'Sold', WITHHELD: 'Withheld' };
 export const UNIT_SALE_STAGE_LABEL: Record<UnitSaleStage, string> = { RESERVED: 'Reserved', SOLD: 'Agreement signed', COMPLETED: 'Paid in full', CANCELLED: 'Cancelled' };

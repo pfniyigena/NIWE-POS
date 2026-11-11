@@ -27,7 +27,7 @@ export class HotelExportComponent {
   @Input() name = 'hotel';
   @Input() filters: Record<string, string | number | boolean | null | undefined> = {};
 
-  formats = [{ value: 'xlsx', label: 'Excel' }, { value: 'pdf', label: 'PDF' }, { value: 'csv', label: 'CSV' }];
+  formats = [{ value: 'xlsx', label: T('Excel') }, { value: 'pdf', label: T('PDF') }, { value: 'csv', label: T('CSV') }];
   busy = false;
   error: string | null = null;
 

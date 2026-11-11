@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.25.0 - French for messages, lists and report headings
+
+Error messages, confirmation questions, notices, status lists and every report's title and column headings are now translated. Fixes texts with values (for example "{p0} days left") showing the raw placeholder. Frontend only. Details in `RELEASE-NOTES-v1.25.0.md`.
+
 ### Version 1.24.0 - French for the remaining modules
 
 The other modules are now in French too: Restaurant, Hotel, Manufacturing, Subscriptions, Installments, Help Desk, HR and Payroll, Time tracking, Work orders, Booking, Law firm, Real estate, Property management, Assets, Gift cards, Loyalty, Promotions and the client portal. Messages built in code, server messages, e-mails and PDFs are still English. Frontend only. Details in `RELEASE-NOTES-v1.24.0.md`.

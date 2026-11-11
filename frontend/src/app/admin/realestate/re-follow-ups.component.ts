@@ -106,7 +106,7 @@ export class ReFollowUpsComponent implements OnInit {
   none = false;
   busy = false;
   formError: string | null = null;
-  chips = [{ label: 'Tomorrow', days: 1 }, { label: 'In 3 days', days: 3 }, { label: 'In a week', days: 7 }, { label: 'In 2 weeks', days: 14 }, { label: 'In a month', days: 30 }];
+  chips = [{ label: T('Tomorrow'), days: 1 }, { label: T('In 3 days'), days: 3 }, { label: T('In a week'), days: 7 }, { label: T('In 2 weeks'), days: 14 }, { label: T('In a month'), days: 30 }];
 
   constructor(private api: RealEstateApiService, private route: ActivatedRoute, auth: AuthService) {
     this.canManage = auth.canManage('OPERATIONS');
@@ -140,8 +140,8 @@ export class ReFollowUpsComponent implements OnInit {
     const b = this.board;
     if (!b) return [];
     const all: Section[] = [
-      { key: 'overdue', title: 'Late', hint: 'The call was due on an earlier day. Oldest first.', color: '#b91c1c', rows: b.overdue },
-      { key: 'today', title: 'Due today', hint: 'Call these today.', color: '#b45309', rows: b.today },
+      { key: 'overdue', title: 'Late', hint: T('The call was due on an earlier day. Oldest first.'), color: '#b91c1c', rows: b.overdue },
+      { key: 'today', title: 'Due today', hint: T('Call these today.'), color: '#b45309', rows: b.today },
       { key: 'upcoming', title: 'Coming up', hint: `Due in the next ${b.upcomingDays} days.`, color: '', rows: b.upcoming },
       { key: 'quiet', title: 'Gone quiet', hint: `Nobody has been in touch for ${b.staleDays} days or more and no call is booked. Call them, or mark the lead lost.`, color: '#b45309', rows: b.quiet },
     ];

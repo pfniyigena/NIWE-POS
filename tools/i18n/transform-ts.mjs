@@ -14,6 +14,8 @@ const ts = (await import(pathToFileURL(req.resolve('typescript')).href)).default
 const keysFile = path.resolve(process.cwd(), '../tools/i18n/keys.json');
 const keys = fs.existsSync(keysFile) ? JSON.parse(fs.readFileSync(keysFile, 'utf8')) : {};
 
+const LABELS = new Set((process.env.I18N_LABELS || '').split(',').filter(Boolean));
+const outside = [];
 const PROPS = new Set(['error', 'message', 'info', 'notice', 'msg', 'success', 'warning', 'err', 'errorMessage', 'infoMessage', 'okMessage', 'saveError', 'formError', 'flash', 'toast', 'hint']);
 const CALLS = new Set(['confirm', 'alert', 'run', 'fail', 'showError', 'showMessage', 'setError', 'setMessage', 'flash', 'toast', 'notify']);
 const hasLetter = (s) => /\p{L}/u.test(s);
@@ -97,6 +99,15 @@ function processFile(file) {
         if (r) { edits.push([node.right.getStart(sf), node.right.getEnd(), r]); done = true; }
       }
     }
+    if (!done && LABELS.size && ts.isPropertyAssignment(node) && ts.isIdentifier(node.name) && LABELS.has(node.name.text) && (ts.isStringLiteral(node.initializer) || ts.isNoSubstitutionTemplateLiteral(node.initializer))) {
+      let inClass = false; for (let p = node.parent; p; p = p.parent) if (ts.isClassDeclaration(p)) { inClass = true; break; }
+      const r = conv(node.initializer, sf);
+      if (r) {
+        if (inClass) { edits.push([node.initializer.getStart(sf), node.initializer.getEnd(), r]); done = true; }
+        else if (/report-defs/.test(file)) { outside.push(`${file}: ${node.getText(sf).slice(0, 80)}`); found.delete(node.initializer.text); }
+        else { edits.push([node.getStart(sf), node.getEnd(), `get ${node.name.text}() { return ${r}; }`]); done = true; }  // module-level list: translated when read, after the language is loaded
+      }
+    }
     if (!done && ts.isCallExpression(node)) {
       const c = node.expression;
       const name = ts.isIdentifier(c) ? c.text : ts.isPropertyAccessExpression(c) ? c.name.text : '';
@@ -139,4 +150,5 @@ if (!dry && !discover) {
   for (const k of found) { keys[k] ??= []; }
   fs.writeFileSync(keysFile, JSON.stringify(keys, null, 1), 'utf8');
 }
-console.log(JSON.stringify({ files, changed, edits: total, phrases: found.size, ...(discover ? stats : {}) }, null, 1));
+if (outside.length) fs.writeFileSync(path.resolve(process.cwd(), '../tools/i18n/_outside.txt'), outside.join('\n'));
+console.log(JSON.stringify({ outside: outside.length, files, changed, edits: total, phrases: found.size, ...(discover ? stats : {}) }, null, 1));

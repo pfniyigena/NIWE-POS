@@ -20,14 +20,14 @@ import { REPORT_DEFS } from '../../core/report-defs';
     <app-shell>
       <h3 class="mb-3">{{ 'POS Reports' | translate }}</h3>
       <div *ngFor="let section of sections" class="mb-4">
-        <h5 class="mb-2">{{ section }}</h5>
+        <h5 class="mb-2">{{ section | translate }}</h5>
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <a
             *ngFor="let r of bySection(section)"
             class="btn btn-outline-primary"
             [routerLink]="['/admin/reports', r.key]"
           >
-            {{ r.title }}
+            {{ r.title | translate }}
           </a>
         </div>
       </div>

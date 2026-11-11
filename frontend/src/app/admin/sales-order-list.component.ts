@@ -12,6 +12,7 @@ import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 import { Branch, SalesOrder } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Admin > Sales > Sale Orders — Task: "Add Sale order... So that we can have POS & Sales." */
 @Component({
   selector: 'app-sales-order-list',
@@ -70,7 +71,7 @@ export class SalesOrderListComponent implements OnInit {
   branches: Branch[] = [];
 
   list = new ListState<SalesOrder>((f, p, sz) => this.salesOrderApi.page(f, p, sz), 'Failed to load sale orders');
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'CONFIRMED', label: 'Confirmed' }, { value: 'PARTIALLY_FULFILLED', label: 'Partially fulfilled' }, { value: 'FULFILLED', label: 'Fulfilled' }, { value: 'CANCELLED', label: 'Cancelled' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'CONFIRMED', label: T('Confirmed') }, { value: 'PARTIALLY_FULFILLED', label: T('Partially fulfilled') }, { value: 'FULFILLED', label: T('Fulfilled') }, { value: 'CANCELLED', label: T('Cancelled') }];
   constructor(private salesOrderApi: SalesOrderApiService, private branchApi: BranchApiService) {}
 
 

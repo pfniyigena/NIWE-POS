@@ -104,8 +104,8 @@ export class LeaveSettingsComponent implements OnInit {
   type: LeaveTypePayload = { name: '', daysPerYear: 0, paid: true, active: true, accrualMode: 'UPFRONT', carryOverMaxDays: 0, payoutOnExit: false };
   holiday = { date: new Date().toISOString().slice(0, 10), name: '' };
   days = [
-    { code: 'MON', label: 'Mon' }, { code: 'TUE', label: 'Tue' }, { code: 'WED', label: 'Wed' }, { code: 'THU', label: 'Thu' },
-    { code: 'FRI', label: 'Fri' }, { code: 'SAT', label: 'Sat' }, { code: 'SUN', label: 'Sun' },
+    { code: 'MON', label: T('Mon') }, { code: 'TUE', label: T('Tue') }, { code: 'WED', label: T('Wed') }, { code: 'THU', label: T('Thu') },
+    { code: 'FRI', label: T('Fri') }, { code: 'SAT', label: T('Sat') }, { code: 'SUN', label: T('Sun') },
   ];
 
   constructor(private api: HrApiService) {}

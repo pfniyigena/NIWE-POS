@@ -12,8 +12,8 @@ interface Row { key: string; label: string; open: boolean; on: boolean; start: s
 interface Card { s: Schedule; custom: boolean; rows: Row[]; from: string; to: string; reason: string; msg: string | null; err: string | null; }
 
 const DAYS = [
-  { key: 'MON', label: 'Monday' }, { key: 'TUE', label: 'Tuesday' }, { key: 'WED', label: 'Wednesday' }, { key: 'THU', label: 'Thursday' },
-  { key: 'FRI', label: 'Friday' }, { key: 'SAT', label: 'Saturday' }, { key: 'SUN', label: 'Sunday' },
+  { key: 'MON', get label() { return T('Monday'); } }, { key: 'TUE', get label() { return T('Tuesday'); } }, { key: 'WED', get label() { return T('Wednesday'); } }, { key: 'THU', get label() { return T('Thursday'); } },
+  { key: 'FRI', get label() { return T('Friday'); } }, { key: 'SAT', get label() { return T('Saturday'); } }, { key: 'SUN', get label() { return T('Sunday'); } },
 ];
 
 /** Booking > Working hours: each person's own hours and days off (otherwise they follow the opening hours) and their leave. */

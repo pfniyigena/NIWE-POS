@@ -138,7 +138,7 @@ import { T } from '../core/i18n/t';
   `,
 })
 export class ShiftListComponent implements OnInit {
-  statuses = [{ value: 'OPEN', label: 'Open only' }, { value: 'CLOSED', label: 'Closed only' }];
+  statuses = [{ value: 'OPEN', label: T('Open only') }, { value: 'CLOSED', label: T('Closed only') }];
   registers: RegisterSummary[] = [];
   registerId = '';
   extra: Record<string, string | number | null | undefined> = {};

@@ -4,13 +4,14 @@ import { Observable, map } from 'rxjs';
 import { API_BASE } from '../constants';
 import { downloadBlob } from '../download-file';
 
+import { T } from '../i18n/t';
 export type PmDocSubject = 'PROPERTY' | 'UNIT' | 'OWNER' | 'TENANT' | 'LEASE' | 'MAINTENANCE' | 'INSPECTION';
 export type PmDocCategory = 'LEASE_AGREEMENT' | 'ID_DOCUMENT' | 'TITLE_DEED' | 'INSPECTION' | 'PERMIT' | 'INSURANCE' | 'PHOTO' | 'RECEIPT' | 'NOTICE' | 'OTHER';
 
 export const PM_DOC_CATEGORIES: { value: PmDocCategory; label: string }[] = [
-  { value: 'LEASE_AGREEMENT', label: 'Lease agreement' }, { value: 'ID_DOCUMENT', label: 'ID document' }, { value: 'TITLE_DEED', label: 'Title deed' }, { value: 'INSPECTION', label: 'Inspection report' },
-  { value: 'PERMIT', label: 'Permit / licence' }, { value: 'INSURANCE', label: 'Insurance' }, { value: 'PHOTO', label: 'Photo' }, { value: 'RECEIPT', label: 'Receipt / invoice' },
-  { value: 'NOTICE', label: 'Notice / letter' }, { value: 'OTHER', label: 'Other' },
+  { value: 'LEASE_AGREEMENT', get label() { return T('Lease agreement'); } }, { value: 'ID_DOCUMENT', get label() { return T('ID document'); } }, { value: 'TITLE_DEED', get label() { return T('Title deed'); } }, { value: 'INSPECTION', get label() { return T('Inspection report'); } },
+  { value: 'PERMIT', get label() { return T('Permit / licence'); } }, { value: 'INSURANCE', get label() { return T('Insurance'); } }, { value: 'PHOTO', get label() { return T('Photo'); } }, { value: 'RECEIPT', get label() { return T('Receipt / invoice'); } },
+  { value: 'NOTICE', get label() { return T('Notice / letter'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export function pmDocCategoryLabel(c: string): string { return PM_DOC_CATEGORIES.find((x) => x.value === c)?.label ?? c; }
 

@@ -10,6 +10,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /** Voids and returns: sales voided after payment, returns (with who approved them) and carts dropped before payment, with search, filters, pages and Excel / PDF / CSV. */
 @Component({
   selector: 'app-pos-log',
@@ -52,12 +53,12 @@ import { PagerComponent } from '../shared/pager.component';
 })
 export class PosLogComponent implements OnInit {
   types = [
-    { value: 'VOID', label: 'Voided sales' },
-    { value: 'RETURN', label: 'Returns' },
-    { value: 'DROPPED_CART', label: 'Dropped carts' },
-    { value: 'DISCOUNT', label: 'Discounts' },
-    { value: 'PRICE_OVERRIDE', label: 'Price changes' },
-    { value: 'REPRINT', label: 'Receipt reprints' },
+    { value: 'VOID', label: T('Voided sales') },
+    { value: 'RETURN', label: T('Returns') },
+    { value: 'DROPPED_CART', label: T('Dropped carts') },
+    { value: 'DISCOUNT', label: T('Discounts') },
+    { value: 'PRICE_OVERRIDE', label: T('Price changes') },
+    { value: 'REPRINT', label: T('Receipt reprints') },
   ];
   registers: RegisterSummary[] = [];
   registerId = '';

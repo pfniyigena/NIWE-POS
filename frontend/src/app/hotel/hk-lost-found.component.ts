@@ -82,7 +82,7 @@ import { T } from '../core/i18n/t';
   `,
 })
 export class HkLostFoundComponent implements OnInit {
-  statuses = [{ value: 'FOUND', label: 'Waiting for owner' }, { value: 'CLAIMED', label: 'Handed over' }, { value: 'DISPOSED', label: 'Disposed' }];
+  statuses = [{ value: 'FOUND', label: T('Waiting for owner') }, { value: 'CLAIMED', label: T('Handed over') }, { value: 'DISPOSED', label: T('Disposed') }];
   list = new ListState<LostFound>((f, p, sz) => this.api.page<LostFound>('lost-found', f, p, sz), 'Failed to load lost & found');
   rooms: Room[] = [];
   form: LostFoundPayload | null = null;

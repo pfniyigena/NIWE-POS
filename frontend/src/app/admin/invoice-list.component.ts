@@ -12,6 +12,7 @@ import { Branch, Invoice } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Sales > Invoices — Fourier: "Add Invoice ... without touching warehousing"; later:
  * "someone can create invoice (with invoice lines) without creating sales order." Store-wide
@@ -93,7 +94,7 @@ export class InvoiceListComponent implements OnInit {
   customerName: string | null = null;
 
   list = new ListState<Invoice>((f, p, sz) => this.invoiceApi.page(f, p, sz, { customerId: this.customerId }), 'Failed to load invoices');
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'ISSUED', label: 'Issued' }, { value: 'VOID', label: 'Void' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'ISSUED', label: T('Issued') }, { value: 'VOID', label: T('Void') }];
   constructor(private invoiceApi: InvoiceApiService, private route: ActivatedRoute, private branchApi: BranchApiService) {}
 
   ngOnInit(): void {

@@ -17,7 +17,7 @@ import { REPORT_DEFS } from '../../core/report-defs';
     <app-shell>
       <h3 class="mb-3">{{ 'Purchases Reports' | translate }}</h3>
       <div class="flex gap-2" style="flex-wrap:wrap;">
-        <a *ngFor="let r of reports" class="btn btn-outline-primary" [routerLink]="['/admin/reports', r.key]">{{ r.title }}</a>
+        <a *ngFor="let r of reports" class="btn btn-outline-primary" [routerLink]="['/admin/reports', r.key]">{{ r.title | translate }}</a>
         <div class="text-muted" *ngIf="reports.length === 0">{{ 'No purchases reports yet.' | translate }}</div>
       </div>
     </app-shell>

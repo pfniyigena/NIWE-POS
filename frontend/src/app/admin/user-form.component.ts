@@ -118,17 +118,17 @@ export class UserFormComponent implements OnInit {
 
   /** Fourier: "Build a full permissions system" — the fixed set this app currently supports. */
   readonly permissionOptions: PermissionOption[] = [
-    { value: 'CONFIRM_RESTAURANT_WASTAGE', label: 'Confirm/reject Restaurant wastage', hint: 'Review a logged wastage entry — applies the stock/accounting impact or discards it.' },
-    { value: 'APPROVE_STOCK_ADJUSTMENT', label: 'Approve general Inventory stock adjustments', hint: 'Review a logged stock adjustment — applies the stock/accounting impact or discards it.' },
-    { value: 'APPROVE_PURCHASE_REQUISITION', label: 'Approve Purchase requisitions', hint: 'Approve or reject a requisition awaiting approval.' },
-    { value: 'OVERRIDE_DISCOUNT_CAP', label: 'Override the store-wide discount cap', hint: 'Apply a discount at checkout, and exceed the configured maximum discount.' },
-    { value: 'APPROVE_EXPENSE', label: 'Approve/reject Expenses', hint: 'Approve or reject an expense awaiting approval, and void an already-approved one.' },
-    { value: 'APPROVE_LARGE_EXPENSE', label: 'Approve large Expenses', hint: 'Approve an expense above the approval limit set in Expenses > Settings. Administrators can always do this.' },
-    { value: 'APPROVE_ASSET_DISPOSAL', label: 'Approve large asset disposals', hint: 'Dispose of an asset whose book value is above the limit set in Assets > Settings, and undo a disposal. Administrators can always do this.' },
-    { value: 'APPROVE_STOCK_TRANSFER', label: 'Approve/reject Stock transfers', hint: 'Review a logged transfer between warehouses — moves the stock or discards it.' },
-    { value: 'APPROVE_POS_VOID_RETURN', label: 'Approve voids and returns at the till', hint: 'Approve a void or a large return by typing a PIN, without any other manager right.' },
-    { value: 'APPROVE_POS_PRICE', label: 'Approve price changes at the till', hint: 'Approve a hand-changed price by typing a PIN.' },
-    { value: 'APPROVE_POS_CASH', label: 'Approve big paid-outs and cash corrections', hint: 'Approve a large paid-out, and cancel a mistaken cash movement.' },
+    { value: 'CONFIRM_RESTAURANT_WASTAGE', label: T('Confirm/reject Restaurant wastage'), hint: T('Review a logged wastage entry — applies the stock/accounting impact or discards it.') },
+    { value: 'APPROVE_STOCK_ADJUSTMENT', label: T('Approve general Inventory stock adjustments'), hint: T('Review a logged stock adjustment — applies the stock/accounting impact or discards it.') },
+    { value: 'APPROVE_PURCHASE_REQUISITION', label: T('Approve Purchase requisitions'), hint: T('Approve or reject a requisition awaiting approval.') },
+    { value: 'OVERRIDE_DISCOUNT_CAP', label: T('Override the store-wide discount cap'), hint: T('Apply a discount at checkout, and exceed the configured maximum discount.') },
+    { value: 'APPROVE_EXPENSE', label: T('Approve/reject Expenses'), hint: T('Approve or reject an expense awaiting approval, and void an already-approved one.') },
+    { value: 'APPROVE_LARGE_EXPENSE', label: T('Approve large Expenses'), hint: T('Approve an expense above the approval limit set in Expenses > Settings. Administrators can always do this.') },
+    { value: 'APPROVE_ASSET_DISPOSAL', label: T('Approve large asset disposals'), hint: T('Dispose of an asset whose book value is above the limit set in Assets > Settings, and undo a disposal. Administrators can always do this.') },
+    { value: 'APPROVE_STOCK_TRANSFER', label: T('Approve/reject Stock transfers'), hint: T('Review a logged transfer between warehouses — moves the stock or discards it.') },
+    { value: 'APPROVE_POS_VOID_RETURN', label: T('Approve voids and returns at the till'), hint: T('Approve a void or a large return by typing a PIN, without any other manager right.') },
+    { value: 'APPROVE_POS_PRICE', label: T('Approve price changes at the till'), hint: T('Approve a hand-changed price by typing a PIN.') },
+    { value: 'APPROVE_POS_CASH', label: T('Approve big paid-outs and cash corrections'), hint: T('Approve a large paid-out, and cancel a mistaken cash movement.') },
   ];
 
   constructor(

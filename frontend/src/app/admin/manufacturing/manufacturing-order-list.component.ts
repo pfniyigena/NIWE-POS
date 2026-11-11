@@ -10,6 +10,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { ManufacturingOrderApiService } from '../../core/api/manufacturing-order-api.service';
 import { ManufacturingOrder } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Manufacturing orders (Fourier's own list, item 3). */
 @Component({
   selector: 'app-manufacturing-order-list',
@@ -54,11 +55,11 @@ import { ManufacturingOrder } from '../../core/models';
 })
 export class ManufacturingOrderListComponent implements OnInit {
   statuses = [
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'CONFIRMED', label: 'Confirmed' },
-    { value: 'PARTIALLY_PRODUCED', label: 'Partly produced' },
-    { value: 'PRODUCED', label: 'Produced' },
-    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'DRAFT', label: T('Draft') },
+    { value: 'CONFIRMED', label: T('Confirmed') },
+    { value: 'PARTIALLY_PRODUCED', label: T('Partly produced') },
+    { value: 'PRODUCED', label: T('Produced') },
+    { value: 'CANCELLED', label: T('Cancelled') },
   ];
   list = new ListState<ManufacturingOrder>((f, p, sz) => this.manufacturingOrderApi.page(f, p, sz), 'Failed to load manufacturing orders');
 

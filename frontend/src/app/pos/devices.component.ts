@@ -210,9 +210,9 @@ export class DevicesComponent implements OnInit {
   serverPaper: string | null = null;
   readonly bauds = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200];
   readonly printers: { slot: PrinterSlot; title: string; hint: string; kitchen: boolean }[] = [
-    { slot: 'receipt', title: 'Receipt printer', hint: 'Sale receipts, returns, restaurant bills, X / Z reports and the cash drawer.', kitchen: false },
-    { slot: 'kitchen', title: 'Kitchen printer (optional)', hint: 'Order tickets for the kitchen stations. Without one, tickets go to the receipt printer when you print them by hand.', kitchen: true },
-    { slot: 'bar', title: 'Bar printer (optional)', hint: 'Order tickets for the stations listed here (for example Bar).', kitchen: true },
+    { slot: 'receipt', title: 'Receipt printer', hint: T('Sale receipts, returns, restaurant bills, X / Z reports and the cash drawer.'), kitchen: false },
+    { slot: 'kitchen', title: 'Kitchen printer (optional)', hint: T('Order tickets for the kitchen stations. Without one, tickets go to the receipt printer when you print them by hand.'), kitchen: true },
+    { slot: 'bar', title: 'Bar printer (optional)', hint: T('Order tickets for the stations listed here (for example Bar).'), kitchen: true },
   ];
 
   constructor(

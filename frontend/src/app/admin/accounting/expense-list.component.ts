@@ -156,12 +156,12 @@ export class ExpenseListComponent implements OnInit {
   branchFilter: number | null = null;
 
   readonly views = [
-    { key: '', label: 'All' },
-    { key: 'pending', label: 'Awaiting approval' },
-    { key: 'unpaid', label: 'Unpaid bills' },
-    { key: 'overdue', label: 'Overdue' },
-    { key: 'due-soon', label: 'Due soon' },
-    { key: 'mine', label: 'Entered by me' },
+    { key: '', label: T('All') },
+    { key: 'pending', label: T('Awaiting approval') },
+    { key: 'unpaid', label: T('Unpaid bills') },
+    { key: 'overdue', label: T('Overdue') },
+    { key: 'due-soon', label: T('Due soon') },
+    { key: 'mine', label: T('Entered by me') },
   ];
   view = '';
   q = '';

@@ -105,7 +105,7 @@ export class LeavesComponent implements OnInit {
   tab: 'requests' | 'balances' = 'requests';
   branches: Branch[] = [];
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'PENDING', label: 'Pending' }, { value: 'APPROVED', label: 'Approved' }, { value: 'REJECTED', label: 'Rejected' }, { value: 'CANCELLED', label: 'Cancelled' }];
+  statuses = [{ value: 'PENDING', label: T('Pending') }, { value: 'APPROVED', label: T('Approved') }, { value: 'REJECTED', label: T('Rejected') }, { value: 'CANCELLED', label: T('Cancelled') }];
   list = new ListState<LeaveRequest>((f, p, sz) => this.api.page<LeaveRequest>('leaves', f, p, sz, { employeeId: this.filterEmployeeId }), 'Failed to load leave requests');
   balances: LeaveBalance[] = [];
   employees: Employee[] = [];

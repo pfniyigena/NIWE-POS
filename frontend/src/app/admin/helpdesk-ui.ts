@@ -1,5 +1,6 @@
 import { HelpDeskPriority, HelpDeskSlaState, HelpDeskStatus, HelpDeskTicket } from '../core/models';
 
+import { T } from '../core/i18n/t';
 /** Shared look-ups for the Help Desk screens: badge classes, labels and deadline wording. */
 export function hdPriorityClass(p: HelpDeskPriority | string): string {
   switch (p) {
@@ -56,11 +57,11 @@ export function hdSlaLabel(s: HelpDeskSlaState | null, kind: 'reply' | 'fix'): s
 
 /** The one badge a list row shows: the worst thing about the ticket's deadlines, or nothing. */
 export function hdWorstSla(t: HelpDeskTicket): { label: string; cls: string } | null {
-  if (t.responseState === 'BREACHED') return { label: 'Reply overdue', cls: 'badge-danger' };
-  if (t.resolutionState === 'BREACHED') return { label: 'Overdue', cls: 'badge-danger' };
-  if (t.resolutionState === 'DUE_SOON') return { label: 'Due soon', cls: 'badge-warning' };
-  if (t.resolutionState === 'MISSED' || t.responseState === 'MISSED') return { label: 'Was late', cls: 'badge-outline' };
-  if (t.resolutionState === 'PAUSED') return { label: 'Clock paused', cls: 'badge-outline' };
+  if (t.responseState === 'BREACHED') return { get label() { return T('Reply overdue'); }, cls: 'badge-danger' };
+  if (t.resolutionState === 'BREACHED') return { get label() { return T('Overdue'); }, cls: 'badge-danger' };
+  if (t.resolutionState === 'DUE_SOON') return { get label() { return T('Due soon'); }, cls: 'badge-warning' };
+  if (t.resolutionState === 'MISSED' || t.responseState === 'MISSED') return { get label() { return T('Was late'); }, cls: 'badge-outline' };
+  if (t.resolutionState === 'PAUSED') return { get label() { return T('Clock paused'); }, cls: 'badge-outline' };
   return null;
 }
 

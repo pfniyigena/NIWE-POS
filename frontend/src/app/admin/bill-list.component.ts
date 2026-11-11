@@ -12,6 +12,7 @@ import { Branch, Bill } from '../core/models';
 import { BranchApiService } from '../core/api/branch-api.service';
 import { branchNameOf, effectiveBranchId } from '../core/branch-util';
 
+import { T } from '../core/i18n/t';
 /**
  * Admin > Purchases > Bills — Fourier: "The Purchase order should flow same workflow as Sale order
  * (with Bills and Refunds equivalent with Invoices and Credit note)." Store-wide ledger; one is
@@ -80,7 +81,7 @@ export class BillListComponent implements OnInit {
   error: string | null = null;
 
   list = new ListState<Bill>((f, p, sz) => this.billApi.page(f, p, sz), 'Failed to load bills');
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'ISSUED', label: 'Issued' }, { value: 'VOID', label: 'Void' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'ISSUED', label: T('Issued') }, { value: 'VOID', label: T('Void') }];
   constructor(private billApi: BillApiService, private branchApi: BranchApiService) {}
 
   ngOnInit(): void {

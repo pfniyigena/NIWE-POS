@@ -5,6 +5,7 @@ import { API_BASE } from '../constants';
 import { ListFilter, pagedList } from './list-state';
 import { PageResult } from './paged';
 
+import { T } from '../i18n/t';
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
 export type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CASUAL' | 'INTERN';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
@@ -657,13 +658,13 @@ export interface FinalPayPayload { leaveDays: number | null; noticePayDays: numb
 // ---- documents, checklists, import (HR-7) ----
 export type DocCategory = 'CONTRACT' | 'ID_DOCUMENT' | 'QUALIFICATION' | 'PERMIT' | 'PAYROLL' | 'DISCIPLINARY' | 'OTHER';
 export const DOC_CATEGORIES: { value: DocCategory; label: string }[] = [
-  { value: 'CONTRACT', label: 'Contract' },
-  { value: 'ID_DOCUMENT', label: 'ID document' },
-  { value: 'QUALIFICATION', label: 'Qualification' },
-  { value: 'PERMIT', label: 'Permit' },
-  { value: 'PAYROLL', label: 'Payroll' },
-  { value: 'DISCIPLINARY', label: 'Disciplinary' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'CONTRACT', get label() { return T('Contract'); } },
+  { value: 'ID_DOCUMENT', get label() { return T('ID document'); } },
+  { value: 'QUALIFICATION', get label() { return T('Qualification'); } },
+  { value: 'PERMIT', get label() { return T('Permit'); } },
+  { value: 'PAYROLL', get label() { return T('Payroll'); } },
+  { value: 'DISCIPLINARY', get label() { return T('Disciplinary'); } },
+  { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export function docCategoryLabel(c: string): string {
   return DOC_CATEGORIES.find((x) => x.value === c)?.label ?? c;

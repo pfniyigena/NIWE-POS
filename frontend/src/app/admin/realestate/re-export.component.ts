@@ -25,7 +25,7 @@ export class ReExportComponent {
   /** The filters of the list as they are now; empty values are left out. */
   @Input() filters: Record<string, string | number | boolean | null | undefined> = {};
 
-  formats = [{ value: 'xlsx', label: 'Excel' }, { value: 'pdf', label: 'PDF' }, { value: 'csv', label: 'CSV' }];
+  formats = [{ value: 'xlsx', label: T('Excel') }, { value: 'pdf', label: T('PDF') }, { value: 'csv', label: T('CSV') }];
   busy = false;
   error: string | null = null;
 

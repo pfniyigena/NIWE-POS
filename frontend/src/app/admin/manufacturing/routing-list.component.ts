@@ -10,6 +10,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { RoutingApiService } from '../../core/api/routing-api.service';
 import { Routing } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Settings > Routings: search (name, description, step, workstation), active/inactive, pages and exports. */
 @Component({
   selector: 'app-routing-list',
@@ -55,7 +56,7 @@ import { Routing } from '../../core/models';
   `,
 })
 export class RoutingListComponent implements OnInit {
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'INACTIVE', label: T('Inactive') }];
   list = new ListState<Routing>((f, p, sz) => this.routingApi.page(f, p, sz), 'Failed to load routings');
 
   constructor(private routingApi: RoutingApiService) {}

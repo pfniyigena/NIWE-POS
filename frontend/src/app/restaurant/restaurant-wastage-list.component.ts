@@ -83,7 +83,7 @@ import { T } from '../core/i18n/t';
   `,
 })
 export class RestaurantWastageListComponent implements OnInit {
-  statuses = [{ value: 'PENDING', label: 'Pending' }, { value: 'CONFIRMED', label: 'Confirmed' }, { value: 'REJECTED', label: 'Rejected' }];
+  statuses = [{ value: 'PENDING', label: T('Pending') }, { value: 'CONFIRMED', label: T('Confirmed') }, { value: 'REJECTED', label: T('Rejected') }];
   reasons = ['SPOILAGE', 'BURNT_OR_OVERCOOKED', 'DROPPED_OR_SPILLED', 'EXPIRED', 'PREP_TRIM', 'CUSTOMER_COMPLAINT', 'OTHER'];
   reason = '';
   extra: Record<string, string | number | null | undefined> = {};

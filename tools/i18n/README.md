@@ -7,3 +7,5 @@ The English text written in an Angular template is the translation key: `{{ 'Sav
 2. Add each new English phrase and its French to `frontend/src/app/core/i18n/fr.json`. A `{p0}` in a phrase is a value filled in by the screen; keep it in the French text.
 3. `node ../tools/i18n/build-fr.mjs` writes `fr.ts` (commit both).
 4. Text written in TypeScript (messages, `confirm()` texts, labels held in arrays) is not touched by the script: use `TranslateService.instant('English text')` or `| translate` where it is shown.
+
+5. Messages in `.ts` files: `node ../tools/i18n/transform-ts.mjs src/app/<dir>` wraps `this.error = '...'`, `confirm('...')`, `this.run(..., '...')` in `T('English', {p0: value})`. Add `I18N_LABELS=label,hint` to also convert label lists. Run `--dry` first.

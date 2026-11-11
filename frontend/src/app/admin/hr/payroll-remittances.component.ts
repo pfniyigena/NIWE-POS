@@ -101,7 +101,7 @@ export class PayrollRemittancesComponent implements OnInit, OnDestroy {
   loaded = false;
   country = '';
   form: RemittancePayload | null = null;
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'VOIDED', label: 'Cancelled' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'VOIDED', label: T('Cancelled') }];
   history = new ListState<Remittance>((f, p, sz) => this.api.page<Remittance>('payroll/remittances', f, p, sz), 'Failed to load the payments');
   error: string | null = null;
   saved: string | null = null;

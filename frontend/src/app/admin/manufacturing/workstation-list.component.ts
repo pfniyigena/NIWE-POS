@@ -10,6 +10,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { WorkstationApiService } from '../../core/api/workstation-api.service';
 import { Workstation } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Workstations: search (code, name, description), active/inactive, pages and exports. */
 @Component({
   selector: 'app-workstation-list',
@@ -54,7 +55,7 @@ import { Workstation } from '../../core/models';
   `,
 })
 export class WorkstationListComponent implements OnInit {
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'INACTIVE', label: T('Inactive') }];
   list = new ListState<Workstation>((f, p, sz) => this.workstationApi.page(f, p, sz), 'Failed to load workstations');
 
   constructor(private workstationApi: WorkstationApiService) {}

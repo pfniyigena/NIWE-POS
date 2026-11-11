@@ -87,8 +87,8 @@ export class RoomListComponent implements OnInit {
   roomTypeId: number | null = null;
   extra: Record<string, string | number | null | undefined> = {};
   statuses = [
-    { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }, { value: 'OUT_OF_ORDER', label: 'Out of order' }, { value: 'INACTIVE', label: 'Not in use' },
-    { value: 'DIRTY', label: 'Dirty' }, { value: 'CLEANING', label: 'Being cleaned' }, { value: 'CLEAN', label: 'Clean' }, { value: 'INSPECTED', label: 'Inspected' },
+    { value: 'OCCUPIED', label: T('Occupied') }, { value: 'VACANT', label: T('Vacant') }, { value: 'OUT_OF_ORDER', label: T('Out of order') }, { value: 'INACTIVE', label: T('Not in use') },
+    { value: 'DIRTY', label: T('Dirty') }, { value: 'CLEANING', label: T('Being cleaned') }, { value: 'CLEAN', label: T('Clean') }, { value: 'INSPECTED', label: T('Inspected') },
   ];
   list = new ListState<Room>((f, p, sz) => this.api.page<Room>('rooms', f, p, sz, { roomTypeId: this.roomTypeId }), 'Failed to load rooms');
   editing: { id: number | null } | null = null;

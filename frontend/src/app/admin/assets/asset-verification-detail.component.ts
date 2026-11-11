@@ -104,8 +104,8 @@ export class AssetVerificationDetailComponent implements OnInit {
   notice: string | null = null;
   busy = false;
   readonly filters = [
-    { key: 'PENDING', label: 'To check' }, { key: 'FOUND', label: 'Found' }, { key: 'MISSING', label: 'Missing' },
-    { key: 'DAMAGED', label: 'Damaged' }, { key: '', label: 'All' },
+    { key: 'PENDING', label: T('To check') }, { key: 'FOUND', label: T('Found') }, { key: 'MISSING', label: T('Missing') },
+    { key: 'DAMAGED', label: T('Damaged') }, { key: '', label: T('All') },
   ];
 
   constructor(private api: AssetApiService, private route: ActivatedRoute, private router: Router, private auth: AuthService) {}

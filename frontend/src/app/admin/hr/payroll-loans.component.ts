@@ -90,7 +90,7 @@ export class PayrollLoansComponent implements OnInit {
   employees: Employee[] = [];
   type = '';
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'PAID_OFF', label: 'Paid off' }, { value: 'CANCELLED', label: 'Cancelled' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'PAID_OFF', label: T('Paid off') }, { value: 'CANCELLED', label: T('Cancelled') }];
   list = new ListState<StaffLoan>((f, p, sz) => this.api.page<StaffLoan>('payroll/loans', f, p, sz, { type: this.type }), 'Failed to load advances and loans');
   form: LoanPayload = this.blank();
   error: string | null = null;

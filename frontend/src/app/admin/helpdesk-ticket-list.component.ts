@@ -154,14 +154,14 @@ export class HelpDeskTicketListComponent implements OnInit {
   busy = false;
 
   views = [
-    { key: 'active', label: 'Active' },
-    { key: 'mine', label: 'Mine' },
-    { key: 'unassigned', label: 'Unassigned' },
-    { key: 'unanswered', label: 'Unanswered' },
-    { key: 'overdue', label: 'Overdue' },
-    { key: 'due-soon', label: 'Due soon' },
-    { key: 'waiting', label: 'Waiting' },
-    { key: '', label: 'All' },
+    { key: 'active', label: T('Active') },
+    { key: 'mine', label: T('Mine') },
+    { key: 'unassigned', label: T('Unassigned') },
+    { key: 'unanswered', label: T('Unanswered') },
+    { key: 'overdue', label: T('Overdue') },
+    { key: 'due-soon', label: T('Due soon') },
+    { key: 'waiting', label: T('Waiting') },
+    { key: '', label: T('All') },
   ];
   view = 'active';
 

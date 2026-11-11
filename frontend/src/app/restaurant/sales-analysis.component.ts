@@ -238,24 +238,24 @@ type Tab = 'overview' | 'menu' | 'servers' | 'tables' | 'controls';
 })
 export class SalesAnalysisComponent implements OnInit {
   presets = [
-    { key: 'today', label: 'Today' },
-    { key: 'yesterday', label: 'Yesterday' },
-    { key: 'week', label: 'Last 7 days' },
-    { key: 'month', label: 'Last 30 days' },
-    { key: 'thismonth', label: 'This month' },
+    { key: 'today', label: T('Today') },
+    { key: 'yesterday', label: T('Yesterday') },
+    { key: 'week', label: T('Last 7 days') },
+    { key: 'month', label: T('Last 30 days') },
+    { key: 'thismonth', label: T('This month') },
   ];
   tabs: { key: Tab; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'menu', label: 'Menu mix' },
-    { key: 'servers', label: 'Servers' },
-    { key: 'tables', label: 'Tables' },
-    { key: 'controls', label: 'Voids & comps' },
+    { key: 'overview', label: T('Overview') },
+    { key: 'menu', label: T('Menu mix') },
+    { key: 'servers', label: T('Servers') },
+    { key: 'tables', label: T('Tables') },
+    { key: 'controls', label: T('Voids & comps') },
   ];
   classes = [
-    { key: 'STAR', label: 'Stars' },
-    { key: 'PLOWHORSE', label: 'Plowhorses' },
-    { key: 'PUZZLE', label: 'Puzzles' },
-    { key: 'DOG', label: 'Dogs' },
+    { key: 'STAR', label: T('Stars') },
+    { key: 'PLOWHORSE', label: T('Plowhorses') },
+    { key: 'PUZZLE', label: T('Puzzles') },
+    { key: 'DOG', label: T('Dogs') },
   ];
   from = iso(new Date());
   to = iso(new Date());
@@ -340,11 +340,11 @@ export class SalesAnalysisComponent implements OnInit {
 
   exportChoices(): { key: string; label: string }[] {
     switch (this.tab) {
-      case 'menu': return [{ key: 'items', label: 'Menu mix' }, { key: 'categories', label: 'Categories' }];
-      case 'servers': return [{ key: 'servers', label: 'Servers' }];
-      case 'tables': return [{ key: 'tables', label: 'Table turns' }];
-      case 'controls': return [{ key: 'controls', label: 'Voids & comps' }];
-      default: return [{ key: 'hours', label: 'By hour' }, { key: 'weekdays', label: 'By weekday' }, { key: 'days', label: 'By day' }, { key: 'types', label: 'By order type' }, { key: 'payments', label: 'Payments' }];
+      case 'menu': return [{ key: 'items', label: T('Menu mix') }, { key: 'categories', label: T('Categories') }];
+      case 'servers': return [{ key: 'servers', label: T('Servers') }];
+      case 'tables': return [{ key: 'tables', label: T('Table turns') }];
+      case 'controls': return [{ key: 'controls', label: T('Voids & comps') }];
+      default: return [{ key: 'hours', label: T('By hour') }, { key: 'weekdays', label: T('By weekday') }, { key: 'days', label: T('By day') }, { key: 'types', label: T('By order type') }, { key: 'payments', label: T('Payments') }];
     }
   }
 

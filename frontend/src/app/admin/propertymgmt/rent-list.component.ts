@@ -71,8 +71,8 @@ export class RentListComponent implements OnInit {
   readonly size = PAGE_SIZE;
   properties: PropertyRow[] = [];
   tabs = [
-    { value: 'TO_INVOICE', label: 'To invoice' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'OPEN', label: 'Invoiced, unpaid' },
-    { value: 'PAID', label: 'Paid' }, { value: 'WAIVED', label: 'Waived' }, { value: '', label: 'All' },
+    { value: 'TO_INVOICE', label: T('To invoice') }, { value: 'OVERDUE', label: T('Overdue') }, { value: 'OPEN', label: T('Invoiced, unpaid') },
+    { value: 'PAID', label: T('Paid') }, { value: 'WAIVED', label: T('Waived') }, { value: '', label: T('All') },
   ];
   status = 'TO_INVOICE';
   propertyId: number | null = null;

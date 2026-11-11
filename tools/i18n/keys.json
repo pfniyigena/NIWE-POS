@@ -23673,5 +23673,1236 @@
  "Saved {p0} on {p1}.": [],
  "Throw away the time on this timer?": [],
  "Could not discard the timer": [],
- "Could not load your jobs": []
+ "Could not load your jobs": [],
+ "Entered by me": [],
+ "Held by someone": [],
+ "Warranty or insurance ended": [],
+ "Fully depreciated soon": [],
+ "Draft": [],
+ "Mon": [],
+ "Tue": [],
+ "Wed": [],
+ "Thu": [],
+ "Fri": [],
+ "Sat": [],
+ "Sun": [],
+ "Monday": [],
+ "Tuesday": [],
+ "Wednesday": [],
+ "Thursday": [],
+ "Friday": [],
+ "Saturday": [],
+ "Sunday": [],
+ "Drops to safe": [],
+ "Counts": [],
+ "Opening stock": [],
+ "What customers owe you": [],
+ "What you owe suppliers": [],
+ "Ledger opening balances": [],
+ "Reply overdue": [],
+ "Was late": [],
+ "Clock paused": [],
+ "Left the company": [],
+ "Not contacted this week": [],
+ "Promised": [],
+ "Team": [],
+ "Partly produced": [],
+ "Dropped carts": [],
+ "Price changes": [],
+ "Receipt reprints": [],
+ "To invoice": [],
+ "Invoiced, unpaid": [],
+ "Waived": [],
+ "Drafts": [],
+ "Partially received": [],
+ "Converted": [],
+ "An instalment is past its due date. The longest overdue is first.": [],
+ "Sold, but the buyer has no payment plan and still owes money. Set up a plan on the sale, or follow up.": [],
+ "In 3 days": [],
+ "In a week": [],
+ "In 2 weeks": [],
+ "In a month": [],
+ "The call was due on an earlier day. Oldest first.": [],
+ "Call these today.": [],
+ "Offer letter": [],
+ "Reservation letter": [],
+ "Reserve the property first": [],
+ "Sale agreement": [],
+ "Available once the agreement is recorded on the deal": [],
+ "Available once the agreement is signed and the unit is sold": [],
+ "Buyer statement": [],
+ "Available once the unit is sold": [],
+ "Price list (available units)": [],
+ "Price list (all units)": [],
+ "Flyer": [],
+ "Partially fulfilled": [],
+ "Billing within 7 days": [],
+ "Inactive only": [],
+ "DD/MM/YYYY (31/01/2026)": [],
+ "MM/DD/YYYY (01/31/2026)": [],
+ "YYYY-MM-DD (2026-01-31)": [],
+ "D MMM YYYY (31 Jan 2026)": [],
+ "Confirm/reject Restaurant wastage": [],
+ "Review a logged wastage entry — applies the stock/accounting impact or discards it.": [],
+ "Approve general Inventory stock adjustments": [],
+ "Review a logged stock adjustment — applies the stock/accounting impact or discards it.": [],
+ "Approve Purchase requisitions": [],
+ "Approve or reject a requisition awaiting approval.": [],
+ "Override the store-wide discount cap": [],
+ "Apply a discount at checkout, and exceed the configured maximum discount.": [],
+ "Approve/reject Expenses": [],
+ "Approve or reject an expense awaiting approval, and void an already-approved one.": [],
+ "Approve large Expenses": [],
+ "Approve an expense above the approval limit set in Expenses > Settings. Administrators can always do this.": [],
+ "Dispose of an asset whose book value is above the limit set in Assets > Settings, and undo a disposal. Administrators can always do this.": [],
+ "Approve/reject Stock transfers": [],
+ "Review a logged transfer between warehouses — moves the stock or discards it.": [],
+ "Approve voids and returns at the till": [],
+ "Approve a void or a large return by typing a PIN, without any other manager right.": [],
+ "Approve price changes at the till": [],
+ "Approve a hand-changed price by typing a PIN.": [],
+ "Approve big paid-outs and cash corrections": [],
+ "Approve a large paid-out, and cancel a mistaken cash movement.": [],
+ "ID document": [],
+ "Qualification": [],
+ "Permit": [],
+ "Disciplinary": [],
+ "Unpaid rent": [],
+ "Utilities": [],
+ "Mobile money": [],
+ "Cheque": [],
+ "Card": [],
+ "Good": [],
+ "Fair": [],
+ "Poor": [],
+ "Not applicable": [],
+ "Lease agreement": [],
+ "Title deed": [],
+ "Inspection report": [],
+ "Permit / licence": [],
+ "Insurance": [],
+ "Photo": [],
+ "Receipt / invoice": [],
+ "Notice / letter": [],
+ "Plumbing": [],
+ "Electrical": [],
+ "Structure / roof": [],
+ "Painting": [],
+ "Appliance": [],
+ "Security / locks": [],
+ "Garden": [],
+ "Pest control": [],
+ "The tenant": [],
+ "Us (the agency)": [],
+ "Apartment block": [],
+ "House": [],
+ "Commercial building": [],
+ "Mixed use": [],
+ "Land": [],
+ "Apartment": [],
+ "Shop": [],
+ "Office": [],
+ "Store": [],
+ "Every 3 months": [],
+ "Every 6 months": [],
+ "Villa": [],
+ "Land / plot": [],
+ "Commercial": [],
+ "Survey / plan": [],
+ "Valuation report": [],
+ "Mortgage": [],
+ "Comparable sales": [],
+ "Income": [],
+ "Plot": [],
+ "Townhouse": [],
+ "Navy (default)": [],
+ "Charcoal": [],
+ "True black": [],
+ "Slate": [],
+ "Forest": [],
+ "Plum": [],
+ "Warm brown": [],
+ "Clean white": [],
+ "Warm paper": [],
+ "Soft grey": [],
+ "Sky blue": [],
+ "Checked in": [],
+ "Checked out": [],
+ "Open (tentative + confirmed)": [],
+ "Tentative": [],
+ "Waiting for owner": [],
+ "Handed over": [],
+ "Day report": [],
+ "By source": [],
+ "Forecast": [],
+ "Today's board": [],
+ "Lost & found": [],
+ "Minibar & linen": [],
+ "Setup": [],
+ "Room types and calendars": [],
+ "Being cleaned": [],
+ "My details": [],
+ "Sale receipts, returns, restaurant bills, X / Z reports and the cash drawer.": [],
+ "Order tickets for the kitchen stations. Without one, tickets go to the receipt printer when you print them by hand.": [],
+ "Order tickets for the stations listed here (for example Bar).": [],
+ "Rung offline": [],
+ "Sync problem": [],
+ "EFRIS failed": [],
+ "Part on credit": [],
+ "Charged to a room": [],
+ "Voided sales": [],
+ "Drop to safe": [],
+ "Seated": [],
+ "Cancelled orders": [],
+ "Paid and cancelled": [],
+ "Voided items": [],
+ "Receipt copies": [],
+ "Servers": [],
+ "Voids & comps": [],
+ "Stars": [],
+ "Plowhorses": [],
+ "Puzzles": [],
+ "Dogs": [],
+ "By hour": [],
+ "POS Sales-Transactions": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Sales by Cashier": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Operations": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Sales total": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Sales by Hour": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Hour": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Share of sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Sales by Payment Method": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Share of takings": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Exceptions (voids, returns, discounts, price changes, reprints)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Shift Comparison": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Shift": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Z no.": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Items per sale": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cash difference": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Versus average shift": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total POS Categories Sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Qty sold": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total POS Brands Sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total POS Products Sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Shifts Sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Opened by": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Opened at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Detailed POS Shifts Transactions": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Completed at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Shifts Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total POS Categories Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total POS Brands Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total POS Products Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Credit Sale Report": [
+  "src/app/core/report-defs.ts"
+ ],
+ "POS Credit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Credit amount": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Daily Credit Collection Report": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Outstanding Credit Report": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Available credit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Overdue Credit Report": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Days overdue": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Stock On Hand & Valuation": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Stock qty": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Stock Aging": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Last received": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Last sold": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Days since sale": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Dead Stock (no sales in 90 days)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Tied-up value": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Batch Stock (lots & expiry)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Expiring Stock (60 days)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Value at risk": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Serial Number Register": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Stock Movement History": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Purchase Orders": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Outstanding Payables Report": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Purchases by Supplier": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Net cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Purchases by Product": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Avg unit cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Purchases by Category": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Purchase Returns": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Supplier Payments": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Paid at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Payables Aging": [
+  "src/app/core/report-defs.ts"
+ ],
+ "0-30 days": [
+  "src/app/core/report-defs.ts"
+ ],
+ "31-60 days": [
+  "src/app/core/report-defs.ts"
+ ],
+ "61-90 days": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total outstanding": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Sales Orders": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Qty fulfilled": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Sales by Customer": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Net amount": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Sales by Product": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Avg unit price": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Sales by Category": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Credit Notes": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Voided at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Payment handling": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Sale Order Returns": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Customer Payments": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Receivables Aging": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Sales by Order Type": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Orders (all types)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Closed at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Menu Item Sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Menu category": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Menu Category Sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Menu Item Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Menu Category Profit": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Sales by Server": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Cancelled Orders": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cancelled at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Would-be total": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Restaurant Wastage": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Help Desk Tickets": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Help Desk Deadlines (SLA)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "First reply on time": [
+  "src/app/core/report-defs.ts"
+ ],
+ "First reply late": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Avg first reply (h)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Resolved on time": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Resolved late": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Avg resolution (h)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "On time": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Help Desk by Agent": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Still open": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Avg rating": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Help Desk by Category": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Help Desk Satisfaction": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Rating (1-5)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Comment": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Rated": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Overdue Help Desk Tickets": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Deadline missed": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Was due": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Hours late": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Expense Register": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cost without VAT": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Unpaid Bills by Age": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Paid so far": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Budget vs Actual": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Expenses by Payment Account": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Paid at once": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Bill payments": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total paid": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Asset Register": [
+  "src/app/core/report-defs.ts"
+ ],
+ "tag, name, serial": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Serial no.": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Assets by Category": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Assets by Location": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Assets by Holder": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Warranty and Insurance Expiry": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Ending within (days)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Depreciation Forecast": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Months ahead": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Book value at month end": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Fixed Asset Movement": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Opening cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Additions": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Improvements": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Disposals": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Closing cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Opening depreciation": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Removed on disposal": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Closing depreciation": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Closing book value": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Asset Verification": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Found at": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Depreciation Schedule": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Accumulated after": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Asset Disposals": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Proceeds": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Gain / (loss)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Asset Transfers": [
+  "src/app/core/report-defs.ts"
+ ],
+ "From branch": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Employee Directory": [
+  "src/app/core/report-defs.ts"
+ ],
+ "HR": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Headcount by Department": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Leave Balances (year of the end date)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Leave Requests": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Decided by": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Attendance Summary": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Leave days": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Overtime hours": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Contracts Expiring (60 days)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Payroll Register": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Payroll Summary": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Total cost to employer": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Instalment Agreements": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Financed": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Paid amount": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Instalments Due (next 30 days)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Instalment": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Amount due": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Overdue Instalments": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Defaulted and Written-off Instalments": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Since": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Instalment Collections": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Subscriptions by Plan": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cancelled or ended": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Monthly revenue": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Yearly revenue": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Average per subscription": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cancelled and Ended Subscriptions": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Left on": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Months active": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Monthly value": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cycles billed": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Unpaid Subscription Invoices": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Subscription": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Timesheet Summary": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Non-billable hours": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Billable amount": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Not yet approved": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Invoiced hours": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Project Hours vs Budget": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Budget hours": [
+  "src/app/core/report-defs.ts"
+ ],
+ "% of budget": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Hours left": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Unbilled Time": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Entries": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Oldest entry": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Utilisation": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Available hours": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Time Entries": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Requested": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Outside cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Work Order Profitability": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Margin %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Maintenance Cost by Asset": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Jobs": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Overdue Work Orders": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Booking utilisation": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Booked hours": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Utilisation %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Bookings by service": [
+  "src/app/core/report-defs.ts"
+ ],
+ "No-show %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law matters": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law deadlines": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law billing and work in progress": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include closed matters": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law fees billed": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Invoice status": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Client money ledger": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law workload": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Lawyer": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Matters led": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Matters on": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Deadlines (30 days)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law lawyer productivity": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Billable value": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Not yet billed": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Days open": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Value of time": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Fees billed": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cost of time": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Costs paid out": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Costs recovered": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Profit %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Hours without a cost rate": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law unpaid invoices by age": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law documents and client portal": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Storage (MB)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Shared with client": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Waiting for review": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Portal": [
+  "src/app/core/report-defs.ts"
+ ],
+ "People with access": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Last client sign-in": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Unanswered messages": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law conflict check log": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Law caseload by practice area and court": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Open now": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Average days to close": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate listings": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate leads": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include won and lost leads": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Budget to": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate viewings": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Feedback": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate deals": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include completed and cancelled deals": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate commission": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate projects": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate price list": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include reserved, sold and withheld units": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate unit sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include paid-in-full and cancelled sales": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Agreement": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate valuations": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include earlier valuations (not just the current one)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Valuation date": [
+  "src/app/core/report-defs.ts"
+ ],
+ "vs asking %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Real Estate documents": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Include documents with no expiry date": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Attached to": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management rent roll": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Leave out leases that have not started yet": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Due day": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management vacancy": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only units that can be let now (leave out off-market and already let)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Vacant since": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Next tenant": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Next lease starts": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management lease expiry": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only leases ending soon or past their end date": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Renewal": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management owners": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Leave out inactive owners": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management arrears": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only rent more than 30 days late": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Period from": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Period to": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management rent collection": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only months with rent still owed or not yet invoiced": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Collected %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management maintenance requests": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only requests still open": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Estimate": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management maintenance cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only properties with a cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Owner pays": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Tenant pays": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Agency pays": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management owner statements": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only statements not yet paid": [
+  "src/app/core/report-defs.ts"
+ ],
+ "VAT on fee": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Net payable": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management security deposits": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only deposits that need action: to collect, or to settle now the lease is over": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management fee invoices": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Also list voided invoices": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Owner tax ID": [
+  "src/app/core/report-defs.ts"
+ ],
+ "VAT %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management utilities and service charges": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Rent due": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management rent increases due": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only leases ending within 120 days or past their end": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Rent now": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Increase %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Rent after": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Extra": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management monthly trend": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only months with rent still owed or units empty": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Let": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Occupancy %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management repairs by contractor": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only contractors who have been paid something": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Average cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Average days": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Property Management documents": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Only documents that expire, soonest first (lapsed or lapsing ones on top)": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Production runs": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Good units": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cost per product": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Runs": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Component use against recipe": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Recipe quantity": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Difference %": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cost of use": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cost of difference": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Workstation time and cost": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Steps run": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Planned minutes": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Actual minutes": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Scrap and rejects": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Units scrapped": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Cost of scrap": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Orders: plan against actual": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Planned qty": [
+  "src/app/core/report-defs.ts"
+ ],
+ "Planned cost of units made": [
+  "src/app/core/report-defs.ts"
+ ]
 }

@@ -9,6 +9,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 export function groupBadge(status: string): string {
   switch (status) {
     case 'CONFIRMED': return 'badge-success';
@@ -58,7 +59,7 @@ export function billingLabel(b: string): string {
   `,
 })
 export class GroupListComponent implements OnInit {
-  statuses = [{ value: 'ACTIVE', label: 'Open (tentative + confirmed)' }, { value: 'TENTATIVE', label: 'Tentative' }, { value: 'CONFIRMED', label: 'Confirmed' }, { value: 'COMPLETED', label: 'Completed' }, { value: 'CANCELLED', label: 'Cancelled' }];
+  statuses = [{ value: 'ACTIVE', label: T('Open (tentative + confirmed)') }, { value: 'TENTATIVE', label: T('Tentative') }, { value: 'CONFIRMED', label: T('Confirmed') }, { value: 'COMPLETED', label: T('Completed') }, { value: 'CANCELLED', label: T('Cancelled') }];
   list = new ListState<GroupSummary>((f, p, sz) => this.api.page<GroupSummary>('groups', f, p, sz), 'Failed to load groups');
   badge = groupBadge;
   label = billingLabel;

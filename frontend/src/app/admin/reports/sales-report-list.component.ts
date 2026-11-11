@@ -25,7 +25,7 @@ import { REPORT_DEFS } from '../../core/report-defs';
           class="btn btn-outline-primary"
           [routerLink]="['/admin/reports', r.key]"
         >
-          {{ r.title }}
+          {{ r.title | translate }}
         </a>
         <div class="text-muted" *ngIf="reports.length === 0">{{ 'No sales reports yet.' | translate }}</div>
       </div>

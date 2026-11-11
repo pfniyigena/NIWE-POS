@@ -10,6 +10,7 @@ import { PagerComponent } from '../../shared/pager.component';
 import { OverheadCostApiService } from '../../core/api/overhead-cost-api.service';
 import { OverheadCost } from '../../core/models';
 
+import { T } from '../../core/i18n/t';
 /** Manufacturing > Indirect costs: search (code, name), active/inactive, allocation method, pages and exports. */
 @Component({
   selector: 'app-overhead-cost-list',
@@ -65,7 +66,7 @@ import { OverheadCost } from '../../core/models';
   `,
 })
 export class OverheadCostListComponent implements OnInit {
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'INACTIVE', label: T('Inactive') }];
   method = '';
   extra: Record<string, string | number | null | undefined> = {};
   list = new ListState<OverheadCost>((f, p, sz) => this.overheadCostApi.page(f, p, sz, { method: this.method }), 'Failed to load indirect costs');

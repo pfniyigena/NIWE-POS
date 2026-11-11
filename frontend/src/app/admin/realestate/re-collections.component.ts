@@ -151,9 +151,9 @@ export class ReCollectionsComponent implements OnInit {
     const b = this.board;
     if (!b) return [];
     const all: Section[] = [
-      { key: 'overdue', title: 'Late', hint: 'An instalment is past its due date. The longest overdue is first.', color: '#b91c1c', total: b.overdueTotal, rows: b.overdue },
+      { key: 'overdue', title: 'Late', hint: T('An instalment is past its due date. The longest overdue is first.'), color: '#b91c1c', total: b.overdueTotal, rows: b.overdue },
       { key: 'dueSoon', title: 'Due soon', hint: `The next instalment falls due within ${b.soonDays} days. Nearest first.`, color: '#b45309', total: b.dueSoonTotal, rows: b.dueSoon },
-      { key: 'unscheduled', title: 'No payment schedule', hint: 'Sold, but the buyer has no payment plan and still owes money. Set up a plan on the sale, or follow up.', color: '#b45309', total: b.unscheduledTotal, rows: b.unscheduled },
+      { key: 'unscheduled', title: 'No payment schedule', hint: T('Sold, but the buyer has no payment plan and still owes money. Set up a plan on the sale, or follow up.'), color: '#b45309', total: b.unscheduledTotal, rows: b.unscheduled },
     ];
     return all.filter((s) => s.rows.length);
   }

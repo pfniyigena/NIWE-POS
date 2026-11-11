@@ -11,6 +11,7 @@ import { RptSourcesComponent } from './rpt-sources.component';
 import { RptForecastComponent } from './rpt-forecast.component';
 import { RptAuditComponent } from './rpt-audit.component';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Reports: occupancy, average daily rate (ADR) and revenue per available room (RevPAR) for any date range. */
 @Component({
   selector: 'app-hotel-report',
@@ -65,11 +66,11 @@ import { RptAuditComponent } from './rpt-audit.component';
 })
 export class HotelReportComponent implements OnInit {
   tabs = [
-    { key: 'daily', label: 'Day report' },
-    { key: 'occupancy', label: 'Occupancy' },
-    { key: 'sources', label: 'By source' },
-    { key: 'forecast', label: 'Forecast' },
-    { key: 'audit', label: 'Night audit' },
+    { key: 'daily', label: T('Day report') },
+    { key: 'occupancy', label: T('Occupancy') },
+    { key: 'sources', label: T('By source') },
+    { key: 'forecast', label: T('Forecast') },
+    { key: 'audit', label: T('Night audit') },
   ];
   tab = 'daily';
   from = '';

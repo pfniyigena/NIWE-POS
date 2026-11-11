@@ -69,7 +69,7 @@ import { T } from '../../core/i18n/t';
   `,
 })
 export class BomListComponent implements OnInit {
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'INACTIVE', label: T('Inactive') }];
   list = new ListState<Bom>((f, p, sz) => this.bomApi.page(f, p, sz), 'Failed to load bills of materials');
 
   constructor(private bomApi: BomApiService, private router: Router) {}

@@ -76,7 +76,7 @@ export class EmployeeListComponent implements OnInit {
   branches: Branch[] = [];
   departmentId: number | null = null;
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }, { value: 'TERMINATED', label: 'Left the company' }];
+  statuses = [{ value: 'ACTIVE', label: T('Active') }, { value: 'INACTIVE', label: T('Inactive') }, { value: 'TERMINATED', label: T('Left the company') }];
   /** The list opens on active employees, like before. */
   initial = { status: 'ACTIVE' };
   list = new ListState<Employee>((f, p, sz) => this.api.page<Employee>('employees', f, p, sz, { departmentId: this.departmentId }), 'Failed to load employees');

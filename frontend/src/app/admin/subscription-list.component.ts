@@ -110,12 +110,12 @@ export class SubscriptionListComponent implements OnInit {
   planId: number | null = null;
   view = 'all';
   views = [
-    { key: 'all', label: 'All' },
-    { key: 'trial', label: 'On trial' },
-    { key: 'due-soon', label: 'Billing within 7 days' },
-    { key: 'cancelling', label: 'Cancelling' },
-    { key: 'term-ending', label: 'Term ending' },
-    { key: 'resuming', label: 'Resuming' },
+    { key: 'all', label: T('All') },
+    { key: 'trial', label: T('On trial') },
+    { key: 'due-soon', label: T('Billing within 7 days') },
+    { key: 'cancelling', label: T('Cancelling') },
+    { key: 'term-ending', label: T('Term ending') },
+    { key: 'resuming', label: T('Resuming') },
   ];
 
   jobSummary: string | null = null;

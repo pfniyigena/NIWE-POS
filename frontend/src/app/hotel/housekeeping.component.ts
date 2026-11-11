@@ -9,6 +9,7 @@ import { HkLostFoundComponent } from './hk-lost-found.component';
 import { HkSuppliesComponent } from './hk-supplies.component';
 import { HkSetupComponent } from './hk-setup.component';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Housekeeping: every room by cleaning state. One click moves a room along: dirty → cleaning → clean → inspected. */
 @Component({
   selector: 'app-housekeeping',
@@ -60,14 +61,14 @@ export class HousekeepingComponent implements OnInit {
   rooms: Room[] = [];
   filter = 'ALL';
   tab = 'board';
-  tabs = [{ code: 'board', label: "Today's board" }, { code: 'rooms', label: 'Rooms' }, { code: 'found', label: 'Lost & found' }, { code: 'supplies', label: 'Minibar & linen' }, { code: 'setup', label: 'Setup' }];
+  tabs = [{ code: 'board', label: T('Today\'s board') }, { code: 'rooms', label: T('Rooms') }, { code: 'found', label: T('Lost & found') }, { code: 'supplies', label: T('Minibar & linen') }, { code: 'setup', label: T('Setup') }];
   error: string | null = null;
   filters = [
-    { code: 'ALL', label: 'All' },
-    { code: 'DIRTY', label: 'Dirty' },
-    { code: 'CLEANING', label: 'Cleaning' },
-    { code: 'CLEAN', label: 'Clean' },
-    { code: 'INSPECTED', label: 'Inspected' },
+    { code: 'ALL', label: T('All') },
+    { code: 'DIRTY', label: T('Dirty') },
+    { code: 'CLEANING', label: T('Cleaning') },
+    { code: 'CLEAN', label: T('Clean') },
+    { code: 'INSPECTED', label: T('Inspected') },
   ];
 
   constructor(private api: HotelApiService) {}

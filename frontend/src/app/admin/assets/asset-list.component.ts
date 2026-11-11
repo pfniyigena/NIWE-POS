@@ -183,13 +183,13 @@ export class AssetListComponent implements OnInit {
   skipped: { id: number; code: string | null; reason: string }[] = [];
 
   readonly views = [
-    { key: '', label: 'All' },
-    { key: 'held', label: 'Held by someone' },
-    { key: 'no-custodian', label: 'Nobody holding' },
-    { key: 'warranty-expiring', label: 'Warranty ending' },
-    { key: 'insurance-expiring', label: 'Insurance ending' },
-    { key: 'expired', label: 'Warranty or insurance ended' },
-    { key: 'soon', label: 'Fully depreciated soon' },
+    { key: '', label: T('All') },
+    { key: 'held', label: T('Held by someone') },
+    { key: 'no-custodian', label: T('Nobody holding') },
+    { key: 'warranty-expiring', label: T('Warranty ending') },
+    { key: 'insurance-expiring', label: T('Insurance ending') },
+    { key: 'expired', label: T('Warranty or insurance ended') },
+    { key: 'soon', label: T('Fully depreciated soon') },
   ];
   view = '';
   q = '';

@@ -204,8 +204,8 @@ type Tab = 'overview' | 'payslips' | 'leave' | 'attendance' | 'documents' | 'con
 export class MyHrComponent implements OnInit {
   tab: Tab = 'overview';
   tabs: { code: Tab; label: string }[] = [
-    { code: 'overview', label: 'Overview' }, { code: 'payslips', label: 'Payslips' }, { code: 'leave', label: 'Leave' },
-    { code: 'attendance', label: 'Attendance' }, { code: 'documents', label: 'Documents' }, { code: 'contact', label: 'My details' },
+    { code: 'overview', label: T('Overview') }, { code: 'payslips', label: T('Payslips') }, { code: 'leave', label: T('Leave') },
+    { code: 'attendance', label: T('Attendance') }, { code: 'documents', label: T('Documents') }, { code: 'contact', label: T('My details') },
   ];
   months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   overview: MyOverview | null = null;

@@ -9,6 +9,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /** Admin > Restaurant > Voids and comps: every item voided or given free, every cancelled order and every receipt copy, with who did it and why. */
 @Component({
   selector: 'app-restaurant-voids',
@@ -56,10 +57,10 @@ import { PagerComponent } from '../shared/pager.component';
 })
 export class RestaurantVoidsComponent implements OnInit {
   kinds = [
-    { value: 'VOID', label: 'Voided items' },
-    { value: 'COMP', label: 'Comps' },
-    { value: 'CANCEL', label: 'Cancelled orders' },
-    { value: 'REPRINT', label: 'Receipt copies' },
+    { value: 'VOID', label: T('Voided items') },
+    { value: 'COMP', label: T('Comps') },
+    { value: 'CANCEL', label: T('Cancelled orders') },
+    { value: 'REPRINT', label: T('Receipt copies') },
   ];
   list = new ListState<RestaurantVoidEntry>((f, p, sz) => this.orderApi.voidsPage(f, p, sz), 'Failed to load the log');
 

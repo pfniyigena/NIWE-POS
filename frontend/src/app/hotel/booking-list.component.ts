@@ -11,6 +11,7 @@ import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 import { statusBadge, statusLabel } from './hotel-util';
 
+import { T } from '../core/i18n/t';
 /** Hotel > Bookings: every reservation and stay, newest arrival first; search, filter by status, arrival dates and room type; paged; exports. */
 @Component({
   selector: 'app-booking-list',
@@ -58,11 +59,11 @@ export class BookingListComponent implements OnInit {
   roomTypeId: number | null = null;
   extra: Record<string, string | number | null | undefined> = {};
   statuses = [
-    { value: 'BOOKED', label: 'Booked' },
-    { value: 'CHECKED_IN', label: 'Checked in' },
-    { value: 'CHECKED_OUT', label: 'Checked out' },
-    { value: 'CANCELLED', label: 'Cancelled' },
-    { value: 'NO_SHOW', label: 'No-show' },
+    { value: 'BOOKED', label: T('Booked') },
+    { value: 'CHECKED_IN', label: T('Checked in') },
+    { value: 'CHECKED_OUT', label: T('Checked out') },
+    { value: 'CANCELLED', label: T('Cancelled') },
+    { value: 'NO_SHOW', label: T('No-show') },
   ];
   list = new ListState<Booking>((f, p, sz) => this.api.page<Booking>('bookings', f, p, sz, { roomTypeId: this.roomTypeId }), 'Failed to load bookings');
   badge = statusBadge;

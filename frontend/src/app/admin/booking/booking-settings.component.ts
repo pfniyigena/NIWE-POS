@@ -7,8 +7,8 @@ import { BookingApiService, BookingSettings } from '../../core/api/booking-api.s
 
 import { T } from '../../core/i18n/t';
 const DAYS = [
-  { key: 'MON', label: 'Mon' }, { key: 'TUE', label: 'Tue' }, { key: 'WED', label: 'Wed' }, { key: 'THU', label: 'Thu' },
-  { key: 'FRI', label: 'Fri' }, { key: 'SAT', label: 'Sat' }, { key: 'SUN', label: 'Sun' },
+  { key: 'MON', get label() { return T('Mon'); } }, { key: 'TUE', get label() { return T('Tue'); } }, { key: 'WED', get label() { return T('Wed'); } }, { key: 'THU', get label() { return T('Thu'); } },
+  { key: 'FRI', get label() { return T('Fri'); } }, { key: 'SAT', get label() { return T('Sat'); } }, { key: 'SUN', get label() { return T('Sun'); } },
 ];
 
 /** Booking > Settings (admin): opening hours, slot rules, payment hold, and the public page wording. */

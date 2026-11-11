@@ -34,7 +34,7 @@ import { T } from '../../core/i18n/t';
   template: `
     <app-shell [wide]="true">
       <div class="flex justify-between align-center mb-3">
-        <h3>{{ def?.title ?? 'Report' }}</h3>
+        <h3>{{ (def?.title ?? 'Report') | translate }}</h3>
         <a class="btn btn-outline-secondary" [routerLink]="backRoute">&larr; All reports</a>
       </div>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -66,20 +66,20 @@ import { T } from '../../core/i18n/t';
             </select>
           </div>
           <div class="form-group" style="margin:0;" *ngFor="let x of def.extraFilters">
-            <label class="form-label">{{ x.label }}</label>
+            <label class="form-label">{{ x.label | translate }}</label>
             <select class="form-select" *ngIf="x.type === 'select'" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key">
               <option value="">{{ 'Any' | translate }}</option>
-              <option *ngFor="let o of x.options" [value]="o.value">{{ o.label }}</option>
+              <option *ngFor="let o of x.options" [value]="o.value">{{ o.label | translate }}</option>
             </select>
             <select class="form-select" *ngIf="x.type === 'verification'" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key">
               <option value="">{{ 'Latest round' | translate }}</option>
               <option *ngFor="let r of rounds" [value]="'' + r.id">{{ r.name }} ({{ r.startedOn }})</option>
             </select>
             <input class="form-control" *ngIf="x.type === 'number'" type="number" min="1" style="width:8rem;" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key" />
-            <input class="form-control" *ngIf="x.type === 'text'" style="width:11rem;" [placeholder]="x.placeholder || ''" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key" />
+            <input class="form-control" *ngIf="x.type === 'text'" style="width:11rem;" [placeholder]="(x.placeholder || '') | translate" [(ngModel)]="extra[x.key]" [name]="'x-' + x.key" [attr.data-filter]="x.key" />
           </div>
           <div class="form-group" style="margin:0;" *ngIf="def.openOnlyToggle">
-            <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="includeClosed" (ngModelChange)="hasRun && run()" /> {{ def.openOnlyToggle }}</label>
+            <label style="display:flex; gap:0.4rem; align-items:center;"><input type="checkbox" [(ngModel)]="includeClosed" (ngModelChange)="hasRun && run()" /> {{ def.openOnlyToggle | translate }}</label>
           </div>
           <div class="form-group" style="margin:0;" *ngIf="def.branchFilter && branches.length > 1">
             <label class="form-label">{{ 'Branch' | translate }}</label>
@@ -127,7 +127,7 @@ import { T } from '../../core/i18n/t';
         <table>
           <thead>
             <tr>
-              <th *ngFor="let col of def.columns">{{ col.label }}</th>
+              <th *ngFor="let col of def.columns">{{ col.label | translate }}</th>
             </tr>
           </thead>
           <tbody>

@@ -76,7 +76,7 @@ export class PayrollRunsComponent implements OnInit {
   filterYear: number | null = null;
   summaryYear = new Date().getFullYear();
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'APPROVED', label: 'Approved' }, { value: 'PAID', label: 'Paid' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'APPROVED', label: T('Approved') }, { value: 'PAID', label: T('Paid') }];
   list = new ListState<PayrollRun>((f, p, sz) => this.api.page<PayrollRun>('payroll/runs', f, p, sz, { year: this.filterYear }), 'Failed to load payroll runs');
   error: string | null = null;
   busy = false;

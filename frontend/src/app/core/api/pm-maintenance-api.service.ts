@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
 
+import { T } from '../i18n/t';
 export type MaintenanceStatus = 'OPEN' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
 export type MaintenancePriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 export type MaintenanceCategory = 'PLUMBING' | 'ELECTRICAL' | 'STRUCTURE' | 'PAINTING' | 'APPLIANCE' | 'SECURITY' | 'CLEANING' | 'GARDEN' | 'PEST' | 'OTHER';
@@ -10,15 +11,15 @@ export type CostBearer = 'OWNER' | 'TENANT' | 'AGENCY';
 
 export const MAINTENANCE_STATUS_LABEL: Record<MaintenanceStatus, string> = { OPEN: 'Open', IN_PROGRESS: 'In progress', ON_HOLD: 'On hold', COMPLETED: 'Done', CANCELLED: 'Cancelled' };
 export const MAINTENANCE_PRIORITIES: { value: MaintenancePriority; label: string }[] = [
-  { value: 'LOW', label: 'Low' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' },
+  { value: 'LOW', get label() { return T('Low'); } }, { value: 'NORMAL', get label() { return T('Normal'); } }, { value: 'HIGH', get label() { return T('High'); } }, { value: 'URGENT', get label() { return T('Urgent'); } },
 ];
 export const MAINTENANCE_CATEGORIES: { value: MaintenanceCategory; label: string }[] = [
-  { value: 'PLUMBING', label: 'Plumbing' }, { value: 'ELECTRICAL', label: 'Electrical' }, { value: 'STRUCTURE', label: 'Structure / roof' }, { value: 'PAINTING', label: 'Painting' },
-  { value: 'APPLIANCE', label: 'Appliance' }, { value: 'SECURITY', label: 'Security / locks' }, { value: 'CLEANING', label: 'Cleaning' }, { value: 'GARDEN', label: 'Garden' },
-  { value: 'PEST', label: 'Pest control' }, { value: 'OTHER', label: 'Other' },
+  { value: 'PLUMBING', get label() { return T('Plumbing'); } }, { value: 'ELECTRICAL', get label() { return T('Electrical'); } }, { value: 'STRUCTURE', get label() { return T('Structure / roof'); } }, { value: 'PAINTING', get label() { return T('Painting'); } },
+  { value: 'APPLIANCE', get label() { return T('Appliance'); } }, { value: 'SECURITY', get label() { return T('Security / locks'); } }, { value: 'CLEANING', get label() { return T('Cleaning'); } }, { value: 'GARDEN', get label() { return T('Garden'); } },
+  { value: 'PEST', get label() { return T('Pest control'); } }, { value: 'OTHER', get label() { return T('Other'); } },
 ];
 export const COST_BEARERS: { value: CostBearer; label: string }[] = [
-  { value: 'OWNER', label: 'The owner' }, { value: 'TENANT', label: 'The tenant' }, { value: 'AGENCY', label: 'Us (the agency)' },
+  { value: 'OWNER', get label() { return T('The owner'); } }, { value: 'TENANT', get label() { return T('The tenant'); } }, { value: 'AGENCY', get label() { return T('Us (the agency)'); } },
 ];
 
 export function maintenanceActive(s: string): boolean { return s === 'OPEN' || s === 'IN_PROGRESS' || s === 'ON_HOLD'; }

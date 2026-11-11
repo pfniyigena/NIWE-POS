@@ -100,7 +100,7 @@ import { T } from '../core/i18n/t';
   `,
 })
 export class OnlineSettingsComponent implements OnInit {
-  tabs = [{ key: 'settings', label: 'Settings' }, { key: 'types', label: 'Room types and calendars' }];
+  tabs = [{ key: 'settings', label: T('Settings') }, { key: 'types', label: T('Room types and calendars') }];
   tab = 'settings';
   s: OnlineSettings | null = null;
   types: OnlineRoomType[] = [];

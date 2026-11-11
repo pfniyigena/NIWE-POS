@@ -13,6 +13,7 @@ import { ListState } from '../core/api/list-state';
 import { ListFilterComponent } from '../shared/list-filter.component';
 import { PagerComponent } from '../shared/pager.component';
 
+import { T } from '../core/i18n/t';
 /**
  * Completed sales: lookup + reprint. Open to any logged-in user (a cashier reprinting a receipt for a customer doesn't need admin rights).
  * Search by invoice, customer, cashier, register or product; filter by day, payment method, register and kind (rung offline, sync problem,
@@ -98,12 +99,12 @@ import { PagerComponent } from '../shared/pager.component';
 })
 export class ReceiptListComponent implements OnInit {
   kinds = [
-    { value: 'OFFLINE', label: 'Rung offline' },
-    { value: 'SYNC_ISSUE', label: 'Sync problem' },
-    { value: 'EFRIS_FAILED', label: 'EFRIS failed' },
-    { value: 'CREDIT', label: 'Part on credit' },
-    { value: 'ROOM_CHARGE', label: 'Charged to a room' },
-    { value: 'VOIDED', label: 'Voided sales' },
+    { value: 'OFFLINE', label: T('Rung offline') },
+    { value: 'SYNC_ISSUE', label: T('Sync problem') },
+    { value: 'EFRIS_FAILED', label: T('EFRIS failed') },
+    { value: 'CREDIT', label: T('Part on credit') },
+    { value: 'ROOM_CHARGE', label: T('Charged to a room') },
+    { value: 'VOIDED', label: T('Voided sales') },
   ];
   voiding: Order | null = null;
   voidReason = '';

@@ -104,10 +104,10 @@ export class CashControlComponent implements OnInit {
   sum: CashSummary | null = null;
   reasons: Record<string, Record<string, string>> = {};
   kinds = [
-    { value: 'PAID_IN', label: 'Paid in' },
-    { value: 'PAID_OUT', label: 'Paid out' },
-    { value: 'DROP', label: 'Drop to safe' },
-    { value: 'COUNT', label: 'Count the drawer' },
+    { value: 'PAID_IN', label: T('Paid in') },
+    { value: 'PAID_OUT', label: T('Paid out') },
+    { value: 'DROP', label: T('Drop to safe') },
+    { value: 'COUNT', label: T('Count the drawer') },
   ];
   kind = 'PAID_OUT';
   reasonCode = '';

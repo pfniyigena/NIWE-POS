@@ -377,8 +377,8 @@ export class LawMatterDetailComponent implements OnInit {
   clearNote = '';
 
   tabs: { key: Tab; label: string }[] = [
-    { key: 'deadlines', label: 'Deadlines' }, { key: 'tasks', label: 'Tasks' }, { key: 'parties', label: 'Parties' },
-    { key: 'team', label: 'Team' }, { key: 'diary', label: 'Diary' }, { key: 'documents', label: 'Documents' }, { key: 'billing', label: 'Billing' }, { key: 'trust', label: 'Client money' }, { key: 'papers', label: 'Papers' }, { key: 'portal', label: 'Client portal' }, { key: 'conflicts', label: 'Conflict check' },
+    { key: 'deadlines', label: T('Deadlines') }, { key: 'tasks', label: T('Tasks') }, { key: 'parties', label: T('Parties') },
+    { key: 'team', label: T('Team') }, { key: 'diary', label: T('Diary') }, { key: 'documents', label: T('Documents') }, { key: 'billing', label: T('Billing') }, { key: 'trust', label: T('Client money') }, { key: 'papers', label: T('Papers') }, { key: 'portal', label: T('Client portal') }, { key: 'conflicts', label: T('Conflict check') },
   ];
   billingTypes = Object.entries(BILLING_LABEL).map(([key, label]) => ({ key, label }));
   deadlineTypes = Object.entries(DEADLINE_TYPE_LABEL).map(([key, label]) => ({ key, label }));

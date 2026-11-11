@@ -91,7 +91,7 @@ export class StatementListComponent implements OnInit {
   page = 0;
   readonly size = PAGE_SIZE;
   owners: OwnerRow[] = [];
-  tabs = [{ value: 'FINAL', label: 'To pay' }, { value: 'DRAFT', label: 'Drafts' }, { value: 'PAID', label: 'Paid' }, { value: '', label: 'All' }];
+  tabs = [{ value: 'FINAL', label: T('To pay') }, { value: 'DRAFT', label: T('Drafts') }, { value: 'PAID', label: T('Paid') }, { value: '', label: T('All') }];
   tab = 'FINAL';
   ownerId: number | null = null;
   makeOwner: number | null = null;

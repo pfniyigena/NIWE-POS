@@ -76,12 +76,12 @@ import { T } from '../../core/i18n/t';
 })
 export class InstallmentCollectionsComponent implements OnInit {
   filters = [
-    { key: 'overdue', label: 'Overdue' },
-    { key: 'no-contact', label: 'Not contacted this week' },
-    { key: 'promises', label: 'Promised' },
-    { key: 'broken', label: 'Broken promises' },
-    { key: 'due-soon', label: 'Due soon' },
-    { key: 'defaulted', label: 'Defaulted' },
+    { key: 'overdue', label: T('Overdue') },
+    { key: 'no-contact', label: T('Not contacted this week') },
+    { key: 'promises', label: T('Promised') },
+    { key: 'broken', label: T('Broken promises') },
+    { key: 'due-soon', label: T('Due soon') },
+    { key: 'defaulted', label: T('Defaulted') },
   ];
   filter = 'overdue';
   search = '';

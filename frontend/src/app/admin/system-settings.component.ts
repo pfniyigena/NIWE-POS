@@ -152,10 +152,10 @@ export class SystemSettingsComponent implements OnInit {
   ];
 
   dateFormats = [
-    { value: 'dd/MM/yyyy', label: 'DD/MM/YYYY (31/01/2026)' },
-    { value: 'MM/dd/yyyy', label: 'MM/DD/YYYY (01/31/2026)' },
-    { value: 'yyyy-MM-dd', label: 'YYYY-MM-DD (2026-01-31)' },
-    { value: 'd MMM yyyy', label: 'D MMM YYYY (31 Jan 2026)' },
+    { value: 'dd/MM/yyyy', label: T('DD/MM/YYYY (31/01/2026)') },
+    { value: 'MM/dd/yyyy', label: T('MM/DD/YYYY (01/31/2026)') },
+    { value: 'yyyy-MM-dd', label: T('YYYY-MM-DD (2026-01-31)') },
+    { value: 'd MMM yyyy', label: T('D MMM YYYY (31 Jan 2026)') },
   ];
 
   /**

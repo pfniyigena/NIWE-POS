@@ -85,8 +85,8 @@ export class ContractListComponent implements OnInit {
   branches: Branch[] = [];
   type = '';
   extra: Record<string, string | number | null | undefined> = {};
-  statuses = [{ value: 'DRAFT', label: 'Draft' }, { value: 'ACTIVE', label: 'Active' }, { value: 'EXPIRED', label: 'Expired' }, { value: 'TERMINATED', label: 'Terminated' }];
-  types = [{ value: 'PERMANENT', label: 'Permanent' }, { value: 'FIXED_TERM', label: 'Fixed term' }, { value: 'PROBATION', label: 'Probation' }, { value: 'CASUAL', label: 'Casual' }, { value: 'INTERNSHIP', label: 'Internship' }];
+  statuses = [{ value: 'DRAFT', label: T('Draft') }, { value: 'ACTIVE', label: T('Active') }, { value: 'EXPIRED', label: T('Expired') }, { value: 'TERMINATED', label: T('Terminated') }];
+  types = [{ value: 'PERMANENT', label: T('Permanent') }, { value: 'FIXED_TERM', label: T('Fixed term') }, { value: 'PROBATION', label: T('Probation') }, { value: 'CASUAL', label: T('Casual') }, { value: 'INTERNSHIP', label: T('Internship') }];
   error: string | null = null;
   list = new ListState<Contract>((f, p, sz) => this.api.page<Contract>('contracts', f, p, sz, { type: this.type }), 'Failed to load contracts');
   action: { kind: 'terminate' | 'renew'; contract: Contract; date: string; endDate: string | null; salary: number | null; reason: string } | null = null;

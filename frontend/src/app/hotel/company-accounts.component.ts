@@ -103,7 +103,7 @@ import { T } from '../core/i18n/t';
 export class CompanyAccountsComponent implements OnInit {
   summary: CompanySummary[] = [];
   methods: PaymentMethodOption[] = [];
-  statuses = [{ value: 'OPEN', label: 'Open' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'PAID', label: 'Paid' }];
+  statuses = [{ value: 'OPEN', label: T('Open') }, { value: 'OVERDUE', label: T('Overdue') }, { value: 'PAID', label: T('Paid') }];
   companyId: number | null = null;
   companyName = '';
   extra: Record<string, string | number | null | undefined> = {};
