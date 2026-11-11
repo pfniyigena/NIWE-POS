@@ -188,7 +188,9 @@ public class OnlineOrderService {
         OnlineOrder o = getOrThrow(id);
         expect(o, "ACCEPTED");
         move(o, "PACKED", note);
-        return dto(repository.save(o));
+        repository.save(o);
+        tell(o, I18n.t("Your order {0} is being prepared", o.getCode()), I18n.t("Your order {0} is packed. We will tell you when it is on its way or ready for pick-up.", o.getCode()));
+        return dto(o);
     }
 
     @Transactional

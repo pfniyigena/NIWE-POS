@@ -6592,6 +6592,7 @@ export const FR: Record<string, string> = {
   "Send it about": "L'envoyer environ",
   "Send it now": "L'envoyer maintenant",
   "Send my order": "Envoyer ma commande",
+  "Send new-order e-mails to (empty = business e-mail)": "Envoyer les e-mails de nouvelle commande à (vide = e-mail de l'entreprise)",
   "Send now": "Envoyer maintenant",
   "Send on": "Envoyer le",
   "Send payment reminders automatically": "Envoyer automatiquement les relances de paiement",

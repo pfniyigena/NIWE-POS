@@ -19,6 +19,8 @@ public class OnlineStoreSettings extends BaseEntity {
     private String shopName;
     private String introText;
     private String contactPhone;
+    /** Told by e-mail when a customer places an order. Empty = the business e-mail from Settings. */
+    private String notifyEmail;
     private String pickupAddress;
     private boolean pickupEnabled = true;
     private boolean deliveryEnabled = true;

@@ -321,6 +321,7 @@ public class OnlineStoreService {
         OnlineMessages.send(mailService, storeSettingsService, saved,
                 I18n.t("We received your order {0}", saved.getCode()),
                 I18n.t("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())));
+        OnlineMessages.notifyShop(mailService, storeSettingsService, s, saved);
         return track(saved);
     }
 
@@ -349,6 +350,7 @@ public class OnlineStoreService {
         ev.setByUser("customer");
         o.getEvents().add(ev);
         orderRepository.save(o);
+        OnlineMessages.send(mailService, storeSettingsService, o, I18n.t("Your order {0} is cancelled", o.getCode()), I18n.t("Your order {0} has been cancelled.", o.getCode()));
         return track(o);
     }
 

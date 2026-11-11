@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.28.0 - Online Store e-mails: the shop is told of new orders, the customer of every step
+
+When a customer places an order, the shop gets an e-mail with the customer, the items and the total, at an address set in **Online Store > Shop settings** (empty = the business e-mail). The customer, when they gave an e-mail address, is now told at every step: received, accepted or rejected, packed, on its way or ready for pick-up, completed, cancelled (by the shop or by themselves). Migration V65. Details in `RELEASE-NOTES-v1.28.0.md`.
+
 ### Version 1.27.1 - The public shop shows its products a page at a time
 
 The shop at `/shop` now loads 16 products per page, with Previous / Next, instead of the whole catalogue at once. Search and categories are applied by the server, and the cart is kept while the customer moves between pages. Details in `RELEASE-NOTES-v1.27.1.md`.

@@ -63,6 +63,9 @@ public class OnlineStoreAdminService {
         s.setShopName(text(in.shopName(), 120));
         s.setIntroText(text(in.introText(), 300));
         s.setContactPhone(text(in.contactPhone(), 40));
+        String notify = text(in.notifyEmail(), 160);
+        if (notify != null && !notify.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw ApiException.badRequest(I18n.t("The shop e-mail address does not look right"));
+        s.setNotifyEmail(notify);
         s.setPickupAddress(text(in.pickupAddress(), 240));
         s.setPickupEnabled(in.pickupEnabled());
         s.setDeliveryEnabled(in.deliveryEnabled());
@@ -98,7 +101,7 @@ public class OnlineStoreAdminService {
         }
         return new SettingsDto(s.isEnabled(), s.isPaused(), s.getPauseMessage(), s.getShopName(), s.getIntroText(), s.getContactPhone(), s.getPickupAddress(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
-                s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName);
+                s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail());
     }
 
     // ------------------------------------------------------------------ listings

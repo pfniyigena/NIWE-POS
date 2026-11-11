@@ -8726,5 +8726,6 @@
  "Online Store": "Boutique en ligne",
  "Showing {p0}–{p1} of {p2}": "Affichage de {p0} à {p1} sur {p2}",
  "Continue shopping": "Continuer vos achats",
- "Proceed to checkout": "Passer la commande"
+ "Proceed to checkout": "Passer la commande",
+ "Send new-order e-mails to (empty = business e-mail)": "Envoyer les e-mails de nouvelle commande à (vide = e-mail de l'entreprise)"
 }
