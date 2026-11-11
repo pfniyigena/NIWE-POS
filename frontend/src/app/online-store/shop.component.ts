@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopProduct } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, Shop, ShopPage, ShopProduct } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
 
@@ -36,13 +36,14 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
-          <input class="form-control shop-search" style="max-width:260px;" [placeholder]="'Search' | translate" [(ngModel)]="q" name="q" />
-          <button class="btn btn-sm" [class.btn-primary]="category === ''" [class.btn-outline-secondary]="category !== ''" (click)="category = ''">{{ 'All' | translate }}</button>
-          <button *ngFor="let c of categories" class="btn btn-sm" [class.btn-primary]="category === c" [class.btn-outline-secondary]="category !== c" (click)="category = c">{{ c }}</button>
+          <input class="form-control shop-search" style="max-width:260px;" [placeholder]="'Search' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" name="q" />
+          <button class="btn btn-sm" [class.btn-primary]="category === ''" [class.btn-outline-secondary]="category !== ''" (click)="pickCategory('')">{{ 'All' | translate }}</button>
+          <button *ngFor="let c of shop.categories" class="btn btn-sm" [class.btn-primary]="category === c" [class.btn-outline-secondary]="category !== c" (click)="pickCategory(c)">{{ c }}</button>
         </div>
 
-        <div class="shop-grid mt-3" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
-          <div class="card shop-product" *ngFor="let p of visible()" style="padding:0.6rem;">
+        <div id="shop-top"></div>
+        <div class="shop-grid mt-3" [style.opacity]="loading ? 0.5 : 1" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
+          <div class="card shop-product" *ngFor="let p of items" style="padding:0.6rem;">
             <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; height:130px; object-fit:cover; border-radius:6px;" />
             <div *ngIf="!p.imageUrl" style="width:100%; height:130px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
             <div class="mt-1"><strong>{{ p.name }}</strong></div>
@@ -60,7 +61,17 @@ import { T } from '../core/i18n/t';
             <ng-template #addBtn><button class="btn btn-sm btn-primary mt-1 shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
           </div>
         </div>
-        <p class="text-muted mt-3" *ngIf="shop.products.length === 0">{{ 'Nothing is for sale yet. Please come back soon.' | translate }}</p>
+        <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && !q.trim() && !category">{{ 'Nothing is for sale yet. Please come back soon.' | translate }}</p>
+        <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && (q.trim() || category)">{{ 'No products match.' | translate }}</p>
+
+        <nav class="shop-pager flex justify-between align-center mt-3" *ngIf="totalPages > 1" style="flex-wrap:wrap; gap:0.5rem;">
+          <span class="text-muted" style="font-size:0.85rem;">{{ 'Showing {p0}–{p1} of {p2}' | translate: { p0: firstShown(), p1: lastShown(), p2: total } }}</span>
+          <div class="flex gap-1" style="align-items:center;">
+            <button class="btn btn-sm btn-outline-secondary shop-prev" [disabled]="page === 0 || loading" (click)="go(page - 1)">{{ 'Previous' | translate }}</button>
+            <span style="font-size:0.85rem;">{{ 'Page {p0} of {p1}' | translate: { p0: page + 1, p1: totalPages } }}</span>
+            <button class="btn btn-sm btn-outline-secondary shop-next" [disabled]="page + 1 >= totalPages || loading" (click)="go(page + 1)">{{ 'Next' | translate }}</button>
+          </div>
+        </nav>
 
         <div class="card mt-4 shop-checkout" id="checkout" style="padding:1rem;" *ngIf="count() > 0">
           <h4 class="mb-2">{{ 'Your order' | translate }}</h4>
@@ -112,7 +123,17 @@ export class ShopComponent implements OnInit {
   error: string | null = null;
   q = '';
   category = '';
+  /** What the visitor has put in the cart, kept with the product so it survives moving between pages and searches. */
   cart: Record<number, number> = {};
+  cartProducts: Record<number, ShopProduct> = {};
+  items: ShopProduct[] = [];
+  page = 0;
+  readonly size = 24;
+  total = 0;
+  totalPages = 0;
+  loading = false;
+  private seq = 0;
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
   method: 'DELIVERY' | 'PICKUP' = 'DELIVERY';
   name = '';
   phone = '';
@@ -130,18 +151,65 @@ export class ShopComponent implements OnInit {
       next: (s) => {
         this.shop = s;
         this.method = s.delivery ? 'DELIVERY' : 'PICKUP';
+        this.load();
       },
       error: (e) => (this.error = e?.error?.message ?? T('The shop is not available right now.')),
     });
   }
 
-  get categories(): string[] {
-    return Array.from(new Set((this.shop?.products ?? []).map((p) => p.category).filter((c): c is string => !!c))).sort();
+  /** Fetches the current page. A slower, older answer never replaces a newer one. */
+  load(scrollToTop = false): void {
+    const mine = ++this.seq;
+    this.loading = true;
+    this.api.products(this.page, this.size, this.q, this.category).subscribe({
+      next: (r: ShopPage) => {
+        if (mine !== this.seq) return;
+        if (r.totalPages > 0 && r.page >= r.totalPages) {
+          this.page = r.totalPages - 1;
+          this.load(scrollToTop);
+          return;
+        }
+        this.items = r.items;
+        this.total = r.total;
+        this.totalPages = r.totalPages;
+        this.loading = false;
+        if (scrollToTop) document.getElementById('shop-top')?.scrollIntoView({ behavior: 'smooth' });
+      },
+      error: (e) => {
+        if (mine !== this.seq) return;
+        this.loading = false;
+        this.error = e?.error?.message ?? T('The shop is not available right now.');
+      },
+    });
   }
 
-  visible(): ShopProduct[] {
-    const needle = this.q.trim().toLowerCase();
-    return (this.shop?.products ?? []).filter((p) => (!this.category || p.category === this.category) && (!needle || p.name.toLowerCase().includes(needle)));
+  searchChanged(v: string): void {
+    this.q = v ?? '';
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => {
+      this.page = 0;
+      this.load();
+    }, 300);
+  }
+
+  pickCategory(c: string): void {
+    this.category = c;
+    this.page = 0;
+    this.load();
+  }
+
+  go(p: number): void {
+    if (p < 0 || p >= this.totalPages || p === this.page) return;
+    this.page = p;
+    this.load(true);
+  }
+
+  firstShown(): number {
+    return this.total === 0 ? 0 : this.page * this.size + 1;
+  }
+
+  lastShown(): number {
+    return Math.min(this.total, this.page * this.size + this.items.length);
   }
 
   img(p: ShopProduct): string {
@@ -154,12 +222,17 @@ export class ShopComponent implements OnInit {
 
   change(p: ShopProduct, by: number): void {
     const n = Math.max(0, Math.min(20, this.qty(p) + by));
-    if (n === 0) delete this.cart[p.id];
-    else this.cart[p.id] = n;
+    if (n === 0) {
+      delete this.cart[p.id];
+      delete this.cartProducts[p.id];
+    } else {
+      this.cart[p.id] = n;
+      this.cartProducts[p.id] = p;
+    }
   }
 
   cartLines(): { p: ShopProduct; qty: number }[] {
-    return (this.shop?.products ?? []).filter((p) => this.cart[p.id] > 0).map((p) => ({ p, qty: this.cart[p.id] }));
+    return Object.keys(this.cart).map((id) => ({ p: this.cartProducts[+id], qty: this.cart[+id] })).filter((l) => !!l.p && l.qty > 0);
   }
 
   count(): number {

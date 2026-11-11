@@ -25,7 +25,11 @@ public final class OnlineStoreDtos {
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
-                             List<PublicZone> zones, List<PublicProduct> products) {
+                             List<PublicZone> zones, List<String> categories) {
+    }
+
+    /** One page of the catalogue. page starts at 0. */
+    public record PublicProductPage(List<PublicProduct> items, int page, int size, long total, int totalPages) {
     }
 
     public record PublicLine(@NotNull Long productId, @NotNull BigDecimal quantity) {

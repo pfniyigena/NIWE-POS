@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
 import { ListFilter, pagedList } from './list-state';
@@ -10,8 +10,9 @@ export interface ShopProduct { id: number; name: string; description: string | n
 export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
-  zones: ShopZone[]; products: ShopProduct[];
+  zones: ShopZone[]; categories: string[];
 }
+export interface ShopPage { items: ShopProduct[]; page: number; size: number; total: number; totalPages: number }
 export interface ShopOrderPayload {
   name: string; phone: string; email: string | null; address: string | null; method: 'DELIVERY' | 'PICKUP'; zoneId: number | null;
   notes: string | null; language: string; website: string; lines: { productId: number; quantity: number }[];
@@ -51,6 +52,13 @@ export class OnlineStoreApiService {
 
   // ---- customers
   shop(): Observable<Shop> { return this.http.get<Shop>(`${this.pub}/shop`); }
+  /** One page of the catalogue (page starts at 0); search and category are applied by the server. */
+  products(page: number, size: number, q: string, category: string): Observable<ShopPage> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (q.trim()) params = params.set('q', q.trim());
+    if (category) params = params.set('category', category);
+    return this.http.get<ShopPage>(`${this.pub}/products`, { params });
+  }
   place(payload: ShopOrderPayload): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders`, payload); }
   track(code: string): Observable<ShopTrack> { return this.http.get<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}`); }
   cancel(code: string): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/cancel`, {}); }

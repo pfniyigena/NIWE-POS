@@ -3,6 +3,7 @@ package com.posapp.onlinestore;
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
 import com.posapp.onlinestore.OnlineStoreDtos.PlaceRequest;
+import com.posapp.onlinestore.OnlineStoreDtos.PublicProductPage;
 import com.posapp.onlinestore.OnlineStoreDtos.PublicShop;
 import com.posapp.onlinestore.OnlineStoreDtos.Track;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.concurrent.TimeUnit;
@@ -48,6 +50,14 @@ public class PublicStoreController {
     public PublicShop shop() {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
         return service.shop();
+    }
+
+    /** The catalogue, a page at a time. page starts at 0; size is capped; q searches the name; category is a category name from the shop's list. */
+    @GetMapping("/products")
+    public PublicProductPage products(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "24") int size,
+                                      @RequestParam(required = false) String q, @RequestParam(required = false) String category) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return service.products(page, size, q, category);
     }
 
     @GetMapping("/products/{id}/image")

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.27.1 - The public shop shows its products a page at a time
+
+The shop at `/shop` now loads 24 products per page, with Previous / Next, instead of the whole catalogue at once. Search and categories are applied by the server, and the cart is kept while the customer moves between pages. Details in `RELEASE-NOTES-v1.27.1.md`.
+
 ### Version 1.27.0 - Online Store (phase 1)
 
 A public shop at `/shop`: customers order for delivery or pick-up and pay in cash; staff accept the order, which becomes a sale order, invoice and payment. New optional module **Online Store** (licence key `ONLINE_STORE`), migration V64. Details and the list of what was not tested in `RELEASE-NOTES-v1.27.0.md`.

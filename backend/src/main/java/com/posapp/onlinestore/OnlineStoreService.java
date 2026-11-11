@@ -151,20 +151,37 @@ public class OnlineStoreService {
         String name = s.getShopName() != null && !s.getShopName().isBlank() ? s.getShopName() : storeSettingsService.getSettingsEntity().getBusinessName();
         List<PublicZone> zones = zoneRepository.findAllByOrderBySortOrderAscNameAsc().stream().filter(OnlineDeliveryZone::isActive)
                 .map(z -> new PublicZone(z.getId(), z.getName(), z.getFee(), z.getMinOrder())).toList();
-        List<PublicProduct> products = new ArrayList<>();
-        for (OnlineListing l : listingRepository.findByListedTrueOrderBySortOrderAscIdAsc()) {
+        boolean open = !s.isPaused();
+        return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
+                s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
+                listingRepository.findShopCategories());
+    }
+
+    static final int DEFAULT_PAGE_SIZE = 24;
+    static final int MAX_PAGE_SIZE = 60;
+
+    /** One page of the catalogue, searched and filtered in the database so a shop with many products never sends them all at once. */
+    @Transactional(readOnly = true)
+    public PublicProductPage products(int page, int size, String q, String category) {
+        OnlineStoreSettings s = openSettings();
+        int pageSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        int pageNo = Math.max(0, page);
+        String needle = q == null ? "" : q.trim().toLowerCase().replace("\\", "").replace("%", "").replace("_", "");
+        if (needle.length() > 60) needle = needle.substring(0, 60);
+        String cat = category == null ? "" : category.trim();
+        org.springframework.data.domain.Page<OnlineListing> result =
+                listingRepository.findShopPage(needle, cat, org.springframework.data.domain.PageRequest.of(pageNo, pageSize));
+        List<PublicProduct> items = new ArrayList<>();
+        for (OnlineListing l : result.getContent()) {
             Product p = l.getProduct();
-            if (!p.isActive()) continue;
             String title = l.getWebTitle() != null && !l.getWebTitle().isBlank() ? l.getWebTitle() : p.getName();
             String description = l.getWebDescription() != null && !l.getWebDescription().isBlank() ? l.getWebDescription() : p.getDescription();
-            products.add(new PublicProduct(p.getId(), title, description, shown(p, basePrice(l)),
+            items.add(new PublicProduct(p.getId(), title, description, shown(p, basePrice(l)),
                     p.getCategory() == null ? null : p.getCategory().getName(),
                     p.getIconDataUrl() == null || p.getIconDataUrl().isBlank() ? null : "/api/public/store/products/" + p.getId() + "/image",
                     stockLabel(sellable(p, s.getStockBuffer()))));
         }
-        boolean open = !s.isPaused();
-        return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
-                s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones, products);
+        return new PublicProductPage(items, pageNo, pageSize, result.getTotalElements(), result.getTotalPages());
     }
 
     /** The product's own picture as bytes; the shop page asks for it per product so the product list stays small. */

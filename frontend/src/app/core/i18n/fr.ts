@@ -6726,6 +6726,7 @@ export const FR: Record<string, string> = {
   "Showing rent due from six months ago to a month ahead. Pick a tab for the rest.": "Affichage des loyers dus d'il y a six mois à un mois à venir. Choisissez un onglet pour le reste.",
   "Showing the first 200 matches — type to search for more.": "Affichage des 200 premiers résultats — saisissez pour en chercher d'autres.",
   "Showing {p0}": "Affichage de {p0}",
+  "Showing {p0}–{p1} of {p2}": "Affichage de {p0} à {p1} sur {p2}",
   "Shown": "Affiché",
   "Shown on the public website while Available": "Affiché sur le site web public tant qu'il est Disponible",
   "Shows approved leave and requests still waiting for a decision. Rejected and cancelled requests are not shown.": "Affiche les congés approuvés et les demandes encore en attente de décision. Les demandes refusées et annulées ne sont pas affichées.",
