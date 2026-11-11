@@ -9,6 +9,7 @@ The public shop (`/shop`) used to download every product on the shop in one go a
 - **The cart is kept** while the customer moves between pages, searches and categories.
 - Pictures are loaded for the products on the current page only.
 - **Order errors show at the top of the order form.** When the order cannot be sent (a missing name or phone, a minimum order, a limit reached, stock that ran out), the red message now appears at the top of the "Your order" box and the page scrolls to it, instead of at the top of the page.
+- **Checkout is now a step.** The cart bar at the bottom has a **Proceed to checkout** button that opens the order step: the cart (with + and - to change or remove items), the delivery or pick-up choice, the customer's details and **Place order**. **Continue shopping** goes back to the products with the cart kept. The old button only tried to scroll the page, and did nothing for some visitors.
 - When there is no match the shop says "No products match."; when nothing is on the shop yet it keeps the earlier message.
 
 ## Technical

@@ -35,6 +35,7 @@ import { T } from '../core/i18n/t';
 
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
+        <ng-container *ngIf="step === 'shop'">
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
           <input class="form-control shop-search" style="max-width:260px;" [placeholder]="'Search' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" name="q" />
           <button class="btn btn-sm" [class.btn-primary]="category === ''" [class.btn-outline-secondary]="category !== ''" (click)="pickCategory('')">{{ 'All' | translate }}</button>
@@ -72,11 +73,22 @@ import { T } from '../core/i18n/t';
             <button class="btn btn-sm btn-outline-secondary shop-next" [disabled]="page + 1 >= totalPages || loading" (click)="go(page + 1)">{{ 'Next' | translate }}</button>
           </div>
         </nav>
+        </ng-container>
 
-        <div class="card mt-4 shop-checkout" id="checkout" style="padding:1rem;" *ngIf="count() > 0">
+        <button class="btn btn-sm btn-outline-secondary mt-3 shop-back" *ngIf="step === 'order'" (click)="back()">← {{ 'Continue shopping' | translate }}</button>
+
+        <div class="card mt-3 shop-checkout" id="checkout" style="padding:1rem;" *ngIf="step === 'order' && count() > 0">
           <h4 class="mb-2">{{ 'Your order' | translate }}</h4>
           <div class="alert alert-danger shop-order-error" id="order-error" role="alert" *ngIf="orderError">{{ orderError }}</div>
-          <div *ngFor="let l of cartLines()" class="flex justify-between" style="padding:0.15rem 0;"><span>{{ l.qty }} × {{ l.p.name }}</span><span>{{ l.qty * l.p.price | number: '1.0-2' }}</span></div>
+          <div *ngFor="let l of cartLines()" class="flex justify-between align-center" style="padding:0.25rem 0; gap:0.5rem;">
+            <span style="flex:1;">{{ l.p.name }}</span>
+            <span class="flex gap-1" style="align-items:center;">
+              <button class="btn btn-sm btn-outline-secondary" (click)="change(l.p, -1)">−</button>
+              <span style="min-width:1.5em; text-align:center;">{{ l.qty }}</span>
+              <button class="btn btn-sm btn-outline-secondary" (click)="change(l.p, 1)" [disabled]="l.qty >= 20">+</button>
+            </span>
+            <span style="min-width:4.5em; text-align:right;">{{ l.qty * l.p.price | number: '1.0-2' }}</span>
+          </div>
           <hr />
 
           <div class="flex gap-3 mb-2" style="flex-wrap:wrap;">
@@ -111,9 +123,9 @@ import { T } from '../core/i18n/t';
           <button class="btn btn-primary shop-place mt-2" style="width:100%;" [disabled]="busy || !shop.open || !shop.cash" (click)="place()">{{ busy ? ('Sending…' | translate) : ('Place order' | translate) }}</button>
         </div>
 
-        <div *ngIf="count() > 0" style="position:fixed; left:0; right:0; bottom:0; background:#111827; color:#fff; padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center; z-index:50;">
+        <div *ngIf="step === 'shop' && count() > 0" style="position:fixed; left:0; right:0; bottom:0; background:#111827; color:#fff; padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center; z-index:50;">
           <span>🛒 {{ count() }} · {{ subtotal() | number: '1.0-2' }}</span>
-          <a class="btn btn-sm btn-primary" href="#checkout" (click)="scroll($event)">{{ 'Checkout' | translate }}</a>
+          <button class="btn btn-sm btn-primary shop-checkout-btn" (click)="checkout()">{{ 'Proceed to checkout' | translate }}</button>
         </div>
       </ng-container>
     </div>
@@ -122,6 +134,8 @@ import { T } from '../core/i18n/t';
 export class ShopComponent implements OnInit {
   shop: Shop | null = null;
   error: string | null = null;
+  /** shop = browsing; order = the cart and the place-order form. */
+  step: 'shop' | 'order' = 'shop';
   /** Why the order could not be sent. Shown at the top of the order form, where the customer is looking. */
   orderError: string | null = null;
   q = '';
@@ -232,6 +246,7 @@ export class ShopComponent implements OnInit {
       this.cart[p.id] = n;
       this.cartProducts[p.id] = p;
     }
+    if (this.step === 'order' && this.count() === 0) this.back();
   }
 
   cartLines(): { p: ShopProduct; qty: number }[] {
@@ -254,9 +269,18 @@ export class ShopComponent implements OnInit {
     return z ? z.fee : 0;
   }
 
-  scroll(ev: Event): void {
-    ev.preventDefault();
-    document.getElementById('checkout')?.scrollIntoView({ behavior: 'smooth' });
+  /** From the cart bar to the place-order step. */
+  checkout(): void {
+    if (this.count() === 0) return;
+    this.orderError = null;
+    this.step = 'order';
+    window.scrollTo({ top: 0 });
+  }
+
+  back(): void {
+    this.step = 'shop';
+    this.orderError = null;
+    window.scrollTo({ top: 0 });
   }
 
   place(): void {
