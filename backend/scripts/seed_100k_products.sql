@@ -8,10 +8,10 @@
 -- BEFORE YOU RUN IT: start the backend at least once against this database, so Flyway has built the tables and the
 -- default "Main" warehouse (with its SALES location) exists. The script stops with a message if it does not.
 --
--- Usage (adjust host/user/db to match backend/src/main/resources/application.properties):
+-- Usage: plain SQL, so it runs the same in psql, pgAdmin, DBeaver or any other SQL tool (it uses no psql commands).
 --   psql -h localhost -U postgres -d pos_app -f backend/scripts/seed_100k_products.sql
--- A different number of products:
---   psql -h localhost -U postgres -d pos_app -v product_count=20000 -f backend/scripts/seed_100k_products.sql
+--   or open it in the query tool of your database, connect to the application's database, and run the whole script.
+-- A different number of products: change 100000 in the generate_series(1, 100000) line below (the only place it appears).
 --
 -- Safe to run again: every sample product has a fixed number (SKU-000001 ... SKU-100000). A product that is already
 -- there is left alone, and only the missing ones are added, so a second run with the same count adds nothing.
@@ -37,26 +37,13 @@
 --     and not exists (select 1 from sales_order_line l where l.product_id = product.id);
 -- (add the same "not exists" test for any other table that refers to the product if the delete reports a foreign key error).
 
-\set ON_ERROR_STOP on
-
-\if :{?product_count}
-\else
-  \set product_count 100000
-\endif
-
--- The place the stock goes: the primary warehouse's active SALES location (the one the POS sells from).
-select coalesce(min(l.id), 0) as sales_location_id
-  from warehouse_location l
-  join warehouse w on w.id = l.warehouse_id
- where w.is_primary and w.active and l.active and l.location_type = 'SALES'
-\gset
-
-select :sales_location_id = 0 as no_sales_location \gset
-
-\if :no_sales_location
-  \echo 'No primary warehouse with an active SALES location was found. Start the backend once against this database (it creates the Main warehouse), then run this script again.'
-  \quit
-\endif
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM warehouse_location l JOIN warehouse w ON w.id = l.warehouse_id
+                    WHERE w.is_primary AND w.active AND l.active AND l.location_type = 'SALES') THEN
+        RAISE EXCEPTION 'No primary warehouse with an active SALES location was found. Start the backend once against this database (it creates the Main warehouse), then run this script again.';
+    END IF;
+END $$;
 
 BEGIN;
 
@@ -86,19 +73,22 @@ SELECT
     (s.i % 10 = 0),
     (s.i % 10 <> 0),
     CASE WHEN s.i % 10 = 0 THEN NULL ELSE 'NONE' END
-FROM (SELECT i, round((random() * 100 + 1)::numeric, 2) AS price FROM generate_series(1, :product_count) AS i) AS s
+FROM (SELECT i, round((random() * 100 + 1)::numeric, 2) AS price FROM generate_series(1, 100000) AS i) AS s
 CROSS JOIN (SELECT array_agg(id ORDER BY id) AS ids FROM category) AS c
 WHERE NOT EXISTS (SELECT 1 FROM product p WHERE p.sku = 'SKU-' || lpad(s.i::text, 6, '0'))
 ON CONFLICT DO NOTHING;
 
 -- Stock by location for the sample products that track stock and have none there yet; it mirrors the product's own quantity.
 INSERT INTO product_stock (created_at, updated_at, product_id, location_id, quantity)
-SELECT now(), now(), p.id, :sales_location_id, p.stock_quantity
+SELECT now(), now(), p.id, loc.id, p.stock_quantity
   FROM product p
+ CROSS JOIN (SELECT min(l.id) AS id
+               FROM warehouse_location l JOIN warehouse w ON w.id = l.warehouse_id
+              WHERE w.is_primary AND w.active AND l.active AND l.location_type = 'SALES') AS loc
  WHERE p.sku ~ '^SKU-[0-9]{6}$'
    AND p.name LIKE 'Sample product %'
    AND p.track_stock
-   AND NOT EXISTS (SELECT 1 FROM product_stock ps WHERE ps.product_id = p.id AND ps.location_id = :sales_location_id)
+   AND NOT EXISTS (SELECT 1 FROM product_stock ps WHERE ps.product_id = p.id AND ps.location_id = loc.id)
 ON CONFLICT DO NOTHING;
 
 COMMIT;
@@ -106,18 +96,12 @@ COMMIT;
 ANALYZE product;
 ANALYZE product_stock;
 
--- What is there now:
-SELECT count(*)                                           AS sample_products,
-       count(*) FILTER (WHERE code IS NOT NULL)           AS with_code,
-       count(*) FILTER (WHERE barcode IS NOT NULL)        AS with_barcode,
-       count(*) FILTER (WHERE icon_data_url IS NOT NULL)  AS with_picture,
-       count(*) FILTER (WHERE service)                    AS services,
-       count(*) FILTER (WHERE category_id IS NOT NULL)    AS categorised
-  FROM product
- WHERE sku ~ '^SKU-[0-9]{6}$' AND name LIKE 'Sample product %';
-
-SELECT count(*) AS stock_rows_at_sales_location,
-       count(*) FILTER (WHERE ps.quantity <> p.stock_quantity) AS rows_that_disagree_with_the_product
-  FROM product_stock ps
-  JOIN product p ON p.id = ps.product_id
- WHERE ps.location_id = :sales_location_id AND p.sku ~ '^SKU-[0-9]{6}$' AND p.name LIKE 'Sample product %';
+-- What is there now (one row):
+SELECT (SELECT count(*) FROM product WHERE sku ~ '^SKU-[0-9]{6}$' AND name LIKE 'Sample product %')                          AS sample_products,
+       (SELECT count(*) FROM product WHERE sku ~ '^SKU-[0-9]{6}$' AND name LIKE 'Sample product %' AND code IS NOT NULL)      AS with_code,
+       (SELECT count(*) FROM product WHERE sku ~ '^SKU-[0-9]{6}$' AND name LIKE 'Sample product %' AND service)               AS services,
+       (SELECT count(*) FROM product WHERE sku ~ '^SKU-[0-9]{6}$' AND name LIKE 'Sample product %' AND category_id IS NOT NULL) AS categorised,
+       (SELECT count(*) FROM product_stock ps JOIN product p ON p.id = ps.product_id
+         WHERE p.sku ~ '^SKU-[0-9]{6}$' AND p.name LIKE 'Sample product %')                                                   AS stock_rows,
+       (SELECT count(*) FROM product_stock ps JOIN product p ON p.id = ps.product_id
+         WHERE p.sku ~ '^SKU-[0-9]{6}$' AND p.name LIKE 'Sample product %' AND ps.quantity <> p.stock_quantity)               AS stock_rows_that_disagree;
