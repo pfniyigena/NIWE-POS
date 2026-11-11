@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.28.1 - Demo data only for development
+
+`app.seed-demo-data` now defaults to `false` and is switched on only by the dev profile. The administrator, the payment methods, a register and the walk-in customer are created on every first start; the sample cashier, categories, products and tax rate only in demo mode. The administrator never gets a fixed password any more, and the log warns when a demo account still has its demo password. Details in `RELEASE-NOTES-v1.28.1.md`.
+
 ### Version 1.28.0 - Online Store e-mails: the shop is told of new orders, the customer of every step
 
 When a customer places an order, the shop gets an e-mail with the customer, the items and the total, at an address set in **Online Store > Shop settings** (empty = the business e-mail). The customer, when they gave an e-mail address, is now told at every step: received, accepted or rejected, packed, on its way or ready for pick-up, completed, cancelled (by the shop or by themselves). Migration V65. Details in `RELEASE-NOTES-v1.28.0.md`.
@@ -429,9 +433,10 @@ mvn spring-boot:run
 `src/main/resources/application.properties` defaults to `jdbc:postgresql://localhost:5432/pos_app`
 with user/password `postgres`/`postgres` — edit those to match your local setup.
 
-Demo data (an admin + cashier login, 4 categories, 8 barcoded products, a walk-in customer, one
-register) is seeded automatically on first run. Set `app.seed-demo-data=false` once you have real
-data. The API listens on `http://localhost:8080`.
+Demo data (a sample cashier, 4 categories, 8 barcoded products and the Standard tax rate) is for
+development only: `app.seed-demo-data` is `false` by default and `application-dev.properties` turns it
+on. Every installation, demo or not, gets the administrator (on the first start of an empty database),
+the payment methods, a register and the walk-in customer. The API listens on `http://localhost:8080`.
 
 ### Database migrations (Flyway)
 

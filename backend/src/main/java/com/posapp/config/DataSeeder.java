@@ -34,11 +34,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * First-run demo data so the app is usable immediately: an admin + cashier login (each with a
- * demo PIN too — admin 1234, cashier 5678 — for the multi-cashier-per-shift "join with PIN" flow,
- * see CashierSessionService), a handful of categories/products (barcoded, so the terminal's scan
- * flow has something to scan), a walk-in customer, and one register. Disable with
- * app.seed-demo-data=false once you have real data.
+ * First-run data. Every installation gets the administrator (only when there are no users; no fixed
+ * password), the payment methods, a register and the walk-in customer. Demo data is for development
+ * only (app.seed-demo-data=true, set by application-dev.properties; the default is false): a sample
+ * cashier login (PIN 5678, and PIN 1234 for the administrator, for the multi-cashier-per-shift "join
+ * with PIN" flow, see CashierSessionService), a handful of categories/products (barcoded, so the
+ * terminal's scan flow has something to scan) and the Standard tax rate they use.
  */
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -70,6 +71,9 @@ public class DataSeeder implements CommandLineRunner {
     /** Password of the first administrator when demo data is off and no user exists yet; blank = generate one. */
     @Value("${app.initial-admin-password:}")
     private String initialAdminPassword;
+    /** Only used to tell whether the developer profile is on (see {@link #warnAboutDemoAccounts}). */
+    @Value("${spring.profiles.active:}")
+    private String activeProfiles;
     private final BigDecimal defaultTaxRatePercent;
     private final String defaultCurrencySymbol;
 
@@ -86,7 +90,7 @@ public class DataSeeder implements CommandLineRunner {
                        WarehouseService warehouseService,
                        BranchService branchService,
                        PasswordEncoder passwordEncoder,
-                       @Value("${app.seed-demo-data:true}") boolean seedEnabled,
+                       @Value("${app.seed-demo-data:false}") boolean seedEnabled,
                        @Value("${app.pos.tax-rate:0.15}") BigDecimal defaultTaxRateFraction,
                        @Value("${app.pos.currency-symbol:$}") String defaultCurrencySymbol) {
         this.userRepository = userRepository;
@@ -161,18 +165,25 @@ public class DataSeeder implements CommandLineRunner {
         // Branches: the default head office must exist before the warehouses are attached to it.
         branchService.seedDefaultBranchIfNeeded();
         warehouseService.assignMissingBranches();
-        if (!seedEnabled) {
-            ensureInitialAdmin();
-            return;
-        }
-        seedUsers();
-        Map<String, Category> categories = seedCategories();
-        seedRegister();
+        // What every installation needs, whatever app.seed-demo-data says (all of it only fills what is missing):
+        // the administrator (only when there are no users at all), the payment methods, a register and the walk-in customer.
+        // The administrator's password is never a fixed one: app.initial-admin-password, or a random one written once to the log.
+        ensureInitialAdmin();
         seedPaymentMethods();
-        TaxRate standardTaxRate = seedTaxRate();
-        seedProducts(categories, standardTaxRate);
+        seedRegister();
         seedCustomer();
         backfillWalkInCustomer();
+        warnAboutDemoAccounts();
+        if (!seedEnabled) {
+            return;
+        }
+        // Demo data, for development only (switched on by application-dev.properties): the sample cashier (and a PIN for the
+        // administrator), sample categories and products, and the Standard tax rate they use. A tax rate is not seeded for a real
+        // installation: the right rate depends on the country, so the administrator sets it in Settings > Taxes.
+        seedUsers();
+        Map<String, Category> categories = seedCategories();
+        TaxRate standardTaxRate = seedTaxRate();
+        seedProducts(categories, standardTaxRate);
         // Runs every startup (not gated by a count check): any product that predates per-product
         // tax — created before this migration, or added some other way with no rate assigned —
         // gets the same Standard rate it effectively had under the old single-flat-rate model, so
@@ -201,7 +212,27 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     /**
-     * Production first start (app.seed-demo-data=false): with no demo data there would otherwise be
+     * A well-known demo password left on a real installation is a way in for anyone. Say so in the log at every start, unless the
+     * developer profile is on. Only the two demo accounts are checked, and only by their demo passwords.
+     */
+    private void warnAboutDemoAccounts() {
+        boolean dev = java.util.Arrays.asList(activeProfiles == null ? new String[0] : activeProfiles.split(",")).stream()
+                .anyMatch(x -> x.trim().equalsIgnoreCase("dev"));
+        if (dev) return;
+        for (String[] demo : new String[][]{{"admin", "admin123"}, {"cashier", "cashier123"}}) {
+            userRepository.findByUsernameIgnoreCase(demo[0]).ifPresent(u -> {
+                if (u.getPasswordHash() != null && passwordEncoder.matches(demo[1], u.getPasswordHash())) {
+                    log.warn("SECURITY: the account '{}' still has its well-known demo password. Change it now (Profile) or remove the account.", demo[0]);
+                }
+            });
+        }
+        if (seedEnabled) {
+            log.warn("SECURITY: app.seed-demo-data is on outside the dev profile. Demo data is for development only; switch it off in a real installation.");
+        }
+    }
+
+    /**
+     * First start of an empty database (any profile): with no demo data there would otherwise be
      * no user at all and nobody could sign in. If - and only if - the user table is empty, create the
      * administrator "admin". The password is app.initial-admin-password when it is set, otherwise a
      * random one that is written once to the log. It is never created again once any user exists.
@@ -237,15 +268,14 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        if (!userRepository.existsByUsernameIgnoreCase("admin")) {
-            AppUser admin = new AppUser();
-            admin.setUsername("admin");
-            admin.setPasswordHash(passwordEncoder.encode("admin123"));
-            admin.setPinHash(passwordEncoder.encode("1234"));
-            admin.setFullName("Admin");
-            admin.setRole(Role.ADMIN);
-            userRepository.save(admin);
-        }
+        // The administrator is created by ensureInitialAdmin() (no fixed password). In demo mode it also gets the demo PIN, for the
+        // "join with PIN" cashier flow, when it has none yet.
+        userRepository.findByUsernameIgnoreCase("admin").ifPresent(admin -> {
+            if (admin.getPinHash() == null) {
+                admin.setPinHash(passwordEncoder.encode("1234"));
+                userRepository.save(admin);
+            }
+        });
         if (!userRepository.existsByUsernameIgnoreCase("cashier")) {
             AppUser cashier = new AppUser();
             cashier.setUsername("cashier");
