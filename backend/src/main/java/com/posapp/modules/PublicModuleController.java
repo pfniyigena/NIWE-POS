@@ -26,9 +26,12 @@ public class PublicModuleController {
     private final HelpDeskSettingsService helpDesk;
     private final RestaurantSettingsService restaurant;
     private final BookingSetupService booking;
+    private final com.posapp.onlinestore.OnlineStoreService onlineStore;
 
     public PublicModuleController(ModuleService service, RePublicService realEstate, HotelOnlineService hotel,
-                                  HelpDeskSettingsService helpDesk, RestaurantSettingsService restaurant, BookingSetupService booking) {
+                                  HelpDeskSettingsService helpDesk, RestaurantSettingsService restaurant, BookingSetupService booking,
+                                  com.posapp.onlinestore.OnlineStoreService onlineStore) {
+        this.onlineStore = onlineStore;
         this.helpDesk = helpDesk;
         this.restaurant = restaurant;
         this.booking = booking;
@@ -48,6 +51,8 @@ public class PublicModuleController {
         result.put(ModuleKey.REAL_ESTATE.name(), realEstate.isOpen());
         // The hotel's booking page needs the module and its own switch in Hotel > Online booking.
         result.put(ModuleKey.HOTEL.name(), hotel.isOpen());
+        // The online shop needs the module and its own switch in Online Store > Settings.
+        result.put(ModuleKey.ONLINE_STORE.name(), service.isEnabled(ModuleKey.ONLINE_STORE) && onlineStore.isOpen());
         return result;
     }
 }

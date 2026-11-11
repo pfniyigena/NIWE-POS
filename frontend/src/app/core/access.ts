@@ -124,6 +124,7 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/manufacturing/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/manufacturing', areas: ['OPERATIONS'] },
   { prefix: 'admin/restaurant', areas: ['OPERATIONS'] },
+  { prefix: 'admin/online-store', areas: ['OPERATIONS'] },
   { prefix: 'admin/hotel', areas: ['HOTEL'] },
   { prefix: 'admin/subscription-plans', areas: ['OPERATIONS'] },
   { prefix: 'admin/subscriptions', areas: ['OPERATIONS'] },

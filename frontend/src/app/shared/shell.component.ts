@@ -157,6 +157,17 @@ import { LanguageSwitcherComponent } from './language-switcher.component';
           <a *ngIf="canSee('/admin/restaurant/menu')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/menu" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Menu' | translate }}</a>
           <a *ngIf="canSee('/admin/restaurant/settings')" class="sidenav-link sidenav-sublink" routerLink="/admin/restaurant/settings" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Settings' | translate }}</a>
         </ng-container>
+        <!-- Online Store group: optional module (Settings > Modules). Orders and settings are Operations screens; the public shop itself is at /shop. -->
+        <button type="button" *ngIf="modules.on('ONLINE_STORE')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('onlinestore')">
+          <span class="sidenav-icon">🛍️</span>
+          <span class="sidenav-label">{{ 'Online Store' | translate }}</span>
+          <span class="sidenav-arrow">{{ isOpen('onlinestore') ? '▲' : '▼' }}</span>
+        </button>
+        <ng-container *ngIf="isOpen('onlinestore') && modules.on('ONLINE_STORE')">
+          <a *ngIf="canSee('/admin/online-store/orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/orders" routerLinkActive="active"><span class="sidenav-icon">📲</span> {{ 'Online orders' | translate }}</a>
+          <a *ngIf="canSee('/admin/online-store/setup')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/setup" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Shop settings' | translate }}</a>
+          <a class="sidenav-link sidenav-sublink" href="/shop" target="_blank" rel="noopener"><span class="sidenav-icon">🌐</span> {{ 'Open the shop' | translate }}</a>
+        </ng-container>
         <!-- Time Tracking group: optional module (Settings > Modules). "My time" is for every signed-in user; the rest follows the Operations / Billing areas. -->
         <button type="button" *ngIf="modules.on('TIME_TRACKING')" class="sidenav-link sidenav-toggle" (click)="toggleGroup('time')">
           <span class="sidenav-icon">⏱️</span>

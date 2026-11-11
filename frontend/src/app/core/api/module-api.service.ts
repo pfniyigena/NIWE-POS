@@ -5,7 +5,7 @@ import { API_BASE } from '../constants';
 import { HotelApiService } from './hotel-api.service';
 import { SalesFeatures } from '../models';
 
-export type ModuleKey = 'SALES' | 'PURCHASES' | 'ACCOUNTING' | 'POS' | 'HOTEL' | 'RESTAURANT' | 'MANUFACTURING' | 'SUBSCRIPTIONS' | 'HELPDESK' | 'EXPENSES' | 'ASSETS' | 'INSTALLMENTS' | 'TIME_TRACKING' | 'WORK_ORDERS' | 'BOOKING' | 'LAW_FIRM' | 'REAL_ESTATE' | 'PROPERTY_MANAGEMENT' | 'EMPLOYEES' | 'ORG_STRUCTURE' | 'ATTENDANCE' | 'CONTRACTS' | 'PAYROLL';
+export type ModuleKey = 'SALES' | 'PURCHASES' | 'ACCOUNTING' | 'POS' | 'HOTEL' | 'RESTAURANT' | 'ONLINE_STORE' | 'MANUFACTURING' | 'SUBSCRIPTIONS' | 'HELPDESK' | 'EXPENSES' | 'ASSETS' | 'INSTALLMENTS' | 'TIME_TRACKING' | 'WORK_ORDERS' | 'BOOKING' | 'LAW_FIRM' | 'REAL_ESTATE' | 'PROPERTY_MANAGEMENT' | 'EMPLOYEES' | 'ORG_STRUCTURE' | 'ATTENDANCE' | 'CONTRACTS' | 'PAYROLL';
 
 export interface ModuleInfo {
   key: ModuleKey;

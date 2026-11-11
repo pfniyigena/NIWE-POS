@@ -109,7 +109,7 @@ export function moduleGuard(key: ModuleKey): CanActivateFn {
  * The public (no-login) pages /reserve and /helpdesk: reachable only while their module is switched on in Settings >
  * Modules; otherwise visitors land on the home page. If the state cannot be loaded the page counts as off.
  */
-export function publicModuleGuard(key: 'RESTAURANT' | 'HELPDESK' | 'BOOKING' | 'REAL_ESTATE' | 'HOTEL'): CanActivateFn {
+export function publicModuleGuard(key: 'RESTAURANT' | 'ONLINE_STORE' | 'HELPDESK' | 'BOOKING' | 'REAL_ESTATE' | 'HOTEL'): CanActivateFn {
   return () => {
     const publicSettings = inject(PublicSettingsApiService);
     const router = inject(Router);

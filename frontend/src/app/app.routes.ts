@@ -372,6 +372,10 @@ import { RestaurantReportListComponent } from './restaurant/restaurant-report-li
 import { RestaurantWastageListComponent } from './restaurant/restaurant-wastage-list.component';
 import { RestaurantWastageFormComponent } from './restaurant/restaurant-wastage-form.component';
 import { OnlineOrdersComponent } from './restaurant/online-orders.component';
+import { StoreOrdersComponent } from './online-store/store-orders.component';
+import { StoreSetupComponent } from './online-store/store-setup.component';
+import { ShopComponent } from './online-store/shop.component';
+import { ShopTrackComponent } from './online-store/shop-track.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
 import { QrPrintComponent } from './restaurant/qr-print.component';
 import { PublicOrderComponent } from './restaurant/public-order.component';
@@ -1073,6 +1077,10 @@ const baseRoutes: Routes = [
   // (no ':id' segment exists to collide with), kept for consistency with the orders block above.
   { path: 'admin/restaurant/wastage', component: RestaurantWastageListComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/wastage/new', component: RestaurantWastageFormComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/orders', component: StoreOrdersComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/setup', component: StoreSetupComponent, canActivate: [authGuard] },
+  { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'admin/restaurant/online-orders', component: OnlineOrdersComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/online-setup', component: OnlineSetupComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/qr-print', component: QrPrintComponent, canActivate: [authGuard] },

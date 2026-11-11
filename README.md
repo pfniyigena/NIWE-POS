@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.27.0 - Online Store (phase 1)
+
+A public shop at `/shop`: customers order for delivery or pick-up and pay in cash; staff accept the order, which becomes a sale order, invoice and payment. New optional module **Online Store** (licence key `ONLINE_STORE`), migration V64. Details and the list of what was not tested in `RELEASE-NOTES-v1.27.0.md`.
+
 ### Version 1.26.2 - Log files in a folder called logs
 
 As a jar the server now writes `logs/` and `backups/` next to the jar. Details in `RELEASE-NOTES-v1.26.2.md`.

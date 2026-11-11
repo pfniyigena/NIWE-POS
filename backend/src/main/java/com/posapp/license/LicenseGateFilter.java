@@ -33,6 +33,7 @@ public class LicenseGateFilter extends OncePerRequestFilter {
             new Rule("/api/returns", ModuleKey.POS),
             new Rule("/api/hotel", ModuleKey.HOTEL),
             new Rule("/api/restaurant", ModuleKey.RESTAURANT),
+            new Rule("/api/online-store", ModuleKey.ONLINE_STORE),
             new Rule("/api/manufacturing", ModuleKey.MANUFACTURING),
             new Rule("/api/subscription-plans", ModuleKey.SUBSCRIPTIONS),
             new Rule("/api/subscriptions", ModuleKey.SUBSCRIPTIONS),

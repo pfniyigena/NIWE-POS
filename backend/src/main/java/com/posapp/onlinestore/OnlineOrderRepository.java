@@ -1,0 +1,21 @@
+package com.posapp.onlinestore;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> {
+    Optional<OnlineOrder> findByCode(String code);
+
+    List<OnlineOrder> findAllByOrderByCreatedAtDesc();
+
+    List<OnlineOrder> findByStatusOrderByCreatedAtAsc(String status);
+
+    long countByStatus(String status);
+
+    long countByCustomerPhoneAndStatus(String customerPhone, String status);
+
+    long countByCreatedAtAfter(Instant since);
+}
