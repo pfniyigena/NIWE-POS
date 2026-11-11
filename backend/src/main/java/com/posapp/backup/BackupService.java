@@ -71,7 +71,7 @@ public class BackupService {
     private final AuditLogService auditLogService;
     private final MaintenanceModeService maintenanceModeService;
 
-    @Value("${app.backup.directory}")
+    @Value("${app.backup.directory:./backups}")
     private String backupDirectory;
 
     @Value("${app.backup.pg-dump-path}")

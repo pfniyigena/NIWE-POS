@@ -26,7 +26,9 @@ public class PosApplication {
         // environment variable or a command-line argument still wins. Started from an IDE the default stays "logs".
         File jarFolder = jarFolder();
         if (jarFolder != null) {
-            app.setDefaultProperties(Map.<String, Object>of("app.logging.dir", jarFolder.getAbsolutePath()));
+            app.setDefaultProperties(Map.<String, Object>of(
+                    "app.logging.dir", jarFolder.getAbsolutePath(),
+                    "app.backup.directory", new File(jarFolder, "backups").getAbsolutePath()));
         }
         app.run(args);
     }

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.26.1 - Backups folder next to the jar
+
+Fixes "Failed to create backup directory ./backups" when the server runs as a service: backups are now written to a `backups` folder next to the jar. Details in `RELEASE-NOTES-v1.26.1.md`.
+
 ### Version 1.26.0 - French for printed documents, e-mails and server messages
 
 PDF papers, e-mails and the messages returned by the server follow the business language (English or Français), with French dates and amounts. Backend only. Details in `RELEASE-NOTES-v1.26.0.md`.
