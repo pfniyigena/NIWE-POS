@@ -8,6 +8,7 @@ The public shop (`/shop`) used to download every product on the shop in one go a
 - **Search and categories are done by the server**, so they cover the whole catalogue, not only the page on screen. Typing waits a moment (0.3 s) before searching, and starting a search or choosing a category returns to page 1.
 - **The cart is kept** while the customer moves between pages, searches and categories.
 - Pictures are loaded for the products on the current page only.
+- **Order errors show at the top of the order form.** When the order cannot be sent (a missing name or phone, a minimum order, a limit reached, stock that ran out), the red message now appears at the top of the "Your order" box and the page scrolls to it, instead of at the top of the page.
 - When there is no match the shop says "No products match."; when nothing is on the shop yet it keeps the earlier message.
 
 ## Technical

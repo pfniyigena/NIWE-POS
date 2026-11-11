@@ -75,6 +75,7 @@ import { T } from '../core/i18n/t';
 
         <div class="card mt-4 shop-checkout" id="checkout" style="padding:1rem;" *ngIf="count() > 0">
           <h4 class="mb-2">{{ 'Your order' | translate }}</h4>
+          <div class="alert alert-danger shop-order-error" id="order-error" role="alert" *ngIf="orderError">{{ orderError }}</div>
           <div *ngFor="let l of cartLines()" class="flex justify-between" style="padding:0.15rem 0;"><span>{{ l.qty }} × {{ l.p.name }}</span><span>{{ l.qty * l.p.price | number: '1.0-2' }}</span></div>
           <hr />
 
@@ -121,6 +122,8 @@ import { T } from '../core/i18n/t';
 export class ShopComponent implements OnInit {
   shop: Shop | null = null;
   error: string | null = null;
+  /** Why the order could not be sent. Shown at the top of the order form, where the customer is looking. */
+  orderError: string | null = null;
   q = '';
   category = '';
   /** What the visitor has put in the cart, kept with the product so it survives moving between pages and searches. */
@@ -257,7 +260,7 @@ export class ShopComponent implements OnInit {
   }
 
   place(): void {
-    this.error = null;
+    this.orderError = null;
     this.busy = true;
     this.api
       .place({
@@ -272,8 +275,8 @@ export class ShopComponent implements OnInit {
         },
         error: (e) => {
           this.busy = false;
-          this.error = e?.error?.message ?? T('We could not send your order. Please try again.');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.orderError = e?.error?.message ?? T('We could not send your order. Please try again.');
+          setTimeout(() => document.getElementById('order-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         },
       });
   }
