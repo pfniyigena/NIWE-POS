@@ -27,7 +27,7 @@ public class PosApplication {
         File jarFolder = jarFolder();
         if (jarFolder != null) {
             app.setDefaultProperties(Map.<String, Object>of(
-                    "app.logging.dir", jarFolder.getAbsolutePath(),
+                    "app.logging.dir", new File(jarFolder, "logs").getAbsolutePath(),
                     "app.backup.directory", new File(jarFolder, "backups").getAbsolutePath()));
         }
         app.run(args);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  v1.14.0 server logs. Three rotating files in app.logging.dir (default: the folder holding the jar when started as a jar, otherwise logs/ where the server is started):
+  v1.14.0 server logs. Three rotating files in app.logging.dir (default: the "logs" folder next to the jar when started as a jar (v1.26.2; before that the jar folder itself), otherwise logs/ where the server is started):
     niwe-erp.log        everything the application logs (INFO and above)
     niwe-erp-error.log  warnings and errors only, kept longer
     niwe-access.log     one line per API call that changed something, failed or was slow (never the query string, body or token)

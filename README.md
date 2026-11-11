@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.26.2 - Log files in a folder called logs
+
+As a jar the server now writes `logs/` and `backups/` next to the jar. Details in `RELEASE-NOTES-v1.26.2.md`.
+
 ### Version 1.26.1 - Backups folder next to the jar
 
 Fixes "Failed to create backup directory ./backups" when the server runs as a service: backups are now written to a `backups` folder next to the jar. Details in `RELEASE-NOTES-v1.26.1.md`.
@@ -31,7 +35,7 @@ Settings > Modules has a **Print PDF** button: the license (holder, number, expi
 
 ### Version 1.22.4 - Logs next to the jar
 
-When the backend runs as a jar (for example as a service), `niwe-erp.log`, `niwe-erp-error.log` and `niwe-access.log` are written in the same folder as the jar. `app.logging.dir` still overrides it; without a jar (IDE, `mvn spring-boot:run`) the logs stay in `logs/`. Settings > Server logs lists only `niwe-*.log` files. No migration. Details in `RELEASE-NOTES-v1.22.4.md`.
+When the backend runs as a jar (for example as a service), `niwe-erp.log`, `niwe-erp-error.log` and `niwe-access.log` are written in a `logs` folder next to the jar (1.26.2; before that the jar folder itself). `app.logging.dir` still overrides it; without a jar (IDE, `mvn spring-boot:run`) the logs stay in `logs/`. Settings > Server logs lists only `niwe-*.log` files. No migration. Details in `RELEASE-NOTES-v1.22.4.md`.
 
 ### Version 1.22.3 - No password or secret in git
 
