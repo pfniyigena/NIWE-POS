@@ -35,6 +35,30 @@
                 }
               ]
             },
+            "niweSoft": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "5mb", "maximumError": "6mb" }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.niwe-soft.ts"
+                }
+              ]
+            },
+           "accounting": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "5mb", "maximumError": "6mb" }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.accounting.ts"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,

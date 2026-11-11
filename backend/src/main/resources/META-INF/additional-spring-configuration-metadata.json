@@ -1,0 +1,87 @@
+{"properties": [
+  {
+    "name": "app.jwt.expiration-minutes",
+    "type": "java.lang.String",
+    "description": "A description for 'app.jwt.expiration-minutes'"
+  },
+  {
+    "name": "app.jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'app.jwt.secret'"
+  },
+  {
+    "name": "app.license.dev-all-modules",
+    "type": "java.lang.String",
+    "description": "A description for 'app.license.dev-all-modules'"
+  },
+  {
+    "name": "app.accounting.chart-country",
+    "type": "java.lang.String",
+    "description": "A description for 'app.accounting.chart-country'"
+  },
+  {
+    "name": "app.backup.pg-dump-path",
+    "type": "java.lang.String",
+    "description": "A description for 'app.backup.pg-dump-path'"
+  },
+  {
+    "name": "app.backup.psql-path",
+    "type": "java.lang.String",
+    "description": "A description for 'app.backup.psql-path'"
+  },
+  {
+    "name": "app.backup.cron",
+    "type": "java.lang.String",
+    "description": "A description for 'app.backup.cron'"
+  },
+  {
+    "name": "app.seed-demo-data",
+    "type": "java.lang.String",
+    "description": "A description for 'app.seed-demo-data'"
+  },
+  {
+    "name": "app.backup.directory",
+    "type": "java.lang.String",
+    "description": "A description for 'app.backup.directory'"
+  },
+  {
+    "name": "app.cors.allowed-origins",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cors.allowed-origins'"
+  },
+  {
+    "name": "app.frontend-url",
+    "type": "java.lang.String",
+    "description": "A description for 'app.frontend-url'"
+  },
+  {
+    "name": "app.license.vendor-email",
+    "type": "java.lang.String",
+    "description": "A description for 'app.license.vendor-email'"
+  },
+  {
+    "name": "app.pos.credit-limit-warning-percent",
+    "type": "java.lang.String",
+    "description": "A description for 'app.pos.credit-limit-warning-percent'"
+  },
+  {
+    "name": "app.pos.currency-symbol",
+    "type": "java.lang.String",
+    "description": "A description for 'app.pos.currency-symbol'"
+  },
+  {
+    "name": "app.pos.low-stock-threshold",
+    "type": "java.lang.String",
+    "description": "A description for 'app.pos.low-stock-threshold'"
+  },
+  {
+    "name": "app.pos.quotation-expiry-warning-days",
+    "type": "java.lang.String",
+    "description": "A description for 'app.pos.quotation-expiry-warning-days'"
+  },
+  {
+    "name": "app.pos.tax-rate",
+    "type": "java.lang.String",
+    "description": "A description for 'app.pos.tax-rate'"
+  }
+]}
