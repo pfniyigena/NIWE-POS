@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.email.MailService;
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
@@ -42,7 +43,7 @@ public class LawMailService {
                 if (u.getEmail() == null || u.getEmail().isBlank()) continue;
                 try {
                     String html = workService.digestHtml(u, s.getReminderDays());
-                    if (html != null) mailService.send(u.getEmail(), "Your deadlines and tasks", html, List.of());
+                    if (html != null) mailService.send(u.getEmail(), I18n.t("Your deadlines and tasks"), html, List.of());
                 } catch (Exception e) {
                     log.warn("Could not send the law digest to {}: {}", u.getUsername(), e.getMessage());
                 }

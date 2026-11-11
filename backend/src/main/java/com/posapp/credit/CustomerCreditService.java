@@ -1,5 +1,6 @@
 package com.posapp.credit;
 
+import com.posapp.i18n.I18n;
 import com.posapp.accounting.AccountingService;
 import com.posapp.alerts.AlertMailService;
 import com.posapp.common.ApiException;
@@ -302,7 +303,7 @@ public class CustomerCreditService {
             return;
         }
         if (!customer.isCreditEnabled()) {
-            throw ApiException.badRequest("Customer '" + customer.getName() + "' is not enabled for credit purchases");
+            throw ApiException.badRequest(I18n.t("Customer '") + customer.getName() + I18n.t("' is not enabled for credit purchases"));
         }
         BigDecimal currentOutstanding = outstandingBalance(customer.getId());
         BigDecimal projected = currentOutstanding.add(creditPortion);
@@ -311,8 +312,8 @@ public class CustomerCreditService {
             if (available.compareTo(BigDecimal.ZERO) < 0) {
                 available = BigDecimal.ZERO;
             }
-            throw ApiException.badRequest("This sale would exceed " + customer.getName()
-                    + "'s credit limit — available credit is " + available + ", this sale needs " + creditPortion);
+            throw ApiException.badRequest(I18n.t("This sale would exceed ") + customer.getName()
+                    + I18n.t("'s credit limit — available credit is ") + available + I18n.t(", this sale needs ") + creditPortion);
         }
         BigDecimal warningAmount = customer.getCreditLimit()
                 .multiply(BigDecimal.valueOf(creditLimitWarningPercent))
@@ -400,8 +401,8 @@ public class CustomerCreditService {
             allocatedTotal = allocatedTotal.add(entry.getAmount());
         }
         if (allocatedTotal.compareTo(request.getAmount()) != 0) {
-            throw ApiException.badRequest("Allocations (" + allocatedTotal
-                    + ") must add up to exactly the payment amount (" + request.getAmount() + ")");
+            throw ApiException.badRequest(I18n.t("Allocations (") + allocatedTotal
+                    + I18n.t(") must add up to exactly the payment amount (") + request.getAmount() + ")");
         }
 
         CustomerPayment payment = new CustomerPayment();
@@ -430,14 +431,14 @@ public class CustomerCreditService {
 
             if (orderType == com.posapp.credit.OrderType.INVOICE) {
                 Invoice invoice = invoiceRepository.findById(entry.getOrderId())
-                        .orElseThrow(() -> ApiException.notFound("Invoice not found: " + entry.getOrderId()));
+                        .orElseThrow(() -> ApiException.notFound(I18n.t("Invoice not found: ") + entry.getOrderId()));
                 if (invoice.getCustomerId() == null || !invoice.getCustomerId().equals(customerId)) {
-                    throw ApiException.badRequest("Invoice " + entry.getOrderId() + " does not belong to this customer");
+                    throw ApiException.badRequest(I18n.t("Invoice ") + entry.getOrderId() + I18n.t(" does not belong to this customer"));
                 }
                 BigDecimal outstanding = outstandingForInvoice(invoice);
                 if (entry.getAmount().add(alreadyThisRequest).compareTo(outstanding) > 0) {
-                    throw ApiException.badRequest("Allocation of " + entry.getAmount() + " to invoice "
-                            + invoice.getInvoiceNumber() + " exceeds its outstanding amount of " + outstanding);
+                    throw ApiException.badRequest(I18n.t("Allocation of ") + entry.getAmount() + I18n.t(" to invoice ")
+                            + invoice.getInvoiceNumber() + I18n.t(" exceeds its outstanding amount of ") + outstanding);
                 }
                 allocation.setInvoice(invoice);
             } else if (orderType == com.posapp.credit.OrderType.SALES_ORDER) {
@@ -445,26 +446,26 @@ public class CustomerCreditService {
                 // on invoice" request still works if ever replayed; listOutstandingOrders no
                 // longer surfaces a Sales Order as a new payment target (see its own javadoc).
                 SalesOrder salesOrder = salesOrderRepository.findById(entry.getOrderId())
-                        .orElseThrow(() -> ApiException.notFound("Sales order not found: " + entry.getOrderId()));
+                        .orElseThrow(() -> ApiException.notFound(I18n.t("Sales order not found: ") + entry.getOrderId()));
                 if (salesOrder.getCustomer() == null || !salesOrder.getCustomer().getId().equals(customerId)) {
-                    throw ApiException.badRequest("Sales order " + entry.getOrderId() + " does not belong to this customer");
+                    throw ApiException.badRequest(I18n.t("Sales order ") + entry.getOrderId() + I18n.t(" does not belong to this customer"));
                 }
                 BigDecimal outstanding = outstandingForSalesOrder(salesOrder);
                 if (entry.getAmount().add(alreadyThisRequest).compareTo(outstanding) > 0) {
-                    throw ApiException.badRequest("Allocation of " + entry.getAmount() + " to sales order "
-                            + salesOrder.getOrderNumber() + " exceeds its outstanding amount of " + outstanding);
+                    throw ApiException.badRequest(I18n.t("Allocation of ") + entry.getAmount() + I18n.t(" to sales order ")
+                            + salesOrder.getOrderNumber() + I18n.t(" exceeds its outstanding amount of ") + outstanding);
                 }
                 allocation.setSalesOrder(salesOrder);
             } else {
                 SaleOrder order = orderRepository.findById(entry.getOrderId())
-                        .orElseThrow(() -> ApiException.notFound("Order not found: " + entry.getOrderId()));
+                        .orElseThrow(() -> ApiException.notFound(I18n.t("Order not found: ") + entry.getOrderId()));
                 if (order.getCustomer() == null || !order.getCustomer().getId().equals(customerId)) {
-                    throw ApiException.badRequest("Order " + entry.getOrderId() + " does not belong to this customer");
+                    throw ApiException.badRequest(I18n.t("Order ") + entry.getOrderId() + I18n.t(" does not belong to this customer"));
                 }
                 BigDecimal outstanding = outstandingForOrder(order);
                 if (entry.getAmount().add(alreadyThisRequest).compareTo(outstanding) > 0) {
-                    throw ApiException.badRequest("Allocation of " + entry.getAmount() + " to order "
-                            + order.getInvoiceNumber() + " exceeds its outstanding amount of " + outstanding);
+                    throw ApiException.badRequest(I18n.t("Allocation of ") + entry.getAmount() + I18n.t(" to order ")
+                            + order.getInvoiceNumber() + I18n.t(" exceeds its outstanding amount of ") + outstanding);
                 }
                 allocation.setOrder(order);
             }
@@ -525,19 +526,19 @@ public class CustomerCreditService {
 
     private CustomerPaymentDto recordInvoicePaymentWith(Long invoiceId, java.math.BigDecimal amount, String method, String note, AppUser caller, boolean fromTrust) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> ApiException.notFound("Invoice not found: " + invoiceId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Invoice not found: ") + invoiceId));
         if (invoice.getStatus() != InvoiceStatus.ISSUED) {
-            throw ApiException.badRequest("Only an issued invoice can be paid — " + invoice.getInvoiceNumber() + " is " + invoice.getStatus());
+            throw ApiException.badRequest(I18n.t("Only an issued invoice can be paid — ") + invoice.getInvoiceNumber() + " is " + invoice.getStatus());
         }
         if (invoice.getCustomerId() == null) {
-            throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " has no customer to record a payment against");
+            throw ApiException.badRequest(I18n.t("Invoice ") + invoice.getInvoiceNumber() + I18n.t(" has no customer to record a payment against"));
         }
         Customer customer = getCustomerOrThrow(invoice.getCustomerId());
 
         BigDecimal outstanding = outstandingForInvoice(invoice);
         if (amount.compareTo(outstanding) > 0) {
-            throw ApiException.badRequest("Payment of " + amount + " exceeds invoice " + invoice.getInvoiceNumber()
-                    + "'s outstanding amount of " + outstanding);
+            throw ApiException.badRequest(I18n.t("Payment of ") + amount + I18n.t(" exceeds invoice ") + invoice.getInvoiceNumber()
+                    + I18n.t("'s outstanding amount of ") + outstanding);
         }
 
         CustomerPayment payment = new CustomerPayment();
@@ -576,7 +577,7 @@ public class CustomerCreditService {
     @Transactional(readOnly = true)
     public List<CustomerPaymentDto> paymentHistoryForInvoice(Long invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> ApiException.notFound("Invoice not found: " + invoiceId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Invoice not found: ") + invoiceId));
         BigDecimal currentBalance = invoice.getCustomerId() != null ? outstandingBalance(invoice.getCustomerId()) : BigDecimal.ZERO;
         return allocationRepository.findByInvoiceId(invoiceId).stream()
                 .map(CustomerPaymentAllocation::getPayment)
@@ -639,7 +640,7 @@ public class CustomerCreditService {
     @Transactional(readOnly = true)
     public CustomerPaymentDto getPaymentReceipt(Long paymentId) {
         CustomerPayment payment = customerPaymentRepository.findById(paymentId)
-                .orElseThrow(() -> ApiException.notFound("Payment not found: " + paymentId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Payment not found: ") + paymentId));
         BigDecimal currentBalance = outstandingBalance(payment.getCustomer().getId());
         return CustomerPaymentDto.from(payment, currentBalance);
     }
@@ -657,7 +658,7 @@ public class CustomerCreditService {
 
     private Customer getCustomerOrThrow(Long customerId) {
         return customerRepository.findById(customerId)
-                .orElseThrow(() -> ApiException.notFound("Customer not found: " + customerId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Customer not found: ") + customerId));
     }
 
     /**
@@ -694,21 +695,21 @@ public class CustomerCreditService {
     @Transactional
     public CustomerPayment reverseInvoicePayment(Long paymentId, String reason, AppUser caller) {
         CustomerPayment original = customerPaymentRepository.findById(paymentId)
-                .orElseThrow(() -> ApiException.notFound("Payment not found: " + paymentId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Payment not found: ") + paymentId));
         if (original.getReversalOfPaymentId() != null || original.getAmount() == null || original.getAmount().signum() <= 0) {
-            throw ApiException.badRequest("This entry is itself a reversal and can't be reversed.");
+            throw ApiException.badRequest(I18n.t("This entry is itself a reversal and can't be reversed."));
         }
         if (WRITE_OFF_METHOD.equals(original.getMethod())) {
-            throw ApiException.badRequest("A write-off can't be reversed here.");
+            throw ApiException.badRequest(I18n.t("A write-off can't be reversed here."));
         }
         if (customerPaymentRepository.existsByReversalOfPaymentId(paymentId)) {
-            throw ApiException.conflict("This payment has already been reversed.");
+            throw ApiException.conflict(I18n.t("This payment has already been reversed."));
         }
         CustomerPaymentAllocation target = original.getAllocations().stream().filter(a -> a.getInvoice() != null).findFirst()
-                .orElseThrow(() -> ApiException.badRequest("Only a payment recorded on an invoice can be reversed here."));
+                .orElseThrow(() -> ApiException.badRequest(I18n.t("Only a payment recorded on an invoice can be reversed here.")));
         Invoice invoice = target.getInvoice();
         if (amountPaidForInvoice(invoice).compareTo(target.getAmountApplied()) < 0) {
-            throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " has received less than this payment, so it can't be taken back.");
+            throw ApiException.badRequest(I18n.t("Invoice ") + invoice.getInvoiceNumber() + I18n.t(" has received less than this payment, so it can't be taken back."));
         }
         BigDecimal amount = target.getAmountApplied();
         CustomerPayment rev = new CustomerPayment();
@@ -740,13 +741,13 @@ public class CustomerCreditService {
      */
     @Transactional
     public CustomerPayment writeOffInvoice(Long invoiceId, BigDecimal amount, String note, AppUser caller) {
-        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> ApiException.notFound("Invoice not found: " + invoiceId));
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> ApiException.notFound(I18n.t("Invoice not found: ") + invoiceId));
         if (invoice.getStatus() != InvoiceStatus.ISSUED || invoice.getCustomerId() == null) {
-            throw ApiException.badRequest("Only an issued invoice with a customer can be written off.");
+            throw ApiException.badRequest(I18n.t("Only an issued invoice with a customer can be written off."));
         }
         BigDecimal outstanding = outstandingForInvoice(invoice);
         if (amount == null || amount.signum() <= 0 || amount.compareTo(outstanding) > 0) {
-            throw ApiException.badRequest("The amount to write off must be between 0 and the " + outstanding.toPlainString() + " outstanding on the invoice.");
+            throw ApiException.badRequest(I18n.t("The amount to write off must be between 0 and the ") + outstanding.toPlainString() + I18n.t(" outstanding on the invoice."));
         }
         Customer customer = getCustomerOrThrow(invoice.getCustomerId());
         CustomerPayment payment = new CustomerPayment();

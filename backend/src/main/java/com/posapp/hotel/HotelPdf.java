@@ -1,5 +1,6 @@
 package com.posapp.hotel;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -31,7 +32,7 @@ import java.util.Locale;
 public class HotelPdf {
 
     private static String money(BigDecimal v) {
-        DecimalFormat f = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.US));
+        DecimalFormat f = new DecimalFormat("#,##0.00", I18n.symbols());
         return f.format(v == null ? BigDecimal.ZERO : v.setScale(2, RoundingMode.HALF_UP));
     }
 
@@ -59,7 +60,7 @@ public class HotelPdf {
             }
         }
         if (line.length() > 0) doc.add(new Paragraph(line.toString(), small));
-        if (!nz(store.getTaxId()).isEmpty()) doc.add(new Paragraph("Tax ID: " + store.getTaxId(), small));
+        if (!nz(store.getTaxId()).isEmpty()) doc.add(new Paragraph(I18n.t("Tax ID: ") + store.getTaxId(), small));
         Paragraph gap = new Paragraph(" ", small);
         gap.setSpacingAfter(6);
         doc.add(gap);
@@ -82,7 +83,7 @@ public class HotelPdf {
                     small = FontFactory.getFont(FontFactory.HELVETICA, 9), title = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20);
             header(doc, store);
             var b = folio.booking();
-            Paragraph t = new Paragraph(invoiceNumber != null ? "INVOICE" : "GUEST BILL", title);
+            Paragraph t = new Paragraph(invoiceNumber != null ? "INVOICE" : I18n.t("GUEST BILL"), title);
             t.setSpacingAfter(2);
             doc.add(t);
             String number = invoiceNumber != null ? invoiceNumber : b.bookingNumber() + (billNo > 0 ? " / bill " + billNo : "");
@@ -94,24 +95,24 @@ public class HotelPdf {
             PdfPTable info = new PdfPTable(new float[]{1.1f, 3f, 1.1f, 3f});
             info.setWidthPercentage(100);
             info.setSpacingAfter(10);
-            info.addCell(cell("Bill to", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Bill to"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(billTo, normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Booking", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Booking"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(b.bookingNumber(), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Guest", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Guest"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(b.guestName(), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Room", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Room"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell((b.roomNumber() == null ? "-" : b.roomNumber()) + " " + nz(b.roomTypeName()), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Arrival", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Arrival"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(String.valueOf(b.checkInDate()), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Departure", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Departure"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(String.valueOf(b.checkOutDate()), normal, Element.ALIGN_LEFT, false));
             doc.add(info);
 
             PdfPTable table = new PdfPTable(new float[]{3.6f, 1.3f, 1.1f, 1.4f});
             table.setWidthPercentage(100);
             table.setHeaderRows(1);
-            for (String h : new String[]{"Description", "Net", "Tax", "Amount"}) {
+            for (String h : new String[]{I18n.t("Description"), I18n.t("Net"), I18n.t("Tax"), I18n.t("Amount")}) {
                 PdfPCell c = cell(h, bold, h.equals("Description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT, true);
                 c.setBackgroundColor(new java.awt.Color(235, 235, 235));
                 table.addCell(c);
@@ -129,14 +130,14 @@ public class HotelPdf {
             }
             doc.add(table);
             String suffix = currency(store);
-            right(doc, "Subtotal: " + money(net) + suffix, bold, 10);
-            right(doc, "Tax: " + money(tax) + suffix, bold, 0);
-            right(doc, "Total: " + money(total) + suffix, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13), 0);
+            right(doc, I18n.t("Subtotal: ") + money(net) + suffix, bold, 10);
+            right(doc, I18n.t("Tax: ") + money(tax) + suffix, bold, 0);
+            right(doc, I18n.t("Total: ") + money(total) + suffix, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13), 0);
 
             BigDecimal received = BigDecimal.ZERO;
             List<FolioPaymentDto> pays = folio.payments().stream().filter(p -> billNo == 0 || p.billNo() == billNo).toList();
             if (!pays.isEmpty() && invoiceNumber == null) {
-                Paragraph ph = new Paragraph("Payments", bold);
+                Paragraph ph = new Paragraph(I18n.t("Payments"), bold);
                 ph.setSpacingBefore(10);
                 doc.add(ph);
                 for (FolioPaymentDto p : pays) {
@@ -147,20 +148,20 @@ public class HotelPdf {
             }
             if (invoiceNumber != null) {
                 BillDto bill = folio.bills().stream().filter(x -> x.billNo() == billNo).findFirst().orElse(null);
-                Paragraph due = new Paragraph("Payable by " + nz(companyName) + " on account." + (bill != null && bill.companyBillStatus() != null ? "" : ""), small);
+                Paragraph due = new Paragraph(I18n.t("Payable by ") + nz(companyName) + I18n.t(" on account.") + (bill != null && bill.companyBillStatus() != null ? "" : ""), small);
                 due.setSpacingBefore(10);
                 doc.add(due);
             } else {
                 BigDecimal balance = total.subtract(received);
-                right(doc, (balance.signum() > 0 ? "Balance due: " : "Balance: ") + money(balance) + suffix, bold, 8);
+                right(doc, (balance.signum() > 0 ? I18n.t("Balance due: ") : I18n.t("Balance: ")) + money(balance) + suffix, bold, 8);
             }
-            Paragraph sign = new Paragraph("\n\nGuest signature: ______________________", small);
+            Paragraph sign = new Paragraph(I18n.t("\n\nGuest signature: ______________________"), small);
             sign.setSpacingBefore(14);
             doc.add(sign);
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the bill PDF", e);
+            throw new IllegalStateException(I18n.t("Failed to build the bill PDF"), e);
         }
     }
 
@@ -173,34 +174,34 @@ public class HotelPdf {
             Font bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10), normal = FontFactory.getFont(FontFactory.HELVETICA, 10),
                     title = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
             header(doc, store);
-            String kind = "DEPOSIT".equals(payment.kind()) ? "DEPOSIT RECEIPT" : "REFUND".equals(payment.kind()) ? "REFUND RECEIPT" : "PAYMENT RECEIPT";
+            String kind = "DEPOSIT".equals(payment.kind()) ? I18n.t("DEPOSIT RECEIPT") : "REFUND".equals(payment.kind()) ? I18n.t("REFUND RECEIPT") : I18n.t("PAYMENT RECEIPT");
             Paragraph t = new Paragraph(kind, title);
             t.setSpacingAfter(8);
             doc.add(t);
             PdfPTable info = new PdfPTable(new float[]{1.4f, 3f});
             info.setWidthPercentage(100);
             String[][] rows = {
-                    {"Receipt no.", String.format("R-%06d", payment.id())},
-                    {"Date", payment.createdAt().toString().substring(0, 10)},
-                    {"Booking", bookingNumber},
-                    {"Received from", guestName},
-                    {"Method", payment.method()},
-                    {"Reference", nz(payment.reference())},
+                    {I18n.t("Receipt no."), String.format(I18n.t("R-%06d"), payment.id())},
+                    {I18n.t("Date"), payment.createdAt().toString().substring(0, 10)},
+                    {I18n.t("Booking"), bookingNumber},
+                    {I18n.t("Received from"), guestName},
+                    {I18n.t("Method"), payment.method()},
+                    {I18n.t("Reference"), nz(payment.reference())},
             };
             for (String[] r : rows) {
                 info.addCell(cell(r[0], bold, Element.ALIGN_LEFT, false));
                 info.addCell(cell(r[1], normal, Element.ALIGN_LEFT, false));
             }
             doc.add(info);
-            Paragraph amount = new Paragraph("Amount: " + money(payment.amount()) + currency(store), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15));
+            Paragraph amount = new Paragraph(I18n.t("Amount: ") + money(payment.amount()) + currency(store), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15));
             amount.setSpacingBefore(12);
             doc.add(amount);
             if (!nz(payment.note()).isEmpty()) doc.add(new Paragraph(payment.note(), normal));
-            doc.add(new Paragraph("\n\nReceived by: ______________________", normal));
+            doc.add(new Paragraph(I18n.t("\n\nReceived by: ______________________"), normal));
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the receipt PDF", e);
+            throw new IllegalStateException(I18n.t("Failed to build the receipt PDF"), e);
         }
     }
 
@@ -225,7 +226,7 @@ public class HotelPdf {
             Font bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10), normal = FontFactory.getFont(FontFactory.HELVETICA, 10),
                     title = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20);
             header(doc, store);
-            Paragraph t = new Paragraph("GROUP STATEMENT", title);
+            Paragraph t = new Paragraph(I18n.t("GROUP STATEMENT"), title);
             t.setSpacingAfter(2);
             doc.add(t);
             Paragraph num = new Paragraph(g.groupCode() + " - " + g.name(), normal);
@@ -234,20 +235,20 @@ public class HotelPdf {
             PdfPTable info = new PdfPTable(new float[]{1.1f, 3f, 1.1f, 3f});
             info.setWidthPercentage(100);
             info.setSpacingAfter(10);
-            info.addCell(cell("Contact", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Contact"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(nz(g.contactName()), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Invoice to", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Invoice to"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(nz(g.companyName()), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Arrival", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Arrival"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(String.valueOf(g.arrivalDate()), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Departure", bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Departure"), bold, Element.ALIGN_LEFT, false));
             info.addCell(cell(String.valueOf(g.departureDate()), normal, Element.ALIGN_LEFT, false));
             doc.add(info);
 
             PdfPTable table = new PdfPTable(new float[]{1.2f, 1.3f, 3.6f, 1.4f});
             table.setWidthPercentage(100);
             table.setHeaderRows(1);
-            for (String h : new String[]{"Date", "Type", "Description", "Amount"}) {
+            for (String h : new String[]{I18n.t("Date"), I18n.t("Type"), I18n.t("Description"), I18n.t("Amount")}) {
                 PdfPCell c = cell(h, bold, h.equals("Amount") ? Element.ALIGN_RIGHT : Element.ALIGN_LEFT, true);
                 c.setBackgroundColor(new java.awt.Color(235, 235, 235));
                 table.addCell(c);
@@ -262,15 +263,15 @@ public class HotelPdf {
             doc.add(table);
             String suffix = currency(store);
             var t2 = g.totals();
-            right(doc, "Billed: " + money(t2.billed()) + suffix, bold, 10);
-            right(doc, "Deposits received: " + money(t2.deposits()) + suffix, bold, 0);
-            right(doc, "Paid: " + money(t2.paid()) + suffix, bold, 0);
-            right(doc, "Amount owed: " + money(t2.owed()) + suffix, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13), 0);
-            if (t2.held().signum() > 0) right(doc, "Deposit still held: " + money(t2.held()) + suffix, normal, 0);
+            right(doc, I18n.t("Billed: ") + money(t2.billed()) + suffix, bold, 10);
+            right(doc, I18n.t("Deposits received: ") + money(t2.deposits()) + suffix, bold, 0);
+            right(doc, I18n.t("Paid: ") + money(t2.paid()) + suffix, bold, 0);
+            right(doc, I18n.t("Amount owed: ") + money(t2.owed()) + suffix, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13), 0);
+            if (t2.held().signum() > 0) right(doc, I18n.t("Deposit still held: ") + money(t2.held()) + suffix, normal, 0);
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Could not build the statement", e);
+            throw new IllegalStateException(I18n.t("Could not build the statement"), e);
         }
     }
 
@@ -307,66 +308,66 @@ public class HotelPdf {
                     small = FontFactory.getFont(FontFactory.HELVETICA, 8), title = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20),
                     h2 = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
             header(doc, store);
-            Paragraph t = new Paragraph("REGISTRATION CARD", title);
+            Paragraph t = new Paragraph(I18n.t("REGISTRATION CARD"), title);
             t.setSpacingAfter(2);
             doc.add(t);
-            Paragraph num = new Paragraph(b.bookingNumber() + (g.vip() ? "  -  VIP" : ""), normal);
+            Paragraph num = new Paragraph(b.bookingNumber() + (g.vip() ? I18n.t("  -  VIP") : ""), normal);
             num.setSpacingAfter(8);
             doc.add(num);
 
-            Paragraph stay = new Paragraph("Stay", h2);
+            Paragraph stay = new Paragraph(I18n.t("Stay"), h2);
             stay.setSpacingAfter(2);
             doc.add(stay);
             PdfPTable st = new PdfPTable(new float[]{1.3f, 2.2f, 1.3f, 2.2f});
             st.setWidthPercentage(100);
             st.setSpacingAfter(10);
-            pair(st, "Arrival", b.checkInDate() + (nz(hs.checkInTime()).isEmpty() ? "" : "  (from " + hs.checkInTime() + ")"), bold, normal);
-            pair(st, "Departure", b.checkOutDate() + (nz(hs.checkOutTime()).isEmpty() ? "" : "  (by " + hs.checkOutTime() + ")"), bold, normal);
-            pair(st, "Nights", String.valueOf(b.nights()), bold, normal);
-            pair(st, "Room", (b.roomNumber() == null ? "" : b.roomNumber() + "  ") + nz(b.roomTypeName()), bold, normal);
-            pair(st, "Adults", String.valueOf(b.adults()), bold, normal);
-            pair(st, "Children", String.valueOf(b.children()), bold, normal);
-            pair(st, "Rate / night", money(b.nightlyRate()), bold, normal);
-            pair(st, "Booked through", blank(b.source()), bold, normal);
+            pair(st, I18n.t("Arrival"), b.checkInDate() + (nz(hs.checkInTime()).isEmpty() ? "" : "  (from " + hs.checkInTime() + ")"), bold, normal);
+            pair(st, I18n.t("Departure"), b.checkOutDate() + (nz(hs.checkOutTime()).isEmpty() ? "" : "  (by " + hs.checkOutTime() + ")"), bold, normal);
+            pair(st, I18n.t("Nights"), String.valueOf(b.nights()), bold, normal);
+            pair(st, I18n.t("Room"), (b.roomNumber() == null ? "" : b.roomNumber() + "  ") + nz(b.roomTypeName()), bold, normal);
+            pair(st, I18n.t("Adults"), String.valueOf(b.adults()), bold, normal);
+            pair(st, I18n.t("Children"), String.valueOf(b.children()), bold, normal);
+            pair(st, I18n.t("Rate / night"), money(b.nightlyRate()), bold, normal);
+            pair(st, I18n.t("Booked through"), blank(b.source()), bold, normal);
             doc.add(st);
 
-            Paragraph gp = new Paragraph("Guest", h2);
+            Paragraph gp = new Paragraph(I18n.t("Guest"), h2);
             gp.setSpacingAfter(2);
             doc.add(gp);
             PdfPTable gt = new PdfPTable(new float[]{1.3f, 2.2f, 1.3f, 2.2f});
             gt.setWidthPercentage(100);
             gt.setSpacingAfter(10);
-            pair(gt, "Full name", g.fullName(), bold, normal);
-            pair(gt, "Nationality", blank(g.nationality()), bold, normal);
-            pair(gt, "Date of birth", g.dateOfBirth() == null ? "" : g.dateOfBirth().toString(), bold, normal);
-            pair(gt, "Profession", blank(g.profession()), bold, normal);
-            pair(gt, "ID type", blank(g.idType()), bold, normal);
-            pair(gt, "ID number", blank(g.idNumber()), bold, normal);
-            pair(gt, "Phone", blank(g.phone()), bold, normal);
-            pair(gt, "E-mail", blank(g.email()), bold, normal);
+            pair(gt, I18n.t("Full name"), g.fullName(), bold, normal);
+            pair(gt, I18n.t("Nationality"), blank(g.nationality()), bold, normal);
+            pair(gt, I18n.t("Date of birth"), g.dateOfBirth() == null ? "" : g.dateOfBirth().toString(), bold, normal);
+            pair(gt, I18n.t("Profession"), blank(g.profession()), bold, normal);
+            pair(gt, I18n.t("ID type"), blank(g.idType()), bold, normal);
+            pair(gt, I18n.t("ID number"), blank(g.idNumber()), bold, normal);
+            pair(gt, I18n.t("Phone"), blank(g.phone()), bold, normal);
+            pair(gt, I18n.t("E-mail"), blank(g.email()), bold, normal);
             doc.add(gt);
             PdfPTable addr = new PdfPTable(new float[]{1.3f, 6.2f});
             addr.setWidthPercentage(100);
             addr.setSpacingAfter(10);
-            pair(addr, "Home address", blank(g.address()), bold, normal);
-            pair(addr, "Coming from", "", bold, normal);
-            pair(addr, "Going to", "", bold, normal);
-            pair(addr, "Purpose of visit", "", bold, normal);
-            pair(addr, "Vehicle plate", "", bold, normal);
-            pair(addr, "Payment by", "[ ] Cash   [ ] Card   [ ] Mobile money   [ ] Company: ______________", bold, normal);
+            pair(addr, I18n.t("Home address"), blank(g.address()), bold, normal);
+            pair(addr, I18n.t("Coming from"), "", bold, normal);
+            pair(addr, I18n.t("Going to"), "", bold, normal);
+            pair(addr, I18n.t("Purpose of visit"), "", bold, normal);
+            pair(addr, I18n.t("Vehicle plate"), "", bold, normal);
+            pair(addr, I18n.t("Payment by"), I18n.t("[ ] Cash   [ ] Card   [ ] Mobile money   [ ] Company: ______________"), bold, normal);
             doc.add(addr);
             if (!blank(g.preferences()).isEmpty()) {
-                Paragraph pf = new Paragraph("Preferences on file: " + g.preferences(), small);
+                Paragraph pf = new Paragraph(I18n.t("Preferences on file: ") + g.preferences(), small);
                 pf.setSpacingAfter(8);
                 doc.add(pf);
             }
-            Paragraph terms = new Paragraph("I confirm the details above are correct and agree to settle my account on departure. The hotel is not responsible for valuables left in rooms. "
-                    + (nz(hs.checkOutTime()).isEmpty() ? "" : "Check-out time is " + hs.checkOutTime() + "."), small);
+            Paragraph terms = new Paragraph(I18n.t("I confirm the details above are correct and agree to settle my account on departure. The hotel is not responsible for valuables left in rooms. ")
+                    + (nz(hs.checkOutTime()).isEmpty() ? "" : I18n.t("Check-out time is ") + hs.checkOutTime() + "."), small);
             terms.setSpacingAfter(28);
             doc.add(terms);
             PdfPTable sig = new PdfPTable(new float[]{3f, 0.4f, 3f, 0.4f, 1.6f});
             sig.setWidthPercentage(100);
-            for (String[] col : new String[][]{{"Guest signature"}, {""}, {"Receptionist"}, {""}, {"Date"}}) {
+            for (String[] col : new String[][]{{I18n.t("Guest signature")}, {""}, {I18n.t("Receptionist")}, {""}, {I18n.t("Date")}}) {
                 if (col[0].isEmpty()) {
                     PdfPCell gap = new PdfPCell(new Phrase(" ", small));
                     gap.setBorder(Rectangle.NO_BORDER);
@@ -382,7 +383,7 @@ public class HotelPdf {
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Could not build the registration card", e);
+            throw new IllegalStateException(I18n.t("Could not build the registration card"), e);
         }
     }
 
@@ -396,57 +397,57 @@ public class HotelPdf {
                     title = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20), small = FontFactory.getFont(FontFactory.HELVETICA, 9);
             var b = folio.booking();
             header(doc, store);
-            Paragraph t = new Paragraph("BOOKING CONFIRMATION", title);
+            Paragraph t = new Paragraph(I18n.t("BOOKING CONFIRMATION"), title);
             t.setSpacingAfter(2);
             doc.add(t);
-            Paragraph num = new Paragraph("Reference " + b.bookingNumber(), normal);
+            Paragraph num = new Paragraph(I18n.t("Reference ") + b.bookingNumber(), normal);
             num.setSpacingAfter(12);
             doc.add(num);
-            Paragraph hello = new Paragraph("Dear " + g.fullName() + ",", normal);
+            Paragraph hello = new Paragraph(I18n.t("Dear ") + g.fullName() + ",", normal);
             hello.setSpacingAfter(6);
             doc.add(hello);
-            Paragraph intro = new Paragraph("Thank you for choosing us. We are pleased to confirm your reservation as follows.", normal);
+            Paragraph intro = new Paragraph(I18n.t("Thank you for choosing us. We are pleased to confirm your reservation as follows."), normal);
             intro.setSpacingAfter(10);
             doc.add(intro);
             PdfPTable info = new PdfPTable(new float[]{1.6f, 4f});
             info.setWidthPercentage(100);
             info.setSpacingAfter(10);
-            pair(info, "Arrival", b.checkInDate() + (nz(hs.checkInTime()).isEmpty() ? "" : "  (check-in from " + hs.checkInTime() + ")"), bold, normal);
-            pair(info, "Departure", b.checkOutDate() + (nz(hs.checkOutTime()).isEmpty() ? "" : "  (check-out by " + hs.checkOutTime() + ")"), bold, normal);
-            pair(info, "Nights", String.valueOf(b.nights()), bold, normal);
-            pair(info, "Room", nz(b.roomTypeName()) + (b.roomNumber() == null ? "" : "  -  room " + b.roomNumber()), bold, normal);
-            pair(info, "Guests", b.adults() + " adult" + (b.adults() == 1 ? "" : "s") + (b.children() > 0 ? ", " + b.children() + " child" + (b.children() == 1 ? "" : "ren") : ""), bold, normal);
-            if (b.ratePlanName() != null) pair(info, "Rate plan", b.ratePlanName(), bold, normal);
+            pair(info, I18n.t("Arrival"), b.checkInDate() + (nz(hs.checkInTime()).isEmpty() ? "" : I18n.t("  (check-in from ") + hs.checkInTime() + ")"), bold, normal);
+            pair(info, I18n.t("Departure"), b.checkOutDate() + (nz(hs.checkOutTime()).isEmpty() ? "" : I18n.t("  (check-out by ") + hs.checkOutTime() + ")"), bold, normal);
+            pair(info, I18n.t("Nights"), String.valueOf(b.nights()), bold, normal);
+            pair(info, I18n.t("Room"), nz(b.roomTypeName()) + (b.roomNumber() == null ? "" : I18n.t("  -  room ") + b.roomNumber()), bold, normal);
+            pair(info, I18n.t("Guests"), b.adults() + " adult" + (b.adults() == 1 ? "" : "s") + (b.children() > 0 ? ", " + b.children() + " child" + (b.children() == 1 ? "" : "ren") : ""), bold, normal);
+            if (b.ratePlanName() != null) pair(info, I18n.t("Rate plan"), b.ratePlanName(), bold, normal);
             String suffix = currency(store);
-            pair(info, "Price for the stay", money(b.chargesTotal()) + suffix + "  (tax included)", bold, normal);
+            pair(info, I18n.t("Price for the stay"), money(b.chargesTotal()) + suffix + I18n.t("  (tax included)"), bold, normal);
             if (folio.deposits().signum() > 0) {
-                pair(info, "Deposit received", money(folio.deposits()) + suffix, bold, normal);
-                pair(info, "Balance on arrival", money(folio.balance()) + suffix, bold, normal);
+                pair(info, I18n.t("Deposit received"), money(folio.deposits()) + suffix, bold, normal);
+                pair(info, I18n.t("Balance on arrival"), money(folio.balance()) + suffix, bold, normal);
             }
-            if (b.groupName() != null) pair(info, "Group", b.groupName(), bold, normal);
-            if (!blank(b.guestPreferences()).isEmpty()) pair(info, "Your preferences", b.guestPreferences(), bold, normal);
+            if (b.groupName() != null) pair(info, I18n.t("Group"), b.groupName(), bold, normal);
+            if (!blank(b.guestPreferences()).isEmpty()) pair(info, I18n.t("Your preferences"), b.guestPreferences(), bold, normal);
             doc.add(info);
 
             StringBuilder terms = new StringBuilder();
             if (hs.cancelFreeDays() > 0) {
-                terms.append("Free cancellation until ").append(b.checkInDate().minusDays(hs.cancelFreeDays())).append(" (").append(hs.cancelFreeDays()).append(" day")
-                        .append(hs.cancelFreeDays() == 1 ? "" : "s").append(" before arrival). ");
+                terms.append(I18n.t("Free cancellation until ")).append(b.checkInDate().minusDays(hs.cancelFreeDays())).append(" (").append(hs.cancelFreeDays()).append(" day")
+                        .append(hs.cancelFreeDays() == 1 ? "" : "s").append(I18n.t(" before arrival). "));
             }
-            if (hs.cancelFeeNights() > 0) terms.append("Later cancellations are charged ").append(hs.cancelFeeNights()).append(" night").append(hs.cancelFeeNights() == 1 ? "" : "s").append(". ");
-            if (hs.noShowFeeNights() > 0) terms.append("If you do not arrive, ").append(hs.noShowFeeNights()).append(" night").append(hs.noShowFeeNights() == 1 ? " is" : "s are").append(" charged. ");
+            if (hs.cancelFeeNights() > 0) terms.append(I18n.t("Later cancellations are charged ")).append(hs.cancelFeeNights()).append(" night").append(hs.cancelFeeNights() == 1 ? "" : "s").append(". ");
+            if (hs.noShowFeeNights() > 0) terms.append(I18n.t("If you do not arrive, ")).append(hs.noShowFeeNights()).append(" night").append(hs.noShowFeeNights() == 1 ? " is" : I18n.t("s are")).append(" charged. ");
             if (terms.length() > 0) {
-                Paragraph tp = new Paragraph("Cancellation terms: " + terms.toString().trim(), small);
+                Paragraph tp = new Paragraph(I18n.t("Cancellation terms: ") + terms.toString().trim(), small);
                 tp.setSpacingAfter(10);
                 doc.add(tp);
             }
-            Paragraph close = new Paragraph("Please bring a valid passport or national ID for registration. We look forward to welcoming you.", normal);
+            Paragraph close = new Paragraph(I18n.t("Please bring a valid passport or national ID for registration. We look forward to welcoming you."), normal);
             close.setSpacingAfter(14);
             doc.add(close);
             if (store != null && !nz(store.getBusinessName()).isEmpty()) doc.add(new Paragraph(store.getBusinessName(), bold));
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Could not build the confirmation letter", e);
+            throw new IllegalStateException(I18n.t("Could not build the confirmation letter"), e);
         }
     }
 }

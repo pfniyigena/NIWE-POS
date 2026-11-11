@@ -1,5 +1,6 @@
 package com.posapp.propertymgmt;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.email.MailService;
 import com.posapp.modules.ModuleKey;
@@ -66,9 +67,9 @@ public class PmStatementAuto {
         LocalDate to = today.withDayOfMonth(1).minusDays(1);
         LocalDate from = to.withDayOfMonth(1);
         if (!force) {
-            if (!s.isAutoStatements()) return none("Automatic statements are off.", from, to);
-            if (today.getDayOfMonth() < s.getAutoStatementsDay()) return none("Not due until day " + s.getAutoStatementsDay() + " of the month.", from, to);
-            if (s.getAutoStatementsThrough() != null && !s.getAutoStatementsThrough().isBefore(to)) return none("Last month's statements were already made.", from, to);
+            if (!s.isAutoStatements()) return none(I18n.t("Automatic statements are off."), from, to);
+            if (today.getDayOfMonth() < s.getAutoStatementsDay()) return none(I18n.t("Not due until day ") + s.getAutoStatementsDay() + I18n.t(" of the month."), from, to);
+            if (s.getAutoStatementsThrough() != null && !s.getAutoStatementsThrough().isBefore(to)) return none(I18n.t("Last month's statements were already made."), from, to);
         }
         Actor system = system();
         List<String> notes = new ArrayList<>();
@@ -80,15 +81,15 @@ public class PmStatementAuto {
             List<Long> ids = new ArrayList<>();
             for (StatementRow row : made.statements()) {
                 StatementDto d = statements.get(system, row.id());
-                String why = d.statement().netPayable().signum() <= 0 ? (d.statement().netPayable().signum() == 0 ? "the owner would get nothing" : "the owner would owe money") : !d.warnings().isEmpty() ? d.warnings().get(0) : null;
-                if (why != null) { notes.add(row.code() + " (" + row.ownerName() + ") was left as a draft: " + why); continue; }
+                String why = d.statement().netPayable().signum() <= 0 ? (d.statement().netPayable().signum() == 0 ? I18n.t("the owner would get nothing") : I18n.t("the owner would owe money")) : !d.warnings().isEmpty() ? d.warnings().get(0) : null;
+                if (why != null) { notes.add(row.code() + " (" + row.ownerName() + I18n.t(") was left as a draft: ") + why); continue; }
                 statements.finalizeStatement(system, row.id());
                 ids.add(row.id());
                 agreed++;
             }
             if (!ids.isEmpty()) {
                 if (!mailService.isConfigured()) {
-                    notes.add("E-mail is not set up, so the " + ids.size() + " agreed statement(s) were not sent.");
+                    notes.add(I18n.t("E-mail is not set up, so the ") + ids.size() + I18n.t(" agreed statement(s) were not sent."));
                 } else {
                     EmailAllResult r = mail.emailAll(system, new EmailAllStatementsRequest(false, false, ids));
                     emailed = r.sent();
@@ -99,8 +100,8 @@ public class PmStatementAuto {
         s = settings.entity();
         s.setAutoStatementsThrough(to);
         settings.save(s);
-        String msg = made.created() == 0 ? "No statements were needed for " + from + " to " + to + "." : "Made " + made.created() + " statement(s) for " + from + " to " + to
-                + (send ? ", agreed " + agreed + " and e-mailed " + emailed : ", as drafts") + ".";
+        String msg = made.created() == 0 ? I18n.t("No statements were needed for ") + from + I18n.t(" to ") + to + "." : I18n.t("Made ") + made.created() + I18n.t(" statement(s) for ") + from + I18n.t(" to ") + to
+                + (send ? I18n.t(", agreed ") + agreed + I18n.t(" and e-mailed ") + emailed : I18n.t(", as drafts")) + ".";
         auditLogService.record("PM_STATEMENTS_AUTO", msg);
         return new AutoRunResult(true, msg, from, to, made.created(), agreed, emailed, notes);
     }

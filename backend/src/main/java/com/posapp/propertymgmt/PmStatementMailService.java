@@ -1,5 +1,6 @@
 package com.posapp.propertymgmt;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.EmailAttachment;
@@ -59,21 +60,21 @@ public class PmStatementMailService {
     @Transactional
     public StatementDto email(Actor a, Long id, EmailStatementRequest r) {
         access.on();
-        PmOwnerStatement st = repository.findById(id).orElseThrow(() -> ApiException.notFound("Statement not found"));
-        if (st.getStatus() == StatementStatus.DRAFT) throw ApiException.conflict("Agree the statement first. A draft can still change, so it is not sent to the owner.");
+        PmOwnerStatement st = repository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Statement not found")));
+        if (st.getStatus() == StatementStatus.DRAFT) throw ApiException.conflict(I18n.t("Agree the statement first. A draft can still change, so it is not sent to the owner."));
         StatementDto d = statements.get(a, id);
         String to = r == null || r.to() == null ? "" : r.to().trim();
         if (to.isEmpty() && d.ownerEmail() != null) to = d.ownerEmail().trim();
-        if (to.isEmpty()) throw ApiException.badRequest("The owner has no e-mail address. Type one in, or add it on the owner's page.");
-        if (!EMAIL.matcher(to).matches()) throw ApiException.badRequest("That e-mail address does not look right: " + to);
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (to.isEmpty()) throw ApiException.badRequest(I18n.t("The owner has no e-mail address. Type one in, or add it on the owner's page."));
+        if (!EMAIL.matcher(to).matches()) throw ApiException.badRequest(I18n.t("That e-mail address does not look right: ") + to);
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
         String message = r == null || r.message() == null ? "" : r.message().trim();
-        if (message.length() > 1000) throw ApiException.badRequest("The message is too long (at most 1000 characters).");
+        if (message.length() > 1000) throw ApiException.badRequest(I18n.t("The message is too long (at most 1000 characters)."));
 
         StatementRow row = d.statement();
         StoreSettings store = storeSettingsRepository.findAll().stream().findFirst().orElse(null);
-        String business = store != null && store.getBusinessName() != null && !store.getBusinessName().isBlank() ? store.getBusinessName() : "Your property manager";
-        String subject = "Owner statement " + row.code() + ", " + row.periodFrom() + " to " + row.periodTo() + " - " + business;
+        String business = store != null && store.getBusinessName() != null && !store.getBusinessName().isBlank() ? store.getBusinessName() : I18n.t("Your property manager");
+        String subject = I18n.t("Owner statement ") + row.code() + ", " + row.periodFrom() + I18n.t(" to ") + row.periodTo() + " - " + business;
         byte[] pdf = files.build(d, false);
         List<EmailAttachment> attachments = new ArrayList<>();
         attachments.add(new EmailAttachment(files.filename(row, false), "application/pdf", pdf));
@@ -97,7 +98,7 @@ public class PmStatementMailService {
      */
     public EmailAllResult emailAll(Actor a, EmailAllStatementsRequest r) {
         access.on();
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
         boolean includePaid = r != null && Boolean.TRUE.equals(r.includePaid());
         boolean resend = r != null && Boolean.TRUE.equals(r.resend());
         Set<Long> only = r == null || r.ids() == null ? null : new HashSet<>(r.ids());
@@ -112,7 +113,7 @@ public class PmStatementMailService {
             if (!resend && st.getEmailedAt() != null) { skipped++; continue; }
             PmOwner o = owners.get(st.getOwnerId());
             String who = st.getCode() + (o == null ? "" : " (" + o.getName() + ")");
-            if (o == null || o.getEmail() == null || o.getEmail().isBlank()) { skipped++; notes.add(who + ": the owner has no e-mail address."); continue; }
+            if (o == null || o.getEmail() == null || o.getEmail().isBlank()) { skipped++; notes.add(who + I18n.t(": the owner has no e-mail address.")); continue; }
             if (sent + failed >= MAX_BATCH) { left++; continue; }
             try {
                 email(a, st.getId(), null);
@@ -122,7 +123,7 @@ public class PmStatementMailService {
                 notes.add(who + ": " + ex.getMessage());
             }
         }
-        if (left > 0) notes.add(left + " more are waiting. Press the button again to send them.");
+        if (left > 0) notes.add(left + I18n.t(" more are waiting. Press the button again to send them."));
         auditLogService.record("PM_STATEMENTS_EMAILED", "E-mailed " + sent + " owner statement(s) in one go" + (failed > 0 ? ", " + failed + " failed" : ""));
         return new EmailAllResult(sent, skipped, failed, notes);
     }
@@ -130,22 +131,22 @@ public class PmStatementMailService {
     private static String html(String business, StatementDto d, String message) {
         StatementRow s = d.statement();
         StringBuilder b = new StringBuilder();
-        b.append("<p>Dear ").append(esc(s.ownerName())).append(",</p>");
+        b.append(I18n.t("<p>Dear ")).append(esc(s.ownerName())).append(",</p>");
         if (!message.isEmpty()) b.append("<p>").append(esc(message).replace("\n", "<br/>")).append("</p>");
-        b.append("<p>Here is your statement <strong>").append(esc(s.code())).append("</strong> for ").append(s.periodFrom()).append(" to ").append(s.periodTo()).append(" (PDF attached).</p>");
+        b.append(I18n.t("<p>Here is your statement <strong>")).append(esc(s.code())).append(I18n.t("</strong> for ")).append(s.periodFrom()).append(I18n.t(" to ")).append(s.periodTo()).append(I18n.t(" (PDF attached).</p>"));
         b.append("<table cellpadding=\"4\" style=\"border-collapse:collapse;\">");
-        row(b, "Rent collected", s.rentCollected().toPlainString(), false);
-        row(b, "Management fee", "- " + s.managementFee().toPlainString(), false);
-        if (s.vat().signum() != 0) row(b, "VAT on the fee", "- " + s.vat().toPlainString(), false);
-        row(b, "Repairs paid by you", "- " + s.repairs().toPlainString(), false);
-        if (s.adjustments().signum() != 0) row(b, "Adjustments", s.adjustments().toPlainString(), false);
-        row(b, s.netPayable().signum() >= 0 ? "Net payable to you" : "Net owed to us", s.netPayable().abs().toPlainString(), true);
+        row(b, I18n.t("Rent collected"), s.rentCollected().toPlainString(), false);
+        row(b, I18n.t("Management fee"), "- " + s.managementFee().toPlainString(), false);
+        if (s.vat().signum() != 0) row(b, I18n.t("VAT on the fee"), "- " + s.vat().toPlainString(), false);
+        row(b, I18n.t("Repairs paid by you"), "- " + s.repairs().toPlainString(), false);
+        if (s.adjustments().signum() != 0) row(b, I18n.t("Adjustments"), s.adjustments().toPlainString(), false);
+        row(b, s.netPayable().signum() >= 0 ? I18n.t("Net payable to you") : I18n.t("Net owed to us"), s.netPayable().abs().toPlainString(), true);
         b.append("</table>");
         if (s.status() == StatementStatus.PAID) {
-            b.append("<p>This has been paid").append(s.paidDate() == null ? "" : " on " + s.paidDate()).append(d.paidMethod() == null ? "" : " by " + esc(d.paidMethod()))
+            b.append(I18n.t("<p>This has been paid")).append(s.paidDate() == null ? "" : I18n.t(" on ") + s.paidDate()).append(d.paidMethod() == null ? "" : I18n.t(" by ") + esc(d.paidMethod()))
                     .append(d.paidReference() == null ? "" : " (reference " + esc(d.paidReference()) + ")").append(".</p>");
         }
-        b.append("<p>Regards,<br/>").append(esc(business)).append("</p>");
+        b.append(I18n.t("<p>Regards,<br/>")).append(esc(business)).append("</p>");
         return b.toString();
     }
 

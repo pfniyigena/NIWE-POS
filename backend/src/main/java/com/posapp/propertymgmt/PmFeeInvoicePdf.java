@@ -1,5 +1,6 @@
 package com.posapp.propertymgmt;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -28,7 +29,7 @@ import java.util.Locale;
 public class PmFeeInvoicePdf {
 
     private static String money(BigDecimal v) {
-        DecimalFormat f = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.US));
+        DecimalFormat f = new DecimalFormat("#,##0.00", I18n.symbols());
         return f.format(v == null ? BigDecimal.ZERO : v.setScale(2, RoundingMode.HALF_UP));
     }
 
@@ -59,19 +60,19 @@ public class PmFeeInvoicePdf {
                 if (!part.isEmpty()) { if (seller.length() > 0) seller.append(" - "); seller.append(part); }
             }
             if (seller.length() > 0) doc.add(new Paragraph(seller.toString(), small));
-            if (!nz(d.sellerTaxId()).isEmpty()) doc.add(new Paragraph("Tax ID: " + d.sellerTaxId(), small));
+            if (!nz(d.sellerTaxId()).isEmpty()) doc.add(new Paragraph(I18n.t("Tax ID: ") + d.sellerTaxId(), small));
             Paragraph sp = new Paragraph(" ", small);
             sp.setSpacingAfter(6);
             doc.add(sp);
 
-            Paragraph t = new Paragraph(d.taxInvoice() ? "TAX INVOICE" : "INVOICE", title);
+            Paragraph t = new Paragraph(d.taxInvoice() ? I18n.t("TAX INVOICE") : "INVOICE", title);
             t.setSpacingAfter(2);
             doc.add(t);
             Paragraph num = new Paragraph(d.invoice().number(), normal);
             num.setSpacingAfter(4);
             doc.add(num);
             if (d.invoice().status() == PmFeeInvoiceStatus.VOID) {
-                Paragraph v = new Paragraph("VOID - cancelled" + (nz(d.voidReason()).isEmpty() ? "" : ": " + d.voidReason()), red);
+                Paragraph v = new Paragraph(I18n.t("VOID - cancelled") + (nz(d.voidReason()).isEmpty() ? "" : ": " + d.voidReason()), red);
                 v.setSpacingAfter(6);
                 doc.add(v);
             }
@@ -79,16 +80,16 @@ public class PmFeeInvoicePdf {
             PdfPTable info = new PdfPTable(new float[]{1.2f, 3f, 1.2f, 2.4f});
             info.setWidthPercentage(100);
             info.setSpacingAfter(10);
-            info.addCell(cell("Bill to", bold, Element.ALIGN_LEFT, false));
-            info.addCell(cell(d.invoice().ownerName() + (nz(d.ownerAddress()).isEmpty() ? "" : "\n" + d.ownerAddress()) + (nz(d.invoice().ownerTaxNumber()).isEmpty() ? "" : "\nTax ID: " + d.invoice().ownerTaxNumber()), normal, Element.ALIGN_LEFT, false));
-            info.addCell(cell("Invoice date", bold, Element.ALIGN_LEFT, false));
-            info.addCell(cell(d.invoice().issueDate() + "\nFor " + d.invoice().periodFrom() + " to " + d.invoice().periodTo() + "\nStatement " + nz(d.invoice().statementCode()), normal, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Bill to"), bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(d.invoice().ownerName() + (nz(d.ownerAddress()).isEmpty() ? "" : "\n" + d.ownerAddress()) + (nz(d.invoice().ownerTaxNumber()).isEmpty() ? "" : I18n.t("\nTax ID: ") + d.invoice().ownerTaxNumber()), normal, Element.ALIGN_LEFT, false));
+            info.addCell(cell(I18n.t("Invoice date"), bold, Element.ALIGN_LEFT, false));
+            info.addCell(cell(d.invoice().issueDate() + I18n.t("\nFor ") + d.invoice().periodFrom() + " to " + d.invoice().periodTo() + I18n.t("\nStatement ") + nz(d.invoice().statementCode()), normal, Element.ALIGN_LEFT, false));
             doc.add(info);
 
             PdfPTable table = new PdfPTable(new float[]{3.6f, 1.5f, 0.8f, 1.4f, 1.2f, 1.5f});
             table.setWidthPercentage(100);
             table.setHeaderRows(1);
-            for (String h : new String[]{"Description", "Rent collected", "Rate", "Fee", "VAT", "Total"}) {
+            for (String h : new String[]{I18n.t("Description"), I18n.t("Rent collected"), I18n.t("Rate"), I18n.t("Fee"), "VAT", I18n.t("Total")}) {
                 PdfPCell c = cell(h, bold, h.equals("Description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT, true);
                 c.setBackgroundColor(new java.awt.Color(235, 235, 235));
                 table.addCell(c);
@@ -104,7 +105,7 @@ public class PmFeeInvoicePdf {
             doc.add(table);
 
             String suffix = currency.isEmpty() ? "" : " " + currency;
-            Paragraph sub = new Paragraph("Fee (before VAT): " + money(d.invoice().netAmount()) + suffix, bold);
+            Paragraph sub = new Paragraph(I18n.t("Fee (before VAT): ") + money(d.invoice().netAmount()) + suffix, bold);
             sub.setAlignment(Element.ALIGN_RIGHT);
             sub.setSpacingBefore(10);
             doc.add(sub);
@@ -113,18 +114,18 @@ public class PmFeeInvoicePdf {
                 vat.setAlignment(Element.ALIGN_RIGHT);
                 doc.add(vat);
             }
-            Paragraph total = new Paragraph("Total: " + money(d.invoice().totalAmount()) + suffix, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13));
+            Paragraph total = new Paragraph(I18n.t("Total: ") + money(d.invoice().totalAmount()) + suffix, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13));
             total.setAlignment(Element.ALIGN_RIGHT);
             total.setSpacingAfter(12);
             doc.add(total);
 
-            Paragraph how = new Paragraph("Settled by deduction from the rent collected for you, as shown on owner statement " + nz(d.invoice().statementCode()) + ". Nothing further is payable on this invoice.", small);
+            Paragraph how = new Paragraph(I18n.t("Settled by deduction from the rent collected for you, as shown on owner statement ") + nz(d.invoice().statementCode()) + I18n.t(". Nothing further is payable on this invoice."), small);
             how.setSpacingAfter(6);
             doc.add(how);
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the fee invoice PDF", e);
+            throw new IllegalStateException(I18n.t("Failed to build the fee invoice PDF"), e);
         }
     }
 }

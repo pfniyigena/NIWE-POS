@@ -1,5 +1,6 @@
 package com.posapp.accounting;
 
+import com.posapp.i18n.I18n;
 import com.posapp.accounting.dto.ExpenseDto;
 import com.posapp.accounting.dto.ExpenseExtras.EventDto;
 import com.posapp.accounting.dto.ExpenseExtras.PayRequest;
@@ -168,7 +169,7 @@ public class ExpenseService {
         getEntityOrThrow(id);
         return paymentRepository.findByExpenseIdOrderByPaidOnAscIdAsc(id).stream().map(p -> new PaymentDto(p.getId(), p.getAmount(), p.getPaidOn(),
                 p.getPaidFromAccount() != null ? p.getPaidFromAccount().getId() : null,
-                p.getPaidFromAccount() != null ? p.getPaidFromAccount().getName() : "Cash",
+                p.getPaidFromAccount() != null ? p.getPaidFromAccount().getName() : I18n.t("Cash"),
                 p.getNote(), p.getCreatedByName(), p.getCreatedAt())).toList();
     }
 
@@ -231,7 +232,7 @@ public class ExpenseService {
     public ExpenseDto update(Long id, ExpenseRequest request) {
         Expense expense = getEntityOrThrow(id);
         if (expense.getStatus() != ExpenseStatus.PENDING) {
-            throw ApiException.badRequest("Only a pending expense can be edited — this one is " + expense.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a pending expense can be edited — this one is ") + expense.getStatus());
         }
         Account account = resolveExpenseAccount(request.getAccountId());
         BigDecimal before = expense.getAmount();
@@ -248,7 +249,7 @@ public class ExpenseService {
         Expense expense = getEntityOrThrow(id);
         branchAccessService.assertCanAccess(expense.getBranchId());
         if (expense.getStatus() != ExpenseStatus.PENDING && expense.getStatus() != ExpenseStatus.REJECTED) {
-            throw ApiException.badRequest("Only a pending or rejected expense can be deleted. This one is " + expense.getStatus() + ". An approved expense can be voided instead.");
+            throw ApiException.badRequest(I18n.t("Only a pending or rejected expense can be deleted. This one is ") + expense.getStatus() + I18n.t(". An approved expense can be voided instead."));
         }
         attachmentRepository.deleteByExpenseId(id);
         eventRepository.deleteByExpenseId(id);
@@ -272,15 +273,15 @@ public class ExpenseService {
         Expense expense = getEntityOrThrow(id);
         branchAccessService.assertCanAccess(expense.getBranchId());
         if (expense.getStatus() != ExpenseStatus.PENDING) {
-            throw ApiException.badRequest("Only a pending expense can be approved — this one is " + expense.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a pending expense can be approved — this one is ") + expense.getStatus());
         }
         Actor who = actor();
         ExpenseSettings s = settingsService.entity();
         assertNotSelf(expense, who, s, "approve");
         BigDecimal limit = s.getApprovalLimit() != null ? s.getApprovalLimit() : BigDecimal.ZERO;
         if (limit.signum() > 0 && expense.getAmount().compareTo(limit) > 0 && !who.largeApprover()) {
-            throw ApiException.forbidden("This expense is above the approval limit of " + limit.stripTrailingZeros().toPlainString()
-                    + ". An administrator or someone allowed to approve large expenses must approve it.");
+            throw ApiException.forbidden(I18n.t("This expense is above the approval limit of ") + limit.stripTrailingZeros().toPlainString()
+                    + I18n.t(". An administrator or someone allowed to approve large expenses must approve it."));
         }
         String warning = budgetService.warningFor(expense);
         boolean overBudgetOverride = false;
@@ -288,7 +289,7 @@ public class ExpenseService {
             if (overrideBudget && who.admin()) {
                 overBudgetOverride = true;
             } else {
-                throw ApiException.badRequest(warning + (who.admin() ? " Approve with the budget override to go ahead." : " Ask an administrator to approve it."));
+                throw ApiException.badRequest(warning + (who.admin() ? I18n.t(" Approve with the budget override to go ahead.") : I18n.t(" Ask an administrator to approve it.")));
             }
         }
         expense.setStatus(ExpenseStatus.APPROVED);
@@ -314,7 +315,7 @@ public class ExpenseService {
         Expense expense = getEntityOrThrow(id);
         branchAccessService.assertCanAccess(expense.getBranchId());
         if (expense.getStatus() != ExpenseStatus.PENDING) {
-            throw ApiException.badRequest("Only a pending expense can be rejected — this one is " + expense.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a pending expense can be rejected — this one is ") + expense.getStatus());
         }
         Actor who = actor();
         assertNotSelf(expense, who, settingsService.entity(), "reject");
@@ -337,10 +338,10 @@ public class ExpenseService {
         Expense expense = getEntityOrThrow(id);
         branchAccessService.assertCanAccess(expense.getBranchId());
         if (expense.getStatus() != ExpenseStatus.APPROVED) {
-            throw ApiException.badRequest("Only an approved expense can be voided — this one is " + expense.getStatus());
+            throw ApiException.badRequest(I18n.t("Only an approved expense can be voided — this one is ") + expense.getStatus());
         }
         if (expense.getSettledAt() != null || (!expense.isPaid() && expense.getAmountPaid().signum() > 0)) {
-            throw ApiException.badRequest("A payment has already been made on this bill — correct it with a fresh adjusting journal entry instead");
+            throw ApiException.badRequest(I18n.t("A payment has already been made on this bill — correct it with a fresh adjusting journal entry instead"));
         }
         Actor who = actor();
         assertNotSelf(expense, who, settingsService.entity(), "void");
@@ -360,7 +361,7 @@ public class ExpenseService {
     public ExpenseDto settle(Long id, LocalDate settledDate) {
         Expense expense = getEntityOrThrow(id);
         if (expense.getStatus() == ExpenseStatus.APPROVED && !expense.isPaid() && expense.getSettledAt() != null) {
-            throw ApiException.badRequest("This bill was already settled");
+            throw ApiException.badRequest(I18n.t("This bill was already settled"));
         }
         PayRequest r = new PayRequest();
         r.setAmount(expense.getAmount().subtract(expense.getAmountPaid()));
@@ -375,23 +376,23 @@ public class ExpenseService {
         Expense expense = getEntityOrThrow(id);
         branchAccessService.assertCanAccess(expense.getBranchId());
         if (expense.getStatus() != ExpenseStatus.APPROVED) {
-            throw ApiException.badRequest("Only an approved expense can be paid — this one is " + expense.getStatus());
+            throw ApiException.badRequest(I18n.t("Only an approved expense can be paid — this one is ") + expense.getStatus());
         }
         if (expense.isPaid()) {
-            throw ApiException.badRequest("This expense already posted as paid — there is no outstanding bill to pay");
+            throw ApiException.badRequest(I18n.t("This expense already posted as paid — there is no outstanding bill to pay"));
         }
         BigDecimal balance = expense.getAmount().subtract(expense.getAmountPaid());
         if (balance.signum() <= 0 || expense.getSettledAt() != null) {
-            throw ApiException.badRequest("This bill is already fully paid");
+            throw ApiException.badRequest(I18n.t("This bill is already fully paid"));
         }
         BigDecimal amount = r.getAmount() != null ? r.getAmount() : balance;
-        if (amount.signum() <= 0) throw ApiException.badRequest("The payment must be more than zero.");
+        if (amount.signum() <= 0) throw ApiException.badRequest(I18n.t("The payment must be more than zero."));
         if (amount.compareTo(balance) > 0) {
-            throw ApiException.badRequest("The payment is more than the " + balance.stripTrailingZeros().toPlainString() + " still owed on this bill.");
+            throw ApiException.badRequest(I18n.t("The payment is more than the ") + balance.stripTrailingZeros().toPlainString() + I18n.t(" still owed on this bill."));
         }
         LocalDate date = r.getPaidOn() != null ? r.getPaidOn() : LocalDate.now();
         if (date.isBefore(expense.getExpenseDate())) {
-            throw ApiException.badRequest("A payment cannot be dated before the bill.");
+            throw ApiException.badRequest(I18n.t("A payment cannot be dated before the bill."));
         }
         Account from = r.getPaidFromAccountId() != null ? resolvePaymentAccount(r.getPaidFromAccountId()) : null;
         Actor who = actor();
@@ -419,7 +420,7 @@ public class ExpenseService {
 
     private void assertNotSelf(Expense e, Actor who, ExpenseSettings s, String verb) {
         if (s.isBlockSelfApproval() && who.id() != null && who.id().equals(e.getCreatedByUserId())) {
-            throw ApiException.forbidden("You entered this expense yourself, so someone else has to " + verb + " it.");
+            throw ApiException.forbidden(I18n.t("You entered this expense yourself, so someone else has to ") + verb + " it.");
         }
     }
 
@@ -440,30 +441,30 @@ public class ExpenseService {
 
     private Account resolveExpenseAccount(Long accountId) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> ApiException.notFound("Account not found: " + accountId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Account not found: ") + accountId));
         if (account.getType() != AccountType.EXPENSE) {
-            throw ApiException.badRequest("'" + account.getName() + "' is not an Expense account — pick an Expense-type category");
+            throw ApiException.badRequest("'" + account.getName() + I18n.t("' is not an Expense account — pick an Expense-type category"));
         }
         return account;
     }
 
     private Account resolvePaymentAccount(Long accountId) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> ApiException.notFound("Account not found: " + accountId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Account not found: ") + accountId));
         if (!isPaymentAccount(account)) {
-            throw ApiException.badRequest("'" + account.getName() + "' cannot be used to pay from. Choose Cash, a bank or a mobile money account.");
+            throw ApiException.badRequest("'" + account.getName() + I18n.t("' cannot be used to pay from. Choose Cash, a bank or a mobile money account."));
         }
         return account;
     }
 
     private void applyRequest(Expense expense, ExpenseRequest request, Account account) {
         BigDecimal tax = request.getTaxAmount() != null ? request.getTaxAmount() : BigDecimal.ZERO;
-        if (tax.signum() < 0) throw ApiException.badRequest("The VAT amount cannot be negative.");
+        if (tax.signum() < 0) throw ApiException.badRequest(I18n.t("The VAT amount cannot be negative."));
         if (tax.signum() > 0 && tax.compareTo(request.getAmount()) >= 0) {
-            throw ApiException.badRequest("The VAT amount must be less than the total amount (the total includes the VAT).");
+            throw ApiException.badRequest(I18n.t("The VAT amount must be less than the total amount (the total includes the VAT)."));
         }
         if (request.getDueDate() != null && request.getDueDate().isBefore(request.getExpenseDate())) {
-            throw ApiException.badRequest("The due date cannot be before the expense date.");
+            throw ApiException.badRequest(I18n.t("The due date cannot be before the expense date."));
         }
         Account from = request.getPaidFromAccountId() != null ? resolvePaymentAccount(request.getPaidFromAccountId()) : null;
         expense.setExpenseDate(request.getExpenseDate());
@@ -493,6 +494,6 @@ public class ExpenseService {
 
     Expense getEntityOrThrow(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Expense not found: " + id));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Expense not found: ") + id));
     }
 }

@@ -1,4 +1,5 @@
 package com.posapp.inventory;
+import com.posapp.i18n.I18n;
 import com.posapp.common.Qty;
 import java.math.BigDecimal;
 
@@ -113,7 +114,7 @@ public class StockAutomationService {
                 entries.add(e);
             }
             if (entries.isEmpty()) {
-                message.append("No new products to reorder. ");
+                message.append(I18n.t("No new products to reorder. "));
             } else {
                 ReorderRequisitionRequest request = new ReorderRequisitionRequest();
                 request.setNotes("Created automatically by the daily reorder job");
@@ -121,7 +122,7 @@ public class StockAutomationService {
                 PurchaseRequisitionDto created = reorderService.createRequisition(request);
                 requisitionNumber = created.requisitionNumber();
                 requisitionLines = entries.size();
-                message.append("Drafted requisition ").append(requisitionNumber).append(" with ").append(requisitionLines).append(" line(s). ");
+                message.append(I18n.t("Drafted requisition ")).append(requisitionNumber).append(" with ").append(requisitionLines).append(" line(s). ");
             }
         }
 
@@ -129,14 +130,14 @@ public class StockAutomationService {
         boolean digestSent = false;
         if (wantDigest) {
             if (lowStock.isEmpty() && reorder.isEmpty()) {
-                message.append("Nothing is low, so no digest was sent.");
+                message.append(I18n.t("Nothing is low, so no digest was sent."));
             } else {
                 digestSent = sendDigest(settings, lowStock, reorder, requisitionNumber, requisitionLines);
-                message.append(digestSent ? "Digest emailed." : "Digest not sent (no notifications email or SMTP not configured).");
+                message.append(digestSent ? I18n.t("Digest emailed.") : I18n.t("Digest not sent (no notifications email or SMTP not configured)."));
             }
         }
         if (!wantRequisition && !wantDigest) {
-            message.append("Both daily stock jobs are switched off in Inventory settings.");
+            message.append(I18n.t("Both daily stock jobs are switched off in Inventory settings."));
         }
         return new RunResult(wantRequisition, requisitionNumber, requisitionLines, wantDigest, digestSent,
                 lowStock.size(), reorder.size(), message.toString().trim());
@@ -148,25 +149,25 @@ public class StockAutomationService {
         if (to == null || to.isBlank() || !mailService.isConfigured()) {
             return false;
         }
-        StringBuilder html = new StringBuilder("<p>Daily stock digest for ")
+        StringBuilder html = new StringBuilder(I18n.t("<p>Daily stock digest for "))
                 .append(escape(settings.getBusinessName())).append(".</p>");
         if (requisitionNumber != null) {
-            html.append("<p>A draft purchase requisition <b>").append(escape(requisitionNumber)).append("</b> with ")
-                    .append(requisitionLines).append(" line(s) was created for review.</p>");
+            html.append(I18n.t("<p>A draft purchase requisition <b>")).append(escape(requisitionNumber)).append("</b> with ")
+                    .append(requisitionLines).append(I18n.t(" line(s) was created for review.</p>"));
         }
         if (!lowStock.isEmpty()) {
-            html.append("<h3>Below the low-stock threshold (").append(lowStock.size()).append(")</h3>")
-                    .append(table(List.of("SKU", "Product", "On hand"), lowStock.stream()
+            html.append(I18n.t("<h3>Below the low-stock threshold (")).append(lowStock.size()).append(")</h3>")
+                    .append(table(List.of("SKU", I18n.t("Product"), I18n.t("On hand")), lowStock.stream()
                             .map(p -> List.of(nz(p.sku()), nz(p.name()), String.valueOf(p.stockQuantity()))).toList()));
         }
         if (!reorder.isEmpty()) {
-            html.append("<h3>At or below reorder level (").append(reorder.size()).append(")</h3>")
-                    .append(table(List.of("SKU", "Product", "Sellable", "On order", "Reorder level", "Suggested qty"), reorder.stream()
+            html.append(I18n.t("<h3>At or below reorder level (")).append(reorder.size()).append(")</h3>")
+                    .append(table(List.of("SKU", I18n.t("Product"), I18n.t("Sellable"), I18n.t("On order"), I18n.t("Reorder level"), I18n.t("Suggested qty")), reorder.stream()
                             .map(r -> List.of(nz(r.sku()), nz(r.productName()), String.valueOf(r.onHand()), String.valueOf(r.onOrder()),
                                     String.valueOf(r.reorderLevel()), String.valueOf(r.suggestedQuantity()))).toList()));
         }
         try {
-            mailService.send(to.trim(), "Daily stock digest: " + lowStock.size() + " low, " + reorder.size() + " to reorder", html.toString(), List.of());
+            mailService.send(to.trim(), I18n.t("Daily stock digest: ") + lowStock.size() + " low, " + reorder.size() + I18n.t(" to reorder"), html.toString(), List.of());
             return true;
         } catch (Exception ex) {
             log.warn("Could not send the stock digest: {}", ex.getMessage());

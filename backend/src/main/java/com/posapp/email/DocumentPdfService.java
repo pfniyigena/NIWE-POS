@@ -1,4 +1,5 @@
 package com.posapp.email;
+import com.posapp.i18n.I18n;
 import com.posapp.common.Qty;
 
 import com.lowagie.text.Document;
@@ -62,7 +63,6 @@ import java.util.List;
 @Service
 public class DocumentPdfService {
 
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("d MMM yyyy");
 
     /**
      * Fourier: "Add print A4 on Quotation and Label it as proforma" — headed "Proforma Invoice"
@@ -79,12 +79,12 @@ public class DocumentPdfService {
 
     /** Same, with the document's branch header printed under the business details (null = none). */
     public byte[] quotationPdf(QuotationDto q, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Proforma Invoice", q.quoteNumber(), settings, branch, doc -> {
+        return build(I18n.t("Proforma Invoice"), q.quoteNumber(), settings, branch, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Customer", q.customerName() != null ? q.customerName() : "—"},
-                    new String[]{"Quote date", q.quoteDate() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(q.quoteDate()) : "—"},
-                    new String[]{"Valid until", q.validUntil() != null ? DATE_FMT.format(q.validUntil()) : "—"},
-                    new String[]{"Status", q.status()}
+                    new String[]{I18n.t("Customer"), q.customerName() != null ? q.customerName() : "—"},
+                    new String[]{I18n.t("Quote date"), q.quoteDate() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(q.quoteDate()) : "—"},
+                    new String[]{I18n.t("Valid until"), q.validUntil() != null ? I18n.shortDay().format(q.validUntil()) : "—"},
+                    new String[]{I18n.t("Status"), q.status()}
             ));
             // Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill,
             // Refund)" — each line now shows its own taxTotal alongside the existing columns.
@@ -121,15 +121,15 @@ public class DocumentPdfService {
 
     /** Same, with the document's branch header printed under the business details (null = none). */
     public byte[] invoicePdf(InvoiceDto inv, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Invoice", inv.invoiceNumber(), settings, branch, doc -> {
+        return build(I18n.t("Invoice"), inv.invoiceNumber(), settings, branch, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Bill to", inv.customerName() != null ? inv.customerName() : "—"},
-                    new String[]{"Sale order", inv.salesOrderNumber() != null ? inv.salesOrderNumber() : "—"},
-                    new String[]{"Invoice date", inv.invoiceDate() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(inv.invoiceDate()) : "—"},
-                    new String[]{"Due date", inv.dueDate() != null ? DATE_FMT.format(inv.dueDate()) : "—"},
-                    new String[]{"Status", inv.status()},
+                    new String[]{I18n.t("Bill to"), inv.customerName() != null ? inv.customerName() : "—"},
+                    new String[]{I18n.t("Sale order"), inv.salesOrderNumber() != null ? inv.salesOrderNumber() : "—"},
+                    new String[]{I18n.t("Invoice date"), inv.invoiceDate() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(inv.invoiceDate()) : "—"},
+                    new String[]{I18n.t("Due date"), inv.dueDate() != null ? I18n.shortDay().format(inv.dueDate()) : "—"},
+                    new String[]{I18n.t("Status"), inv.status()},
                     // Fourier: "Add payment status on printout of bill and Invoice".
-                    new String[]{"Payment status", paymentStatusLabel(inv.status(), inv.amountPaid(), inv.amountOutstanding())}
+                    new String[]{I18n.t("Payment status"), paymentStatusLabel(inv.status(), inv.amountPaid(), inv.amountOutstanding())}
             ));
             // Fourier: "On Invoice Line add product description text" — shown as a second line
             // under the product name within the same "Item" cell, same \n-within-a-Paragraph
@@ -170,16 +170,16 @@ public class DocumentPdfService {
 
     /** Same, with the sale order's branch header printed under the business details (null = none). */
     public byte[] salesOrderPdf(SalesOrderDto so, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Sale Order", so.orderNumber(), settings, branch, doc -> {
+        return build(I18n.t("Sale Order"), so.orderNumber(), settings, branch, doc -> {
             List<String[]> infoRows = new java.util.ArrayList<>(List.of(
-                    new String[]{"Customer", so.customerName() != null ? so.customerName() : "—"},
-                    new String[]{"Order date", so.orderDate() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(so.orderDate()) : "—"},
-                    new String[]{"Due date", so.dueDate() != null ? DATE_FMT.format(so.dueDate()) : "—"},
-                    new String[]{"Status", so.status()}
+                    new String[]{I18n.t("Customer"), so.customerName() != null ? so.customerName() : "—"},
+                    new String[]{I18n.t("Order date"), so.orderDate() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(so.orderDate()) : "—"},
+                    new String[]{I18n.t("Due date"), so.dueDate() != null ? I18n.shortDay().format(so.dueDate()) : "—"},
+                    new String[]{I18n.t("Status"), so.status()}
             ));
             // Multi-warehouse: shown only once something was actually fulfilled from a named location.
             if (so.fulfilledFrom() != null && !so.fulfilledFrom().isEmpty()) {
-                infoRows.add(new String[]{"Fulfilled from", String.join(", ", so.fulfilledFrom())});
+                infoRows.add(new String[]{I18n.t("Fulfilled from"), String.join(", ", so.fulfilledFrom())});
             }
             addInfoTable(doc, infoRows);
             // Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill,
@@ -234,13 +234,13 @@ public class DocumentPdfService {
 
     /** Same, with the document's branch header printed under the business details (null = none). */
     public byte[] creditNotePdf(InvoiceDto inv, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Credit Note", inv.creditNoteNumber(), settings, branch, doc -> {
+        return build(I18n.t("Credit Note"), inv.creditNoteNumber(), settings, branch, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Customer", inv.customerName() != null ? inv.customerName() : "—"},
-                    new String[]{"Original invoice", inv.invoiceNumber()},
-                    new String[]{"Sale order", inv.salesOrderNumber() != null ? inv.salesOrderNumber() : "—"},
-                    new String[]{"Voided on", inv.voidedAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(inv.voidedAt()) : "—"},
-                    new String[]{"Reason", inv.voidReason() != null && !inv.voidReason().isBlank() ? inv.voidReason() : "—"}
+                    new String[]{I18n.t("Customer"), inv.customerName() != null ? inv.customerName() : "—"},
+                    new String[]{I18n.t("Original invoice"), inv.invoiceNumber()},
+                    new String[]{I18n.t("Sale order"), inv.salesOrderNumber() != null ? inv.salesOrderNumber() : "—"},
+                    new String[]{I18n.t("Voided on"), inv.voidedAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(inv.voidedAt()) : "—"},
+                    new String[]{I18n.t("Reason"), inv.voidReason() != null && !inv.voidReason().isBlank() ? inv.voidReason() : "—"}
             ));
             // Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill,
             // Refund)" — each line now shows its own taxTotal alongside the existing columns.
@@ -285,14 +285,14 @@ public class DocumentPdfService {
 
     /** Same, with the document's branch header printed under the business details (null = none). */
     public byte[] billPdf(BillDto bill, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Bill", bill.billNumber(), settings, branch, doc -> {
+        return build(I18n.t("Bill"), bill.billNumber(), settings, branch, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Supplier", bill.supplierName() != null ? bill.supplierName() : "—"},
-                    new String[]{"Purchase order", bill.purchaseOrderNumber() != null ? bill.purchaseOrderNumber() : "—"},
-                    new String[]{"Bill date", bill.billDate() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(bill.billDate()) : "—"},
-                    new String[]{"Status", bill.status()},
+                    new String[]{I18n.t("Supplier"), bill.supplierName() != null ? bill.supplierName() : "—"},
+                    new String[]{I18n.t("Purchase order"), bill.purchaseOrderNumber() != null ? bill.purchaseOrderNumber() : "—"},
+                    new String[]{I18n.t("Bill date"), bill.billDate() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(bill.billDate()) : "—"},
+                    new String[]{I18n.t("Status"), bill.status()},
                     // Fourier: "Add payment status on printout of bill and Invoice".
-                    new String[]{"Payment status", paymentStatusLabel(bill.status(), bill.amountPaid(), bill.amountOutstanding())}
+                    new String[]{I18n.t("Payment status"), paymentStatusLabel(bill.status(), bill.amountPaid(), bill.amountOutstanding())}
             ));
             // Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill,
             // Refund)" — each line now shows its own taxTotal alongside the existing columns.
@@ -334,12 +334,12 @@ public class DocumentPdfService {
         BigDecimal outstanding = amountOutstanding == null ? BigDecimal.ZERO : amountOutstanding;
         BigDecimal paid = amountPaid == null ? BigDecimal.ZERO : amountPaid;
         if (outstanding.compareTo(BigDecimal.ZERO) <= 0) {
-            return "Paid";
+            return I18n.t("Paid");
         }
         if (paid.compareTo(BigDecimal.ZERO) > 0) {
-            return "Partially paid (outstanding " + money(outstanding) + ")";
+            return I18n.t("Partially paid (outstanding ") + money(outstanding) + ")";
         }
-        return "Unpaid";
+        return I18n.t("Unpaid");
     }
 
     /**
@@ -355,13 +355,13 @@ public class DocumentPdfService {
 
     /** Same, with the document's branch header printed under the business details (null = none). */
     public byte[] refundPdf(BillDto bill, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Refund", bill.refundNumber(), settings, branch, doc -> {
+        return build(I18n.t("Refund"), bill.refundNumber(), settings, branch, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Supplier", bill.supplierName() != null ? bill.supplierName() : "—"},
-                    new String[]{"Original bill", bill.billNumber()},
-                    new String[]{"Purchase order", bill.purchaseOrderNumber() != null ? bill.purchaseOrderNumber() : "—"},
-                    new String[]{"Voided on", bill.voidedAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(bill.voidedAt()) : "—"},
-                    new String[]{"Reason", bill.voidReason() != null && !bill.voidReason().isBlank() ? bill.voidReason() : "—"}
+                    new String[]{I18n.t("Supplier"), bill.supplierName() != null ? bill.supplierName() : "—"},
+                    new String[]{I18n.t("Original bill"), bill.billNumber()},
+                    new String[]{I18n.t("Purchase order"), bill.purchaseOrderNumber() != null ? bill.purchaseOrderNumber() : "—"},
+                    new String[]{I18n.t("Voided on"), bill.voidedAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(bill.voidedAt()) : "—"},
+                    new String[]{I18n.t("Reason"), bill.voidReason() != null && !bill.voidReason().isBlank() ? bill.voidReason() : "—"}
             ));
             // Fourier: "Show also tax on line (Quotation, Invoice, Credit Note, Sale Order, Bill,
             // Refund)" — each line now shows its own taxTotal alongside the existing columns.
@@ -396,12 +396,12 @@ public class DocumentPdfService {
 
     /** Same, with the sale's branch header printed under the business details (null = none). */
     public byte[] receiptPdf(OrderDto o, StoreSettings settings, BranchReceiptInfo branch) {
-        return build("Receipt", o.invoiceNumber(), settings, branch, doc -> {
+        return build(I18n.t("Receipt"), o.invoiceNumber(), settings, branch, doc -> {
             List<String[]> info = new java.util.ArrayList<>();
-            info.add(new String[]{"Customer", o.customerName() != null ? o.customerName() : "—"});
-            if (o.customerTaxId() != null) info.add(new String[]{"Customer tax ID", o.customerTaxId()});
-            info.add(new String[]{"Date", o.completedAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(o.completedAt()) : "—"});
-            info.add(new String[]{"Served by", o.cashierName() != null ? o.cashierName() : "—"});
+            info.add(new String[]{I18n.t("Customer"), o.customerName() != null ? o.customerName() : "—"});
+            if (o.customerTaxId() != null) info.add(new String[]{I18n.t("Customer tax ID"), o.customerTaxId()});
+            info.add(new String[]{I18n.t("Date"), o.completedAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(o.completedAt()) : "—"});
+            info.add(new String[]{I18n.t("Served by"), o.cashierName() != null ? o.cashierName() : "—"});
             addInfoTable(doc, info);
             List<String[]> rows = o.lines().stream()
                     .map((OrderLineDto l) -> new String[]{l.description(), Qty.str(l.quantity()), money(l.unitPrice()), money(l.lineTotal())})
@@ -433,21 +433,21 @@ public class DocumentPdfService {
      * CustomerPaymentDto}'s own class javadoc for why.
      */
     public byte[] paymentReceiptPdf(CustomerPaymentDto payment, StoreSettings settings) {
-        return build("Payment Receipt", payment.receiptNumber(), settings, doc -> {
+        return build(I18n.t("Payment Receipt"), payment.receiptNumber(), settings, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Customer", payment.customerName() != null ? payment.customerName() : "—"},
-                    new String[]{"Date", payment.paidAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(payment.paidAt()) : "—"},
-                    new String[]{"Method", payment.method() != null && !payment.method().isBlank() ? payment.method() : "—"},
-                    new String[]{"Recorded by", payment.recordedByName() != null ? payment.recordedByName() : "—"}
+                    new String[]{I18n.t("Customer"), payment.customerName() != null ? payment.customerName() : "—"},
+                    new String[]{I18n.t("Date"), payment.paidAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(payment.paidAt()) : "—"},
+                    new String[]{I18n.t("Method"), payment.method() != null && !payment.method().isBlank() ? payment.method() : "—"},
+                    new String[]{I18n.t("Recorded by"), payment.recordedByName() != null ? payment.recordedByName() : "—"}
             ));
             if (payment.allocations() != null && !payment.allocations().isEmpty()) {
                 List<String[]> rows = payment.allocations().stream()
                         .map(a -> new String[]{a.invoiceNumber() != null ? a.invoiceNumber() : "—", money(a.amountApplied())})
                         .toList();
-                addTable(doc, List.of("Applied to", "Amount"), rows, new float[]{2, 1}, 1);
+                addTable(doc, List.of(I18n.t("Applied to"), I18n.t("Amount")), rows, new float[]{2, 1}, 1);
             }
-            addAmountLine(doc, "Amount paid", payment.amount(), true);
-            addAmountLine(doc, "Customer balance", payment.customerBalanceAfter(), false);
+            addAmountLine(doc, I18n.t("Amount paid"), payment.amount(), true);
+            addAmountLine(doc, I18n.t("Customer balance"), payment.customerBalanceAfter(), false);
             if (payment.note() != null && !payment.note().isBlank()) {
                 addNotes(doc, payment.note());
             }
@@ -463,12 +463,12 @@ public class DocumentPdfService {
      * existed.
      */
     public byte[] supplierPaymentReceiptPdf(SupplierPaymentDto payment, StoreSettings settings) {
-        return build("Payment Receipt", payment.receiptNumber(), settings, doc -> {
+        return build(I18n.t("Payment Receipt"), payment.receiptNumber(), settings, doc -> {
             addInfoTable(doc, List.of(
-                    new String[]{"Supplier", payment.supplierName() != null ? payment.supplierName() : "—"},
-                    new String[]{"Date", payment.paidAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(payment.paidAt()) : "—"},
-                    new String[]{"Method", payment.method() != null && !payment.method().isBlank() ? payment.method() : "—"},
-                    new String[]{"Recorded by", payment.recordedByName() != null ? payment.recordedByName() : "—"}
+                    new String[]{I18n.t("Supplier"), payment.supplierName() != null ? payment.supplierName() : "—"},
+                    new String[]{I18n.t("Date"), payment.paidAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(payment.paidAt()) : "—"},
+                    new String[]{I18n.t("Method"), payment.method() != null && !payment.method().isBlank() ? payment.method() : "—"},
+                    new String[]{I18n.t("Recorded by"), payment.recordedByName() != null ? payment.recordedByName() : "—"}
             ));
             if (payment.allocations() != null && !payment.allocations().isEmpty()) {
                 List<String[]> rows = payment.allocations().stream()
@@ -477,10 +477,10 @@ public class DocumentPdfService {
                                 money(a.amountApplied())
                         })
                         .toList();
-                addTable(doc, List.of("Applied to", "Amount"), rows, new float[]{2, 1}, 1);
+                addTable(doc, List.of(I18n.t("Applied to"), I18n.t("Amount")), rows, new float[]{2, 1}, 1);
             }
-            addAmountLine(doc, "Amount paid", payment.amount(), true);
-            addAmountLine(doc, "Supplier balance", payment.supplierBalanceAfter(), false);
+            addAmountLine(doc, I18n.t("Amount paid"), payment.amount(), true);
+            addAmountLine(doc, I18n.t("Supplier balance"), payment.supplierBalanceAfter(), false);
             if (payment.note() != null && !payment.note().isBlank()) {
                 addNotes(doc, payment.note());
             }
@@ -494,31 +494,31 @@ public class DocumentPdfService {
      * "document number" of its own, so its id stands in for one here — display-only, never stored.
      */
     public byte[] subscriptionPdf(SubscriptionDto subscription, List<InvoiceDto> billingHistory, StoreSettings settings) {
-        return build("Subscription", "Subscription #" + subscription.id(), settings, doc -> {
+        return build(I18n.t("Subscription"), I18n.t("Subscription #") + subscription.id(), settings, doc -> {
             List<String[]> info = new java.util.ArrayList<>(List.of(
-                    new String[]{"Customer", subscription.customerName() != null ? subscription.customerName() : "—"},
-                    new String[]{"Plan", subscription.planName() != null ? subscription.planName() : "—"},
-                    new String[]{"Price", money(subscription.price())},
-                    new String[]{"Billing interval", subscription.billingInterval() != null ? subscription.billingInterval().name() : "—"},
+                    new String[]{I18n.t("Customer"), subscription.customerName() != null ? subscription.customerName() : "—"},
+                    new String[]{I18n.t("Plan"), subscription.planName() != null ? subscription.planName() : "—"},
+                    new String[]{I18n.t("Price"), money(subscription.price())},
+                    new String[]{I18n.t("Billing interval"), subscription.billingInterval() != null ? subscription.billingInterval().name() : "—"},
                     // Fourier: "may be some subscription will be paid after service other will be prepaid"
-                    new String[]{"Billing timing", subscription.billInAdvance() ? "Prepaid" : "Paid after service"},
-                    new String[]{"Status", subscription.status() != null ? subscription.status().name() : "—"},
-                    new String[]{"Start date", subscription.startDate() != null ? DATE_FMT.format(subscription.startDate()) : "—"}
+                    new String[]{I18n.t("Billing timing"), subscription.billInAdvance() ? I18n.t("Prepaid") : I18n.t("Paid after service")},
+                    new String[]{I18n.t("Status"), subscription.status() != null ? subscription.status().name() : "—"},
+                    new String[]{I18n.t("Start date"), subscription.startDate() != null ? I18n.shortDay().format(subscription.startDate()) : "—"}
             ));
             if (subscription.status() != SubscriptionStatus.CANCELLED) {
-                info.add(new String[]{"Next billing", subscription.nextBillingDate() != null ? DATE_FMT.format(subscription.nextBillingDate()) : "—"});
+                info.add(new String[]{I18n.t("Next billing"), subscription.nextBillingDate() != null ? I18n.shortDay().format(subscription.nextBillingDate()) : "—"});
             }
             if (subscription.lastBilledAt() != null) {
-                info.add(new String[]{"Last billed", DATE_FMT.withZone(ZoneId.systemDefault()).format(subscription.lastBilledAt())});
+                info.add(new String[]{I18n.t("Last billed"), I18n.shortDay().withZone(ZoneId.systemDefault()).format(subscription.lastBilledAt())});
             }
             if (subscription.cancelledAt() != null) {
-                info.add(new String[]{"Cancelled", DATE_FMT.withZone(ZoneId.systemDefault()).format(subscription.cancelledAt())});
+                info.add(new String[]{I18n.t("Cancelled"), I18n.shortDay().withZone(ZoneId.systemDefault()).format(subscription.cancelledAt())});
             }
             addInfoTable(doc, info);
 
             if (billingHistory != null && !billingHistory.isEmpty()) {
                 Font headingFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-                Paragraph heading = new Paragraph("Billing history", headingFont);
+                Paragraph heading = new Paragraph(I18n.t("Billing history"), headingFont);
                 heading.setSpacingAfter(6);
                 doc.add(heading);
                 // Fourier: "create an invoice from the last end date" — the Period column makes it
@@ -527,19 +527,19 @@ public class DocumentPdfService {
                 List<String[]> rows = billingHistory.stream()
                         .map(inv -> new String[]{
                                 inv.invoiceNumber(),
-                                inv.invoiceDate() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(inv.invoiceDate()) : "—",
-                                inv.periodStart() != null ? DATE_FMT.format(inv.periodStart()) + " - " + DATE_FMT.format(inv.periodEnd()) : "—",
+                                inv.invoiceDate() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(inv.invoiceDate()) : "—",
+                                inv.periodStart() != null ? I18n.shortDay().format(inv.periodStart()) + " - " + I18n.shortDay().format(inv.periodEnd()) : "—",
                                 inv.status(),
                                 money(inv.totalAmount())
                         }).toList();
-                addTable(doc, List.of("Invoice #", "Billed on", "Period", "Status", "Total"), rows, new float[]{1.2f, 1.2f, 1.6f, 0.9f, 1f}, 4);
+                addTable(doc, List.of(I18n.t("Invoice #"), I18n.t("Billed on"), I18n.t("Period"), I18n.t("Status"), I18n.t("Total")), rows, new float[]{1.2f, 1.2f, 1.6f, 0.9f, 1f}, 4);
             }
 
             if (subscription.notes() != null && !subscription.notes().isBlank()) {
                 addNotes(doc, subscription.notes());
             }
             if (subscription.cancelReason() != null && !subscription.cancelReason().isBlank()) {
-                addNotes(doc, "Cancel reason: " + subscription.cancelReason());
+                addNotes(doc, I18n.t("Cancel reason: ") + subscription.cancelReason());
             }
         });
     }
@@ -557,35 +557,35 @@ public class DocumentPdfService {
      * document number and, implicitly, the only number this PDF ever shows.
      */
     public byte[] helpdeskTicketPdf(HelpDeskTicketDto t, List<HelpDeskCommentDto> updates, StoreSettings settings) {
-        return build("Help Desk Ticket", t.ticketNumber(), settings, doc -> {
+        return build(I18n.t("Help Desk Ticket"), t.ticketNumber(), settings, doc -> {
             List<String[]> info = new java.util.ArrayList<>(List.of(
-                    new String[]{"Type", t.type() == HelpDeskTicketType.CUSTOMER ? "Customer" : "Internal"},
-                    new String[]{"Status", t.status().name()},
-                    new String[]{"Priority", t.priority().name()},
-                    new String[]{"Category", t.categoryName() != null ? t.categoryName() : "—"},
-                    new String[]{"Requester", t.requesterName() != null ? t.requesterName() : "—"}
+                    new String[]{I18n.t("Type"), t.type() == HelpDeskTicketType.CUSTOMER ? I18n.t("Customer") : I18n.t("Internal")},
+                    new String[]{I18n.t("Status"), t.status().name()},
+                    new String[]{I18n.t("Priority"), t.priority().name()},
+                    new String[]{I18n.t("Category"), t.categoryName() != null ? t.categoryName() : "—"},
+                    new String[]{I18n.t("Requester"), t.requesterName() != null ? t.requesterName() : "—"}
             ));
             if (t.requesterEmail() != null && !t.requesterEmail().isBlank()) {
-                info.add(new String[]{"Email", t.requesterEmail()});
+                info.add(new String[]{I18n.t("Email"), t.requesterEmail()});
             }
             if (t.requesterPhone() != null && !t.requesterPhone().isBlank()) {
-                info.add(new String[]{"Phone", t.requesterPhone()});
+                info.add(new String[]{I18n.t("Phone"), t.requesterPhone()});
             }
             if (t.customerName() != null) {
-                info.add(new String[]{"Customer record", t.customerName()});
+                info.add(new String[]{I18n.t("Customer record"), t.customerName()});
             }
-            info.add(new String[]{"Created", t.createdAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(t.createdAt()) : "—"});
+            info.add(new String[]{I18n.t("Created"), t.createdAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(t.createdAt()) : "—"});
             if (t.createdByUserFullName() != null) {
-                info.add(new String[]{"Created by", t.createdByUserFullName()});
+                info.add(new String[]{I18n.t("Created by"), t.createdByUserFullName()});
             }
             if (t.assignedToUserFullName() != null) {
-                info.add(new String[]{"Assigned to", t.assignedToUserFullName()});
+                info.add(new String[]{I18n.t("Assigned to"), t.assignedToUserFullName()});
             }
             if (t.resolvedAt() != null) {
-                info.add(new String[]{"Resolved", DATE_FMT.withZone(ZoneId.systemDefault()).format(t.resolvedAt())});
+                info.add(new String[]{I18n.t("Resolved"), I18n.shortDay().withZone(ZoneId.systemDefault()).format(t.resolvedAt())});
             }
             if (t.closedAt() != null) {
-                info.add(new String[]{"Closed", DATE_FMT.withZone(ZoneId.systemDefault()).format(t.closedAt())});
+                info.add(new String[]{I18n.t("Closed"), I18n.shortDay().withZone(ZoneId.systemDefault()).format(t.closedAt())});
             }
             addInfoTable(doc, info);
 
@@ -604,17 +604,17 @@ public class DocumentPdfService {
 
             if (updates != null && !updates.isEmpty()) {
                 Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-                Paragraph heading = new Paragraph("Updates & notes", sectionFont);
+                Paragraph heading = new Paragraph(I18n.t("Updates & notes"), sectionFont);
                 heading.setSpacingAfter(6);
                 doc.add(heading);
                 List<String[]> rows = updates.stream()
                         .map(c -> new String[]{
-                                c.createdAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(c.createdAt()) : "—",
+                                c.createdAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(c.createdAt()) : "—",
                                 c.authorUserFullName() != null ? c.authorUserFullName() : "—",
                                 c.body() + (c.internal() ? " (internal)" : "")
                         }).toList();
                 // firstRightAlignedColumn = 3 (= headers.size()) — none of Date/By/Update is numeric, so nothing right-aligns.
-                addTable(doc, List.of("Date", "By", "Update"), rows, new float[]{1.1f, 1.1f, 3.3f}, 3);
+                addTable(doc, List.of(I18n.t("Date"), I18n.t("By"), I18n.t("Update")), rows, new float[]{1.1f, 1.1f, 3.3f}, 3);
             }
         });
     }
@@ -625,34 +625,34 @@ public class DocumentPdfService {
      */
     public byte[] workOrderPdf(String kind, WorkOrderDetail d, EstimateDto est, List<NoteDto> notes, StoreSettings settings) {
         String title = switch (kind) {
-            case "ESTIMATE" -> "Estimate";
-            case "COMPLETION" -> "Job completion note";
-            default -> "Job card";
+            case "ESTIMATE" -> I18n.t("Estimate");
+            case "COMPLETION" -> I18n.t("Job completion note");
+            default -> I18n.t("Job card");
         };
-        java.time.format.DateTimeFormatter day = DATE_FMT;
+        java.time.format.DateTimeFormatter day = I18n.shortDay();
         return build(title, d.number(), settings, doc -> {
             List<String[]> info = new java.util.ArrayList<>();
             boolean forCustomer = !"JOBCARD".equals(kind);
-            if (d.customerName() != null) info.add(new String[]{"Customer", d.customerName()});
-            info.add(new String[]{"Job", d.title()});
-            if (d.itemDescription() != null) info.add(new String[]{"Item", d.itemDescription()});
-            if (d.assetName() != null) info.add(new String[]{"Asset", d.assetName()});
+            if (d.customerName() != null) info.add(new String[]{I18n.t("Customer"), d.customerName()});
+            info.add(new String[]{I18n.t("Job"), d.title()});
+            if (d.itemDescription() != null) info.add(new String[]{I18n.t("Item"), d.itemDescription()});
+            if (d.assetName() != null) info.add(new String[]{I18n.t("Asset"), d.assetName()});
             if (!forCustomer) {
-                info.add(new String[]{"Type", d.type().name().equals("CUSTOMER") ? "Customer job" : "Internal job"});
-                info.add(new String[]{"Priority", d.priority().name()});
-                info.add(new String[]{"Status", d.status().name()});
+                info.add(new String[]{I18n.t("Type"), d.type().name().equals("CUSTOMER") ? I18n.t("Customer job") : I18n.t("Internal job")});
+                info.add(new String[]{I18n.t("Priority"), d.priority().name()});
+                info.add(new String[]{I18n.t("Status"), d.status().name()});
             }
-            if (d.assignedToName() != null) info.add(new String[]{forCustomer ? "Technician" : "Assigned to", d.assignedToName()});
-            if (d.scheduledDate() != null) info.add(new String[]{"Scheduled", day.format(d.scheduledDate())});
-            if (d.dueDate() != null) info.add(new String[]{"Due", day.format(d.dueDate())});
+            if (d.assignedToName() != null) info.add(new String[]{forCustomer ? I18n.t("Technician") : I18n.t("Assigned to"), d.assignedToName()});
+            if (d.scheduledDate() != null) info.add(new String[]{I18n.t("Scheduled"), day.format(d.scheduledDate())});
+            if (d.dueDate() != null) info.add(new String[]{I18n.t("Due"), day.format(d.dueDate())});
             if ("COMPLETION".equals(kind) && d.completedAt() != null) {
-                info.add(new String[]{"Completed", DATE_FMT.withZone(ZoneId.systemDefault()).format(d.completedAt())});
+                info.add(new String[]{I18n.t("Completed"), I18n.shortDay().withZone(ZoneId.systemDefault()).format(d.completedAt())});
             }
             addInfoTable(doc, info);
             Font section = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
             Font body = FontFactory.getFont(FontFactory.HELVETICA, 9);
             if (d.description() != null && !d.description().isBlank()) {
-                Paragraph h = new Paragraph("Description", section);
+                Paragraph h = new Paragraph(I18n.t("Description"), section);
                 h.setSpacingAfter(3);
                 doc.add(h);
                 Paragraph t = new Paragraph(d.description(), body);
@@ -661,45 +661,45 @@ public class DocumentPdfService {
             }
             if ("JOBCARD".equals(kind)) {
                 if (!d.checklist().isEmpty()) {
-                    Paragraph h = new Paragraph("Checklist", section);
+                    Paragraph h = new Paragraph(I18n.t("Checklist"), section);
                     h.setSpacingAfter(4);
                     doc.add(h);
-                    addTable(doc, List.of("Done", "Step"), d.checklist().stream().map(c -> new String[]{c.done() ? "[x]" : "[  ]", c.text()}).toList(), new float[]{0.6f, 6f}, 2);
+                    addTable(doc, List.of(I18n.t("Done"), I18n.t("Step")), d.checklist().stream().map(c -> new String[]{c.done() ? "[x]" : "[  ]", c.text()}).toList(), new float[]{0.6f, 6f}, 2);
                 }
                 if (!d.lines().isEmpty()) {
-                    Paragraph h = new Paragraph("Parts and materials", section);
+                    Paragraph h = new Paragraph(I18n.t("Parts and materials"), section);
                     h.setSpacingAfter(4);
                     doc.add(h);
-                    addTable(doc, List.of("Part", "Qty"), d.lines().stream().map(l -> new String[]{l.productName(), Qty.str(l.quantity())}).toList(), new float[]{5f, 1f}, 1);
+                    addTable(doc, List.of(I18n.t("Part"), I18n.t("Qty")), d.lines().stream().map(l -> new String[]{l.productName(), Qty.str(l.quantity())}).toList(), new float[]{5f, 1f}, 1);
                 }
                 if (notes != null && !notes.isEmpty()) {
-                    Paragraph h = new Paragraph("Notes", section);
+                    Paragraph h = new Paragraph(I18n.t("Notes"), section);
                     h.setSpacingAfter(4);
                     doc.add(h);
-                    addTable(doc, List.of("Date", "By", "Note"), notes.stream().map(n -> new String[]{
-                            n.createdAt() != null ? DATE_FMT.withZone(ZoneId.systemDefault()).format(n.createdAt()) : "—", n.authorName() == null ? "—" : n.authorName(), n.text()}).toList(),
+                    addTable(doc, List.of(I18n.t("Date"), I18n.t("By"), I18n.t("Note")), notes.stream().map(n -> new String[]{
+                            n.createdAt() != null ? I18n.shortDay().withZone(ZoneId.systemDefault()).format(n.createdAt()) : "—", n.authorName() == null ? "—" : n.authorName(), n.text()}).toList(),
                             new float[]{1.1f, 1.1f, 3.5f}, 3);
                 }
-                Paragraph sign = new Paragraph("\nStarted: ____________   Finished: ____________   Hours: ________\n\nTechnician signature: ______________________________", body);
+                Paragraph sign = new Paragraph(I18n.t("\nStarted: ____________   Finished: ____________   Hours: ________\n\nTechnician signature: ______________________________"), body);
                 sign.setSpacingBefore(14);
                 doc.add(sign);
                 return;
             }
             if ("ESTIMATE".equals(kind) && est != null) {
-                Paragraph h = new Paragraph("Estimate", section);
+                Paragraph h = new Paragraph(I18n.t("Estimate"), section);
                 h.setSpacingAfter(4);
                 doc.add(h);
-                addTable(doc, List.of("Item", "Qty", "Unit price", "Amount"), est.lines().stream().map(l -> new String[]{l.description(), Qty.str(l.quantity()),
+                addTable(doc, List.of(I18n.t("Item"), I18n.t("Qty"), I18n.t("Unit price"), I18n.t("Amount")), est.lines().stream().map(l -> new String[]{l.description(), Qty.str(l.quantity()),
                         l.unitPrice() == null ? "" : money(l.unitPrice()), l.amount().signum() == 0 && "PART_INCLUDED".equals(l.kind()) ? "included" : money(l.amount())}).toList(),
                         new float[]{4f, 0.8f, 1.3f, 1.3f}, 1);
                 addTotal(doc, est.total());
                 if (est.status() == com.posapp.workorder.ApprovalStatus.APPROVED) {
-                    Paragraph ok = new Paragraph("Approved by " + est.decidedByName() + (est.decidedAt() != null ? " on " + DATE_FMT.withZone(ZoneId.systemDefault()).format(est.decidedAt()) : "")
+                    Paragraph ok = new Paragraph(I18n.t("Approved by ") + est.decidedByName() + (est.decidedAt() != null ? " on " + I18n.shortDay().withZone(ZoneId.systemDefault()).format(est.decidedAt()) : "")
                             + (est.note() != null ? " (" + est.note() + ")" : ""), section);
                     ok.setSpacingBefore(10);
                     doc.add(ok);
                 } else {
-                    Paragraph sign = new Paragraph("\nTo approve this estimate, sign below and return a copy.\n\nName: ______________________________   Signature: ______________________________   Date: ____________", body);
+                    Paragraph sign = new Paragraph(I18n.t("\nTo approve this estimate, sign below and return a copy.\n\nName: ______________________________   Signature: ______________________________   Date: ____________"), body);
                     sign.setSpacingBefore(14);
                     doc.add(sign);
                 }
@@ -707,7 +707,7 @@ public class DocumentPdfService {
             }
             // COMPLETION
             if (d.completionNote() != null && !d.completionNote().isBlank()) {
-                Paragraph h = new Paragraph("Work done", section);
+                Paragraph h = new Paragraph(I18n.t("Work done"), section);
                 h.setSpacingAfter(3);
                 doc.add(h);
                 Paragraph t = new Paragraph(d.completionNote(), body);
@@ -716,15 +716,15 @@ public class DocumentPdfService {
             }
             List<String> steps = d.checklist().stream().filter(c -> c.done()).map(c -> c.text()).toList();
             if (!steps.isEmpty()) {
-                Paragraph h = new Paragraph("Steps carried out", section);
+                Paragraph h = new Paragraph(I18n.t("Steps carried out"), section);
                 h.setSpacingAfter(4);
                 doc.add(h);
-                addTable(doc, List.of("Step"), steps.stream().map(x -> new String[]{x}).toList(), new float[]{6f}, 1);
+                addTable(doc, List.of(I18n.t("Step")), steps.stream().map(x -> new String[]{x}).toList(), new float[]{6f}, 1);
             }
             boolean fixed = d.fixedPrice() != null && d.fixedPrice().signum() > 0;
             List<String[]> rows = new java.util.ArrayList<>();
-            if (fixed) rows.add(new String[]{"Fixed price for the job", "1", money(d.fixedPrice()), money(d.fixedPrice())});
-            else if (d.billableHours() != null && d.hours() != null && d.hours().signum() > 0) rows.add(new String[]{"Labour", d.hours().stripTrailingZeros().toPlainString() + " h", "", money(d.money().labourBillable())});
+            if (fixed) rows.add(new String[]{I18n.t("Fixed price for the job"), "1", money(d.fixedPrice()), money(d.fixedPrice())});
+            else if (d.billableHours() != null && d.hours() != null && d.hours().signum() > 0) rows.add(new String[]{I18n.t("Labour"), d.hours().stripTrailingZeros().toPlainString() + " h", "", money(d.money().labourBillable())});
             for (var l : d.lines()) {
                 boolean incl = l.included() && fixed;
                 rows.add(new String[]{l.productName() + (incl ? " (included)" : ""), Qty.str(l.quantity()), incl ? "" : money(l.unitPrice()), incl ? "" : money(l.lineTotal())});
@@ -733,13 +733,13 @@ public class DocumentPdfService {
                 if (c.chargeAmount() != null && c.chargeAmount().signum() > 0) rows.add(new String[]{c.description(), "1", money(c.chargeAmount()), money(c.chargeAmount())});
             }
             if (d.type().name().equals("CUSTOMER") && !rows.isEmpty()) {
-                Paragraph h = new Paragraph("Charges", section);
+                Paragraph h = new Paragraph(I18n.t("Charges"), section);
                 h.setSpacingAfter(4);
                 doc.add(h);
-                addTable(doc, List.of("Item", "Qty", "Unit price", "Amount"), rows, new float[]{4f, 0.8f, 1.3f, 1.3f}, 1);
+                addTable(doc, List.of(I18n.t("Item"), I18n.t("Qty"), I18n.t("Unit price"), I18n.t("Amount")), rows, new float[]{4f, 0.8f, 1.3f, 1.3f}, 1);
                 addTotal(doc, d.money().invoiceTotal() != null ? d.money().invoiceTotal() : d.money().expectedRevenue());
             }
-            Paragraph sign = new Paragraph("\nReceived by: ______________________________   Date: ____________", body);
+            Paragraph sign = new Paragraph(I18n.t("\nReceived by: ______________________________   Date: ____________"), body);
             sign.setSpacingBefore(14);
             doc.add(sign);
         });
@@ -794,7 +794,7 @@ public class DocumentPdfService {
                 }
                 if (branch.taxId() != null && !branch.taxId().isBlank()) {
                     if (branchDetails.length() > 0) branchDetails.append(" · ");
-                    branchDetails.append("Tax ID ").append(branch.taxId());
+                    branchDetails.append(I18n.t("Tax ID ")).append(branch.taxId());
                 }
                 if (branchDetails.length() > 0) {
                     document.add(new Paragraph(branchDetails.toString(), smallBranchFont));
@@ -824,7 +824,7 @@ public class DocumentPdfService {
             document.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build " + title + " PDF", e);
+            throw new IllegalStateException(I18n.t("Failed to build ") + title + " PDF", e);
         }
     }
 
@@ -849,7 +849,7 @@ public class DocumentPdfService {
     }
 
     private void addLinesTable(Document doc, List<String[]> rows) throws Exception {
-        addTable(doc, List.of("Item", "Qty", "Unit price", "Line total"), rows, new float[]{4, 1, 1.3f, 1.3f}, 1);
+        addTable(doc, List.of(I18n.t("Item"), I18n.t("Qty"), I18n.t("Unit price"), I18n.t("Line total")), rows, new float[]{4, 1, 1.3f, 1.3f}, 1);
     }
 
     /**
@@ -864,7 +864,7 @@ public class DocumentPdfService {
      * ask for one there.
      */
     private void addLinesTableWithTax(Document doc, List<String[]> rows) throws Exception {
-        addTable(doc, List.of("Item", "Qty", "Unit price", "Tax", "Line total"), rows, new float[]{3.4f, 1, 1.2f, 1.1f, 1.3f}, 1);
+        addTable(doc, List.of(I18n.t("Item"), I18n.t("Qty"), I18n.t("Unit price"), I18n.t("Tax"), I18n.t("Line total")), rows, new float[]{3.4f, 1, 1.2f, 1.1f, 1.3f}, 1);
     }
 
     /**
@@ -877,7 +877,7 @@ public class DocumentPdfService {
      * would show a column of nothing but 0.00, which is worse than not showing the column at all.
      */
     private void addLinesTableWithTaxAndDiscount(Document doc, List<String[]> rows) throws Exception {
-        addTable(doc, List.of("Item", "Qty", "Unit price", "Discount", "Tax", "Line total"), rows, new float[]{2.8f, 1, 1.1f, 1f, 1f, 1.2f}, 1);
+        addTable(doc, List.of(I18n.t("Item"), I18n.t("Qty"), I18n.t("Unit price"), I18n.t("Discount"), I18n.t("Tax"), I18n.t("Line total")), rows, new float[]{2.8f, 1, 1.1f, 1f, 1f, 1.2f}, 1);
     }
 
     /**
@@ -916,7 +916,7 @@ public class DocumentPdfService {
 
     private void addTotal(Document doc, BigDecimal total) throws Exception {
         Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
-        Paragraph totalPara = new Paragraph("Total: " + money(total), totalFont);
+        Paragraph totalPara = new Paragraph(I18n.t("Total: ") + money(total), totalFont);
         totalPara.setAlignment(Element.ALIGN_RIGHT);
         totalPara.setSpacingAfter(10);
         doc.add(totalPara);
@@ -958,12 +958,12 @@ public class DocumentPdfService {
      * convention a printed invoice/receipt normally uses.
      */
     private void addSubtotalBreakdown(Document doc, BigDecimal subtotal, BigDecimal taxAmount, BigDecimal discountAmount, BigDecimal total) throws Exception {
-        addAmountLine(doc, "Subtotal", subtotal, false);
+        addAmountLine(doc, I18n.t("Subtotal"), subtotal, false);
         if (taxAmount != null) {
-            addAmountLine(doc, "Tax", taxAmount, false);
+            addAmountLine(doc, I18n.t("Tax"), taxAmount, false);
         }
         if (discountAmount != null && discountAmount.compareTo(BigDecimal.ZERO) != 0) {
-            addAmountLine(doc, "Discount", discountAmount.negate(), false);
+            addAmountLine(doc, I18n.t("Discount"), discountAmount.negate(), false);
         }
         addTotal(doc, total);
     }
@@ -984,7 +984,7 @@ public class DocumentPdfService {
     private void addNotes(Document doc, String notes) throws Exception {
         Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9);
         Font bodyFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
-        doc.add(new Paragraph("Notes", labelFont));
+        doc.add(new Paragraph(I18n.t("Notes"), labelFont));
         doc.add(new Paragraph(notes, bodyFont));
     }
 

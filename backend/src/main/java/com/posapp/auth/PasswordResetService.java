@@ -1,5 +1,6 @@
 package com.posapp.auth;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
@@ -62,10 +63,10 @@ public class PasswordResetService {
     @Transactional
     public void requestReset(String email) {
         if (email == null || email.isBlank()) {
-            throw ApiException.badRequest("Email is required");
+            throw ApiException.badRequest(I18n.t("Email is required"));
         }
         if (!mailService.isConfigured()) {
-            throw ApiException.badRequest("Email isn't configured on this system yet — ask your administrator to set up SMTP in Admin > Settings > Email");
+            throw ApiException.badRequest(I18n.t("Email isn't configured on this system yet — ask your administrator to set up SMTP in Admin > Settings > Email"));
         }
         Optional<AppUser> userOpt = userRepository.findByEmailIgnoreCase(email.trim());
         if (userOpt.isEmpty()) {
@@ -80,11 +81,11 @@ public class PasswordResetService {
         tokenRepository.save(resetToken);
 
         String link = frontendUrl + "/reset-password?token=" + token;
-        String html = "<p>Hello " + escapeHtml(user.getFullName()) + ",</p>"
+        String html = I18n.t("<p>Hello ") + escapeHtml(user.getFullName()) + I18n.t(",</p>"
                 + "<p>We received a request to reset your password. Click the link below to choose a new one — it expires in 30 minutes.</p>"
-                + "<p><a href=\"" + link + "\">Reset your password</a></p>"
-                + "<p>If you didn't request this, you can safely ignore this email — your password won't change.</p>";
-        mailService.send(user.getEmail(), "Reset your password", html, List.of());
+                + "<p><a href=\"") + link + I18n.t("\">Reset your password</a></p>"
+                + "<p>If you didn't request this, you can safely ignore this email — your password won't change.</p>");
+        mailService.send(user.getEmail(), I18n.t("Reset your password"), html, List.of());
         auditLogService.record("PASSWORD_RESET_REQUESTED",
                 user.getUsername() + " requested a password reset link", "AppUser", user.getId());
     }
@@ -93,12 +94,12 @@ public class PasswordResetService {
     @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> ApiException.badRequest("This reset link is invalid"));
+                .orElseThrow(() -> ApiException.badRequest(I18n.t("This reset link is invalid")));
         if (resetToken.isUsed()) {
-            throw ApiException.badRequest("This reset link has already been used — request a new one");
+            throw ApiException.badRequest(I18n.t("This reset link has already been used — request a new one"));
         }
         if (resetToken.getExpiresAt().isBefore(Instant.now())) {
-            throw ApiException.badRequest("This reset link has expired — request a new one");
+            throw ApiException.badRequest(I18n.t("This reset link has expired — request a new one"));
         }
         resetToken.setUsed(true);
         tokenRepository.save(resetToken);

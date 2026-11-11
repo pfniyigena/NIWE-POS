@@ -1,5 +1,6 @@
 package com.posapp.license;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
@@ -51,18 +52,18 @@ public class ModuleRequestService {
 
     public RequestResult create(ModuleKey key, String note, String user) {
         if (key.core()) {
-            throw ApiException.badRequest(key.label() + " is a core module and is always available.");
+            throw ApiException.badRequest(key.label() + I18n.t(" is a core module and is always available."));
         }
         if (licenseService.isLicensed(key)) {
-            throw ApiException.conflict(key.label() + " is already part of the license.");
+            throw ApiException.conflict(key.label() + I18n.t(" is already part of the license."));
         }
         String cleanNote = note == null ? null : note.trim();
         if (cleanNote != null && cleanNote.length() > 500) {
-            throw ApiException.badRequest("The note is too long (500 characters at most).");
+            throw ApiException.badRequest(I18n.t("The note is too long (500 characters at most)."));
         }
         if (cleanNote != null && cleanNote.isEmpty()) cleanNote = null;
         if (requests.findFirstByModuleKeyAndStatus(key, ModuleRequestStatus.PENDING).isPresent()) {
-            throw ApiException.conflict(key.label() + " has already been requested. Wait for NIWE's new license, or withdraw the request first.");
+            throw ApiException.conflict(key.label() + I18n.t(" has already been requested. Wait for NIWE's new license, or withdraw the request first."));
         }
         ModuleRequest r = new ModuleRequest();
         r.setModuleKey(key);
@@ -77,17 +78,17 @@ public class ModuleRequestService {
         boolean sent = false;
         String emailNote;
         if (vendorEmail.isEmpty()) {
-            emailNote = "No NIWE address is set up (app.license.vendor-email), so nothing was e-mailed. Send the text below to NIWE.";
+            emailNote = I18n.t("No NIWE address is set up (app.license.vendor-email), so nothing was e-mailed. Send the text below to NIWE.");
         } else if (!mailService.isConfigured()) {
-            emailNote = "E-mail is not set up on this system (Settings > Email), so nothing was sent. Send the text below to NIWE.";
+            emailNote = I18n.t("E-mail is not set up on this system (Settings > Email), so nothing was sent. Send the text below to NIWE.");
         } else {
             try {
-                mailService.send(vendorEmail, "NIWE ERP module request: " + key.label() + (business.isEmpty() ? "" : " - " + business) + " (" + status.installationId() + ")", html(text), List.of());
+                mailService.send(vendorEmail, I18n.t("NIWE ERP module request: ") + key.label() + (business.isEmpty() ? "" : " - " + business) + " (" + status.installationId() + ")", html(text), List.of());
                 sent = true;
-                emailNote = "The request was e-mailed to NIWE.";
+                emailNote = I18n.t("The request was e-mailed to NIWE.");
             } catch (RuntimeException e) {
                 log.warn("Module request e-mail failed: {}", e.getMessage());
-                emailNote = "The request is saved but the e-mail to NIWE failed (" + e.getMessage() + "). Send the text below to NIWE.";
+                emailNote = I18n.t("The request is saved but the e-mail to NIWE failed (") + e.getMessage() + I18n.t("). Send the text below to NIWE.");
             }
         }
         if (sent) {
@@ -99,9 +100,9 @@ public class ModuleRequestService {
 
     @Transactional
     public ModuleRequestDto withdraw(Long id, String user) {
-        ModuleRequest r = requests.findById(id).orElseThrow(() -> ApiException.notFound("Request not found"));
+        ModuleRequest r = requests.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Request not found")));
         if (r.getStatus() != ModuleRequestStatus.PENDING) {
-            throw ApiException.conflict("Only a pending request can be withdrawn.");
+            throw ApiException.conflict(I18n.t("Only a pending request can be withdrawn."));
         }
         r.setStatus(ModuleRequestStatus.WITHDRAWN);
         r.setClosedAt(Instant.now());
@@ -123,17 +124,17 @@ public class ModuleRequestService {
 
     private static String requestText(ModuleKey key, String note, String user, LicenseStatus s, String business) {
         StringBuilder sb = new StringBuilder();
-        sb.append("NIWE ERP: request to add a module to the license\n");
-        sb.append("Module: ").append(key.label()).append(" (").append(key.name()).append(")\n");
+        sb.append(I18n.t("NIWE ERP: request to add a module to the license\n"));
+        sb.append(I18n.t("Module: ")).append(key.label()).append(" (").append(key.name()).append(")\n");
         if (!key.requires().isEmpty()) {
-            sb.append("It also needs: ").append(String.join(", ", key.requires().stream().map(ModuleKey::label).toList())).append("\n");
+            sb.append(I18n.t("It also needs: ")).append(String.join(", ", key.requires().stream().map(ModuleKey::label).toList())).append("\n");
         }
-        sb.append("Business: ").append(business.isEmpty() ? "(not entered in Settings > Business details)" : business).append("\n");
-        sb.append("Installation id: ").append(s.installationId()).append("\n");
-        sb.append("Customer: ").append(s.customer() == null ? "(no license installed yet)" : s.customer()).append("\n");
-        if (s.licenseId() != null) sb.append("Current license: ").append(s.licenseId()).append(" number ").append(s.serial()).append("\n");
-        sb.append("Requested by: ").append(user).append("\n");
-        if (note != null) sb.append("Note: ").append(note).append("\n");
+        sb.append(I18n.t("Business: ")).append(business.isEmpty() ? I18n.t("(not entered in Settings > Business details)") : business).append("\n");
+        sb.append(I18n.t("Installation id: ")).append(s.installationId()).append("\n");
+        sb.append(I18n.t("Customer: ")).append(s.customer() == null ? I18n.t("(no license installed yet)") : s.customer()).append("\n");
+        if (s.licenseId() != null) sb.append(I18n.t("Current license: ")).append(s.licenseId()).append(" number ").append(s.serial()).append("\n");
+        sb.append(I18n.t("Requested by: ")).append(user).append("\n");
+        if (note != null) sb.append(I18n.t("Note: ")).append(note).append("\n");
         return sb.toString();
     }
 

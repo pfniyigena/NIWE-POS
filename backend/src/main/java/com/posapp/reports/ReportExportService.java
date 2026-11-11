@@ -1,5 +1,6 @@
 package com.posapp.reports;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -69,7 +70,7 @@ public class ReportExportService {
             workbook.write(out);
             return out.toByteArray();
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to build Excel export", e);
+            throw new IllegalStateException(I18n.t("Failed to build Excel export"), e);
         }
     }
 
@@ -110,13 +111,13 @@ public class ReportExportService {
             document.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build PDF export", e);
+            throw new IllegalStateException(I18n.t("Failed to build PDF export"), e);
         }
     }
 
     /** Excel sheet names can't exceed 31 chars or contain a handful of special characters. */
     private String safeSheetName(String title) {
         String cleaned = title.replaceAll("[\\\\/:*?\\[\\]]", " ").trim();
-        return cleaned.length() > 31 ? cleaned.substring(0, 31) : (cleaned.isEmpty() ? "Report" : cleaned);
+        return cleaned.length() > 31 ? cleaned.substring(0, 31) : (cleaned.isEmpty() ? I18n.t("Report") : cleaned);
     }
 }

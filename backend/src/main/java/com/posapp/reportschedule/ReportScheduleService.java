@@ -1,5 +1,6 @@
 package com.posapp.reportschedule;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.EmailAttachment;
@@ -100,35 +101,35 @@ public class ReportScheduleService {
     }
 
     private ReportSchedule getOrThrow(Long id) {
-        return repository.findById(id).orElseThrow(() -> ApiException.notFound("Report schedule not found"));
+        return repository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Report schedule not found")));
     }
 
     private void apply(ReportSchedule s, ReportScheduleRequest r) {
         ScheduledReportCatalog.Def def = ScheduledReportCatalog.find(r.getReportKey());
         if (def == null) {
-            throw ApiException.badRequest("Unknown report: " + r.getReportKey());
+            throw ApiException.badRequest(I18n.t("Unknown report: ") + r.getReportKey());
         }
         String format = r.getFormat() == null ? "XLSX" : r.getFormat().trim().toUpperCase();
         if (!FORMATS.contains(format)) {
-            throw ApiException.badRequest("Format must be XLSX or PDF");
+            throw ApiException.badRequest(I18n.t("Format must be XLSX or PDF"));
         }
         String frequency = r.getFrequency() == null ? "DAILY" : r.getFrequency().trim().toUpperCase();
         if (!FREQUENCIES.contains(frequency)) {
-            throw ApiException.badRequest("Frequency must be DAILY, WEEKLY or MONTHLY");
+            throw ApiException.badRequest(I18n.t("Frequency must be DAILY, WEEKLY or MONTHLY"));
         }
         String runTime = r.getRunTime() == null || r.getRunTime().isBlank() ? "07:00" : r.getRunTime().trim();
         if (!runTime.matches("([01]\\d|2[0-3]):[0-5]\\d")) {
-            throw ApiException.badRequest("Run time must look like 07:00 (24-hour HH:mm)");
+            throw ApiException.badRequest(I18n.t("Run time must look like 07:00 (24-hour HH:mm)"));
         }
         Integer dayOfWeek = null;
         Integer dayOfMonth = null;
         if (frequency.equals("WEEKLY")) {
             dayOfWeek = r.getDayOfWeek() == null ? 1 : r.getDayOfWeek();
-            if (dayOfWeek < 1 || dayOfWeek > 7) throw ApiException.badRequest("Day of week must be 1 (Monday) to 7 (Sunday)");
+            if (dayOfWeek < 1 || dayOfWeek > 7) throw ApiException.badRequest(I18n.t("Day of week must be 1 (Monday) to 7 (Sunday)"));
         }
         if (frequency.equals("MONTHLY")) {
             dayOfMonth = r.getDayOfMonth() == null ? 1 : r.getDayOfMonth();
-            if (dayOfMonth < 1 || dayOfMonth > 28) throw ApiException.badRequest("Day of month must be between 1 and 28");
+            if (dayOfMonth < 1 || dayOfMonth > 28) throw ApiException.badRequest(I18n.t("Day of month must be between 1 and 28"));
         }
         String recipients = null;
         if (r.getRecipients() != null && !r.getRecipients().isBlank()) {
@@ -136,7 +137,7 @@ public class ReportScheduleService {
             for (String part : r.getRecipients().split("[,;\\s]+")) {
                 if (part.isBlank()) continue;
                 if (!part.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) {
-                    throw ApiException.badRequest("Not a valid email address: " + part);
+                    throw ApiException.badRequest(I18n.t("Not a valid email address: ") + part);
                 }
                 cleaned.add(part);
             }
@@ -144,7 +145,7 @@ public class ReportScheduleService {
         }
         Integer window = def.daysFilter() ? r.getDayWindow() : null;
         if (window != null && (window < 1 || window > 3650)) {
-            throw ApiException.badRequest("Days must be between 1 and 3650");
+            throw ApiException.badRequest(I18n.t("Days must be between 1 and 3650"));
         }
         s.setName(r.getName().trim());
         s.setReportKey(def.key());
@@ -232,11 +233,11 @@ public class ReportScheduleService {
 
     private String deliver(ReportSchedule s, LocalDate today) {
         ScheduledReportCatalog.Def def = ScheduledReportCatalog.find(s.getReportKey());
-        if (def == null) throw new IllegalStateException("The report '" + s.getReportKey() + "' no longer exists");
+        if (def == null) throw new IllegalStateException(I18n.t("The report '") + s.getReportKey() + I18n.t("' no longer exists"));
         StoreSettings settings = storeSettingsService.getSettingsEntity();
         List<String> to = recipientsOf(s, settings);
-        if (to.isEmpty()) throw new SkippedException("No recipients: add one, or set the notifications email in Settings");
-        if (!mailService.isConfigured()) throw new SkippedException("Email is not configured (Admin > Settings > Email)");
+        if (to.isEmpty()) throw new SkippedException(I18n.t("No recipients: add one, or set the notifications email in Settings"));
+        if (!mailService.isConfigured()) throw new SkippedException(I18n.t("Email is not configured (Admin > Settings > Email)"));
 
         boolean xlsx = "XLSX".equals(s.getFormat());
         String ext = xlsx ? "xlsx" : "pdf";
@@ -245,14 +246,14 @@ public class ReportScheduleService {
         if (def.invoker() == null) {
             // reorder-list is built here because it has no report endpoint of its own.
             List<ReorderSuggestionDto> rows = reorderService.suggestions();
-            List<String> headers = List.of("SKU", "Product", "Category", "Sellable", "On order", "Reorder level", "Max level", "Suggested qty");
+            List<String> headers = List.of("SKU", I18n.t("Product"), I18n.t("Category"), I18n.t("Sellable"), I18n.t("On order"), I18n.t("Reorder level"), I18n.t("Max level"), I18n.t("Suggested qty"));
             List<List<String>> body = new ArrayList<>();
             for (ReorderSuggestionDto r : rows) {
                 body.add(List.of(r.sku() == null ? "—" : r.sku(), r.productName(), r.categoryName() == null ? "—" : r.categoryName(),
                         String.valueOf(r.onHand()), String.valueOf(r.onOrder()), String.valueOf(r.reorderLevel()),
                         String.valueOf(r.maxStockLevel()), String.valueOf(r.suggestedQuantity())));
             }
-            bytes = xlsx ? exportService.toXlsx("Reorder list", headers, body) : exportService.toPdf("Reorder list", headers, body);
+            bytes = xlsx ? exportService.toXlsx(I18n.t("Reorder list"), headers, body) : exportService.toPdf(I18n.t("Reorder list"), headers, body);
         } else {
             LocalDate from = null;
             LocalDate end = null;
@@ -262,13 +263,13 @@ public class ReportScheduleService {
                     case "MONTHLY" -> { from = today.minusMonths(1).withDayOfMonth(1); end = today.withDayOfMonth(1).minusDays(1); }
                     default -> { from = today.minusDays(1); end = from; }
                 }
-                periodLabel = from.equals(end) ? from.toString() : from + " to " + end;
+                periodLabel = from.equals(end) ? from.toString() : from + I18n.t(" to ") + end;
             }
             ScheduledReportCatalog.Params params = new ScheduledReportCatalog.Params(from, end, s.getCategoryId(),
                     s.getWarehouseId(), s.getBranchId(), s.getDayWindow(), ext);
             ResponseEntity<?> response = callAsSystem(def, params);
             if (!(response.getBody() instanceof byte[] file)) {
-                throw new IllegalStateException("The report did not produce a file");
+                throw new IllegalStateException(I18n.t("The report did not produce a file"));
             }
             bytes = file;
         }
@@ -276,8 +277,8 @@ public class ReportScheduleService {
         String fileBase = def.label().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "") + "-" + today;
         String contentType = xlsx ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf";
         String subject = s.getName() + (periodLabel.isEmpty() ? "" : " (" + periodLabel + ")");
-        String html = "<p>Attached is the scheduled report <b>" + escape(def.label()) + "</b>"
-                + (periodLabel.isEmpty() ? "" : " for " + escape(periodLabel)) + ".</p>"
+        String html = I18n.t("<p>Attached is the scheduled report <b>") + escape(def.label()) + "</b>"
+                + (periodLabel.isEmpty() ? "" : I18n.t(" for ") + escape(periodLabel)) + ".</p>"
                 + "<p>Schedule: " + escape(s.getName()) + " (" + s.getFrequency().toLowerCase() + ").</p>";
         List<String> failed = new ArrayList<>();
         for (String address : to) {
@@ -288,9 +289,9 @@ public class ReportScheduleService {
             }
         }
         if (failed.size() == to.size()) {
-            throw new IllegalStateException("Could not email any recipient: " + String.join("; ", failed));
+            throw new IllegalStateException(I18n.t("Could not email any recipient: ") + String.join("; ", failed));
         }
-        return "Sent to " + (to.size() - failed.size()) + " recipient(s)" + (failed.isEmpty() ? "" : "; failed: " + String.join("; ", failed));
+        return I18n.t("Sent to ") + (to.size() - failed.size()) + " recipient(s)" + (failed.isEmpty() ? "" : I18n.t("; failed: ") + String.join("; ", failed));
     }
 
     /** The report endpoints are ADMIN-only, so the call is made under a short-lived system admin identity. */

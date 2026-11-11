@@ -1,4 +1,5 @@
 package com.posapp.manufacturing;
+import com.posapp.i18n.I18n;
 import com.posapp.common.Qty;
 
 import com.lowagie.text.Document;
@@ -55,7 +56,7 @@ public class ManufacturingPrintService {
     }
 
     private static String num(BigDecimal v) {
-        return v == null ? "" : new DecimalFormat("#,##0.##", DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(v);
+        return v == null ? "" : new DecimalFormat("#,##0.##", I18n.symbols()).format(v);
     }
 
     private static PdfPCell cell(String text, Font font, int align, Color bg, float minHeight) {
@@ -75,7 +76,7 @@ public class ManufacturingPrintService {
         public void onEndPage(PdfWriter writer, Document document) {
             PdfContentByte cb = writer.getDirectContent();
             ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(left, muted(8)), document.left(), document.bottom() - 14, 0);
-            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase("Page " + writer.getPageNumber(), muted(8)), document.right(), document.bottom() - 14, 0);
+            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase(I18n.t("Page ") + writer.getPageNumber(), muted(8)), document.right(), document.bottom() - 14, 0);
         }
     }
 
@@ -88,18 +89,18 @@ public class ManufacturingPrintService {
 
     @Transactional(readOnly = true)
     public Printed jobCard(Long id) {
-        ManufacturingOrder mo = orderRepository.findById(id).orElseThrow(() -> com.posapp.common.ApiException.notFound("Manufacturing order not found: " + id));
+        ManufacturingOrder mo = orderRepository.findById(id).orElseThrow(() -> com.posapp.common.ApiException.notFound(I18n.t("Manufacturing order not found: ") + id));
         StoreSettings s = storeSettingsRepository.findAll().stream().findFirst().orElse(null);
-        String business = s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : "Production";
+        String business = s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : I18n.t("Production");
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             Document doc = new Document(PageSize.A4, 40, 40, 40, 48);
             PdfWriter w = PdfWriter.getInstance(doc, out);
-            w.setPageEvent(new Footer("Job card " + mo.getOrderNumber()));
+            w.setPageEvent(new Footer(I18n.t("Job card ") + mo.getOrderNumber()));
             doc.open();
 
             doc.add(new Paragraph(business, bold(15)));
-            Paragraph title = new Paragraph("Job card " + mo.getOrderNumber(), bold(20));
+            Paragraph title = new Paragraph(I18n.t("Job card ") + mo.getOrderNumber(), bold(20));
             title.setSpacingBefore(10);
             doc.add(title);
             doc.add(new Paragraph(mo.getStatus().name().replace('_', ' ').toLowerCase(Locale.ROOT), muted(10)));
@@ -108,9 +109,9 @@ public class ManufacturingPrintService {
             info.setWidthPercentage(100);
             info.setSpacingBefore(10);
             String[][] rows = {
-                    {"Product", mo.getProduct().getName(), "Quantity to make", Qty.str(mo.getQuantityPlanned().subtract(mo.getQuantityProduced()))},
-                    {"Recipe", mo.getBom() != null ? mo.getBom().getCode() + (mo.getBom().getName() != null ? " - " + mo.getBom().getName() : "") + " (v" + mo.getBom().getVersion() + ")" : "", "Already made", Qty.str(mo.getQuantityProduced()) + " of " + mo.getQuantityPlanned()},
-                    {"Scheduled", mo.getScheduledDate() != null ? mo.getScheduledDate().format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)) : "Not scheduled", "Location", mo.getLocationName() != null ? mo.getLocationName() : "Main stock"},
+                    {I18n.t("Product"), mo.getProduct().getName(), I18n.t("Quantity to make"), Qty.str(mo.getQuantityPlanned().subtract(mo.getQuantityProduced()))},
+                    {I18n.t("Recipe"), mo.getBom() != null ? mo.getBom().getCode() + (mo.getBom().getName() != null ? " - " + mo.getBom().getName() : "") + " (v" + mo.getBom().getVersion() + ")" : "", I18n.t("Already made"), Qty.str(mo.getQuantityProduced()) + " of " + mo.getQuantityPlanned()},
+                    {I18n.t("Scheduled"), mo.getScheduledDate() != null ? mo.getScheduledDate().format(I18n.shortDay()) : I18n.t("Not scheduled"), I18n.t("Location"), mo.getLocationName() != null ? mo.getLocationName() : I18n.t("Main stock")},
             };
             for (String[] r : rows) {
                 info.addCell(cell(r[0], bold(9), Element.ALIGN_LEFT, SOFT, 0));
@@ -120,16 +121,16 @@ public class ManufacturingPrintService {
             }
             doc.add(info);
             if (mo.getNote() != null && !mo.getNote().isBlank()) {
-                Paragraph n = new Paragraph("Note: " + mo.getNote(), plain(10));
+                Paragraph n = new Paragraph(I18n.t("Note: ") + mo.getNote(), plain(10));
                 n.setSpacingBefore(6);
                 doc.add(n);
             }
 
             BigDecimal remaining = Qty.max(BigDecimal.ZERO, mo.getQuantityPlanned().subtract(mo.getQuantityProduced()));
-            heading(doc, "Components to issue (for " + Qty.str(remaining) + ")");
+            heading(doc, I18n.t("Components to issue (for ") + Qty.str(remaining) + ")");
             PdfPTable comp = new PdfPTable(new float[]{4f, 1.2f, 1.4f, 1.8f});
             comp.setWidthPercentage(100);
-            for (String h : new String[]{"Component", "Per unit", "Needed", "Issued"}) comp.addCell(cell(h, bold(9), Element.ALIGN_LEFT, SOFT, 0));
+            for (String h : new String[]{I18n.t("Component"), I18n.t("Per unit"), I18n.t("Needed"), I18n.t("Issued")}) comp.addCell(cell(h, bold(9), Element.ALIGN_LEFT, SOFT, 0));
             if (mo.getBom() != null) {
                 for (BomLine l : mo.getBom().getLines()) {
                     comp.addCell(cell(l.getComponent().getName(), plain(10), Element.ALIGN_LEFT, null, 20));
@@ -141,10 +142,10 @@ public class ManufacturingPrintService {
             doc.add(comp);
 
             // Steps: the copy on the order once confirmed, otherwise what the recipe's routing says today.
-            heading(doc, "Steps");
+            heading(doc, I18n.t("Steps"));
             PdfPTable ops = new PdfPTable(new float[]{0.7f, 2.6f, 2.2f, 1.3f, 1.4f, 1.4f});
             ops.setWidthPercentage(100);
-            for (String h : new String[]{"Step", "Operation", "Workstation", "Min per unit", "Planned min", "Actual min"}) ops.addCell(cell(h, bold(9), Element.ALIGN_LEFT, SOFT, 0));
+            for (String h : new String[]{I18n.t("Step"), I18n.t("Operation"), I18n.t("Workstation"), I18n.t("Min per unit"), I18n.t("Planned min"), I18n.t("Actual min")}) ops.addCell(cell(h, bold(9), Element.ALIGN_LEFT, SOFT, 0));
             boolean any = false;
             if (!mo.getOperations().isEmpty()) {
                 for (ManufacturingOrderOperation o : mo.getOperations()) {
@@ -163,14 +164,14 @@ public class ManufacturingPrintService {
             if (any) {
                 doc.add(ops);
             } else {
-                doc.add(new Paragraph("This recipe has no routing steps.", muted(10)));
+                doc.add(new Paragraph(I18n.t("This recipe has no routing steps."), muted(10)));
             }
 
             if (mo.getBom() != null && !mo.getBom().getByProducts().isEmpty()) {
-                heading(doc, "By-products expected");
+                heading(doc, I18n.t("By-products expected"));
                 PdfPTable bp = new PdfPTable(new float[]{4f, 1.5f, 1.5f});
                 bp.setWidthPercentage(100);
-                for (String h : new String[]{"By-product", "Expected", "Received"}) bp.addCell(cell(h, bold(9), Element.ALIGN_LEFT, SOFT, 0));
+                for (String h : new String[]{I18n.t("By-product"), I18n.t("Expected"), I18n.t("Received")}) bp.addCell(cell(h, bold(9), Element.ALIGN_LEFT, SOFT, 0));
                 for (BomByProduct b : mo.getBom().getByProducts()) {
                     bp.addCell(cell(b.getProduct().getName(), plain(10), Element.ALIGN_LEFT, null, 20));
                     bp.addCell(cell(Qty.str(b.getQuantityPerUnit().multiply(remaining)), plain(10), Element.ALIGN_RIGHT, null, 20));
@@ -179,14 +180,14 @@ public class ManufacturingPrintService {
                 doc.add(bp);
             }
 
-            heading(doc, "Result");
+            heading(doc, I18n.t("Result"));
             PdfPTable res = new PdfPTable(new float[]{1.6f, 1f, 1.6f, 3f});
             res.setWidthPercentage(100);
-            res.addCell(cell("Good units made", bold(9), Element.ALIGN_LEFT, SOFT, 26));
+            res.addCell(cell(I18n.t("Good units made"), bold(9), Element.ALIGN_LEFT, SOFT, 26));
             res.addCell(cell("", plain(10), Element.ALIGN_LEFT, null, 26));
-            res.addCell(cell("Scrapped units", bold(9), Element.ALIGN_LEFT, SOFT, 26));
+            res.addCell(cell(I18n.t("Scrapped units"), bold(9), Element.ALIGN_LEFT, SOFT, 26));
             res.addCell(cell("", plain(10), Element.ALIGN_LEFT, null, 26));
-            res.addCell(cell("Scrap reason", bold(9), Element.ALIGN_LEFT, SOFT, 26));
+            res.addCell(cell(I18n.t("Scrap reason"), bold(9), Element.ALIGN_LEFT, SOFT, 26));
             PdfPCell reason = cell("", plain(10), Element.ALIGN_LEFT, null, 26);
             reason.setColspan(3);
             res.addCell(reason);
@@ -195,7 +196,7 @@ public class ManufacturingPrintService {
             PdfPTable sign = new PdfPTable(3);
             sign.setWidthPercentage(100);
             sign.setSpacingBefore(26);
-            for (String l : new String[]{"Made by", "Checked by", "Date"}) {
+            for (String l : new String[]{I18n.t("Made by"), I18n.t("Checked by"), I18n.t("Date")}) {
                 PdfPCell c = new PdfPCell(new Phrase(l, muted(9)));
                 c.setBorder(com.lowagie.text.Rectangle.TOP);
                 c.setBorderColor(GREY);
@@ -206,14 +207,14 @@ public class ManufacturingPrintService {
             doc.close();
             return new Printed("job-card-" + mo.getOrderNumber() + ".pdf", out.toByteArray());
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the job card", e);
+            throw new IllegalStateException(I18n.t("Failed to build the job card"), e);
         }
     }
 
     private static void addStep(PdfPTable t, int seq, String name, String workstation, BigDecimal perUnit, BigDecimal planned) {
         t.addCell(cell(String.valueOf(seq), plain(10), Element.ALIGN_LEFT, null, 22));
         t.addCell(cell(name, plain(10), Element.ALIGN_LEFT, null, 22));
-        t.addCell(cell(workstation != null ? workstation : "Hand work", plain(10), Element.ALIGN_LEFT, null, 22));
+        t.addCell(cell(workstation != null ? workstation : I18n.t("Hand work"), plain(10), Element.ALIGN_LEFT, null, 22));
         t.addCell(cell(num(perUnit), plain(10), Element.ALIGN_RIGHT, null, 22));
         t.addCell(cell(num(planned), plain(10), Element.ALIGN_RIGHT, null, 22));
         t.addCell(cell("", plain(10), Element.ALIGN_LEFT, null, 22));

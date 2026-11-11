@@ -1,5 +1,6 @@
 package com.posapp.realestate;
 
+import com.posapp.i18n.I18n;
 import com.posapp.accounting.ExpenseService;
 import com.posapp.accounting.ExpenseStatus;
 import com.posapp.accounting.dto.ExpenseDto;
@@ -125,7 +126,7 @@ public class ReCommissionService {
     @Transactional(readOnly = true)
     public PayoutBoard board(LocalDate from, LocalDate to, String payee, boolean openOnly) {
         access.on();
-        if (from != null && to != null && to.isBefore(from)) throw ApiException.badRequest("The end of the period is before its start.");
+        if (from != null && to != null && to.isBefore(from)) throw ApiException.badRequest(I18n.t("The end of the period is before its start."));
         Map<Long, ReProperty> props = propertyRepository.findAll().stream().collect(Collectors.toMap(ReProperty::getId, Function.identity()));
         Map<Long, ReDeal> deals = dealRepository.findAll().stream().filter(d -> d.getStage() != DealStage.CANCELLED).filter(d -> {
             if (from == null && to == null) return true;
@@ -195,8 +196,8 @@ public class ReCommissionService {
     /** Sends every earned share (of the people and period chosen) to Expenses, as the commission account of the Real Estate settings. One that cannot be posted does not stop the rest. */
     public PostDueResult postDue(Actor a, LocalDate from, LocalDate to, String payee) {
         access.on();
-        if (!moduleService.isEnabled(ModuleKey.EXPENSES)) throw ApiException.badRequest("Switch on the Expenses module to post commission to the accounts.");
-        if (settingsService.entity().getCommissionAccountId() == null) throw ApiException.badRequest("Choose the expense account for commission in the Real Estate settings first.");
+        if (!moduleService.isEnabled(ModuleKey.EXPENSES)) throw ApiException.badRequest(I18n.t("Switch on the Expenses module to post commission to the accounts."));
+        if (settingsService.entity().getCommissionAccountId() == null) throw ApiException.badRequest(I18n.t("Choose the expense account for commission in the Real Estate settings first."));
         PayoutBoard b = board(from, to, payee, false);
         int posted = 0, failed = 0;
         BigDecimal amount = ZERO;
@@ -214,7 +215,7 @@ public class ReCommissionService {
                 }
             }
         }
-        String msg = posted == 0 && failed == 0 ? "Nothing was waiting to be posted." : "Posted " + posted + " share" + (posted == 1 ? "" : "s") + " to Expenses" + (failed > 0 ? "; " + failed + " could not be posted." : ".");
+        String msg = posted == 0 && failed == 0 ? I18n.t("Nothing was waiting to be posted.") : I18n.t("Posted ") + posted + " share" + (posted == 1 ? "" : "s") + I18n.t(" to Expenses") + (failed > 0 ? "; " + failed + I18n.t(" could not be posted.") : ".");
         if (posted > 0) auditLogService.record("RE_COMMISSION_POST_DUE", "Posted " + posted + " commission shares (" + amount + ") to Expenses", "ReDeal", null);
         return new PostDueResult(posted, failed, amount, problems, msg);
     }
@@ -222,15 +223,15 @@ public class ReCommissionService {
     // ------------------------------------------------------------------ the statement
 
     private PayeeStatement one(LocalDate from, LocalDate to, String payee) {
-        if (payee == null || payee.isBlank()) throw ApiException.badRequest("Choose whose statement to make.");
+        if (payee == null || payee.isBlank()) throw ApiException.badRequest(I18n.t("Choose whose statement to make."));
         PayoutBoard b = board(from, to, payee, false);
-        if (b.payees().isEmpty()) throw ApiException.notFound("There is no commission for that person" + (from != null || to != null ? " in this period." : "."));
+        if (b.payees().isEmpty()) throw ApiException.notFound(I18n.t("There is no commission for that person") + (from != null || to != null ? I18n.t(" in this period.") : "."));
         return b.payees().get(0);
     }
 
     private static String periodText(LocalDate from, LocalDate to) {
-        if (from == null && to == null) return "All sales";
-        return "Sales completed " + (from != null ? "from " + RePrintFiles.DAY.format(from) + " " : "") + (to != null ? "to " + RePrintFiles.DAY.format(to) : "");
+        if (from == null && to == null) return I18n.t("All sales");
+        return I18n.t("Sales completed ") + (from != null ? I18n.t("from ") + RePrintFiles.DAY.format(from) + " " : "") + (to != null ? I18n.t("to ") + RePrintFiles.DAY.format(to) : "");
     }
 
     @Transactional(readOnly = true)
@@ -245,28 +246,28 @@ public class ReCommissionService {
     /** E-mails the statement to a staff member (the address on their user record). */
     public MailedPayee emailStatement(Actor a, LocalDate from, LocalDate to, String payee) {
         access.on();
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
         PayeeStatement st = one(from, to, payee);
-        if (st.payeeKind() != PayeeKind.STAFF || st.payeeUserId() == null) throw ApiException.badRequest(st.payeeName() + " is not on your staff list, so there is no e-mail address. Print the statement instead.");
-        AppUser u = userRepository.findById(st.payeeUserId()).orElseThrow(() -> ApiException.notFound("That user no longer exists."));
-        if (u.getEmail() == null || u.getEmail().isBlank()) throw ApiException.badRequest(st.payeeName() + " has no e-mail address on the user record. Add one under Users first.");
+        if (st.payeeKind() != PayeeKind.STAFF || st.payeeUserId() == null) throw ApiException.badRequest(st.payeeName() + I18n.t(" is not on your staff list, so there is no e-mail address. Print the statement instead."));
+        AppUser u = userRepository.findById(st.payeeUserId()).orElseThrow(() -> ApiException.notFound(I18n.t("That user no longer exists.")));
+        if (u.getEmail() == null || u.getEmail().isBlank()) throw ApiException.badRequest(st.payeeName() + I18n.t(" has no e-mail address on the user record. Add one under Users first."));
         Printed pdf = statement(from, to, payee);
         String business = files.businessName();
         ReSettings rs = settingsService.entity();
         StringBuilder body = new StringBuilder();
-        body.append("<p>Dear ").append(HtmlUtils.htmlEscape(st.payeeName())).append(",</p>");
-        body.append("<p>Please find attached your commission statement (").append(HtmlUtils.htmlEscape(periodText(from, to).trim())).append("). ");
-        body.append("Earned: <b>").append(plain(st.earned())).append("</b>, paid: <b>").append(plain(st.paid())).append("</b>, still to be paid: <b>").append(plain(st.owed())).append("</b>.</p>");
+        body.append(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(st.payeeName())).append(",</p>");
+        body.append(I18n.t("<p>Please find attached your commission statement (")).append(HtmlUtils.htmlEscape(periodText(from, to).trim())).append("). ");
+        body.append(I18n.t("Earned: <b>")).append(plain(st.earned())).append(I18n.t("</b>, paid: <b>")).append(plain(st.paid())).append(I18n.t("</b>, still to be paid: <b>")).append(plain(st.owed())).append("</b>.</p>");
         StringBuilder contact = new StringBuilder();
         for (String part : new String[]{rs.getWebsitePhone(), rs.getWebsiteEmail()}) if (part != null && !part.isBlank()) contact.append(contact.length() == 0 ? "" : "  |  ").append(part.trim());
-        if (contact.length() > 0) body.append("<p>Questions? Contact us: ").append(HtmlUtils.htmlEscape(contact.toString())).append("</p>");
+        if (contact.length() > 0) body.append(I18n.t("<p>Questions? Contact us: ")).append(HtmlUtils.htmlEscape(contact.toString())).append("</p>");
         body.append("<p>").append(HtmlUtils.htmlEscape(business)).append("</p>");
-        mailService.send(u.getEmail(), "Your commission statement - " + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
+        mailService.send(u.getEmail(), I18n.t("Your commission statement - ") + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
         auditLogService.record("RE_COMMISSION_STATEMENT", "E-mailed a commission statement to " + st.payeeName() + " (" + u.getEmail() + ")", "AppUser", u.getId());
-        return new MailedPayee(u.getEmail(), "Statement sent to " + u.getEmail() + ".");
+        return new MailedPayee(u.getEmail(), I18n.t("Statement sent to ") + u.getEmail() + ".");
     }
 
     private static String plain(BigDecimal v) {
-        return new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(v);
+        return new java.text.DecimalFormat("#,##0.00", I18n.symbols()).format(v);
     }
 }

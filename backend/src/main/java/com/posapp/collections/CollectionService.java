@@ -1,5 +1,6 @@
 package com.posapp.collections;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.branch.BranchService;
 import com.posapp.collections.CollectionDtos.Aging;
@@ -112,7 +113,7 @@ public class CollectionService {
     }
 
     private static int range(Integer v, int min, int max, String what) {
-        if (v < min || v > max) throw ApiException.badRequest(what + " must be between " + min + " and " + max + ".");
+        if (v < min || v > max) throw ApiException.badRequest(what + I18n.t(" must be between ") + min + " and " + max + ".");
         return v;
     }
 
@@ -120,10 +121,10 @@ public class CollectionService {
     public SettingsDto updateSettings(SettingsRequest r) {
         CollectionSettings s = settingsEntity();
         if (r.autoEnabled() != null) s.setAutoEnabled(r.autoEnabled());
-        if (r.firstDays() != null) s.setFirstDays(range(r.firstDays(), 1, 365, "Days after the due date"));
-        if (r.repeatDays() != null) s.setRepeatDays(range(r.repeatDays(), 1, 365, "Days between reminders"));
-        if (r.maxReminders() != null) s.setMaxReminders(range(r.maxReminders(), 1, 20, "Number of reminders"));
-        if (r.defaultTermDays() != null) s.setDefaultTermDays(range(r.defaultTermDays(), 0, 365, "Payment term"));
+        if (r.firstDays() != null) s.setFirstDays(range(r.firstDays(), 1, 365, I18n.t("Days after the due date")));
+        if (r.repeatDays() != null) s.setRepeatDays(range(r.repeatDays(), 1, 365, I18n.t("Days between reminders")));
+        if (r.maxReminders() != null) s.setMaxReminders(range(r.maxReminders(), 1, 20, I18n.t("Number of reminders")));
+        if (r.defaultTermDays() != null) s.setDefaultTermDays(range(r.defaultTermDays(), 0, 365, I18n.t("Payment term")));
         settingsRepository.save(s);
         auditLogService.record("COLLECTION_SETTINGS_CHANGED", "Collections settings: automatic reminders " + (s.isAutoEnabled() ? "on" : "off") + ", first after " + s.getFirstDays() + " days, every "
                 + s.getRepeatDays() + " days, at most " + s.getMaxReminders() + ", default term " + s.getDefaultTermDays() + " days", "CollectionSettings", s.getId());
@@ -284,10 +285,10 @@ public class CollectionService {
 
     @Transactional
     public StatementData statementData(Long customerId) {
-        Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound("Customer not found."));
+        Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound(I18n.t("Customer not found.")));
         LocalDate today = LocalDate.now();
         List<ItemRow> items = open(customerId, today).stream().sorted(Comparator.comparing(ItemRow::date).thenComparing(i -> i.number() == null ? "" : i.number())).toList();
-        List<StatementLine> lines = items.stream().map(i -> new StatementLine(i.date(), i.number(), "POS_SALE".equals(i.kind()) ? "Sale on credit" : "Invoice", i.total(), i.paid(), i.outstanding(), i.dueDate(),
+        List<StatementLine> lines = items.stream().map(i -> new StatementLine(i.date(), i.number(), "POS_SALE".equals(i.kind()) ? I18n.t("Sale on credit") : I18n.t("Invoice"), i.total(), i.paid(), i.outstanding(), i.dueDate(),
                 i.daysOverdue())).toList();
         LocalDate since = today.minusDays(90);
         List<PaymentLine> payments = new ArrayList<>();
@@ -312,12 +313,12 @@ public class CollectionService {
     }
 
     private void requireMail() {
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
     }
 
     private void contact(StringBuilder body) {
         String contact = files.contactLine();
-        if (!contact.isEmpty()) body.append("<p>Questions? Contact us: ").append(HtmlUtils.htmlEscape(contact)).append("</p>");
+        if (!contact.isEmpty()) body.append(I18n.t("<p>Questions? Contact us: ")).append(HtmlUtils.htmlEscape(contact)).append("</p>");
         body.append("<p>").append(HtmlUtils.htmlEscape(files.businessName())).append("</p>");
     }
 
@@ -336,18 +337,18 @@ public class CollectionService {
     public MailedStatement emailStatement(Long customerId, String by) {
         requireMail();
         StatementData d = statementData(customerId);
-        if (d.email() == null || d.email().isBlank()) throw ApiException.badRequest("This customer has no e-mail address on the customer record.");
+        if (d.email() == null || d.email().isBlank()) throw ApiException.badRequest(I18n.t("This customer has no e-mail address on the customer record."));
         byte[] pdf = files.statement(d);
-        StringBuilder body = new StringBuilder("<p>Dear ").append(HtmlUtils.htmlEscape(d.customerName())).append(",</p>");
-        body.append("<p>Please find attached your statement of account with ").append(HtmlUtils.htmlEscape(files.businessName())).append(" up to ").append(CollectionFiles.day(d.asOf())).append(".</p>");
-        if (d.totalOutstanding().signum() > 0) body.append("<p>The amount still to pay is <b>").append(CollectionFiles.amount(files.currency(), d.totalOutstanding())).append("</b>.</p>");
-        else body.append("<p>Nothing is owed on your account. Thank you.</p>");
+        StringBuilder body = new StringBuilder(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(d.customerName())).append(",</p>");
+        body.append(I18n.t("<p>Please find attached your statement of account with ")).append(HtmlUtils.htmlEscape(files.businessName())).append(I18n.t(" up to ")).append(CollectionFiles.day(d.asOf())).append(".</p>");
+        if (d.totalOutstanding().signum() > 0) body.append(I18n.t("<p>The amount still to pay is <b>")).append(CollectionFiles.amount(files.currency(), d.totalOutstanding())).append("</b>.</p>");
+        else body.append(I18n.t("<p>Nothing is owed on your account. Thank you.</p>"));
         contact(body);
         String to = d.email().trim();
-        mailService.send(to, "Your statement of account - " + files.businessName(), body.toString(), List.of(new EmailAttachment("statement-" + slug(d.customerName()) + ".pdf", "application/pdf", pdf)));
+        mailService.send(to, I18n.t("Your statement of account - ") + files.businessName(), body.toString(), List.of(new EmailAttachment("statement-" + slug(d.customerName()) + ".pdf", "application/pdf", pdf)));
         logSent(customerId, "STATEMENT", to, d.lines().size(), d.totalOutstanding(), by);
         auditLogService.record("CUSTOMER_STATEMENT_SENT", "E-mailed the statement of " + d.customerName() + " to " + to, "Customer", customerId);
-        return new MailedStatement(to, "Statement sent to " + to + ".");
+        return new MailedStatement(to, I18n.t("Statement sent to ") + to + ".");
     }
 
     // ------------------------------------------------------------------ reminders
@@ -355,15 +356,15 @@ public class CollectionService {
     private String reminderHtml(String name, List<ItemRow> list) {
         String cur = files.currency();
         BigDecimal total = list.stream().map(ItemRow::outstanding).reduce(ZERO, BigDecimal::add);
-        StringBuilder b = new StringBuilder("<p>Dear ").append(HtmlUtils.htmlEscape(name)).append(",</p>");
-        b.append("<p>Our records show that the following amounts are overdue. If you have already paid, please ignore this reminder and accept our thanks.</p>");
-        b.append("<table cellpadding=\"4\" style=\"border-collapse:collapse;\" border=\"1\"><tr><th>Number</th><th>Due</th><th>Days overdue</th><th align=\"right\">Still to pay</th></tr>");
+        StringBuilder b = new StringBuilder(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(name)).append(",</p>");
+        b.append(I18n.t("<p>Our records show that the following amounts are overdue. If you have already paid, please ignore this reminder and accept our thanks.</p>"));
+        b.append(I18n.t("<table cellpadding=\"4\" style=\"border-collapse:collapse;\" border=\"1\"><tr><th>Number</th><th>Due</th><th>Days overdue</th><th align=\"right\">Still to pay</th></tr>"));
         for (ItemRow i : list) {
             b.append("<tr><td>").append(HtmlUtils.htmlEscape(String.valueOf(i.number()))).append("</td><td>").append(i.dueDate()).append("</td><td>").append(i.daysOverdue())
                     .append("</td><td align=\"right\">").append(CollectionFiles.amount(cur, i.outstanding())).append("</td></tr>");
         }
-        b.append("<tr><td colspan=\"3\"><b>Total</b></td><td align=\"right\"><b>").append(CollectionFiles.amount(cur, total)).append("</b></td></tr></table>");
-        b.append("<p>Your statement is attached. Please arrange payment as soon as you can, or contact us if there is a problem with any of these.</p>");
+        b.append(I18n.t("<tr><td colspan=\"3\"><b>Total</b></td><td align=\"right\"><b>")).append(CollectionFiles.amount(cur, total)).append("</b></td></tr></table>");
+        b.append(I18n.t("<p>Your statement is attached. Please arrange payment as soon as you can, or contact us if there is a problem with any of these.</p>"));
         contact(b);
         return b.toString();
     }
@@ -379,17 +380,17 @@ public class CollectionService {
             BigDecimal owed = list.stream().map(ItemRow::outstanding).reduce(ZERO, BigDecimal::add);
             if (email == null) {
                 skipped++;
-                out.add(new ReminderItem(e.getKey(), name, null, list.size(), owed, "This customer has no e-mail address."));
+                out.add(new ReminderItem(e.getKey(), name, null, list.size(), owed, I18n.t("This customer has no e-mail address.")));
                 continue;
             }
             try {
                 byte[] pdf = files.statement(statementData(e.getKey()));
-                mailService.send(email, "Overdue payment reminder - " + files.businessName(), reminderHtml(name, list),
+                mailService.send(email, I18n.t("Overdue payment reminder - ") + files.businessName(), reminderHtml(name, list),
                         List.of(new EmailAttachment("statement-" + slug(name) + ".pdf", "application/pdf", pdf)));
             } catch (Exception ex) {
                 log.warn("Could not send the payment reminder to {}: {}", name, ex.getMessage());
                 skipped++;
-                out.add(new ReminderItem(e.getKey(), name, email, list.size(), owed, "The e-mail could not be sent."));
+                out.add(new ReminderItem(e.getKey(), name, email, list.size(), owed, I18n.t("The e-mail could not be sent.")));
                 continue;
             }
             logSent(e.getKey(), kind, email, list.size(), owed, by);
@@ -411,10 +412,10 @@ public class CollectionService {
     @Transactional
     public RemindResult remind(List<Long> customerIds, String by) {
         requireMail();
-        if (customerIds == null || customerIds.isEmpty()) throw ApiException.badRequest("Choose the customers to remind.");
+        if (customerIds == null || customerIds.isEmpty()) throw ApiException.badRequest(I18n.t("Choose the customers to remind."));
         Set<Long> want = Set.copyOf(customerIds);
         List<ItemRow> chosen = open(null, LocalDate.now()).stream().filter(i -> want.contains(i.customerId()) && i.daysOverdue() > 0).sorted(WORST_FIRST).toList();
-        if (chosen.isEmpty()) throw ApiException.badRequest("None of those customers has anything overdue.");
+        if (chosen.isEmpty()) throw ApiException.badRequest(I18n.t("None of those customers has anything overdue."));
         return sendTo(byCustomer(chosen), "MANUAL", by);
     }
 
@@ -443,7 +444,7 @@ public class CollectionService {
             ItemRow f = e.getValue().get(0);
             String email = f.customerEmail() != null && !f.customerEmail().isBlank() ? f.customerEmail().trim() : null;
             out.add(new ReminderItem(e.getKey(), f.customerName(), email, e.getValue().size(), e.getValue().stream().map(ItemRow::outstanding).reduce(ZERO, BigDecimal::add),
-                    email == null ? "This customer has no e-mail address." : null));
+                    email == null ? I18n.t("This customer has no e-mail address.") : null));
         }
         return out;
     }

@@ -1,6 +1,7 @@
 package com.posapp.warehouse;
 
 
+import com.posapp.i18n.I18n;
 import java.math.BigDecimal;import com.posapp.audit.AuditLogService;
 import com.posapp.branch.Branch;
 import com.posapp.branch.BranchService;
@@ -123,10 +124,10 @@ public class WarehouseService {
     @Transactional
     public WarehouseDto create(WarehouseRequest request) {
         if (!storeSettingsService.getSettingsEntity().isMultiWarehouseEnabled() && warehouseRepository.count() >= 1) {
-            throw ApiException.conflict("Multi-warehouse is turned off — enable it in Inventory settings before adding another warehouse.");
+            throw ApiException.conflict(I18n.t("Multi-warehouse is turned off — enable it in Inventory settings before adding another warehouse."));
         }
         if (warehouseRepository.existsByNameIgnoreCase(request.name())) {
-            throw ApiException.conflict("A warehouse named '" + request.name() + "' already exists");
+            throw ApiException.conflict(I18n.t("A warehouse named '") + request.name() + I18n.t("' already exists"));
         }
         Warehouse warehouse = new Warehouse();
         warehouse.setName(request.name());
@@ -140,8 +141,8 @@ public class WarehouseService {
         Warehouse saved = warehouseRepository.save(warehouse);
         auditLogService.record("WAREHOUSE_CREATED", "Created warehouse '" + saved.getName() + "'",
                 "Warehouse", saved.getId());
-        WarehouseLocation receiving = createLocationInternal(saved, resolveLocationName(saved, "Receiving"), LocationType.RECEIVING);
-        WarehouseLocation sales = createLocationInternal(saved, resolveLocationName(saved, "Main Stock"), LocationType.SALES);
+        WarehouseLocation receiving = createLocationInternal(saved, resolveLocationName(saved, I18n.t("Receiving")), LocationType.RECEIVING);
+        WarehouseLocation sales = createLocationInternal(saved, resolveLocationName(saved, I18n.t("Main Stock")), LocationType.SALES);
         auditLogService.record("WAREHOUSE_LOCATION_CREATED",
                 "Seeded Receiving (" + receiving.getName() + ") and Main Stock (" + sales.getName() + ") locations for warehouse '" + saved.getName() + "'",
                 "WarehouseLocation", sales.getId());
@@ -151,12 +152,12 @@ public class WarehouseService {
     @Transactional
     public WarehouseDto update(Long id, WarehouseRequest request) {
         Warehouse warehouse = warehouseRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Warehouse not found: " + id));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Warehouse not found: ") + id));
         if (!warehouse.getName().equalsIgnoreCase(request.name()) && warehouseRepository.existsByNameIgnoreCase(request.name())) {
-            throw ApiException.conflict("A warehouse named '" + request.name() + "' already exists");
+            throw ApiException.conflict(I18n.t("A warehouse named '") + request.name() + I18n.t("' already exists"));
         }
         if (warehouse.isPrimary() && request.active() != null && !request.active()) {
-            throw ApiException.conflict("Cannot deactivate '" + warehouse.getName() + "' — it is the primary warehouse");
+            throw ApiException.conflict(I18n.t("Cannot deactivate '") + warehouse.getName() + I18n.t("' — it is the primary warehouse"));
         }
         warehouse.setName(request.name());
         warehouse.setAddress(request.address());
@@ -177,9 +178,9 @@ public class WarehouseService {
     @Transactional
     public WarehouseDto setActive(Long id, boolean active) {
         Warehouse warehouse = warehouseRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Warehouse not found: " + id));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Warehouse not found: ") + id));
         if (warehouse.isPrimary() && !active) {
-            throw ApiException.conflict("Cannot deactivate '" + warehouse.getName() + "' — it is the primary warehouse");
+            throw ApiException.conflict(I18n.t("Cannot deactivate '") + warehouse.getName() + I18n.t("' — it is the primary warehouse"));
         }
         warehouse.setActive(active);
         Warehouse saved = warehouseRepository.save(warehouse);
@@ -198,7 +199,7 @@ public class WarehouseService {
     @Transactional(readOnly = true)
     public Warehouse getDefaultWarehouseOrThrow() {
         return warehouseRepository.findByPrimaryTrue()
-                .orElseThrow(() -> ApiException.notFound("No primary warehouse is configured"));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("No primary warehouse is configured")));
     }
 
     private static BigDecimal toDec(Object o) {
@@ -209,14 +210,14 @@ public class WarehouseService {
     @Transactional(readOnly = true)
     public Warehouse getEntityOrThrow(Long id) {
         return warehouseRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Warehouse not found: " + id));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Warehouse not found: ") + id));
     }
 
     /** The warehouse's one RECEIVING location — see {@link LocationType}'s own javadoc on why there's always exactly one. Used by PurchaseOrderService/PurchaseReturnService to resolve where a receipt/reversal lands. */
     @Transactional(readOnly = true)
     public WarehouseLocation getReceivingLocationOrThrow(Warehouse warehouse) {
         return warehouseLocationRepository.findByWarehouseAndType(warehouse, LocationType.RECEIVING)
-                .orElseThrow(() -> ApiException.notFound("No RECEIVING location configured for warehouse '" + warehouse.getName() + "'"));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("No RECEIVING location configured for warehouse '") + warehouse.getName() + "'"));
     }
 
     /**
@@ -232,12 +233,12 @@ public class WarehouseService {
     public WarehouseLocation resolveFallbackSalesLocation(Warehouse warehouse) {
         List<WarehouseLocation> active = warehouseLocationRepository.findAllByWarehouseAndTypeAndActiveTrue(warehouse, LocationType.SALES);
         if (active.isEmpty()) {
-            throw ApiException.conflict("Warehouse '" + warehouse.getName()
-                    + "' has no active SALES location — add one in Admin > Warehouses, or assign this register a specific location in Admin > Registers.");
+            throw ApiException.conflict(I18n.t("Warehouse '") + warehouse.getName()
+                    + I18n.t("' has no active SALES location — add one in Admin > Warehouses, or assign this register a specific location in Admin > Registers."));
         }
         if (active.size() > 1) {
-            throw ApiException.conflict("Warehouse '" + warehouse.getName()
-                    + "' has more than one active SALES location — assign this register a specific location in Admin > Registers.");
+            throw ApiException.conflict(I18n.t("Warehouse '") + warehouse.getName()
+                    + I18n.t("' has more than one active SALES location — assign this register a specific location in Admin > Registers."));
         }
         return active.get(0);
     }
@@ -265,7 +266,7 @@ public class WarehouseService {
         if (!any.isEmpty()) {
             return any.stream().min(Comparator.comparing(WarehouseLocation::getId)).orElseThrow();
         }
-        throw ApiException.notFound("Warehouse '" + warehouse.getName() + "' has no SALES location configured");
+        throw ApiException.notFound(I18n.t("Warehouse '") + warehouse.getName() + I18n.t("' has no SALES location configured"));
     }
 
     /**
@@ -452,13 +453,13 @@ public class WarehouseService {
         for (Warehouse warehouse : warehouseRepository.findAll()) {
             boolean hasAnySalesLocation = !warehouseLocationRepository.findAllByWarehouseAndType(warehouse, LocationType.SALES).isEmpty();
             if (!hasAnySalesLocation) {
-                WarehouseLocation sales = createLocationInternal(warehouse, resolveLocationName(warehouse, "Main Stock"), LocationType.SALES);
+                WarehouseLocation sales = createLocationInternal(warehouse, resolveLocationName(warehouse, I18n.t("Main Stock")), LocationType.SALES);
                 auditLogService.record("WAREHOUSE_LOCATION_CREATED",
                         "Seeded Main Stock (SALES) location for warehouse '" + warehouse.getName() + "'",
                         "WarehouseLocation", sales.getId());
             }
             if (warehouseLocationRepository.findByWarehouseAndType(warehouse, LocationType.RECEIVING).isEmpty()) {
-                WarehouseLocation receiving = createLocationInternal(warehouse, resolveLocationName(warehouse, "Receiving"), LocationType.RECEIVING);
+                WarehouseLocation receiving = createLocationInternal(warehouse, resolveLocationName(warehouse, I18n.t("Receiving")), LocationType.RECEIVING);
                 auditLogService.record("WAREHOUSE_LOCATION_CREATED",
                         "Seeded Receiving location for warehouse '" + warehouse.getName() + "'",
                         "WarehouseLocation", receiving.getId());
@@ -637,11 +638,11 @@ public class WarehouseService {
     public WarehouseLocationDto createLocation(Long warehouseId, WarehouseLocationRequest request) {
         Warehouse warehouse = getEntityOrThrow(warehouseId);
         if (warehouseLocationRepository.existsByWarehouseAndNameIgnoreCase(warehouse, request.name())) {
-            throw ApiException.conflict("Warehouse '" + warehouse.getName() + "' already has a location named '" + request.name() + "'");
+            throw ApiException.conflict(I18n.t("Warehouse '") + warehouse.getName() + I18n.t("' already has a location named '") + request.name() + "'");
         }
         LocationType type = parseType(request.type());
         if (type == LocationType.RECEIVING && warehouseLocationRepository.findByWarehouseAndType(warehouse, LocationType.RECEIVING).isPresent()) {
-            throw ApiException.conflict("Warehouse '" + warehouse.getName() + "' already has a RECEIVING location — every warehouse can only have one.");
+            throw ApiException.conflict(I18n.t("Warehouse '") + warehouse.getName() + I18n.t("' already has a RECEIVING location — every warehouse can only have one."));
         }
         WarehouseLocation saved = createLocationInternal(warehouse, request.name(), type);
         auditLogService.record("WAREHOUSE_LOCATION_CREATED",
@@ -656,12 +657,12 @@ public class WarehouseService {
         WarehouseLocation location = getLocationOrThrow(locationId);
         if (!active) {
             if (location.getType() == LocationType.RECEIVING) {
-                throw ApiException.conflict("Cannot deactivate '" + location.getName() + "' — it is the RECEIVING location for warehouse '"
+                throw ApiException.conflict(I18n.t("Cannot deactivate '") + location.getName() + I18n.t("' — it is the RECEIVING location for warehouse '")
                         + location.getWarehouse().getName() + "'");
             }
             if (location.getType() == LocationType.SALES
                     && warehouseLocationRepository.findAllByWarehouseAndTypeAndActiveTrue(location.getWarehouse(), LocationType.SALES).size() <= 1) {
-                throw ApiException.conflict("Cannot deactivate '" + location.getName() + "' — it is the last active SALES location for warehouse '"
+                throw ApiException.conflict(I18n.t("Cannot deactivate '") + location.getName() + I18n.t("' — it is the last active SALES location for warehouse '")
                         + location.getWarehouse().getName() + "'");
             }
         }
@@ -692,17 +693,17 @@ public class WarehouseService {
             return WarehouseLocationDto.from(location);
         }
         if (currentType == LocationType.RECEIVING) {
-            throw ApiException.conflict("'" + location.getName() + "' is the RECEIVING location for warehouse '"
-                    + location.getWarehouse().getName() + "' — it can't be retyped.");
+            throw ApiException.conflict("'" + location.getName() + I18n.t("' is the RECEIVING location for warehouse '")
+                    + location.getWarehouse().getName() + I18n.t("' — it can't be retyped."));
         }
         if (currentType == LocationType.SALES
                 && location.isActive()
                 && warehouseLocationRepository.findAllByWarehouseAndTypeAndActiveTrue(location.getWarehouse(), LocationType.SALES).size() <= 1) {
-            throw ApiException.conflict("Cannot retype '" + location.getName() + "' — it is the last active SALES location for warehouse '"
-                    + location.getWarehouse().getName() + "'. Every warehouse needs at least one.");
+            throw ApiException.conflict(I18n.t("Cannot retype '") + location.getName() + I18n.t("' — it is the last active SALES location for warehouse '")
+                    + location.getWarehouse().getName() + I18n.t("'. Every warehouse needs at least one."));
         }
         if (newType == LocationType.RECEIVING && warehouseLocationRepository.findByWarehouseAndType(location.getWarehouse(), LocationType.RECEIVING).isPresent()) {
-            throw ApiException.conflict("Warehouse '" + location.getWarehouse().getName() + "' already has a RECEIVING location.");
+            throw ApiException.conflict(I18n.t("Warehouse '") + location.getWarehouse().getName() + I18n.t("' already has a RECEIVING location."));
         }
         location.setType(newType);
         WarehouseLocation saved = warehouseLocationRepository.save(location);
@@ -714,12 +715,12 @@ public class WarehouseService {
 
     private LocationType parseType(String name) {
         if (name == null || name.isBlank()) {
-            throw ApiException.badRequest("Location type is required");
+            throw ApiException.badRequest(I18n.t("Location type is required"));
         }
         try {
             return LocationType.valueOf(name.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw ApiException.badRequest("Unknown location type '" + name + "' — expected RECEIVING, SALES, STORAGE, or DAMAGED");
+            throw ApiException.badRequest(I18n.t("Unknown location type '") + name + I18n.t("' — expected RECEIVING, SALES, STORAGE, or DAMAGED"));
         }
     }
 
@@ -739,10 +740,10 @@ public class WarehouseService {
     /** See {@link #getUsableLocationOrThrow}; also re-checked at the moment stock actually moves, since a location can be deactivated after a document was drafted. */
     public void assertUsable(WarehouseLocation location) {
         if (!location.isActive() || location.getWarehouse() == null || !location.getWarehouse().isActive()) {
-            throw ApiException.badRequest("Location '" + location.getName() + "' is inactive and cannot be used");
+            throw ApiException.badRequest(I18n.t("Location '") + location.getName() + I18n.t("' is inactive and cannot be used"));
         }
         if (location.getType() == LocationType.DAMAGED) {
-            throw ApiException.badRequest("Location '" + location.getName() + "' is a Damaged location and cannot be used for this");
+            throw ApiException.badRequest(I18n.t("Location '") + location.getName() + I18n.t("' is a Damaged location and cannot be used for this"));
         }
     }
 
@@ -762,7 +763,7 @@ public class WarehouseService {
         try {
             assertUsable(location);
         } catch (ApiException ex) {
-            throw ApiException.badRequest("The restaurant kitchen location set in Inventory settings can't be used: " + ex.getMessage());
+            throw ApiException.badRequest(I18n.t("The restaurant kitchen location set in Inventory settings can't be used: ") + ex.getMessage());
         }
         return location;
     }
@@ -777,6 +778,6 @@ public class WarehouseService {
     @Transactional(readOnly = true)
     public WarehouseLocation getLocationOrThrow(Long id) {
         return warehouseLocationRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Warehouse location not found: " + id));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Warehouse location not found: ") + id));
     }
 }

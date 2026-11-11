@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.credit.CustomerCreditService;
@@ -94,16 +95,16 @@ public class LawPortalService {
     }
 
     private void requireAccount(LawPortalPrincipal p) {
-        LawPortalAccount a = accountRepository.findById(p.accountId()).orElseThrow(() -> ApiException.forbidden("Sign in again."));
-        if (!a.isActive() || !a.getCustomerId().equals(p.customerId())) throw ApiException.forbidden("Sign in again.");
+        LawPortalAccount a = accountRepository.findById(p.accountId()).orElseThrow(() -> ApiException.forbidden(I18n.t("Sign in again.")));
+        if (!a.isActive() || !a.getCustomerId().equals(p.customerId())) throw ApiException.forbidden(I18n.t("Sign in again."));
     }
 
     /** The matter, if it is this client's and open to the portal. Anything else is "not found". */
     private Open open(LawPortalPrincipal p, Long matterId) {
         requireAccount(p);
-        LawMatter m = matterRepository.findById(matterId).orElseThrow(() -> ApiException.notFound("Matter not found."));
-        if (!p.customerId().equals(m.getClientCustomerId())) throw ApiException.notFound("Matter not found.");
-        LawMatterPortal portal = portalRepository.findByMatterId(m.getId()).filter(LawMatterPortal::isEnabled).orElseThrow(() -> ApiException.notFound("Matter not found."));
+        LawMatter m = matterRepository.findById(matterId).orElseThrow(() -> ApiException.notFound(I18n.t("Matter not found.")));
+        if (!p.customerId().equals(m.getClientCustomerId())) throw ApiException.notFound(I18n.t("Matter not found."));
+        LawMatterPortal portal = portalRepository.findByMatterId(m.getId()).filter(LawMatterPortal::isEnabled).orElseThrow(() -> ApiException.notFound(I18n.t("Matter not found.")));
         return new Open(m, portal);
     }
 
@@ -183,10 +184,10 @@ public class LawPortalService {
 
     private static String kind(TrustType t) {
         return switch (t) {
-            case DEPOSIT -> "Money received";
-            case PAYOUT -> "Payment made for you";
-            case FEE_TRANSFER -> "Fees paid from your money";
-            case DEPOSIT_REVERSAL -> "Deposit returned";
+            case DEPOSIT -> I18n.t("Money received");
+            case PAYOUT -> I18n.t("Payment made for you");
+            case FEE_TRANSFER -> I18n.t("Fees paid from your money");
+            case DEPOSIT_REVERSAL -> I18n.t("Deposit returned");
         };
     }
 
@@ -207,12 +208,12 @@ public class LawPortalService {
 
     @Transactional
     public Download download(LawPortalPrincipal p, Long documentId) {
-        LawDocument d = documentRepository.findById(documentId).orElseThrow(() -> ApiException.notFound("Document not found."));
+        LawDocument d = documentRepository.findById(documentId).orElseThrow(() -> ApiException.notFound(I18n.t("Document not found.")));
         Open o = open(p, d.getMatterId());
         boolean ok = d.isFromClient()
                 ? o.portal.isAllowUpload()
                 : (o.portal.isShowDocuments() && d.isSharedWithClient() && !d.isConfidential() && !d.isArchived());
-        if (!ok) throw ApiException.notFound("Document not found.");
+        if (!ok) throw ApiException.notFound(I18n.t("Document not found."));
         audit.record("LAW_PORTAL_DOWNLOAD", "Client " + p.email() + " downloaded '" + d.getName() + "' from matter " + o.matter.getNumber(), "LawDocument", d.getId());
         return documents.currentFile(d);
     }
@@ -220,21 +221,21 @@ public class LawPortalService {
     @Transactional
     public UploadDto upload(LawPortalPrincipal p, Long matterId, MultipartFile file, String name) {
         Open o = open(p, matterId);
-        if (!o.portal.isAllowUpload()) throw ApiException.conflict("Sending documents is not switched on for this matter.");
-        if (o.matter.getStatus() == MatterStatus.CLOSED) throw ApiException.conflict("This matter is closed.");
-        if (file == null || file.isEmpty()) throw ApiException.badRequest("Choose a file to send.");
-        if (file.getSize() > LawDocumentService.MAX_BYTES) throw ApiException.badRequest("That file is too big. The limit is 25 MB.");
+        if (!o.portal.isAllowUpload()) throw ApiException.conflict(I18n.t("Sending documents is not switched on for this matter."));
+        if (o.matter.getStatus() == MatterStatus.CLOSED) throw ApiException.conflict(I18n.t("This matter is closed."));
+        if (file == null || file.isEmpty()) throw ApiException.badRequest(I18n.t("Choose a file to send."));
+        if (file.getSize() > LawDocumentService.MAX_BYTES) throw ApiException.badRequest(I18n.t("That file is too big. The limit is 25 MB."));
         long pending = documentRepository.findByMatterIdOrderByUpdatedAtDesc(o.matter.getId()).stream().filter(d -> d.isFromClient() && d.getReviewStatus() == DocReview.PENDING).count();
-        if (pending >= MAX_PENDING_UPLOADS) throw ApiException.conflict("Several documents are still waiting for the firm to look at them. Please wait before sending more.");
+        if (pending >= MAX_PENDING_UPLOADS) throw ApiException.conflict(I18n.t("Several documents are still waiting for the firm to look at them. Please wait before sending more."));
         byte[] data;
         try {
             data = file.getBytes();
         } catch (IOException e) {
-            throw ApiException.badRequest("The file could not be read.");
+            throw ApiException.badRequest(I18n.t("The file could not be read."));
         }
         LawDocument d = documents.clientUpload(o.matter, p.name(), data, file.getOriginalFilename(), file.getContentType(), name);
         audit.record("LAW_PORTAL_UPLOAD", "Client " + p.email() + " sent '" + d.getName() + "' on matter " + o.matter.getNumber(), "LawDocument", d.getId());
-        notifyLead(o.matter, "A client sent a document on " + o.matter.getNumber(), "<p>" + esc(p.name()) + " sent the document '" + esc(d.getName()) + "' through the client portal. It is waiting for your review on the matter's Documents tab.</p>");
+        notifyLead(o.matter, I18n.t("A client sent a document on ") + o.matter.getNumber(), "<p>" + esc(p.name()) + I18n.t(" sent the document '") + esc(d.getName()) + I18n.t("' through the client portal. It is waiting for your review on the matter's Documents tab.</p>"));
         return new UploadDto(d.getId(), d.getName(), d.getFileName(), d.getSizeBytes(), d.getReviewStatus(), d.getReviewNote(), d.getCreatedAt());
     }
 
@@ -243,12 +244,12 @@ public class LawPortalService {
     @Transactional
     public List<MessageDto> post(LawPortalPrincipal p, Long matterId, MessageRequest r) {
         Open o = open(p, matterId);
-        if (!o.portal.isAllowMessages()) throw ApiException.conflict("Messages are not switched on for this matter.");
+        if (!o.portal.isAllowMessages()) throw ApiException.conflict(I18n.t("Messages are not switched on for this matter."));
         String body = r == null || r.body() == null ? null : r.body().trim();
-        if (body == null || body.isEmpty()) throw ApiException.badRequest("Write a message.");
-        if (body.length() > 2000) throw ApiException.badRequest("Keep the message under 2000 characters.");
+        if (body == null || body.isEmpty()) throw ApiException.badRequest(I18n.t("Write a message."));
+        if (body.length() > 2000) throw ApiException.badRequest(I18n.t("Keep the message under 2000 characters."));
         if (messageRepository.countByMatterIdAndFromClientTrueAndReadByStaffFalse(o.matter.getId()) >= MAX_UNANSWERED) {
-            throw ApiException.conflict("The firm has not read your earlier messages yet. Please wait for a reply.");
+            throw ApiException.conflict(I18n.t("The firm has not read your earlier messages yet. Please wait for a reply."));
         }
         LawPortalMessage x = new LawPortalMessage();
         x.setMatterId(o.matter.getId());
@@ -259,7 +260,7 @@ public class LawPortalService {
         x.setReadByClient(true);
         messageRepository.save(x);
         audit.record("LAW_PORTAL_MESSAGE_IN", "Client " + p.email() + " wrote on matter " + o.matter.getNumber(), "LawMatter", o.matter.getId());
-        notifyLead(o.matter, "New client message on " + o.matter.getNumber(), "<p>" + esc(p.name()) + " wrote to you through the client portal. Open the matter's Client portal tab to read and answer.</p>");
+        notifyLead(o.matter, I18n.t("New client message on ") + o.matter.getNumber(), "<p>" + esc(p.name()) + I18n.t(" wrote to you through the client portal. Open the matter's Client portal tab to read and answer.</p>"));
         return messageRepository.findByMatterIdOrderByIdAsc(o.matter.getId()).stream().map(m -> new MessageDto(m.getId(), m.isFromClient(), m.getSenderName(), m.getBody(), m.getCreatedAt())).toList();
     }
 

@@ -1,5 +1,6 @@
 package com.posapp.propertymgmt;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.CatalogService;
 import com.posapp.catalog.Product;
@@ -96,7 +97,7 @@ public class PmReminderService {
     }
 
     private static int range(Integer v, int lo, int hi, String what) {
-        if (v < lo || v > hi) throw ApiException.badRequest(what + " must be between " + lo + " and " + hi + ".");
+        if (v < lo || v > hi) throw ApiException.badRequest(what + I18n.t(" must be between ") + lo + " and " + hi + ".");
         return v;
     }
 
@@ -104,35 +105,35 @@ public class PmReminderService {
     public ReminderSettingsDto saveSettings(ReminderSettingsRequest r) {
         access.on();
         PmSettings s = settings.entity();
-        if (r.reminderBeforeDays() != null) s.setReminderBeforeDays(range(r.reminderBeforeDays(), 0, 30, "Days before the due date"));
-        if (r.overdueFirstDays() != null) s.setOverdueFirstDays(range(r.overdueFirstDays(), 0, 90, "Days after the due date for the first reminder"));
-        if (r.overdueRepeatDays() != null) s.setOverdueRepeatDays(range(r.overdueRepeatDays(), 0, 90, "Days between reminders"));
-        if (r.overdueMaxReminders() != null) s.setOverdueMaxReminders(range(r.overdueMaxReminders(), 1, 12, "The most reminders for one late rent"));
-        if (r.lateFeeGraceDays() != null) s.setLateFeeGraceDays(range(r.lateFeeGraceDays(), 0, 90, "The grace period"));
+        if (r.reminderBeforeDays() != null) s.setReminderBeforeDays(range(r.reminderBeforeDays(), 0, 30, I18n.t("Days before the due date")));
+        if (r.overdueFirstDays() != null) s.setOverdueFirstDays(range(r.overdueFirstDays(), 0, 90, I18n.t("Days after the due date for the first reminder")));
+        if (r.overdueRepeatDays() != null) s.setOverdueRepeatDays(range(r.overdueRepeatDays(), 0, 90, I18n.t("Days between reminders")));
+        if (r.overdueMaxReminders() != null) s.setOverdueMaxReminders(range(r.overdueMaxReminders(), 1, 12, I18n.t("The most reminders for one late rent")));
+        if (r.lateFeeGraceDays() != null) s.setLateFeeGraceDays(range(r.lateFeeGraceDays(), 0, 90, I18n.t("The grace period")));
         if (r.lateFeeType() != null) {
             String t = r.lateFeeType().trim().toUpperCase();
-            if (!t.equals("PERCENT") && !t.equals("FIXED")) throw ApiException.badRequest("A late fee is a percentage of the unpaid rent or a fixed amount.");
+            if (!t.equals("PERCENT") && !t.equals("FIXED")) throw ApiException.badRequest(I18n.t("A late fee is a percentage of the unpaid rent or a fixed amount."));
             s.setLateFeeType(t);
         }
         if (r.lateFeeValue() != null) {
-            if (r.lateFeeValue().signum() <= 0) throw ApiException.badRequest("The late fee must be more than zero.");
-            if (r.lateFeeValue().compareTo(new BigDecimal("1000000000000")) > 0) throw ApiException.badRequest("That late fee is too large.");
+            if (r.lateFeeValue().signum() <= 0) throw ApiException.badRequest(I18n.t("The late fee must be more than zero."));
+            if (r.lateFeeValue().compareTo(new BigDecimal("1000000000000")) > 0) throw ApiException.badRequest(I18n.t("That late fee is too large."));
             s.setLateFeeValue(r.lateFeeValue().setScale(2, RoundingMode.HALF_UP));
         }
         if (Boolean.TRUE.equals(r.clearLateFeeMax())) s.setLateFeeMax(null);
         else if (r.lateFeeMax() != null) {
-            if (r.lateFeeMax().signum() <= 0) throw ApiException.badRequest("The most a late fee can come to must be more than zero.");
+            if (r.lateFeeMax().signum() <= 0) throw ApiException.badRequest(I18n.t("The most a late fee can come to must be more than zero."));
             s.setLateFeeMax(r.lateFeeMax().setScale(2, RoundingMode.HALF_UP));
         }
-        if ("PERCENT".equals(s.getLateFeeType()) && s.getLateFeeValue() != null && s.getLateFeeValue().compareTo(HUNDRED) > 0) throw ApiException.badRequest("A percentage late fee is at most 100 percent.");
+        if ("PERCENT".equals(s.getLateFeeType()) && s.getLateFeeValue() != null && s.getLateFeeValue().compareTo(HUNDRED) > 0) throw ApiException.badRequest(I18n.t("A percentage late fee is at most 100 percent."));
         if (r.remindersEnabled() != null) s.setRemindersEnabled(r.remindersEnabled());
         if (r.lateFeeEnabled() != null) {
             s.setLateFeeEnabled(r.lateFeeEnabled());
             if (!r.lateFeeEnabled()) s.setLateFeeAuto(false);
         }
         if (r.lateFeeAuto() != null) s.setLateFeeAuto(r.lateFeeAuto());
-        if (s.isLateFeeEnabled() && s.getLateFeeValue() == null) throw ApiException.badRequest("Give the late fee (a percentage or an amount) before switching late fees on.");
-        if (s.isLateFeeAuto() && !s.isLateFeeEnabled()) throw ApiException.badRequest("Switch late fees on first. Charging them automatically builds on it.");
+        if (s.isLateFeeEnabled() && s.getLateFeeValue() == null) throw ApiException.badRequest(I18n.t("Give the late fee (a percentage or an amount) before switching late fees on."));
+        if (s.isLateFeeAuto() && !s.isLateFeeEnabled()) throw ApiException.badRequest(I18n.t("Switch late fees on first. Charging them automatically builds on it."));
         settings.save(s);
         auditLogService.record("PM_REMINDER_SETTINGS", "Changed the rent reminder and late fee settings");
         return dto(s);
@@ -199,9 +200,9 @@ public class PmReminderService {
             String email = t == null || t.getEmail() == null ? null : t.getEmail().trim();
             String problem = null;
             if (kind != null) {
-                if (email == null || email.isEmpty()) problem = "No e-mail address for " + r.tenantName() + ".";
-                else if (!EMAIL.matcher(email).matches()) problem = "The e-mail address of " + r.tenantName() + " does not look right: " + email;
-                else if (!mail) problem = "E-mail is not set up yet.";
+                if (email == null || email.isEmpty()) problem = I18n.t("No e-mail address for ") + r.tenantName() + ".";
+                else if (!EMAIL.matcher(email).matches()) problem = I18n.t("The e-mail address of ") + r.tenantName() + I18n.t(" does not look right: ") + email;
+                else if (!mail) problem = I18n.t("E-mail is not set up yet.");
             }
             out.add(new PlanRow(r.id(), r.leaseId(), r.leaseCode(), r.tenantName(), email, (r.propertyName() == null ? "" : r.propertyName() + " · ") + r.unitNo(), r.invoiceNumber(), r.dueDate(),
                     r.outstanding(), r.daysOverdue(), kind, fee, problem));
@@ -235,7 +236,7 @@ public class PmReminderService {
                     feesCharged++;
                 } catch (RuntimeException e) {
                     failed++;
-                    if (notes.size() < 50) notes.add(who + ": late fee not charged: " + message(e));
+                    if (notes.size() < 50) notes.add(who + I18n.t(": late fee not charged: ") + message(e));
                 }
             }
             if (p.reminder() != null) {
@@ -255,7 +256,7 @@ public class PmReminderService {
                 }
             }
         }
-        String summary = reminded + " reminder" + (reminded == 1 ? "" : "s") + " sent, " + feesCharged + " late fee" + (feesCharged == 1 ? "" : "s") + " charged"
+        String summary = reminded + " reminder" + (reminded == 1 ? "" : "s") + " sent, " + feesCharged + I18n.t(" late fee") + (feesCharged == 1 ? "" : "s") + " charged"
                 + (skipped > 0 ? ", " + skipped + " skipped" : "") + (failed > 0 ? ", " + failed + " failed" : "");
         tx.executeWithoutResult(x -> {
             PmSettings fresh = settings.entity();
@@ -274,7 +275,7 @@ public class PmReminderService {
     // ------------------------------------------------------------------ one reminder
 
     private PmRentCharge find(Long id) {
-        return charges.findById(id).orElseThrow(() -> ApiException.notFound("Rent charge not found: " + id));
+        return charges.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Rent charge not found: ") + id));
     }
 
     private RentChargeRow rowOf(PmRentCharge c, Snapshot s) {
@@ -290,40 +291,40 @@ public class PmReminderService {
         PmRentCharge c = find(chargeId);
         Snapshot s = views.snapshot();
         RentChargeRow r = rowOf(c, s);
-        if (c.getStatus() != RentChargeStatus.INVOICED || !unpaid(r)) throw ApiException.conflict("This rent is not waiting to be paid, so there is nothing to remind about.");
+        if (c.getStatus() != RentChargeStatus.INVOICED || !unpaid(r)) throw ApiException.conflict(I18n.t("This rent is not waiting to be paid, so there is nothing to remind about."));
         PmTenant t = s.tenants.get(r.tenantId());
         String to = override != null && !override.isBlank() ? override.trim() : t == null || t.getEmail() == null ? "" : t.getEmail().trim();
-        if (to.isEmpty()) throw ApiException.badRequest("The tenant has no e-mail address. Type one in, or add it on the tenant's page.");
-        if (!EMAIL.matcher(to).matches()) throw ApiException.badRequest("That e-mail address does not look right: " + to);
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
-        if (note != null && note.trim().length() > 1000) throw ApiException.badRequest("The message is too long (at most 1000 characters).");
+        if (to.isEmpty()) throw ApiException.badRequest(I18n.t("The tenant has no e-mail address. Type one in, or add it on the tenant's page."));
+        if (!EMAIL.matcher(to).matches()) throw ApiException.badRequest(I18n.t("That e-mail address does not look right: ") + to);
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
+        if (note != null && note.trim().length() > 1000) throw ApiException.badRequest(I18n.t("The message is too long (at most 1000 characters)."));
         PmSettings st = settings.entity();
         PmLateFee fee = fees.findByRentChargeId(chargeId).orElse(null);
         String business = documents.businessName();
         boolean late = r.daysOverdue() != null;
         String amount = r.outstanding().toPlainString();
-        String subject = (late ? "Overdue rent: " + amount + " was due on " + r.dueDate().format(PmTenantAccountService.DAY) : "Rent reminder: " + amount + " is due on " + r.dueDate().format(PmTenantAccountService.DAY))
+        String subject = (late ? I18n.t("Overdue rent: ") + amount + I18n.t(" was due on ") + r.dueDate().format(PmTenantAccountService.DAY) : I18n.t("Rent reminder: ") + amount + I18n.t(" is due on ") + r.dueDate().format(PmTenantAccountService.DAY))
                 + " - " + business;
         StringBuilder b = new StringBuilder();
-        b.append("<p>Dear ").append(esc(r.tenantName())).append(",</p>");
+        b.append(I18n.t("<p>Dear ")).append(esc(r.tenantName())).append(",</p>");
         if (note != null && !note.trim().isEmpty()) b.append("<p>").append(esc(note.trim()).replace("\n", "<br/>")).append("</p>");
-        if (late) b.append("<p>Our records show that your rent for <strong>").append(esc(r.unitNo())).append("</strong> is <strong>").append(r.daysOverdue()).append(" day").append(r.daysOverdue() == 1 ? "" : "s")
+        if (late) b.append(I18n.t("<p>Our records show that your rent for <strong>")).append(esc(r.unitNo())).append("</strong> is <strong>").append(r.daysOverdue()).append(" day").append(r.daysOverdue() == 1 ? "" : "s")
                 .append(" overdue</strong>.</p>");
-        else b.append("<p>This is a friendly reminder that your rent for <strong>").append(esc(r.unitNo())).append("</strong> falls due soon.</p>");
+        else b.append(I18n.t("<p>This is a friendly reminder that your rent for <strong>")).append(esc(r.unitNo())).append(I18n.t("</strong> falls due soon.</p>"));
         b.append("<table cellpadding=\"4\" style=\"border-collapse:collapse;\">");
-        row(b, "Property", (r.propertyName() == null ? "" : r.propertyName() + ", ") + "unit " + r.unitNo());
-        row(b, "Lease", r.leaseCode());
-        row(b, "Rent for", r.periodStart().format(PmTenantAccountService.DAY) + " to " + r.periodEnd().format(PmTenantAccountService.DAY));
-        row(b, "Invoice", r.invoiceNumber());
-        row(b, "Due on", r.dueDate().format(PmTenantAccountService.DAY));
-        row(b, late ? "Amount overdue" : "Amount to pay", "<strong>" + amount + "</strong>");
+        row(b, I18n.t("Property"), (r.propertyName() == null ? "" : r.propertyName() + ", ") + "unit " + r.unitNo());
+        row(b, I18n.t("Lease"), r.leaseCode());
+        row(b, I18n.t("Rent for"), r.periodStart().format(PmTenantAccountService.DAY) + I18n.t(" to ") + r.periodEnd().format(PmTenantAccountService.DAY));
+        row(b, I18n.t("Invoice"), r.invoiceNumber());
+        row(b, I18n.t("Due on"), r.dueDate().format(PmTenantAccountService.DAY));
+        row(b, late ? I18n.t("Amount overdue") : I18n.t("Amount to pay"), "<strong>" + amount + "</strong>");
         b.append("</table>");
-        if (fee != null) b.append("<p>A late fee of <strong>").append(fee.getAmount().toPlainString()).append("</strong> has been added (invoice ").append(esc(fee.getInvoiceNumber())).append(").</p>");
-        else if (st.isLateFeeEnabled() && st.getLateFeeValue() != null && late) b.append("<p>Please note that a late fee of ").append(feeText(st)).append(" may be charged on rent that stays unpaid.</p>");
-        else if (st.isLateFeeEnabled() && st.getLateFeeValue() != null) b.append("<p>Please note that a late fee of ").append(feeText(st)).append(" may be charged on rent that is more than ").append(st.getLateFeeGraceDays())
-                .append(" days late.</p>");
-        b.append("<p>Your invoice is attached (PDF). If you have already paid, please ignore this message and accept our thanks.</p>");
-        b.append("<p>Regards,<br/>").append(esc(business)).append(documents.contactLine().isEmpty() ? "" : "<br/>" + esc(documents.contactLine())).append("</p>");
+        if (fee != null) b.append(I18n.t("<p>A late fee of <strong>")).append(fee.getAmount().toPlainString()).append(I18n.t("</strong> has been added (invoice ")).append(esc(fee.getInvoiceNumber())).append(").</p>");
+        else if (st.isLateFeeEnabled() && st.getLateFeeValue() != null && late) b.append(I18n.t("<p>Please note that a late fee of ")).append(feeText(st)).append(I18n.t(" may be charged on rent that stays unpaid.</p>"));
+        else if (st.isLateFeeEnabled() && st.getLateFeeValue() != null) b.append(I18n.t("<p>Please note that a late fee of ")).append(feeText(st)).append(I18n.t(" may be charged on rent that is more than ")).append(st.getLateFeeGraceDays())
+                .append(I18n.t(" days late.</p>"));
+        b.append(I18n.t("<p>Your invoice is attached (PDF). If you have already paid, please ignore this message and accept our thanks.</p>"));
+        b.append(I18n.t("<p>Regards,<br/>")).append(esc(business)).append(documents.contactLine().isEmpty() ? "" : "<br/>" + esc(documents.contactLine())).append("</p>");
         byte[] pdf = invoiceService.pdf(r.invoiceId());
         mailService.send(to, subject, b.toString(), List.of(new EmailAttachment(r.invoiceNumber() + ".pdf", "application/pdf", pdf)));
         PmRentReminder x = new PmRentReminder();
@@ -342,7 +343,7 @@ public class PmReminderService {
 
     private static String feeText(PmSettings st) {
         String v = st.getLateFeeValue().stripTrailingZeros().toPlainString();
-        return "FIXED".equals(st.getLateFeeType()) ? v : v + "% of the unpaid rent" + (st.getLateFeeMax() == null ? "" : " (at most " + st.getLateFeeMax().toPlainString() + ")");
+        return "FIXED".equals(st.getLateFeeType()) ? v : v + I18n.t("% of the unpaid rent") + (st.getLateFeeMax() == null ? "" : I18n.t(" (at most ") + st.getLateFeeMax().toPlainString() + ")");
     }
 
     /** A reminder sent by hand, to the tenant's address or one typed in, with an optional message. */
@@ -391,14 +392,14 @@ public class PmReminderService {
     private LateFeeDto chargeFee(Long chargeId, boolean auto, String by) {
         PmRentCharge c = find(chargeId);
         PmSettings st = settings.entity();
-        if (!st.isLateFeeEnabled()) throw ApiException.conflict("Late fees are switched off in Settings.");
-        if (st.getLateFeeValue() == null) throw ApiException.conflict("Give the late fee (a percentage or an amount) in Settings first.");
-        if (fees.findByRentChargeId(chargeId).isPresent()) throw ApiException.conflict("A late fee was already charged on this rent.");
+        if (!st.isLateFeeEnabled()) throw ApiException.conflict(I18n.t("Late fees are switched off in Settings."));
+        if (st.getLateFeeValue() == null) throw ApiException.conflict(I18n.t("Give the late fee (a percentage or an amount) in Settings first."));
+        if (fees.findByRentChargeId(chargeId).isPresent()) throw ApiException.conflict(I18n.t("A late fee was already charged on this rent."));
         Snapshot s = views.snapshot();
         RentChargeRow r = rowOf(c, s);
-        if (!unpaid(r) || r.daysOverdue() == null) throw ApiException.conflict("Only rent that is unpaid and past its due date can be charged a late fee.");
+        if (!unpaid(r) || r.daysOverdue() == null) throw ApiException.conflict(I18n.t("Only rent that is unpaid and past its due date can be charged a late fee."));
         BigDecimal amount = feeFor(st, rentOutstanding(r));
-        if (amount.signum() <= 0) throw ApiException.conflict("The late fee comes to nothing on this rent.");
+        if (amount.signum() <= 0) throw ApiException.conflict(I18n.t("The late fee comes to nothing on this rent."));
         PmTenant t = tenantService.entity(r.tenantId());
         Customer cust = tenantService.ensureCustomer(t);
         InvoiceRequest req = new InvoiceRequest();

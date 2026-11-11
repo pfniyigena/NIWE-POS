@@ -1,5 +1,6 @@
 package com.posapp.realestate;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.customer.Customer;
@@ -82,7 +83,7 @@ public class ReCollectionService {
     }
 
     private ReUnitSale find(Long id) {
-        return saleRepository.findById(id).orElseThrow(() -> ApiException.notFound("Sale not found: " + id));
+        return saleRepository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Sale not found: ") + id));
     }
 
     private InvoiceDto invoice(Long id) {
@@ -185,17 +186,17 @@ public class ReCollectionService {
     public SaleNoteDto addNote(Actor a, Long saleId, SaleNoteRequest r) {
         access.on();
         ReUnitSale s = find(saleId);
-        if (s.getStage() != UnitSaleStage.SOLD) throw ApiException.conflict("Collection notes are kept on sold units that still owe money.");
-        if (r == null || r.kind() == null || !BY_HAND.contains(r.kind())) throw ApiException.badRequest("Choose what this is: a call, a promise to pay, or a note.");
+        if (s.getStage() != UnitSaleStage.SOLD) throw ApiException.conflict(I18n.t("Collection notes are kept on sold units that still owe money."));
+        if (r == null || r.kind() == null || !BY_HAND.contains(r.kind())) throw ApiException.badRequest(I18n.t("Choose what this is: a call, a promise to pay, or a note."));
         String text = r.text() == null ? "" : r.text().trim();
-        if (text.isEmpty()) throw ApiException.badRequest("Write what was said.");
-        if (text.length() > 2000) throw ApiException.badRequest("A note can be at most 2000 characters.");
+        if (text.isEmpty()) throw ApiException.badRequest(I18n.t("Write what was said."));
+        if (text.length() > 2000) throw ApiException.badRequest(I18n.t("A note can be at most 2000 characters."));
         LocalDate promise = null;
         if (r.kind() == SaleNoteKind.PROMISE) {
             promise = r.promiseDate();
-            if (promise == null) throw ApiException.badRequest("Choose the day the buyer promised to pay by.");
-            if (promise.isBefore(LocalDate.now())) throw ApiException.badRequest("The promised day cannot be in the past.");
-            if (promise.isAfter(LocalDate.now().plusYears(1))) throw ApiException.badRequest("The promised day is more than a year away.");
+            if (promise == null) throw ApiException.badRequest(I18n.t("Choose the day the buyer promised to pay by."));
+            if (promise.isBefore(LocalDate.now())) throw ApiException.badRequest(I18n.t("The promised day cannot be in the past."));
+            if (promise.isAfter(LocalDate.now().plusYears(1))) throw ApiException.badRequest(I18n.t("The promised day is more than a year away."));
         }
         ReSaleNote n = save(saleId, r.kind(), text, promise, a);
         auditLogService.record("RE_SALE_NOTE", "Collection note on sale " + s.getCode() + ": " + r.kind(), "ReUnitSale", saleId);
@@ -211,7 +212,7 @@ public class ReCollectionService {
     }
 
     private void requireMail() {
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
     }
 
     /** E-mails the buyer what is overdue or due soon, using the Installments module's reminder. Needs an active payment plan. */
@@ -219,14 +220,14 @@ public class ReCollectionService {
     public MailedBuyer remind(Actor a, Long saleId) {
         access.on();
         ReUnitSale s = find(saleId);
-        if (s.getStage() != UnitSaleStage.SOLD) throw ApiException.conflict("Only a sold unit that still owes money can be reminded.");
+        if (s.getStage() != UnitSaleStage.SOLD) throw ApiException.conflict(I18n.t("Only a sold unit that still owes money can be reminded."));
         requireMail();
         PlanSummaryDto plan = s.getInvoiceId() == null ? null
                 : installmentService.forInvoice(s.getInvoiceId()).stream().filter(p -> p.status() == InstallmentPlanStatus.ACTIVE).findFirst().orElse(null);
-        if (plan == null) throw ApiException.conflict("This sale has no payment plan, so no instalment is due to remind about. E-mail the statement instead.");
+        if (plan == null) throw ApiException.conflict(I18n.t("This sale has no payment plan, so no instalment is due to remind about. E-mail the statement instead."));
         ReminderResultDto r = installmentService.remindNow(plan.id());
         save(saleId, SaleNoteKind.REMINDER, "Reminder e-mailed to " + r.sentTo(), null, a);
-        return new MailedBuyer(r.sentTo(), "Reminder sent to " + r.sentTo() + ".");
+        return new MailedBuyer(r.sentTo(), I18n.t("Reminder sent to ") + r.sentTo() + ".");
     }
 
     /** E-mails the buyer's statement (PDF) and records it on the sale. */
@@ -236,20 +237,20 @@ public class ReCollectionService {
         ReUnitSale s = find(saleId);
         requireMail();
         String to = buyerEmail(s);
-        if (to == null) throw ApiException.badRequest("This buyer has no e-mail address on the sale or the customer record.");
+        if (to == null) throw ApiException.badRequest(I18n.t("This buyer has no e-mail address on the sale or the customer record."));
         Printed pdf = printService.statement(a, saleId);
         ReSettings rs = settingsService.entity();
         String business = files.businessName();
         StringBuilder body = new StringBuilder();
-        body.append("<p>Dear ").append(HtmlUtils.htmlEscape(s.getBuyerName())).append(",</p>");
-        body.append("<p>Please find attached your statement for sale <b>").append(HtmlUtils.htmlEscape(s.getCode())).append("</b>, with the payments received and the schedule still to pay.</p>");
+        body.append(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(s.getBuyerName())).append(",</p>");
+        body.append(I18n.t("<p>Please find attached your statement for sale <b>")).append(HtmlUtils.htmlEscape(s.getCode())).append(I18n.t("</b>, with the payments received and the schedule still to pay.</p>"));
         String contact = contact(rs);
-        if (!contact.isEmpty()) body.append("<p>Questions? Contact us: ").append(HtmlUtils.htmlEscape(contact)).append("</p>");
+        if (!contact.isEmpty()) body.append(I18n.t("<p>Questions? Contact us: ")).append(HtmlUtils.htmlEscape(contact)).append("</p>");
         body.append("<p>").append(HtmlUtils.htmlEscape(business)).append("</p>");
-        mailService.send(to, "Your statement for " + s.getCode() + " - " + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
+        mailService.send(to, I18n.t("Your statement for ") + s.getCode() + " - " + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
         save(saleId, SaleNoteKind.STATEMENT, "Statement e-mailed to " + to, null, a);
         auditLogService.record("RE_SALE_STATEMENT", "E-mailed the statement of sale " + s.getCode() + " to " + to, "ReUnitSale", saleId);
-        return new MailedBuyer(to, "Statement sent to " + to + ".");
+        return new MailedBuyer(to, I18n.t("Statement sent to ") + to + ".");
     }
 
     private static String contact(ReSettings s) {

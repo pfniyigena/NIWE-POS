@@ -1,5 +1,6 @@
 package com.posapp.timetracking;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
@@ -41,7 +42,7 @@ public class TimesheetDisciplineService {
 
     private static final Logger log = LoggerFactory.getLogger(TimesheetDisciplineService.class);
     private static final BigDecimal SIXTY = BigDecimal.valueOf(60);
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("d MMM yyyy");
+    private static DateTimeFormatter dayFmt() { return I18n.pattern("d MMM yyyy"); }
 
     private final TimeTrackingService time;
     private final TimeSettingsRepository settingsRepository;
@@ -102,10 +103,10 @@ public class TimesheetDisciplineService {
             int cap = time.settingsEntity().getMaxHoursPerDay() * 60;
             int already = entryRepository.findByUserIdAndWorkDate(user.getId(), date).stream().mapToInt(TimeEntry::getMinutes).sum();
             int minutes = Math.min(limit * 60, cap - already);
-            String note = "Timer left running; stopped automatically after " + limit + " hours. Please check this time.";
+            String note = I18n.t("Timer left running; stopped automatically after ") + limit + I18n.t(" hours. Please check this time.");
             String desc = t.getDescription() == null || t.getDescription().isBlank() ? note : t.getDescription() + " (" + note + ")";
             try {
-                if (minutes < 1) throw ApiException.conflict("The daily limit is already used on " + date + ".");
+                if (minutes < 1) throw ApiException.conflict(I18n.t("The daily limit is already used on ") + date + ".");
                 time.stopTimer(user, new TimerStopRequest(desc.length() > 1000 ? desc.substring(0, 1000) : desc, minutes));
                 auditLogService.record("TIME_TIMER_AUTO_STOPPED", "Stopped " + TimeTrackingService.actorName(user) + "'s timer left running since " + t.getStartedAt()
                         + "; saved " + hours(minutes) + " h on " + date, "TimeTimer", t.getId());
@@ -131,11 +132,11 @@ public class TimesheetDisciplineService {
         LinkedHashSet<String> notes = new LinkedHashSet<>();
         for (TimeEntry e : from) {
             LocalDate date = e.getWorkDate().plusDays(7);
-            if (date.isAfter(LocalDate.now())) { skipped++; notes.add("Days that have not happened yet were left out."); continue; }
+            if (date.isAfter(LocalDate.now())) { skipped++; notes.add(I18n.t("Days that have not happened yet were left out.")); continue; }
             boolean dup = existing.stream().anyMatch(x -> x.getWorkDate().equals(date) && x.getProjectId().equals(e.getProjectId())
                     && java.util.Objects.equals(x.getTaskId(), e.getTaskId()) && x.getMinutes() == e.getMinutes()
                     && java.util.Objects.equals(x.getDescription(), e.getDescription()));
-            if (dup) { skipped++; notes.add("Entries that are already there were not copied again."); continue; }
+            if (dup) { skipped++; notes.add(I18n.t("Entries that are already there were not copied again.")); continue; }
             try {
                 time.createEntry(user, new EntryRequest(e.getProjectId(), e.getTaskId(), date, null, e.getMinutes(), e.getDescription(), e.isBillable()));
                 copied++;
@@ -186,7 +187,7 @@ public class TimesheetDisciplineService {
     public ReminderResult sendReminders(AppUser actor, LocalDate week, List<Long> userIds, String by) {
         MissingDto m = missing(week);
         if (!mailService.isConfigured()) {
-            return new ReminderResult(0, 0, 0, List.of("E-mail is not set up yet (Settings > Email settings), so no reminder was sent."));
+            return new ReminderResult(0, 0, 0, List.of(I18n.t("E-mail is not set up yet (Settings > Email settings), so no reminder was sent.")));
         }
         Set<Long> only = userIds == null || userIds.isEmpty() ? null : new LinkedHashSet<>(userIds);
         String business = storeSettingsService.getSettingsEntity().getBusinessName();
@@ -195,22 +196,22 @@ public class TimesheetDisciplineService {
         for (MissingRow r : m.rows()) {
             if (only != null && !only.contains(r.userId())) continue;
             AppUser u = userRepository.findById(r.userId()).orElse(null);
-            if (u == null || u.getEmail() == null || u.getEmail().isBlank()) { noEmail++; notes.add(r.userName() + " has no e-mail address."); continue; }
+            if (u == null || u.getEmail() == null || u.getEmail().isBlank()) { noEmail++; notes.add(r.userName() + I18n.t(" has no e-mail address.")); continue; }
             String what = switch (r.status()) {
-                case "NOTHING" -> "no time is logged for that week.";
-                case "SENT_BACK" -> "some of your time was sent back and needs correcting.";
-                default -> hoursText(r.hoursNotSubmitted()) + " of your time is not submitted yet.";
+                case "NOTHING" -> I18n.t("no time is logged for that week.");
+                case "SENT_BACK" -> I18n.t("some of your time was sent back and needs correcting.");
+                default -> hoursText(r.hoursNotSubmitted()) + I18n.t(" of your time is not submitted yet.");
             };
-            String body = "<p>Hello " + html(r.userName()) + ",</p><p>Your timesheet for the week of " + m.weekStart().format(DAY) + " to " + m.weekEnd().format(DAY)
-                    + " is not complete: " + what + "</p><p>Please open <b>Time Tracking &gt; My timesheet</b>, check your entries and submit the week.</p>"
-                    + "<p>" + (business == null || business.isBlank() ? "Thank you." : "Thank you,<br>" + html(business)) + "</p>";
+            String body = I18n.t("<p>Hello ") + html(r.userName()) + I18n.t(",</p><p>Your timesheet for the week of ") + m.weekStart().format(dayFmt()) + I18n.t(" to ") + m.weekEnd().format(dayFmt())
+                    + I18n.t(" is not complete: ") + what + I18n.t("</p><p>Please open <b>Time Tracking &gt; My timesheet</b>, check your entries and submit the week.</p>"
+                    + "<p>") + (business == null || business.isBlank() ? I18n.t("Thank you.") : I18n.t("Thank you,<br>") + html(business)) + "</p>";
             try {
-                mailService.send(u.getEmail().trim(), "Please complete your timesheet (week of " + m.weekStart().format(DAY) + ")"
+                mailService.send(u.getEmail().trim(), I18n.t("Please complete your timesheet (week of ") + m.weekStart().format(dayFmt()) + ")"
                         + (business == null || business.isBlank() ? "" : " - " + business), body, List.of());
                 sent++;
             } catch (Exception ex) {
                 failed++;
-                notes.add("Could not send to " + r.userName() + ": " + ex.getMessage());
+                notes.add(I18n.t("Could not send to ") + r.userName() + ": " + ex.getMessage());
             }
         }
         auditLogService.record("TIME_REMINDERS_SENT", by + " sent " + sent + " timesheet reminder(s) for the week of " + m.weekStart()
@@ -236,7 +237,7 @@ public class TimesheetDisciplineService {
             if (!s.isReminderEnabled() || s.getReminderDay() != today.getDayOfWeek().getValue() || today.equals(s.getReminderLastSentOn())) return;
             s.setReminderLastSentOn(today);
             settingsRepository.save(s);
-            ReminderResult r = sendReminders(null, today.minusDays(7), null, "The reminder job");
+            ReminderResult r = sendReminders(null, today.minusDays(7), null, I18n.t("The reminder job"));
             if (r.sent() > 0 || r.failed() > 0) log.info("Time tracking reminders: sent {}, no e-mail {}, failed {}", r.sent(), r.noEmail(), r.failed());
         } catch (Exception e) {
             log.warn("Time tracking reminders failed: {}", e.getMessage());

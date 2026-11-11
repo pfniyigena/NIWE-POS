@@ -1,5 +1,6 @@
 package com.posapp.restaurant;
 
+import com.posapp.i18n.I18n;
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
@@ -54,7 +55,7 @@ public class ReservationService {
 
     public static final Set<String> DEPOSIT_STATES = Set.of("NONE", "REQUIRED", "HELD", "APPLIED", "REFUNDED", "FORFEITED");
     private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("EEE d MMM yyyy", Locale.ENGLISH);
+    private static DateTimeFormatter dateFmt() { return I18n.pattern("EEE d MMM yyyy"); }
 
     private final ReservationRepository reservationRepository;
     private final DiningTableRepository tableRepository;
@@ -140,7 +141,7 @@ public class ReservationService {
     public ReservationInfoDto info() {
         RestaurantSettings s = settings();
         String name = storeSettingsService.getSettingsEntity().getBusinessName();
-        return new ReservationInfoDto(name == null || name.isBlank() ? "the restaurant" : name, s.getOpenTime(), s.getCloseTime(), s.getSlotMinutes(),
+        return new ReservationInfoDto(name == null || name.isBlank() ? I18n.t("the restaurant") : name, s.getOpenTime(), s.getCloseTime(), s.getSlotMinutes(),
                 s.getTurnMinutes(), s.getBookingDaysAhead(), s.getDepositPerGuest(), clock.today().toString(), zone().getId());
     }
 
@@ -149,7 +150,7 @@ public class ReservationService {
     /** The times a party of this size could be seated on a date, with how many tables each time still has. Times already past are left out. */
     @Transactional(readOnly = true)
     public List<ReservationSlotDto> slots(LocalDate date, Integer partySize) {
-        if (date == null) throw ApiException.badRequest("A date is required");
+        if (date == null) throw ApiException.badRequest(I18n.t("A date is required"));
         int party = partySize == null || partySize < 1 ? 1 : partySize;
         RestaurantSettings s = settings();
         Instant now = Instant.now();
@@ -173,7 +174,7 @@ public class ReservationService {
         if (at != null) {
             return freeTables(at, minutes(null, s), party, null).stream().map(t -> DiningTableDto.from(t, null)).toList();
         }
-        if (date == null) throw ApiException.badRequest("A date is required");
+        if (date == null) throw ApiException.badRequest(I18n.t("A date is required"));
         java.util.LinkedHashMap<Long, DiningTable> any = new java.util.LinkedHashMap<>();
         for (Instant start : grid(date, s)) {
             for (DiningTable t : freeTables(start, minutes(null, s), party, null)) any.putIfAbsent(t.getId(), t);
@@ -236,9 +237,9 @@ public class ReservationService {
      */
     private void assertTableAvailable(Long tableId, Instant reservedFor, Integer durationMinutes, Long excludeReservationId) {
         DiningTable table = tableRepository.findById(tableId)
-                .orElseThrow(() -> ApiException.notFound("Table not found: " + tableId));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Table not found: ") + tableId));
         if (!table.isActive() || table.getStatus() == TableStatus.OUT_OF_SERVICE) {
-            throw ApiException.badRequest("Table '" + table.getName() + "' isn't available for reservations");
+            throw ApiException.badRequest(I18n.t("Table '") + table.getName() + I18n.t("' isn't available for reservations"));
         }
         if (reservedFor == null) return;
         int minutes = minutes(durationMinutes, settings());
@@ -246,8 +247,8 @@ public class ReservationService {
         for (Reservation r : blockers(reservedFor, end, excludeReservationId)) {
             if (r.getTable().getId().equals(tableId)) {
                 int rm = minutes(r.getDurationMinutes(), settings());
-                throw ApiException.conflict("Table '" + table.getName() + "' is already reserved from "
-                        + r.getReservedFor().atZone(zone()).format(HHMM) + " to " + r.getReservedFor().plusSeconds(rm * 60L).atZone(zone()).format(HHMM) + " that day");
+                throw ApiException.conflict(I18n.t("Table '") + table.getName() + I18n.t("' is already reserved from ")
+                        + r.getReservedFor().atZone(zone()).format(HHMM) + I18n.t(" to ") + r.getReservedFor().plusSeconds(rm * 60L).atZone(zone()).format(HHMM) + I18n.t(" that day"));
             }
         }
     }
@@ -264,30 +265,30 @@ public class ReservationService {
     public ReservationDto createOnline(ReservationRequest request) {
         RestaurantSettings s = settings();
         if (request.getReservedFor() == null || !request.getReservedFor().isAfter(Instant.now())) {
-            throw ApiException.badRequest("Choose a time in the future");
+            throw ApiException.badRequest(I18n.t("Choose a time in the future"));
         }
         var local = request.getReservedFor().atZone(zone());
         LocalDate today = clock.today();
         if (local.toLocalDate().isAfter(today.plusDays(s.getBookingDaysAhead()))) {
-            throw ApiException.badRequest("Bookings open up to " + s.getBookingDaysAhead() + " days ahead");
+            throw ApiException.badRequest(I18n.t("Bookings open up to ") + s.getBookingDaysAhead() + I18n.t(" days ahead"));
         }
         LocalTime open = LocalTime.parse(s.getOpenTime());
         LocalTime close = LocalTime.parse(s.getCloseTime());
         LocalTime time = local.toLocalTime();
         long sinceOpen = Duration.between(open, time).toMinutes();
         if (time.isBefore(open) || !time.isBefore(close)) {
-            throw ApiException.badRequest("We take bookings between " + s.getOpenTime() + " and " + s.getCloseTime());
+            throw ApiException.badRequest(I18n.t("We take bookings between ") + s.getOpenTime() + " and " + s.getCloseTime());
         }
         if (sinceOpen % s.getSlotMinutes() != 0 || local.getSecond() != 0) {
-            throw ApiException.badRequest("Choose one of the times offered (every " + s.getSlotMinutes() + " minutes from " + s.getOpenTime() + ")");
+            throw ApiException.badRequest(I18n.t("Choose one of the times offered (every ") + s.getSlotMinutes() + I18n.t(" minutes from ") + s.getOpenTime() + ")");
         }
         if (request.getPartySize() < 1 || request.getPartySize() > 50) {
-            throw ApiException.badRequest("Party size must be between 1 and 50");
+            throw ApiException.badRequest(I18n.t("Party size must be between 1 and 50"));
         }
         if (request.getTableId() != null) {
-            DiningTable t = tableRepository.findById(request.getTableId()).orElseThrow(() -> ApiException.notFound("Table not found: " + request.getTableId()));
+            DiningTable t = tableRepository.findById(request.getTableId()).orElseThrow(() -> ApiException.notFound(I18n.t("Table not found: ") + request.getTableId()));
             if (request.getPartySize() > t.getCapacity()) {
-                throw ApiException.badRequest("Table '" + t.getName() + "' seats at most " + t.getCapacity());
+                throw ApiException.badRequest(I18n.t("Table '") + t.getName() + I18n.t("' seats at most ") + t.getCapacity());
             }
         }
         if (s.getNoShowBlockCount() > 0) {
@@ -295,7 +296,7 @@ public class ReservationService {
             long misses = key == null ? 0 : reservationRepository.findAll().stream()
                     .filter(r -> r.getStatus() == ReservationStatus.NO_SHOW && key.equals(digits(r.getGuestPhone()))).count();
             if (misses >= s.getNoShowBlockCount()) {
-                throw ApiException.badRequest("We cannot take an online booking for this phone number. Please call the restaurant.");
+                throw ApiException.badRequest(I18n.t("We cannot take an online booking for this phone number. Please call the restaurant."));
             }
         }
         request.setDurationMinutes(null);
@@ -331,7 +332,7 @@ public class ReservationService {
     public ReservationDto update(Long id, ReservationRequest request) {
         Reservation reservation = getOrThrow(id);
         if (reservation.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(reservation.getStatus()) + " and cannot be changed");
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(reservation.getStatus()) + I18n.t(" and cannot be changed"));
         }
         validate(request);
         if (request.getTableId() != null) {
@@ -354,15 +355,15 @@ public class ReservationService {
     private void validate(ReservationRequest request) {
         if (request.getGuestEmail() != null && !request.getGuestEmail().isBlank()) {
             String e = request.getGuestEmail().trim();
-            if (e.length() > 160 || !e.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) throw ApiException.badRequest("That e-mail address does not look right");
+            if (e.length() > 160 || !e.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) throw ApiException.badRequest(I18n.t("That e-mail address does not look right"));
         }
         if (request.getDurationMinutes() != null && (request.getDurationMinutes() < 15 || request.getDurationMinutes() > 480)) {
-            throw ApiException.badRequest("The table time must be between 15 and 480 minutes");
+            throw ApiException.badRequest(I18n.t("The table time must be between 15 and 480 minutes"));
         }
         if (request.getDepositAmount() != null && (request.getDepositAmount().signum() < 0 || request.getDepositAmount().compareTo(BigDecimal.valueOf(100_000_000)) > 0)) {
-            throw ApiException.badRequest("The deposit must be between 0 and 100,000,000");
+            throw ApiException.badRequest(I18n.t("The deposit must be between 0 and 100,000,000"));
         }
-        if (request.getPartySize() > 500) throw ApiException.badRequest("Party size is too large");
+        if (request.getPartySize() > 500) throw ApiException.badRequest(I18n.t("Party size is too large"));
     }
 
     private BigDecimal depositFor(BigDecimal asked, int party, RestaurantSettings s) {
@@ -380,7 +381,7 @@ public class ReservationService {
         reservation.setNotes(request.getNotes());
         if (request.getTableId() != null) {
             reservation.setTable(tableRepository.findById(request.getTableId())
-                    .orElseThrow(() -> ApiException.notFound("Table not found: " + request.getTableId())));
+                    .orElseThrow(() -> ApiException.notFound(I18n.t("Table not found: ") + request.getTableId())));
         } else {
             reservation.setTable(null);
         }
@@ -409,15 +410,15 @@ public class ReservationService {
     public RestaurantOrderDto seat(Long id, SeatReservationRequest request) {
         Reservation reservation = getOrThrow(id);
         if (reservation.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(reservation.getStatus()));
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(reservation.getStatus()));
         }
         Long tableId = request.getTableId() != null ? request.getTableId()
                 : (reservation.getTable() != null ? reservation.getTable().getId() : null);
         if (tableId == null) {
-            throw ApiException.badRequest("Assign a table before seating this reservation");
+            throw ApiException.badRequest(I18n.t("Assign a table before seating this reservation"));
         }
         if (reservation.getTable() == null || !reservation.getTable().getId().equals(tableId)) {
-            reservation.setTable(tableRepository.findById(tableId).orElseThrow(() -> ApiException.notFound("Table not found: " + tableId)));
+            reservation.setTable(tableRepository.findById(tableId).orElseThrow(() -> ApiException.notFound(I18n.t("Table not found: ") + tableId)));
         }
         OpenTableOrderRequest openRequest = new OpenTableOrderRequest();
         openRequest.setGuestCount(reservation.getPartySize());
@@ -447,13 +448,13 @@ public class ReservationService {
     public ReservationDto cancel(Long id, ReservationCancelRequest request) {
         Reservation reservation = getOrThrow(id);
         if (reservation.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(reservation.getStatus()));
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(reservation.getStatus()));
         }
         String reason = request == null || request.getReason() == null ? "" : request.getReason().trim();
-        if (reason.length() > 200) throw ApiException.badRequest("The reason is too long (200 characters at most)");
+        if (reason.length() > 200) throw ApiException.badRequest(I18n.t("The reason is too long (200 characters at most)"));
         String choice = request == null || request.getDeposit() == null ? "" : request.getDeposit().trim().toUpperCase();
         if (!choice.isEmpty() && !choice.equals("REFUND") && !choice.equals("FORFEIT")) {
-            throw ApiException.badRequest("Deposit must be REFUND or FORFEIT");
+            throw ApiException.badRequest(I18n.t("Deposit must be REFUND or FORFEIT"));
         }
         String note = "";
         if ("HELD".equals(reservation.getDepositStatus())) {
@@ -462,7 +463,7 @@ public class ReservationService {
                 choice = hoursAhead >= settings().getDepositRefundHours() ? "REFUND" : "FORFEIT";
             }
             settleDeposit(reservation, choice.equals("REFUND") ? "REFUNDED" : "FORFEITED");
-            note = choice.equals("REFUND") ? " (deposit refunded)" : " (deposit kept)";
+            note = choice.equals("REFUND") ? I18n.t(" (deposit refunded)") : I18n.t(" (deposit kept)");
         } else if ("REQUIRED".equals(reservation.getDepositStatus())) {
             reservation.setDepositStatus("NONE");
         }
@@ -478,14 +479,14 @@ public class ReservationService {
     public ReservationDto noShow(Long id) {
         Reservation reservation = getOrThrow(id);
         if (reservation.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(reservation.getStatus()));
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(reservation.getStatus()));
         }
         Instant after = reservation.getReservedFor().plusSeconds(settings().getGraceMinutes() * 60L);
         if (Instant.now().isBefore(after)) {
-            throw ApiException.badRequest("Wait until " + after.atZone(zone()).format(HHMM) + " before marking a no-show");
+            throw ApiException.badRequest(I18n.t("Wait until ") + after.atZone(zone()).format(HHMM) + I18n.t(" before marking a no-show"));
         }
         if ("HELD".equals(reservation.getDepositStatus()) && !RestaurantAccess.isApprover()) {
-            throw ApiException.forbidden("Keeping a deposit needs a manager's approval");
+            throw ApiException.forbidden(I18n.t("Keeping a deposit needs a manager's approval"));
         }
         return dto(markNoShow(reservation));
     }
@@ -507,7 +508,7 @@ public class ReservationService {
         String note = "";
         if ("HELD".equals(reservation.getDepositStatus())) {
             settleDeposit(reservation, "FORFEITED");
-            note = " (deposit kept)";
+            note = I18n.t(" (deposit kept)");
         } else if ("REQUIRED".equals(reservation.getDepositStatus())) {
             reservation.setDepositStatus("NONE");
         }
@@ -524,12 +525,12 @@ public class ReservationService {
     public ReservationDto collectDeposit(Long id, String method, BigDecimal amount) {
         Reservation reservation = getOrThrow(id);
         if (reservation.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(reservation.getStatus()));
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(reservation.getStatus()));
         }
         if (!"REQUIRED".equals(reservation.getDepositStatus())) {
-            throw ApiException.badRequest("There is no deposit waiting to be paid on this reservation");
+            throw ApiException.badRequest(I18n.t("There is no deposit waiting to be paid on this reservation"));
         }
-        if (method == null || method.isBlank()) throw ApiException.badRequest("Choose how the deposit is paid");
+        if (method == null || method.isBlank()) throw ApiException.badRequest(I18n.t("Choose how the deposit is paid"));
         takeDeposit(reservation, method, amount);
         return dto(reservationRepository.save(reservation));
     }
@@ -537,7 +538,7 @@ public class ReservationService {
     private void takeDeposit(Reservation reservation, String method, BigDecimal amount) {
         String code = paymentMethodService.validateActiveCodeOrThrow(method);
         if (amount != null) {
-            if (amount.signum() <= 0 || amount.compareTo(BigDecimal.valueOf(100_000_000)) > 0) throw ApiException.badRequest("The deposit must be more than zero");
+            if (amount.signum() <= 0 || amount.compareTo(BigDecimal.valueOf(100_000_000)) > 0) throw ApiException.badRequest(I18n.t("The deposit must be more than zero"));
             reservation.setDepositAmount(amount.setScale(2, RoundingMode.HALF_UP));
         }
         reservation.setDepositMethod(code);
@@ -576,32 +577,32 @@ public class ReservationService {
     public ReservationReminderDto reminder(Long id, boolean send) {
         Reservation r = getOrThrow(id);
         if (r.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(r.getStatus()));
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(r.getStatus()));
         }
         String text = reminderText(r);
         if (!send) return new ReservationReminderDto(text, false, null);
         if (r.getGuestEmail() == null) {
-            return new ReservationReminderDto(text, false, "No e-mail address on this booking — copy the message and send it by SMS or WhatsApp, then mark it as sent.");
+            return new ReservationReminderDto(text, false, I18n.t("No e-mail address on this booking — copy the message and send it by SMS or WhatsApp, then mark it as sent."));
         }
         if (!mailService.isConfigured()) {
-            return new ReservationReminderDto(text, false, "E-mail is not set up yet (Admin > Settings > Email).");
+            return new ReservationReminderDto(text, false, I18n.t("E-mail is not set up yet (Admin > Settings > Email)."));
         }
         try {
-            mailService.send(r.getGuestEmail(), "Your table reservation " + r.getConfirmationCode(), "<p>" + escape(text) + "</p>", List.of());
+            mailService.send(r.getGuestEmail(), I18n.t("Your table reservation ") + r.getConfirmationCode(), "<p>" + escape(text) + "</p>", List.of());
         } catch (ApiException e) {
             return new ReservationReminderDto(text, false, e.getMessage());
         }
         r.setRemindedAt(Instant.now());
         reservationRepository.save(r);
         auditLogService.record("RESTAURANT_RESERVATION_REMINDED", "E-mailed a reminder to " + r.getGuestName(), "Reservation", r.getId());
-        return new ReservationReminderDto(text, true, "Reminder e-mailed to " + r.getGuestEmail());
+        return new ReservationReminderDto(text, true, I18n.t("Reminder e-mailed to ") + r.getGuestEmail());
     }
 
     @Transactional
     public ReservationDto markReminded(Long id) {
         Reservation r = getOrThrow(id);
         if (r.getStatus() != ReservationStatus.BOOKED) {
-            throw ApiException.badRequest("This reservation is already " + pretty(r.getStatus()));
+            throw ApiException.badRequest(I18n.t("This reservation is already ") + pretty(r.getStatus()));
         }
         r.setRemindedAt(Instant.now());
         auditLogService.record("RESTAURANT_RESERVATION_REMINDED", "Marked the reminder to " + r.getGuestName() + " as sent", "Reservation", r.getId());
@@ -627,7 +628,7 @@ public class ReservationService {
                 .replace("{name}", r.getGuestName())
                 .replace("{party}", String.valueOf(r.getPartySize()))
                 .replace("{restaurant}", name == null || name.isBlank() ? "the restaurant" : name)
-                .replace("{date}", local.format(DATE))
+                .replace("{date}", local.format(dateFmt()))
                 .replace("{time}", local.format(HHMM))
                 .replace("{code}", r.getConfirmationCode());
     }
@@ -651,12 +652,12 @@ public class ReservationService {
     }
 
     private Reservation getOrThrow(Long id) {
-        return reservationRepository.findById(id).orElseThrow(() -> ApiException.notFound("Reservation not found: " + id));
+        return reservationRepository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Reservation not found: ") + id));
     }
 
     private Reservation getByCodeOrThrow(String code) {
         return reservationRepository.findByConfirmationCode(code)
-                .orElseThrow(() -> ApiException.notFound("No reservation found with number: " + code));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("No reservation found with number: ") + code));
     }
 
     /** "Reservation number" — short, guest-readable, unique. */

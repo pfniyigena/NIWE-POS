@@ -1,5 +1,6 @@
 package com.posapp.realestate;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -79,7 +80,7 @@ public class RePrintFiles {
 
     public String businessName() {
         StoreSettings s = store();
-        return s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : "Real estate agency";
+        return s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : I18n.t("Real estate agency");
     }
 
     public String currency() {
@@ -98,7 +99,7 @@ public class RePrintFiles {
 
     private static String money(BigDecimal v) {
         if (v == null) return "";
-        return new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(v);
+        return new DecimalFormat("#,##0.00", I18n.symbols()).format(v);
     }
 
     private static String amount(String cur, BigDecimal v) {
@@ -106,11 +107,11 @@ public class RePrintFiles {
     }
 
     private static String day(LocalDate d) {
-        return d == null ? "" : d.format(DAY);
+        return d == null ? "" : d.format(I18n.longDay());
     }
 
     private static String shortDay(LocalDate d) {
-        return d == null ? "" : DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH).format(d);
+        return d == null ? "" : I18n.shortDay().format(d);
     }
 
     private static String nz(String s) {
@@ -155,7 +156,7 @@ public class RePrintFiles {
         public void onEndPage(PdfWriter writer, Document document) {
             PdfContentByte cb = writer.getDirectContent();
             ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(left, muted(8)), document.left(), document.bottom() - 14, 0);
-            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase("Page " + writer.getPageNumber(), muted(8)), document.right(), document.bottom() - 14, 0);
+            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase(I18n.t("Page ") + writer.getPageNumber(), muted(8)), document.right(), document.bottom() - 14, 0);
         }
     }
 
@@ -172,7 +173,7 @@ public class RePrintFiles {
         doc.add(new Paragraph(businessName(), bold(15)));
         StringBuilder b = new StringBuilder();
         if (s != null) {
-            for (String part : new String[]{s.getAddress(), s.getPhone(), s.getEmail(), s.getTaxId() == null || s.getTaxId().isBlank() ? null : "Tax ID " + s.getTaxId()}) {
+            for (String part : new String[]{s.getAddress(), s.getPhone(), s.getEmail(), s.getTaxId() == null || s.getTaxId().isBlank() ? null : I18n.t("Tax ID ") + s.getTaxId()}) {
                 if (part != null && !part.isBlank()) b.append(b.length() == 0 ? "" : "  |  ").append(part.trim().replace("\n", ", "));
             }
         }
@@ -233,7 +234,7 @@ public class RePrintFiles {
         t.setWidthPercentage(100);
         t.setKeepTogether(true);
         t.setSpacingBefore(12);
-        PdfPCell h = new PdfPCell(new Phrase("Terms", bold(11)));
+        PdfPCell h = new PdfPCell(new Phrase(I18n.t("Terms"), bold(11)));
         h.setBorder(Rectangle.NO_BORDER);
         h.setPaddingBottom(4);
         t.addCell(h);
@@ -241,7 +242,7 @@ public class RePrintFiles {
         for (String line : text.split("\\r?\\n")) {
             if (line.isBlank()) continue;
             n++;
-            Paragraph p = new Paragraph(n + ".  " + line.trim(), plain(10));
+            Paragraph p = new Paragraph(n + ".  " + (custom == null || custom.isBlank() ? I18n.t(line.trim()) : line.trim()), plain(10));
             p.setIndentationLeft(14);
             p.setFirstLineIndent(-14);
             PdfPCell c = new PdfPCell();
@@ -264,7 +265,7 @@ public class RePrintFiles {
             c.setBorder(Rectangle.TOP);
             c.setBorderColor(DARK);
             c.setPaddingTop(4);
-            c.setPhrase(new Phrase(w + "\nName:\nDate:", muted(9)));
+            c.setPhrase(new Phrase(w + I18n.t("\nName:\nDate:"), muted(9)));
             t.addCell(c);
         }
         doc.add(t);
@@ -286,7 +287,7 @@ public class RePrintFiles {
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the document", e);
+            throw new IllegalStateException(I18n.t("Failed to build the document"), e);
         }
     }
 
@@ -298,54 +299,54 @@ public class RePrintFiles {
     /** The buyer's offer to purchase a listed property. */
     public byte[] offer(DealDto d, PropertyDto p, String customTerms, String cur) {
         return build(doc -> {
-            head(doc, "Offer to purchase", "Reference " + d.code() + "  |  " + day(d.offerDate() != null ? d.offerDate() : LocalDate.now()));
-            section(doc, "The buyer");
-            doc.add(facts(new String[][]{{"Name", d.buyerName()}, {"Phone", d.buyerPhone()}, {"E-mail", d.buyerEmail()}}));
-            section(doc, "The property");
-            doc.add(facts(new String[][]{{"Property", p.code() + "  " + p.title()}, {"Location", join(p.address(), p.area())}, {"Title reference", p.titleReference()},
-                    {"Asking price", d.listPrice() == null ? null : amount(cur, d.listPrice())}}));
-            section(doc, "The offer");
-            doc.add(facts(new String[][]{{"Amount offered", amount(cur, d.offerAmount())}, {"Offer valid until", day(d.offerValidUntil())}, {"Agent", d.agentName()}}));
+            head(doc, I18n.t("Offer to purchase"), I18n.t("Reference ") + d.code() + "  |  " + day(d.offerDate() != null ? d.offerDate() : LocalDate.now()));
+            section(doc, I18n.t("The buyer"));
+            doc.add(facts(new String[][]{{I18n.t("Name"), d.buyerName()}, {I18n.t("Phone"), d.buyerPhone()}, {I18n.t("E-mail"), d.buyerEmail()}}));
+            section(doc, I18n.t("The property"));
+            doc.add(facts(new String[][]{{I18n.t("Property"), p.code() + "  " + p.title()}, {I18n.t("Location"), join(p.address(), p.area())}, {I18n.t("Title reference"), p.titleReference()},
+                    {I18n.t("Asking price"), d.listPrice() == null ? null : amount(cur, d.listPrice())}}));
+            section(doc, I18n.t("The offer"));
+            doc.add(facts(new String[][]{{I18n.t("Amount offered"), amount(cur, d.offerAmount())}, {I18n.t("Offer valid until"), day(d.offerValidUntil())}, {I18n.t("Agent"), d.agentName()}}));
             terms(doc, customTerms, STANDARD_OFFER);
-            signatures(doc, "The buyer", businessName() + " (for the seller)");
-        }, "Offer " + d.code());
+            signatures(doc, I18n.t("The buyer"), businessName() + I18n.t(" (for the seller)"));
+        }, I18n.t("Offer ") + d.code());
     }
 
     /** The reservation of a property for a buyer who has paid a deposit. */
     public byte[] dealReservation(DealDto d, PropertyDto p, String customTerms, String cur) {
         return build(doc -> {
-            head(doc, "Reservation letter", "Reference " + d.code() + "  |  " + day(LocalDate.now()));
-            section(doc, "The buyer");
-            doc.add(facts(new String[][]{{"Name", d.buyerName()}, {"Phone", d.buyerPhone()}, {"E-mail", d.buyerEmail()}}));
-            section(doc, "The property");
-            doc.add(facts(new String[][]{{"Property", p.code() + "  " + p.title()}, {"Location", join(p.address(), p.area())}, {"Title reference", p.titleReference()}}));
-            section(doc, "The reservation");
+            head(doc, I18n.t("Reservation letter"), I18n.t("Reference ") + d.code() + "  |  " + day(LocalDate.now()));
+            section(doc, I18n.t("The buyer"));
+            doc.add(facts(new String[][]{{I18n.t("Name"), d.buyerName()}, {I18n.t("Phone"), d.buyerPhone()}, {I18n.t("E-mail"), d.buyerEmail()}}));
+            section(doc, I18n.t("The property"));
+            doc.add(facts(new String[][]{{I18n.t("Property"), p.code() + "  " + p.title()}, {I18n.t("Location"), join(p.address(), p.area())}, {I18n.t("Title reference"), p.titleReference()}}));
+            section(doc, I18n.t("The reservation"));
             BigDecimal price = d.agreedPrice() != null ? d.agreedPrice() : d.offerAmount();
-            doc.add(facts(new String[][]{{"Price", amount(cur, price)}, {"Deposit", d.reservationDeposit() == null ? null : amount(cur, d.reservationDeposit())},
-                    {"Reserved until", day(d.reservationExpiry())}, {"Agent", d.agentName()}}));
+            doc.add(facts(new String[][]{{I18n.t("Price"), amount(cur, price)}, {I18n.t("Deposit"), d.reservationDeposit() == null ? null : amount(cur, d.reservationDeposit())},
+                    {I18n.t("Reserved until"), day(d.reservationExpiry())}, {I18n.t("Agent"), d.agentName()}}));
             terms(doc, customTerms, STANDARD_RESERVATION);
-            signatures(doc, "The buyer", businessName());
-        }, "Reservation " + d.code());
+            signatures(doc, I18n.t("The buyer"), businessName());
+        }, I18n.t("Reservation ") + d.code());
     }
 
     /** The sale agreement of a deal with its payment milestones. */
     public byte[] dealAgreement(DealDto d, PropertyDto p, String seller, String customTerms, String cur) {
         return build(doc -> {
-            head(doc, "Sale agreement", "Reference " + d.code() + "  |  " + day(d.agreementDate() != null ? d.agreementDate() : LocalDate.now()));
-            section(doc, "The parties");
-            doc.add(facts(new String[][]{{"Seller", seller}, {"Buyer", d.buyerName()}, {"Buyer's phone", d.buyerPhone()}, {"Buyer's e-mail", d.buyerEmail()}, {"Agent", businessName() + (d.agentName() == null ? "" : " (" + d.agentName() + ")")}}));
-            section(doc, "The property");
-            doc.add(facts(new String[][]{{"Property", p.code() + "  " + p.title()}, {"Location", join(p.address(), p.area())}, {"Title reference", p.titleReference()},
-                    {"Size", p.sizeSqm() == null ? null : money(p.sizeSqm()) + " m²"}, {"Plot", p.plotSqm() == null ? null : money(p.plotSqm()) + " m²"}}));
-            section(doc, "The price");
+            head(doc, I18n.t("Sale agreement"), I18n.t("Reference ") + d.code() + "  |  " + day(d.agreementDate() != null ? d.agreementDate() : LocalDate.now()));
+            section(doc, I18n.t("The parties"));
+            doc.add(facts(new String[][]{{I18n.t("Seller"), seller}, {I18n.t("Buyer"), d.buyerName()}, {I18n.t("Buyer's phone"), d.buyerPhone()}, {I18n.t("Buyer's e-mail"), d.buyerEmail()}, {I18n.t("Agent"), businessName() + (d.agentName() == null ? "" : " (" + d.agentName() + ")")}}));
+            section(doc, I18n.t("The property"));
+            doc.add(facts(new String[][]{{I18n.t("Property"), p.code() + "  " + p.title()}, {I18n.t("Location"), join(p.address(), p.area())}, {I18n.t("Title reference"), p.titleReference()},
+                    {I18n.t("Size"), p.sizeSqm() == null ? null : money(p.sizeSqm()) + " m²"}, {I18n.t("Plot"), p.plotSqm() == null ? null : money(p.plotSqm()) + " m²"}}));
+            section(doc, I18n.t("The price"));
             BigDecimal price = d.agreedPrice() != null ? d.agreedPrice() : d.offerAmount();
-            doc.add(facts(new String[][]{{"Agreed price", amount(cur, price)}, {"Expected completion", day(d.expectedCompletion())}}));
+            doc.add(facts(new String[][]{{I18n.t("Agreed price"), amount(cur, price)}, {I18n.t("Expected completion"), day(d.expectedCompletion())}}));
             List<MilestoneDto> ms = d.milestones() == null ? List.of() : d.milestones();
             if (!ms.isEmpty()) {
-                section(doc, "Payment schedule");
+                section(doc, I18n.t("Payment schedule"));
                 PdfPTable t = new PdfPTable(new float[]{0.7f, 4f, 2f, 2.4f});
                 t.setWidthPercentage(100);
-                headerCells(t, new String[]{"No.", "Payment", "Due", "Amount"}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT});
+                headerCells(t, new String[]{I18n.t("No."), I18n.t("Payment"), I18n.t("Due"), I18n.t("Amount")}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT});
                 BigDecimal total = BigDecimal.ZERO;
                 int n = 0;
                 for (MilestoneDto m : ms) {
@@ -353,83 +354,83 @@ public class RePrintFiles {
                     total = total.add(m.amount() == null ? BigDecimal.ZERO : m.amount());
                     t.addCell(cell(String.valueOf(n), plain(9), Element.ALIGN_LEFT, null));
                     t.addCell(cell(m.label(), plain(9), Element.ALIGN_LEFT, null));
-                    t.addCell(cell(m.dueDate() == null ? "On signing" : day(m.dueDate()), plain(9), Element.ALIGN_LEFT, null));
+                    t.addCell(cell(m.dueDate() == null ? I18n.t("On signing") : day(m.dueDate()), plain(9), Element.ALIGN_LEFT, null));
                     t.addCell(cell(amount(cur, m.amount()), plain(9), Element.ALIGN_RIGHT, null));
                 }
                 t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
-                t.addCell(cell("Total of the schedule", bold(9), Element.ALIGN_LEFT, SOFT));
+                t.addCell(cell(I18n.t("Total of the schedule"), bold(9), Element.ALIGN_LEFT, SOFT));
                 t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
                 t.addCell(cell(amount(cur, total), bold(9), Element.ALIGN_RIGHT, SOFT));
                 doc.add(t);
                 if (price != null && total.compareTo(price) != 0) {
-                    Paragraph note = new Paragraph("The schedule covers " + amount(cur, total) + " of the agreed price of " + amount(cur, price) + "; the rest is settled as agreed between the parties.", muted(8.5f));
+                    Paragraph note = new Paragraph(I18n.t("The schedule covers ") + amount(cur, total) + I18n.t(" of the agreed price of ") + amount(cur, price) + I18n.t("; the rest is settled as agreed between the parties."), muted(8.5f));
                     note.setSpacingBefore(4);
                     doc.add(note);
                 }
             }
             terms(doc, customTerms, STANDARD_AGREEMENT);
-            signatures(doc, "The seller", "The buyer", businessName() + " (witness)");
-        }, "Sale agreement " + d.code());
+            signatures(doc, I18n.t("The seller"), I18n.t("The buyer"), businessName() + " (witness)");
+        }, I18n.t("Sale agreement ") + d.code());
     }
 
     // ------------------------------------------------------------------ unit sales (a developer selling its own units)
 
     private static String unitLine(UnitSaleDto s, UnitRow u) {
-        StringBuilder b = new StringBuilder("Unit ").append(s.unitNo());
-        if (s.block() != null && !s.block().isBlank()) b.append(", block ").append(s.block());
+        StringBuilder b = new StringBuilder(I18n.t("Unit ")).append(s.unitNo());
+        if (s.block() != null && !s.block().isBlank()) b.append(I18n.t(", block ")).append(s.block());
         b.append(", ").append(s.projectName());
         return b.toString();
     }
 
     private String[][] unitFacts(UnitSaleDto s, ProjectDto pr, UnitRow u) {
-        return new String[][]{{"Unit", unitLine(s, u)}, {"Type", nice(s.unitKind())}, {"Floor", u == null || u.floor() == null ? null : String.valueOf(u.floor())},
-                {"Bedrooms", u == null || u.bedrooms() == null ? null : String.valueOf(u.bedrooms())}, {"Size", u == null || u.sizeSqm() == null ? null : money(u.sizeSqm()) + " m²"},
-                {"Location", pr == null ? null : join(pr.address(), pr.area())}};
+        return new String[][]{{I18n.t("Unit"), unitLine(s, u)}, {I18n.t("Type"), nice(s.unitKind())}, {I18n.t("Floor"), u == null || u.floor() == null ? null : String.valueOf(u.floor())},
+                {I18n.t("Bedrooms"), u == null || u.bedrooms() == null ? null : String.valueOf(u.bedrooms())}, {I18n.t("Size"), u == null || u.sizeSqm() == null ? null : money(u.sizeSqm()) + " m²"},
+                {I18n.t("Location"), pr == null ? null : join(pr.address(), pr.area())}};
     }
 
     /** The reservation of a unit. */
     public byte[] saleReservation(UnitSaleDto s, ProjectDto pr, UnitRow u, String customTerms, String cur) {
         return build(doc -> {
-            head(doc, "Reservation letter", "Reference " + s.code() + "  |  " + day(s.reservedOn() != null ? s.reservedOn() : LocalDate.now()));
-            section(doc, "The buyer");
-            doc.add(facts(new String[][]{{"Name", s.buyerName()}, {"Phone", s.buyerPhone()}, {"E-mail", s.buyerEmail()}}));
-            section(doc, "The unit");
+            head(doc, I18n.t("Reservation letter"), I18n.t("Reference ") + s.code() + "  |  " + day(s.reservedOn() != null ? s.reservedOn() : LocalDate.now()));
+            section(doc, I18n.t("The buyer"));
+            doc.add(facts(new String[][]{{I18n.t("Name"), s.buyerName()}, {I18n.t("Phone"), s.buyerPhone()}, {I18n.t("E-mail"), s.buyerEmail()}}));
+            section(doc, I18n.t("The unit"));
             doc.add(facts(unitFacts(s, pr, u)));
-            section(doc, "The reservation");
-            doc.add(facts(new String[][]{{"List price", amount(cur, s.listPrice())}, {"Discount", s.discount() != null && s.discount().signum() > 0 ? amount(cur, s.discount()) : null},
-                    {"Agreed price", amount(cur, s.agreedPrice())}, {"Reserved until", day(s.reservationExpiry())}, {"Agent", s.agentName()}}));
+            section(doc, I18n.t("The reservation"));
+            doc.add(facts(new String[][]{{I18n.t("List price"), amount(cur, s.listPrice())}, {I18n.t("Discount"), s.discount() != null && s.discount().signum() > 0 ? amount(cur, s.discount()) : null},
+                    {I18n.t("Agreed price"), amount(cur, s.agreedPrice())}, {I18n.t("Reserved until"), day(s.reservationExpiry())}, {I18n.t("Agent"), s.agentName()}}));
             terms(doc, customTerms, STANDARD_RESERVATION);
-            signatures(doc, "The buyer", businessName());
-        }, "Reservation " + s.code());
+            signatures(doc, I18n.t("The buyer"), businessName());
+        }, I18n.t("Reservation ") + s.code());
     }
 
     /** The sale agreement of a unit with the payment schedule taken from its payment plan. */
     public byte[] saleAgreement(UnitSaleDto s, ProjectDto pr, UnitRow u, String customTerms, String cur) {
         return build(doc -> {
-            head(doc, "Sale agreement", "Reference " + s.code() + "  |  " + day(s.agreementDate() != null ? s.agreementDate() : LocalDate.now()));
-            section(doc, "The parties");
+            head(doc, I18n.t("Sale agreement"), I18n.t("Reference ") + s.code() + "  |  " + day(s.agreementDate() != null ? s.agreementDate() : LocalDate.now()));
+            section(doc, I18n.t("The parties"));
             String seller = pr != null && pr.developerName() != null && !pr.developerName().isBlank() ? pr.developerName().trim() : businessName();
-            doc.add(facts(new String[][]{{"Seller", seller}, {"Buyer", s.buyerName()}, {"Buyer's phone", s.buyerPhone()}, {"Buyer's e-mail", s.buyerEmail()}}));
-            section(doc, "The unit");
+            doc.add(facts(new String[][]{{I18n.t("Seller"), seller}, {I18n.t("Buyer"), s.buyerName()}, {I18n.t("Buyer's phone"), s.buyerPhone()}, {I18n.t("Buyer's e-mail"), s.buyerEmail()}}));
+            section(doc, I18n.t("The unit"));
             doc.add(facts(unitFacts(s, pr, u)));
-            section(doc, "The price");
-            doc.add(facts(new String[][]{{"List price", amount(cur, s.listPrice())}, {"Discount", s.discount() != null && s.discount().signum() > 0 ? amount(cur, s.discount()) : null},
-                    {"Agreed price", amount(cur, s.agreedPrice())}, {"Invoice", s.invoice() == null ? null : s.invoice().invoiceNumber()}}));
-            section(doc, "Payment schedule");
+            section(doc, I18n.t("The price"));
+            doc.add(facts(new String[][]{{I18n.t("List price"), amount(cur, s.listPrice())}, {I18n.t("Discount"), s.discount() != null && s.discount().signum() > 0 ? amount(cur, s.discount()) : null},
+                    {I18n.t("Agreed price"), amount(cur, s.agreedPrice())}, {I18n.t("Invoice"), s.invoice() == null ? null : s.invoice().invoiceNumber()}}));
+            section(doc, I18n.t("Payment schedule"));
             PlanDetailDto plan = s.plan();
             if (plan == null || plan.installments() == null || plan.installments().isEmpty()) {
-                doc.add(new Paragraph("The agreed price of " + amount(cur, s.agreedPrice()) + " is payable in full"
-                        + (s.invoice() == null ? "." : " under invoice " + s.invoice().invoiceNumber() + "."), plain(10)));
+                doc.add(new Paragraph(I18n.t("The agreed price of ") + amount(cur, s.agreedPrice()) + I18n.t(" is payable in full")
+                        + (s.invoice() == null ? "." : I18n.t(" under invoice ") + s.invoice().invoiceNumber() + "."), plain(10)));
             } else {
                 PdfPTable t = new PdfPTable(new float[]{0.7f, 2.4f, 2.2f, 2f, 2.4f});
                 t.setWidthPercentage(100);
-                headerCells(t, new String[]{"No.", "Due", "Principal", "Interest", "Amount due"},
+                headerCells(t, new String[]{I18n.t("No."), I18n.t("Due"), I18n.t("Principal"), I18n.t("Interest"), I18n.t("Amount due")},
                         new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT});
                 BigDecimal deposit = plan.terms() == null ? null : plan.terms().deposit();
                 BigDecimal total = BigDecimal.ZERO;
                 if (deposit != null && deposit.signum() > 0) {
                     t.addCell(cell("", plain(9), Element.ALIGN_LEFT, null));
-                    t.addCell(cell("Deposit, on signing", plain(9), Element.ALIGN_LEFT, null));
+                    t.addCell(cell(I18n.t("Deposit, on signing"), plain(9), Element.ALIGN_LEFT, null));
                     t.addCell(cell(money(deposit), plain(9), Element.ALIGN_RIGHT, null));
                     t.addCell(cell("", plain(9), Element.ALIGN_RIGHT, null));
                     t.addCell(cell(money(deposit), plain(9), Element.ALIGN_RIGHT, null));
@@ -444,22 +445,22 @@ public class RePrintFiles {
                     total = total.add(i.principalDue()).add(i.interestDue());
                 }
                 t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
-                t.addCell(cell("Total to pay", bold(9), Element.ALIGN_LEFT, SOFT));
+                t.addCell(cell(I18n.t("Total to pay"), bold(9), Element.ALIGN_LEFT, SOFT));
                 t.addCell(cell("", plain(9), Element.ALIGN_RIGHT, SOFT));
                 t.addCell(cell("", plain(9), Element.ALIGN_RIGHT, SOFT));
                 t.addCell(cell(amount(cur, total), bold(9), Element.ALIGN_RIGHT, SOFT));
                 doc.add(t);
                 List<String> notes = new ArrayList<>();
                 if (plan.plan() != null && plan.plan().totalInterest() != null && plan.plan().totalInterest().signum() > 0) {
-                    notes.add("The instalments include interest of " + amount(cur, plan.plan().totalInterest()) + ".");
+                    notes.add(I18n.t("The instalments include interest of ") + amount(cur, plan.plan().totalInterest()) + ".");
                 }
                 if (plan.terms() != null) {
                     var tm = plan.terms();
                     boolean fixed = tm.lateFeeFixed() != null && tm.lateFeeFixed().signum() > 0;
                     boolean pct = tm.lateFeePercent() != null && tm.lateFeePercent().signum() > 0;
                     if (fixed || pct) {
-                        notes.add("An instalment paid more than " + tm.graceDays() + " day(s) late carries a late charge of "
-                                + (fixed ? amount(cur, tm.lateFeeFixed()) : "") + (fixed && pct ? " plus " : "") + (pct ? money(tm.lateFeePercent()) + "% of the instalment" : "") + ".");
+                        notes.add(I18n.t("An instalment paid more than ") + tm.graceDays() + I18n.t(" day(s) late carries a late charge of ")
+                                + (fixed ? amount(cur, tm.lateFeeFixed()) : "") + (fixed && pct ? " plus " : "") + (pct ? money(tm.lateFeePercent()) + I18n.t("% of the instalment") : "") + ".");
                     }
                 }
                 for (String n : notes) {
@@ -469,32 +470,32 @@ public class RePrintFiles {
                 }
             }
             terms(doc, customTerms, STANDARD_AGREEMENT);
-            signatures(doc, "The seller", "The buyer", businessName() + " (witness)");
-        }, "Sale agreement " + s.code());
+            signatures(doc, I18n.t("The seller"), I18n.t("The buyer"), businessName() + " (witness)");
+        }, I18n.t("Sale agreement ") + s.code());
     }
 
     /** The statement of a sold unit: what was agreed, what has been paid, the schedule with its state, and the balance. */
     public byte[] statement(UnitSaleDto s, ProjectDto pr, UnitRow u, List<PaymentRow> payments, String cur) {
         return build(doc -> {
             LocalDate today = LocalDate.now();
-            head(doc, "Buyer statement", "Reference " + s.code() + "  |  as at " + day(today));
-            section(doc, "The buyer");
-            doc.add(facts(new String[][]{{"Name", s.buyerName()}, {"Phone", s.buyerPhone()}, {"E-mail", s.buyerEmail()}}));
-            section(doc, "The unit");
+            head(doc, I18n.t("Buyer statement"), I18n.t("Reference ") + s.code() + I18n.t("  |  as at ") + day(today));
+            section(doc, I18n.t("The buyer"));
+            doc.add(facts(new String[][]{{I18n.t("Name"), s.buyerName()}, {I18n.t("Phone"), s.buyerPhone()}, {I18n.t("E-mail"), s.buyerEmail()}}));
+            section(doc, I18n.t("The unit"));
             doc.add(facts(unitFacts(s, pr, u)));
-            section(doc, "Where you stand");
+            section(doc, I18n.t("Where you stand"));
             BigDecimal paid = s.invoice() == null || s.invoice().paid() == null ? BigDecimal.ZERO : s.invoice().paid();
             BigDecimal out = s.invoice() == null || s.invoice().outstanding() == null ? BigDecimal.ZERO : s.invoice().outstanding();
             BigDecimal overdue = s.plan() == null || s.plan().plan() == null || s.plan().plan().overdueAmount() == null ? BigDecimal.ZERO : s.plan().plan().overdueAmount();
-            doc.add(facts(new String[][]{{"Agreed price", amount(cur, s.agreedPrice())}, {"Paid to date", amount(cur, paid)}, {"Balance owed", amount(cur, out)},
-                    {"Overdue now", overdue.signum() > 0 ? amount(cur, overdue) : null}, {"Invoice", s.invoice() == null ? null : s.invoice().invoiceNumber()}}));
+            doc.add(facts(new String[][]{{I18n.t("Agreed price"), amount(cur, s.agreedPrice())}, {I18n.t("Paid to date"), amount(cur, paid)}, {I18n.t("Balance owed"), amount(cur, out)},
+                    {I18n.t("Overdue now"), overdue.signum() > 0 ? amount(cur, overdue) : null}, {I18n.t("Invoice"), s.invoice() == null ? null : s.invoice().invoiceNumber()}}));
             PlanDetailDto plan = s.plan();
             if (plan != null && plan.installments() != null && !plan.installments().isEmpty()) {
-                section(doc, "Payment schedule");
+                section(doc, I18n.t("Payment schedule"));
                 PdfPTable t = new PdfPTable(new float[]{0.7f, 2.4f, 2.2f, 2.2f, 2.2f, 1.8f});
                 t.setWidthPercentage(100);
                 t.setHeaderRows(1);
-                headerCells(t, new String[]{"No.", "Due", "Amount due", "Paid", "Balance", "Status"},
+                headerCells(t, new String[]{I18n.t("No."), I18n.t("Due"), I18n.t("Amount due"), I18n.t("Paid"), I18n.t("Balance"), I18n.t("Status")},
                         new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT});
                 for (InstallmentDto i : plan.installments()) {
                     boolean late = i.daysOverdue() > 0 && i.balance().signum() > 0;
@@ -504,18 +505,18 @@ public class RePrintFiles {
                     t.addCell(cell(money(i.totalDue()), f, Element.ALIGN_RIGHT, null));
                     t.addCell(cell(money(i.paid()), f, Element.ALIGN_RIGHT, null));
                     t.addCell(cell(money(i.balance()), f, Element.ALIGN_RIGHT, null));
-                    t.addCell(cell(late ? "Overdue " + i.daysOverdue() + " d" : nice(i.state()), f, Element.ALIGN_LEFT, null));
+                    t.addCell(cell(late ? I18n.t("Overdue ") + i.daysOverdue() + " d" : nice(i.state()), f, Element.ALIGN_LEFT, null));
                 }
                 doc.add(t);
             }
-            section(doc, "Payments received");
+            section(doc, I18n.t("Payments received"));
             if (payments.isEmpty()) {
-                doc.add(new Paragraph("No payment has been received yet.", muted(10)));
+                doc.add(new Paragraph(I18n.t("No payment has been received yet."), muted(10)));
             } else {
                 PdfPTable t = new PdfPTable(new float[]{2f, 3f, 2f, 2.4f});
                 t.setWidthPercentage(100);
                 t.setHeaderRows(1);
-                headerCells(t, new String[]{"Date", "Receipt no.", "Method", "Amount"}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT});
+                headerCells(t, new String[]{I18n.t("Date"), I18n.t("Receipt no."), I18n.t("Method"), I18n.t("Amount")}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT});
                 for (PaymentRow r : payments) {
                     t.addCell(cell(day(r.paidAt().atZone(java.time.ZoneId.systemDefault()).toLocalDate()), plain(9), Element.ALIGN_LEFT, null));
                     t.addCell(cell(nz(r.receiptNumber()), plain(9), Element.ALIGN_LEFT, null));
@@ -524,38 +525,38 @@ public class RePrintFiles {
                 }
                 doc.add(t);
             }
-            Paragraph close = new Paragraph((out.signum() > 0 ? "Balance owed at " : "Balance at ") + day(today) + ":  " + amount(cur, out), bold(12));
+            Paragraph close = new Paragraph((out.signum() > 0 ? I18n.t("Balance owed at ") : I18n.t("Balance at ")) + day(today) + ":  " + amount(cur, out), bold(12));
             close.setSpacingBefore(12);
             close.setAlignment(Element.ALIGN_RIGHT);
             doc.add(close);
-        }, "Statement " + s.code());
+        }, I18n.t("Statement ") + s.code());
     }
 
     /** What one person has earned in commission, what has gone to the accounts and what has been paid out, line by line. */
     public byte[] commissionStatement(RealEstateCommissionDtos.PayeeStatement st, String period, String cur) {
         return build(doc -> {
             LocalDate today = LocalDate.now();
-            head(doc, "Commission statement", st.payeeName() + "  |  as at " + day(today));
-            section(doc, "For");
-            doc.add(facts(new String[][]{{"Name", st.payeeName()}, {"Who", st.payeeKind() == PayeeKind.STAFF ? "Staff" : "External (referrer or other agency)"}, {"Period", period}}));
-            section(doc, "Where you stand");
-            doc.add(facts(new String[][]{{"Earned on completed sales", amount(cur, st.earned())}, {"Paid out", amount(cur, st.paid())}, {"Still to be paid", amount(cur, st.owed())},
-                    {"Sale not complete yet", st.planned().signum() > 0 ? amount(cur, st.planned()) : null},
-                    {"Rejected (to post again)", st.rejected().signum() > 0 ? amount(cur, st.rejected()) : null}}));
-            section(doc, "Commission by sale");
+            head(doc, I18n.t("Commission statement"), st.payeeName() + I18n.t("  |  as at ") + day(today));
+            section(doc, I18n.t("For"));
+            doc.add(facts(new String[][]{{I18n.t("Name"), st.payeeName()}, {I18n.t("Who"), st.payeeKind() == PayeeKind.STAFF ? I18n.t("Staff") : I18n.t("External (referrer or other agency)")}, {I18n.t("Period"), period}}));
+            section(doc, I18n.t("Where you stand"));
+            doc.add(facts(new String[][]{{I18n.t("Earned on completed sales"), amount(cur, st.earned())}, {I18n.t("Paid out"), amount(cur, st.paid())}, {I18n.t("Still to be paid"), amount(cur, st.owed())},
+                    {I18n.t("Sale not complete yet"), st.planned().signum() > 0 ? amount(cur, st.planned()) : null},
+                    {I18n.t("Rejected (to post again)"), st.rejected().signum() > 0 ? amount(cur, st.rejected()) : null}}));
+            section(doc, I18n.t("Commission by sale"));
             PdfPTable t = new PdfPTable(new float[]{1.6f, 3f, 1.9f, 2.3f, 2f, 2.2f, 2.8f});
             t.setWidthPercentage(100);
             t.setHeaderRows(1);
-            headerCells(t, new String[]{"Deal", "Property", "Completed", "Sale price", "Role", "Commission", "Status"},
+            headerCells(t, new String[]{I18n.t("Deal"), I18n.t("Property"), I18n.t("Completed"), I18n.t("Sale price"), I18n.t("Role"), I18n.t("Commission"), I18n.t("Status")},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT});
             for (RealEstateCommissionDtos.ShareLine l : st.lines()) {
                 String status = switch (l.state()) {
-                    case PLANNED -> "Not earned yet";
-                    case TO_POST -> "Earned";
-                    case AWAITING_APPROVAL -> "Awaiting approval";
-                    case TO_PAY -> "Approved, to pay";
-                    case PAID -> "Paid" + (l.paidOn() == null ? "" : " " + shortDay(l.paidOn()));
-                    case REJECTED -> "Rejected";
+                    case PLANNED -> I18n.t("Not earned yet");
+                    case TO_POST -> I18n.t("Earned");
+                    case AWAITING_APPROVAL -> I18n.t("Awaiting approval");
+                    case TO_PAY -> I18n.t("Approved, to pay");
+                    case PAID -> I18n.t("Paid") + (l.paidOn() == null ? "" : " " + shortDay(l.paidOn()));
+                    case REJECTED -> I18n.t("Rejected");
                 };
                 Font f = l.state() == PayoutState.PAID ? plain(9) : bold(9);
                 t.addCell(cell(l.dealCode(), plain(9), Element.ALIGN_LEFT, null));
@@ -567,11 +568,11 @@ public class RePrintFiles {
                 t.addCell(cell(status, f, Element.ALIGN_LEFT, null));
             }
             doc.add(t);
-            Paragraph close = new Paragraph((st.owed().signum() > 0 ? "Still to be paid at " : "Balance at ") + day(today) + ":  " + amount(cur, st.owed()), bold(12));
+            Paragraph close = new Paragraph((st.owed().signum() > 0 ? I18n.t("Still to be paid at ") : I18n.t("Balance at ")) + day(today) + ":  " + amount(cur, st.owed()), bold(12));
             close.setSpacingBefore(12);
             close.setAlignment(Element.ALIGN_RIGHT);
             doc.add(close);
-        }, "Commission statement " + st.payeeName());
+        }, I18n.t("Commission statement ") + st.payeeName());
     }
 
     // ------------------------------------------------------------------ price list
@@ -579,11 +580,11 @@ public class RePrintFiles {
     /** The price list of a project: its units by block, with the price of each. */
     public byte[] priceList(ProjectDto pr, List<UnitRow> units, boolean all, String contact, String cur) {
         return build(doc -> {
-            head(doc, "Price list: " + pr.name(), "Prices as at " + day(LocalDate.now()) + (all ? "" : "  |  units still available"));
-            doc.add(facts(new String[][]{{"Project", pr.code() + "  " + pr.name()}, {"Location", join(pr.address(), pr.area())}, {"Developer", pr.developerName()},
-                    {"Handover", day(pr.handoverDate())}}));
+            head(doc, I18n.t("Price list: ") + pr.name(), I18n.t("Prices as at ") + day(LocalDate.now()) + (all ? "" : I18n.t("  |  units still available")));
+            doc.add(facts(new String[][]{{I18n.t("Project"), pr.code() + "  " + pr.name()}, {I18n.t("Location"), join(pr.address(), pr.area())}, {I18n.t("Developer"), pr.developerName()},
+                    {I18n.t("Handover"), day(pr.handoverDate())}}));
             if (units.isEmpty()) {
-                doc.add(new Paragraph("No units to list.", muted(10)));
+                doc.add(new Paragraph(I18n.t("No units to list."), muted(10)));
                 return;
             }
             String block = null;
@@ -595,12 +596,12 @@ public class RePrintFiles {
                     if (t != null) doc.add(t);
                     first = false;
                     block = b;
-                    section(doc, b.isEmpty() ? "Units" : "Block " + b);
+                    section(doc, b.isEmpty() ? I18n.t("Units") : I18n.t("Block ") + b);
                     float[] widths = all ? new float[]{1.5f, 1.8f, 0.9f, 1.1f, 1.4f, 2.4f, 2f, 1.5f} : new float[]{1.5f, 1.8f, 0.9f, 1.1f, 1.4f, 2.4f, 2f};
                     t = new PdfPTable(widths);
                     t.setWidthPercentage(100);
                     t.setHeaderRows(1);
-                    String[] heads = all ? new String[]{"Unit", "Type", "Floor", "Beds", "Size m²", "Price", "Per m²", "Status"} : new String[]{"Unit", "Type", "Floor", "Beds", "Size m²", "Price", "Per m²"};
+                    String[] heads = all ? new String[]{I18n.t("Unit"), I18n.t("Type"), I18n.t("Floor"), I18n.t("Beds"), I18n.t("Size m²"), I18n.t("Price"), I18n.t("Per m²"), I18n.t("Status")} : new String[]{I18n.t("Unit"), I18n.t("Type"), I18n.t("Floor"), I18n.t("Beds"), I18n.t("Size m²"), I18n.t("Price"), I18n.t("Per m²")};
                     int[] al = new int[heads.length];
                     for (int i = 0; i < al.length; i++) al[i] = i < 2 || i == 7 ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT;
                     headerCells(t, heads, al);
@@ -616,14 +617,14 @@ public class RePrintFiles {
             }
             if (t != null) doc.add(t);
             if (contact != null && !contact.isBlank()) {
-                Paragraph c = new Paragraph("To reserve a unit or to ask about a payment plan, contact us: " + contact, bold(10));
+                Paragraph c = new Paragraph(I18n.t("To reserve a unit or to ask about a payment plan, contact us: ") + contact, bold(10));
                 c.setSpacingBefore(14);
                 doc.add(c);
             }
-            Paragraph fine = new Paragraph("Prices can change without notice and a unit is held only once it is reserved.", muted(8.5f));
+            Paragraph fine = new Paragraph(I18n.t("Prices can change without notice and a unit is held only once it is reserved."), muted(8.5f));
             fine.setSpacingBefore(4);
             doc.add(fine);
-        }, "Price list " + pr.code());
+        }, I18n.t("Price list ") + pr.code());
     }
 
     // ------------------------------------------------------------------ flyer
@@ -634,7 +635,7 @@ public class RePrintFiles {
             boolean forSale = p.purpose() != ListingPurpose.RENT;
             boolean forRent = p.purpose() != ListingPurpose.SALE;
             doc.add(new Paragraph(businessName(), muted(10)));
-            Paragraph kind = new Paragraph((forSale && forRent ? "FOR SALE OR TO LET" : forRent ? "TO LET" : "FOR SALE") + "  |  " + nice(p.type())
+            Paragraph kind = new Paragraph((forSale && forRent ? I18n.t("FOR SALE OR TO LET") : forRent ? I18n.t("TO LET") : I18n.t("FOR SALE")) + "  |  " + nice(p.type())
                     + (p.area() == null || p.area().isBlank() ? "" : "  |  " + p.area().trim()), bold(10));
             kind.setSpacingBefore(6);
             doc.add(kind);
@@ -643,7 +644,7 @@ public class RePrintFiles {
             doc.add(title);
             List<String> prices = new ArrayList<>();
             if (forSale && p.salePrice() != null) prices.add(amount(cur, p.salePrice()));
-            if (forRent && p.rentPrice() != null) prices.add(amount(cur, p.rentPrice()) + " per month");
+            if (forRent && p.rentPrice() != null) prices.add(amount(cur, p.rentPrice()) + I18n.t(" per month"));
             if (!prices.isEmpty()) {
                 Font pf = bold(17);
                 pf.setColor(ACCENT);
@@ -684,13 +685,13 @@ public class RePrintFiles {
                 }
             }
             List<String[]> f = new ArrayList<>();
-            if (p.bedrooms() != null) f.add(new String[]{"Bedrooms", String.valueOf(p.bedrooms())});
-            if (p.bathrooms() != null) f.add(new String[]{"Bathrooms", String.valueOf(p.bathrooms())});
-            if (p.parkingSpaces() != null && p.parkingSpaces() > 0) f.add(new String[]{"Parking", String.valueOf(p.parkingSpaces())});
-            if (p.sizeSqm() != null) f.add(new String[]{"Built area", money(p.sizeSqm()) + " m²"});
-            if (p.plotSqm() != null) f.add(new String[]{"Plot", money(p.plotSqm()) + " m²"});
-            if (p.yearBuilt() != null) f.add(new String[]{"Built", String.valueOf(p.yearBuilt())});
-            if (p.furnished()) f.add(new String[]{"Furnished", "Yes"});
+            if (p.bedrooms() != null) f.add(new String[]{I18n.t("Bedrooms"), String.valueOf(p.bedrooms())});
+            if (p.bathrooms() != null) f.add(new String[]{I18n.t("Bathrooms"), String.valueOf(p.bathrooms())});
+            if (p.parkingSpaces() != null && p.parkingSpaces() > 0) f.add(new String[]{I18n.t("Parking"), String.valueOf(p.parkingSpaces())});
+            if (p.sizeSqm() != null) f.add(new String[]{I18n.t("Built area"), money(p.sizeSqm()) + " m²"});
+            if (p.plotSqm() != null) f.add(new String[]{I18n.t("Plot"), money(p.plotSqm()) + " m²"});
+            if (p.yearBuilt() != null) f.add(new String[]{I18n.t("Built"), String.valueOf(p.yearBuilt())});
+            if (p.furnished()) f.add(new String[]{I18n.t("Furnished"), I18n.t("Yes")});
             if (!f.isEmpty()) {
                 int cols = Math.min(4, f.size());
                 PdfPTable t = new PdfPTable(cols);
@@ -720,13 +721,13 @@ public class RePrintFiles {
                 doc.add(dp);
             }
             if (p.features() != null && !p.features().isBlank()) {
-                Paragraph fp = new Paragraph("Features: " + p.features().trim().replaceAll("\\s*[\\r\\n]+\\s*", ", "), plain(10));
+                Paragraph fp = new Paragraph(I18n.t("Features: ") + p.features().trim().replaceAll("\\s*[\\r\\n]+\\s*", ", "), plain(10));
                 fp.setSpacingBefore(8);
                 doc.add(fp);
             }
             String where = join(p.address(), p.area());
             if (!where.isBlank()) {
-                Paragraph lp = new Paragraph("Location: " + where, plain(10));
+                Paragraph lp = new Paragraph(I18n.t("Location: ") + where, plain(10));
                 lp.setSpacingBefore(6);
                 doc.add(lp);
             }
@@ -742,7 +743,7 @@ public class RePrintFiles {
             w1.setColor(Color.WHITE);
             Font w2 = plain(10);
             w2.setColor(Color.WHITE);
-            c.addElement(new Paragraph(p.agentName() != null && !p.agentName().isBlank() ? "Call " + p.agentName() + " to arrange a viewing" : "Call us to arrange a viewing", w1));
+            c.addElement(new Paragraph(p.agentName() != null && !p.agentName().isBlank() ? I18n.t("Call ") + p.agentName() + I18n.t(" to arrange a viewing") : I18n.t("Call us to arrange a viewing"), w1));
             if (contact != null && !contact.isBlank()) c.addElement(new Paragraph(contact, w2));
             band.addCell(c);
             doc.add(band);

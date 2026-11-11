@@ -1,5 +1,6 @@
 package com.posapp.alerts;
 
+import com.posapp.i18n.I18n;
 import com.posapp.common.Qty;
 import com.posapp.accounting.Expense;
 import com.posapp.catalog.Product;
@@ -51,45 +52,45 @@ public class AlertMailService {
     /** Fired from {@code CatalogService.adjustStock} the moment a tracked product's stock crosses from at/above the low-stock threshold to below it. */
     @Async
     public void alertLowStock(Product product) {
-        send("Low stock: " + product.getName(),
-                "<p>" + escapeHtml(product.getName()) + " has crossed below its low-stock threshold.</p>"
-                        + "<p>Current stock on hand: " + Qty.str(product.getStockQuantity()) + "</p>");
+        send(I18n.t("Low stock: ") + product.getName(),
+                "<p>" + escapeHtml(product.getName()) + I18n.t(" has crossed below its low-stock threshold.</p>"
+                        + "<p>Current stock on hand: ") + Qty.str(product.getStockQuantity()) + "</p>");
     }
 
     /** Per-warehouse variant, fired from {@code CatalogService.adjustStock(Product, int, WarehouseLocation)} when a non-primary warehouse's total for a tracked product crosses below the same threshold. */
     @Async
     public void alertLowStock(Product product, String warehouseName, java.math.BigDecimal warehouseQuantity) {
-        send("Low stock at " + warehouseName + ": " + product.getName(),
-                "<p>" + escapeHtml(product.getName()) + " has crossed below its low-stock threshold at warehouse "
-                        + escapeHtml(warehouseName) + ".</p>"
-                        + "<p>Current stock at " + escapeHtml(warehouseName) + ": " + Qty.str(warehouseQuantity) + "</p>");
+        send(I18n.t("Low stock at ") + warehouseName + ": " + product.getName(),
+                "<p>" + escapeHtml(product.getName()) + I18n.t(" has crossed below its low-stock threshold at warehouse ")
+                        + escapeHtml(warehouseName) + I18n.t(".</p>"
+                        + "<p>Current stock at ") + escapeHtml(warehouseName) + ": " + Qty.str(warehouseQuantity) + "</p>");
     }
 
     /** Fired from {@code PurchaseRequisitionService.submit} on the DRAFT -&gt; PENDING_APPROVAL transition. */
     @Async
     public void alertRequisitionAwaitingApproval(PurchaseRequisition requisition) {
-        send("Purchase requisition awaiting approval: " + requisition.getRequisitionNumber(),
-                "<p>Purchase requisition " + escapeHtml(requisition.getRequisitionNumber())
-                        + " has been submitted and is now awaiting approval.</p>"
-                        + "<p>Requested by: " + escapeHtml(requisition.getRequestedByFullName()) + "</p>");
+        send(I18n.t("Purchase requisition awaiting approval: ") + requisition.getRequisitionNumber(),
+                I18n.t("<p>Purchase requisition ") + escapeHtml(requisition.getRequisitionNumber())
+                        + I18n.t(" has been submitted and is now awaiting approval.</p>"
+                        + "<p>Requested by: ") + escapeHtml(requisition.getRequestedByFullName()) + "</p>");
     }
 
     /** Fired from {@code QuotationService}'s daily scheduled sweep for a SENT quote whose {@code validUntil} is within the configured warning window. */
     @Async
     public void alertQuotationExpiringSoon(Quotation quotation) {
         String customerName = quotation.getCustomer() != null ? quotation.getCustomer().getName() : null;
-        send("Quotation expiring soon: " + quotation.getQuoteNumber(),
-                "<p>Quotation " + escapeHtml(quotation.getQuoteNumber())
-                        + (customerName != null ? " for " + escapeHtml(customerName) : "")
-                        + " is valid until " + quotation.getValidUntil() + " and has not yet been accepted or rejected.</p>");
+        send(I18n.t("Quotation expiring soon: ") + quotation.getQuoteNumber(),
+                I18n.t("<p>Quotation ") + escapeHtml(quotation.getQuoteNumber())
+                        + (customerName != null ? I18n.t(" for ") + escapeHtml(customerName) : "")
+                        + I18n.t(" is valid until ") + quotation.getValidUntil() + I18n.t(" and has not yet been accepted or rejected.</p>"));
     }
 
     /** Fired from {@code CustomerCreditService.assertWithinLimit} once a successful credit sale leaves the customer's outstanding balance crossing into the configured warning zone of their credit limit. */
     @Async
     public void alertCustomerNearingCreditLimit(Customer customer, BigDecimal outstanding) {
-        send("Customer nearing credit limit: " + customer.getName(),
-                "<p>" + escapeHtml(customer.getName()) + " is approaching their credit limit.</p>"
-                        + "<p>Outstanding balance: " + outstanding + " of a " + customer.getCreditLimit() + " limit.</p>");
+        send(I18n.t("Customer nearing credit limit: ") + customer.getName(),
+                "<p>" + escapeHtml(customer.getName()) + I18n.t(" is approaching their credit limit.</p>"
+                        + "<p>Outstanding balance: ") + outstanding + I18n.t(" of a ") + customer.getCreditLimit() + " limit.</p>");
     }
 
     /**
@@ -100,10 +101,10 @@ public class AlertMailService {
      */
     @Async
     public void alertExpenseAwaitingApproval(Expense expense) {
-        send("Expense awaiting approval: " + expense.getPayeeName(),
-                "<p>An expense of " + expense.getAmount() + " to " + escapeHtml(expense.getPayeeName())
-                        + " has been logged and is now awaiting approval.</p>"
-                        + "<p>Category: " + escapeHtml(expense.getAccount() != null ? expense.getAccount().getName() : null) + "</p>");
+        send(I18n.t("Expense awaiting approval: ") + expense.getPayeeName(),
+                I18n.t("<p>An expense of ") + expense.getAmount() + I18n.t(" to ") + escapeHtml(expense.getPayeeName())
+                        + I18n.t(" has been logged and is now awaiting approval.</p>"
+                        + "<p>Category: ") + escapeHtml(expense.getAccount() != null ? expense.getAccount().getName() : null) + "</p>");
     }
 
     private void send(String subject, String html) {

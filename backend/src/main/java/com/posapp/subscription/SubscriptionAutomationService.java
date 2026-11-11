@@ -1,5 +1,6 @@
 package com.posapp.subscription;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.email.MailService;
 import com.posapp.modules.ModuleKey;
@@ -120,9 +121,9 @@ public class SubscriptionAutomationService {
             try {
                 for (SubscriptionService.OverdueInfo o : subscriptionService.overdueCandidates(today, settings.getSubscriptionOverdueDays(), zoneOf(settings))) {
                     try {
-                        String reason = "Invoice " + o.invoiceNumber() + " has been unpaid for more than " + settings.getSubscriptionOverdueDays() + " days";
+                        String reason = I18n.t("Invoice ") + o.invoiceNumber() + I18n.t(" has been unpaid for more than ") + settings.getSubscriptionOverdueDays() + " days";
                         if ("CANCEL".equals(action)) {
-                            subscriptionService.cancel(o.subscriptionId(), "Cancelled automatically: " + reason);
+                            subscriptionService.cancel(o.subscriptionId(), I18n.t("Cancelled automatically: ") + reason);
                         } else {
                             subscriptionService.pause(o.subscriptionId());
                         }
@@ -131,12 +132,12 @@ public class SubscriptionAutomationService {
                                 "Subscription", o.subscriptionId());
                         actioned.add(new String[]{o.customerName(), o.invoiceNumber(), "CANCEL".equals(action) ? "cancelled" : "paused"});
                     } catch (Exception ex) {
-                        failed.add(new String[]{o.customerName(), "Could not " + action.toLowerCase() + ": " + ex.getMessage()});
+                        failed.add(new String[]{o.customerName(), I18n.t("Could not ") + action.toLowerCase() + ": " + ex.getMessage()});
                     }
                 }
             } catch (Exception ex) {
                 log.warn("Overdue subscription check failed: {}", ex.getMessage(), ex);
-                failed.add(new String[]{"(overdue check)", ex.getMessage()});
+                failed.add(new String[]{I18n.t("(overdue check)"), ex.getMessage()});
             }
         }
 
@@ -148,13 +149,13 @@ public class SubscriptionAutomationService {
                     try {
                         SubscriptionService.BillResult r = subscriptionService.billDue(id, today);
                         if ("CANCELLED".equals(r.outcome())) {
-                            actioned.add(new String[]{r.customerName(), "-", "cancelled as scheduled"});
+                            actioned.add(new String[]{r.customerName(), "-", I18n.t("cancelled as scheduled")});
                         } else {
                             billed.add(r);
-                            if ("BILLED_AND_CANCELLED".equals(r.outcome())) actioned.add(new String[]{r.customerName(), nz(r.invoiceNumber()), "cancelled as scheduled"});
+                            if ("BILLED_AND_CANCELLED".equals(r.outcome())) actioned.add(new String[]{r.customerName(), nz(r.invoiceNumber()), I18n.t("cancelled as scheduled")});
                         }
                     } catch (Exception ex) {
-                        String name = "Subscription #" + id;
+                        String name = I18n.t("Subscription #") + id;
                         auditLogService.record("SUBSCRIPTION_BILLING_FAILED", "Failed to bill " + name + ": " + ex.getMessage(), "Subscription", id);
                         failed.add(new String[]{name, ex.getMessage()});
                         break;
@@ -179,14 +180,14 @@ public class SubscriptionAutomationService {
             digestSent = sendDigest(settings, today, billed, failed, actioned, reminders, overdueReminders);
         }
 
-        StringBuilder m = new StringBuilder("Billed ").append(billed.size()).append(", failed ").append(failed.size());
-        if (settings.isSubscriptionReminderEnabled()) m.append(", reminders sent ").append(reminders);
+        StringBuilder m = new StringBuilder(I18n.t("Billed ")).append(billed.size()).append(I18n.t(", failed ")).append(failed.size());
+        if (settings.isSubscriptionReminderEnabled()) m.append(I18n.t(", reminders sent ")).append(reminders);
         if (resumed > 0) m.append(", ").append(resumed).append(" resumed");
-        if (overdueReminders > 0) m.append(", ").append(overdueReminders).append(" overdue reminder(s) sent");
+        if (overdueReminders > 0) m.append(", ").append(overdueReminders).append(I18n.t(" overdue reminder(s) sent"));
         if (!"NONE".equals(action)) {
-            m.append(", ").append(actioned.size()).append(" subscription(s) ").append("CANCEL".equals(action) ? "cancelled" : "paused").append(" for non-payment");
+            m.append(", ").append(actioned.size()).append(" subscription(s) ").append("CANCEL".equals(action) ? "cancelled" : "paused").append(I18n.t(" for non-payment"));
         }
-        if (settings.isSubscriptionDigestEnabled()) m.append(digestSent ? "; digest emailed" : "; digest not sent");
+        if (settings.isSubscriptionDigestEnabled()) m.append(digestSent ? I18n.t("; digest emailed") : I18n.t("; digest not sent"));
         String message = m.append(".").toString();
         storeSettingsService.markSubscriptionJobRan(today, today + ": " + message);
         return new RunResult(billed.size(), failed.size(), reminders, actioned.size(), digestSent, message, resumed, overdueReminders);
@@ -198,20 +199,20 @@ public class SubscriptionAutomationService {
         int sent = 0;
         for (SubscriptionService.ReminderInfo r : subscriptionService.reminderCandidates(today, settings.getSubscriptionReminderDays())) {
             if (!canMail) break;
-            String subject = "Upcoming subscription billing: " + r.planName() + " on " + r.nextBillingDate();
+            String subject = I18n.t("Upcoming subscription billing: ") + r.planName() + I18n.t(" on ") + r.nextBillingDate();
             String business = settings.getBusinessName() == null ? "" : settings.getBusinessName();
             String currency = settings.getCurrencySymbol() == null ? "" : settings.getCurrencySymbol();
             boolean delivered = false;
             if (settings.isSubscriptionReminderCustomer() && r.customerEmail() != null && !r.customerEmail().isBlank()) {
-                String html = "<p>Hello " + escape(r.customerName()) + ",</p>"
-                        + "<p>This is a reminder that your subscription to <b>" + escape(r.planName()) + "</b> will be billed on <b>"
-                        + r.nextBillingDate() + "</b> (" + escape(currency) + r.price() + ").</p>"
-                        + "<p>Thank you,<br/>" + escape(business) + "</p>";
+                String html = I18n.t("<p>Hello ") + escape(r.customerName()) + I18n.t(",</p>"
+                        + "<p>This is a reminder that your subscription to <b>") + escape(r.planName()) + I18n.t("</b> will be billed on <b>")
+                        + r.nextBillingDate() + "</b> (" + escape(currency) + r.price() + I18n.t(").</p>"
+                        + "<p>Thank you,<br/>") + escape(business) + "</p>";
                 delivered |= trySend(r.customerEmail().trim(), subject, html);
             }
             if (settings.isSubscriptionReminderStore() && storeEmail != null && !storeEmail.isBlank()) {
-                String html = "<p>Subscription for <b>" + escape(r.customerName()) + "</b> (" + escape(r.planName()) + ", "
-                        + escape(currency) + r.price() + ") will be billed on <b>" + r.nextBillingDate() + "</b>.</p>";
+                String html = I18n.t("<p>Subscription for <b>") + escape(r.customerName()) + "</b> (" + escape(r.planName()) + ", "
+                        + escape(currency) + r.price() + I18n.t(") will be billed on <b>") + r.nextBillingDate() + "</b>.</p>";
                 delivered |= trySend(storeEmail.trim(), subject, html);
             }
             if (delivered) {
@@ -229,11 +230,11 @@ public class SubscriptionAutomationService {
         int sent = 0;
         for (SubscriptionService.DunningInfo d : subscriptionService.dunningCandidates(today, zoneOf(settings))) {
             if (d.customerEmail() == null || d.customerEmail().isBlank()) continue;
-            String subject = "Payment reminder: invoice " + d.invoiceNumber();
-            String html = "<p>Hello " + escape(d.customerName()) + ",</p>"
-                    + "<p>Our records show that invoice <b>" + escape(d.invoiceNumber()) + "</b> for your subscription still has <b>" + escape(currency) + d.outstanding()
-                    + "</b> outstanding (" + d.daysLate() + " day(s) past its due date). Please arrange payment, or get in touch if you already have.</p>"
-                    + "<p>Thank you,<br/>" + escape(business) + "</p>";
+            String subject = I18n.t("Payment reminder: invoice ") + d.invoiceNumber();
+            String html = I18n.t("<p>Hello ") + escape(d.customerName()) + I18n.t(",</p>"
+                    + "<p>Our records show that invoice <b>") + escape(d.invoiceNumber()) + I18n.t("</b> for your subscription still has <b>") + escape(currency) + d.outstanding()
+                    + I18n.t("</b> outstanding (") + d.daysLate() + I18n.t(" day(s) past its due date). Please arrange payment, or get in touch if you already have.</p>"
+                    + "<p>Thank you,<br/>") + escape(business) + "</p>";
             if (trySend(d.customerEmail().trim(), subject, html)) {
                 subscriptionService.markDunned(d.subscriptionId(), d.invoiceId(), today, d.reminderNumber(), d.invoiceNumber());
                 sent++;
@@ -246,32 +247,32 @@ public class SubscriptionAutomationService {
                                List<String[]> failed, List<String[]> actioned, int reminders, int overdueReminders) {
         String to = settings.getNotificationsEmail();
         if (to == null || to.isBlank() || !mailService.isConfigured()) return false;
-        StringBuilder html = new StringBuilder("<p>Subscription job results for ").append(today).append(".</p>");
+        StringBuilder html = new StringBuilder(I18n.t("<p>Subscription job results for ")).append(today).append(".</p>");
         if (!billed.isEmpty()) {
             List<List<String>> rows = new ArrayList<>();
             for (SubscriptionService.BillResult b : billed) {
                 rows.add(List.of(nz(b.customerName()), String.valueOf(b.price()), nz(b.invoiceNumber()), String.valueOf(b.nextBillingDate())));
             }
-            html.append("<h3>Billed (").append(billed.size()).append(")</h3>")
-                    .append(table(List.of("Customer", "Amount", "Invoice", "Next billing"), rows));
+            html.append(I18n.t("<h3>Billed (")).append(billed.size()).append(")</h3>")
+                    .append(table(List.of(I18n.t("Customer"), I18n.t("Amount"), I18n.t("Invoice"), I18n.t("Next billing")), rows));
         }
         if (!failed.isEmpty()) {
             List<List<String>> rows = new ArrayList<>();
             for (String[] f : failed) rows.add(List.of(nz(f[0]), nz(f[1])));
-            html.append("<h3>Needs attention (").append(failed.size()).append(")</h3>").append(table(List.of("Subscription", "Problem"), rows));
+            html.append(I18n.t("<h3>Needs attention (")).append(failed.size()).append(")</h3>").append(table(List.of(I18n.t("Subscription"), I18n.t("Problem")), rows));
         }
         if (!actioned.isEmpty()) {
             List<List<String>> rows = new ArrayList<>();
             for (String[] a : actioned) rows.add(List.of(nz(a[0]), nz(a[1]), nz(a[2])));
-            html.append("<h3>Paused or cancelled (").append(actioned.size()).append(")</h3>").append(table(List.of("Customer", "Invoice", "Action"), rows));
+            html.append(I18n.t("<h3>Paused or cancelled (")).append(actioned.size()).append(")</h3>").append(table(List.of(I18n.t("Customer"), I18n.t("Invoice"), I18n.t("Action")), rows));
         }
         if (reminders > 0) {
-            html.append("<p>").append(reminders).append(" upcoming-billing reminder(s) were sent.</p>");
+            html.append("<p>").append(reminders).append(I18n.t(" upcoming-billing reminder(s) were sent.</p>"));
         }
         if (overdueReminders > 0) {
-            html.append("<p>").append(overdueReminders).append(" overdue-invoice reminder(s) were sent to customers.</p>");
+            html.append("<p>").append(overdueReminders).append(I18n.t(" overdue-invoice reminder(s) were sent to customers.</p>"));
         }
-        return trySend(to.trim(), "Subscription job: " + billed.size() + " billed, " + failed.size() + " need attention", html.toString());
+        return trySend(to.trim(), I18n.t("Subscription job: ") + billed.size() + " billed, " + failed.size() + I18n.t(" need attention"), html.toString());
     }
 
     private boolean trySend(String to, String subject, String html) {

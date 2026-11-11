@@ -1,5 +1,6 @@
 package com.posapp.common;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -34,8 +35,6 @@ import java.util.Locale;
 @Component
 public class PdfKit {
 
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
-    private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
 
     public static final Color DARK = new Color(0x33, 0x33, 0x33);
     public static final Color SOFT = new Color(0xF0, 0xF0, 0xF0);
@@ -54,7 +53,7 @@ public class PdfKit {
 
     public String businessName() {
         StoreSettings s = store();
-        return s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : "Our business";
+        return s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : I18n.t("Our business");
     }
 
     public String currency() {
@@ -75,7 +74,7 @@ public class PdfKit {
 
     public static String money(BigDecimal v) {
         if (v == null) return "";
-        return new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(v);
+        return new DecimalFormat("#,##0.00", I18n.symbols()).format(v);
     }
 
     public static String amount(String cur, BigDecimal v) {
@@ -83,11 +82,11 @@ public class PdfKit {
     }
 
     public static String day(LocalDate d) {
-        return d == null ? "" : d.format(DAY);
+        return d == null ? "" : d.format(I18n.longDay());
     }
 
     public static String shortDay(LocalDate d) {
-        return d == null ? "" : SHORT.format(d);
+        return d == null ? "" : I18n.shortDay().format(d);
     }
 
     public static String nz(String s) {
@@ -159,7 +158,7 @@ public class PdfKit {
             c.setBorder(Rectangle.TOP);
             c.setBorderColor(DARK);
             c.setPaddingTop(4);
-            c.setPhrase(new Phrase(w + "\nName:\nDate:", muted(9)));
+            c.setPhrase(new Phrase(w + I18n.t("\nName:\nDate:"), muted(9)));
             t.addCell(c);
         }
         doc.add(t);
@@ -179,7 +178,7 @@ public class PdfKit {
         public void onEndPage(PdfWriter writer, Document document) {
             PdfContentByte cb = writer.getDirectContent();
             ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(left, muted(8)), document.left(), document.bottom() - 14, 0);
-            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase("Page " + writer.getPageNumber(), muted(8)), document.right(), document.bottom() - 14, 0);
+            ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase(I18n.t("Page ") + writer.getPageNumber(), muted(8)), document.right(), document.bottom() - 14, 0);
         }
     }
 
@@ -189,7 +188,7 @@ public class PdfKit {
         doc.add(new Paragraph(businessName(), bold(15)));
         StringBuilder b = new StringBuilder();
         if (s != null) {
-            for (String part : new String[]{s.getAddress(), s.getPhone(), s.getEmail(), s.getTaxId() == null || s.getTaxId().isBlank() ? null : "Tax ID " + s.getTaxId()}) {
+            for (String part : new String[]{s.getAddress(), s.getPhone(), s.getEmail(), s.getTaxId() == null || s.getTaxId().isBlank() ? null : I18n.t("Tax ID ") + s.getTaxId()}) {
                 if (part != null && !part.isBlank()) b.append(b.length() == 0 ? "" : "  |  ").append(part.trim().replace("\n", ", "));
             }
         }
@@ -221,7 +220,7 @@ public class PdfKit {
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the document", e);
+            throw new IllegalStateException(I18n.t("Failed to build the document"), e);
         }
     }
 }

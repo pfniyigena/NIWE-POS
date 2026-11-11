@@ -1,5 +1,6 @@
 package com.posapp.installment;
 
+import com.posapp.i18n.I18n;
 import com.posapp.accounting.AccountingService;
 import com.posapp.audit.AuditLogService;
 import com.posapp.branch.BranchAccessService;
@@ -117,36 +118,36 @@ public class InstallmentService {
             s.setRemindersEnabled(r.remindersEnabled());
         }
         if (r.reminderDaysBefore() != null) {
-            s.setReminderDaysBefore(inRange(r.reminderDaysBefore(), 0, 60, "Days before a due date"));
+            s.setReminderDaysBefore(inRange(r.reminderDaysBefore(), 0, 60, I18n.t("Days before a due date")));
         }
         if (r.overdueReminderEveryDays() != null) {
-            s.setOverdueReminderEveryDays(inRange(r.overdueReminderEveryDays(), 1, 90, "Days between overdue reminders"));
+            s.setOverdueReminderEveryDays(inRange(r.overdueReminderEveryDays(), 1, 90, I18n.t("Days between overdue reminders")));
         }
         if (r.defaultWholeUnits() != null) {
             s.setDefaultWholeUnits(r.defaultWholeUnits());
         }
         if (r.defaultInterestRate() != null) {
-            s.setDefaultInterestRate(percent(r.defaultInterestRate(), "Interest rate"));
+            s.setDefaultInterestRate(percent(r.defaultInterestRate(), I18n.t("Interest rate")));
         }
         if (r.defaultGraceDays() != null) {
-            s.setDefaultGraceDays(inRange(r.defaultGraceDays(), 0, 90, "Grace days"));
+            s.setDefaultGraceDays(inRange(r.defaultGraceDays(), 0, 90, I18n.t("Grace days")));
         }
         if (r.defaultLateFeeFixed() != null) {
-            s.setDefaultLateFeeFixed(nonNegative(r.defaultLateFeeFixed(), "Late fee"));
+            s.setDefaultLateFeeFixed(nonNegative(r.defaultLateFeeFixed(), I18n.t("Late fee")));
         }
         if (r.defaultLateFeePercent() != null) {
-            s.setDefaultLateFeePercent(percent(r.defaultLateFeePercent(), "Late fee percentage"));
+            s.setDefaultLateFeePercent(percent(r.defaultLateFeePercent(), I18n.t("Late fee percentage")));
         }
         if (r.payoffRebatePercent() != null) {
-            s.setPayoffRebatePercent(percent(r.payoffRebatePercent(), "Early payoff interest waiver"));
+            s.setPayoffRebatePercent(percent(r.payoffRebatePercent(), I18n.t("Early payoff interest waiver")));
         }
         if (r.defaultAfterDays() != null) {
-            s.setDefaultAfterDays(inRange(r.defaultAfterDays(), 0, 730, "Days overdue before a plan is marked defaulted"));
+            s.setDefaultAfterDays(inRange(r.defaultAfterDays(), 0, 730, I18n.t("Days overdue before a plan is marked defaulted")));
         }
         if (r.agreementTerms() != null) {
             String t = r.agreementTerms().trim();
             if (t.length() > 4000) {
-                throw ApiException.badRequest("The agreement wording is limited to 4000 characters.");
+                throw ApiException.badRequest(I18n.t("The agreement wording is limited to 4000 characters."));
             }
             s.setAgreementTerms(t.isEmpty() ? null : t);
         }
@@ -314,7 +315,7 @@ public class InstallmentService {
         Invoice invoice = payableInvoice(r.invoiceId());
         if (planRepository.existsByInvoiceIdAndStatus(invoice.getId(), InstallmentPlanStatus.ACTIVE)
                 || planRepository.existsByInvoiceIdAndStatus(invoice.getId(), InstallmentPlanStatus.DEFAULTED)) {
-            throw ApiException.conflict("Invoice " + invoice.getInvoiceNumber() + " already has an open instalment plan.");
+            throw ApiException.conflict(I18n.t("Invoice ") + invoice.getInvoiceNumber() + I18n.t(" already has an open instalment plan."));
         }
         Built b = build(invoice, r, true);
         BigDecimal deposit = b.deposit;
@@ -372,33 +373,33 @@ public class InstallmentService {
     private Built build(Invoice invoice, PlanRequest r, boolean forCreate) {
         BigDecimal outstanding = customerCreditService.outstandingForInvoice(invoice);
         BigDecimal paid = customerCreditService.amountPaidForInvoice(invoice);
-        BigDecimal deposit = r.deposit() == null ? ZERO : InstallmentCalculator.round(nonNegative(r.deposit(), "The deposit"));
+        BigDecimal deposit = r.deposit() == null ? ZERO : InstallmentCalculator.round(nonNegative(r.deposit(), I18n.t("The deposit")));
         if (deposit.compareTo(outstanding) >= 0) {
-            throw ApiException.badRequest("The deposit must be less than what is still unpaid on the invoice (" + outstanding.toPlainString() + ").");
+            throw ApiException.badRequest(I18n.t("The deposit must be less than what is still unpaid on the invoice (") + outstanding.toPlainString() + ").");
         }
         if (forCreate && deposit.signum() > 0 && (r.depositMethod() == null || r.depositMethod().isBlank())) {
-            throw ApiException.badRequest("Choose how the deposit is paid.");
+            throw ApiException.badRequest(I18n.t("Choose how the deposit is paid."));
         }
         BigDecimal financed = outstanding.subtract(deposit);
         int n = r.numberOfInstallments() == null ? 0 : r.numberOfInstallments();
         if (n < 2 || n > 60) {
-            throw ApiException.badRequest("Choose between 2 and 60 instalments.");
+            throw ApiException.badRequest(I18n.t("Choose between 2 and 60 instalments."));
         }
         InstallmentFrequency frequency = r.frequency() == null ? InstallmentFrequency.MONTHLY : r.frequency();
         if (r.firstDueDate() == null) {
-            throw ApiException.badRequest("Choose the date the first instalment falls due.");
+            throw ApiException.badRequest(I18n.t("Choose the date the first instalment falls due."));
         }
         if (r.firstDueDate().isBefore(today())) {
-            throw ApiException.badRequest("The first instalment can't fall due in the past.");
+            throw ApiException.badRequest(I18n.t("The first instalment can't fall due in the past."));
         }
         InterestMethod method = r.interestMethod() == null ? InterestMethod.NONE : r.interestMethod();
-        BigDecimal rate = r.interestRate() == null ? ZERO : percent(r.interestRate(), "The interest rate");
+        BigDecimal rate = r.interestRate() == null ? ZERO : percent(r.interestRate(), I18n.t("The interest rate"));
         if (rate.signum() == 0) {
             method = InterestMethod.NONE;
         }
-        int grace = r.graceDays() == null ? 0 : inRange(r.graceDays(), 0, 90, "Grace days");
-        BigDecimal feeFixed = r.lateFeeFixed() == null ? ZERO : nonNegative(r.lateFeeFixed(), "The late fee");
-        BigDecimal feePercent = r.lateFeePercent() == null ? ZERO : percent(r.lateFeePercent(), "The late fee percentage");
+        int grace = r.graceDays() == null ? 0 : inRange(r.graceDays(), 0, 90, I18n.t("Grace days"));
+        BigDecimal feeFixed = r.lateFeeFixed() == null ? ZERO : nonNegative(r.lateFeeFixed(), I18n.t("The late fee"));
+        BigDecimal feePercent = r.lateFeePercent() == null ? ZERO : percent(r.lateFeePercent(), I18n.t("The late fee percentage"));
         boolean reminders = r.remindersEnabled() == null || r.remindersEnabled();
 
         boolean whole = r.wholeUnits() != null ? r.wholeUnits() : settingsEntity().isDefaultWholeUnits();
@@ -412,18 +413,18 @@ public class InstallmentService {
 
     private Invoice payableInvoice(Long invoiceId) {
         if (invoiceId == null) {
-            throw ApiException.badRequest("Choose an invoice.");
+            throw ApiException.badRequest(I18n.t("Choose an invoice."));
         }
-        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> ApiException.notFound("Invoice not found"));
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> ApiException.notFound(I18n.t("Invoice not found")));
         branchAccessService.assertCanAccess(invoice.getBranchId());
         if (invoice.getStatus() != InvoiceStatus.ISSUED) {
-            throw ApiException.badRequest("Only an issued invoice can be paid in instalments — " + invoice.getInvoiceNumber() + " is " + invoice.getStatus() + ".");
+            throw ApiException.badRequest(I18n.t("Only an issued invoice can be paid in instalments — ") + invoice.getInvoiceNumber() + " is " + invoice.getStatus() + ".");
         }
         if (invoice.getCustomerId() == null) {
-            throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " has no customer, so it can't have an instalment plan.");
+            throw ApiException.badRequest(I18n.t("Invoice ") + invoice.getInvoiceNumber() + I18n.t(" has no customer, so it can't have an instalment plan."));
         }
         if (customerCreditService.outstandingForInvoice(invoice).signum() <= 0) {
-            throw ApiException.badRequest("Invoice " + invoice.getInvoiceNumber() + " is already fully paid.");
+            throw ApiException.badRequest(I18n.t("Invoice ") + invoice.getInvoiceNumber() + I18n.t(" is already fully paid."));
         }
         return invoice;
     }
@@ -435,16 +436,16 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (isOpen(p) && syncWithInvoice(p, today())) {
-            throw ApiException.conflict("The invoice is no longer payable, so this plan was cancelled: " + p.getCancelReason());
+            throw ApiException.conflict(I18n.t("The invoice is no longer payable, so this plan was cancelled: ") + p.getCancelReason());
         }
         if (!isOpen(p)) {
-            throw ApiException.conflict("This plan is " + p.getStatus().name().toLowerCase().replace('_', ' ') + " — payments can't be recorded on it.");
+            throw ApiException.conflict(I18n.t("This plan is ") + p.getStatus().name().toLowerCase().replace('_', ' ') + I18n.t(" — payments can't be recorded on it."));
         }
         if (r.amount() == null || r.amount().signum() <= 0) {
-            throw ApiException.badRequest("Enter the amount received.");
+            throw ApiException.badRequest(I18n.t("Enter the amount received."));
         }
         if (r.method() == null || r.method().isBlank()) {
-            throw ApiException.badRequest("Choose the payment method.");
+            throw ApiException.badRequest(I18n.t("Choose the payment method."));
         }
         BigDecimal amount = InstallmentCalculator.round(r.amount());
         applyPayment(p, amount, r.method(), r.note(), caller, today());
@@ -457,7 +458,7 @@ public class InstallmentService {
         List<Row> rows = view(p, today);
         BigDecimal totalLeft = rows.stream().map(Row::left).reduce(ZERO, BigDecimal::add);
         if (amount.compareTo(totalLeft) > 0) {
-            throw ApiException.badRequest("That is more than the " + totalLeft.toPlainString() + " still owed on this plan.");
+            throw ApiException.badRequest(I18n.t("That is more than the ") + totalLeft.toPlainString() + I18n.t(" still owed on this plan."));
         }
         // Oldest first; within an instalment the interest and fees are settled before the principal.
         BigDecimal remaining = amount;
@@ -487,7 +488,7 @@ public class InstallmentService {
             RecordInvoicePaymentRequest inv = new RecordInvoicePaymentRequest();
             inv.setAmount(principalPart);
             inv.setMethod(method);
-            inv.setNote(clip("Instalment plan " + p.getPlanNumber() + (note != null && !note.isBlank() ? " — " + note.trim() : ""), 250));
+            inv.setNote(clip(I18n.t("Instalment plan ") + p.getPlanNumber() + (note != null && !note.isBlank() ? " — " + note.trim() : ""), 250));
             CustomerPaymentDto done = customerCreditService.recordInvoicePayment(p.getInvoiceId(), inv, caller);
             pay.setCustomerPaymentId(done.id());
             pay.setReceiptNumber(done.receiptNumber());
@@ -509,7 +510,7 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (!isOpen(p)) {
-            throw ApiException.conflict("Only an active or defaulted plan can be cancelled.");
+            throw ApiException.conflict(I18n.t("Only an active or defaulted plan can be cancelled."));
         }
         markCancelled(p, blankToNull(reason));
         auditLogService.record("INSTALLMENT_PLAN_CANCELLED", "Cancelled instalment plan " + p.getPlanNumber(), "InstallmentPlan", p.getId());
@@ -592,10 +593,10 @@ public class InstallmentService {
         branchAccessService.assertCanAccess(p.getBranchId());
         LocalDate today = today();
         if (!isOpen(p)) {
-            throw ApiException.conflict("Only an active or defaulted plan can be rescheduled.");
+            throw ApiException.conflict(I18n.t("Only an active or defaulted plan can be rescheduled."));
         }
         if (syncWithInvoice(p, today)) {
-            throw ApiException.conflict("The invoice is no longer payable, so this plan was cancelled: " + p.getCancelReason());
+            throw ApiException.conflict(I18n.t("The invoice is no longer payable, so this plan was cancelled: ") + p.getCancelReason());
         }
         List<Row> rows = view(p, today);
         int firstOpen = 0;
@@ -603,29 +604,29 @@ public class InstallmentService {
             firstOpen++;
         }
         if (firstOpen == rows.size()) {
-            throw ApiException.badRequest("Every instalment is already paid.");
+            throw ApiException.badRequest(I18n.t("Every instalment is already paid."));
         }
         List<Row> kept = rows.subList(0, firstOpen);
         List<Row> open = rows.subList(firstOpen, rows.size());
         List<RescheduleLine> lines = r == null || r.installments() == null ? List.of() : r.installments();
         if (lines.isEmpty()) {
-            throw ApiException.badRequest("Add at least one instalment.");
+            throw ApiException.badRequest(I18n.t("Add at least one instalment."));
         }
         if (firstOpen + lines.size() > 60) {
-            throw ApiException.badRequest("A plan can have at most 60 instalments.");
+            throw ApiException.badRequest(I18n.t("A plan can have at most 60 instalments."));
         }
         LocalDate prev = kept.isEmpty() ? null : kept.get(kept.size() - 1).i.getDueDate();
         BigDecimal newPrincipal = ZERO;
         BigDecimal newInterest = ZERO;
         for (RescheduleLine l : lines) {
             if (l.dueDate() == null) {
-                throw ApiException.badRequest("Every instalment needs a due date.");
+                throw ApiException.badRequest(I18n.t("Every instalment needs a due date."));
             }
             if (l.principalDue() == null || l.interestDue() == null || l.principalDue().signum() < 0 || l.interestDue().signum() < 0) {
-                throw ApiException.badRequest("Amounts can't be negative.");
+                throw ApiException.badRequest(I18n.t("Amounts can't be negative."));
             }
             if (prev != null && l.dueDate().isBefore(prev)) {
-                throw ApiException.badRequest("The due dates must be in order, each on or after the one before.");
+                throw ApiException.badRequest(I18n.t("The due dates must be in order, each on or after the one before."));
             }
             prev = l.dueDate();
             newPrincipal = newPrincipal.add(InstallmentCalculator.round(l.principalDue()));
@@ -633,7 +634,7 @@ public class InstallmentService {
         }
         BigDecimal oldPrincipal = open.stream().map(x -> x.i.getPrincipalDue()).reduce(ZERO, BigDecimal::add);
         if (newPrincipal.compareTo(oldPrincipal) != 0) {
-            throw ApiException.badRequest("The principal of the instalments must add up to " + oldPrincipal.toPlainString() + " — it adds up to " + newPrincipal.toPlainString() + ".");
+            throw ApiException.badRequest(I18n.t("The principal of the instalments must add up to ") + oldPrincipal.toPlainString() + I18n.t(" — it adds up to ") + newPrincipal.toPlainString() + ".");
         }
         BigDecimal chargesPaid = rows.stream().map(x -> x.chargesPaid).reduce(ZERO, BigDecimal::add);
         BigDecimal newCharges = kept.stream().map(x -> x.i.getInterestDue().add(x.i.getLateFee())).reduce(ZERO, BigDecimal::add).add(newInterest);
@@ -641,7 +642,7 @@ public class InstallmentService {
             newCharges = newCharges.add(open.get(k).i.getLateFee());   // late fees stay with the instalment they were charged on
         }
         if (newCharges.compareTo(chargesPaid) < 0) {
-            throw ApiException.badRequest("Interest and fees can't be lowered below the " + chargesPaid.toPlainString() + " already paid.");
+            throw ApiException.badRequest(I18n.t("Interest and fees can't be lowered below the ") + chargesPaid.toPlainString() + I18n.t(" already paid."));
         }
 
         for (int k = 0; k < lines.size(); k++) {
@@ -688,7 +689,7 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         Installment i = p.getInstallments().stream().filter(x -> x.getSeq() == seq).findFirst()
-                .orElseThrow(() -> ApiException.notFound("Instalment " + seq + " not found"));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Instalment ") + seq + I18n.t(" not found")));
         i.setLateFee(ZERO);
         i.setLateFeeWaived(true);
         planRepository.save(p);
@@ -829,21 +830,21 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (p.getStatus() != InstallmentPlanStatus.ACTIVE) {
-            throw ApiException.conflict("Only an active plan can be reminded about.");
+            throw ApiException.conflict(I18n.t("Only an active plan can be reminded about."));
         }
         LocalDate today = today();
         if (syncWithInvoice(p, today)) {
-            throw ApiException.conflict("The invoice is no longer payable, so this plan was cancelled.");
+            throw ApiException.conflict(I18n.t("The invoice is no longer payable, so this plan was cancelled."));
         }
         int ahead = settingsEntity().getReminderDaysBefore();
         List<Row> due = view(p, today).stream()
                 .filter(r -> r.left().signum() > 0 && !r.i.getDueDate().isAfter(today.plusDays(ahead))).toList();
         if (due.isEmpty()) {
-            throw ApiException.badRequest("Nothing is overdue or due soon on this plan.");
+            throw ApiException.badRequest(I18n.t("Nothing is overdue or due soon on this plan."));
         }
         String to = sendEmail(p, due, today);
         if (to == null) {
-            throw ApiException.badRequest("This customer has no email address.");
+            throw ApiException.badRequest(I18n.t("This customer has no email address."));
         }
         for (Row r : due) {
             if (r.state == InstallmentState.OVERDUE) {
@@ -869,10 +870,10 @@ public class InstallmentService {
         String business = store != null && store.getBusinessName() != null ? store.getBusinessName() : "";
         boolean anyOverdue = rows.stream().anyMatch(r -> r.state == InstallmentState.OVERDUE);
         StringBuilder b = new StringBuilder();
-        b.append("<p>Dear ").append(esc(customer.getName())).append(",</p>");
-        b.append("<p>").append(anyOverdue ? "This is a reminder that the instalment(s) below on invoice <b>" : "A friendly reminder of the instalment(s) coming due on invoice <b>")
-                .append(esc(p.getInvoiceNumber())).append("</b> ").append(anyOverdue ? "are overdue:" : "are due soon:").append("</p>");
-        b.append("<table cellpadding=\"6\" style=\"border-collapse:collapse;border:1px solid #ccc;\"><tr><th align=\"left\">No.</th><th align=\"left\">Due date</th><th align=\"right\">Amount</th><th align=\"left\"></th></tr>");
+        b.append(I18n.t("<p>Dear ")).append(esc(customer.getName())).append(",</p>");
+        b.append("<p>").append(anyOverdue ? I18n.t("This is a reminder that the instalment(s) below on invoice <b>") : I18n.t("A friendly reminder of the instalment(s) coming due on invoice <b>"))
+                .append(esc(p.getInvoiceNumber())).append("</b> ").append(anyOverdue ? I18n.t("are overdue:") : I18n.t("are due soon:")).append("</p>");
+        b.append(I18n.t("<table cellpadding=\"6\" style=\"border-collapse:collapse;border:1px solid #ccc;\"><tr><th align=\"left\">No.</th><th align=\"left\">Due date</th><th align=\"right\">Amount</th><th align=\"left\"></th></tr>"));
         BigDecimal total = ZERO;
         for (Row r : rows) {
             total = total.add(r.left());
@@ -880,9 +881,9 @@ public class InstallmentService {
                     .append("</td><td align=\"right\">").append(esc(cur)).append(money(r.left())).append("</td><td>")
                     .append(r.state == InstallmentState.OVERDUE ? "<span style=\"color:#b00020;\">overdue " + r.daysOverdue + " day(s)</span>" : "").append("</td></tr>");
         }
-        b.append("</table><p>Total: <b>").append(esc(cur)).append(money(total)).append("</b></p>");
-        b.append("<p>Please arrange payment. If you have already paid, thank you — please disregard this message.</p><p>").append(esc(business)).append("</p>");
-        mailService.send(customer.getEmail(), (anyOverdue ? "Overdue instalment" : "Instalment due") + " — " + p.getInvoiceNumber(), b.toString(), List.of());
+        b.append(I18n.t("</table><p>Total: <b>")).append(esc(cur)).append(money(total)).append("</b></p>");
+        b.append(I18n.t("<p>Please arrange payment. If you have already paid, thank you — please disregard this message.</p><p>")).append(esc(business)).append("</p>");
+        mailService.send(customer.getEmail(), (anyOverdue ? I18n.t("Overdue instalment") : I18n.t("Instalment due")) + " — " + p.getInvoiceNumber(), b.toString(), List.of());
         return customer.getEmail();
     }
 
@@ -897,8 +898,8 @@ public class InstallmentService {
             rows.add(List.of(String.valueOf(r.i.getSeq()), String.valueOf(r.i.getDueDate()), money(r.i.getPrincipalDue()), money(r.i.getInterestDue()),
                     money(r.i.getLateFee()), money(r.total()), money(r.paid()), money(r.left()), r.state.name()));
         }
-        return exportService.toPdf("Instalment schedule " + p.getPlanNumber() + " — " + p.getCustomerName() + " (invoice " + p.getInvoiceNumber() + ")",
-                List.of("No.", "Due date", "Principal", "Interest", "Late fee", "Total", "Paid", "Balance", "Status"), rows);
+        return exportService.toPdf(I18n.t("Instalment schedule ") + p.getPlanNumber() + " — " + p.getCustomerName() + " (invoice " + p.getInvoiceNumber() + ")",
+                List.of(I18n.t("No."), I18n.t("Due date"), I18n.t("Principal"), I18n.t("Interest"), I18n.t("Late fee"), I18n.t("Total"), I18n.t("Paid"), I18n.t("Balance"), I18n.t("Status")), rows);
     }
 
     // ---- early payoff ----
@@ -909,15 +910,15 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         requireOpenForPayoff(p);
-        return quote(p, rebatePercent != null ? percent(rebatePercent, "Interest waiver") : settingsEntity().getPayoffRebatePercent(), today());
+        return quote(p, rebatePercent != null ? percent(rebatePercent, I18n.t("Interest waiver")) : settingsEntity().getPayoffRebatePercent(), today());
     }
 
     private void requireOpenForPayoff(InstallmentPlan p) {
         if (isOpen(p) && syncWithInvoice(p, today())) {
-            throw ApiException.conflict("The invoice is no longer payable, so this plan was cancelled: " + p.getCancelReason());
+            throw ApiException.conflict(I18n.t("The invoice is no longer payable, so this plan was cancelled: ") + p.getCancelReason());
         }
         if (!isOpen(p)) {
-            throw ApiException.conflict("This plan is " + p.getStatus().name().toLowerCase().replace('_', ' ') + " — it can't be paid off.");
+            throw ApiException.conflict(I18n.t("This plan is ") + p.getStatus().name().toLowerCase().replace('_', ' ') + I18n.t(" — it can't be paid off."));
         }
     }
 
@@ -953,16 +954,16 @@ public class InstallmentService {
         branchAccessService.assertCanAccess(p.getBranchId());
         requireOpenForPayoff(p);
         if (r.method() == null || r.method().isBlank()) {
-            throw ApiException.badRequest("Choose the payment method.");
+            throw ApiException.badRequest(I18n.t("Choose the payment method."));
         }
         LocalDate today = today();
-        BigDecimal pct = r.rebatePercent() != null ? percent(r.rebatePercent(), "Interest waiver") : settingsEntity().getPayoffRebatePercent();
+        BigDecimal pct = r.rebatePercent() != null ? percent(r.rebatePercent(), I18n.t("Interest waiver")) : settingsEntity().getPayoffRebatePercent();
         PayoffQuoteDto q = quote(p, pct, today);
         if (q.instalmentsLeft() == 0) {
-            throw ApiException.badRequest("Nothing is left to pay on this plan.");
+            throw ApiException.badRequest(I18n.t("Nothing is left to pay on this plan."));
         }
         if (r.expectedAmount() != null && r.expectedAmount().compareTo(q.amountToSettle()) != 0) {
-            throw ApiException.conflict("The payoff amount is now " + money(q.amountToSettle()) + " (it was " + money(r.expectedAmount()) + " on screen). Review it and confirm again.");
+            throw ApiException.conflict(I18n.t("The payoff amount is now ") + money(q.amountToSettle()) + I18n.t(" (it was ") + money(r.expectedAmount()) + I18n.t(" on screen). Review it and confirm again."));
         }
         int scale = p.isWholeUnits() ? 0 : 2;
         if (q.rebate().signum() > 0) {
@@ -996,14 +997,14 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (p.getStatus() == InstallmentPlanStatus.WRITTEN_OFF) {
-            throw ApiException.conflict("This plan was written off — its payments can't be reversed.");
+            throw ApiException.conflict(I18n.t("This plan was written off — its payments can't be reversed."));
         }
-        InstallmentPayment pay = paymentRepository.findByIdAndPlanId(paymentId, planId).orElseThrow(() -> ApiException.notFound("Payment not found on this plan"));
+        InstallmentPayment pay = paymentRepository.findByIdAndPlanId(paymentId, planId).orElseThrow(() -> ApiException.notFound(I18n.t("Payment not found on this plan")));
         if (pay.isReversed()) {
-            throw ApiException.conflict("This payment has already been reversed.");
+            throw ApiException.conflict(I18n.t("This payment has already been reversed."));
         }
         if (reason == null || reason.isBlank()) {
-            throw ApiException.badRequest("Say why the payment is being reversed.");
+            throw ApiException.badRequest(I18n.t("Say why the payment is being reversed."));
         }
         if (pay.getCustomerPaymentId() != null) {
             com.posapp.credit.CustomerPayment rev = customerCreditService.reverseInvoicePayment(pay.getCustomerPaymentId(), reason, caller);
@@ -1034,7 +1035,7 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (p.getStatus() != InstallmentPlanStatus.ACTIVE) {
-            throw ApiException.conflict("Only an active plan can be marked defaulted.");
+            throw ApiException.conflict(I18n.t("Only an active plan can be marked defaulted."));
         }
         markDefaulted(p, today(), blankToNull(reason) != null ? reason.trim() : "Marked defaulted by hand.");
         auditLogService.record("INSTALLMENT_PLAN_DEFAULTED", "Marked instalment plan " + p.getPlanNumber() + " as defaulted", "InstallmentPlan", p.getId());
@@ -1053,7 +1054,7 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (p.getStatus() != InstallmentPlanStatus.DEFAULTED) {
-            throw ApiException.conflict("Only a defaulted plan can be put back to active.");
+            throw ApiException.conflict(I18n.t("Only a defaulted plan can be put back to active."));
         }
         p.setStatus(InstallmentPlanStatus.ACTIVE);
         p.setDefaultedOn(null);
@@ -1070,17 +1071,17 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (reason == null || reason.isBlank()) {
-            throw ApiException.badRequest("Say why the balance is being written off.");
+            throw ApiException.badRequest(I18n.t("Say why the balance is being written off."));
         }
         requireOpenForPayoff(p);
         LocalDate today = today();
         BigDecimal principalLeft = view(p, today).stream().map(r -> r.principalLeft).reduce(ZERO, BigDecimal::add);
-        Invoice inv = invoiceRepository.findById(p.getInvoiceId()).orElseThrow(() -> ApiException.notFound("Invoice not found"));
+        Invoice inv = invoiceRepository.findById(p.getInvoiceId()).orElseThrow(() -> ApiException.notFound(I18n.t("Invoice not found")));
         BigDecimal amount = principalLeft.min(customerCreditService.outstandingForInvoice(inv));
         if (amount.signum() <= 0) {
-            throw ApiException.badRequest("There is no unpaid principal to write off.");
+            throw ApiException.badRequest(I18n.t("There is no unpaid principal to write off."));
         }
-        customerCreditService.writeOffInvoice(p.getInvoiceId(), amount, clip("Instalment plan " + p.getPlanNumber() + " written off — " + reason.trim(), 250), caller);
+        customerCreditService.writeOffInvoice(p.getInvoiceId(), amount, clip(I18n.t("Instalment plan ") + p.getPlanNumber() + I18n.t(" written off — ") + reason.trim(), 250), caller);
         p.setStatus(InstallmentPlanStatus.WRITTEN_OFF);
         p.setWrittenOffOn(today);
         p.setWrittenOffAmount(amount);
@@ -1110,11 +1111,11 @@ public class InstallmentService {
         InstallmentPlan p = entity(planId);
         branchAccessService.assertCanAccess(p.getBranchId());
         if (r.kind() == null) {
-            throw ApiException.badRequest("Choose what kind of contact this was.");
+            throw ApiException.badRequest(I18n.t("Choose what kind of contact this was."));
         }
         String note = blankToNull(r.note());
         if (note != null && note.length() > 1000) {
-            throw ApiException.badRequest("Keep the note under 1000 characters.");
+            throw ApiException.badRequest(I18n.t("Keep the note under 1000 characters."));
         }
         InstallmentFollowUp f = new InstallmentFollowUp();
         f.setPlan(p);
@@ -1124,18 +1125,18 @@ public class InstallmentService {
         if (r.kind() == InstallmentFollowUpKind.PROMISE) {
             LocalDate today = today();
             if (!isOpen(p)) {
-                throw ApiException.conflict("A promise to pay can only be recorded on an active or defaulted plan.");
+                throw ApiException.conflict(I18n.t("A promise to pay can only be recorded on an active or defaulted plan."));
             }
             if (r.promisedOn() == null || r.promisedOn().isBefore(today) || r.promisedOn().isAfter(today.plusDays(365))) {
-                throw ApiException.badRequest("Enter the date the customer promised to pay by (today or later, within a year).");
+                throw ApiException.badRequest(I18n.t("Enter the date the customer promised to pay by (today or later, within a year)."));
             }
             if (r.promisedAmount() != null && r.promisedAmount().signum() < 0) {
-                throw ApiException.badRequest("The promised amount can't be negative.");
+                throw ApiException.badRequest(I18n.t("The promised amount can't be negative."));
             }
             f.setPromisedOn(r.promisedOn());
             f.setPromisedAmount(r.promisedAmount() != null && r.promisedAmount().signum() > 0 ? r.promisedAmount() : null);
         } else if (note == null) {
-            throw ApiException.badRequest("Write a short note about the contact.");
+            throw ApiException.badRequest(I18n.t("Write a short note about the contact."));
         }
         followUpRepository.save(f);
         return followUpDtos(planId);
@@ -1256,10 +1257,10 @@ public class InstallmentService {
         branchAccessService.assertCanAccess(p.getBranchId());
         Customer customer = p.getCustomerId() == null ? null : customerRepository.findById(p.getCustomerId()).orElse(null);
         if (customer == null || customer.getEmail() == null || customer.getEmail().isBlank()) {
-            throw ApiException.badRequest("This customer has no email address.");
+            throw ApiException.badRequest(I18n.t("This customer has no email address."));
         }
         if (!mailService.isConfigured()) {
-            throw ApiException.badRequest("Email isn't configured yet — set up SMTP in Admin > Settings > Email first");
+            throw ApiException.badRequest(I18n.t("Email isn't configured yet — set up SMTP in Admin > Settings > Email first"));
         }
         PlanDetailDto d = detail(p);
         String cur = currency();
@@ -1272,11 +1273,11 @@ public class InstallmentService {
         StoreSettings store = storeSettingsRepository.findAll().stream().findFirst().orElse(null);
         String business = store != null && store.getBusinessName() != null ? store.getBusinessName() : "";
         String c = cur.isEmpty() ? "" : cur + " ";
-        String body = "<p>Dear " + esc(customer.getName()) + ",</p><p>Please find attached your instalment statement for invoice <b>" + esc(p.getInvoiceNumber()) + "</b>"
-                + (includeAgreement ? " and a copy of your instalment agreement" : "") + ".</p><p>Paid so far: <b>" + esc(c) + money(d.plan().paid()) + "</b><br>Still to pay: <b>"
-                + esc(c) + money(d.plan().outstanding()) + "</b>" + (d.plan().overdueAmount().signum() > 0 ? "<br>Overdue now: <b>" + esc(c) + money(d.plan().overdueAmount()) + "</b>" : "")
+        String body = I18n.t("<p>Dear ") + esc(customer.getName()) + I18n.t(",</p><p>Please find attached your instalment statement for invoice <b>") + esc(p.getInvoiceNumber()) + "</b>"
+                + (includeAgreement ? I18n.t(" and a copy of your instalment agreement") : "") + I18n.t(".</p><p>Paid so far: <b>") + esc(c) + money(d.plan().paid()) + I18n.t("</b><br>Still to pay: <b>")
+                + esc(c) + money(d.plan().outstanding()) + "</b>" + (d.plan().overdueAmount().signum() > 0 ? I18n.t("<br>Overdue now: <b>") + esc(c) + money(d.plan().overdueAmount()) + "</b>" : "")
                 + "</p><p>" + esc(business) + "</p>";
-        mailService.send(customer.getEmail(), "Your instalment statement — " + p.getInvoiceNumber(), body, files);
+        mailService.send(customer.getEmail(), I18n.t("Your instalment statement — ") + p.getInvoiceNumber(), body, files);
         logEmailContact(p, "Statement" + (includeAgreement ? " and agreement" : "") + " e-mailed to " + customer.getEmail(), caller);
         auditLogService.record("INSTALLMENT_STATEMENT_SENT", "E-mailed the statement of instalment plan " + p.getPlanNumber() + " to " + customer.getEmail(), "InstallmentPlan", p.getId());
         return new ReminderResultDto(true, customer.getEmail());
@@ -1358,7 +1359,7 @@ public class InstallmentService {
     // ---- small helpers ----
 
     private InstallmentPlan entity(Long id) {
-        return planRepository.findById(id).orElseThrow(() -> ApiException.notFound("Instalment plan not found"));
+        return planRepository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Instalment plan not found")));
     }
 
     private static ZoneId zone() {
@@ -1371,21 +1372,21 @@ public class InstallmentService {
 
     private static int inRange(int v, int min, int max, String what) {
         if (v < min || v > max) {
-            throw ApiException.badRequest(what + " must be between " + min + " and " + max + ".");
+            throw ApiException.badRequest(what + I18n.t(" must be between ") + min + " and " + max + ".");
         }
         return v;
     }
 
     private static BigDecimal nonNegative(BigDecimal v, String what) {
         if (v.signum() < 0) {
-            throw ApiException.badRequest(what + " can't be negative.");
+            throw ApiException.badRequest(what + I18n.t(" can't be negative."));
         }
         return v;
     }
 
     private static BigDecimal percent(BigDecimal v, String what) {
         if (v.signum() < 0 || v.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw ApiException.badRequest(what + " must be between 0 and 100.");
+            throw ApiException.badRequest(what + I18n.t(" must be between 0 and 100."));
         }
         return v;
     }
@@ -1399,7 +1400,7 @@ public class InstallmentService {
     }
 
     private static String money(BigDecimal v) {
-        return new DecimalFormat("#,##0.##").format(v);
+        return new DecimalFormat("#,##0.##", I18n.symbols()).format(v);
     }
 
     private static String esc(String s) {

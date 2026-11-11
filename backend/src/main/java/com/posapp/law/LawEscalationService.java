@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
@@ -65,9 +66,9 @@ public class LawEscalationService {
 
     static String stageLabel(int stage) {
         return switch (stage) {
-            case 1 -> "Coming up";
-            case 2 -> "Last days";
-            case 3 -> "Overdue";
+            case 1 -> I18n.t("Coming up");
+            case 2 -> I18n.t("Last days");
+            case 3 -> I18n.t("Overdue");
             default -> "";
         };
     }
@@ -95,8 +96,8 @@ public class LawEscalationService {
             }
             List<AppUser> to = who.values().stream().filter(u -> u.getEmail() != null && !u.getEmail().isBlank()).toList();
             String problem = null;
-            if (who.isEmpty()) problem = "The matter has no lead lawyer.";
-            else if (to.isEmpty()) problem = "Nobody to warn has an e-mail address.";
+            if (who.isEmpty()) problem = I18n.t("The matter has no lead lawyer.");
+            else if (to.isEmpty()) problem = I18n.t("Nobody to warn has an e-mail address.");
             out.add(new Work(d, m, stage, left, to, problem));
         }
         out.sort(Comparator.comparing((Work w) -> w.d().getDueDate()));
@@ -120,22 +121,22 @@ public class LawEscalationService {
 
     private static String subject(Work w) {
         String what = w.d().getTitle() + " (" + w.m().getNumber() + ")";
-        if (w.stage() == 3) return "OVERDUE limitation date: " + what;
-        return "Limitation date " + (w.daysLeft() == 0 ? "is today" : w.daysLeft() == 1 ? "is tomorrow" : "in " + w.daysLeft() + " days") + ": " + what;
+        if (w.stage() == 3) return I18n.t("OVERDUE limitation date: ") + what;
+        return I18n.t("Limitation date ") + (w.daysLeft() == 0 ? I18n.t("is today") : w.daysLeft() == 1 ? I18n.t("is tomorrow") : "in " + w.daysLeft() + " days") + ": " + what;
     }
 
     private static String body(Work w, AppUser to) {
-        String when = w.stage() == 3 ? "<strong style=\"color:#c0392b\">The date has passed (" + (-w.daysLeft()) + " day" + (w.daysLeft() == -1 ? "" : "s") + " ago).</strong>"
-                : w.daysLeft() == 0 ? "<strong style=\"color:#c0392b\">It falls today.</strong>" : "It falls in <strong>" + w.daysLeft() + "</strong> day" + (w.daysLeft() == 1 ? "" : "s") + ".";
-        return "<p>Hello " + esc(LawAccess.name(to)) + ",</p>"
+        String when = w.stage() == 3 ? I18n.t("<strong style=\"color:#c0392b\">The date has passed (") + (-w.daysLeft()) + " day" + (w.daysLeft() == -1 ? "" : "s") + " ago).</strong>"
+                : w.daysLeft() == 0 ? I18n.t("<strong style=\"color:#c0392b\">It falls today.</strong>") : I18n.t("It falls in <strong>") + w.daysLeft() + "</strong> day" + (w.daysLeft() == 1 ? "" : "s") + ".";
+        return I18n.t("<p>Hello ") + esc(LawAccess.name(to)) + I18n.t(",</p>"
                 + "<p>A limitation date is close. Missing one can lose the case, so please check that the step is done or on its way.</p>"
                 + "<table cellpadding=\"4\" style=\"border-collapse:collapse;\">"
-                + "<tr><td><strong>Matter</strong></td><td>" + esc(w.m().getNumber()) + " " + esc(w.m().getTitle()) + "</td></tr>"
-                + "<tr><td><strong>What</strong></td><td>" + esc(w.d().getTitle()) + "</td></tr>"
-                + "<tr><td><strong>Date</strong></td><td>" + w.d().getDueDate() + (w.d().getDueTime() != null ? " " + w.d().getDueTime() : "") + "</td></tr>"
-                + (w.d().getAssignedToName() != null ? "<tr><td><strong>Assigned to</strong></td><td>" + esc(w.d().getAssignedToName()) + "</td></tr>" : "")
-                + (w.d().getNotes() != null ? "<tr><td><strong>Notes</strong></td><td>" + esc(w.d().getNotes()) + "</td></tr>" : "")
-                + "</table><p>" + when + "</p><p>When the step is done, mark the deadline as done on the matter so these warnings stop.</p>";
+                + "<tr><td><strong>Matter</strong></td><td>") + esc(w.m().getNumber()) + " " + esc(w.m().getTitle()) + I18n.t("</td></tr>"
+                + "<tr><td><strong>What</strong></td><td>") + esc(w.d().getTitle()) + I18n.t("</td></tr>"
+                + "<tr><td><strong>Date</strong></td><td>") + w.d().getDueDate() + (w.d().getDueTime() != null ? " " + w.d().getDueTime() : "") + "</td></tr>"
+                + (w.d().getAssignedToName() != null ? I18n.t("<tr><td><strong>Assigned to</strong></td><td>") + esc(w.d().getAssignedToName()) + "</td></tr>" : "")
+                + (w.d().getNotes() != null ? I18n.t("<tr><td><strong>Notes</strong></td><td>") + esc(w.d().getNotes()) + "</td></tr>" : "")
+                + "</table><p>" + when + I18n.t("</p><p>When the step is done, mark the deadline as done on the matter so these warnings stop.</p>");
     }
 
     /** Sends every warning that is due and remembers how far each deadline has got. A mail that cannot be sent leaves that deadline for the next run. */
@@ -177,7 +178,7 @@ public class LawEscalationService {
     /** The button on the settings screen: runs now, whether or not the daily run is switched on. Needs e-mail to be set up. */
     @Transactional
     public EscalationResult runNow() {
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Fill in the e-mail settings first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Fill in the e-mail settings first."));
         return run();
     }
 

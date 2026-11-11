@@ -1,5 +1,6 @@
 package com.posapp.booking;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.booking.dto.BookingDtos.*;
 import com.posapp.booking.dto.BookingRequests.*;
@@ -46,7 +47,7 @@ import java.util.stream.Collectors;
 public class AppointmentService {
 
     private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);
-    private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("d MMM yyyy HH:mm");
+    private static DateTimeFormatter whenFmt() { return I18n.pattern("d MMM yyyy HH:mm"); }
     private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -221,20 +222,20 @@ public class AppointmentService {
 
     /** Re-checks the wanted time against the live bookings and picks the person and room. Call with the settings row locked. */
     private Chosen choose(BookableService svc, LocalDateTime start, Long staffId, Long resourceId, Long ignoreId, boolean publicRules) {
-        if (start == null) throw ApiException.badRequest("Choose a time.");
-        if (!svc.isActive()) throw ApiException.badRequest("This service is not available for booking.");
+        if (start == null) throw ApiException.badRequest(I18n.t("Choose a time."));
+        if (!svc.isActive()) throw ApiException.badRequest(I18n.t("This service is not available for booking."));
         SlotDto slot = slots(svc, start.toLocalDate(), staffId, ignoreId, publicRules).stream()
                 .filter(s -> LocalTime.parse(s.time()).equals(start.toLocalTime())).findFirst()
-                .orElseThrow(() -> ApiException.conflict("That time is not available (taken, outside opening or working hours, on leave, in the past or blocked). Please pick another."));
+                .orElseThrow(() -> ApiException.conflict(I18n.t("That time is not available (taken, outside opening or working hours, on leave, in the past or blocked). Please pick another.")));
         Option staff = null;
         if (!slot.staff().isEmpty() || staffId != null) {
             staff = slot.staff().stream().filter(o -> staffId == null || o.id().equals(staffId)).findFirst()
-                    .orElseThrow(() -> ApiException.conflict("That person is not free at this time."));
+                    .orElseThrow(() -> ApiException.conflict(I18n.t("That person is not free at this time.")));
         }
         Option resource = null;
         if (!slot.resources().isEmpty() || resourceId != null) {
             resource = slot.resources().stream().filter(o -> resourceId == null || o.id().equals(resourceId)).findFirst()
-                    .orElseThrow(() -> ApiException.conflict("That room or equipment is not free at this time."));
+                    .orElseThrow(() -> ApiException.conflict(I18n.t("That room or equipment is not free at this time.")));
         }
         return new Chosen(staff, resource);
     }
@@ -245,20 +246,20 @@ public class AppointmentService {
             for (int i = 0; i < 8; i++) sb.append(CODE_ALPHABET.charAt(RANDOM.nextInt(CODE_ALPHABET.length())));
             if (repository.findByConfirmationCode(sb.toString()).isEmpty()) return sb.toString();
         }
-        throw ApiException.conflict("Could not create a booking code. Please try again.");
+        throw ApiException.conflict(I18n.t("Could not create a booking code. Please try again."));
     }
 
     @Transactional
     public AppointmentDto book(Actor actor, BookRequest r) {
         on();
-        if (r.serviceId() == null) throw ApiException.badRequest("Choose a service.");
-        if (!notBlank(r.guestName()) && r.customerId() == null) throw ApiException.badRequest("Enter the customer's name or choose a customer.");
+        if (r.serviceId() == null) throw ApiException.badRequest(I18n.t("Choose a service."));
+        if (!notBlank(r.guestName()) && r.customerId() == null) throw ApiException.badRequest(I18n.t("Enter the customer's name or choose a customer."));
         String name = clean(r.guestName());
         String phone = clean(r.guestPhone());
         String email = clean(r.guestEmail());
         Long customerId = r.customerId();
         if (customerId != null) {
-            Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound("Customer not found."));
+            Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound(I18n.t("Customer not found.")));
             if (name == null) name = c.getName();
             if (phone == null) phone = c.getPhone();
             if (email == null) email = c.getEmail();
@@ -314,7 +315,7 @@ public class AppointmentService {
             raiseInvoice(saved, settings);
         }
         repository.save(saved);
-        auditLogService.record("APPOINTMENT_BOOKED", "Booked " + saved.getNumber() + " — " + saved.getServiceName() + " for " + saved.getGuestName() + " on " + saved.getStartAt().format(WHEN),
+        auditLogService.record("APPOINTMENT_BOOKED", "Booked " + saved.getNumber() + " — " + saved.getServiceName() + " for " + saved.getGuestName() + " on " + saved.getStartAt().format(whenFmt()),
                 "Appointment", saved.getId());
         if (settings.isEmailConfirmations()) {
             if (saved.getStatus() == AppointmentStatus.PENDING_PAYMENT) mail.awaitingPayment(saved, settings.getPaymentInstructions());
@@ -325,7 +326,7 @@ public class AppointmentService {
 
     private Customer resolveCustomer(Appointment a) {
         if (a.getCustomerId() != null) {
-            return customerRepository.findById(a.getCustomerId()).orElseThrow(() -> ApiException.notFound("Customer not found."));
+            return customerRepository.findById(a.getCustomerId()).orElseThrow(() -> ApiException.notFound(I18n.t("Customer not found.")));
         }
         Customer found = null;
         if (notBlank(a.getGuestEmail())) found = customerRepository.findFirstByEmailIgnoreCase(a.getGuestEmail()).orElse(null);
@@ -346,13 +347,13 @@ public class AppointmentService {
         Customer customer = resolveCustomer(a);
         InvoiceRequest req = new InvoiceRequest();
         req.setCustomerId(customer.getId());
-        req.setNotes("Appointment " + a.getNumber() + " — " + a.getServiceName() + " on " + a.getStartAt().format(WHEN));
+        req.setNotes("Appointment " + a.getNumber() + " — " + a.getServiceName() + " on " + a.getStartAt().format(whenFmt()));
         if (a.getBranchId() != null) req.setBranchId(a.getBranchId());
         InvoiceRequest.LineEntry line = new InvoiceRequest.LineEntry();
         line.setProductId(setup.billingProduct().getId());
         line.setQuantity(BigDecimal.ONE);
         line.setUnitPrice(a.getPrice());
-        line.setDescription(a.getServiceName() + " — " + a.getStartAt().format(WHEN) + (a.getStaffName() != null ? " (" + a.getStaffName() + ")" : ""));
+        line.setDescription(a.getServiceName() + " — " + a.getStartAt().format(whenFmt()) + (a.getStaffName() != null ? " (" + a.getStaffName() + ")" : ""));
         req.setLines(List.of(line));
         InvoiceDto draft = invoiceService.createDraft(req);
         InvoiceDto issued = invoiceService.issue(draft.id());
@@ -364,9 +365,9 @@ public class AppointmentService {
     public AppointmentDto createInvoice(Actor actor, Long id) {
         on();
         Appointment a = find(id);
-        if (a.getInvoiceId() != null) throw ApiException.conflict("This appointment already has invoice " + a.getInvoiceNumber() + ".");
-        if (a.getPrice().signum() <= 0) throw ApiException.badRequest("This service has no price, so there is nothing to invoice.");
-        if (a.getStatus() == AppointmentStatus.CANCELLED || a.getStatus() == AppointmentStatus.NO_SHOW) throw ApiException.conflict("This appointment was cancelled or missed.");
+        if (a.getInvoiceId() != null) throw ApiException.conflict(I18n.t("This appointment already has invoice ") + a.getInvoiceNumber() + ".");
+        if (a.getPrice().signum() <= 0) throw ApiException.badRequest(I18n.t("This service has no price, so there is nothing to invoice."));
+        if (a.getStatus() == AppointmentStatus.CANCELLED || a.getStatus() == AppointmentStatus.NO_SHOW) throw ApiException.conflict(I18n.t("This appointment was cancelled or missed."));
         raiseInvoice(a, setup.settingsEntity());
         repository.save(a);
         auditLogService.record("APPOINTMENT_INVOICED", "Invoiced appointment " + a.getNumber() + " on " + a.getInvoiceNumber(), "Appointment", id);
@@ -431,7 +432,7 @@ public class AppointmentService {
     // ------------------------------------------------------------------ status changes
 
     private Appointment find(Long id) {
-        return repository.findById(id).orElseThrow(() -> ApiException.notFound("Appointment not found: " + id));
+        return repository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Appointment not found: ") + id));
     }
 
     private static boolean canWork(Actor actor, Appointment a) {
@@ -450,12 +451,12 @@ public class AppointmentService {
                 a.setAmountPaid(paid);
                 if (paid.signum() == 0) {
                     if ("DRAFT".equals(inv.status())) invoiceService.deleteDraft(inv.id());
-                    else if ("ISSUED".equals(inv.status())) invoiceService.voidInvoice(inv.id(), "Appointment " + a.getNumber() + " cancelled");
+                    else if ("ISSUED".equals(inv.status())) invoiceService.voidInvoice(inv.id(), I18n.t("Appointment ") + a.getNumber() + " cancelled");
                 } else {
-                    note = reason + " A payment of " + paid.toPlainString() + " remains on invoice " + a.getInvoiceNumber() + " — refund or keep it from the invoice.";
+                    note = reason + I18n.t(" A payment of ") + paid.toPlainString() + I18n.t(" remains on invoice ") + a.getInvoiceNumber() + I18n.t(" — refund or keep it from the invoice.");
                 }
             } catch (ApiException e) {
-                note = reason + " The invoice " + a.getInvoiceNumber() + " could not be voided automatically: " + e.getMessage();
+                note = reason + I18n.t(" The invoice ") + a.getInvoiceNumber() + I18n.t(" could not be voided automatically: ") + e.getMessage();
             }
         }
         a.setCancelReason(note.length() > 500 ? note.substring(0, 500) : note);
@@ -466,10 +467,10 @@ public class AppointmentService {
     @Transactional
     public AppointmentDto cancel(Actor actor, Long id, String reason) {
         on();
-        if (!actor.manager()) throw ApiException.forbidden("Only a manager can cancel an appointment.");
+        if (!actor.manager()) throw ApiException.forbidden(I18n.t("Only a manager can cancel an appointment."));
         Appointment a = find(id);
         if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT && a.getStatus() != AppointmentStatus.CONFIRMED) {
-            throw ApiException.conflict("Only a pending or confirmed appointment can be cancelled.");
+            throw ApiException.conflict(I18n.t("Only a pending or confirmed appointment can be cancelled."));
         }
         applyCancel(a, notBlank(reason) ? reason.trim() : "Cancelled by staff.", true);
         repository.save(a);
@@ -479,9 +480,9 @@ public class AppointmentService {
     @Transactional
     public AppointmentDto confirmWithoutPayment(Actor actor, Long id) {
         on();
-        if (!actor.manager()) throw ApiException.forbidden("Only a manager can do that.");
+        if (!actor.manager()) throw ApiException.forbidden(I18n.t("Only a manager can do that."));
         Appointment a = find(id);
-        if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT) throw ApiException.conflict("This appointment is not waiting for payment.");
+        if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT) throw ApiException.conflict(I18n.t("This appointment is not waiting for payment."));
         a.setStatus(AppointmentStatus.CONFIRMED);
         a.setHoldExpiresAt(null);
         repository.save(a);
@@ -494,8 +495,8 @@ public class AppointmentService {
     public AppointmentDto complete(Actor actor, Long id) {
         on();
         Appointment a = find(id);
-        if (!canWork(actor, a)) throw ApiException.forbidden("Only the person this is booked with, or a manager, can do that.");
-        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict("Only a confirmed appointment can be completed.");
+        if (!canWork(actor, a)) throw ApiException.forbidden(I18n.t("Only the person this is booked with, or a manager, can do that."));
+        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict(I18n.t("Only a confirmed appointment can be completed."));
         a.setStatus(AppointmentStatus.COMPLETED);
         repository.save(a);
         auditLogService.record("APPOINTMENT_COMPLETED", "Completed appointment " + a.getNumber(), "Appointment", id);
@@ -506,8 +507,8 @@ public class AppointmentService {
     public AppointmentDto noShow(Actor actor, Long id) {
         on();
         Appointment a = find(id);
-        if (!canWork(actor, a)) throw ApiException.forbidden("Only the person this is booked with, or a manager, can do that.");
-        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict("Only a confirmed appointment can be marked as a no-show.");
+        if (!canWork(actor, a)) throw ApiException.forbidden(I18n.t("Only the person this is booked with, or a manager, can do that."));
+        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict(I18n.t("Only a confirmed appointment can be marked as a no-show."));
         a.setStatus(AppointmentStatus.NO_SHOW);
         repository.save(a);
         auditLogService.record("APPOINTMENT_NO_SHOW", "Marked appointment " + a.getNumber() + " as a no-show", "Appointment", id);
@@ -517,10 +518,10 @@ public class AppointmentService {
     @Transactional
     public AppointmentDto reschedule(Actor actor, Long id, RescheduleRequest r) {
         on();
-        if (!actor.manager()) throw ApiException.forbidden("Only a manager can move an appointment.");
+        if (!actor.manager()) throw ApiException.forbidden(I18n.t("Only a manager can move an appointment."));
         Appointment a = find(id);
         if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT && a.getStatus() != AppointmentStatus.CONFIRMED) {
-            throw ApiException.conflict("Only a pending or confirmed appointment can be moved.");
+            throw ApiException.conflict(I18n.t("Only a pending or confirmed appointment can be moved."));
         }
         setup.settingsEntity();
         settingsRepository.lockAll();
@@ -529,7 +530,7 @@ public class AppointmentService {
         LocalDateTime oldStart = a.getStartAt();
         applyMove(a, svc, r.start(), chosen);
         repository.save(a);
-        auditLogService.record("APPOINTMENT_MOVED", "Moved appointment " + a.getNumber() + " to " + a.getStartAt().format(WHEN), "Appointment", id);
+        auditLogService.record("APPOINTMENT_MOVED", "Moved appointment " + a.getNumber() + " to " + a.getStartAt().format(whenFmt()), "Appointment", id);
         if (setup.settingsEntity().isEmailConfirmations() && a.getStatus() == AppointmentStatus.CONFIRMED) mail.moved(a, oldStart);
         return toDto(a, actor);
     }
@@ -553,7 +554,7 @@ public class AppointmentService {
     public AppointmentDto saveNotes(Actor actor, Long id, String notes) {
         on();
         Appointment a = find(id);
-        if (!canWork(actor, a)) throw ApiException.forbidden("Only the person this is booked with, or a manager, can do that.");
+        if (!canWork(actor, a)) throw ApiException.forbidden(I18n.t("Only the person this is booked with, or a manager, can do that."));
         a.setNotes(clean(notes));
         repository.save(a);
         return toDto(a, actor);
@@ -596,7 +597,7 @@ public class AppointmentService {
     public AppointmentDto get(Actor actor, Long id) {
         on();
         Appointment a = find(id);
-        if (!actor.viewer() && !canWork(actor, a)) throw ApiException.forbidden("This appointment is not yours.");
+        if (!actor.viewer() && !canWork(actor, a)) throw ApiException.forbidden(I18n.t("This appointment is not yours."));
         syncPayment(a);
         return toDto(a, actor, history(a));
     }
@@ -668,7 +669,7 @@ public class AppointmentService {
     public PublicInfoDto publicInfo() {
         on();
         BookingSettings s = setup.settingsEntity();
-        if (!s.isPublicEnabled()) throw ApiException.notFound("Online booking is not available.");
+        if (!s.isPublicEnabled()) throw ApiException.notFound(I18n.t("Online booking is not available."));
         List<PublicServiceDto> services = setup.services(true).stream().filter(ServiceDto::publicVisible)
                 .map(x -> new PublicServiceDto(x.id(), x.name(), x.description(), x.durationMinutes(), x.price(), x.paymentMode(), x.depositAmount(), x.staff())).toList();
         return new PublicInfoDto(s.getPublicTitle(), s.getPublicIntro(), s.getPaymentInstructions(), s.getMaxAdvanceDays(), s.getWorkDays(), services);
@@ -678,9 +679,9 @@ public class AppointmentService {
     public List<String> publicSlots(Long serviceId, LocalDate date, Long staffId) {
         on();
         BookingSettings s = setup.settingsEntity();
-        if (!s.isPublicEnabled()) throw ApiException.notFound("Online booking is not available.");
+        if (!s.isPublicEnabled()) throw ApiException.notFound(I18n.t("Online booking is not available."));
         BookableService svc = setup.findService(serviceId);
-        if (!svc.isActive() || !svc.isPublicVisible()) throw ApiException.notFound("Service not found.");
+        if (!svc.isActive() || !svc.isPublicVisible()) throw ApiException.notFound(I18n.t("Service not found."));
         return slots(svc, date, staffId, null, true).stream().map(SlotDto::time).toList();
     }
 
@@ -688,28 +689,28 @@ public class AppointmentService {
     public PublicConfirmationDto publicBook(PublicBookRequest r) {
         on();
         BookingSettings s = setup.settingsEntity();
-        if (!s.isPublicEnabled()) throw ApiException.notFound("Online booking is not available.");
-        if (notBlank(r.website())) throw ApiException.badRequest("Could not make the booking.");
-        if (r.serviceId() == null || r.date() == null || !notBlank(r.time())) throw ApiException.badRequest("Choose a service, a day and a time.");
+        if (!s.isPublicEnabled()) throw ApiException.notFound(I18n.t("Online booking is not available."));
+        if (notBlank(r.website())) throw ApiException.badRequest(I18n.t("Could not make the booking."));
+        if (r.serviceId() == null || r.date() == null || !notBlank(r.time())) throw ApiException.badRequest(I18n.t("Choose a service, a day and a time."));
         String name = clean(r.name());
         String phone = clean(r.phone());
         String email = clean(r.email());
-        if (name == null || name.length() > 120) throw ApiException.badRequest("Enter your name.");
-        if (phone == null || digits(phone).length() < 7 || digits(phone).length() > 15) throw ApiException.badRequest("Enter a phone number we can reach you on.");
-        if (email != null && (email.length() > 160 || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))) throw ApiException.badRequest("That e-mail address does not look right.");
+        if (name == null || name.length() > 120) throw ApiException.badRequest(I18n.t("Enter your name."));
+        if (phone == null || digits(phone).length() < 7 || digits(phone).length() > 15) throw ApiException.badRequest(I18n.t("Enter a phone number we can reach you on."));
+        if (email != null && (email.length() > 160 || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))) throw ApiException.badRequest(I18n.t("That e-mail address does not look right."));
         String notes = clean(r.notes());
         if (notes != null && notes.length() > 500) notes = notes.substring(0, 500);
         LocalDateTime start;
         try {
             start = r.date().atTime(LocalTime.parse(r.time()));
         } catch (DateTimeParseException e) {
-            throw ApiException.badRequest("Choose a time from the list.");
+            throw ApiException.badRequest(I18n.t("Choose a time from the list."));
         }
         BookableService svc = setup.findService(r.serviceId());
-        if (!svc.isPublicVisible()) throw ApiException.notFound("Service not found.");
+        if (!svc.isPublicVisible()) throw ApiException.notFound(I18n.t("Service not found."));
         long today = repository.countBySourceAndGuestPhoneAndCreatedAtGreaterThanEqual(AppointmentSource.PUBLIC, phone, Instant.now().minusSeconds(24 * 3600L));
         if (today >= s.getMaxPublicPerPhonePerDay()) {
-            throw ApiException.conflict("There are already " + today + " bookings from this phone number today. Please call us to book more.");
+            throw ApiException.conflict(I18n.t("There are already ") + today + I18n.t(" bookings from this phone number today. Please call us to book more."));
         }
         Appointment a = create(svc, start, r.staffUserId(), null, null, name, phone, email, notes, AppointmentSource.PUBLIC, false, true, "Online booking");
         return publicView(a, s);
@@ -727,7 +728,7 @@ public class AppointmentService {
     private Appointment byCodeAndPhone(String code, String phone) {
         Appointment a = repository.findByConfirmationCode(code == null ? "" : code.trim().toUpperCase()).orElse(null);
         if (a == null || a.getGuestPhone() == null || !digits(a.getGuestPhone()).equals(digits(phone))) {
-            throw ApiException.notFound("No booking found with that code and phone number.");
+            throw ApiException.notFound(I18n.t("No booking found with that code and phone number."));
         }
         return a;
     }
@@ -746,10 +747,10 @@ public class AppointmentService {
         Appointment a = byCodeAndPhone(code, phone);
         BookingSettings s = setup.settingsEntity();
         if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT && a.getStatus() != AppointmentStatus.CONFIRMED) {
-            throw ApiException.conflict("This booking can no longer be cancelled.");
+            throw ApiException.conflict(I18n.t("This booking can no longer be cancelled."));
         }
         if (!a.getStartAt().minusHours(s.getCancelNoticeHours()).isAfter(now())) {
-            throw ApiException.conflict("It is too late to cancel online (less than " + s.getCancelNoticeHours() + " hours to go). Please call us.");
+            throw ApiException.conflict(I18n.t("It is too late to cancel online (less than ") + s.getCancelNoticeHours() + I18n.t(" hours to go). Please call us."));
         }
         applyCancel(a, "Cancelled by the guest.", true);
         repository.save(a);
@@ -760,14 +761,14 @@ public class AppointmentService {
 
     private void requireGuestMovable(Appointment a, BookingSettings s) {
         if (a.getStatus() != AppointmentStatus.PENDING_PAYMENT && a.getStatus() != AppointmentStatus.CONFIRMED) {
-            throw ApiException.conflict("This booking can no longer be moved.");
+            throw ApiException.conflict(I18n.t("This booking can no longer be moved."));
         }
-        if (!s.isAllowGuestReschedule()) throw ApiException.conflict("Bookings cannot be moved online. Please call us.");
+        if (!s.isAllowGuestReschedule()) throw ApiException.conflict(I18n.t("Bookings cannot be moved online. Please call us."));
         if (a.getRescheduleCount() >= s.getMaxGuestReschedules()) {
-            throw ApiException.conflict("This booking has already been moved " + a.getRescheduleCount() + " time(s) online. Please call us to change it again.");
+            throw ApiException.conflict(I18n.t("This booking has already been moved ") + a.getRescheduleCount() + I18n.t(" time(s) online. Please call us to change it again."));
         }
         if (!a.getStartAt().minusHours(s.getCancelNoticeHours()).isAfter(now())) {
-            throw ApiException.conflict("It is too late to move this online (less than " + s.getCancelNoticeHours() + " hours to go). Please call us.");
+            throw ApiException.conflict(I18n.t("It is too late to move this online (less than ") + s.getCancelNoticeHours() + I18n.t(" hours to go). Please call us."));
         }
     }
 
@@ -777,7 +778,7 @@ public class AppointmentService {
         on();
         Appointment a = byCodeAndPhone(code, r.phone());
         requireGuestMovable(a, setup.settingsEntity());
-        if (r.date() == null) throw ApiException.badRequest("Choose a day.");
+        if (r.date() == null) throw ApiException.badRequest(I18n.t("Choose a day."));
         return slots(setup.findService(a.getServiceId()), r.date(), null, a.getId(), true).stream().map(SlotDto::time).toList();
     }
 
@@ -787,12 +788,12 @@ public class AppointmentService {
         Appointment a = byCodeAndPhone(code, r.phone());
         BookingSettings s = setup.settingsEntity();
         requireGuestMovable(a, s);
-        if (r.date() == null || !notBlank(r.time())) throw ApiException.badRequest("Choose a day and a time.");
+        if (r.date() == null || !notBlank(r.time())) throw ApiException.badRequest(I18n.t("Choose a day and a time."));
         LocalDateTime start;
         try {
             start = r.date().atTime(LocalTime.parse(r.time()));
         } catch (DateTimeParseException e) {
-            throw ApiException.badRequest("Choose a time from the list.");
+            throw ApiException.badRequest(I18n.t("Choose a time from the list."));
         }
         settingsRepository.lockAll();
         BookableService svc = setup.findService(a.getServiceId());
@@ -806,7 +807,7 @@ public class AppointmentService {
         applyMove(a, svc, start, chosen);
         a.setRescheduleCount(a.getRescheduleCount() + 1);
         repository.save(a);
-        auditLogService.record("APPOINTMENT_MOVED", "Appointment " + a.getNumber() + " moved by the guest from " + oldStart.format(WHEN) + " to " + start.format(WHEN), "Appointment", a.getId());
+        auditLogService.record("APPOINTMENT_MOVED", "Appointment " + a.getNumber() + " moved by the guest from " + oldStart.format(whenFmt()) + " to " + start.format(whenFmt()), "Appointment", a.getId());
         if (s.isEmailConfirmations() && a.getStatus() == AppointmentStatus.CONFIRMED) mail.moved(a, oldStart);
         return publicView(a, s);
     }
@@ -830,7 +831,7 @@ public class AppointmentService {
     public CalendarFile calendar(Actor actor, Long id) {
         on();
         Appointment a = find(id);
-        if (!actor.viewer() && !canWork(actor, a)) throw ApiException.forbidden("This appointment is not yours.");
+        if (!actor.viewer() && !canWork(actor, a)) throw ApiException.forbidden(I18n.t("This appointment is not yours."));
         return calendarFile(a);
     }
 
@@ -868,7 +869,7 @@ public class AppointmentService {
             if (mail.reminder(a)) {
                 a.setReminderSentAt(Instant.now());
                 repository.save(a);
-                auditLogService.record("APPOINTMENT_REMINDER_SENT", "Reminder e-mailed for " + a.getNumber() + " (" + a.getStartAt().format(WHEN) + ")", "Appointment", a.getId());
+                auditLogService.record("APPOINTMENT_REMINDER_SENT", "Reminder e-mailed for " + a.getNumber() + " (" + a.getStartAt().format(whenFmt()) + ")", "Appointment", a.getId());
                 sent++;
             }
         }
@@ -878,7 +879,7 @@ public class AppointmentService {
     @Transactional
     public int runReminders(Actor actor) {
         on();
-        if (!actor.manager()) throw ApiException.forbidden("Only a manager can do that.");
+        if (!actor.manager()) throw ApiException.forbidden(I18n.t("Only a manager can do that."));
         return sendDueReminders();
     }
 
@@ -887,11 +888,11 @@ public class AppointmentService {
     public AppointmentDto remindNow(Actor actor, Long id) {
         on();
         Appointment a = find(id);
-        if (!canWork(actor, a)) throw ApiException.forbidden("Only the person this is booked with, or a manager, can do that.");
-        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict("Only a confirmed appointment can be reminded.");
-        if (!notBlank(a.getGuestEmail())) throw ApiException.conflict("This guest has no e-mail address.");
-        if (!mail.mailConfigured()) throw ApiException.conflict("E-mail is not set up yet (Settings > Email settings), so no reminder was sent.");
-        if (!mail.reminder(a)) throw ApiException.conflict("The reminder could not be sent. Check the e-mail settings.");
+        if (!canWork(actor, a)) throw ApiException.forbidden(I18n.t("Only the person this is booked with, or a manager, can do that."));
+        if (a.getStatus() != AppointmentStatus.CONFIRMED) throw ApiException.conflict(I18n.t("Only a confirmed appointment can be reminded."));
+        if (!notBlank(a.getGuestEmail())) throw ApiException.conflict(I18n.t("This guest has no e-mail address."));
+        if (!mail.mailConfigured()) throw ApiException.conflict(I18n.t("E-mail is not set up yet (Settings > Email settings), so no reminder was sent."));
+        if (!mail.reminder(a)) throw ApiException.conflict(I18n.t("The reminder could not be sent. Check the e-mail settings."));
         a.setReminderSentAt(Instant.now());
         repository.save(a);
         auditLogService.record("APPOINTMENT_REMINDER_SENT", "Reminder e-mailed for " + a.getNumber() + " by " + BookingSetupService.name(actor.user()), "Appointment", id);

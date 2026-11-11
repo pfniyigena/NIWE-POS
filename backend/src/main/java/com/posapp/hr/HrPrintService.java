@@ -1,5 +1,6 @@
 package com.posapp.hr;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -56,12 +57,12 @@ public class HrPrintService {
 
     @Transactional(readOnly = true)
     public Printed serviceCard(Long employeeId) {
-        Employee e = employeeRepository.findById(employeeId).orElseThrow(() -> ApiException.notFound("Employee not found"));
+        Employee e = employeeRepository.findById(employeeId).orElseThrow(() -> ApiException.notFound(I18n.t("Employee not found")));
         if (e.getStatus() == EmployeeStatus.TERMINATED) {
-            throw ApiException.badRequest("A service card is not printed for an employee who has left the company.");
+            throw ApiException.badRequest(I18n.t("A service card is not printed for an employee who has left the company."));
         }
         StoreSettings store = storeSettingsRepository.findAll().stream().findFirst().orElse(null);
-        String business = store != null && store.getBusinessName() != null && !store.getBusinessName().isBlank() ? store.getBusinessName() : "Service Card";
+        String business = store != null && store.getBusinessName() != null && !store.getBusinessName().isBlank() ? store.getBusinessName() : I18n.t("Service Card");
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             Document doc = new Document(PageSize.A4, 36, 36, 36, 36);
@@ -74,8 +75,8 @@ public class HrPrintService {
             float x = (pageW - (2 * CARD_W + gap)) / 2;
             float y = top - CARD_H;
 
-            ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase("Service Card - " + e.fullName(), font(true, 12, Color.BLACK)), pageW / 2, top + 30, 0);
-            ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase("Print on card stock at 100% size, cut along the lines (front left, back right).", font(false, 8, GREY)), pageW / 2, top + 16, 0);
+            ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(I18n.t("Service Card - ") + e.fullName(), font(true, 12, Color.BLACK)), pageW / 2, top + 30, 0);
+            ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(I18n.t("Print on card stock at 100% size, cut along the lines (front left, back right)."), font(false, 8, GREY)), pageW / 2, top + 16, 0);
 
             front(cb, e, store, business, x, y);
             back(cb, e, store, business, x + CARD_W + gap, y);
@@ -83,7 +84,7 @@ public class HrPrintService {
             String safe = e.getEmployeeNumber().replaceAll("[^A-Za-z0-9._-]", "_");
             return new Printed("service-card-" + safe + ".pdf", out.toByteArray());
         } catch (Exception ex) {
-            throw ApiException.badRequest("Could not build the service card: " + ex.getMessage());
+            throw ApiException.badRequest(I18n.t("Could not build the service card: ") + ex.getMessage());
         }
     }
 
@@ -113,7 +114,7 @@ public class HrPrintService {
             textX = x + 6 + logo.getScaledWidth() + 6;
         }
         ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(business, font(true, 10, Color.WHITE)), textX, y + CARD_H - bandH / 2 - 3, 0);
-        ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase("SERVICE CARD", font(true, 7, new Color(0xCC, 0xD6, 0xE6))), x + CARD_W - 8, y + CARD_H - bandH / 2 - 2, 0);
+        ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase(I18n.t("SERVICE CARD"), font(true, 7, new Color(0xCC, 0xD6, 0xE6))), x + CARD_W - 8, y + CARD_H - bandH / 2 - 2, 0);
 
         float cy = y + CARD_H - bandH - 18;
         ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(e.fullName(), font(true, 13, Color.BLACK)), x + 10, cy, 0);
@@ -127,8 +128,8 @@ public class HrPrintService {
             cy -= 11;
         }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase("No. " + e.getEmployeeNumber(), font(true, 8, Color.BLACK)), x + 10, y + 36, 0);
-        ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase("Joined " + fmt.format(e.getHireDate()), font(false, 8, Color.BLACK)), x + 10, y + 25, 0);
+        ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(I18n.t("No. ") + e.getEmployeeNumber(), font(true, 8, Color.BLACK)), x + 10, y + 36, 0);
+        ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(I18n.t("Joined ") + fmt.format(e.getHireDate()), font(false, 8, Color.BLACK)), x + 10, y + 25, 0);
         Barcode128 bc = new Barcode128();
         bc.setCode(e.getEmployeeNumber());
         bc.setBarHeight(16);
@@ -149,10 +150,10 @@ public class HrPrintService {
         ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(business, font(true, 10, BAND)), x + CARD_W / 2, cy, 0);
         cy -= 14;
         String[] lines = {
-                "This card identifies " + e.fullName() + " as a member of staff.",
-                "It remains the property of " + business + " and must be",
-                "returned on request or when employment ends.",
-                "If found, please return it to:"
+                I18n.t("This card identifies ") + e.fullName() + I18n.t(" as a member of staff."),
+                I18n.t("It remains the property of ") + business + I18n.t(" and must be"),
+                I18n.t("returned on request or when employment ends."),
+                I18n.t("If found, please return it to:")
         };
         for (String l : lines) {
             ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(l, font(false, 7, new Color(0x33, 0x33, 0x33))), x + CARD_W / 2, cy, 0);
@@ -176,8 +177,8 @@ public class HrPrintService {
         cb.lineTo(x + CARD_W - 14, y + 20);
         cb.stroke();
         cb.restoreState();
-        ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase("Holder's signature", font(false, 6, GREY)), x + CARD_W / 4 + 4, y + 11, 0);
-        ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase("Authorised by", font(false, 6, GREY)), x + 3 * CARD_W / 4 - 4, y + 11, 0);
+        ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(I18n.t("Holder's signature"), font(false, 6, GREY)), x + CARD_W / 4 + 4, y + 11, 0);
+        ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, new Phrase(I18n.t("Authorised by"), font(false, 6, GREY)), x + 3 * CARD_W / 4 - 4, y + 11, 0);
     }
 
     private static Image logo(StoreSettings store) {

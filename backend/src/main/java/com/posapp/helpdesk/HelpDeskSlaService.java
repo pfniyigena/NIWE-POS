@@ -1,5 +1,6 @@
 package com.posapp.helpdesk;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
@@ -44,8 +45,8 @@ public class HelpDeskSlaService {
 
     public record RunResult(int responseBreaches, int resolutionWarnings, int resolutionBreaches, int autoClosed) {
         public String message() {
-            return responseBreaches + " response breach(es), " + resolutionWarnings + " deadline warning(s), "
-                    + resolutionBreaches + " resolution breach(es), " + autoClosed + " ticket(s) closed automatically.";
+            return responseBreaches + I18n.t(" response breach(es), ") + resolutionWarnings + I18n.t(" deadline warning(s), ")
+                    + resolutionBreaches + I18n.t(" resolution breach(es), ") + autoClosed + I18n.t(" ticket(s) closed automatically.");
         }
     }
 

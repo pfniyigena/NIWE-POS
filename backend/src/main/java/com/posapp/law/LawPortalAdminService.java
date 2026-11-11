@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
@@ -104,11 +105,11 @@ public class LawPortalAdminService {
     @Transactional
     public AdminDto saveSettings(Actor a, Long matterId, SettingsRequest r) {
         LawMatter m = access.leadable(a, matterId);
-        if (r == null) throw ApiException.badRequest("Nothing to change.");
+        if (r == null) throw ApiException.badRequest(I18n.t("Nothing to change."));
         LawMatterPortal p = row(m.getId());
         if (r.enabled() != null) {
-            if (r.enabled() && !firmOpen()) throw ApiException.conflict("The client portal is switched off for the firm. An admin switches it on in Law Firm > Settings.");
-            if (r.enabled() && !m.isConflictCleared()) throw ApiException.conflict("Clear the conflict check before opening the matter to the client.");
+            if (r.enabled() && !firmOpen()) throw ApiException.conflict(I18n.t("The client portal is switched off for the firm. An admin switches it on in Law Firm > Settings."));
+            if (r.enabled() && !m.isConflictCleared()) throw ApiException.conflict(I18n.t("Clear the conflict check before opening the matter to the client."));
             p.setEnabled(r.enabled());
         }
         if (r.showDeadlines() != null) p.setShowDeadlines(r.showDeadlines());
@@ -128,7 +129,7 @@ public class LawPortalAdminService {
     public AdminDto postUpdate(Actor a, Long matterId, UpdateRequest r) {
         LawMatter m = access.workable(a, matterId);
         String text = r == null ? null : clean(r.text());
-        if (text != null && text.length() > 2000) throw ApiException.badRequest("Keep the note under 2000 characters.");
+        if (text != null && text.length() > 2000) throw ApiException.badRequest(I18n.t("Keep the note under 2000 characters."));
         LawMatterPortal p = row(m.getId());
         p.setClientUpdate(text);
         p.setClientUpdateAt(text == null ? null : Instant.now());
@@ -140,9 +141,9 @@ public class LawPortalAdminService {
 
     @Transactional
     public AdminDto setDeadlineVisible(Actor a, Long deadlineId, VisibleRequest r) {
-        LawMatterDeadline d = deadlineRepository.findById(deadlineId).orElseThrow(() -> ApiException.notFound("Deadline not found."));
+        LawMatterDeadline d = deadlineRepository.findById(deadlineId).orElseThrow(() -> ApiException.notFound(I18n.t("Deadline not found.")));
         LawMatter m = access.workable(a, d.getMatterId());
-        if (r == null || r.visible() == null) throw ApiException.badRequest("Choose whether the client sees it.");
+        if (r == null || r.visible() == null) throw ApiException.badRequest(I18n.t("Choose whether the client sees it."));
         d.setVisibleToClient(r.visible());
         deadlineRepository.save(d);
         audit.record("LAW_PORTAL_DEADLINE", "Deadline '" + d.getTitle() + "' on matter " + m.getNumber() + (r.visible() ? " shown to" : " hidden from") + " the client", "LawMatterDeadline", d.getId());
@@ -161,17 +162,17 @@ public class LawPortalAdminService {
         String note;
         if (mailService.isConfigured()) {
             try {
-                String html = "<p>Hello " + esc(acc.getName()) + ",</p><p>You have been given access to the client portal to follow your matter with us. "
-                        + "Open the link below to choose your password. It works once and expires in " + LawPortalAuthService.INVITE_DAYS + " days.</p>"
-                        + "<p><a href=\"" + link + "\">Open the client portal</a></p><p>If you were not expecting this, you can ignore this message.</p>";
-                mailService.send(acc.getEmail(), "Your client portal access", html, List.of());
+                String html = I18n.t("<p>Hello ") + esc(acc.getName()) + I18n.t(",</p><p>You have been given access to the client portal to follow your matter with us. "
+                        + "Open the link below to choose your password. It works once and expires in ") + LawPortalAuthService.INVITE_DAYS + I18n.t(" days.</p>"
+                        + "<p><a href=\"") + link + I18n.t("\">Open the client portal</a></p><p>If you were not expecting this, you can ignore this message.</p>");
+                mailService.send(acc.getEmail(), I18n.t("Your client portal access"), html, List.of());
                 sent = true;
-                note = "The invitation was sent by e-mail.";
+                note = I18n.t("The invitation was sent by e-mail.");
             } catch (Exception e) {
-                note = "The e-mail could not be sent (" + e.getMessage() + "). Give the client the link yourself.";
+                note = I18n.t("The e-mail could not be sent (") + e.getMessage() + I18n.t("). Give the client the link yourself.");
             }
         } else {
-            note = "E-mail is not set up, so nothing was sent. Give the client the link yourself.";
+            note = I18n.t("E-mail is not set up, so nothing was sent. Give the client the link yourself.");
         }
         audit.record("LAW_PORTAL_INVITE", "Portal invitation issued to " + acc.getEmail() + " for matter " + m.getNumber() + (sent ? " (e-mailed)" : ""), "LawPortalAccount", acc.getId());
         return new InviteResultDto(toDto(acc), link, sent, note);
@@ -184,12 +185,12 @@ public class LawPortalAdminService {
     @Transactional
     public InviteResultDto invite(Actor a, Long matterId, InviteRequest r) {
         LawMatter m = access.leadable(a, matterId);
-        if (!firmOpen()) throw ApiException.conflict("The client portal is switched off for the firm. An admin switches it on in Law Firm > Settings.");
-        if (r == null || clean(r.name()) == null) throw ApiException.badRequest("Enter the person's name.");
+        if (!firmOpen()) throw ApiException.conflict(I18n.t("The client portal is switched off for the firm. An admin switches it on in Law Firm > Settings."));
+        if (r == null || clean(r.name()) == null) throw ApiException.badRequest(I18n.t("Enter the person's name."));
         String email = LawPortalAuthService.normalise(r.email());
-        if (!EMAIL.matcher(email).matches()) throw ApiException.badRequest("Enter a valid e-mail address.");
+        if (!EMAIL.matcher(email).matches()) throw ApiException.badRequest(I18n.t("Enter a valid e-mail address."));
         LawPortalAccount acc = accountRepository.findByEmail(email).orElse(null);
-        if (acc != null && !acc.getCustomerId().equals(m.getClientCustomerId())) throw ApiException.conflict("This e-mail address is already used for another client's portal account.");
+        if (acc != null && !acc.getCustomerId().equals(m.getClientCustomerId())) throw ApiException.conflict(I18n.t("This e-mail address is already used for another client's portal account."));
         if (acc == null) {
             acc = new LawPortalAccount();
             acc.setCustomerId(m.getClientCustomerId());
@@ -202,8 +203,8 @@ public class LawPortalAdminService {
     }
 
     private LawPortalAccount accountOf(LawMatter m, Long accountId) {
-        LawPortalAccount acc = accountRepository.findById(accountId).orElseThrow(() -> ApiException.notFound("Account not found."));
-        if (!acc.getCustomerId().equals(m.getClientCustomerId())) throw ApiException.notFound("Account not found.");
+        LawPortalAccount acc = accountRepository.findById(accountId).orElseThrow(() -> ApiException.notFound(I18n.t("Account not found.")));
+        if (!acc.getCustomerId().equals(m.getClientCustomerId())) throw ApiException.notFound(I18n.t("Account not found."));
         return acc;
     }
 
@@ -211,9 +212,9 @@ public class LawPortalAdminService {
     @Transactional
     public InviteResultDto reinvite(Actor a, Long matterId, Long accountId) {
         LawMatter m = access.leadable(a, matterId);
-        if (!firmOpen()) throw ApiException.conflict("The client portal is switched off for the firm.");
+        if (!firmOpen()) throw ApiException.conflict(I18n.t("The client portal is switched off for the firm."));
         LawPortalAccount acc = accountOf(m, accountId);
-        if (!acc.isActive()) throw ApiException.conflict("Switch the account on first.");
+        if (!acc.isActive()) throw ApiException.conflict(I18n.t("Switch the account on first."));
         return issue(acc, m);
     }
 
@@ -221,7 +222,7 @@ public class LawPortalAdminService {
     public AdminDto setActive(Actor a, Long matterId, Long accountId, ActiveRequest r) {
         LawMatter m = access.leadable(a, matterId);
         LawPortalAccount acc = accountOf(m, accountId);
-        if (r == null || r.active() == null) throw ApiException.badRequest("Choose on or off.");
+        if (r == null || r.active() == null) throw ApiException.badRequest(I18n.t("Choose on or off."));
         acc.setActive(r.active());
         if (!r.active()) {
             acc.setSessionsValidFrom(Instant.now());
@@ -241,10 +242,10 @@ public class LawPortalAdminService {
     public AdminDto reply(Actor a, Long matterId, MessageRequest r) {
         LawMatter m = access.workable(a, matterId);
         LawMatterPortal p = row(m.getId());
-        if (!p.isEnabled() || !p.isAllowMessages()) throw ApiException.conflict("Messages are not switched on for this matter.");
+        if (!p.isEnabled() || !p.isAllowMessages()) throw ApiException.conflict(I18n.t("Messages are not switched on for this matter."));
         String body = r == null ? null : clean(r.body());
-        if (body == null) throw ApiException.badRequest("Write a message.");
-        if (body.length() > 2000) throw ApiException.badRequest("Keep the message under 2000 characters.");
+        if (body == null) throw ApiException.badRequest(I18n.t("Write a message."));
+        if (body.length() > 2000) throw ApiException.badRequest(I18n.t("Keep the message under 2000 characters."));
         LawPortalMessage x = new LawPortalMessage();
         x.setMatterId(m.getId());
         x.setFromClient(false);
@@ -258,9 +259,9 @@ public class LawPortalAdminService {
             for (LawPortalAccount acc : accountRepository.findByCustomerIdOrderByIdAsc(m.getClientCustomerId())) {
                 if (!acc.isActive() || acc.getPasswordHash() == null) continue;
                 try {
-                    mailService.send(acc.getEmail(), "New message about your matter " + m.getNumber(),
-                            "<p>Hello " + esc(acc.getName()) + ",</p><p>You have a new message from the firm about your matter " + esc(m.getNumber())
-                                    + ". Sign in to the client portal to read it:</p><p><a href=\"" + frontendUrl + "/portal\">Open the client portal</a></p>", List.of());
+                    mailService.send(acc.getEmail(), I18n.t("New message about your matter ") + m.getNumber(),
+                            I18n.t("<p>Hello ") + esc(acc.getName()) + I18n.t(",</p><p>You have a new message from the firm about your matter ") + esc(m.getNumber())
+                                    + I18n.t(". Sign in to the client portal to read it:</p><p><a href=\"") + frontendUrl + "/portal\">Open the client portal</a></p>", List.of());
                 } catch (Exception ignored) {
                     // the message is saved; the e-mail is only a nudge
                 }

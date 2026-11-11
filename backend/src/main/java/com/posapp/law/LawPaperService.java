@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.customer.Customer;
@@ -36,7 +37,7 @@ import java.util.Locale;
 public class LawPaperService {
 
     public enum Kind {
-        COVER("Cover sheet", DocCategory.OTHER, false), ENGAGEMENT("Engagement letter", DocCategory.CONTRACT, true), CLOSING("Closing letter", DocCategory.CORRESPONDENCE, true);
+        COVER(I18n.t("Cover sheet"), DocCategory.OTHER, false), ENGAGEMENT(I18n.t("Engagement letter"), DocCategory.CONTRACT, true), CLOSING(I18n.t("Closing letter"), DocCategory.CORRESPONDENCE, true);
 
         final String label;
         final DocCategory category;
@@ -52,7 +53,7 @@ public class LawPaperService {
             try {
                 return Kind.valueOf(text.toUpperCase(Locale.ROOT));
             } catch (Exception e) {
-                throw ApiException.notFound("Unknown paper.");
+                throw ApiException.notFound(I18n.t("Unknown paper."));
             }
         }
     }
@@ -130,10 +131,10 @@ public class LawPaperService {
             case COVER -> pdf = files.coverSheet(new CoverData(dto, LawAccess.name(a.user()), LocalDate.now(), trustOn, trustOn ? trust.heldFor(id) : null));
             case ENGAGEMENT -> pdf = files.engagementLetter(new EngagementData(dto, billing.billing(a, id, false), r != null ? r.scope() : null, r != null ? r.terms() : null, date, trustOn, signer));
             case CLOSING -> {
-                if (m.getStatus() != MatterStatus.CLOSED) throw ApiException.conflict("Close the matter first. The closing letter states the final figures.");
+                if (m.getStatus() != MatterStatus.CLOSED) throw ApiException.conflict(I18n.t("Close the matter first. The closing letter states the final figures."));
                 pdf = files.closingLetter(new ClosingData(dto, billing.billing(a, id, false), trustOn ? trust.heldFor(id) : BigDecimal.ZERO, trustOn, r != null ? r.notes() : null, date, signer));
             }
-            default -> throw ApiException.notFound("Unknown paper.");
+            default -> throw ApiException.notFound(I18n.t("Unknown paper."));
         }
         return new Printed(pdf, slug(kind.label) + "-" + slug(m.getNumber()) + ".pdf");
     }
@@ -151,23 +152,23 @@ public class LawPaperService {
     /** E-mails a letter to the client with the PDF attached. */
     @Transactional
     public MailedClient email(Actor a, Long id, Kind kind, PaperRequest r) {
-        if (!kind.toClient) throw ApiException.badRequest("The cover sheet is for the file. It cannot be e-mailed to the client.");
+        if (!kind.toClient) throw ApiException.badRequest(I18n.t("The cover sheet is for the file. It cannot be e-mailed to the client."));
         LawMatter m = access.workable(a, id);
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
         String to = clientEmail(m.getClientCustomerId());
-        if (to == null) throw ApiException.badRequest("This client has no e-mail address on the customer record.");
+        if (to == null) throw ApiException.badRequest(I18n.t("This client has no e-mail address on the customer record."));
         Printed p = print(a, id, kind, r);
         String business = files.businessName();
-        StringBuilder body = new StringBuilder("<p>Dear ").append(HtmlUtils.htmlEscape(m.getClientName())).append(",</p>");
+        StringBuilder body = new StringBuilder(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(m.getClientName())).append(",</p>");
         body.append(kind == Kind.ENGAGEMENT
-                ? "<p>Please find attached our engagement and fee letter for matter <b>" + HtmlUtils.htmlEscape(m.getNumber()) + "</b> (" + HtmlUtils.htmlEscape(m.getTitle())
-                + "). Please read it, sign it and send a copy back to us.</p>"
-                : "<p>Please find attached our letter closing matter <b>" + HtmlUtils.htmlEscape(m.getNumber()) + "</b> (" + HtmlUtils.htmlEscape(m.getTitle()) + ").</p>");
+                ? I18n.t("<p>Please find attached our engagement and fee letter for matter <b>") + HtmlUtils.htmlEscape(m.getNumber()) + "</b> (" + HtmlUtils.htmlEscape(m.getTitle())
+                + I18n.t("). Please read it, sign it and send a copy back to us.</p>")
+                : I18n.t("<p>Please find attached our letter closing matter <b>") + HtmlUtils.htmlEscape(m.getNumber()) + "</b> (" + HtmlUtils.htmlEscape(m.getTitle()) + ").</p>");
         String contact = files.contactLine();
-        if (!contact.isEmpty()) body.append("<p>Questions? Contact us: ").append(HtmlUtils.htmlEscape(contact)).append("</p>");
+        if (!contact.isEmpty()) body.append(I18n.t("<p>Questions? Contact us: ")).append(HtmlUtils.htmlEscape(contact)).append("</p>");
         body.append("<p>").append(HtmlUtils.htmlEscape(business)).append("</p>");
         mailService.send(to, kind.label + " " + m.getNumber() + " - " + business, body.toString(), List.of(new EmailAttachment(p.fileName(), "application/pdf", p.content())));
         auditLogService.record("LAW_PAPER_SENT", kind.label + " of matter " + m.getNumber() + " e-mailed to " + to, "LawMatter", m.getId());
-        return new MailedClient(to, kind.label + " sent to " + to + ".");
+        return new MailedClient(to, kind.label + I18n.t(" sent to ") + to + ".");
     }
 }

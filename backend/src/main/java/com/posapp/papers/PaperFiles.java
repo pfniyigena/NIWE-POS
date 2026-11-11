@@ -1,4 +1,5 @@
 package com.posapp.papers;
+import com.posapp.i18n.I18n;
 import com.posapp.common.Qty;
 
 
@@ -77,21 +78,21 @@ public class PaperFiles {
 
     private static void note(Document doc, String text) throws Exception {
         if (text == null || text.isBlank()) return;
-        section(doc, "Notes");
+        section(doc, I18n.t("Notes"));
         doc.add(new Paragraph(text.trim(), plain(9.5f)));
     }
 
     // ------------------------------------------------------------------ delivery note
 
     public byte[] deliveryNote(SalesOrderDto so, String phone, String email, List<Delivery> deliveries) {
-        return kit.build(false, "Delivery note " + so.orderNumber(), doc -> {
-            kit.head(doc, "Delivery note", so.orderNumber() + "  |  Printed " + PdfKit.day(LocalDate.now()));
-            doc.add(PdfKit.facts(new String[][]{{"Deliver to", so.customerName()}, {"Phone", phone}, {"E-mail", email}, {"Order date", dayOf(so.orderDate())},
-                    {"Expected delivery", dayOf(so.expectedDate())}, {"Order status", so.status().replace('_', ' ').toLowerCase()}}));
-            section(doc, "Goods");
+        return kit.build(false, I18n.t("Delivery note ") + so.orderNumber(), doc -> {
+            kit.head(doc, I18n.t("Delivery note"), so.orderNumber() + I18n.t("  |  Printed ") + PdfKit.day(LocalDate.now()));
+            doc.add(PdfKit.facts(new String[][]{{I18n.t("Deliver to"), so.customerName()}, {I18n.t("Phone"), phone}, {I18n.t("E-mail"), email}, {I18n.t("Order date"), dayOf(so.orderDate())},
+                    {I18n.t("Expected delivery"), dayOf(so.expectedDate())}, {I18n.t("Order status"), so.status().replace('_', ' ').toLowerCase()}}));
+            section(doc, I18n.t("Goods"));
             PdfPTable t = new PdfPTable(new float[]{0.6f, 5f, 1.6f, 1.8f, 1.8f});
             t.setWidthPercentage(100);
-            headerCells(t, new String[]{"#", "Item", "Ordered", "Delivered to date", "Still to deliver"},
+            headerCells(t, new String[]{"#", I18n.t("Item"), I18n.t("Ordered"), I18n.t("Delivered to date"), I18n.t("Still to deliver")},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT});
             int i = 1;
             BigDecimal ordered = BigDecimal.ZERO, done = BigDecimal.ZERO;
@@ -106,16 +107,16 @@ public class PaperFiles {
                 done = done.add(l.quantityFulfilled());
             }
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
-            t.addCell(cell("Total units", bold(9), Element.ALIGN_LEFT, SOFT));
+            t.addCell(cell(I18n.t("Total units"), bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell(num(ordered), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(num(done), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(num(Qty.max(BigDecimal.ZERO, ordered.subtract(done))), bold(9), Element.ALIGN_RIGHT, SOFT));
             doc.add(t);
             if (!deliveries.isEmpty()) {
-                section(doc, "Deliveries so far");
+                section(doc, I18n.t("Deliveries so far"));
                 PdfPTable d = new PdfPTable(new float[]{1.6f, 5f, 1.2f, 3f});
                 d.setWidthPercentage(100);
-                headerCells(d, new String[]{"Date", "Item", "Quantity", "Taken from"}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT});
+                headerCells(d, new String[]{I18n.t("Date"), I18n.t("Item"), I18n.t("Quantity"), I18n.t("Taken from")}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT});
                 for (Delivery x : deliveries) {
                     d.addCell(cell(day(x.when()), plain(8.5f), Element.ALIGN_LEFT, null));
                     d.addCell(cell(x.product(), plain(8.5f), Element.ALIGN_LEFT, null));
@@ -125,24 +126,24 @@ public class PaperFiles {
                 doc.add(d);
             }
             note(doc, so.notes());
-            Paragraph p = new Paragraph("Please check the goods on delivery. Tell us about any shortage or damage when you sign.", muted(9));
+            Paragraph p = new Paragraph(I18n.t("Please check the goods on delivery. Tell us about any shortage or damage when you sign."), muted(9));
             p.setSpacingBefore(14);
             doc.add(p);
-            PdfKit.signatures(doc, "Prepared by", "Driver / carrier", "Received by (customer)");
+            PdfKit.signatures(doc, I18n.t("Prepared by"), I18n.t("Driver / carrier"), I18n.t("Received by (customer)"));
         });
     }
 
     // ------------------------------------------------------------------ goods received note
 
     public byte[] goodsReceived(PurchaseOrderDto po, String contact, String phone, List<Receipt> receipts) {
-        return kit.build(false, "Goods received note " + po.orderNumber(), doc -> {
-            kit.head(doc, "Goods received note", po.orderNumber() + "  |  Printed " + PdfKit.day(LocalDate.now()));
-            doc.add(PdfKit.facts(new String[][]{{"Supplier", po.supplierName()}, {"Contact", contact}, {"Phone", phone}, {"Ordered on", dayOf(po.orderDate())},
-                    {"Expected", dayOf(po.expectedDate())}, {"Receiving into", po.receivingWarehouseName()}, {"Order status", po.status().replace('_', ' ').toLowerCase()}}));
-            section(doc, "Goods expected");
+        return kit.build(false, I18n.t("Goods received note ") + po.orderNumber(), doc -> {
+            kit.head(doc, I18n.t("Goods received note"), po.orderNumber() + I18n.t("  |  Printed ") + PdfKit.day(LocalDate.now()));
+            doc.add(PdfKit.facts(new String[][]{{I18n.t("Supplier"), po.supplierName()}, {I18n.t("Contact"), contact}, {I18n.t("Phone"), phone}, {I18n.t("Ordered on"), dayOf(po.orderDate())},
+                    {I18n.t("Expected"), dayOf(po.expectedDate())}, {I18n.t("Receiving into"), po.receivingWarehouseName()}, {I18n.t("Order status"), po.status().replace('_', ' ').toLowerCase()}}));
+            section(doc, I18n.t("Goods expected"));
             PdfPTable t = new PdfPTable(new float[]{0.5f, 4f, 1.3f, 1.5f, 1.4f, 1.7f, 2.4f});
             t.setWidthPercentage(100);
-            headerCells(t, new String[]{"#", "Item", "Ordered", "Received to date", "Still expected", "Received now", "Remarks"},
+            headerCells(t, new String[]{"#", I18n.t("Item"), I18n.t("Ordered"), I18n.t("Received to date"), I18n.t("Still expected"), I18n.t("Received now"), I18n.t("Remarks")},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT, Element.ALIGN_LEFT});
             int i = 1;
             BigDecimal ordered = BigDecimal.ZERO, got = BigDecimal.ZERO;
@@ -159,7 +160,7 @@ public class PaperFiles {
                 got = got.add(l.quantityReceived());
             }
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
-            t.addCell(cell("Total units", bold(9), Element.ALIGN_LEFT, SOFT));
+            t.addCell(cell(I18n.t("Total units"), bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell(num(ordered), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(num(got), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(num(Qty.max(BigDecimal.ZERO, ordered.subtract(got))), bold(9), Element.ALIGN_RIGHT, SOFT));
@@ -167,10 +168,10 @@ public class PaperFiles {
             t.addCell(cell("", bold(9), Element.ALIGN_LEFT, SOFT));
             doc.add(t);
             if (!receipts.isEmpty()) {
-                section(doc, "Received so far");
+                section(doc, I18n.t("Received so far"));
                 PdfPTable d = new PdfPTable(new float[]{1.6f, 6f, 1.2f});
                 d.setWidthPercentage(100);
-                headerCells(d, new String[]{"Date", "Item", "Quantity"}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT});
+                headerCells(d, new String[]{I18n.t("Date"), I18n.t("Item"), I18n.t("Quantity")}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT});
                 for (Receipt x : receipts) {
                     d.addCell(cell(day(x.when()), plain(8.5f), Element.ALIGN_LEFT, null));
                     d.addCell(cell(x.product(), plain(8.5f), Element.ALIGN_LEFT, null));
@@ -179,10 +180,10 @@ public class PaperFiles {
                 doc.add(d);
             }
             note(doc, po.notes());
-            Paragraph p = new Paragraph("Count and check the goods against this list before signing. Write what you actually received in the empty boxes, then record it in the system.", muted(9));
+            Paragraph p = new Paragraph(I18n.t("Count and check the goods against this list before signing. Write what you actually received in the empty boxes, then record it in the system."), muted(9));
             p.setSpacingBefore(14);
             doc.add(p);
-            PdfKit.signatures(doc, "Received by", "Checked by", "Supplier's driver");
+            PdfKit.signatures(doc, I18n.t("Received by"), I18n.t("Checked by"), I18n.t("Supplier's driver"));
         });
     }
 
@@ -195,23 +196,23 @@ public class PaperFiles {
     public byte[] countSheet(StockCountDto c, boolean showSystem) {
         boolean result = !"IN_PROGRESS".equals(c.status());
         boolean system = showSystem || result;
-        String title = result ? "Stock count result" : "Stock count sheet";
+        String title = result ? I18n.t("Stock count result") : I18n.t("Stock count sheet");
         return kit.build(true, title + " " + c.countNumber(), doc -> {
-            kit.head(doc, title, c.countNumber() + "  |  Printed " + PdfKit.day(LocalDate.now()));
-            doc.add(PdfKit.facts(new String[][]{{"Warehouse", c.warehouseName()}, {"Category", c.categoryName() == null ? "All products" : c.categoryName()}, {"Started", dayOf(c.createdAt())},
-                    {"Status", c.status().replace('_', ' ').toLowerCase()}, {"Approved", c.approvedAt() == null ? null : dayOf(c.approvedAt()) + (c.approvedBy() == null ? "" : " by " + c.approvedBy())}}));
+            kit.head(doc, title, c.countNumber() + I18n.t("  |  Printed ") + PdfKit.day(LocalDate.now()));
+            doc.add(PdfKit.facts(new String[][]{{I18n.t("Warehouse"), c.warehouseName()}, {I18n.t("Category"), c.categoryName() == null ? I18n.t("All products") : c.categoryName()}, {I18n.t("Started"), dayOf(c.createdAt())},
+                    {I18n.t("Status"), c.status().replace('_', ' ').toLowerCase()}, {I18n.t("Approved"), c.approvedAt() == null ? null : dayOf(c.approvedAt()) + (c.approvedBy() == null ? "" : " by " + c.approvedBy())}}));
             section(doc, c.lines().size() + " line" + (c.lines().size() == 1 ? "" : "s"));
             float[] widths = result ? new float[]{0.5f, 2f, 5f, 3f, 1.4f, 1.4f, 1.4f} : system ? new float[]{0.5f, 2f, 5f, 3f, 1.4f, 1.6f, 3.2f} : new float[]{0.5f, 2f, 5f, 3f, 1.8f, 3.6f};
             PdfPTable t = new PdfPTable(widths);
             t.setWidthPercentage(100);
             if (result) {
-                headerCells(t, new String[]{"#", "SKU", "Item", "Location", "System", "Counted", "Difference"},
+                headerCells(t, new String[]{"#", "SKU", I18n.t("Item"), I18n.t("Location"), I18n.t("System"), I18n.t("Counted"), I18n.t("Difference")},
                         new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT});
             } else if (system) {
-                headerCells(t, new String[]{"#", "SKU", "Item", "Location", "System", "Counted", "Notes"},
+                headerCells(t, new String[]{"#", "SKU", I18n.t("Item"), I18n.t("Location"), I18n.t("System"), I18n.t("Counted"), I18n.t("Notes")},
                         new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT, Element.ALIGN_LEFT});
             } else {
-                headerCells(t, new String[]{"#", "SKU", "Item", "Location", "Counted", "Notes"},
+                headerCells(t, new String[]{"#", "SKU", I18n.t("Item"), I18n.t("Location"), I18n.t("Counted"), I18n.t("Notes")},
                         new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT});
             }
             t.setHeaderRows(1);
@@ -237,25 +238,25 @@ public class PaperFiles {
             }
             doc.add(t);
             note(doc, c.notes());
-            PdfKit.signatures(doc, "Counted by", "Checked by", result ? "Approved by" : "Entered in the system by");
+            PdfKit.signatures(doc, I18n.t("Counted by"), I18n.t("Checked by"), result ? I18n.t("Approved by") : I18n.t("Entered in the system by"));
         });
     }
 
     // ------------------------------------------------------------------ transfer note
 
     public byte[] transferNote(StockTransferDto t) {
-        String ref = "TR-" + String.format("%05d", t.id());
-        return kit.build(false, "Stock transfer note " + ref, doc -> {
-            kit.head(doc, "Stock transfer note", ref + "  |  Printed " + PdfKit.day(LocalDate.now()));
+        String ref = I18n.t("TR-") + String.format("%05d", t.id());
+        return kit.build(false, I18n.t("Stock transfer note ") + ref, doc -> {
+            kit.head(doc, I18n.t("Stock transfer note"), ref + I18n.t("  |  Printed ") + PdfKit.day(LocalDate.now()));
             String from = nz(t.fromWarehouseName()) + (t.fromLocationName() == null ? "" : " / " + t.fromLocationName()) + (t.fromBranchName() == null ? "" : " (" + t.fromBranchName() + ")");
             String to = nz(t.toWarehouseName()) + (t.toLocationName() == null ? "" : " / " + t.toLocationName()) + (t.toBranchName() == null ? "" : " (" + t.toBranchName() + ")");
-            doc.add(PdfKit.facts(new String[][]{{"From", from}, {"To", to}, {"Status", t.status() == null ? "" : t.status().replace('_', ' ').toLowerCase()}, {"Logged", dayOf(t.createdAt())},
-                    {"Confirmed", dayOf(t.confirmedAt())}, {"Sent", dayOf(t.dispatchedAt())}, {"Received", dayOf(t.receivedAt())},
-                    {"Between branches", t.interBranch() ? "Yes" : null}}));
-            section(doc, "Goods");
+            doc.add(PdfKit.facts(new String[][]{{I18n.t("From"), from}, {I18n.t("To"), to}, {I18n.t("Status"), t.status() == null ? "" : t.status().replace('_', ' ').toLowerCase()}, {I18n.t("Logged"), dayOf(t.createdAt())},
+                    {I18n.t("Confirmed"), dayOf(t.confirmedAt())}, {I18n.t("Sent"), dayOf(t.dispatchedAt())}, {I18n.t("Received"), dayOf(t.receivedAt())},
+                    {I18n.t("Between branches"), t.interBranch() ? I18n.t("Yes") : null}}));
+            section(doc, I18n.t("Goods"));
             PdfPTable g = new PdfPTable(new float[]{5f, 1.6f, 2f, 2f});
             g.setWidthPercentage(100);
-            headerCells(g, new String[]{"Item", "Quantity sent", "Quantity received", "Counted on arrival"}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT});
+            headerCells(g, new String[]{I18n.t("Item"), I18n.t("Quantity sent"), I18n.t("Quantity received"), I18n.t("Counted on arrival")}, new int[]{Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_LEFT});
             g.addCell(cell(t.productName(), plain(10), Element.ALIGN_LEFT, null));
             g.addCell(cell(num(t.quantity()), bold(10), Element.ALIGN_RIGHT, null));
             g.addCell(cell(t.receivedQuantity() == null ? "" : num(t.receivedQuantity()), plain(10), Element.ALIGN_RIGHT, null));
@@ -263,10 +264,10 @@ public class PaperFiles {
             doc.add(g);
             note(doc, t.note());
             if (t.receiveNote() != null && !t.receiveNote().isBlank()) {
-                section(doc, "Remarks on arrival");
+                section(doc, I18n.t("Remarks on arrival"));
                 doc.add(new Paragraph(t.receiveNote().trim(), plain(9.5f)));
             }
-            PdfKit.signatures(doc, "Sent by", "Carrier", "Received by");
+            PdfKit.signatures(doc, I18n.t("Sent by"), I18n.t("Carrier"), I18n.t("Received by"));
         });
     }
 }

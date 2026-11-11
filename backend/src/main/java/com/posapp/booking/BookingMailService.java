@@ -1,5 +1,6 @@
 package com.posapp.booking;
 
+import com.posapp.i18n.I18n;
 import com.posapp.email.EmailAttachment;
 import com.posapp.email.MailService;
 import com.posapp.settings.StoreSettings;
@@ -22,7 +23,7 @@ import java.util.List;
 public class BookingMailService {
 
     private static final Logger log = LoggerFactory.getLogger(BookingMailService.class);
-    private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy 'at' HH:mm");
+    private static DateTimeFormatter whenFmt() { return I18n.pattern("EEEE d MMMM yyyy 'at' HH:mm"); }
 
     private final MailService mailService;
     private final StoreSettingsService storeSettingsService;
@@ -42,32 +43,32 @@ public class BookingMailService {
 
     @Async
     public void confirmed(Appointment a) {
-        send(a, "Booking confirmed: " + a.getServiceName(),
-                "<p>Hello " + esc(a.getGuestName()) + ",</p><p>Your booking is <strong>confirmed</strong>.</p>" + details(a)
-                        + "<p>Keep this code if you need to look up, move or cancel your booking: <strong>" + esc(a.getConfirmationCode()) + "</strong></p>", true);
+        send(a, I18n.t("Booking confirmed: ") + a.getServiceName(),
+                I18n.t("<p>Hello ") + esc(a.getGuestName()) + I18n.t(",</p><p>Your booking is <strong>confirmed</strong>.</p>") + details(a)
+                        + I18n.t("<p>Keep this code if you need to look up, move or cancel your booking: <strong>") + esc(a.getConfirmationCode()) + "</strong></p>", true);
     }
 
     @Async
     public void moved(Appointment a, LocalDateTime oldStart) {
-        send(a, "Booking moved: " + a.getServiceName(),
-                "<p>Hello " + esc(a.getGuestName()) + ",</p><p>Your booking has been <strong>moved</strong>"
-                        + (oldStart != null ? " from " + oldStart.format(WHEN) : "") + ". The new time is:</p>" + details(a)
-                        + "<p>Your booking code: <strong>" + esc(a.getConfirmationCode()) + "</strong></p>", true);
+        send(a, I18n.t("Booking moved: ") + a.getServiceName(),
+                I18n.t("<p>Hello ") + esc(a.getGuestName()) + I18n.t(",</p><p>Your booking has been <strong>moved</strong>")
+                        + (oldStart != null ? I18n.t(" from ") + oldStart.format(whenFmt()) : "") + I18n.t(". The new time is:</p>") + details(a)
+                        + I18n.t("<p>Your booking code: <strong>") + esc(a.getConfirmationCode()) + "</strong></p>", true);
     }
 
     @Async
     public void awaitingPayment(Appointment a, String instructions) {
-        send(a, "Booking received — payment needed: " + a.getServiceName(),
-                "<p>Hello " + esc(a.getGuestName()) + ",</p><p>We are holding your time, but the booking is confirmed only once <strong>"
-                        + a.getAmountDue().toPlainString() + "</strong> is paid" + (a.getInvoiceNumber() != null ? " (invoice " + esc(a.getInvoiceNumber()) + ")" : "") + ".</p>"
+        send(a, I18n.t("Booking received — payment needed: ") + a.getServiceName(),
+                I18n.t("<p>Hello ") + esc(a.getGuestName()) + I18n.t(",</p><p>We are holding your time, but the booking is confirmed only once <strong>")
+                        + a.getAmountDue().toPlainString() + I18n.t("</strong> is paid") + (a.getInvoiceNumber() != null ? " (invoice " + esc(a.getInvoiceNumber()) + ")" : "") + ".</p>"
                         + details(a) + (instructions != null ? "<p>" + esc(instructions).replace("\n", "<br>") + "</p>" : "")
-                        + "<p>Your booking code: <strong>" + esc(a.getConfirmationCode()) + "</strong></p>", false);
+                        + I18n.t("<p>Your booking code: <strong>") + esc(a.getConfirmationCode()) + "</strong></p>", false);
     }
 
     @Async
     public void cancelled(Appointment a) {
-        send(a, "Booking cancelled: " + a.getServiceName(),
-                "<p>Hello " + esc(a.getGuestName()) + ",</p><p>Your booking has been <strong>cancelled</strong>.</p>" + details(a)
+        send(a, I18n.t("Booking cancelled: ") + a.getServiceName(),
+                I18n.t("<p>Hello ") + esc(a.getGuestName()) + I18n.t(",</p><p>Your booking has been <strong>cancelled</strong>.</p>") + details(a)
                         + (a.getCancelReason() != null ? "<p>" + esc(a.getCancelReason()) + "</p>" : ""), false);
     }
 
@@ -75,9 +76,9 @@ public class BookingMailService {
     public boolean reminder(Appointment a) {
         if (a.getGuestEmail() == null || a.getGuestEmail().isBlank()) return false;
         try {
-            mailService.send(a.getGuestEmail(), "Reminder: " + a.getServiceName() + " on " + a.getStartAt().format(DateTimeFormatter.ofPattern("d MMM 'at' HH:mm")),
-                    "<p>Hello " + esc(a.getGuestName()) + ",</p><p>This is a reminder of your booking.</p>" + details(a)
-                            + "<p>Need to change it? Use your booking code <strong>" + esc(a.getConfirmationCode()) + "</strong> on our booking page, or call us.</p>",
+            mailService.send(a.getGuestEmail(), I18n.t("Reminder: ") + a.getServiceName() + I18n.t(" on ") + a.getStartAt().format(I18n.pattern("d MMM 'at' HH:mm")),
+                    I18n.t("<p>Hello ") + esc(a.getGuestName()) + I18n.t(",</p><p>This is a reminder of your booking.</p>") + details(a)
+                            + I18n.t("<p>Need to change it? Use your booking code <strong>") + esc(a.getConfirmationCode()) + I18n.t("</strong> on our booking page, or call us.</p>"),
                     attachments(a));
             return true;
         } catch (Exception e) {
@@ -87,8 +88,8 @@ public class BookingMailService {
     }
 
     private String details(Appointment a) {
-        return "<p>" + esc(a.getServiceName()) + "<br>" + a.getStartAt().format(WHEN)
-                + (a.getStaffName() != null ? "<br>With " + esc(a.getStaffName()) : "")
+        return "<p>" + esc(a.getServiceName()) + "<br>" + a.getStartAt().format(whenFmt())
+                + (a.getStaffName() != null ? I18n.t("<br>With ") + esc(a.getStaffName()) : "")
                 + (a.getResourceName() != null ? "<br>" + esc(a.getResourceName()) : "") + "</p>";
     }
 

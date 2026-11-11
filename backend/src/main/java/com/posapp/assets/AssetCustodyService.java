@@ -1,5 +1,6 @@
 package com.posapp.assets;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -63,22 +64,22 @@ public class AssetCustodyService {
     @Transactional
     public void checkOut(FixedAsset asset, Long userId, String name, LocalDate date, String condition, String note) {
         if (asset.getStatus() == AssetStatus.DISPOSED) {
-            throw ApiException.conflict("A disposed asset can't be handed to anyone.");
+            throw ApiException.conflict(I18n.t("A disposed asset can't be handed to anyone."));
         }
         String holder = name != null && !name.isBlank() ? name.trim() : null;
         if (userId != null) {
-            AppUser user = userRepository.findById(userId).orElseThrow(() -> ApiException.badRequest("That user was not found."));
+            AppUser user = userRepository.findById(userId).orElseThrow(() -> ApiException.badRequest(I18n.t("That user was not found.")));
             holder = user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getUsername();
         }
         if (holder == null) {
-            throw ApiException.badRequest("Choose who gets the asset or type a name.");
+            throw ApiException.badRequest(I18n.t("Choose who gets the asset or type a name."));
         }
         LocalDate on = date != null ? date : LocalDate.now();
         if (on.isBefore(asset.getPurchaseDate())) {
-            throw ApiException.badRequest("The date can't be before the purchase date.");
+            throw ApiException.badRequest(I18n.t("The date can't be before the purchase date."));
         }
         if (on.isAfter(LocalDate.now())) {
-            throw ApiException.badRequest("The date can't be in the future.");
+            throw ApiException.badRequest(I18n.t("The date can't be in the future."));
         }
         repository.findFirstByAssetIdAndCheckedInOnIsNullOrderByIdDesc(asset.getId()).ifPresent(open -> {
             open.setCheckedInOn(on.isBefore(open.getCheckedOutOn()) ? open.getCheckedOutOn() : on);
@@ -98,28 +99,28 @@ public class AssetCustodyService {
         asset.setCustodianName(holder);
         asset.setAssignedTo(holder);
         asset.setCheckedOutOn(on);
-        history.event(asset.getId(), "CHECK_OUT", "Handed to " + holder + " on " + on + (condition != null && !condition.isBlank() ? " (" + condition.trim() + ")" : ""));
-        auditLogService.record("ASSET_CHECKED_OUT", "Asset " + asset.getCode() + " handed to " + holder, "FixedAsset", asset.getId());
+        history.event(asset.getId(), "CHECK_OUT", I18n.t("Handed to ") + holder + " on " + on + (condition != null && !condition.isBlank() ? " (" + condition.trim() + ")" : ""));
+        auditLogService.record("ASSET_CHECKED_OUT", I18n.t("Asset ") + asset.getCode() + I18n.t(" handed to ") + holder, I18n.t("FixedAsset"), asset.getId());
     }
 
     /** The holder gives the asset back. The caller saves the asset. */
     @Transactional
     public void checkIn(FixedAsset asset, LocalDate date, String condition, String note) {
         AssetCustody open = repository.findFirstByAssetIdAndCheckedInOnIsNullOrderByIdDesc(asset.getId())
-                .orElseThrow(() -> ApiException.badRequest("Nobody is holding this asset."));
+                .orElseThrow(() -> ApiException.badRequest(I18n.t("Nobody is holding this asset.")));
         LocalDate on = date != null ? date : LocalDate.now();
         if (on.isBefore(open.getCheckedOutOn())) {
-            throw ApiException.badRequest("The return date can't be before the hand-out date (" + open.getCheckedOutOn() + ").");
+            throw ApiException.badRequest(I18n.t("The return date can't be before the hand-out date (") + open.getCheckedOutOn() + ").");
         }
         if (on.isAfter(LocalDate.now())) {
-            throw ApiException.badRequest("The date can't be in the future.");
+            throw ApiException.badRequest(I18n.t("The date can't be in the future."));
         }
         open.setCheckedInOn(on);
         open.setInCondition(clip(condition, 255));
         if (note != null && !note.isBlank()) open.setNote(clip((open.getNote() == null ? "" : open.getNote() + " | ") + note.trim(), 1000));
         repository.save(open);
-        history.event(asset.getId(), "CHECK_IN", "Returned by " + open.getCustodianName() + " on " + on + (condition != null && !condition.isBlank() ? " (" + condition.trim() + ")" : ""));
-        auditLogService.record("ASSET_CHECKED_IN", "Asset " + asset.getCode() + " returned by " + open.getCustodianName(), "FixedAsset", asset.getId());
+        history.event(asset.getId(), "CHECK_IN", I18n.t("Returned by ") + open.getCustodianName() + " on " + on + (condition != null && !condition.isBlank() ? " (" + condition.trim() + ")" : ""));
+        auditLogService.record("ASSET_CHECKED_IN", I18n.t("Asset ") + asset.getCode() + I18n.t(" returned by ") + open.getCustodianName(), I18n.t("FixedAsset"), asset.getId());
         asset.setCustodianUserId(null);
         asset.setCustodianName(null);
         asset.setAssignedTo(null);
@@ -151,51 +152,51 @@ public class AssetCustodyService {
             PdfWriter.getInstance(doc, out);
             doc.open();
             StoreSettings s = storeSettingsRepository.findAll().stream().findFirst().orElse(null);
-            String business = s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : "Business";
+            String business = s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : I18n.t("Business");
             doc.add(new Paragraph(business, font(true, 15)));
-            Paragraph title = new Paragraph("Asset handover sheet", font(true, 18));
+            Paragraph title = new Paragraph(I18n.t("Asset handover sheet"), font(true, 18));
             title.setSpacingBefore(6);
             title.setSpacingAfter(10);
             doc.add(title);
             PdfPTable t = new PdfPTable(new float[]{1.2f, 3});
             t.setWidthPercentage(100);
-            row(t, "Tag", asset.getCode());
-            row(t, "Asset", asset.getName());
-            row(t, "Category", categoryName);
-            row(t, "Serial number", asset.getSerialNumber());
-            row(t, "Location", asset.getLocation());
-            row(t, "Purchased", String.valueOf(asset.getPurchaseDate()));
-            row(t, "Cost", money(asset.getCost()));
-            row(t, "Warranty until", asset.getWarrantyExpiresOn() != null ? asset.getWarrantyExpiresOn().toString() : null);
+            row(t, I18n.t("Tag"), asset.getCode());
+            row(t, I18n.t("Asset"), asset.getName());
+            row(t, I18n.t("Category"), categoryName);
+            row(t, I18n.t("Serial number"), asset.getSerialNumber());
+            row(t, I18n.t("Location"), asset.getLocation());
+            row(t, I18n.t("Purchased"), String.valueOf(asset.getPurchaseDate()));
+            row(t, I18n.t("Cost"), money(asset.getCost()));
+            row(t, I18n.t("Warranty until"), asset.getWarrantyExpiresOn() != null ? asset.getWarrantyExpiresOn().toString() : null);
             doc.add(t);
             AssetCustody open = repository.findFirstByAssetIdAndCheckedInOnIsNullOrderByIdDesc(asset.getId()).orElse(null);
-            Paragraph h = new Paragraph(open != null ? "Handed to" : "Currently not held by anyone", font(true, 12));
+            Paragraph h = new Paragraph(open != null ? I18n.t("Handed to") : I18n.t("Currently not held by anyone"), font(true, 12));
             h.setSpacingBefore(14);
             h.setSpacingAfter(6);
             doc.add(h);
             if (open != null) {
                 PdfPTable c = new PdfPTable(new float[]{1.2f, 3});
                 c.setWidthPercentage(100);
-                row(c, "Name", open.getCustodianName());
-                row(c, "Date", String.valueOf(open.getCheckedOutOn()));
-                row(c, "Condition", open.getOutCondition());
-                row(c, "Note", open.getNote());
+                row(c, I18n.t("Name"), open.getCustodianName());
+                row(c, I18n.t("Date"), String.valueOf(open.getCheckedOutOn()));
+                row(c, I18n.t("Condition"), open.getOutCondition());
+                row(c, I18n.t("Note"), open.getNote());
                 doc.add(c);
             }
-            Paragraph terms = new Paragraph("The person named above has received this asset in the condition shown and agrees to look after it, "
-                    + "use it for the business only, and return it when asked or when leaving.", font(false, 9.5f));
+            Paragraph terms = new Paragraph(I18n.t("The person named above has received this asset in the condition shown and agrees to look after it, "
+                    + "use it for the business only, and return it when asked or when leaving."), font(false, 9.5f));
             terms.setSpacingBefore(16);
             doc.add(terms);
             PdfPTable sig = new PdfPTable(2);
             sig.setWidthPercentage(100);
             sig.setSpacingBefore(40);
-            sig.addCell(sigCell("Received by (signature and date)"));
-            sig.addCell(sigCell("Handed over by (signature and date)"));
+            sig.addCell(sigCell(I18n.t("Received by (signature and date)")));
+            sig.addCell(sigCell(I18n.t("Handed over by (signature and date)")));
             doc.add(sig);
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw ApiException.badRequest("The handover sheet could not be made.");
+            throw ApiException.badRequest(I18n.t("The handover sheet could not be made."));
         }
     }
 
@@ -223,7 +224,7 @@ public class AssetCustodyService {
     }
 
     private static String money(java.math.BigDecimal v) {
-        return v == null ? "" : new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(v);
+        return v == null ? "" : new DecimalFormat("#,##0.00", I18n.symbols()).format(v);
     }
 
     private static String clip(String v, int max) {

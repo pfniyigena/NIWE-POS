@@ -1,5 +1,6 @@
 package com.posapp.propertymgmt;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.EmailAttachment;
@@ -39,10 +40,10 @@ public class PmTenantMailService {
     private String target(String given, String tenantEmail, String message) {
         String to = given == null ? "" : given.trim();
         if (to.isEmpty() && tenantEmail != null) to = tenantEmail.trim();
-        if (to.isEmpty()) throw ApiException.badRequest("The tenant has no e-mail address. Type one in, or add it on the tenant's page.");
-        if (!EMAIL.matcher(to).matches()) throw ApiException.badRequest("That e-mail address does not look right: " + to);
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
-        if (message != null && message.trim().length() > 1000) throw ApiException.badRequest("The message is too long (at most 1000 characters).");
+        if (to.isEmpty()) throw ApiException.badRequest(I18n.t("The tenant has no e-mail address. Type one in, or add it on the tenant's page."));
+        if (!EMAIL.matcher(to).matches()) throw ApiException.badRequest(I18n.t("That e-mail address does not look right: ") + to);
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
+        if (message != null && message.trim().length() > 1000) throw ApiException.badRequest(I18n.t("The message is too long (at most 1000 characters)."));
         return to;
     }
 
@@ -60,10 +61,10 @@ public class PmTenantMailService {
         TenantAccount a = accounts.account(tenantId, r == null ? null : r.from(), r == null ? null : r.to());
         String to = target(r == null ? null : r.email(), a.tenantEmail(), r == null ? null : r.message());
         String business = documents.businessName();
-        String body = "<p>Dear " + esc(a.tenantName()) + ",</p>" + note(r == null ? null : r.message()) + "<p>Here is your rent statement for " + a.from().format(PmTenantAccountService.DAY) + " to "
-                + a.to().format(PmTenantAccountService.DAY) + " (PDF attached). " + (a.closing().signum() > 0 ? "The balance owed is <strong>" + a.closing().toPlainString() + "</strong>"
-                + (a.overdue().signum() > 0 ? ", of which " + a.overdue().toPlainString() + " is overdue" : "") + "." : "There is nothing owed.") + "</p><p>Regards,<br/>" + esc(business) + "</p>";
-        mailService.send(to, "Your rent statement, " + a.from().format(PmTenantAccountService.DAY) + " to " + a.to().format(PmTenantAccountService.DAY) + " - " + business, body,
+        String body = I18n.t("<p>Dear ") + esc(a.tenantName()) + ",</p>" + note(r == null ? null : r.message()) + I18n.t("<p>Here is your rent statement for ") + a.from().format(PmTenantAccountService.DAY) + I18n.t(" to ")
+                + a.to().format(PmTenantAccountService.DAY) + I18n.t(" (PDF attached). ") + (a.closing().signum() > 0 ? I18n.t("The balance owed is <strong>") + a.closing().toPlainString() + "</strong>"
+                + (a.overdue().signum() > 0 ? I18n.t(", of which ") + a.overdue().toPlainString() + I18n.t(" is overdue") : "") + "." : I18n.t("There is nothing owed.")) + I18n.t("</p><p>Regards,<br/>") + esc(business) + "</p>";
+        mailService.send(to, I18n.t("Your rent statement, ") + a.from().format(PmTenantAccountService.DAY) + I18n.t(" to ") + a.to().format(PmTenantAccountService.DAY) + " - " + business, body,
                 List.of(new EmailAttachment("tenant-statement-" + a.tenantCode().toLowerCase() + ".pdf", "application/pdf", documents.statement(a, documents.currency()))));
         auditLogService.record("PM_TENANT_STATEMENT_EMAILED", "E-mailed the rent statement of " + a.tenantName() + " to " + to, "PmTenant", tenantId);
         return new MailSent(to);
@@ -76,10 +77,10 @@ public class PmTenantMailService {
         String to = target(r == null ? null : r.email(), rc.tenantEmail(), r == null ? null : r.message());
         String business = documents.businessName();
         var p = rc.payment();
-        String body = "<p>Dear " + esc(p.tenantName()) + ",</p>" + note(r == null ? null : r.message()) + "<p>Thank you for your payment of <strong>" + p.amount().toPlainString() + "</strong>"
-                + (p.paidDate() == null ? "" : " on " + p.paidDate().format(PmTenantAccountService.DAY)) + ". Your receipt " + esc(p.receiptNumber()) + " is attached (PDF).</p><p>Regards,<br/>"
+        String body = I18n.t("<p>Dear ") + esc(p.tenantName()) + ",</p>" + note(r == null ? null : r.message()) + I18n.t("<p>Thank you for your payment of <strong>") + p.amount().toPlainString() + "</strong>"
+                + (p.paidDate() == null ? "" : I18n.t(" on ") + p.paidDate().format(PmTenantAccountService.DAY)) + I18n.t(". Your receipt ") + esc(p.receiptNumber()) + I18n.t(" is attached (PDF).</p><p>Regards,<br/>")
                 + esc(business) + "</p>";
-        mailService.send(to, "Rent receipt " + nz(p.receiptNumber()) + " - " + business, body,
+        mailService.send(to, I18n.t("Rent receipt ") + nz(p.receiptNumber()) + " - " + business, body,
                 List.of(new EmailAttachment(fileName(rc), "application/pdf", documents.receipt(rc, documents.currency()))));
         auditLogService.record("PM_RECEIPT_EMAILED", "E-mailed rent receipt " + nz(p.receiptNumber()) + " to " + to, "CustomerPayment", paymentId);
         return new MailSent(to);

@@ -1,5 +1,6 @@
 package com.posapp.realestate;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.email.MailService;
@@ -33,7 +34,7 @@ public class ReViewingReminderService {
 
     private static final Pattern EMAIL = Pattern.compile("^[^@\\s,;]+@[^@\\s,;]+\\.[^@\\s,;]{2,}$");
     static final int MAX_PER_RUN = 200;
-    private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("EEEE d MMMM 'at' HH:mm", Locale.ENGLISH);
+    private static DateTimeFormatter whenFmt() { return I18n.pattern("EEEE d MMMM 'at' HH:mm"); }
 
     private final ReViewingRepository viewings;
     private final RePropertyRepository properties;
@@ -61,7 +62,7 @@ public class ReViewingReminderService {
     }
 
     private static String when(Instant t) {
-        return WHEN.format(t.atZone(ZoneId.systemDefault()));
+        return whenFmt().format(t.atZone(ZoneId.systemDefault()));
     }
 
     /** Sends one reminder run. With {@code preview} nothing is sent or recorded. */
@@ -153,8 +154,8 @@ public class ReViewingReminderService {
                     v.getAgentName(), au == null ? null : au.getEmail(), as));
         }
         viewings.saveAll(due);
-        String summary = (preview ? "Preview: " : "") + (preview ? lines.size() + " viewings need a reminder" : clientsSent + " clients and " + agentsSent + " agents e-mailed")
-                + ", " + skipped + " skipped (no e-mail address or e-mail not set up), " + failed + " failed.";
+        String summary = (preview ? I18n.t("Preview: ") : "") + (preview ? lines.size() + I18n.t(" viewings need a reminder") : clientsSent + I18n.t(" clients and ") + agentsSent + I18n.t(" agents e-mailed"))
+                + ", " + skipped + I18n.t(" skipped (no e-mail address or e-mail not set up), ") + failed + " failed.";
         if (!preview && (clientsSent > 0 || agentsSent > 0 || failed > 0)) auditLogService.record("RE_VIEWING_REMINDERS", by + " sent viewing reminders: " + summary);
         return new ReminderResult(preview, configured, lines.size(), clientsSent, agentsSent, skipped, failed, summary, lines);
     }
@@ -163,67 +164,67 @@ public class ReViewingReminderService {
     @Transactional
     public RemindOne remindClient(Long viewingId) {
         access.on();
-        ReViewing v = viewings.findById(viewingId).orElseThrow(() -> ApiException.notFound("Viewing not found."));
-        if (v.getStatus() != ViewingStatus.SCHEDULED) throw ApiException.conflict("Only a scheduled viewing can be reminded.");
-        if (v.getStartAt().isBefore(Instant.now())) throw ApiException.conflict("This viewing is already over.");
-        ReLead l = leads.findById(v.getLeadId()).orElseThrow(() -> ApiException.notFound("Lead not found."));
+        ReViewing v = viewings.findById(viewingId).orElseThrow(() -> ApiException.notFound(I18n.t("Viewing not found.")));
+        if (v.getStatus() != ViewingStatus.SCHEDULED) throw ApiException.conflict(I18n.t("Only a scheduled viewing can be reminded."));
+        if (v.getStartAt().isBefore(Instant.now())) throw ApiException.conflict(I18n.t("This viewing is already over."));
+        ReLead l = leads.findById(v.getLeadId()).orElseThrow(() -> ApiException.notFound(I18n.t("Lead not found.")));
         ReProperty p = properties.findById(v.getPropertyId()).orElse(null);
         String email = l.getEmail() == null ? null : l.getEmail().trim();
-        if (!valid(email)) return new RemindOne("NO_EMAIL", null, "This lead has no e-mail address. Call or message " + (l.getPhone() == null ? "them" : l.getPhone()) + " instead.");
-        if (!mailService.isConfigured()) return new RemindOne("NOT_CONFIGURED", email, "E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!valid(email)) return new RemindOne("NO_EMAIL", null, I18n.t("This lead has no e-mail address. Call or message ") + (l.getPhone() == null ? "them" : l.getPhone()) + " instead.");
+        if (!mailService.isConfigured()) return new RemindOne("NOT_CONFIGURED", email, I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
         try {
             sendToClient(v, l, p, settingsService.entity());
         } catch (Exception ex) {
-            return new RemindOne("FAILED", email, "The e-mail could not be sent.");
+            return new RemindOne("FAILED", email, I18n.t("The e-mail could not be sent."));
         }
         v.setClientRemindedAt(Instant.now());
         viewings.save(v);
         auditLogService.record("RE_VIEWING_REMINDER", "Reminded " + l.getName() + " of the viewing on " + when(v.getStartAt()), "ReViewing", v.getId());
-        return new RemindOne("SENT", email, "Reminder sent to " + email + ".");
+        return new RemindOne("SENT", email, I18n.t("Reminder sent to ") + email + ".");
     }
 
     private void sendToClient(ReViewing v, ReLead l, ReProperty p, ReSettings st) {
-        mailService.send(l.getEmail().trim(), "Reminder: your viewing on " + when(v.getStartAt()), clientBody(v, l, p, st), List.of());
+        mailService.send(l.getEmail().trim(), I18n.t("Reminder: your viewing on ") + when(v.getStartAt()), clientBody(v, l, p, st), List.of());
     }
 
     static String clientBody(ReViewing v, ReLead l, ReProperty p, ReSettings st) {
-        StringBuilder b = new StringBuilder("<p>Hello " + HtmlUtils.htmlEscape(l.getName()) + ",</p>");
-        b.append("<p>This is a reminder of your viewing:</p><ul>");
+        StringBuilder b = new StringBuilder(I18n.t("<p>Hello ") + HtmlUtils.htmlEscape(l.getName()) + ",</p>");
+        b.append(I18n.t("<p>This is a reminder of your viewing:</p><ul>"));
         if (p != null) {
             b.append("<li><strong>").append(HtmlUtils.htmlEscape(p.getTitle())).append("</strong> (").append(HtmlUtils.htmlEscape(p.getCode())).append(")</li>");
             String where = p.getAddress() != null && !p.getAddress().isBlank() ? p.getAddress() : p.getArea();
-            if (where != null && !where.isBlank()) b.append("<li>Where: ").append(HtmlUtils.htmlEscape(where)).append(p.getArea() != null && p.getAddress() != null && !p.getAddress().isBlank() ? ", " + HtmlUtils.htmlEscape(p.getArea()) : "").append("</li>");
+            if (where != null && !where.isBlank()) b.append(I18n.t("<li>Where: ")).append(HtmlUtils.htmlEscape(where)).append(p.getArea() != null && p.getAddress() != null && !p.getAddress().isBlank() ? ", " + HtmlUtils.htmlEscape(p.getArea()) : "").append("</li>");
         }
-        b.append("<li>When: ").append(when(v.getStartAt())).append("</li>");
-        if (v.getAgentName() != null) b.append("<li>You will be met by: ").append(HtmlUtils.htmlEscape(v.getAgentName())).append("</li>");
+        b.append(I18n.t("<li>When: ")).append(when(v.getStartAt())).append("</li>");
+        if (v.getAgentName() != null) b.append(I18n.t("<li>You will be met by: ")).append(HtmlUtils.htmlEscape(v.getAgentName())).append("</li>");
         b.append("</ul>");
         String phone = st.getWebsitePhone(), mail = st.getWebsiteEmail();
         if ((phone != null && !phone.isBlank()) || (mail != null && !mail.isBlank())) {
-            b.append("<p>If you cannot come, please let us know");
-            if (phone != null && !phone.isBlank()) b.append(" on ").append(HtmlUtils.htmlEscape(phone));
-            if (mail != null && !mail.isBlank()) b.append(phone != null && !phone.isBlank() ? " or at " : " at ").append(HtmlUtils.htmlEscape(mail));
-            b.append(" so we can arrange another time.</p>");
+            b.append(I18n.t("<p>If you cannot come, please let us know"));
+            if (phone != null && !phone.isBlank()) b.append(I18n.t(" on ")).append(HtmlUtils.htmlEscape(phone));
+            if (mail != null && !mail.isBlank()) b.append(phone != null && !phone.isBlank() ? I18n.t(" or at ") : " at ").append(HtmlUtils.htmlEscape(mail));
+            b.append(I18n.t(" so we can arrange another time.</p>"));
         } else {
-            b.append("<p>If you cannot come, please let us know so we can arrange another time.</p>");
+            b.append(I18n.t("<p>If you cannot come, please let us know so we can arrange another time.</p>"));
         }
-        b.append("<p>We look forward to seeing you.</p>");
+        b.append(I18n.t("<p>We look forward to seeing you.</p>"));
         return b.toString();
     }
 
     static String agentSubject(List<ReViewing> list) {
-        return list.size() == 1 ? "Viewing coming up: " + when(list.get(0).getStartAt()) : list.size() + " viewings coming up";
+        return list.size() == 1 ? I18n.t("Viewing coming up: ") + when(list.get(0).getStartAt()) : list.size() + I18n.t(" viewings coming up");
     }
 
     String agentBody(String name, List<ReViewing> list) {
-        StringBuilder b = new StringBuilder("<p>Hello " + HtmlUtils.htmlEscape(name) + ",</p><p>You have " + (list.size() == 1 ? "a viewing" : list.size() + " viewings") + " coming up:</p><ul>");
+        StringBuilder b = new StringBuilder(I18n.t("<p>Hello ") + HtmlUtils.htmlEscape(name) + I18n.t(",</p><p>You have ") + (list.size() == 1 ? I18n.t("a viewing") : list.size() + " viewings") + I18n.t(" coming up:</p><ul>"));
         for (ReViewing v : list) {
             ReProperty p = properties.findById(v.getPropertyId()).orElse(null);
             ReLead l = leads.findById(v.getLeadId()).orElse(null);
             b.append("<li><strong>").append(when(v.getStartAt())).append("</strong> · ");
-            b.append(p == null ? "a property" : HtmlUtils.htmlEscape(p.getCode() + " " + p.getTitle()));
+            b.append(p == null ? I18n.t("a property") : HtmlUtils.htmlEscape(p.getCode() + " " + p.getTitle()));
             if (p != null && p.getArea() != null && !p.getArea().isBlank()) b.append(" (").append(HtmlUtils.htmlEscape(p.getArea())).append(")");
             if (l != null) {
-                b.append(" · with ").append(HtmlUtils.htmlEscape(l.getName()));
+                b.append(I18n.t(" · with ")).append(HtmlUtils.htmlEscape(l.getName()));
                 if (l.getPhone() != null && !l.getPhone().isBlank()) b.append(", ").append(HtmlUtils.htmlEscape(l.getPhone()));
             }
             b.append("</li>");

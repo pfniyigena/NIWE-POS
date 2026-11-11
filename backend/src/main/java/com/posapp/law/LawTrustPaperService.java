@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.customer.Customer;
@@ -72,21 +73,21 @@ public class LawTrustPaperService {
     @Transactional
     public MailedClient emailStatement(Actor a, boolean canBill, Long matterId) {
         trust.requireSender(a, canBill, matterId);
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
         LawMatter m = access.viewable(a, matterId);
         String to = clientEmail(m.getClientCustomerId());
-        if (to == null) throw ApiException.badRequest("This client has no e-mail address on the customer record.");
+        if (to == null) throw ApiException.badRequest(I18n.t("This client has no e-mail address on the customer record."));
         Printed pdf = statement(a, matterId, null, null);
         String business = files.businessName();
         StringBuilder body = new StringBuilder();
-        body.append("<p>Dear ").append(HtmlUtils.htmlEscape(m.getClientName())).append(",</p>");
-        body.append("<p>Please find attached the statement of the money we hold for you in our client account for matter <b>").append(HtmlUtils.htmlEscape(m.getNumber()))
+        body.append(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(m.getClientName())).append(",</p>");
+        body.append(I18n.t("<p>Please find attached the statement of the money we hold for you in our client account for matter <b>")).append(HtmlUtils.htmlEscape(m.getNumber()))
                 .append("</b> (").append(HtmlUtils.htmlEscape(m.getTitle())).append(").</p>");
         String contact = files.contactLine();
-        if (!contact.isEmpty()) body.append("<p>Questions? Contact us: ").append(HtmlUtils.htmlEscape(contact)).append("</p>");
+        if (!contact.isEmpty()) body.append(I18n.t("<p>Questions? Contact us: ")).append(HtmlUtils.htmlEscape(contact)).append("</p>");
         body.append("<p>").append(HtmlUtils.htmlEscape(business)).append("</p>");
-        mailService.send(to, "Your client account statement for " + m.getNumber() + " - " + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
+        mailService.send(to, I18n.t("Your client account statement for ") + m.getNumber() + " - " + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
         auditLogService.record("LAW_TRUST_STATEMENT_SENT", "E-mailed the client trust statement of matter " + m.getNumber() + " to " + to, "LawMatter", m.getId());
-        return new MailedClient(to, "Statement sent to " + to + ".");
+        return new MailedClient(to, I18n.t("Statement sent to ") + to + ".");
     }
 }

@@ -1,5 +1,6 @@
 package com.posapp.workorder;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLog;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
@@ -78,7 +79,7 @@ public class WorkOrderExtrasService {
     private static String clean(String s, int max, String what) {
         if (!notBlank(s)) return null;
         String t = s.trim();
-        if (t.length() > max) throw ApiException.badRequest(what + " can be at most " + max + " characters.");
+        if (t.length() > max) throw ApiException.badRequest(what + I18n.t(" can be at most ") + max + " characters.");
         return t;
     }
 
@@ -96,7 +97,7 @@ public class WorkOrderExtrasService {
 
     @Transactional
     public SettingsDto saveSettings(Actor actor, SettingsRequest r) {
-        if (!actor.manager()) throw ApiException.forbidden("Only a manager can do that.");
+        if (!actor.manager()) throw ApiException.forbidden(I18n.t("Only a manager can do that."));
         WorkOrderSettings s = service.settings();
         if (r.requireApprovalDefault() != null) s.setRequireApprovalDefault(r.requireApprovalDefault());
         if (r.emailCustomerOnComplete() != null) s.setEmailCustomerOnComplete(r.emailCustomerOnComplete());
@@ -142,10 +143,10 @@ public class WorkOrderExtrasService {
     @Transactional
     public EstimateDto saveEstimateSettings(Actor actor, Long id, EstimateSettingsRequest r) {
         WorkOrder w = service.requireManage(actor, id);
-        if (w.getStatus() == WorkOrderStatus.COMPLETED || w.getStatus() == WorkOrderStatus.CANCELLED) throw ApiException.conflict("This work order is " + w.getStatus().name().toLowerCase(Locale.ROOT) + ".");
-        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest("Only a customer job has an estimate to approve.");
+        if (w.getStatus() == WorkOrderStatus.COMPLETED || w.getStatus() == WorkOrderStatus.CANCELLED) throw ApiException.conflict(I18n.t("This work order is ") + w.getStatus().name().toLowerCase(Locale.ROOT) + ".");
+        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest(I18n.t("Only a customer job has an estimate to approve."));
         if (r.estimatedHours() != null) {
-            if (r.estimatedHours().signum() < 0) throw ApiException.badRequest("The estimated hours cannot be negative.");
+            if (r.estimatedHours().signum() < 0) throw ApiException.badRequest(I18n.t("The estimated hours cannot be negative."));
             BigDecimal before = w.getEstimatedHours() == null ? ZERO : w.getEstimatedHours();
             w.setEstimatedHours(r.estimatedHours().signum() == 0 ? null : r.estimatedHours().setScale(2, java.math.RoundingMode.HALF_UP));
             repository.save(w);
@@ -162,10 +163,10 @@ public class WorkOrderExtrasService {
     @Transactional
     public EstimateDto sendEstimate(Actor actor, Long id, EstimateSendRequest r) {
         WorkOrder w = service.requireManage(actor, id);
-        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest("Only a customer job has an estimate to approve.");
-        if (w.getStatus() != WorkOrderStatus.OPEN) throw ApiException.conflict("An estimate can only be sent before work has started.");
+        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest(I18n.t("Only a customer job has an estimate to approve."));
+        if (w.getStatus() != WorkOrderStatus.OPEN) throw ApiException.conflict(I18n.t("An estimate can only be sent before work has started."));
         EstimateDto e = estimate(w, false, null);
-        if (e.total().signum() <= 0) throw ApiException.badRequest("Add a price, estimated hours with a labour rate, or parts before sending an estimate.");
+        if (e.total().signum() <= 0) throw ApiException.badRequest(I18n.t("Add a price, estimated hours with a labour rate, or parts before sending an estimate."));
         w.setApprovalStatus(ApprovalStatus.REQUESTED);
         w.setApprovalRequestedAt(Instant.now());
         w.setApprovalEstimateTotal(e.total());
@@ -184,10 +185,10 @@ public class WorkOrderExtrasService {
             } else {
                 try {
                     String extra = r.note() != null && !r.note().isBlank() ? "<p>" + html(r.note().trim()) + "</p>" : "";
-                    sendMail(w, "Estimate " + w.getNumber(), "<p>Please find our estimate for <b>" + html(w.getTitle()) + "</b> attached. Sign it and send it back to approve the work.</p>" + extra,
+                    sendMail(w, I18n.t("Estimate ") + w.getNumber(), I18n.t("<p>Please find our estimate for <b>") + html(w.getTitle()) + I18n.t("</b> attached. Sign it and send it back to approve the work.</p>") + extra,
                             "estimate-" + w.getNumber() + ".pdf", pdf("ESTIMATE", w));
                     sent = true;
-                    note = "Estimate e-mailed to " + customerEmail(w) + ".";
+                    note = I18n.t("Estimate e-mailed to ") + customerEmail(w) + ".";
                     auditLogService.record("WORK_ORDER_EMAILED", "E-mailed the estimate of " + w.getNumber() + " to " + customerEmail(w), "WorkOrder", id);
                 } catch (ApiException ex) {
                     note = ex.getMessage();
@@ -200,18 +201,18 @@ public class WorkOrderExtrasService {
     @Transactional
     public EstimateDto approve(Actor actor, Long id, ApprovalDecisionRequest r) {
         WorkOrder w = service.requireManage(actor, id);
-        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest("Only a customer job has an estimate to approve.");
-        if (w.getStatus() != WorkOrderStatus.OPEN) throw ApiException.conflict("The estimate can only be approved before work has started.");
-        String by = clean(r == null ? null : r.byName(), 200, "The name");
-        if (by == null) throw ApiException.badRequest("Enter who at the customer approved the estimate.");
+        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest(I18n.t("Only a customer job has an estimate to approve."));
+        if (w.getStatus() != WorkOrderStatus.OPEN) throw ApiException.conflict(I18n.t("The estimate can only be approved before work has started."));
+        String by = clean(r == null ? null : r.byName(), 200, I18n.t("The name"));
+        if (by == null) throw ApiException.badRequest(I18n.t("Enter who at the customer approved the estimate."));
         EstimateDto e = estimate(w, false, null);
-        if (e.total().signum() <= 0) throw ApiException.badRequest("Add a price, estimated hours with a labour rate, or parts first, so there is something to approve.");
+        if (e.total().signum() <= 0) throw ApiException.badRequest(I18n.t("Add a price, estimated hours with a labour rate, or parts first, so there is something to approve."));
         w.setApprovalStatus(ApprovalStatus.APPROVED);
         if (w.getApprovalRequestedAt() == null) w.setApprovalRequestedAt(Instant.now());
         w.setApprovalEstimateTotal(e.total());
         w.setApprovalDecidedAt(Instant.now());
         w.setApprovalByName(by);
-        w.setApprovalNote(clean(r.note(), 1000, "The note"));
+        w.setApprovalNote(clean(r.note(), 1000, I18n.t("The note")));
         w.setApprovalRecordedBy(TimeTrackingService.actorName(actor.user()));
         repository.save(w);
         auditLogService.record("WORK_ORDER_ESTIMATE_APPROVED", "Estimate of " + e.total().toPlainString() + " for " + w.getNumber() + " approved by " + by, "WorkOrder", id);
@@ -221,12 +222,12 @@ public class WorkOrderExtrasService {
     @Transactional
     public EstimateDto reject(Actor actor, Long id, ApprovalDecisionRequest r) {
         WorkOrder w = service.requireManage(actor, id);
-        if (w.getApprovalStatus() != ApprovalStatus.REQUESTED) throw ApiException.conflict("There is no estimate waiting for an answer.");
-        if (w.getStatus() != WorkOrderStatus.OPEN) throw ApiException.conflict("The job has already started.");
+        if (w.getApprovalStatus() != ApprovalStatus.REQUESTED) throw ApiException.conflict(I18n.t("There is no estimate waiting for an answer."));
+        if (w.getStatus() != WorkOrderStatus.OPEN) throw ApiException.conflict(I18n.t("The job has already started."));
         w.setApprovalStatus(ApprovalStatus.REJECTED);
         w.setApprovalDecidedAt(Instant.now());
-        w.setApprovalByName(clean(r == null ? null : r.byName(), 200, "The name"));
-        w.setApprovalNote(clean(r == null ? null : r.note(), 1000, "The note"));
+        w.setApprovalByName(clean(r == null ? null : r.byName(), 200, I18n.t("The name")));
+        w.setApprovalNote(clean(r == null ? null : r.note(), 1000, I18n.t("The note")));
         w.setApprovalRecordedBy(TimeTrackingService.actorName(actor.user()));
         repository.save(w);
         auditLogService.record("WORK_ORDER_ESTIMATE_REJECTED", "Estimate for " + w.getNumber() + " was not approved by the customer", "WorkOrder", id);
@@ -249,8 +250,8 @@ public class WorkOrderExtrasService {
     @Transactional
     public NoteDto addNote(Actor actor, Long id, NoteRequest r) {
         WorkOrder w = service.requireWork(actor, id);
-        String text = clean(r == null ? null : r.text(), 2000, "A note");
-        if (text == null) throw ApiException.badRequest("Write the note first.");
+        String text = clean(r == null ? null : r.text(), 2000, I18n.t("A note"));
+        if (text == null) throw ApiException.badRequest(I18n.t("Write the note first."));
         WorkOrderNote n = new WorkOrderNote();
         n.setWorkOrderId(w.getId());
         n.setAuthorUserId(actor.user().getId());
@@ -264,9 +265,9 @@ public class WorkOrderExtrasService {
     @Transactional
     public void deleteNote(Actor actor, Long id, Long noteId) {
         WorkOrder w = service.requireWork(actor, id);
-        WorkOrderNote n = noteRepository.findById(noteId).filter(x -> x.getWorkOrderId().equals(id)).orElseThrow(() -> ApiException.notFound("Note not found."));
+        WorkOrderNote n = noteRepository.findById(noteId).filter(x -> x.getWorkOrderId().equals(id)).orElseThrow(() -> ApiException.notFound(I18n.t("Note not found.")));
         boolean mine = n.getAuthorUserId() != null && n.getAuthorUserId().equals(actor.user().getId());
-        if (!actor.manager() && !mine) throw ApiException.forbidden("Only the person who wrote a note, or a manager, can delete it.");
+        if (!actor.manager() && !mine) throw ApiException.forbidden(I18n.t("Only the person who wrote a note, or a manager, can delete it."));
         noteRepository.delete(n);
         auditLogService.record("WORK_ORDER_NOTE_DELETED", "Deleted a note from " + w.getNumber(), "WorkOrder", id);
     }
@@ -315,21 +316,21 @@ public class WorkOrderExtrasService {
     @Transactional
     public AttachmentDto addAttachment(Actor actor, Long id, MultipartFile file, String caption) throws IOException {
         WorkOrder w = service.requireWork(actor, id);
-        if (file == null || file.isEmpty()) throw ApiException.badRequest("Choose a file to add.");
-        if (file.getSize() > MAX_FILE_BYTES) throw ApiException.badRequest("A file can be at most 10 MB.");
+        if (file == null || file.isEmpty()) throw ApiException.badRequest(I18n.t("Choose a file to add."));
+        if (file.getSize() > MAX_FILE_BYTES) throw ApiException.badRequest(I18n.t("A file can be at most 10 MB."));
         String fileName = file.getOriginalFilename() == null || file.getOriginalFilename().isBlank() ? "file" : file.getOriginalFilename().replaceAll("[\\\\/\\r\\n\\u0000]", "_");
         if (fileName.length() > 200) fileName = fileName.substring(fileName.length() - 200);
         String type = detectType(file, fileName);
-        if (type == null) throw ApiException.badRequest("Files must be photos (JPEG, PNG, GIF, WebP), PDF or text files.");
+        if (type == null) throw ApiException.badRequest(I18n.t("Files must be photos (JPEG, PNG, GIF, WebP), PDF or text files."));
         byte[] data = file.getBytes();
-        if (!looksRight(data, type)) throw ApiException.badRequest("That file does not look like a valid " + type.substring(type.lastIndexOf('/') + 1).toUpperCase(Locale.ROOT) + " file.");
-        if (attachmentRepository.countByWorkOrderId(id) >= MAX_FILES) throw ApiException.badRequest("At most " + MAX_FILES + " files can be added to one job.");
+        if (!looksRight(data, type)) throw ApiException.badRequest(I18n.t("That file does not look like a valid ") + type.substring(type.lastIndexOf('/') + 1).toUpperCase(Locale.ROOT) + " file.");
+        if (attachmentRepository.countByWorkOrderId(id) >= MAX_FILES) throw ApiException.badRequest(I18n.t("At most ") + MAX_FILES + I18n.t(" files can be added to one job."));
         WorkOrderAttachment a = new WorkOrderAttachment();
         a.setWorkOrderId(id);
         a.setFileName(fileName);
         a.setContentType(type);
         a.setSizeBytes(data.length);
-        a.setCaption(clean(caption, 300, "The caption"));
+        a.setCaption(clean(caption, 300, I18n.t("The caption")));
         a.setUploadedByName(TimeTrackingService.actorName(actor.user()));
         a.setData(data);
         attachmentRepository.save(a);
@@ -343,14 +344,14 @@ public class WorkOrderExtrasService {
     @Transactional
     public FileData file(Actor actor, Long id, Long attachmentId) {
         service.requireView(actor, id);
-        WorkOrderAttachment a = attachmentRepository.findById(attachmentId).filter(x -> x.getWorkOrderId().equals(id)).orElseThrow(() -> ApiException.notFound("File not found."));
+        WorkOrderAttachment a = attachmentRepository.findById(attachmentId).filter(x -> x.getWorkOrderId().equals(id)).orElseThrow(() -> ApiException.notFound(I18n.t("File not found.")));
         return new FileData(a.getFileName(), a.getContentType(), a.getData());
     }
 
     @Transactional
     public void deleteAttachment(Actor actor, Long id, Long attachmentId) {
         WorkOrder w = service.requireWork(actor, id);
-        WorkOrderAttachment a = attachmentRepository.findById(attachmentId).filter(x -> x.getWorkOrderId().equals(id)).orElseThrow(() -> ApiException.notFound("File not found."));
+        WorkOrderAttachment a = attachmentRepository.findById(attachmentId).filter(x -> x.getWorkOrderId().equals(id)).orElseThrow(() -> ApiException.notFound(I18n.t("File not found.")));
         attachmentRepository.delete(a);
         auditLogService.record("WORK_ORDER_FILE_DELETED", "Removed " + a.getFileName() + " from " + w.getNumber(), "WorkOrder", id);
     }
@@ -386,16 +387,16 @@ public class WorkOrderExtrasService {
         return switch (k) {
             case "jobcard" -> pdf("JOBCARD", w);
             case "estimate" -> {
-                if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest("Only a customer job has an estimate.");
-                if (!actor.viewer()) throw ApiException.forbidden("Only a manager can print the estimate.");
+                if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest(I18n.t("Only a customer job has an estimate."));
+                if (!actor.viewer()) throw ApiException.forbidden(I18n.t("Only a manager can print the estimate."));
                 yield pdf("ESTIMATE", w);
             }
             case "completion" -> {
-                if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest("Only a customer job has a completion note.");
-                if (w.getStatus() != WorkOrderStatus.COMPLETED) throw ApiException.conflict("The completion note is available once the job is completed.");
+                if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest(I18n.t("Only a customer job has a completion note."));
+                if (w.getStatus() != WorkOrderStatus.COMPLETED) throw ApiException.conflict(I18n.t("The completion note is available once the job is completed."));
                 yield pdf("COMPLETION", w);
             }
-            default -> throw ApiException.badRequest("Unknown document: " + kind);
+            default -> throw ApiException.badRequest(I18n.t("Unknown document: ") + kind);
         };
     }
 
@@ -405,8 +406,8 @@ public class WorkOrderExtrasService {
     }
 
     private String emailProblem(WorkOrder w) {
-        if (!mailService.isConfigured()) return "E-mail is not set up yet (Settings > Email settings), so nothing was sent. You can print the PDF instead.";
-        if (customerEmail(w) == null) return "The customer has no e-mail address, so nothing was sent. You can print the PDF instead.";
+        if (!mailService.isConfigured()) return I18n.t("E-mail is not set up yet (Settings > Email settings), so nothing was sent. You can print the PDF instead.");
+        if (customerEmail(w) == null) return I18n.t("The customer has no e-mail address, so nothing was sent. You can print the PDF instead.");
         return null;
     }
 
@@ -416,8 +417,8 @@ public class WorkOrderExtrasService {
 
     private void sendMail(WorkOrder w, String subject, String bodyHtml, String fileName, byte[] pdf) {
         String business = storeSettingsService.getSettingsEntity().getBusinessName();
-        String greeting = "<p>Dear " + html(w.getCustomerName() == null ? "customer" : w.getCustomerName()) + ",</p>";
-        String footer = "<p>" + (business == null || business.isBlank() ? "Thank you." : "Thank you,<br>" + html(business)) + "</p>";
+        String greeting = I18n.t("<p>Dear ") + html(w.getCustomerName() == null ? "customer" : w.getCustomerName()) + ",</p>";
+        String footer = "<p>" + (business == null || business.isBlank() ? I18n.t("Thank you.") : I18n.t("Thank you,<br>") + html(business)) + "</p>";
         mailService.send(customerEmail(w), subject + (business == null || business.isBlank() ? "" : " - " + business), greeting + bodyHtml + footer,
                 List.of(new EmailAttachment(fileName, "application/pdf", pdf)));
     }
@@ -426,16 +427,16 @@ public class WorkOrderExtrasService {
     @Transactional
     public Result emailCompletion(Actor actor, Long id) {
         WorkOrder w = service.requireManage(actor, id);
-        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest("Only a customer job has a completion note.");
-        if (w.getStatus() != WorkOrderStatus.COMPLETED) throw ApiException.conflict("The job is not completed yet.");
+        if (w.getType() != WorkOrderType.CUSTOMER) throw ApiException.badRequest(I18n.t("Only a customer job has a completion note."));
+        if (w.getStatus() != WorkOrderStatus.COMPLETED) throw ApiException.conflict(I18n.t("The job is not completed yet."));
         String problem = emailProblem(w);
         if (problem != null) throw ApiException.badRequest(problem);
-        sendMail(w, "Job completed " + w.getNumber(), "<p>We have finished <b>" + html(w.getTitle()) + "</b>. The completion note is attached.</p>",
+        sendMail(w, I18n.t("Job completed ") + w.getNumber(), I18n.t("<p>We have finished <b>") + html(w.getTitle()) + I18n.t("</b>. The completion note is attached.</p>"),
                 "completion-" + w.getNumber() + ".pdf", pdf("COMPLETION", w));
         w.setCompletionEmailedAt(Instant.now());
         repository.save(w);
         auditLogService.record("WORK_ORDER_EMAILED", "E-mailed the completion note of " + w.getNumber() + " to " + customerEmail(w), "WorkOrder", id);
-        return new Result(true, "Completion note e-mailed to " + customerEmail(w) + ".");
+        return new Result(true, I18n.t("Completion note e-mailed to ") + customerEmail(w) + ".");
     }
 
     public record Result(boolean ok, String message) {
@@ -451,7 +452,7 @@ public class WorkOrderExtrasService {
                 auditLogService.record("WORK_ORDER_EMAIL_SKIPPED", "The completion note of " + w.getNumber() + " was not e-mailed: " + emailProblem(w), "WorkOrder", id);
                 return;
             }
-            sendMail(w, "Job completed " + w.getNumber(), "<p>We have finished <b>" + html(w.getTitle()) + "</b>. The completion note is attached.</p>",
+            sendMail(w, I18n.t("Job completed ") + w.getNumber(), I18n.t("<p>We have finished <b>") + html(w.getTitle()) + I18n.t("</b>. The completion note is attached.</p>"),
                     "completion-" + w.getNumber() + ".pdf", pdf("COMPLETION", w));
             w.setCompletionEmailedAt(Instant.now());
             repository.save(w);

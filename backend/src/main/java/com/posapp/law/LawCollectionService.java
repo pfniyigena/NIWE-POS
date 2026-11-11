@@ -1,5 +1,6 @@
 package com.posapp.law;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.common.ApiException;
 import com.posapp.customer.Customer;
@@ -175,12 +176,12 @@ public class LawCollectionService {
     @Transactional(readOnly = true)
     public FeeStatementData statementData(Actor a, Long customerId, LocalDate from, LocalDate to) {
         access.on();
-        if (from != null && to != null && to.isBefore(from)) throw ApiException.badRequest("The end date is before the start date.");
+        if (from != null && to != null && to.isBefore(from)) throw ApiException.badRequest(I18n.t("The end date is before the start date."));
         LocalDate today = LocalDate.now();
         List<Item> all = items(m -> access.canView(m, a) && customerId.equals(m.getClientCustomerId()), today);
-        Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound("Client not found."));
+        Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound(I18n.t("Client not found.")));
         boolean sees = matterRepository.findByClientCustomerIdOrderByOpenedDateDescIdDesc(customerId).stream().anyMatch(m -> access.canView(m, a));
-        if (!sees) throw ApiException.notFound("Client not found.");
+        if (!sees) throw ApiException.notFound(I18n.t("Client not found."));
         List<Item> shown = all.stream().filter(i -> (from == null || !i.date().isBefore(from)) && (to == null || !i.date().isAfter(to)))
                 .sorted(Comparator.comparing(Item::date).thenComparing(i -> i.bill().getInvoiceNumber() == null ? "" : i.bill().getInvoiceNumber())).toList();
         List<FeeLine> lines = shown.stream().map(i -> new FeeLine(i.date(), i.bill().getInvoiceNumber(), i.m().getNumber() + " " + i.m().getTitle(), i.total(), i.paid(), i.outstanding(), i.due(),
@@ -203,29 +204,29 @@ public class LawCollectionService {
 
     private void requireSender(Actor a, boolean canBill) {
         access.on();
-        if (!canSend(a, canBill)) throw ApiException.forbidden("Only a billing user, a manager or an admin can send fee e-mails.");
-        if (!mailService.isConfigured()) throw ApiException.badRequest("E-mail is not set up yet. Set up SMTP in Settings > Email first.");
+        if (!canSend(a, canBill)) throw ApiException.forbidden(I18n.t("Only a billing user, a manager or an admin can send fee e-mails."));
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet. Set up SMTP in Settings > Email first."));
     }
 
     @Transactional
     public MailedClient emailStatement(Actor a, boolean canBill, Long customerId) {
         requireSender(a, canBill);
         FeeStatementData d = statementData(a, customerId, null, null);
-        if (d.clientEmail() == null || d.clientEmail().isBlank()) throw ApiException.badRequest("This client has no e-mail address on the customer record.");
+        if (d.clientEmail() == null || d.clientEmail().isBlank()) throw ApiException.badRequest(I18n.t("This client has no e-mail address on the customer record."));
         Printed pdf = new Printed(files.feeStatement(d), "fee-statement-" + slug(d.clientName()) + ".pdf");
         String business = files.businessName();
-        StringBuilder body = new StringBuilder("<p>Dear ").append(HtmlUtils.htmlEscape(d.clientName())).append(",</p>");
-        body.append("<p>Please find attached the statement of your fees with ").append(HtmlUtils.htmlEscape(business)).append(" up to ").append(LawPrintFiles.day(d.asOf())).append(".</p>");
-        if (d.totalOutstanding().signum() > 0) body.append("<p>The amount still to pay is <b>").append(LawPrintFiles.amount(files.currency(), d.totalOutstanding())).append("</b>.</p>");
+        StringBuilder body = new StringBuilder(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(d.clientName())).append(",</p>");
+        body.append(I18n.t("<p>Please find attached the statement of your fees with ")).append(HtmlUtils.htmlEscape(business)).append(I18n.t(" up to ")).append(LawPrintFiles.day(d.asOf())).append(".</p>");
+        if (d.totalOutstanding().signum() > 0) body.append(I18n.t("<p>The amount still to pay is <b>")).append(LawPrintFiles.amount(files.currency(), d.totalOutstanding())).append("</b>.</p>");
         contact(body);
-        mailService.send(d.clientEmail().trim(), "Your statement of fees - " + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
+        mailService.send(d.clientEmail().trim(), I18n.t("Your statement of fees - ") + business, body.toString(), List.of(new EmailAttachment(pdf.fileName(), "application/pdf", pdf.content())));
         auditLogService.record("LAW_FEE_STATEMENT_SENT", "E-mailed the fee statement of " + d.clientName() + " to " + d.clientEmail(), "Customer", customerId);
-        return new MailedClient(d.clientEmail().trim(), "Statement sent to " + d.clientEmail().trim() + ".");
+        return new MailedClient(d.clientEmail().trim(), I18n.t("Statement sent to ") + d.clientEmail().trim() + ".");
     }
 
     private void contact(StringBuilder body) {
         String contact = files.contactLine();
-        if (!contact.isEmpty()) body.append("<p>Questions? Contact us: ").append(HtmlUtils.htmlEscape(contact)).append("</p>");
+        if (!contact.isEmpty()) body.append(I18n.t("<p>Questions? Contact us: ")).append(HtmlUtils.htmlEscape(contact)).append("</p>");
         body.append("<p>").append(HtmlUtils.htmlEscape(files.businessName())).append("</p>");
     }
 
@@ -234,15 +235,15 @@ public class LawCollectionService {
     private String reminderHtml(String clientName, List<Item> list) {
         String cur = files.currency();
         BigDecimal total = list.stream().map(Item::outstanding).reduce(ZERO, BigDecimal::add);
-        StringBuilder b = new StringBuilder("<p>Dear ").append(HtmlUtils.htmlEscape(clientName)).append(",</p>");
-        b.append("<p>Our records show that the following fees are overdue. If you have already paid, please ignore this reminder and accept our thanks.</p>");
-        b.append("<table cellpadding=\"4\" style=\"border-collapse:collapse;\" border=\"1\"><tr><th>Invoice</th><th>Matter</th><th>Due</th><th>Days overdue</th><th align=\"right\">Still to pay</th></tr>");
+        StringBuilder b = new StringBuilder(I18n.t("<p>Dear ")).append(HtmlUtils.htmlEscape(clientName)).append(",</p>");
+        b.append(I18n.t("<p>Our records show that the following fees are overdue. If you have already paid, please ignore this reminder and accept our thanks.</p>"));
+        b.append(I18n.t("<table cellpadding=\"4\" style=\"border-collapse:collapse;\" border=\"1\"><tr><th>Invoice</th><th>Matter</th><th>Due</th><th>Days overdue</th><th align=\"right\">Still to pay</th></tr>"));
         for (Item i : list) {
             b.append("<tr><td>").append(HtmlUtils.htmlEscape(String.valueOf(i.bill().getInvoiceNumber()))).append("</td><td>").append(HtmlUtils.htmlEscape(i.m().getNumber() + " " + i.m().getTitle()))
                     .append("</td><td>").append(i.due()).append("</td><td>").append(i.daysOverdue()).append("</td><td align=\"right\">").append(LawPrintFiles.amount(cur, i.outstanding())).append("</td></tr>");
         }
-        b.append("<tr><td colspan=\"4\"><b>Total</b></td><td align=\"right\"><b>").append(LawPrintFiles.amount(cur, total)).append("</b></td></tr></table>");
-        b.append("<p>A statement of your fees is attached. Please arrange payment as soon as you can, or contact us if there is a problem with any invoice.</p>");
+        b.append(I18n.t("<tr><td colspan=\"4\"><b>Total</b></td><td align=\"right\"><b>")).append(LawPrintFiles.amount(cur, total)).append("</b></td></tr></table>");
+        b.append(I18n.t("<p>A statement of your fees is attached. Please arrange payment as soon as you can, or contact us if there is a problem with any invoice.</p>"));
         contact(b);
         return b.toString();
     }
@@ -259,17 +260,17 @@ public class LawCollectionService {
             BigDecimal owed = list.stream().map(Item::outstanding).reduce(ZERO, BigDecimal::add);
             if (email == null) {
                 skipped++;
-                items.add(new ReminderItem(e.getKey(), name, null, list.size(), owed, "This client has no e-mail address."));
+                items.add(new ReminderItem(e.getKey(), name, null, list.size(), owed, I18n.t("This client has no e-mail address.")));
                 continue;
             }
             try {
                 FeeStatementData d = a != null ? statementData(a, e.getKey(), null, null) : systemStatement(e.getKey());
                 byte[] pdf = files.feeStatement(d);
-                mailService.send(email, "Overdue fees - " + files.businessName(), reminderHtml(name, list), List.of(new EmailAttachment("fee-statement-" + slug(name) + ".pdf", "application/pdf", pdf)));
+                mailService.send(email, I18n.t("Overdue fees - ") + files.businessName(), reminderHtml(name, list), List.of(new EmailAttachment("fee-statement-" + slug(name) + ".pdf", "application/pdf", pdf)));
             } catch (Exception ex) {
                 log.warn("Could not send the fee reminder to {}: {}", name, ex.getMessage());
                 skipped++;
-                items.add(new ReminderItem(e.getKey(), name, email, list.size(), owed, "The e-mail could not be sent."));
+                items.add(new ReminderItem(e.getKey(), name, email, list.size(), owed, I18n.t("The e-mail could not be sent.")));
                 continue;
             }
             Instant now = Instant.now();
@@ -291,7 +292,7 @@ public class LawCollectionService {
     private FeeStatementData systemStatement(Long customerId) {
         LocalDate today = LocalDate.now();
         List<Item> all = items(m -> customerId.equals(m.getClientCustomerId()), today).stream().sorted(Comparator.comparing(Item::date)).toList();
-        Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound("Client not found."));
+        Customer c = customerRepository.findById(customerId).orElseThrow(() -> ApiException.notFound(I18n.t("Client not found.")));
         List<FeeLine> lines = all.stream().map(i -> new FeeLine(i.date(), i.bill().getInvoiceNumber(), i.m().getNumber() + " " + i.m().getTitle(), i.total(), i.paid(), i.outstanding(), i.due(), i.daysOverdue())).toList();
         return new FeeStatementData(c.getName(), c.getEmail(), c.getPhone(), today, null, null, lines, all.stream().map(Item::total).reduce(ZERO, BigDecimal::add),
                 all.stream().map(Item::paid).reduce(ZERO, BigDecimal::add), all.stream().map(Item::outstanding).reduce(ZERO, BigDecimal::add), aging(all.stream().filter(Item::open).toList()));
@@ -307,10 +308,10 @@ public class LawCollectionService {
     @Transactional
     public RemindResult remind(Actor a, boolean canBill, RemindRequest r) {
         requireSender(a, canBill);
-        if (r == null || r.billIds() == null || r.billIds().isEmpty()) throw ApiException.badRequest("Choose the invoices to remind about.");
+        if (r == null || r.billIds() == null || r.billIds().isEmpty()) throw ApiException.badRequest(I18n.t("Choose the invoices to remind about."));
         Set<Long> want = Set.copyOf(r.billIds());
         List<Item> chosen = items(m -> access.canView(m, a), LocalDate.now()).stream().filter(i -> want.contains(i.bill().getId()) && i.open() && i.daysOverdue() > 0).toList();
-        if (chosen.isEmpty()) throw ApiException.badRequest("None of those invoices is overdue.");
+        if (chosen.isEmpty()) throw ApiException.badRequest(I18n.t("None of those invoices is overdue."));
         return sendGroups(byClient(chosen), a);
     }
 
@@ -330,7 +331,7 @@ public class LawCollectionService {
             Item f = e.getValue().get(0);
             String email = f.customer() != null && f.customer().getEmail() != null && !f.customer().getEmail().isBlank() ? f.customer().getEmail().trim() : null;
             out.add(new ReminderItem(e.getKey(), f.m().getClientName(), email, e.getValue().size(), e.getValue().stream().map(Item::outstanding).reduce(ZERO, BigDecimal::add),
-                    email == null ? "This client has no e-mail address." : null));
+                    email == null ? I18n.t("This client has no e-mail address.") : null));
         }
         return out;
     }

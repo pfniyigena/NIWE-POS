@@ -1,5 +1,6 @@
 package com.posapp.realestate;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.email.MailService;
 import com.posapp.realestate.RealEstateAccess.Actor;
@@ -117,7 +118,7 @@ public class ReFollowUpService {
         for (Map.Entry<Long, List<LeadRow>[]> e : byAgent.entrySet()) {
             AppUser u = userRepository.findById(e.getKey()).orElse(null);
             List<LeadRow>[] x = e.getValue();
-            String name = u == null ? "Someone" : RealEstateAccess.name(u);
+            String name = u == null ? I18n.t("Someone") : RealEstateAccess.name(u);
             String email = u == null || u.getEmail() == null ? null : u.getEmail().trim();
             String status;
             if (u == null || !u.isActive() || email == null || !EMAIL.matcher(email).matches()) {
@@ -144,8 +145,8 @@ public class ReFollowUpService {
             }
             details.add(new DigestAgent(e.getKey(), name, email, x[0].size(), x[1].size(), x[2].size(), status));
         }
-        String summary = (preview ? "Preview: " : "") + (preview ? details.stream().filter(d -> "WOULD_SEND".equals(d.status())).count() + " agents would get an e-mail" : sent + " e-mailed")
-                + ", " + skipped + " skipped (no e-mail address or e-mail not set up), " + failed + " failed, " + unassigned + " leads with nobody assigned.";
+        String summary = (preview ? I18n.t("Preview: ") : "") + (preview ? details.stream().filter(d -> "WOULD_SEND".equals(d.status())).count() + I18n.t(" agents would get an e-mail") : sent + " e-mailed")
+                + ", " + skipped + I18n.t(" skipped (no e-mail address or e-mail not set up), ") + failed + " failed, " + unassigned + I18n.t(" leads with nobody assigned.");
         if (!preview) {
             st.setFollowUpLastRun(LocalDate.now());
             st.setFollowUpLastSummary(by + ": " + summary);
@@ -157,17 +158,17 @@ public class ReFollowUpService {
     static String subject(List<LeadRow>[] x) {
         List<String> parts = new ArrayList<>();
         if (!x[0].isEmpty()) parts.add(x[0].size() + " late");
-        if (!x[1].isEmpty()) parts.add(x[1].size() + " due today");
-        if (!x[2].isEmpty()) parts.add(x[2].size() + " gone quiet");
-        return "Your lead follow-ups: " + String.join(", ", parts);
+        if (!x[1].isEmpty()) parts.add(x[1].size() + I18n.t(" due today"));
+        if (!x[2].isEmpty()) parts.add(x[2].size() + I18n.t(" gone quiet"));
+        return I18n.t("Your lead follow-ups: ") + String.join(", ", parts);
     }
 
     static String body(String name, List<LeadRow>[] x, int staleDays) {
-        StringBuilder b = new StringBuilder("<p>Good morning " + HtmlUtils.htmlEscape(name) + ",</p><p>These are the leads that need a call from you today.</p>");
-        section(b, "Late follow-ups", x[0], true);
-        section(b, "Due today", x[1], false);
-        section(b, "Gone quiet (no contact for " + staleDays + " days or more)", x[2], false);
-        b.append("<p>Open <strong>Real Estate &gt; My follow-ups</strong> to log the call and set the next date.</p>");
+        StringBuilder b = new StringBuilder(I18n.t("<p>Good morning ") + HtmlUtils.htmlEscape(name) + I18n.t(",</p><p>These are the leads that need a call from you today.</p>"));
+        section(b, I18n.t("Late follow-ups"), x[0], true);
+        section(b, I18n.t("Due today"), x[1], false);
+        section(b, I18n.t("Gone quiet (no contact for ") + staleDays + I18n.t(" days or more)"), x[2], false);
+        b.append(I18n.t("<p>Open <strong>Real Estate &gt; My follow-ups</strong> to log the call and set the next date.</p>"));
         return b.toString();
     }
 
@@ -184,11 +185,11 @@ public class ReFollowUpService {
             if (r.propertyCode() != null) b.append(" · ").append(HtmlUtils.htmlEscape(r.propertyCode()));
             if (showDate && r.nextFollowUp() != null) {
                 long late = ChronoUnit.DAYS.between(r.nextFollowUp(), today);
-                b.append(" · was due ").append(r.nextFollowUp()).append(" (").append(late).append(late == 1 ? " day" : " days").append(" late)");
+                b.append(I18n.t(" · was due ")).append(r.nextFollowUp()).append(" (").append(late).append(late == 1 ? " day" : " days").append(" late)");
             }
             b.append("</li>");
         }
         b.append("</ul>");
-        if (rows.size() > MAX_LISTED) b.append("<p>… and ").append(rows.size() - MAX_LISTED).append(" more.</p>");
+        if (rows.size() > MAX_LISTED) b.append(I18n.t("<p>… and ")).append(rows.size() - MAX_LISTED).append(" more.</p>");
     }
 }

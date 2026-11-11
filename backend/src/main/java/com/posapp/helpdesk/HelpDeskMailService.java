@@ -1,5 +1,6 @@
 package com.posapp.helpdesk;
 
+import com.posapp.i18n.I18n;
 import com.posapp.email.MailService;
 import com.posapp.user.AppUser;
 import com.posapp.user.UserRepository;
@@ -54,13 +55,13 @@ public class HelpDeskMailService {
         if (recipients.isEmpty()) {
             return;
         }
-        String subject = "New help desk ticket: " + ticket.getTicketNumber();
-        String html = "<p>A new " + (ticket.getType() == HelpDeskTicketType.CUSTOMER ? "customer" : "internal")
-                + " ticket has been raised.</p>"
-                + "<p><strong>" + escapeHtml(ticket.getSubject()) + "</strong></p>"
-                + "<p>Ticket: " + escapeHtml(ticket.getTicketNumber()) + "</p>"
-                + "<p>Priority: " + ticket.getPriority() + "</p>"
-                + (ticket.getRequesterName() != null ? "<p>From: " + escapeHtml(ticket.getRequesterName()) + "</p>" : "");
+        String subject = I18n.t("New help desk ticket: ") + ticket.getTicketNumber();
+        String html = I18n.t("<p>A new ") + (ticket.getType() == HelpDeskTicketType.CUSTOMER ? "customer" : "internal")
+                + I18n.t(" ticket has been raised.</p>"
+                + "<p><strong>") + escapeHtml(ticket.getSubject()) + I18n.t("</strong></p>"
+                + "<p>Ticket: ") + escapeHtml(ticket.getTicketNumber()) + I18n.t("</p>"
+                + "<p>Priority: ") + ticket.getPriority() + "</p>"
+                + (ticket.getRequesterName() != null ? I18n.t("<p>From: ") + escapeHtml(ticket.getRequesterName()) + "</p>" : "");
         for (String to : recipients) {
             send(to, subject, html);
         }
@@ -69,9 +70,9 @@ public class HelpDeskMailService {
     /** Fired from HelpDeskTicketService.assign only when the assignee actually changes to a new non-null value. */
     @Async
     public void notifyTicketAssigned(HelpDeskTicket ticket) {
-        String subject = "Help desk ticket assigned: " + ticket.getTicketNumber();
-        String html = "<p>Ticket " + escapeHtml(ticket.getTicketNumber()) + " (\"" + escapeHtml(ticket.getSubject())
-                + "\") has been assigned to " + escapeHtml(ticket.getAssignedToUserFullName()) + ".</p>";
+        String subject = I18n.t("Help desk ticket assigned: ") + ticket.getTicketNumber();
+        String html = I18n.t("<p>Ticket ") + escapeHtml(ticket.getTicketNumber()) + " (\"" + escapeHtml(ticket.getSubject())
+                + I18n.t("\") has been assigned to ") + escapeHtml(ticket.getAssignedToUserFullName()) + ".</p>";
         for (String to : recipientsForAssigneeAndCreator(ticket)) {
             send(to, subject, html);
         }
@@ -80,13 +81,13 @@ public class HelpDeskMailService {
     /** Fired from HelpDeskTicketService.resolve. */
     @Async
     public void notifyTicketResolved(HelpDeskTicket ticket) {
-        String subject = "Help desk ticket resolved: " + ticket.getTicketNumber();
-        String html = "<p>Ticket " + escapeHtml(ticket.getTicketNumber()) + " (\"" + escapeHtml(ticket.getSubject())
-                + "\") has been marked resolved.</p>"
+        String subject = I18n.t("Help desk ticket resolved: ") + ticket.getTicketNumber();
+        String html = I18n.t("<p>Ticket ") + escapeHtml(ticket.getTicketNumber()) + " (\"" + escapeHtml(ticket.getSubject())
+                + I18n.t("\") has been marked resolved.</p>")
                 + (ticket.getResolutionNotes() != null && !ticket.getResolutionNotes().isBlank()
-                        ? "<p><strong>Resolution notes:</strong><br/>" + escapeHtml(ticket.getResolutionNotes()) + "</p>" : "")
+                        ? I18n.t("<p><strong>Resolution notes:</strong><br/>") + escapeHtml(ticket.getResolutionNotes()) + "</p>" : "")
                 + (settingsService.entity().isSatisfactionEnabled() && ticket.getRequesterEmail() != null
-                        ? "<p>You can rate our help on the Help Desk page of our website: look up this ticket with your e-mail address.</p>" : "");
+                        ? I18n.t("<p>You can rate our help on the Help Desk page of our website: look up this ticket with your e-mail address.</p>") : "");
         for (String to : recipientsForAssigneeAndCreator(ticket)) {
             send(to, subject, html);
         }
@@ -101,10 +102,10 @@ public class HelpDeskMailService {
             return;
         }
         String subject = "Re: " + ticket.getSubject() + " [" + ticket.getTicketNumber() + "]";
-        String html = "<p>" + escapeHtml(agent == null ? "Support" : agent) + " replied to your ticket <strong>" + escapeHtml(ticket.getTicketNumber()) + "</strong>:</p>"
+        String html = "<p>" + escapeHtml(agent == null ? I18n.t("Support") : agent) + I18n.t(" replied to your ticket <strong>") + escapeHtml(ticket.getTicketNumber()) + "</strong>:</p>"
                 + "<blockquote style=\"margin:0 0 1em 0;padding-left:1em;border-left:3px solid #ccc;white-space:pre-wrap;\">" + escapeHtml(body) + "</blockquote>"
                 + (settingsService.entity().isPublicReplyEnabled()
-                        ? "<p>To answer, open the Help Desk page of our website, look the ticket up with this e-mail address and add your reply.</p>"
+                        ? I18n.t("<p>To answer, open the Help Desk page of our website, look the ticket up with this e-mail address and add your reply.</p>")
                         : "");
         send(to, subject, html);
     }
@@ -119,10 +120,10 @@ public class HelpDeskMailService {
         } else {
             recipients.addAll(settingsService.getNotificationEmailList());
         }
-        String subject = "New reply on help desk ticket " + ticket.getTicketNumber();
-        String html = "<p>" + escapeHtml(ticket.getRequesterName() == null ? "The requester" : ticket.getRequesterName()) + " replied to ticket <strong>"
-                + escapeHtml(ticket.getTicketNumber()) + "</strong> (" + escapeHtml(ticket.getSubject()) + "):</p>"
-                + "<blockquote style=\"margin:0;padding-left:1em;border-left:3px solid #ccc;white-space:pre-wrap;\">" + escapeHtml(body) + "</blockquote>";
+        String subject = I18n.t("New reply on help desk ticket ") + ticket.getTicketNumber();
+        String html = "<p>" + escapeHtml(ticket.getRequesterName() == null ? I18n.t("The requester") : ticket.getRequesterName()) + I18n.t(" replied to ticket <strong>")
+                + escapeHtml(ticket.getTicketNumber()) + "</strong> (" + escapeHtml(ticket.getSubject()) + I18n.t("):</p>"
+                + "<blockquote style=\"margin:0;padding-left:1em;border-left:3px solid #ccc;white-space:pre-wrap;\">") + escapeHtml(body) + "</blockquote>";
         for (String to : recipients) {
             send(to, subject, html);
         }
@@ -137,14 +138,14 @@ public class HelpDeskMailService {
             recipients.add(assignee);
         }
         String what = switch (kind) {
-            case "RESPONSE_BREACH" -> "No first response yet - the response deadline has passed";
-            case "RESOLUTION_WARNING" -> "The resolution deadline is close";
-            default -> "The resolution deadline has passed";
+            case "RESPONSE_BREACH" -> I18n.t("No first response yet - the response deadline has passed");
+            case "RESOLUTION_WARNING" -> I18n.t("The resolution deadline is close");
+            default -> I18n.t("The resolution deadline has passed");
         };
-        String subject = ("RESOLUTION_WARNING".equals(kind) ? "Deadline close: " : "SLA breached: ") + ticket.getTicketNumber();
+        String subject = ("RESOLUTION_WARNING".equals(kind) ? I18n.t("Deadline close: ") : I18n.t("SLA breached: ")) + ticket.getTicketNumber();
         String html = "<p><strong>" + escapeHtml(what) + ".</strong></p>"
-                + "<p>Ticket " + escapeHtml(ticket.getTicketNumber()) + ": " + escapeHtml(ticket.getSubject()) + "</p>"
-                + "<p>Priority: " + ticket.getPriority() + " &middot; Assigned to: " + escapeHtml(ticket.getAssignedToUserFullName() == null ? "nobody" : ticket.getAssignedToUserFullName()) + "</p>";
+                + "<p>Ticket " + escapeHtml(ticket.getTicketNumber()) + ": " + escapeHtml(ticket.getSubject()) + I18n.t("</p>"
+                + "<p>Priority: ") + ticket.getPriority() + I18n.t(" &middot; Assigned to: ") + escapeHtml(ticket.getAssignedToUserFullName() == null ? "nobody" : ticket.getAssignedToUserFullName()) + "</p>";
         for (String to : recipients) {
             send(to, subject, html);
         }

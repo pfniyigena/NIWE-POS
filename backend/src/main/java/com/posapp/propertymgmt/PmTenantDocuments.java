@@ -1,5 +1,6 @@
 package com.posapp.propertymgmt;
 
+import com.posapp.i18n.I18n;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -41,7 +42,7 @@ public class PmTenantDocuments {
 
     public String businessName() {
         StoreSettings s = store();
-        return s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : "Your property manager";
+        return s != null && s.getBusinessName() != null && !s.getBusinessName().isBlank() ? s.getBusinessName().trim() : I18n.t("Your property manager");
     }
 
     private StoreSettings store() {
@@ -50,7 +51,7 @@ public class PmTenantDocuments {
 
     private static String money(BigDecimal v) {
         if (v == null) return "";
-        return new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH)).format(v);
+        return new DecimalFormat("#,##0.00", I18n.symbols()).format(v);
     }
 
     private static String nz(String s) {
@@ -76,7 +77,7 @@ public class PmTenantDocuments {
         doc.add(new Paragraph(businessName(), bold(15)));
         StringBuilder b = new StringBuilder();
         if (s != null) {
-            for (String part : new String[]{s.getAddress(), s.getPhone(), s.getEmail(), s.getTaxId() == null || s.getTaxId().isBlank() ? null : "Tax ID " + s.getTaxId()}) {
+            for (String part : new String[]{s.getAddress(), s.getPhone(), s.getEmail(), s.getTaxId() == null || s.getTaxId().isBlank() ? null : I18n.t("Tax ID ") + s.getTaxId()}) {
                 if (part != null && !part.isBlank()) b.append(b.length() == 0 ? "" : "  |  ").append(part.trim().replace("\n", ", "));
             }
         }
@@ -124,21 +125,21 @@ public class PmTenantDocuments {
             Document doc = new Document(PageSize.A4, 36, 36, 36, 36);
             PdfWriter.getInstance(doc, out);
             doc.open();
-            head(doc, "Tenant statement");
-            doc.add(facts(new String[][]{{"Tenant", a.tenantName() + " (" + a.tenantCode() + ")"}, {"Period", a.from().format(PmTenantAccountService.DAY) + " to " + a.to().format(PmTenantAccountService.DAY)},
-                    {"Currency", cur}}));
+            head(doc, I18n.t("Tenant statement"));
+            doc.add(facts(new String[][]{{I18n.t("Tenant"), a.tenantName() + " (" + a.tenantCode() + ")"}, {I18n.t("Period"), a.from().format(I18n.shortDay()) + " to " + a.to().format(I18n.shortDay())},
+                    {I18n.t("Currency"), cur}}));
             PdfPTable t = new PdfPTable(new float[]{1.6f, 3.1f, 2.6f, 2.0f, 2.0f, 2.1f});
             t.setWidthPercentage(100);
-            headerCells(t, new String[]{"Date", "Description", "Reference", "Charged", "Paid", "Balance"},
+            headerCells(t, new String[]{I18n.t("Date"), I18n.t("Description"), I18n.t("Reference"), I18n.t("Charged"), I18n.t("Paid"), I18n.t("Balance")},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT});
             t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
-            t.addCell(cell("Balance brought forward", bold(9), Element.ALIGN_LEFT, SOFT));
+            t.addCell(cell(I18n.t("Balance brought forward"), bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell("", plain(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell("", plain(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(money(a.opening()), bold(9), Element.ALIGN_RIGHT, SOFT));
             for (AccountLine l : a.lines()) {
-                t.addCell(cell(l.date().format(PmTenantAccountService.DAY), plain(9), Element.ALIGN_LEFT, null));
+                t.addCell(cell(l.date().format(I18n.shortDay()), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(l.description(), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(nz(l.reference()), plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(cell(money(l.charge()), plain(9), Element.ALIGN_RIGHT, null));
@@ -146,25 +147,25 @@ public class PmTenantDocuments {
                 t.addCell(cell(money(l.balance()), plain(9), Element.ALIGN_RIGHT, null));
             }
             t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
-            t.addCell(cell("Totals for the period", bold(9), Element.ALIGN_LEFT, SOFT));
+            t.addCell(cell(I18n.t("Totals for the period"), bold(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell("", plain(9), Element.ALIGN_LEFT, SOFT));
             t.addCell(cell(money(a.charged()), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell(money(a.paid()), bold(9), Element.ALIGN_RIGHT, SOFT));
             t.addCell(cell("", plain(9), Element.ALIGN_RIGHT, SOFT));
             doc.add(t);
-            Paragraph close = new Paragraph((a.closing().signum() > 0 ? "Balance owed at " : "Balance at ") + a.to().format(PmTenantAccountService.DAY) + ":  " + money(a.closing()), bold(12));
+            Paragraph close = new Paragraph((a.closing().signum() > 0 ? I18n.t("Balance owed at ") : I18n.t("Balance at ")) + a.to().format(I18n.shortDay()) + ":  " + money(a.closing()), bold(12));
             close.setSpacingBefore(12);
             close.setAlignment(Element.ALIGN_RIGHT);
             doc.add(close);
             if (a.overdue().signum() > 0) {
-                Paragraph od = new Paragraph("Of which overdue today: " + money(a.overdue()), plain(10));
+                Paragraph od = new Paragraph(I18n.t("Of which overdue today: ") + money(a.overdue()), plain(10));
                 od.setAlignment(Element.ALIGN_RIGHT);
                 doc.add(od);
             }
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the tenant statement", e);
+            throw new IllegalStateException(I18n.t("Failed to build the tenant statement"), e);
         }
     }
 
@@ -174,13 +175,13 @@ public class PmTenantDocuments {
             Document doc = new Document(PageSize.A4, 36, 36, 36, 36);
             PdfWriter.getInstance(doc, out);
             doc.open();
-            head(doc, "Rent receipt");
+            head(doc, I18n.t("Rent receipt"));
             var p = r.payment();
-            doc.add(facts(new String[][]{{"Receipt no.", p.receiptNumber()}, {"Date", p.paidDate() == null ? "" : p.paidDate().format(PmTenantAccountService.DAY)}, {"Received from", p.tenantName()},
-                    {"For", (p.leaseCode() == null ? "" : "Lease " + p.leaseCode() + " · ") + nz(p.unit())}, {"Paid by", p.method()}, {"Reference", p.reference()}, {"Received by", r.recordedBy()}}));
+            doc.add(facts(new String[][]{{I18n.t("Receipt no."), p.receiptNumber()}, {I18n.t("Date"), p.paidDate() == null ? "" : p.paidDate().format(I18n.shortDay())}, {I18n.t("Received from"), p.tenantName()},
+                    {I18n.t("For"), (p.leaseCode() == null ? "" : I18n.t("Lease ") + p.leaseCode() + " · ") + nz(p.unit())}, {I18n.t("Paid by"), p.method()}, {I18n.t("Reference"), p.reference()}, {I18n.t("Received by"), r.recordedBy()}}));
             PdfPTable t = new PdfPTable(new float[]{2.4f, 3.6f, 1.8f, 1.8f, 1.8f});
             t.setWidthPercentage(100);
-            headerCells(t, new String[]{"Invoice", "Rent for", "Invoice total", "Paid now", "Still owed"},
+            headerCells(t, new String[]{I18n.t("Invoice"), I18n.t("Rent for"), I18n.t("Invoice total"), I18n.t("Paid now"), I18n.t("Still owed")},
                     new int[]{Element.ALIGN_LEFT, Element.ALIGN_LEFT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT, Element.ALIGN_RIGHT});
             for (ReceiptLine l : r.lines()) {
                 t.addCell(cell(nz(l.invoiceNumber()), plain(9), Element.ALIGN_LEFT, null));
@@ -190,17 +191,17 @@ public class PmTenantDocuments {
                 t.addCell(cell(money(l.balanceAfter()), plain(9), Element.ALIGN_RIGHT, null));
             }
             doc.add(t);
-            Paragraph total = new Paragraph("Total received:  " + cur + " " + money(p.amount()), bold(13));
+            Paragraph total = new Paragraph(I18n.t("Total received:  ") + cur + " " + money(p.amount()), bold(13));
             total.setSpacingBefore(14);
             total.setAlignment(Element.ALIGN_RIGHT);
             doc.add(total);
-            Paragraph thanks = new Paragraph("Thank you.", plain(10));
+            Paragraph thanks = new Paragraph(I18n.t("Thank you."), plain(10));
             thanks.setSpacingBefore(18);
             doc.add(thanks);
             doc.close();
             return out.toByteArray();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build the rent receipt", e);
+            throw new IllegalStateException(I18n.t("Failed to build the rent receipt"), e);
         }
     }
 

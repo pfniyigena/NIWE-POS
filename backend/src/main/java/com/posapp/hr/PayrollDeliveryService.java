@@ -1,5 +1,6 @@
 package com.posapp.hr;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.branch.BranchAccessService;
 import com.posapp.common.ApiException;
@@ -71,17 +72,17 @@ public class PayrollDeliveryService {
     public PayslipEmailResultDto emailPayslips(Long runId, Long lineId) {
         PayrollRun run = approvedRun(runId);
         if (!mailService.isConfigured()) {
-            throw ApiException.badRequest("Email isn't configured yet — set up SMTP in Admin > Settings > Email first");
+            throw ApiException.badRequest(I18n.t("Email isn't configured yet — set up SMTP in Admin > Settings > Email first"));
         }
         StoreSettings store = storeSettingsRepository.findAll().stream().findFirst().orElse(null);
-        String business = store != null && store.getBusinessName() != null ? store.getBusinessName() : "Payslip";
+        String business = store != null && store.getBusinessName() != null ? store.getBusinessName() : I18n.t("Payslip");
         String currency = store != null && store.getCurrencySymbol() != null ? store.getCurrencySymbol() : "";
         String period = MONTHS[run.getPeriodMonth() - 1] + " " + run.getPeriodYear();
 
         List<PayrollLine> lines = run.getLines().stream().filter(l -> lineId == null || l.getId().equals(lineId))
                 .sorted(Comparator.comparing(PayrollLine::getEmployeeName, Comparator.nullsLast(String::compareToIgnoreCase))).toList();
         if (lineId != null && lines.isEmpty()) {
-            throw ApiException.notFound("Payslip not found");
+            throw ApiException.notFound(I18n.t("Payslip not found"));
         }
         int sent = 0;
         List<String> noEmail = new ArrayList<>();
@@ -96,7 +97,7 @@ public class PayrollDeliveryService {
                 PayrollPaperService.Pdf file = paperService.payslipFile(run, l, e);
                 String filename = file.filename();
                 byte[] pdf = file.bytes();
-                mailService.send(e.getEmail(), "Your payslip for " + period + " — " + business, html(business, period, currency, l),
+                mailService.send(e.getEmail(), I18n.t("Your payslip for ") + period + " — " + business, html(business, period, currency, l),
                         List.of(new EmailAttachment(filename, "application/pdf", pdf)));
                 sent++;
             } catch (RuntimeException ex) {
@@ -109,23 +110,23 @@ public class PayrollDeliveryService {
 
     private List<List<String>> pdfRows(PayrollLine l) {
         List<List<String>> rows = new ArrayList<>();
-        rows.add(List.of("Employee", l.getEmployeeName() + " (" + l.getEmployeeNumber() + ")"));
-        rows.add(List.of("Days paid", l.getPayableDays() + " of " + l.getDaysInMonth()));
+        rows.add(List.of(I18n.t("Employee"), l.getEmployeeName() + " (" + l.getEmployeeNumber() + ")"));
+        rows.add(List.of(I18n.t("Days paid"), l.getPayableDays() + " of " + l.getDaysInMonth()));
         for (PayrollItem i : sorted(l)) {
             if (i.getKind() == ItemKind.EARNING) {
                 rows.add(List.of(i.getName(), fmt(i.getAmount())));
             }
         }
-        rows.add(List.of("GROSS PAY", fmt(l.getGrossPay())));
+        rows.add(List.of(I18n.t("GROSS PAY"), fmt(l.getGrossPay())));
         for (PayrollItem i : sorted(l)) {
             if (i.getKind() == ItemKind.TAX || i.getKind() == ItemKind.DEDUCTION) {
                 rows.add(List.of(i.getName() + " (deduction)", fmt(i.getAmount())));
             }
         }
-        rows.add(List.of("NET PAY", fmt(l.getNetPay())));
+        rows.add(List.of(I18n.t("NET PAY"), fmt(l.getNetPay())));
         for (PayrollItem i : sorted(l)) {
             if (i.getKind() == ItemKind.EMPLOYER) {
-                rows.add(List.of(i.getName() + " (paid by employer)", fmt(i.getAmount())));
+                rows.add(List.of(i.getName() + I18n.t(" (paid by employer)"), fmt(i.getAmount())));
             }
         }
         return rows;
@@ -133,28 +134,28 @@ public class PayrollDeliveryService {
 
     private String html(String business, String period, String currency, PayrollLine l) {
         StringBuilder b = new StringBuilder();
-        b.append("<p>Dear ").append(esc(l.getEmployeeName())).append(",</p>");
-        b.append("<p>Here is your payslip for <strong>").append(esc(period)).append("</strong> (PDF attached).</p>");
+        b.append(I18n.t("<p>Dear ")).append(esc(l.getEmployeeName())).append(",</p>");
+        b.append(I18n.t("<p>Here is your payslip for <strong>")).append(esc(period)).append(I18n.t("</strong> (PDF attached).</p>"));
         b.append("<table cellpadding=\"4\" style=\"border-collapse:collapse;\">");
         for (PayrollItem i : sorted(l)) {
             if (i.getKind() == ItemKind.EARNING) {
                 row(b, i.getName(), i.getAmount(), false);
             }
         }
-        row(b, "Gross pay", l.getGrossPay(), true);
+        row(b, I18n.t("Gross pay"), l.getGrossPay(), true);
         for (PayrollItem i : sorted(l)) {
             if (i.getKind() == ItemKind.TAX || i.getKind() == ItemKind.DEDUCTION) {
                 row(b, i.getName(), i.getAmount().negate(), false);
             }
         }
-        row(b, "Net pay " + (currency.isBlank() ? "" : "(" + currency + ")"), l.getNetPay(), true);
+        row(b, I18n.t("Net pay ") + (currency.isBlank() ? "" : "(" + currency + ")"), l.getNetPay(), true);
         b.append("</table>");
-        b.append("<p>Kind regards,<br/>").append(esc(business)).append("</p>");
+        b.append(I18n.t("<p>Kind regards,<br/>")).append(esc(business)).append("</p>");
         return b.toString();
     }
 
     private void row(StringBuilder b, String label, BigDecimal amount, boolean bold) {
-        String style = bold ? " style=\"border-top:1px solid #999;font-weight:bold;\"" : "";
+        String style = bold ? I18n.t(" style=\"border-top:1px solid #999;font-weight:bold;\"") : "";
         b.append("<tr").append(style).append("><td>").append(esc(label)).append("</td><td align=\"right\">").append(fmt(amount)).append("</td></tr>");
     }
 
@@ -211,7 +212,7 @@ public class PayrollDeliveryService {
         rows.sort(Comparator.comparing(BankRow::surname, String.CASE_INSENSITIVE_ORDER).thenComparing(BankRow::name, String.CASE_INSENSITIVE_ORDER));
         auditLogService.record("PAYROLL_BANK_FILE", "Downloaded the bank transfer file for " + period + " (" + rows.size() + " payments)", "PayrollRun", runId);
 
-        String[] headers = {"No", "SURNAME", "NAME", "NET SALARY", "ACCOUNT NO", "BANK NAME"};
+        String[] headers = {I18n.t("No"), "SURNAME", "NAME", I18n.t("NET SALARY"), I18n.t("ACCOUNT NO"), I18n.t("BANK NAME")};
         if ("xlsx".equalsIgnoreCase(format)) {
             return new FileOut("bank-transfers-" + period + ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bankWorkbook(headers, rows));
         }
@@ -263,7 +264,7 @@ public class PayrollDeliveryService {
             wb.write(out);
             return out.toByteArray();
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to build the bank file", e);
+            throw new IllegalStateException(I18n.t("Failed to build the bank file"), e);
         }
     }
 
@@ -279,11 +280,11 @@ public class PayrollDeliveryService {
 
     private PayrollRun approvedRun(Long runId) {
         if (branchAccessService.isRestricted()) {
-            throw ApiException.forbidden("Payroll covers all branches — it's only available to users who aren't limited to certain branches.");
+            throw ApiException.forbidden(I18n.t("Payroll covers all branches — it's only available to users who aren't limited to certain branches."));
         }
-        PayrollRun run = runRepository.findById(runId).orElseThrow(() -> ApiException.notFound("Payroll run not found"));
+        PayrollRun run = runRepository.findById(runId).orElseThrow(() -> ApiException.notFound(I18n.t("Payroll run not found")));
         if (run.getStatus() == PayrollStatus.DRAFT) {
-            throw ApiException.conflict("Approve the payroll first — payslips and the bank file are only available for an approved payroll.");
+            throw ApiException.conflict(I18n.t("Approve the payroll first — payslips and the bank file are only available for an approved payroll."));
         }
         return run;
     }

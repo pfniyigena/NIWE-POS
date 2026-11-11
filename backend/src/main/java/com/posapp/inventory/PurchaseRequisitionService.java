@@ -1,5 +1,6 @@
 package com.posapp.inventory;
 
+import com.posapp.i18n.I18n;
 import com.posapp.alerts.AlertMailService;
 import com.posapp.audit.AuditLogService;
 import com.posapp.catalog.CatalogService;
@@ -100,7 +101,7 @@ public class PurchaseRequisitionService {
     public PurchaseRequisitionDto updateDraft(Long id, PurchaseRequisitionRequest request) {
         PurchaseRequisition r = getEntityOrThrow(id);
         if (r.getStatus() != PurchaseRequisitionStatus.DRAFT) {
-            throw ApiException.badRequest("Only a draft requisition can be edited — " + r.getRequisitionNumber() + " is " + r.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a draft requisition can be edited — ") + r.getRequisitionNumber() + " is " + r.getStatus());
         }
         r.getLines().clear();
         applyRequest(r, request);
@@ -119,7 +120,7 @@ public class PurchaseRequisitionService {
     public PurchaseRequisitionDto submit(Long id) {
         PurchaseRequisition r = getEntityOrThrow(id);
         if (r.getStatus() != PurchaseRequisitionStatus.DRAFT) {
-            throw ApiException.badRequest("Only a draft requisition can be submitted — " + r.getRequisitionNumber() + " is " + r.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a draft requisition can be submitted — ") + r.getRequisitionNumber() + " is " + r.getStatus());
         }
         r.setStatus(PurchaseRequisitionStatus.PENDING_APPROVAL);
         PurchaseRequisition saved = purchaseRequisitionRepository.save(r);
@@ -133,7 +134,7 @@ public class PurchaseRequisitionService {
     public PurchaseRequisitionDto approve(Long id) {
         PurchaseRequisition r = getEntityOrThrow(id);
         if (r.getStatus() != PurchaseRequisitionStatus.PENDING_APPROVAL) {
-            throw ApiException.badRequest("Only a pending requisition can be approved — " + r.getRequisitionNumber() + " is " + r.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a pending requisition can be approved — ") + r.getRequisitionNumber() + " is " + r.getStatus());
         }
         r.setStatus(PurchaseRequisitionStatus.APPROVED);
         r.setApprovedAt(Instant.now());
@@ -148,7 +149,7 @@ public class PurchaseRequisitionService {
     public PurchaseRequisitionDto reject(Long id, String reason) {
         PurchaseRequisition r = getEntityOrThrow(id);
         if (r.getStatus() != PurchaseRequisitionStatus.PENDING_APPROVAL) {
-            throw ApiException.badRequest("Only a pending requisition can be rejected — " + r.getRequisitionNumber() + " is " + r.getStatus());
+            throw ApiException.badRequest(I18n.t("Only a pending requisition can be rejected — ") + r.getRequisitionNumber() + " is " + r.getStatus());
         }
         r.setStatus(PurchaseRequisitionStatus.REJECTED);
         r.setRejectedAt(Instant.now());
@@ -163,7 +164,7 @@ public class PurchaseRequisitionService {
     public PurchaseRequisitionDto cancel(Long id) {
         PurchaseRequisition r = getEntityOrThrow(id);
         if (r.getStatus() != PurchaseRequisitionStatus.DRAFT && r.getStatus() != PurchaseRequisitionStatus.PENDING_APPROVAL) {
-            throw ApiException.badRequest("Cannot cancel purchase requisition " + r.getRequisitionNumber() + " — it is " + r.getStatus());
+            throw ApiException.badRequest(I18n.t("Cannot cancel purchase requisition ") + r.getRequisitionNumber() + I18n.t(" — it is ") + r.getStatus());
         }
         r.setStatus(PurchaseRequisitionStatus.CANCELLED);
         PurchaseRequisition saved = purchaseRequisitionRepository.save(r);
@@ -183,7 +184,7 @@ public class PurchaseRequisitionService {
     public PurchaseOrderDto convertToPurchaseOrder(Long id, ConvertRequisitionRequest request) {
         PurchaseRequisition r = getEntityOrThrow(id);
         if (r.getStatus() != PurchaseRequisitionStatus.APPROVED) {
-            throw ApiException.badRequest("Only an approved requisition can be converted — " + r.getRequisitionNumber() + " is " + r.getStatus());
+            throw ApiException.badRequest(I18n.t("Only an approved requisition can be converted — ") + r.getRequisitionNumber() + " is " + r.getStatus());
         }
 
         PurchaseOrderRequest poRequest = new PurchaseOrderRequest();
@@ -194,7 +195,7 @@ public class PurchaseRequisitionService {
             ConvertRequisitionRequest.LineEntry costEntry = request.getLines().stream()
                     .filter(e -> e.getLineId().equals(line.getId()))
                     .findFirst()
-                    .orElseThrow(() -> ApiException.badRequest("No unit cost supplied for line '" + line.getProductName() + "'"));
+                    .orElseThrow(() -> ApiException.badRequest(I18n.t("No unit cost supplied for line '") + line.getProductName() + "'"));
             PurchaseOrderRequest.LineEntry entry = new PurchaseOrderRequest.LineEntry();
             entry.setProductId(line.getProduct() != null ? line.getProduct().getId() : null);
             entry.setQuantityOrdered(line.getQuantityRequested());
@@ -216,7 +217,7 @@ public class PurchaseRequisitionService {
 
     PurchaseRequisition getEntityOrThrow(Long id) {
         return purchaseRequisitionRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Purchase requisition not found: " + id));
+                .orElseThrow(() -> ApiException.notFound(I18n.t("Purchase requisition not found: ") + id));
     }
 
     private void applyRequest(PurchaseRequisition r, PurchaseRequisitionRequest request) {

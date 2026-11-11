@@ -1,5 +1,6 @@
 package com.posapp.invoice;
 
+import com.posapp.i18n.I18n;
 import com.posapp.audit.AuditLogService;
 import com.posapp.email.DocumentPdfService;
 import com.posapp.email.EmailAttachment;
@@ -84,9 +85,9 @@ public class InvoiceMailService {
             log.warn("Failed to build PDF for invoice {} — not auto-emailing: {}", invoice.invoiceNumber(), ex.getMessage());
             return;
         }
-        String subject = "Invoice " + invoice.invoiceNumber();
-        String html = "<p>Hello " + escapeHtml(invoice.customerName()) + ",</p>"
-                + "<p>Please find attached invoice " + invoice.invoiceNumber() + " for " + invoice.totalAmount() + ".</p>";
+        String subject = I18n.t("Invoice ") + invoice.invoiceNumber();
+        String html = I18n.t("<p>Hello ") + escapeHtml(invoice.customerName()) + I18n.t(",</p>"
+                + "<p>Please find attached invoice ") + invoice.invoiceNumber() + I18n.t(" for ") + invoice.totalAmount() + ".</p>";
         List<EmailAttachment> attachments = List.of(new EmailAttachment(invoice.invoiceNumber() + ".pdf", "application/pdf", pdf));
 
         for (String to : recipients) {

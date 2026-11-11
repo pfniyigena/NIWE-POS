@@ -13,7 +13,7 @@
 
     <groupId>com.posapp</groupId>
     <artifactId>pos-app</artifactId>
-    <version>1.25.0</version>
+    <version>1.26.0</version>
     <name>pos-app</name>
     <description>Standalone POS backend (Angular frontend, Spring Boot REST API, PostgreSQL)</description>
     <packaging>jar</packaging>
