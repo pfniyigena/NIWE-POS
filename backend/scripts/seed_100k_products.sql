@@ -1,78 +1,123 @@
 -- seed_100k_products.sql
 --
--- Generates 100,000 sample products for load-testing the admin product list and the terminal's
--- product search/grid (Task: "I want to check the loading of 100000 products. Feed the sample of
--- products."). This is what motivated pagination on GET /api/products/all and the 200-row cap on
--- GET /api/products (see CatalogService.TERMINAL_SEARCH_CAP, CatalogRepository.searchAllForAdmin)
--- in this same pass, alongside the new `code`/`iconDataUrl` columns.
+-- Adds sample products for load-testing the admin product list, the POS product search and grid, and the
+-- stock screens (Task: "I want to check the loading of 100000 products. Feed the sample of products.").
+-- Updated for NIWE ERP 1.27: the schema is now built by Flyway (not ddl-auto), products must say whether they track
+-- stock, and stock is held per warehouse location in product_stock.
 --
--- RUN THIS AFTER STARTING THE BACKEND AT LEAST ONCE against this database — spring.jpa.hibernate
--- .ddl-auto=update only adds a new column (originally `code`/`icon_data_url`; now also
--- `unsp_code`/`service`, added for EFRIS Rwanda/Chad) the first time the app boots with the
--- updated Product entity. Running this script against an older schema fails with
--- "column ... does not exist".
+-- BEFORE YOU RUN IT: start the backend at least once against this database, so Flyway has built the tables and the
+-- default "Main" warehouse (with its SALES location) exists. The script stops with a message if it does not.
 --
 -- Usage (adjust host/user/db to match backend/src/main/resources/application.properties):
 --   psql -h localhost -U postgres -d pos_app -f backend/scripts/seed_100k_products.sql
+-- A different number of products:
+--   psql -h localhost -U postgres -d pos_app -v product_count=20000 -f backend/scripts/seed_100k_products.sql
 --
--- One set-based INSERT ... SELECT over generate_series rather than 100,000 individual
--- statements — this finishes in a couple of seconds instead of minutes, and is exactly the kind
--- of bulk load that would be painfully slow to do 100,000 times through the REST API instead.
+-- Safe to run again: every sample product has a fixed number (SKU-000001 ... SKU-100000). A product that is already
+-- there is left alone, and only the missing ones are added, so a second run with the same count adds nothing.
+-- Your own products are never touched.
 --
--- Data shape, deliberately kept simple:
---   * category_id / tax_rate_id are left NULL (uncategorized, tax-exempt) so this script has no
---     foreign keys to satisfy against whatever categories/tax rates already exist in your
---     database. The point of this data is to exercise the LISTING/paging/search code paths, not
---     checkout — if you want these filed under a real category, fill in a literal category_id
---     below and re-run (safe to run more than once; it only ever adds rows).
---   * barcode is set on 1 in 3 rows, `code` on 1 in 5 (both unique per row by construction, since
---     each embeds the row's own generated-series number) — most real catalogs don't assign a
---     second code to every single item, so this leaves plenty of NULLs to confirm "code can be
---     null but unique" actually holds under bulk data, not just in the form.
---   * iconDataUrl is set on only 1 row in 500, using a tiny 1x1-pixel placeholder GIF, purely so
---     the admin list's thumbnail column and the terminal tile's icon both have at least a few
---     real rows to render — 100,000 real product photos as base64 would bloat this script (and
---     your database) for no testing benefit.
---   * unsp_code (EFRIS's UNSPSC-style commodity/tariff code, "unsp_code" for EFRIS Rwanda,
---     "classification_code" for EFRIS Chad) is set on 1 in 10 rows, an 8-digit placeholder code —
---     enough NULL/non-NULL mix to exercise a real EFRIS submission's per-line lookup without
---     pretending every product has been through real UNSPSC classification.
---   * service (EFRIS Chad's item_nature: goods vs. service) is true on 1 in 10 rows — most of a
---     typical POS catalog is physical goods, so this keeps that the overwhelming majority while
---     still giving the admin product list/form a realistic few services to show.
+-- What it creates, per product i:
+--   * product: sku SKU-<i>, name "Sample product <i>", a selling price of 1 to 101, a cost price of 30 to 80 percent of
+--     that price, active, with a barcode on 1 in 3 and a code on 1 in 5 (both unique, built from i), a tiny placeholder
+--     picture on 1 in 500, and a UNSPSC-style code on 1 in 10. 1 in 10 are services (no stock tracked, like a real
+--     catalogue). The rest track stock and are marked tracking mode NONE.
+--   * product_stock: for each product that tracks stock, a row of 0 to 200 units at the primary warehouse's active
+--     SALES location, and the same quantity on the product itself (the two must agree, as they do when stock is
+--     received through the application). So the stock screens, the shop's availability and the POS all see stock.
+--   * category: if you already have categories, products are spread across them (round robin) so the category filters
+--     have something to show; with none, products are uncategorised. Tax rate is left empty (tax exempt), so these
+--     products can be sold in tests without a tax setup.
+--
+-- It is one set-based INSERT ... SELECT per table, not 100,000 separate statements: well under a minute for 100,000 products.
+--
+-- To remove the sample products again (only works for ones never sold or used on a document; the others are kept):
+--   delete from product_stock where product_id in (select id from product where sku ~ '^SKU-[0-9]{6}$' and name like 'Sample product %');
+--   delete from product where sku ~ '^SKU-[0-9]{6}$' and name like 'Sample product %'
+--     and not exists (select 1 from sales_order_line l where l.product_id = product.id);
+-- (add the same "not exists" test for any other table that refers to the product if the delete reports a foreign key error).
+
+\set ON_ERROR_STOP on
+
+\if :{?product_count}
+\else
+  \set product_count 100000
+\endif
+
+-- The place the stock goes: the primary warehouse's active SALES location (the one the POS sells from).
+select coalesce(min(l.id), 0) as sales_location_id
+  from warehouse_location l
+  join warehouse w on w.id = l.warehouse_id
+ where w.is_primary and w.active and l.active and l.location_type = 'SALES'
+\gset
+
+select :sales_location_id = 0 as no_sales_location \gset
+
+\if :no_sales_location
+  \echo 'No primary warehouse with an active SALES location was found. Start the backend once against this database (it creates the Main warehouse), then run this script again.'
+  \quit
+\endif
 
 BEGIN;
 
 INSERT INTO product (
     created_at, updated_at, sku, barcode, code, icon_data_url, name,
-    unit_price, cost_price, stock_quantity, active, category_id, tax_rate_id, unsp_code, service
+    unit_price, cost_price, stock_quantity, active, category_id, tax_rate_id, unsp_code,
+    service, track_stock, tracking_mode
 )
 SELECT
     now(),
     now(),
-    'SKU-' || lpad(i::text, 6, '0'),
-    CASE WHEN i % 3 = 0 THEN '2' || lpad(i::text, 11, '0') ELSE NULL END,
-    CASE WHEN i % 5 = 0 THEN 'CODE-' || lpad(i::text, 6, '0') ELSE NULL END,
-    CASE WHEN i % 500 = 0
+    'SKU-' || lpad(s.i::text, 6, '0'),
+    CASE WHEN s.i % 3 = 0 THEN '2' || lpad(s.i::text, 11, '0') ELSE NULL END,
+    CASE WHEN s.i % 5 = 0 THEN 'CODE-' || lpad(s.i::text, 6, '0') ELSE NULL END,
+    CASE WHEN s.i % 500 = 0
         THEN 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7'
         ELSE NULL
     END,
-    'Sample product ' || i,
-    round((random() * 100 + 1)::numeric, 2),
-    round((random() * 50)::numeric, 2),
-    (random() * 200)::int,
+    'Sample product ' || s.i,
+    s.price,
+    round((s.price * (0.3 + random() * 0.5))::numeric, 2),
+    CASE WHEN s.i % 10 = 0 THEN 0 ELSE (random() * 200)::int END,
     true,
+    CASE WHEN c.ids IS NULL THEN NULL ELSE c.ids[1 + (s.i % cardinality(c.ids))] END,
     NULL,
-    NULL,
-    CASE WHEN i % 10 = 0 THEN '43' || lpad((i % 1000000)::text, 6, '0') ELSE NULL END,
-    (i % 10 = 0)
-FROM generate_series(1, 100000) AS i;
+    CASE WHEN s.i % 10 = 0 THEN '43' || lpad((s.i % 1000000)::text, 6, '0') ELSE NULL END,
+    (s.i % 10 = 0),
+    (s.i % 10 <> 0),
+    CASE WHEN s.i % 10 = 0 THEN NULL ELSE 'NONE' END
+FROM (SELECT i, round((random() * 100 + 1)::numeric, 2) AS price FROM generate_series(1, :product_count) AS i) AS s
+CROSS JOIN (SELECT array_agg(id ORDER BY id) AS ids FROM category) AS c
+WHERE NOT EXISTS (SELECT 1 FROM product p WHERE p.sku = 'SKU-' || lpad(s.i::text, 6, '0'))
+ON CONFLICT DO NOTHING;
+
+-- Stock by location for the sample products that track stock and have none there yet; it mirrors the product's own quantity.
+INSERT INTO product_stock (created_at, updated_at, product_id, location_id, quantity)
+SELECT now(), now(), p.id, :sales_location_id, p.stock_quantity
+  FROM product p
+ WHERE p.sku ~ '^SKU-[0-9]{6}$'
+   AND p.name LIKE 'Sample product %'
+   AND p.track_stock
+   AND NOT EXISTS (SELECT 1 FROM product_stock ps WHERE ps.product_id = p.id AND ps.location_id = :sales_location_id)
+ON CONFLICT DO NOTHING;
 
 COMMIT;
 
--- Sanity checks to run afterward:
---   select count(*) from product;                        -- should include +100000 over whatever you had
---   select count(*) from product where code is not null;  -- ~20000, all distinct
---   select count(*) from product where icon_data_url is not null; -- ~200
---   select count(*) from product where unsp_code is not null; -- ~10000
---   select count(*) from product where service = true;    -- ~10000
+ANALYZE product;
+ANALYZE product_stock;
+
+-- What is there now:
+SELECT count(*)                                           AS sample_products,
+       count(*) FILTER (WHERE code IS NOT NULL)           AS with_code,
+       count(*) FILTER (WHERE barcode IS NOT NULL)        AS with_barcode,
+       count(*) FILTER (WHERE icon_data_url IS NOT NULL)  AS with_picture,
+       count(*) FILTER (WHERE service)                    AS services,
+       count(*) FILTER (WHERE category_id IS NOT NULL)    AS categorised
+  FROM product
+ WHERE sku ~ '^SKU-[0-9]{6}$' AND name LIKE 'Sample product %';
+
+SELECT count(*) AS stock_rows_at_sales_location,
+       count(*) FILTER (WHERE ps.quantity <> p.stock_quantity) AS rows_that_disagree_with_the_product
+  FROM product_stock ps
+  JOIN product p ON p.id = ps.product_id
+ WHERE ps.location_id = :sales_location_id AND p.sku ~ '^SKU-[0-9]{6}$' AND p.name LIKE 'Sample product %';
