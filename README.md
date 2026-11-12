@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.35.1 - Online Store: clearer products list
+
+In Shop settings, each product on the shop is now a card instead of a crowded 12-column table. Frontend only. Details in `RELEASE-NOTES-v1.35.1.md`.
+
 ### Version 1.35.0 - Online Store: a full front page
 
 The shop's first page now has an announcement bar, header with search, hero banner, popular categories, Featured / Best-selling / Special offers / New arrivals rows (products ticked by staff), customer reviews (real reviews approved by staff), a newsletter sign-up with e-mail confirmation, and a footer with links. Wording is edited in Shop settings > Front page; new screens Online Store > Reviews and > Newsletter. Migration V72. Set `app.frontend-url` to the public address. Details in `RELEASE-NOTES-v1.35.0.md`.

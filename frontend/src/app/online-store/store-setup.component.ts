@@ -148,25 +148,34 @@ import { API_BASE } from '../core/constants';
           <input class="form-control listing-filter" style="width:260px;" [placeholder]="'Filter the products on the shop' | translate" [ngModel]="listFilter" (ngModelChange)="filterChanged($event)" name="listFilter" />
           <span class="text-muted" style="font-size:0.85rem;">{{ 'Showing {p0}–{p1} of {p2}' | translate: { p0: firstShown(), p1: lastShown(), p2: filteredListings().length } }}</span>
         </div>
-        <table class="table-sm mt-2" *ngIf="listings.length">
-          <thead><tr><th>{{ 'Product' | translate }}</th><th>{{ 'Title on the shop' | translate }}</th><th class="text-end">{{ 'Price' | translate }}</th><th class="text-end">{{ 'Online price' | translate }}</th><th>{{ 'Order' | translate }}</th><th>{{ 'Shown' | translate }}</th><th title="{{ 'Featured products' | translate }}">{{ 'Featured' | translate }}</th><th title="{{ 'Best-selling products' | translate }}">{{ 'Best seller' | translate }}</th><th title="{{ 'Special offers and discounts' | translate }}">{{ 'Offer' | translate }}</th><th title="{{ 'New arrivals' | translate }}">{{ 'New' | translate }}</th><th>{{ 'Stock' | translate }}</th><th></th></tr></thead>
-          <tbody>
-            <tr *ngFor="let l of pageListings()">
-              <td>{{ l.productName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="!l.hasImage">{{ 'No picture yet' | translate }}</div></td>
-              <td><input class="form-control" style="width:200px;" maxlength="160" [name]="'t' + l.id" [(ngModel)]="l.webTitle" [placeholder]="l.productName" /></td>
-              <td class="text-end">{{ l.unitPrice | number: '1.0-2' }}</td>
-              <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" [name]="'p' + l.id" [(ngModel)]="l.onlinePrice" /></td>
-              <td><input class="form-control" type="number" style="width:70px;" [name]="'o' + l.id" [(ngModel)]="l.sortOrder" /></td>
-              <td><input type="checkbox" [name]="'v' + l.id" [(ngModel)]="l.listed" /></td>
-              <td><input type="checkbox" class="tag-featured" [name]="'tf' + l.id" [(ngModel)]="l.featured" /></td>
-              <td><input type="checkbox" class="tag-best" [name]="'tb' + l.id" [(ngModel)]="l.bestSeller" /></td>
-              <td><input type="checkbox" class="tag-offer" [name]="'to' + l.id" [(ngModel)]="l.specialOffer" /></td>
-              <td><input type="checkbox" class="tag-new" [name]="'tn' + l.id" [(ngModel)]="l.newArrival" /></td>
-              <td>{{ stockLabel(l.stock) | translate }}</td>
-              <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveListing(l)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeListing(l)">{{ 'Remove' | translate }}</button></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="lst-rows mt-2" *ngIf="listings.length">
+          <div class="lst-row" *ngFor="let l of pageListings()" style="border:1px solid #e5e7eb; border-radius:8px; padding:0.75rem; margin-bottom:0.6rem;">
+            <div class="flex justify-between" style="flex-wrap:wrap; gap:0.5rem; align-items:flex-start;">
+              <div style="min-width:0;">
+                <strong class="lst-name">{{ l.productName }}</strong>
+                <div class="text-muted" style="font-size:0.8rem;">
+                  {{ 'Price' | translate }}: {{ l.unitPrice | number: '1.0-2' }} · {{ 'Stock' | translate }}: {{ stockLabel(l.stock) | translate }}<span *ngIf="!l.hasImage"> · {{ 'No picture yet' | translate }}</span>
+                </div>
+              </div>
+              <div style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveListing(l)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeListing(l)">{{ 'Remove' | translate }}</button></div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:0.6rem; margin-top:0.6rem;">
+              <div style="grid-column: span 2; min-width:0;"><label class="form-label" style="font-size:0.8rem;">{{ 'Title on the shop' | translate }}</label>
+                <input class="form-control" style="width:100%;" maxlength="160" [name]="'t' + l.id" [(ngModel)]="l.webTitle" [placeholder]="l.productName" /></div>
+              <div><label class="form-label" style="font-size:0.8rem;">{{ 'Online price' | translate }}</label>
+                <input class="form-control" type="number" min="0" style="width:100%;" [name]="'p' + l.id" [(ngModel)]="l.onlinePrice" /></div>
+              <div><label class="form-label" style="font-size:0.8rem;">{{ 'Order' | translate }}</label>
+                <input class="form-control" type="number" style="width:100%;" [name]="'o' + l.id" [(ngModel)]="l.sortOrder" /></div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.4rem 1.2rem; margin-top:0.6rem;">
+              <label style="display:flex; align-items:center; gap:0.35rem;"><input type="checkbox" [name]="'v' + l.id" [(ngModel)]="l.listed" /> {{ 'Shown' | translate }}</label>
+              <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'Featured products' | translate }}"><input type="checkbox" class="tag-featured" [name]="'tf' + l.id" [(ngModel)]="l.featured" /> {{ 'Featured' | translate }}</label>
+              <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'Best-selling products' | translate }}"><input type="checkbox" class="tag-best" [name]="'tb' + l.id" [(ngModel)]="l.bestSeller" /> {{ 'Best seller' | translate }}</label>
+              <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'Special offers and discounts' | translate }}"><input type="checkbox" class="tag-offer" [name]="'to' + l.id" [(ngModel)]="l.specialOffer" /> {{ 'Offer' | translate }}</label>
+              <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'New arrivals' | translate }}"><input type="checkbox" class="tag-new" [name]="'tn' + l.id" [(ngModel)]="l.newArrival" /> {{ 'New' | translate }}</label>
+            </div>
+          </div>
+        </div>
         <p class="text-muted listing-none" *ngIf="listings.length && !filteredListings().length">{{ 'No product matches.' | translate }}</p>
         <nav class="flex justify-between align-center mt-2 listing-pager" *ngIf="listings.length && filteredListings().length" style="flex-wrap:wrap; gap:0.5rem;">
           <label class="flex gap-1" style="align-items:center; font-size:0.85rem;">{{ 'Per page' | translate }}
