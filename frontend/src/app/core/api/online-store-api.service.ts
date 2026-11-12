@@ -96,8 +96,10 @@ export interface PendingCounts { pending: number; overdue: number; alertMinutes:
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
-  featured: boolean; bestSeller: boolean; specialOffer: boolean; newArrival: boolean;
+  featured: boolean; bestSeller: boolean; specialOffer: boolean; newArrival: boolean; stockInfo: StoreStockInfo;
 }
+/** Why a product shows the stock it shows. tracked false = stock is not tracked for it, so the shop always shows it as in stock. */
+export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; buffer: number; sellable: number | null }
 /** Staff's wording of the front page (Shop settings > Front page). Links are one per line, written Label|address. */
 export interface StorePageContent {
   announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;

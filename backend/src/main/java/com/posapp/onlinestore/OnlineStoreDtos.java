@@ -214,7 +214,15 @@ public final class OnlineStoreDtos {
 
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,
                              String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock,
-                             boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival) {
+                             boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival, StockInfo stockInfo) {
+    }
+
+    /**
+     * Why a product shows the stock it shows: units in sellable warehouse locations, minus units promised on confirmed sales orders (reserved), minus the shop's
+     * safety buffer, is what the shop may still sell. tracked = false: stock is not tracked for the product, so the shop always shows it as in stock (the other
+     * figures are then null).
+     */
+    public record StockInfo(boolean tracked, BigDecimal inWarehouses, BigDecimal reserved, int buffer, BigDecimal sellable) {
     }
 
     public record ListingRequest(@NotNull Long productId, Boolean listed, @Size(max = 160) String webTitle, @Size(max = 2000) String webDescription,

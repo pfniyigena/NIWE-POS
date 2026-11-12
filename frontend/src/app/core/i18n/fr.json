@@ -9037,5 +9037,7 @@
  "Upload up to 8 pictures (JPEG, PNG, WebP or GIF, at most 8 MB each). They slide one after the other on the front page, in the order shown here. A wide picture works best (for example 1600 × 600).": "Téléversez jusqu'à 8 images (JPEG, PNG, WebP ou GIF, 8 Mo au plus chacune). Elles défilent l'une après l'autre sur la page d'accueil, dans l'ordre indiqué ici. Une image large convient le mieux (par exemple 1600 × 600).",
  "Banner pictures saved": "Images de la bannière enregistrées",
  "Could not move the picture": "Impossible de déplacer l'image",
- "Could not remove the picture": "Impossible de retirer l'image"
+ "Could not remove the picture": "Impossible de retirer l'image",
+ "In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − shop buffer {p2} = sellable now {p3}": "Dans les emplacements vendables des entrepôts {p0} − réservé sur commandes confirmées {p1} − réserve de la boutique {p2} = vendable maintenant {p3}",
+ "Stock is not tracked for this product: the shop always shows it as in stock.": "Le stock n'est pas suivi pour ce produit : la boutique l'affiche toujours en stock."
 }

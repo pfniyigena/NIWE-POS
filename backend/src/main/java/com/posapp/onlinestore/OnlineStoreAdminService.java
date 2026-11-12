@@ -220,7 +220,7 @@ public class OnlineStoreAdminService {
         return new ListingDto(l.getId(), p.getId(), p.getName(), p.getSku(), p.getCategory() == null ? null : p.getCategory().getName(), p.getUnitPrice(),
                 l.isListed(), l.getWebTitle(), l.getWebDescription(), l.getOnlinePrice(), l.getSortOrder(),
                 p.getIconDataUrl() != null && !p.getIconDataUrl().isBlank(), OnlineStoreService.stockLabel(storeService.sellable(p, buffer)),
-                l.isFeatured(), l.isBestSeller(), l.isSpecialOffer(), l.isNewArrival());
+                l.isFeatured(), l.isBestSeller(), l.isSpecialOffer(), l.isNewArrival(), storeService.stockInfo(p, buffer));
     }
 
 

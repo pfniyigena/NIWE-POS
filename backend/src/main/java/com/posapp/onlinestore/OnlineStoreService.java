@@ -112,6 +112,14 @@ public class OnlineStoreService {
         return stockReservationService.available(p).subtract(BigDecimal.valueOf(buffer));
     }
 
+    /** The figures behind the stock the shop shows for a product (Shop settings > Products on the shop). */
+    OnlineStoreDtos.StockInfo stockInfo(Product p, int buffer) {
+        if (!p.isTrackStock() || p.isService()) return new OnlineStoreDtos.StockInfo(false, null, null, buffer, null);
+        BigDecimal reserved = stockReservationService.reserved(p);
+        BigDecimal available = stockReservationService.available(p);
+        return new OnlineStoreDtos.StockInfo(true, available.add(reserved), reserved, buffer, available.subtract(BigDecimal.valueOf(buffer)));
+    }
+
     static String stockLabel(BigDecimal sellable) {
         if (sellable == null) return "IN_STOCK";
         if (sellable.signum() <= 0) return "SOLD_OUT";

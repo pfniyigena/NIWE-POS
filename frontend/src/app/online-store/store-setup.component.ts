@@ -172,6 +172,10 @@ import { API_BASE } from '../core/constants';
                 <div class="text-muted" style="font-size:0.8rem;">
                   {{ 'Price' | translate }}: {{ l.unitPrice | number: '1.0-2' }} · {{ 'Stock' | translate }}: {{ stockLabel(l.stock) | translate }}<span *ngIf="!l.hasImage"> · {{ 'No picture yet' | translate }}</span>
                 </div>
+                <div class="lst-stock" style="font-size:0.8rem; margin-top:0.15rem;" [style.color]="l.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">
+                  <ng-container *ngIf="l.stockInfo.tracked; else untracked">{{ 'In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − shop buffer {p2} = sellable now {p3}' | translate: { p0: l.stockInfo.inWarehouses, p1: l.stockInfo.reserved, p2: l.stockInfo.buffer, p3: l.stockInfo.sellable } }}</ng-container>
+                  <ng-template #untracked>{{ 'Stock is not tracked for this product: the shop always shows it as in stock.' | translate }}</ng-template>
+                </div>
               </div>
               <div style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveListing(l)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeListing(l)">{{ 'Remove' | translate }}</button></div>
             </div>

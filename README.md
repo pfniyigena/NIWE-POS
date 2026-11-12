@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.36.2 - Online Store: Sellable now
+
+Shop settings shows, under each product, the figures behind its stock: sellable warehouse stock − reserved − shop buffer. Details in `RELEASE-NOTES-v1.36.2.md`.
+
 ### Version 1.36.1 - Online Store: all product rows slide
 
 Best-selling, Special offers and New arrivals slide left and right like Featured. Frontend only. Details in `RELEASE-NOTES-v1.36.1.md`.
