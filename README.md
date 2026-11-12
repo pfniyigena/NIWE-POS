@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.36.1 - Online Store: all product rows slide
+
+Best-selling, Special offers and New arrivals slide left and right like Featured. Frontend only. Details in `RELEASE-NOTES-v1.36.1.md`.
+
 ### Version 1.36.0 - Online Store: banner pictures, sliding Featured row
 
 Banner pictures are uploaded (up to 8) in Shop settings and slide on the front page; the Featured products row slides left and right; Popular categories is removed. Migration V73. Details in `RELEASE-NOTES-v1.36.0.md`.
