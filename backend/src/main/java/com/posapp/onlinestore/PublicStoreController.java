@@ -35,8 +35,11 @@ public class PublicStoreController {
     private final ModuleService moduleService;
     private final OnlinePaymentService payments;
     private final SimulatedPaymentProvider simulated;
+    private final ShopAccountService accounts;
 
-    public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated) {
+    public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated,
+                                 ShopAccountService accounts) {
+        this.accounts = accounts;
         this.payments = payments;
         this.simulated = simulated;
         this.service = service;
@@ -77,7 +80,8 @@ public class PublicStoreController {
     @PostMapping("/orders")
     public Track place(@Valid @RequestBody PlaceRequest request, HttpServletRequest http) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
-        return service.place(request, ip(http));
+        // A signed-in customer's order joins the account; a missing or stale token just makes it a guest order.
+        return service.place(request, ip(http), accounts.optionalCustomerId(http.getHeader(ShopAccountController.TOKEN_HEADER)));
     }
 
     @GetMapping("/orders/{code}")

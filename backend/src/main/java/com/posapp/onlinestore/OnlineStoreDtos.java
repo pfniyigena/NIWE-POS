@@ -25,7 +25,7 @@ public final class OnlineStoreDtos {
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
-                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods) {
+                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -63,6 +63,38 @@ public final class OnlineStoreDtos {
     public record PayRequest(String payment, @Size(max = 40) String payPhone) {
     }
 
+    // ---------------------------------------------------------------- customer accounts
+
+    /** identifier is an e-mail address or a phone number already saved on an account. */
+    public record AccountCodeRequest(@Size(max = 160) String identifier, String language) {
+    }
+
+    /** Always sent = true, whether or not an account exists. */
+    public record AccountCodeResult(boolean sent) {
+    }
+
+    public record AccountVerifyRequest(@Size(max = 160) String identifier, @Size(max = 12) String code) {
+    }
+
+    public record AccountProfile(String email, String phone, String name, String address, String language) {
+    }
+
+    public record AccountSession(String token, AccountProfile profile) {
+    }
+
+    public record AccountProfileRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 240) String address, String language) {
+    }
+
+    public record AccountOrder(String code, String status, String deliveryMethod, BigDecimal total, Instant placedAt, int items, String paymentStatus) {
+    }
+
+    public record ReorderLine(PublicProduct product, BigDecimal quantity) {
+    }
+
+    /** lines are on the shop now at today's price; unavailable names the products that are gone or sold out. */
+    public record Reorder(List<ReorderLine> lines, List<String> unavailable) {
+    }
+
     // ---------------------------------------------------------------- staff
 
     public record OrderLineDto(Long productId, String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
@@ -98,7 +130,7 @@ public final class OnlineStoreDtos {
                               String pickupAddress, boolean pickupEnabled, boolean deliveryEnabled, boolean codEnabled, int stockBuffer,
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
-                              int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes) {
+                              int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.30.0 - Online Store phase 3 (1 of 4): customer accounts
+
+Shop customers can sign in (e-mail or saved phone + a one-time code sent by e-mail, no password) to see their orders, save their details and order again at today's prices. Guest checkout stays; guest orders with the same e-mail join the account when it is proved. Codes are hashed, expire in 10 minutes, die after 5 wrong tries and are rate limited; asking for a code never reveals whether an account exists. Off by default (Shop settings > Customer accounts). Migration V68. Details in `RELEASE-NOTES-v1.30.0.md`.
+
 ### Version 1.29.0 - Online Store phase 2: pay online
 
 Customers can pay at checkout with mobile money or card; the order reaches the shop only once the payment is confirmed (new status Awaiting payment). Signed webhook, status check when a webhook is lost, retries, automatic cancel after a day, refunds (through the provider or recorded by hand), review of odd payments (wrong amount, double payment) and a new Online payments screen that matches what was paid with the books. Built once for any provider with a test provider included; a real provider is one class (`docs/online-store-payment-providers.md`). Off by default. Migration V67. Details in `RELEASE-NOTES-v1.29.0.md`.

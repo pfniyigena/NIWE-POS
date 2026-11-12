@@ -1749,5 +1749,14 @@
  "already paid online": "déjà payée en ligne",
  "card": "carte",
  "mobile money": "mobile money",
- "paid online {0} but the invoice is {1}: check the difference": "payé en ligne {0} mais la facture est de {1} : vérifiez la différence"
+ "paid online {0} but the invoice is {1}: check the difference": "payé en ligne {0} mais la facture est de {1} : vérifiez la différence",
+ "Accounts are not available.": "Les comptes ne sont pas disponibles.",
+ "Enter your e-mail address or phone number": "Saisissez votre adresse e-mail ou votre numéro de téléphone",
+ "Too many codes were asked for this address. Please try again later.": "Trop de codes ont été demandés pour cette adresse. Réessayez plus tard.",
+ "We cannot send e-mails right now. Please try again later.": "Nous ne pouvons pas envoyer d'e-mails pour le moment. Réessayez plus tard.",
+ "We could not send the code. Please try again later.": "Nous n'avons pas pu envoyer le code. Réessayez plus tard.",
+ "That code is not right or has expired. Ask for a new one.": "Ce code n'est pas correct ou a expiré. Demandez-en un nouveau.",
+ "Please sign in again.": "Veuillez vous reconnecter.",
+ "Your sign-in code: {0}": "Votre code de connexion : {0}",
+ "Your sign-in code is {0}. It works for 10 minutes. If you did not ask for it, ignore this message.": "Votre code de connexion est {0}. Il est valable 10 minutes. Si vous ne l'avez pas demandé, ignorez ce message."
 }

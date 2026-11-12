@@ -11,11 +11,16 @@
 //
 // Online payments (phase 2) are tried too when the shop has them switched on with the SIMULATED provider and you give the webhook secret
 // (app.online-store.payments.simulated.secret, set in application-dev.properties) as SIM_SECRET or the 5th argument; otherwise that part is skipped.
+//
+// Customer accounts (phase 3) are tried too when the shop has them switched on and you give the development sign-in code
+// (app.online-store.accounts.dev-code, set in application-dev.properties: 123456) as DEV_CODE or the 6th argument; otherwise that part is skipped.
+// The script then signs in with an address of its own (smoke-<number>@example.test) and deletes that account at the end.
 
 const base = (process.argv[2] || process.env.BASE || 'http://localhost:8080').replace(/\/+$/, '');
 const user = process.argv[3] || process.env.ADMIN_USER || 'admin';
 const password = process.argv[4] || process.env.ADMIN_PASSWORD || '';
 const simSecret = process.argv[5] || process.env.SIM_SECRET || '';
+const devCode = process.argv[6] || process.env.DEV_CODE || '';
 const pub = `${base}/api/public/store`;
 const staff = `${base}/api/online-store`;
 
@@ -32,8 +37,8 @@ function ok(cond, what, extra = '') {
   return cond;
 }
 
-async function call(method, url, body, auth = false) {
-  const headers = { Accept: 'application/json' };
+async function call(method, url, body, auth = false, extra = {}) {
+  const headers = { Accept: 'application/json', ...extra };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (auth) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -177,6 +182,76 @@ async function payments(s, lines) {
   }
 }
 
+async function accounts(s, lines) {
+  if (!s.accounts || !devCode) {
+    console.log(`SKIP  customer accounts: ${!s.accounts ? 'not switched on in the shop settings' : 'no DEV_CODE given'}`);
+    return;
+  }
+  console.log('\nCustomer accounts');
+  const email = `smoke-${stamp}@example.test`;
+  const acc = (path) => `${pub}/account/${path}`;
+  const guest = await place(7, { email: email.toUpperCase(), lines });
+  if (!ok(guest.status === 200, 'public: a guest order placed with the e-mail address (written in capitals)', guest.status === 200 ? `code ${guest.json.code}` : `HTTP ${guest.status} ${guest.json?.message ?? ''}`)) return;
+
+  const bad = await call('POST', acc('code'), { identifier: 'not-an-email', language: 'en' });
+  ok(bad.status === 400, 'public: a bad e-mail address is refused', `HTTP ${bad.status}`);
+  const ghost = await call('POST', acc('code'), { identifier: '0788999888', language: 'en' });
+  ok(ghost.status === 200 && ghost.json?.sent === true, 'public: an unknown phone number gets the same answer (nothing to find out)');
+  const asked = await call('POST', acc('code'), { identifier: email, language: 'en' });
+  ok(asked.status === 200 && asked.json?.sent === true, 'public: a sign-in code is asked for', asked.status === 200 ? '' : `HTTP ${asked.status} ${asked.json?.message ?? ''} (is e-mail set up?)`);
+  if (asked.status !== 200) return;
+  const wrong = await call('POST', acc('verify'), { identifier: email, code: devCode === '000000' ? '111111' : '000000' });
+  ok(wrong.status === 400, 'public: a wrong code is refused', `HTTP ${wrong.status}`);
+  const noTok = await call('GET', acc('me'));
+  ok(noTok.status === 401, 'public: without a token the account is closed (401)');
+  const v = await call('POST', acc('verify'), { identifier: email, code: devCode });
+  if (!ok(v.status === 200 && !!v.json?.token && v.json?.profile?.email === email, 'public: the right code signs in (the address is stored in lower case)', v.status === 200 ? '' : `HTTP ${v.status} ${v.json?.message ?? ''} (is app.online-store.accounts.dev-code set and the dev profile on?)`)) return;
+  const h = { 'X-Shop-Token': v.json.token };
+
+  const mine = await call('GET', acc('orders'), undefined, false, h);
+  ok(mine.status === 200 && mine.json.some((o) => o.code === guest.json.code), 'public: the guest order placed earlier with the same address is now in the account', mine.status === 200 ? `(${mine.json.length} order(s))` : `HTTP ${mine.status}`);
+  const saved = await call('PUT', acc('me'), { name: 'Smoke Customer', phone: `07881${stamp}`.slice(0, 11), address: 'KG 1 Ave', language: 'en' }, false, h);
+  ok(saved.status === 200 && saved.json?.name === 'Smoke Customer', 'public: the details are saved');
+  const badPhone = await call('PUT', acc('me'), { name: 'x', phone: 'abc', address: null, language: 'en' }, false, h);
+  ok(badPhone.status === 400, 'public: a bad phone number is refused', `HTTP ${badPhone.status}`);
+
+  const signed = await call('POST', `${pub}/orders`, {
+    name: 'Smoke Test signed in', phone: `0788${stamp}8`.slice(0, 12), email: null, address: null, method: 'PICKUP', zoneId: null, notes: 'online-store-smoke', language: 'en', website: '', lines, payment: 'CASH', payPhone: null,
+  }, false, h);
+  ok(signed.status === 200, 'public: an order placed while signed in', signed.status === 200 ? `code ${signed.json.code}` : `HTTP ${signed.status} ${signed.json?.message ?? ''}`);
+  const again = await call('GET', acc('orders'), undefined, false, h);
+  ok(again.status === 200 && signed.status === 200 && again.json.some((o) => o.code === signed.json.code), 'public: that order is in the account (no e-mail needed)');
+  const other = await call('GET', acc('orders/NOSUCH000/reorder'), undefined, false, h);
+  ok(other.status === 404, 'public: reordering a code that is not mine: 404', `HTTP ${other.status}`);
+  if (signed.status === 200) {
+    const ro = await call('GET', acc(`orders/${signed.json.code}/reorder`), undefined, false, h);
+    ok(ro.status === 200 && Array.isArray(ro.json?.lines) && ro.json.lines.length > 0, 'public: "order again" gives today\'s products and prices', ro.status === 200 ? `(${ro.json.lines.length} line(s), ${ro.json.unavailable.length} gone)` : `HTTP ${ro.status}`);
+  }
+  const byGuest = await call('POST', `${pub}/orders`, {
+    name: 'Smoke Test stale token', phone: `0788${stamp}9`.slice(0, 12), email: null, address: null, method: 'PICKUP', zoneId: null, notes: 'online-store-smoke', language: 'en', website: '', lines, payment: 'CASH', payPhone: null,
+  }, false, { 'X-Shop-Token': 'stale-token-value' });
+  ok(byGuest.status === 200, 'public: a stale token never stops an order (it becomes a guest order)', `HTTP ${byGuest.status}`);
+
+  const out = await call('POST', acc('logout'), {}, false, h);
+  ok(out.status === 204 || out.status === 200, 'public: sign out', `HTTP ${out.status}`);
+  const after = await call('GET', acc('me'), undefined, false, h);
+  ok(after.status === 401, 'public: the signed-out token no longer works (401)');
+
+  const v2 = await call('POST', acc('verify'), { identifier: email, code: devCode });
+  const reask = v2.status === 200 ? v2 : (await call('POST', acc('code'), { identifier: email, language: 'en' }), await call('POST', acc('verify'), { identifier: email, code: devCode }));
+  if (reask.status === 200) {
+    const h2 = { 'X-Shop-Token': reask.json.token };
+    const del = await call('DELETE', `${pub}/account`, undefined, false, h2);
+    ok(del.status === 204 || del.status === 200, 'public: the account is deleted', `HTTP ${del.status}`);
+    const gone = await call('GET', acc('me'), undefined, false, h2);
+    ok(gone.status === 401, 'public: a deleted account cannot be used any more (401)');
+    const o = await findOrder(guest.json.code);
+    ok(!!o, 'staff: the orders stay in the shop after the account is deleted');
+  } else {
+    ok(false, 'public: sign in again to delete the test account', `HTTP ${reask.status} ${reask.json?.message ?? ''}`);
+  }
+}
+
 async function main() {
   console.log(`Shop at ${base}\n`);
 
@@ -298,6 +373,7 @@ async function main() {
   }
 
   await payments(s, lines);
+  await accounts(s, lines);
 
   // ---- the staff screen counters
   const pc = await call('GET', `${staff}/orders/pending-count`, undefined, true);

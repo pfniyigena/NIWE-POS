@@ -24,6 +24,18 @@ public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> 
 
     long countByPaymentStatus(String paymentStatus);
 
+    List<OnlineOrder> findTop50ByShopCustomerIdOrderByCreatedAtDesc(Long shopCustomerId);
+
+    /** A customer who proved an e-mail address gets the orders earlier placed as a guest with it. Orders already in an account are never moved. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("update OnlineOrder o set o.shopCustomerId = :id where o.shopCustomerId is null and lower(o.customerEmail) = :email")
+    int linkGuestOrders(@org.springframework.data.repository.query.Param("id") Long id, @org.springframework.data.repository.query.Param("email") String email);
+
+    /** The account is deleted: its orders stay (the shop needs them for its books) but no longer belong to it. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("update OnlineOrder o set o.shopCustomerId = null where o.shopCustomerId = :id")
+    int unlinkOrders(@org.springframework.data.repository.query.Param("id") Long id);
+
     long countByCustomerPhoneAndStatus(String customerPhone, String status);
 
     long countByCreatedAtAfter(Instant since);

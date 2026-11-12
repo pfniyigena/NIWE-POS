@@ -3,7 +3,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopPage, ShopProduct } from '../core/api/online-store-api.service';
+import { AccountProfile, OnlineStoreApiService, Reorder, Shop, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { ShopAccountComponent } from './shop-account.component';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
 
@@ -14,7 +15,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShopAccountComponent],
   template: `
     <div class="shop-page" style="max-width:980px; margin:0 auto; padding:1rem 0.75rem 6rem;">
       <div class="alert alert-danger shop-error" *ngIf="error">{{ error }}</div>
@@ -27,7 +28,8 @@ import { T } from '../core/i18n/t';
             <div class="text-muted" *ngIf="shop.intro">{{ shop.intro }}</div>
             <div class="text-muted" *ngIf="shop.phone">📞 {{ shop.phone }}</div>
           </div>
-          <div class="flex gap-1">
+          <div class="flex gap-1" style="align-items:center;">
+            <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email) : ('Sign in' | translate) }}</button>
             <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
             <button class="btn btn-sm" [class.btn-primary]="lang.current === 'fr'" [class.btn-outline-secondary]="lang.current !== 'fr'" (click)="lang.choose('fr')">FR</button>
           </div>
@@ -35,7 +37,10 @@ import { T } from '../core/i18n/t';
 
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
-        <ng-container *ngIf="step === 'shop'">
+        <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
+        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+
+        <ng-container *ngIf="step === 'shop' && !showAccount">
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
           <input class="form-control shop-search" style="max-width:260px;" [placeholder]="'Search' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" name="q" />
           <button class="btn btn-sm" [class.btn-primary]="category === ''" [class.btn-outline-secondary]="category !== ''" (click)="pickCategory('')">{{ 'All' | translate }}</button>
@@ -75,9 +80,9 @@ import { T } from '../core/i18n/t';
         </nav>
         </ng-container>
 
-        <button class="btn btn-sm btn-outline-secondary mt-3 shop-back" *ngIf="step === 'order'" (click)="back()">← {{ 'Continue shopping' | translate }}</button>
+        <button class="btn btn-sm btn-outline-secondary mt-3 shop-back" *ngIf="step === 'order' && !showAccount" (click)="back()">← {{ 'Continue shopping' | translate }}</button>
 
-        <div class="card mt-3 shop-checkout" id="checkout" style="padding:1rem;" *ngIf="step === 'order' && count() > 0">
+        <div class="card mt-3 shop-checkout" id="checkout" style="padding:1rem;" *ngIf="step === 'order' && count() > 0 && !showAccount">
           <h4 class="mb-2">{{ 'Your order' | translate }}</h4>
           <div class="alert alert-danger shop-order-error" id="order-error" role="alert" *ngIf="orderError">{{ orderError }}</div>
           <div *ngFor="let l of cartLines()" class="flex justify-between align-center" style="padding:0.25rem 0; gap:0.5rem;">
@@ -90,6 +95,11 @@ import { T } from '../core/i18n/t';
             <span style="min-width:4.5em; text-align:right;">{{ l.qty * l.p.price | number: '1.0-2' }}</span>
           </div>
           <hr />
+
+          <div class="text-muted mb-2 shop-account-hint" *ngIf="shop.accounts" style="font-size:0.85rem;">
+            <ng-container *ngIf="account">{{ 'Signed in as {p0}. This order will be saved in your account.' | translate: { p0: account.email } }}</ng-container>
+            <ng-container *ngIf="!account">{{ 'Buying as a guest.' | translate }} <a href="javascript:void(0)" class="shop-signin-link" (click)="showAccount = true">{{ 'Sign in' | translate }}</a> {{ 'to save your details and see your orders.' | translate }}</ng-container>
+          </div>
 
           <div class="flex gap-3 mb-2" style="flex-wrap:wrap;">
             <label *ngIf="shop.delivery" class="flex gap-1" style="align-items:center;"><input type="radio" name="method" value="DELIVERY" [(ngModel)]="method" /> {{ 'Delivery' | translate }}</label>
@@ -136,7 +146,7 @@ import { T } from '../core/i18n/t';
           <button class="btn btn-primary shop-place mt-2" style="width:100%;" [disabled]="busy || !shop.open || (!shop.cash && !shop.payOnline)" (click)="place()">{{ busy ? ('Sending…' | translate) : payment === 'CASH' ? ('Place order' | translate) : ('Place order and pay' | translate) }}</button>
         </div>
 
-        <div *ngIf="step === 'shop' && count() > 0" style="position:fixed; left:0; right:0; bottom:0; background:#111827; color:#fff; padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center; z-index:50;">
+        <div *ngIf="step === 'shop' && !showAccount && count() > 0" style="position:fixed; left:0; right:0; bottom:0; background:#111827; color:#fff; padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center; z-index:50;">
           <span>🛒 {{ count() }} · {{ subtotal() | number: '1.0-2' }}</span>
           <button class="btn btn-sm btn-primary shop-checkout-btn" (click)="checkout()">{{ 'Proceed to checkout' | translate }}</button>
         </div>
@@ -176,6 +186,11 @@ export class ShopComponent implements OnInit {
   payment: 'CASH' | 'MOBILE_MONEY' | 'CARD' = 'CASH';
   payPhone = '';
   busy = false;
+  /** The signed-in customer (accounts are optional: null = guest). */
+  account: AccountProfile | null = null;
+  showAccount = false;
+  /** What could not be put back in the cart when ordering again. */
+  reorderNote: string | null = null;
 
   constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService) {}
 
@@ -185,10 +200,38 @@ export class ShopComponent implements OnInit {
         this.shop = s;
         this.method = s.delivery ? 'DELIVERY' : 'PICKUP';
         if (!s.cash && s.payMethods.length > 0) this.payment = s.payMethods[0] as 'MOBILE_MONEY' | 'CARD';
+        if (s.accounts && shopToken.get()) {
+          // A stale token is simply dropped: the customer shops as a guest.
+          this.api.accountMe().subscribe({ next: (p) => this.accountChanged(p), error: () => shopToken.clear() });
+        }
         this.load();
       },
       error: (e) => (this.error = e?.error?.message ?? T('The shop is not available right now.')),
     });
+  }
+
+  /** The customer signed in, saved their details, or signed out. The order form is filled from the account, never over what was already typed. */
+  accountChanged(p: AccountProfile | null): void {
+    this.account = p;
+    if (!p) return;
+    if (!this.name.trim() && p.name) this.name = p.name;
+    if (!this.phone.trim() && p.phone) this.phone = p.phone;
+    if (!this.email.trim()) this.email = p.email;
+    if (!this.address.trim() && p.address) this.address = p.address;
+  }
+
+  /** "Order again": today's products and prices go into the cart, and the customer lands on the order form. */
+  reordered(r: Reorder): void {
+    this.cart = {};
+    this.cartProducts = {};
+    for (const l of r.lines) {
+      this.cart[l.product.id] = Math.max(1, Math.min(20, Math.round(l.quantity)));
+      this.cartProducts[l.product.id] = l.product;
+    }
+    this.reorderNote = r.unavailable.length > 0 ? T('Not added, because they are gone or sold out: {p0}', { p0: r.unavailable.join(', ') }) : null;
+    this.showAccount = false;
+    if (this.count() > 0) this.checkout();
+    else this.step = 'shop';
   }
 
   /** Fetches the current page. A slower, older answer never replaces a newer one. */

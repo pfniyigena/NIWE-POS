@@ -54,6 +54,8 @@ public class OnlineOrder extends BaseEntity {
     /** en or fr: the language of the messages sent to the customer. */
     private String language = "en";
     private Long customerId;
+    /** The shop account the order belongs to (a customer who was signed in, or who verified the same e-mail address later). */
+    private Long shopCustomerId;
     private Long salesOrderId;
     private String salesOrderNumber;
     private Long invoiceId;

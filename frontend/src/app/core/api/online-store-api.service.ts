@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../constants';
 import { ListFilter, pagedList } from './list-state';
@@ -10,7 +10,7 @@ export interface ShopProduct { id: number; name: string; description: string | n
 export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
-  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[];
+  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean;
 }
 export interface ShopPage { items: ShopProduct[]; page: number; size: number; total: number; totalPages: number }
 export interface ShopOrderPayload {
@@ -26,6 +26,12 @@ export interface ShopTrack {
   history: { status: string; note: string | null; at: string }[];
   payment: ShopPayment;
 }
+/** A customer account on the public shop (no passwords: an e-mailed code proves the address). */
+export interface AccountProfile { email: string; phone: string | null; name: string | null; address: string | null; language: string }
+export interface AccountSession { token: string; profile: AccountProfile }
+export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
+/** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
+export interface Reorder { lines: { product: ShopProduct; quantity: number }[]; unavailable: string[] }
 export interface TestPayment { reference: string; amount: number; currency: string; method: string; state: string }
 
 export interface StoreOrder {
@@ -41,7 +47,7 @@ export interface StoreSettings {
   enabled: boolean; paused: boolean; pauseMessage: string | null; shopName: string | null; introText: string | null; contactPhone: string | null;
   pickupAddress: string | null; pickupEnabled: boolean; deliveryEnabled: boolean; codEnabled: boolean; stockBuffer: number; minOrder: number;
   freeDeliveryOver: number | null; maxPendingPerPhone: number; maxPerIpPerHour: number; deliveryProductId: number | null; deliveryProductName: string | null; notifyEmail: string | null; unansweredAlertMinutes: number;
-  onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number;
+  onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number; accountsEnabled: boolean;
 }
 export interface PaymentProvider { code: string; label: string; available: boolean; methods: string[] }
 export interface PaymentRow {
@@ -56,6 +62,20 @@ export interface StoreListing {
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
 }
 export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number }
+
+const TOKEN_KEY = 'niwe.shop.token';
+/** The signed-in customer's session token, kept in this browser only. Storage can be blocked, so every access is guarded. */
+export const shopToken = {
+  get(): string | null {
+    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  },
+  set(t: string): void {
+    try { localStorage.setItem(TOKEN_KEY, t); } catch { /* the customer just has to sign in again next time */ }
+  },
+  clear(): void {
+    try { localStorage.removeItem(TOKEN_KEY); } catch { /* nothing to clear */ }
+  },
+};
 
 /** The public shop (no login) and the staff screens of the Online Store module. */
 @Injectable({ providedIn: 'root' })
@@ -74,7 +94,8 @@ export class OnlineStoreApiService {
     if (category) params = params.set('category', category);
     return this.http.get<ShopPage>(`${this.pub}/products`, { params });
   }
-  place(payload: ShopOrderPayload): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders`, payload); }
+  /** A signed-in customer's order joins their account; a missing or stale token just makes it a guest order. */
+  place(payload: ShopOrderPayload): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders`, payload, { headers: this.shopHeaders() }); }
   track(code: string): Observable<ShopTrack> { return this.http.get<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}`); }
   cancel(code: string): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/cancel`, {}); }
   /** Pay again, or the other way, for an order that is waiting for its payment. */
@@ -84,6 +105,21 @@ export class OnlineStoreApiService {
   /** The test provider's pretend payment page (404 unless the simulated provider is on). */
   testPayment(reference: string): Observable<TestPayment> { return this.http.get<TestPayment>(`${this.pub}/payments/simulated/${encodeURIComponent(reference)}`); }
   decideTestPayment(reference: string, decision: 'approve' | 'decline'): Observable<TestPayment> { return this.http.post<TestPayment>(`${this.pub}/payments/simulated/${encodeURIComponent(reference)}/${decision}`, {}); }
+
+  // ---- customers: accounts
+  private shopHeaders(): HttpHeaders {
+    const t = shopToken.get();
+    return t ? new HttpHeaders({ 'X-Shop-Token': t }) : new HttpHeaders();
+  }
+  /** Sends a sign-in code to an e-mail address (or to the e-mail of the account that has this phone number). The answer is the same either way. */
+  accountCode(identifier: string, language: string): Observable<{ sent: boolean }> { return this.http.post<{ sent: boolean }>(`${this.pub}/account/code`, { identifier, language }); }
+  accountVerify(identifier: string, code: string): Observable<AccountSession> { return this.http.post<AccountSession>(`${this.pub}/account/verify`, { identifier, code }); }
+  accountMe(): Observable<AccountProfile> { return this.http.get<AccountProfile>(`${this.pub}/account/me`, { headers: this.shopHeaders() }); }
+  accountSave(p: { name: string | null; phone: string | null; address: string | null; language: string }): Observable<AccountProfile> { return this.http.put<AccountProfile>(`${this.pub}/account/me`, p, { headers: this.shopHeaders() }); }
+  accountOrders(): Observable<AccountOrder[]> { return this.http.get<AccountOrder[]>(`${this.pub}/account/orders`, { headers: this.shopHeaders() }); }
+  accountReorder(code: string): Observable<Reorder> { return this.http.get<Reorder>(`${this.pub}/account/orders/${encodeURIComponent(code)}/reorder`, { headers: this.shopHeaders() }); }
+  accountLogout(): Observable<void> { return this.http.post<void>(`${this.pub}/account/logout`, {}, { headers: this.shopHeaders() }); }
+  accountDelete(): Observable<void> { return this.http.delete<void>(`${this.pub}/account`, { headers: this.shopHeaders() }); }
   imageUrl(path: string): string { return `${API_BASE.replace(/\/api$/, '')}${path}`; }
 
   // ---- staff: orders

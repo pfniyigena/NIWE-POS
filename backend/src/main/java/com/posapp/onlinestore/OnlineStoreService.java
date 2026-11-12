@@ -156,7 +156,7 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s));
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled());
     }
 
     static final int DEFAULT_PAGE_SIZE = 16;
@@ -174,16 +174,19 @@ public class OnlineStoreService {
         org.springframework.data.domain.Page<OnlineListing> result =
                 listingRepository.findShopPage(needle, cat, org.springframework.data.domain.PageRequest.of(pageNo, pageSize));
         List<PublicProduct> items = new ArrayList<>();
-        for (OnlineListing l : result.getContent()) {
-            Product p = l.getProduct();
-            String title = l.getWebTitle() != null && !l.getWebTitle().isBlank() ? l.getWebTitle() : p.getName();
-            String description = l.getWebDescription() != null && !l.getWebDescription().isBlank() ? l.getWebDescription() : p.getDescription();
-            items.add(new PublicProduct(p.getId(), title, description, shown(p, basePrice(l)),
-                    p.getCategory() == null ? null : p.getCategory().getName(),
-                    p.getIconDataUrl() == null || p.getIconDataUrl().isBlank() ? null : "/api/public/store/products/" + p.getId() + "/image",
-                    stockLabel(sellable(p, s.getStockBuffer()))));
-        }
+        for (OnlineListing l : result.getContent()) items.add(publicProduct(l, s));
         return new PublicProductPage(items, pageNo, pageSize, result.getTotalElements(), result.getTotalPages());
+    }
+
+    /** One product as the public shop shows it: web title and description, today's price, a picture link, and a stock word (never a number). */
+    PublicProduct publicProduct(OnlineListing l, OnlineStoreSettings s) {
+        Product p = l.getProduct();
+        String title = l.getWebTitle() != null && !l.getWebTitle().isBlank() ? l.getWebTitle() : p.getName();
+        String description = l.getWebDescription() != null && !l.getWebDescription().isBlank() ? l.getWebDescription() : p.getDescription();
+        return new PublicProduct(p.getId(), title, description, shown(p, basePrice(l)),
+                p.getCategory() == null ? null : p.getCategory().getName(),
+                p.getIconDataUrl() == null || p.getIconDataUrl().isBlank() ? null : "/api/public/store/products/" + p.getId() + "/image",
+                stockLabel(sellable(p, s.getStockBuffer())));
     }
 
     /** Scaled copies already made, so a busy shop does not decode and shrink the same picture again for every visitor. */
@@ -272,6 +275,12 @@ public class OnlineStoreService {
 
     @Transactional
     public Track place(PlaceRequest in, String ip) {
+        return place(in, ip, null);
+    }
+
+    /** shopCustomerId: the signed-in customer, or null for a guest. */
+    @Transactional
+    public Track place(PlaceRequest in, String ip, Long shopCustomerId) {
         OnlineStoreSettings s = openSettings();
         if (in.website() != null && !in.website().isBlank()) throw ApiException.badRequest(I18n.t("The order could not be placed"));
         if (s.isPaused()) {
@@ -370,6 +379,7 @@ public class OnlineStoreService {
         String code = newCode();
         while (orderRepository.findByCode(code).isPresent()) code = newCode();
         o.setCode(code);
+        o.setShopCustomerId(shopCustomerId);
         o.setDeliveryMethod(method);
         o.setCustomerName(name);
         o.setCustomerPhone(phone);

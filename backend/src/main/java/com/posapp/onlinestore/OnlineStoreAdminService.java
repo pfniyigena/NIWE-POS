@@ -89,6 +89,7 @@ public class OnlineStoreAdminService {
             if (!p.isService()) throw ApiException.badRequest(I18n.t("The delivery product must be a service product, not stock"));
             s.setDeliveryProductId(p.getId());
         }
+        s.setAccountsEnabled(in.accountsEnabled());
         s.setOnlinePaymentsEnabled(in.onlinePaymentsEnabled());
         String prov = text(in.paymentProvider(), 30);
         if (in.onlinePaymentsEnabled()) {
@@ -116,7 +117,7 @@ public class OnlineStoreAdminService {
         return new SettingsDto(s.isEnabled(), s.isPaused(), s.getPauseMessage(), s.getShopName(), s.getIntroText(), s.getContactPhone(), s.getPickupAddress(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
-                s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes());
+                s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled());
     }
 
     // ------------------------------------------------------------------ listings

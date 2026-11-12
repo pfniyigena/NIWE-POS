@@ -59,6 +59,9 @@ import { API_BASE } from '../core/constants';
             <option *ngFor="let p of serviceProducts" [ngValue]="p.id">{{ p.name }}</option>
           </select>
         </div>
+        <h4 class="mt-3 mb-2">{{ 'Customer accounts' | translate }}</h4>
+        <p class="text-muted">{{ 'Customers can sign in with an e-mailed code to see their orders, save their details and order again. Guests can still buy. Needs e-mail to be set up.' | translate }}</p>
+        <label class="flex gap-1 mb-2" style="align-items:center;"><input type="checkbox" name="accounts" [(ngModel)]="s.accountsEnabled" /> {{ 'Customers can sign in to see their orders (optional, by e-mailed code)' | translate }}</label>
         <h4 class="mt-3 mb-2">{{ 'Online payments' | translate }}</h4>
         <p class="text-muted">{{ 'Let customers pay at checkout (mobile money or card). Their order reaches the shop only once the payment is confirmed. Set the currency of the business to the currency you charge in.' | translate }}</p>
         <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="onlinePay" [(ngModel)]="s.onlinePaymentsEnabled" /> {{ 'Customers can pay online' | translate }}</label>

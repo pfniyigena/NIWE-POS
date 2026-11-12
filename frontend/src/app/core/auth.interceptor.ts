@@ -10,6 +10,8 @@ import { getDeviceId } from './device-id';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // The client portal has its own token and sign-in (PortalApiService). A staff token must never go to it, and a portal 401 must not log the staff user out.
   if (req.url.startsWith(`${API_BASE}/portal/`)) return next(req);
+  // Same for the public shop's customer accounts: they have their own token (X-Shop-Token), and a customer's 401 must not log a staff user out.
+  if (req.url.startsWith(`${API_BASE}/public/store/account`)) return next(req);
   const auth = inject(AuthService);
   const router = inject(Router);
   const token = auth.getToken();
