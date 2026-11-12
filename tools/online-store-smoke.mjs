@@ -8,12 +8,18 @@
 // Needs: Node 18 or newer; the Online Store module switched on and licensed; the shop open (Online Store > Shop settings); at least one
 // product on the shop with stock; for the delivery part, a delivery area and a delivery-fee service product in the shop settings.
 // Check the e-mail log or inbox yourself afterwards: this script cannot see mail.
+//
+// Online payments (phase 2) are tried too when the shop has them switched on with the SIMULATED provider and you give the webhook secret
+// (app.online-store.payments.simulated.secret, set in application-dev.properties) as SIM_SECRET or the 5th argument; otherwise that part is skipped.
 
 const base = (process.argv[2] || process.env.BASE || 'http://localhost:8080').replace(/\/+$/, '');
 const user = process.argv[3] || process.env.ADMIN_USER || 'admin';
 const password = process.argv[4] || process.env.ADMIN_PASSWORD || '';
+const simSecret = process.argv[5] || process.env.SIM_SECRET || '';
 const pub = `${base}/api/public/store`;
 const staff = `${base}/api/online-store`;
+
+import { createHmac } from 'node:crypto';
 
 let passed = 0;
 let failed = 0;
@@ -51,6 +57,124 @@ async function step(order, what, path, body) {
   const r = await call('POST', `${staff}/orders/${order.id}/${path}`, body ?? {}, true);
   ok(r.status === 200, `staff: ${what}`, r.status === 200 ? `-> ${r.json?.status}` : `HTTP ${r.status} ${r.json?.message ?? r.text.slice(0, 160)}`);
   return r.status === 200 ? r.json : null;
+}
+
+/** Posts a webhook the way the simulated provider does: the raw JSON body and its HMAC-SHA256 in X-Signature. */
+async function webhook(reference, status, amount, signature) {
+  const body = JSON.stringify({ reference, status, amount: String(amount), providerReference: `SIM-${reference}`, ...(status === 'FAILED' ? { reason: 'Smoke test decline' } : {}) });
+  const sig = signature ?? createHmac('sha256', simSecret).update(body).digest('hex');
+  const res = await fetch(`${pub}/payments/SIMULATED/webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Signature': sig }, body });
+  const text = await res.text();
+  let json = null;
+  try { json = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
+  return { status: res.status, json };
+}
+
+/** An online order waiting for its payment: returns the track, the payment reference and the staff row. */
+async function placeOnline(n, lines, way = 'MOBILE_MONEY') {
+  const r = await place(n, { method: 'PICKUP', lines, payment: way, payPhone: way === 'MOBILE_MONEY' ? `0788${stamp}`.slice(0, 11) : null });
+  return r;
+}
+
+async function payments(s, lines) {
+  if (!s.payOnline || !simSecret) {
+    console.log(`SKIP  online payments: ${!s.payOnline ? 'not switched on in the shop settings (or no provider available)' : 'no SIM_SECRET given'}`);
+    return;
+  }
+  console.log('\nOnline payments');
+  const noPhone = await place(5, { method: 'PICKUP', lines, payment: 'MOBILE_MONEY', payPhone: '' });
+  ok(noPhone.status === 400, 'public: mobile money without a number is refused', `HTTP ${noPhone.status} "${noPhone.json?.message ?? ''}"`);
+
+  // ---- A. paid by webhook, then the whole way to the invoice
+  const a = await placeOnline(6, lines);
+  if (!ok(a.status === 200 && a.json?.status === 'AWAITING_PAYMENT' && a.json?.payment?.status === 'AWAITING', 'public: online order waits for its payment', a.status === 200 ? `code ${a.json.code}` : `HTTP ${a.status} ${a.json?.message ?? ''}`)) return;
+  const code = a.json.code;
+  const ref = `OS${code}-1`;
+  ok(!!a.json.payment.redirectUrl && a.json.payment.redirectUrl.includes('/shop/pay-test/'), 'public: the customer is sent to the test payment page', a.json.payment.redirectUrl ?? '');
+  let o = await findOrder(code);
+  ok(!!o && o.status === 'AWAITING_PAYMENT', 'staff: the order is Awaiting payment, not in the New queue');
+  const newQueue = await call('GET', `${staff}/orders?q=${encodeURIComponent(code)}&status=PLACED`, undefined, true);
+  ok(Array.isArray(newQueue.json) && newQueue.json.length === 0, 'staff: it is not listed under New yet');
+  const accEarly = await call('POST', `${staff}/orders/${o.id}/accept`, { overrideShortage: false }, true);
+  ok(accEarly.status >= 400, 'staff: an unpaid order cannot be accepted', `HTTP ${accEarly.status}`);
+
+  const total = a.json.total;
+  const bad = await webhook(ref, 'PAID', total, 'deadbeef');
+  ok(bad.status === 401, 'webhook: a wrong signature is refused', `HTTP ${bad.status}`);
+  const stillWaiting = await call('GET', `${pub}/orders/${code}`);
+  ok(stillWaiting.json?.status === 'AWAITING_PAYMENT', 'public: and the order did not move');
+  const paid = await webhook(ref, 'PAID', total);
+  ok(paid.status === 200 && paid.json?.ok === true, 'webhook: a signed PAID call is accepted');
+  const placed = await call('GET', `${pub}/orders/${code}`);
+  ok(placed.json?.status === 'PLACED' && placed.json?.payment?.status === 'PAID', 'public: the order is now placed and paid', `${placed.json?.status} / ${placed.json?.payment?.status}`);
+  const events = (placed.json?.history ?? []).length;
+  const dup = await webhook(ref, 'PAID', total);
+  const afterDup = await call('GET', `${pub}/orders/${code}`);
+  ok(dup.status === 200 && (afterDup.json?.history ?? []).length === events, 'webhook: the same call again changes nothing');
+  o = await findOrder(code);
+  ok(o?.status === 'PLACED' && o?.paymentStatus === 'PAID' && Number(o?.paidAmount) === Number(total), 'staff: the order is New and marked paid online', `${o?.paymentChannel} ${o?.paymentReference}`);
+  const acc = await step(o, 'accept the paid order', 'accept', { overrideShortage: false });
+  if (acc) {
+    await step(o, 'ready for pick-up', 'ready-for-pickup', {});
+    const done = await step(o, 'complete (nothing to collect: it is already paid)', 'complete', { collectPayment: false });
+    if (done) {
+      const inv = await call('GET', `${base}/api/invoices/${done.invoiceId}`, undefined, true);
+      ok(inv.status === 200, 'staff: the invoice can be opened', inv.status === 200 ? `status ${inv.json.status ?? '?'}, total ${inv.json.totalAmount ?? '?'}, paid ${inv.json.paidAmount ?? inv.json.amountPaid ?? '?'}` : `HTTP ${inv.status}`);
+    }
+  }
+
+  // ---- B. a paid order is rejected: refund due, then refunded
+  const b = await placeOnline(7, lines, 'CARD');
+  if (ok(b.status === 200 && b.json?.payment?.status === 'AWAITING', 'public: a card order waits for its payment')) {
+    await webhook(`OS${b.json.code}-1`, 'PAID', b.json.total);
+    const ob = await findOrder(b.json.code);
+    await step(ob, 'reject the paid order', 'reject', { reason: 'Smoke test: cannot deliver' });
+    const afterReject = await findOrder(b.json.code);
+    ok(afterReject?.paymentStatus === 'REFUND_DUE', 'staff: rejecting a paid order makes a refund due', afterReject?.paymentStatus ?? '');
+    const refund = await call('POST', `${staff}/orders/${ob.id}/refund`, { manual: false }, true);
+    ok(refund.status === 200 && refund.json?.paymentStatus === 'REFUNDED', 'staff: refund through the provider', refund.status === 200 ? refund.json.refundReference : `HTTP ${refund.status} ${refund.json?.message ?? ''}`);
+    const twice = await call('POST', `${staff}/orders/${ob.id}/refund`, { manual: false }, true);
+    ok(twice.status >= 400, 'staff: a second refund is refused', `HTTP ${twice.status}`);
+  }
+
+  // ---- C. declined, then paid with the other way
+  const c = await placeOnline(8, lines);
+  if (ok(c.status === 200 && c.json?.payment?.status === 'AWAITING', 'public: another online order waits for its payment')) {
+    await webhook(`OS${c.json.code}-1`, 'FAILED', c.json.total);
+    const failed1 = await call('GET', `${pub}/orders/${c.json.code}`);
+    ok(failed1.json?.payment?.status === 'FAILED' && failed1.json?.payment?.canRetry === true && failed1.json?.status === 'AWAITING_PAYMENT', 'public: after a decline the customer can try again');
+    const retry = await call('POST', `${pub}/orders/${c.json.code}/pay`, { payment: 'CARD', payPhone: null });
+    ok(retry.status === 200 && retry.json?.payment?.status === 'AWAITING', 'public: trying again with a card starts a new payment');
+    const approve = await call('POST', `${pub}/payments/simulated/OS${c.json.code}-2/approve`, {});
+    ok(approve.status === 200 && approve.json?.state === 'PAID', 'test page: pressing Pay settles it through the signed webhook', `state ${approve.json?.state}`);
+    const now = await call('GET', `${pub}/orders/${c.json.code}`);
+    ok(now.json?.status === 'PLACED' && now.json?.payment?.status === 'PAID', 'public: the order is placed and paid');
+  }
+
+  // ---- D. a payment of the wrong amount is held for a person
+  const d = await placeOnline(9, lines);
+  if (ok(d.status === 200, 'public: an online order for the wrong-amount test')) {
+    const ref2 = `OS${d.json.code}-1`;
+    await webhook(ref2, 'PAID', Number(d.json.total) - 1);
+    const held = await call('GET', `${pub}/orders/${d.json.code}`);
+    ok(held.json?.status === 'AWAITING_PAYMENT', 'public: a payment of the wrong amount does not release the order');
+    const rec = await call('GET', `${staff}/payments`, undefined, true);
+    const row = rec.json?.rows?.find((x) => x.reference === ref2);
+    ok(rec.status === 200 && row?.flag === 'REVIEW' && rec.json.summary.toReview >= 1, 'staff: the reconciliation flags it for review', row?.failureReason ?? `HTTP ${rec.status}`);
+    if (row) {
+      const noNote = await call('POST', `${staff}/payments/${row.id}/resolve`, { note: '' }, true);
+      ok(noNote.status >= 400, 'staff: resolving needs a note', `HTTP ${noNote.status}`);
+      const res = await call('POST', `${staff}/payments/${row.id}/resolve`, { note: 'Smoke test: refunded by hand' }, true);
+      ok(res.status === 204 || res.status === 200, 'staff: the review is closed with a note', `HTTP ${res.status}`);
+    }
+    const cancel = await call('POST', `${pub}/orders/${d.json.code}/cancel`, {});
+    ok(cancel.status === 200 && cancel.json?.status === 'CANCELLED', 'public: the customer cancels an order that is still unpaid');
+  }
+
+  const rec = await call('GET', `${staff}/payments`, undefined, true);
+  if (ok(rec.status === 200 && !!rec.json?.summary, 'staff: the online payments summary answers', rec.status === 200 ? JSON.stringify(rec.json.summary) : `HTTP ${rec.status}`)) {
+    ok(Number(rec.json.summary.paid) > 0, 'staff: it counts what was paid');
+  }
 }
 
 async function main() {
@@ -173,9 +297,11 @@ async function main() {
     }
   }
 
+  await payments(s, lines);
+
   // ---- the staff screen counters
   const pc = await call('GET', `${staff}/orders/pending-count`, undefined, true);
-  ok(pc.status === 200 && typeof pc.json?.pending === 'number', 'staff: the waiting-orders counter answers', pc.status === 200 ? JSON.stringify(pc.json) : `HTTP ${pc.status}`);
+  ok(pc.status === 200 && typeof pc.json?.pending === 'number' && typeof pc.json?.refundsDue === 'number', 'staff: the waiting-orders counter answers', pc.status === 200 ? JSON.stringify(pc.json) : `HTTP ${pc.status}`);
 }
 
 try {

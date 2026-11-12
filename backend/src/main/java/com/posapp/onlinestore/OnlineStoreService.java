@@ -49,6 +49,7 @@ public class OnlineStoreService {
     private final StoreSettingsService storeSettingsService;
     private final MailService mailService;
     private final AuditLogService auditLogService;
+    private final OnlinePaymentService payments;
 
     /** Requests per connection in the last hour, to slow down scripts that fill the order list. */
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
@@ -56,7 +57,8 @@ public class OnlineStoreService {
     public OnlineStoreService(OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository,
                               OnlineDeliveryZoneRepository zoneRepository, OnlineOrderRepository orderRepository,
                               StockReservationService stockReservationService, StoreSettingsService storeSettingsService,
-                              MailService mailService, AuditLogService auditLogService) {
+                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments) {
+        this.payments = payments;
         this.settingsRepository = settingsRepository;
         this.listingRepository = listingRepository;
         this.zoneRepository = zoneRepository;
@@ -154,7 +156,7 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories());
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s));
     }
 
     static final int DEFAULT_PAGE_SIZE = 16;
@@ -276,7 +278,14 @@ public class OnlineStoreService {
             throw ApiException.badRequest(I18n.t("We are not taking orders right now.") + (s.getPauseMessage() == null ? "" : " " + s.getPauseMessage()));
         }
         throttle(ip, s.getMaxPerIpPerHour());
-        if (!s.isCodEnabled()) throw ApiException.badRequest(I18n.t("Paying online is not available yet. Please try again later."));
+        // How the customer pays: in cash on delivery or at pick-up, or online (mobile money, card) before the shop sees the order.
+        String pay = in.payment() == null || in.payment().isBlank() ? "CASH" : in.payment().trim().toUpperCase();
+        boolean online = !pay.equals("CASH");
+        if (online) {
+            if (!payments.payMethods(s).contains(pay)) throw ApiException.badRequest(I18n.t("Paying online is not available right now. Please choose to pay in cash."));
+        } else if (!s.isCodEnabled()) {
+            throw ApiException.badRequest(I18n.t("Paying in cash is not available right now. Please pay online."));
+        }
         String method = in.method() == null ? "" : in.method().trim().toUpperCase();
         if (!method.equals("DELIVERY") && !method.equals("PICKUP")) throw ApiException.badRequest(I18n.t("Choose delivery or pick-up"));
         if (method.equals("DELIVERY") && !s.isDeliveryEnabled()) throw ApiException.badRequest(I18n.t("Delivery is not available right now"));
@@ -288,7 +297,7 @@ public class OnlineStoreService {
         if (digits.length() < 7 || phone.replaceAll("[0-9+\\-() ]", "").length() > 0) throw ApiException.badRequest(I18n.t("Enter a phone number we can call"));
         String email = clean(in.email(), 160, I18n.t("Your e-mail address"), false);
         if (email != null && !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw ApiException.badRequest(I18n.t("That e-mail address does not look right"));
-        if (orderRepository.countByCustomerPhoneAndStatus(phone, "PLACED") >= s.getMaxPendingPerPhone()) {
+        if (orderRepository.countByCustomerPhoneAndStatus(phone, "PLACED") + orderRepository.countByCustomerPhoneAndStatus(phone, "AWAITING_PAYMENT") >= s.getMaxPendingPerPhone()) {
             throw ApiException.badRequest(I18n.t("You already have {0} orders waiting for an answer. Please wait for them or call us.", s.getMaxPendingPerPhone()));
         }
 
@@ -375,17 +384,25 @@ public class OnlineStoreService {
         o.setSubtotal(subtotal);
         o.setTotal(subtotal.add(fee));
         o.setLanguage("fr".equalsIgnoreCase(in.language()) ? "fr" : "en");
+        // An order paid online is not the shop's to answer until the payment is confirmed; it waits as AWAITING_PAYMENT (holding no stock).
+        o.setStatus(online ? "AWAITING_PAYMENT" : "PLACED");
         OnlineOrderEvent ev = new OnlineOrderEvent();
         ev.setOnlineOrder(o);
-        ev.setStatus("PLACED");
+        ev.setStatus(o.getStatus());
         ev.setByUser("customer");
         o.getEvents().add(ev);
         OnlineOrder saved = orderRepository.save(o);
-        auditLogService.record("ONLINE_ORDER_PLACED", "Online order " + saved.getCode() + " from " + name + " (" + money(saved.getTotal()) + ")", "OnlineOrder", saved.getId());
-        OnlineMessages.send(mailService, storeSettingsService, saved,
-                OnlineMessages.m("We received your order {0}", saved.getCode()),
-                OnlineMessages.m("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())));
-        OnlineMessages.notifyShop(mailService, storeSettingsService, s, saved);
+        auditLogService.record("ONLINE_ORDER_PLACED", "Online order " + saved.getCode() + " from " + name + " (" + money(saved.getTotal()) + (online ? ", to be paid online" : "") + ")", "OnlineOrder", saved.getId());
+        if (online) {
+            // Starting the payment can fail (bad number, provider down): the whole order is then not placed, and the customer fixes it and sends again.
+            payments.start(saved, pay, in.payPhone(), s);
+            orderRepository.save(saved);
+        } else {
+            OnlineMessages.send(mailService, storeSettingsService, saved,
+                    OnlineMessages.m("We received your order {0}", saved.getCode()),
+                    OnlineMessages.m("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())));
+            OnlineMessages.notifyShop(mailService, storeSettingsService, s, saved);
+        }
         return track(saved);
     }
 
@@ -405,7 +422,7 @@ public class OnlineStoreService {
         openSettings();
         throttle("t:" + ip, 60);
         OnlineOrder o = orderRepository.findByCode(code == null ? "" : code.trim().toUpperCase()).orElseThrow(() -> ApiException.notFound(I18n.t("We could not find that order. Check the code.")));
-        if (!o.getStatus().equals("PLACED")) throw ApiException.badRequest(I18n.t("This order is already being handled. Please call us to change it."));
+        if (!o.getStatus().equals("PLACED") && !o.getStatus().equals("AWAITING_PAYMENT")) throw ApiException.badRequest(I18n.t("This order is already being handled. Please call us to change it."));
         o.setStatus("CANCELLED");
         OnlineOrderEvent ev = new OnlineOrderEvent();
         ev.setOnlineOrder(o);
@@ -413,15 +430,30 @@ public class OnlineStoreService {
         ev.setNote(I18n.t("Cancelled by the customer"));
         ev.setByUser("customer");
         o.getEvents().add(ev);
+        boolean refundDue = payments.afterClosed(o);
         orderRepository.save(o);
-        OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), OnlineMessages.m("Your order {0} has been cancelled.", o.getCode()));
+        OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()),
+                refundDue ? OnlineMessages.m("Your order {0} has been cancelled. We will refund {1} to the account you paid with.", o.getCode(), money(o.getPaidAmount()))
+                        : OnlineMessages.m("Your order {0} has been cancelled.", o.getCode()));
         return track(o);
     }
 
-    private static Track track(OnlineOrder o) {
+    /** The customer tries to pay again (or with the other way) for an order that is waiting for its payment. */
+    @Transactional
+    public Track payAgain(String code, PayRequest in, String ip) {
+        OnlineStoreSettings s = openSettings();
+        throttle("t:" + ip, 60);
+        OnlineOrder o = orderRepository.findByCode(code == null ? "" : code.trim().toUpperCase()).orElseThrow(() -> ApiException.notFound(I18n.t("We could not find that order. Check the code.")));
+        if (!o.getStatus().equals("AWAITING_PAYMENT") || o.getPaymentStatus().equals("PAID")) throw ApiException.badRequest(I18n.t("This order cannot be paid now."));
+        payments.start(o, in == null ? null : in.payment(), in == null ? null : in.payPhone(), s);
+        orderRepository.save(o);
+        return track(o);
+    }
+
+    private Track track(OnlineOrder o) {
         List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList();
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
-                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps);
+                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o));
     }
 }

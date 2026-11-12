@@ -376,6 +376,8 @@ import { StoreOrdersComponent } from './online-store/store-orders.component';
 import { StoreSetupComponent } from './online-store/store-setup.component';
 import { ShopComponent } from './online-store/shop.component';
 import { ShopTrackComponent } from './online-store/shop-track.component';
+import { ShopPayTestComponent } from './online-store/shop-pay-test.component';
+import { StorePaymentsComponent } from './online-store/store-payments.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
 import { QrPrintComponent } from './restaurant/qr-print.component';
 import { PublicOrderComponent } from './restaurant/public-order.component';
@@ -1079,8 +1081,10 @@ const baseRoutes: Routes = [
   { path: 'admin/restaurant/wastage/new', component: RestaurantWastageFormComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/orders', component: StoreOrdersComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/setup', component: StoreSetupComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/payments', component: StorePaymentsComponent, canActivate: [authGuard] },
   { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  { path: 'shop/pay-test/:reference', component: ShopPayTestComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'admin/restaurant/online-orders', component: OnlineOrdersComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/online-setup', component: OnlineSetupComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/qr-print', component: QrPrintComponent, canActivate: [authGuard] },

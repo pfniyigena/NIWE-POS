@@ -30,8 +30,10 @@ public class OnlineStoreController {
 
     private final OnlineOrderService orders;
     private final OnlineStoreAdminService admin;
+    private final OnlinePaymentService payments;
 
-    public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin) {
+    public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments) {
+        this.payments = payments;
         this.orders = orders;
         this.admin = admin;
     }
@@ -55,6 +57,35 @@ public class OnlineStoreController {
     @GetMapping("/orders/{id}")
     public OrderDto get(@PathVariable Long id) {
         return orders.get(id);
+    }
+
+    /** Gives the money back for an order that was paid online and then cancelled or rejected. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/orders/{id}/refund")
+    public OrderDto refund(@PathVariable Long id, @RequestBody(required = false) RefundRequest request) {
+        return orders.refund(id, request);
+    }
+
+    /** Online payments for the reconciliation screen: what was paid, what is in the books, what is waiting, what needs a person. */
+    @PreAuthorize(VIEW)
+    @GetMapping("/payments")
+    public Reconciliation reconciliation(@RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+                                         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+                                         @RequestParam(required = false) String status) {
+        return orders.reconciliation(from, to, status);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/payments/{id}/resolve")
+    public ResponseEntity<Void> resolvePayment(@PathVariable Long id, @RequestBody ResolveRequest request) {
+        orders.resolvePayment(id, request == null ? null : request.note());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/payment-providers")
+    public List<ProviderDto> paymentProviders() {
+        return payments.providerList();
     }
 
     @PreAuthorize(MANAGE)

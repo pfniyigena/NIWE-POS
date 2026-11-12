@@ -2,6 +2,7 @@ package com.posapp.onlinestore;
 
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
+import com.posapp.onlinestore.OnlineStoreDtos.PayRequest;
 import com.posapp.onlinestore.OnlineStoreDtos.PlaceRequest;
 import com.posapp.onlinestore.OnlineStoreDtos.PublicProductPage;
 import com.posapp.onlinestore.OnlineStoreDtos.PublicShop;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.posapp.onlinestore.payment.SimulatedPaymentProvider;
 
 import java.util.concurrent.TimeUnit;
 
@@ -31,8 +33,12 @@ public class PublicStoreController {
 
     private final OnlineStoreService service;
     private final ModuleService moduleService;
+    private final OnlinePaymentService payments;
+    private final SimulatedPaymentProvider simulated;
 
-    public PublicStoreController(OnlineStoreService service, ModuleService moduleService) {
+    public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated) {
+        this.payments = payments;
+        this.simulated = simulated;
         this.service = service;
         this.moduleService = moduleService;
     }
@@ -84,5 +90,40 @@ public class PublicStoreController {
     public Track cancel(@PathVariable String code, HttpServletRequest http) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
         return service.cancelByCustomer(code, ip(http));
+    }
+
+    /** The customer pays again, or the other way, for an order that is waiting for its payment. */
+    @PostMapping("/orders/{code}/pay")
+    public Track pay(@PathVariable String code, @Valid @RequestBody PayRequest request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return service.payAgain(code, request, ip(http));
+    }
+
+    /**
+     * Where the payment provider tells us a payment was made or failed. Not gated by the module switch on purpose: money that arrives must always be
+     * recorded. A call without a valid signature is answered 401 and changes nothing; a valid one is always answered ok.
+     */
+    @PostMapping(value = "/payments/{provider}/webhook", consumes = MediaType.ALL_VALUE)
+    public java.util.Map<String, Object> webhook(@PathVariable String provider, @RequestBody String body, HttpServletRequest http) {
+        java.util.Map<String, String> headers = new java.util.HashMap<>();
+        java.util.Collections.list(http.getHeaderNames()).forEach(n -> headers.put(n.toLowerCase(java.util.Locale.ROOT), http.getHeader(n)));
+        payments.processWebhook(provider, body, headers, ip(http));
+        return java.util.Map.of("ok", true);
+    }
+
+    // ---- the test provider's pretend payment page (404 unless the simulated provider is switched on)
+
+    @GetMapping("/payments/simulated/{reference}")
+    public SimulatedPaymentProvider.TestPayment testPayment(@PathVariable String reference) {
+        return simulated.find(reference);
+    }
+
+    @PostMapping("/payments/simulated/{reference}/{decision}")
+    public SimulatedPaymentProvider.TestPayment decideTestPayment(@PathVariable String reference, @PathVariable String decision, HttpServletRequest http) {
+        if (!decision.equals("approve") && !decision.equals("decline")) throw com.posapp.common.ApiException.notFound("Not found.");
+        SimulatedPaymentProvider.Signed signed = simulated.decide(reference, decision.equals("approve"));
+        // The pretend provider calls our own webhook, signature and all, exactly as a real one would.
+        payments.processWebhook(SimulatedPaymentProvider.CODE, signed.body(), java.util.Map.of("x-signature", signed.signature()), ip(http));
+        return simulated.find(reference);
     }
 }

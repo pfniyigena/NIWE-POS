@@ -165,6 +165,7 @@ import { LanguageSwitcherComponent } from './language-switcher.component';
         </button>
         <ng-container *ngIf="isOpen('onlinestore') && modules.on('ONLINE_STORE')">
           <a *ngIf="canSee('/admin/online-store/orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/orders" routerLinkActive="active"><span class="sidenav-icon">📲</span> {{ 'Online orders' | translate }}</a>
+          <a *ngIf="canSee('/admin/online-store/payments')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> {{ 'Online payments' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/setup')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/setup" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Shop settings' | translate }}</a>
           <a class="sidenav-link sidenav-sublink" href="/shop" target="_blank" rel="noopener"><span class="sidenav-icon">🌐</span> {{ 'Open the shop' | translate }}</a>
         </ng-container>

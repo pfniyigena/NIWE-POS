@@ -4,10 +4,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, StoreListing, StoreSettings, StoreZone } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, PaymentProvider, StoreListing, StoreSettings, StoreZone } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
+import { API_BASE } from '../core/constants';
 
 /**
  * Online Store > Shop settings: the shop's switches and limits, the products shown on it and the delivery areas. The shop stays closed until it is
@@ -58,6 +59,20 @@ import { T } from '../core/i18n/t';
             <option *ngFor="let p of serviceProducts" [ngValue]="p.id">{{ p.name }}</option>
           </select>
         </div>
+        <h4 class="mt-3 mb-2">{{ 'Online payments' | translate }}</h4>
+        <p class="text-muted">{{ 'Let customers pay at checkout (mobile money or card). Their order reaches the shop only once the payment is confirmed. Set the currency of the business to the currency you charge in.' | translate }}</p>
+        <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="onlinePay" [(ngModel)]="s.onlinePaymentsEnabled" /> {{ 'Customers can pay online' | translate }}</label>
+        <div class="flex gap-3 mt-2" style="flex-wrap:wrap;" *ngIf="s.onlinePaymentsEnabled || s.paymentProvider">
+          <div class="form-group" style="min-width:260px;">
+            <label class="form-label">{{ 'Payment provider' | translate }}</label>
+            <select class="form-select" name="provider" [(ngModel)]="s.paymentProvider">
+              <option [ngValue]="null">{{ '— none —' | translate }}</option>
+              <option *ngFor="let p of providers" [ngValue]="p.code" [disabled]="!p.available">{{ p.label }}{{ p.available ? '' : (' (' + ('not set up' | translate) + ')') }}</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">{{ 'Minutes the customer has to pay' | translate }}</label><input class="form-control" type="number" min="5" max="1440" style="width:140px;" name="expiry" [(ngModel)]="s.paymentExpiryMinutes" /></div>
+        </div>
+        <p class="text-muted mt-1" *ngIf="s.onlinePaymentsEnabled" style="font-size:0.85rem;">{{ 'Tell the provider to send payment results to {p0}/public/store/payments/CODE/webhook, with CODE the provider code (for example SIMULATED).' | translate: { p0: apiBase } }}</p>
         <div class="mt-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save settings' | translate }}</button></div>
       </form>
 
@@ -128,10 +143,14 @@ export class StoreSetupComponent implements OnInit {
   message: string | null = null;
   busy = false;
 
+  providers: PaymentProvider[] = [];
+  apiBase = API_BASE;
+
   constructor(private api: OnlineStoreApiService, private catalog: CatalogApiService) {}
 
   ngOnInit(): void {
     this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => this.fail(e, 'Failed to load the settings') });
+    this.api.providers().subscribe({ next: (p) => (this.providers = p), error: () => {} });
     this.loadListings();
     this.loadZones();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });

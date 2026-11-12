@@ -25,7 +25,7 @@ public final class OnlineStoreDtos {
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
-                             List<PublicZone> zones, List<String> categories) {
+                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -37,7 +37,8 @@ public final class OnlineStoreDtos {
 
     public record PlaceRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 160) String email,
                                @Size(max = 240) String address, String method, Long zoneId, @Size(max = 300) String notes,
-                               String language, String website, @Valid List<PublicLine> lines) {
+                               String language, String website, @Valid List<PublicLine> lines,
+                               String payment, @Size(max = 40) String payPhone) {
     }
 
     public record TrackLine(String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
@@ -46,9 +47,20 @@ public final class OnlineStoreDtos {
     public record TrackStep(String status, String note, Instant at) {
     }
 
+    /**
+     * What the customer sees about payment. method is COD or ONLINE; status is NONE, AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED.
+     * redirectUrl is where to send the customer to finish paying (while a try is pending); canRetry means "Try again" may be shown.
+     */
+    public record PaymentInfo(String method, String status, String channel, String redirectUrl, boolean canRetry, Instant expiresAt, BigDecimal paidAmount) {
+    }
+
     public record Track(String code, String status, String deliveryMethod, String name, String zoneName, BigDecimal subtotal,
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
-                        List<TrackLine> lines, List<TrackStep> history) {
+                        List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment) {
+    }
+
+    /** The customer pays again (or with another way) for an order that is waiting for payment. */
+    public record PayRequest(String payment, @Size(max = 40) String payPhone) {
     }
 
     // ---------------------------------------------------------------- staff
@@ -63,6 +75,8 @@ public final class OnlineStoreDtos {
                            String customerPhone, String customerEmail, String customerAddress, String zoneName, BigDecimal deliveryFee,
                            String notes, BigDecimal subtotal, BigDecimal total, String language, Long salesOrderId, String salesOrderNumber,
                            Long invoiceId, String invoiceNumber, String rejectReason, String decidedBy, Instant decidedAt, Instant createdAt,
+                           String paymentStatus, String paymentChannel, String paymentReference, BigDecimal paidAmount, Instant paidAt,
+                           Instant refundedAt, String refundReference,
                            List<OrderLineDto> lines, List<EventDto> events) {
     }
 
@@ -84,7 +98,34 @@ public final class OnlineStoreDtos {
                               String pickupAddress, boolean pickupEnabled, boolean deliveryEnabled, boolean codEnabled, int stockBuffer,
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
-                              int unansweredAlertMinutes) {
+                              int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes) {
+    }
+
+    // ---------------------------------------------------------------- online payments (staff)
+
+    public record ProviderDto(String code, String label, boolean available, List<String> methods) {
+    }
+
+    /** manual: the refund was made outside the system and reference says which; otherwise the provider is asked to refund. */
+    public record RefundRequest(boolean manual, @Size(max = 80) String reference, @Size(max = 160) String note) {
+    }
+
+    public record ResolveRequest(@Size(max = 160) String note) {
+    }
+
+    /** flag is REVIEW, REFUND_DUE, STUCK_PENDING or empty: what needs a person. */
+    public record PaymentRow(Long id, Long orderId, String orderCode, Instant createdAt, String provider, String reference, String providerReference,
+                             String method, String phone, BigDecimal amount, String currency, String status, String failureReason,
+                             String orderStatus, String orderPaymentStatus, String flag) {
+    }
+
+    /** paid = confirmed payments in the period; inBooks = of those, on completed orders (recorded as invoice payments); held = on orders not completed yet;
+     *  refundDue / refunded = money to give back / given back. */
+    public record ReconSummary(BigDecimal paid, BigDecimal inBooks, BigDecimal held, BigDecimal refundDue, BigDecimal refunded,
+                               long toReview, long failed, long stuck) {
+    }
+
+    public record Reconciliation(ReconSummary summary, List<PaymentRow> rows) {
     }
 
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,

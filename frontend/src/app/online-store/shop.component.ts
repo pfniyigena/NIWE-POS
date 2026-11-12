@@ -114,13 +114,26 @@ import { T } from '../core/i18n/t';
           <!-- A real visitor never sees this field; a bot that fills in every box does. -->
           <input type="text" name="website" [(ngModel)]="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px; width:1px; height:1px;" />
 
+          <div class="mb-2" *ngIf="shop.payOnline">
+            <label class="form-label">{{ 'How do you want to pay?' | translate }}</label>
+            <div class="flex gap-3" style="flex-wrap:wrap;">
+              <label *ngIf="shop.cash" class="flex gap-1" style="align-items:center;"><input type="radio" name="pay" value="CASH" [(ngModel)]="payment" /> {{ method === 'DELIVERY' ? ('Cash on delivery' | translate) : ('Cash at pick-up' | translate) }}</label>
+              <label *ngIf="shop.payMethods.includes('MOBILE_MONEY')" class="flex gap-1" style="align-items:center;"><input type="radio" name="pay" value="MOBILE_MONEY" [(ngModel)]="payment" /> {{ 'Mobile money' | translate }}</label>
+              <label *ngIf="shop.payMethods.includes('CARD')" class="flex gap-1" style="align-items:center;"><input type="radio" name="pay" value="CARD" [(ngModel)]="payment" /> {{ 'Card' | translate }}</label>
+            </div>
+            <div class="form-group mt-1" *ngIf="payment === 'MOBILE_MONEY'">
+              <label class="form-label">{{ 'Mobile money number to pay from' | translate }}</label>
+              <input class="form-control shop-pay-phone" style="max-width:260px;" maxlength="40" inputmode="tel" name="payphone" [(ngModel)]="payPhone" [placeholder]="phone" />
+            </div>
+          </div>
           <hr />
           <div class="flex justify-between"><span>{{ 'Items' | translate }}</span><span>{{ subtotal() | number: '1.0-2' }}</span></div>
           <div class="flex justify-between" *ngIf="method === 'DELIVERY'"><span>{{ 'Delivery' | translate }}</span><span>{{ fee() | number: '1.0-2' }}</span></div>
           <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="shop-total">{{ subtotal() + fee() | number: '1.0-2' }}</strong></div>
-          <div class="text-muted" style="font-size:0.8rem;">{{ method === 'DELIVERY' ? ('Pay in cash when your order arrives. Prices include tax.' | translate) : ('Pay in cash when you collect. Prices include tax.' | translate) }}</div>
+          <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment === 'CASH'">{{ method === 'DELIVERY' ? ('Pay in cash when your order arrives. Prices include tax.' | translate) : ('Pay in cash when you collect. Prices include tax.' | translate) }}</div>
+          <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment !== 'CASH'">{{ 'You pay now. The shop gets your order as soon as the payment is confirmed. Prices include tax.' | translate }}</div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="shop.minOrder > 0">{{ 'Minimum order {p0}' | translate: { p0: (shop.minOrder | number: '1.0-2') } }}</div>
-          <button class="btn btn-primary shop-place mt-2" style="width:100%;" [disabled]="busy || !shop.open || !shop.cash" (click)="place()">{{ busy ? ('Sending…' | translate) : ('Place order' | translate) }}</button>
+          <button class="btn btn-primary shop-place mt-2" style="width:100%;" [disabled]="busy || !shop.open || (!shop.cash && !shop.payOnline)" (click)="place()">{{ busy ? ('Sending…' | translate) : payment === 'CASH' ? ('Place order' | translate) : ('Place order and pay' | translate) }}</button>
         </div>
 
         <div *ngIf="step === 'shop' && count() > 0" style="position:fixed; left:0; right:0; bottom:0; background:#111827; color:#fff; padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center; z-index:50;">
@@ -159,6 +172,9 @@ export class ShopComponent implements OnInit {
   notes = '';
   website = '';
   zoneId: number | null = null;
+  /** How the customer pays: cash on delivery or at pick-up, or online. */
+  payment: 'CASH' | 'MOBILE_MONEY' | 'CARD' = 'CASH';
+  payPhone = '';
   busy = false;
 
   constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService) {}
@@ -168,6 +184,7 @@ export class ShopComponent implements OnInit {
       next: (s) => {
         this.shop = s;
         this.method = s.delivery ? 'DELIVERY' : 'PICKUP';
+        if (!s.cash && s.payMethods.length > 0) this.payment = s.payMethods[0] as 'MOBILE_MONEY' | 'CARD';
         this.load();
       },
       error: (e) => (this.error = e?.error?.message ?? T('The shop is not available right now.')),
@@ -292,10 +309,16 @@ export class ShopComponent implements OnInit {
         name: this.name, phone: this.phone, email: this.email || null, address: this.method === 'DELIVERY' ? this.address : null, method: this.method,
         zoneId: this.method === 'DELIVERY' ? this.zoneId : null, notes: this.notes || null, language: this.lang.current, website: this.website,
         lines: this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty })),
+        payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.payPhone || this.phone) : null,
       })
       .subscribe({
         next: (t) => {
           this.busy = false;
+          // A card payment (or a provider that shows its own page) sends the customer there; otherwise the order page shows what to do next.
+          if (t.payment?.status === 'AWAITING' && t.payment.redirectUrl) {
+            window.location.assign(t.payment.redirectUrl);
+            return;
+          }
           this.router.navigate(['/shop/order', t.code]);
         },
         error: (e) => {

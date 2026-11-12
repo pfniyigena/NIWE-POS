@@ -22,10 +22,12 @@ public class OnlineStoreAdminService {
     private final OnlineDeliveryZoneRepository zoneRepository;
     private final CatalogService catalogService;
     private final AuditLogService auditLogService;
+    private final OnlinePaymentService payments;
 
     public OnlineStoreAdminService(OnlineStoreService storeService, OnlineStoreSettingsRepository settingsRepository,
                                    OnlineListingRepository listingRepository, OnlineDeliveryZoneRepository zoneRepository,
-                                   CatalogService catalogService, AuditLogService auditLogService) {
+                                   CatalogService catalogService, AuditLogService auditLogService, OnlinePaymentService payments) {
+        this.payments = payments;
         this.storeService = storeService;
         this.settingsRepository = settingsRepository;
         this.listingRepository = listingRepository;
@@ -87,6 +89,16 @@ public class OnlineStoreAdminService {
             if (!p.isService()) throw ApiException.badRequest(I18n.t("The delivery product must be a service product, not stock"));
             s.setDeliveryProductId(p.getId());
         }
+        s.setOnlinePaymentsEnabled(in.onlinePaymentsEnabled());
+        String prov = text(in.paymentProvider(), 30);
+        if (in.onlinePaymentsEnabled()) {
+            var chosen = payments.provider(prov);
+            if (chosen == null || !chosen.available()) throw ApiException.badRequest(I18n.t("Choose a payment provider that is available before switching online payments on"));
+            prov = chosen.code();
+        }
+        s.setPaymentProvider(prov == null ? null : prov.toUpperCase());
+        if (in.paymentExpiryMinutes() < 5 || in.paymentExpiryMinutes() > 1440) throw ApiException.badRequest(I18n.t("The time to pay must be between 5 and 1440 minutes"));
+        s.setPaymentExpiryMinutes(in.paymentExpiryMinutes());
         settingsRepository.save(s);
         auditLogService.record("ONLINE_STORE_SETTINGS", "Updated the Online Store settings (" + (s.isEnabled() ? "on" : "off") + (s.isPaused() ? ", paused" : "") + ")");
         return toDto(s);
@@ -103,7 +115,8 @@ public class OnlineStoreAdminService {
         }
         return new SettingsDto(s.isEnabled(), s.isPaused(), s.getPauseMessage(), s.getShopName(), s.getIntroText(), s.getContactPhone(), s.getPickupAddress(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
-                s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes());
+                s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
+                s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes());
     }
 
     // ------------------------------------------------------------------ listings

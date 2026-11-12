@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.29.0 - Online Store phase 2: pay online
+
+Customers can pay at checkout with mobile money or card; the order reaches the shop only once the payment is confirmed (new status Awaiting payment). Signed webhook, status check when a webhook is lost, retries, automatic cancel after a day, refunds (through the provider or recorded by hand), review of odd payments (wrong amount, double payment) and a new Online payments screen that matches what was paid with the books. Built once for any provider with a test provider included; a real provider is one class (`docs/online-store-payment-providers.md`). Off by default. Migration V67. Details in `RELEASE-NOTES-v1.29.0.md`.
+
 ### Version 1.28.2 - Online Store: phase 1 gaps closed
 
 The shop is told by e-mail when an order has waited too long for an answer (setting "Alert by e-mail when an order waits this many minutes", default 30, 0 = never), the Online orders screen shows how long each new order has waited and marks late ones, customer e-mails go out in the language the customer chose in the shop, and product photos on the shop are shrunk and kept. New: `tools/online-store-smoke.mjs`, a script that runs a whole order against a running backend. Migration V66. Details in `RELEASE-NOTES-v1.28.2.md`.

@@ -25,12 +25,22 @@ public class OnlineOrder extends BaseEntity {
     private String code;
     /** When the shop was told by e-mail that this order is waiting for an answer (once per order). */
     private Instant alertedAt;
-    /** PLACED, ACCEPTED, PACKED, OUT_FOR_DELIVERY, READY_FOR_PICKUP, COMPLETED, REJECTED or CANCELLED. */
+    /** AWAITING_PAYMENT (online payment not confirmed yet), PLACED, ACCEPTED, PACKED, OUT_FOR_DELIVERY, READY_FOR_PICKUP, COMPLETED, REJECTED or CANCELLED. */
     private String status = "PLACED";
     /** DELIVERY or PICKUP. */
     private String deliveryMethod;
-    /** COD (cash on delivery or at pick-up) in phase 1. */
+    /** COD (cash on delivery or at pick-up) or ONLINE (paid at checkout through the payment provider). */
     private String paymentMethod = "COD";
+    /** NONE (cash), AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED. */
+    private String paymentStatus = "NONE";
+    /** MOBILE_MONEY or CARD, once paid. */
+    private String paymentChannel;
+    /** The provider's reference of the payment that was accepted. */
+    private String paymentReference;
+    private BigDecimal paidAmount;
+    private Instant paidAt;
+    private Instant refundedAt;
+    private String refundReference;
     private String customerName;
     private String customerPhone;
     private String customerEmail;

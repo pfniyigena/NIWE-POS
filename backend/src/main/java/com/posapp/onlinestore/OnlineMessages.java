@@ -68,7 +68,9 @@ final class OnlineMessages {
             if (o.getDeliveryFee() != null && o.getDeliveryFee().signum() > 0) {
                 b.append("<p>").append(escape(I18n.t("Delivery fee"))).append(": ").append(escape(OnlineStoreService.money(o.getDeliveryFee()))).append("</p>");
             }
-            b.append("<p><strong>Total: ").append(escape(OnlineStoreService.money(o.getTotal()))).append("</strong></p>");
+            b.append("<p><strong>Total: ").append(escape(OnlineStoreService.money(o.getTotal()))).append("</strong>");
+            if ("PAID".equals(o.getPaymentStatus())) b.append(" — ").append(escape(I18n.t("already paid online"))).append(" (").append(escape(String.valueOf(o.getPaymentChannel()))).append(", ").append(escape(String.valueOf(o.getPaymentReference()))).append(")");
+            b.append("</p>");
             if (o.getNotes() != null && !o.getNotes().isBlank()) b.append("<p>Note: ").append(escape(o.getNotes())).append("</p>");
             b.append("<p>").append(escape(I18n.t("Open Online Store > Online orders to accept or reject it."))).append("</p>");
             mailService.send(to, I18n.t("New online order {0}", o.getCode()), b.toString(), List.of());

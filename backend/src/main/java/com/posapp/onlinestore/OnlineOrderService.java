@@ -46,10 +46,12 @@ public class OnlineOrderService {
     private final StoreSettingsService storeSettingsService;
     private final MailService mailService;
     private final AuditLogService auditLogService;
+    private final OnlinePaymentService payments;
 
     public OnlineOrderService(OnlineOrderRepository repository, OnlineStoreService storeService, CustomerRepository customerRepository,
                               SalesOrderService salesOrderService, InvoiceService invoiceService, StoreSettingsService storeSettingsService,
-                              MailService mailService, AuditLogService auditLogService) {
+                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments) {
+        this.payments = payments;
         this.repository = repository;
         this.storeService = storeService;
         this.customerRepository = customerRepository;
@@ -91,7 +93,7 @@ public class OnlineOrderService {
         String needle = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
         String wanted = status == null || status.isBlank() ? null : status.trim().toUpperCase(Locale.ROOT);
         return repository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(o -> wanted == null || (wanted.equals("OPEN") ? OPEN.contains(o.getStatus()) : o.getStatus().equals(wanted)))
+                .filter(o -> wanted == null || (wanted.equals("OPEN") ? OPEN.contains(o.getStatus()) : wanted.equals("REFUND_DUE") ? o.getPaymentStatus().equals("REFUND_DUE") : o.getStatus().equals(wanted)))
                 .filter(o -> needle.isEmpty() || o.getCode().toLowerCase(Locale.ROOT).contains(needle)
                         || o.getCustomerName().toLowerCase(Locale.ROOT).contains(needle) || o.getCustomerPhone().contains(needle))
                 .map(OnlineOrderService::dto).toList();
@@ -112,7 +114,11 @@ public class OnlineOrderService {
     public java.util.Map<String, Long> pendingSummary() {
         int minutes = storeService.settings().getUnansweredAlertMinutes();
         long overdue = minutes > 0 ? repository.countByStatusAndCreatedAtBefore("PLACED", java.time.Instant.now().minusSeconds(60L * minutes)) : 0;
-        return java.util.Map.of("pending", repository.countByStatus("PLACED"), "overdue", overdue, "alertMinutes", (long) minutes);
+        java.util.Map<String, Long> out = new java.util.LinkedHashMap<>(payments.attentionCounts());
+        out.put("pending", repository.countByStatus("PLACED"));
+        out.put("overdue", overdue);
+        out.put("alertMinutes", (long) minutes);
+        return out;
     }
 
     // ------------------------------------------------------------------ decisions
@@ -170,9 +176,12 @@ public class OnlineOrderService {
         o.setDecidedAt(java.time.Instant.now());
         o.setDecidedBy(user());
         move(o, "REJECTED", o.getRejectReason());
+        boolean refundDue = payments.afterClosed(o);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_REJECTED", "Rejected online order " + o.getCode() + ": " + o.getRejectReason(), "OnlineOrder", o.getId());
-        tell(o, OnlineMessages.m("About your order {0}", o.getCode()), OnlineMessages.m("Sorry, we cannot take your order {0}: {1}", o.getCode(), o.getRejectReason()));
+        tell(o, OnlineMessages.m("About your order {0}", o.getCode()), refundDue
+                ? OnlineMessages.m("Sorry, we cannot take your order {0}: {1}. We will refund {2} to the account you paid with.", o.getCode(), o.getRejectReason(), OnlineStoreService.money(o.getPaidAmount()))
+                : OnlineMessages.m("Sorry, we cannot take your order {0}: {1}", o.getCode(), o.getRejectReason()));
         return dto(o);
     }
 
@@ -180,12 +189,15 @@ public class OnlineOrderService {
     @Transactional
     public OrderDto cancel(Long id, String note) {
         OnlineOrder o = getOrThrow(id);
-        expect(o, "PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
+        expect(o, "AWAITING_PAYMENT", "PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
         if (o.getSalesOrderId() != null) salesOrderService.cancel(o.getSalesOrderId());
         move(o, "CANCELLED", note == null || note.isBlank() ? I18n.t("Cancelled by staff") : note.trim());
+        boolean refundDue = payments.afterClosed(o);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_CANCELLED", "Cancelled online order " + o.getCode(), "OnlineOrder", o.getId());
-        tell(o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), OnlineMessages.m("Your order {0} has been cancelled.", o.getCode()));
+        tell(o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), refundDue
+                ? OnlineMessages.m("Your order {0} has been cancelled. We will refund {1} to the account you paid with.", o.getCode(), OnlineStoreService.money(o.getPaidAmount()))
+                : OnlineMessages.m("Your order {0} has been cancelled.", o.getCode()));
         return dto(o);
     }
 
@@ -208,7 +220,8 @@ public class OnlineOrderService {
         if (!o.getDeliveryMethod().equals("DELIVERY")) throw ApiException.badRequest(I18n.t("This is a pick-up order"));
         move(o, "OUT_FOR_DELIVERY", note);
         repository.save(o);
-        tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), OnlineMessages.m("Your order {0} is on its way. Please keep {1} ready to pay on delivery.", o.getCode(), OnlineStoreService.money(o.getTotal())));
+        tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), paid(o) ? OnlineMessages.m("Your order {0} is on its way. It is already paid.", o.getCode())
+                : OnlineMessages.m("Your order {0} is on its way. Please keep {1} ready to pay on delivery.", o.getCode(), OnlineStoreService.money(o.getTotal())));
         return dto(o);
     }
 
@@ -220,7 +233,8 @@ public class OnlineOrderService {
         move(o, "READY_FOR_PICKUP", note);
         repository.save(o);
         OnlineStoreSettings s = storeService.settings();
-        tell(o, OnlineMessages.m("Your order {0} is ready", o.getCode()), OnlineMessages.m("Your order {0} is ready for pick-up. Please bring {1} to pay.", o.getCode(), OnlineStoreService.money(o.getTotal()))
+        tell(o, OnlineMessages.m("Your order {0} is ready", o.getCode()), (paid(o) ? OnlineMessages.m("Your order {0} is ready for pick-up. It is already paid.", o.getCode())
+                : OnlineMessages.m("Your order {0} is ready for pick-up. Please bring {1} to pay.", o.getCode(), OnlineStoreService.money(o.getTotal())))
                 .plus(s.getPickupAddress() == null ? "" : " " + s.getPickupAddress()));
         return dto(o);
     }
@@ -250,22 +264,61 @@ public class OnlineOrderService {
         InvoiceDto inv = invoiceService.generate(so.id());
         o.setInvoiceId(inv.id());
         o.setInvoiceNumber(inv.invoiceNumber());
-        boolean collect = in == null || in.collectPayment() == null || in.collectPayment();
-        if (collect && inv.totalAmount() != null && inv.totalAmount().signum() > 0) {
+        boolean prepaid = paid(o);
+        // Paid online: the money is already ours, so record it against the invoice with the way the customer paid, whatever staff ticked.
+        boolean collect = prepaid || in == null || in.collectPayment() == null || in.collectPayment();
+        String differs = "";
+        if (prepaid && inv.totalAmount() != null && inv.totalAmount().signum() > 0) {
+            BigDecimal amount = o.getPaidAmount().min(inv.totalAmount());
+            RecordInvoicePaymentRequest pay = new RecordInvoicePaymentRequest();
+            pay.setAmount(amount);
+            pay.setMethod(o.getPaymentChannel());
+            pay.setNote(I18n.t("Online payment {0}", o.getPaymentReference()));
+            invoiceService.recordPayment(inv.id(), pay, caller);
+            if (o.getPaidAmount().compareTo(inv.totalAmount()) != 0) {
+                differs = ", " + I18n.t("paid online {0} but the invoice is {1}: check the difference", OnlineStoreService.money(o.getPaidAmount()), OnlineStoreService.money(inv.totalAmount()));
+            }
+        } else if (collect && inv.totalAmount() != null && inv.totalAmount().signum() > 0) {
             RecordInvoicePaymentRequest pay = new RecordInvoicePaymentRequest();
             pay.setAmount(inv.totalAmount());
             pay.setMethod(in == null || in.method() == null || in.method().isBlank() ? "CASH" : in.method().trim());
             pay.setNote(I18n.t("Online order {0}", o.getCode()));
             invoiceService.recordPayment(inv.id(), pay, caller);
         }
-        move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (collect ? "" : ", " + I18n.t("payment not collected")));
+        move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
         tell(o, OnlineMessages.m("Thank you for your order {0}", o.getCode()), OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber()));
         return dto(o);
     }
 
+    // ------------------------------------------------------------------ money paid online
+
+    /** Gives the customer's money back on an order that was paid online and then cancelled or rejected. */
+    @Transactional
+    public OrderDto refund(Long id, RefundRequest in) {
+        return dto(payments.refund(id, in != null && in.manual(), in == null ? null : in.reference(), in == null ? null : in.note()));
+    }
+
+    @Transactional(readOnly = true)
+    public Reconciliation reconciliation(java.time.LocalDate from, java.time.LocalDate to, String status) {
+        java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+        java.time.LocalDate end = to == null ? java.time.LocalDate.now(zone) : to;
+        java.time.LocalDate start = from == null ? end.minusDays(30) : from;
+        if (start.isAfter(end)) throw ApiException.badRequest(I18n.t("The start date is after the end date"));
+        return payments.reconciliation(start.atStartOfDay(zone).toInstant(), end.plusDays(1).atStartOfDay(zone).toInstant(), status);
+    }
+
+    @Transactional
+    public void resolvePayment(Long paymentId, String note) {
+        payments.resolve(paymentId, note);
+    }
+
     // ------------------------------------------------------------------ helpers
+
+    private static boolean paid(OnlineOrder o) {
+        return "PAID".equals(o.getPaymentStatus()) && o.getPaidAmount() != null;
+    }
 
     private Customer customerFor(OnlineOrder o) {
         return customerRepository.findFirstByPhone(o.getCustomerPhone()).orElseGet(() -> {
@@ -286,6 +339,7 @@ public class OnlineOrderService {
                 o.getCustomerEmail(), o.getCustomerAddress(), o.getZoneName(), o.getDeliveryFee(), o.getNotes(), o.getSubtotal(), o.getTotal(), o.getLanguage(),
                 o.getSalesOrderId(), o.getSalesOrderNumber(), o.getInvoiceId(), o.getInvoiceNumber(), o.getRejectReason(), o.getDecidedBy(), o.getDecidedAt(),
                 o.getCreatedAt(),
+                o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(),
                 o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList(),
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList());
     }

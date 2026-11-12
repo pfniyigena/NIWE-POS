@@ -23,6 +23,12 @@ public class OnlineStoreSettings extends BaseEntity {
     private String notifyEmail;
     /** An order that waits this many minutes as PLACED is reported to the shop by e-mail, once. 0 = never. */
     private int unansweredAlertMinutes = 30;
+    /** Customers may pay at checkout through the payment provider below (phase 2). */
+    private boolean onlinePaymentsEnabled = false;
+    /** The code of the payment provider (see PaymentProvider), e.g. SIMULATED while testing. */
+    private String paymentProvider;
+    /** A try to pay that is not confirmed after this many minutes is closed. */
+    private int paymentExpiryMinutes = 30;
     private String pickupAddress;
     private boolean pickupEnabled = true;
     private boolean deliveryEnabled = true;
