@@ -22,6 +22,10 @@
 //
 // Coupons (phase 3) are always tried: the script makes a 10% coupon of its own (SMK<number>), orders with it, checks that the invoice equals what
 // the customer was charged, and deletes the coupon at the end.
+//
+// Returns (phase 3) are tried when the shop's return period is above 0 days: a cash order is taken to Completed, the customer asks to return one
+// unit (a wrong phone number is refused first), staff approve and process it (stock back through a sale order return, cash handed back), and a
+// second request is refused with a reason. Look at Online Store > Returns afterwards.
 
 const base = (process.argv[2] || process.env.BASE || 'http://localhost:8080').replace(/\/+$/, '');
 const user = process.argv[3] || process.env.ADMIN_USER || 'admin';
@@ -370,6 +374,68 @@ async function coupons(s, lines) {
   ok(gone.status === 204 || gone.status === 200, 'staff: the test coupon is deleted', `HTTP ${gone.status}`);
 }
 
+/** Returns after completion: ask, approve, process; ask again and refuse. */
+async function returns(s, lines) {
+  console.log('\nReturns');
+  const settings = await call('GET', `${staff}/settings`, undefined, true);
+  if (settings.status !== 200 || !(settings.json?.returnWindowDays > 0)) {
+    console.log('SKIP  returns: the return period in the shop settings is 0 days (returns are off)');
+    return;
+  }
+  const phone = `0788${stamp}20`;
+  const r = await place(20, { lines });
+  if (!ok(r.status === 200, 'public: an order placed to be returned later', r.status === 200 ? `code ${r.json.code}` : `HTTP ${r.status} ${r.json?.message ?? ''}`)) return;
+  const code = r.json.code;
+  const early = await call('GET', `${pub}/orders/${code}/returns`);
+  ok(early.status === 200 && early.json?.allowed === false, 'public: a placed order cannot be returned yet', early.json?.message ?? '');
+  const o = await findOrder(code);
+  if (!o) return;
+  if (!(await step(o, 'accept', 'accept', { overrideShortage: false }))) return;
+  await step(o, 'ready for pick-up', 'ready-for-pickup', {});
+  if (!(await step(o, 'complete (cash collected)', 'complete', { collectPayment: true, method: 'CASH' }))) return;
+
+  const opt = await call('GET', `${pub}/orders/${code}/returns`);
+  if (!ok(opt.status === 200 && opt.json?.allowed === true && opt.json.lines?.length > 0, 'public: the completed order can be returned', opt.json?.message ?? `window ${opt.json?.windowDays} days`)) return;
+  const line = opt.json.lines.find((l) => l.returnable > 0);
+  const wrong = await call('POST', `${pub}/orders/${code}/returns`, { phone: '0700000000', reason: 'Smoke test: wrong phone', lines: [{ lineId: line.lineId, quantity: 1 }] });
+  ok(wrong.status === 400, 'public: a wrong phone number is refused', `HTTP ${wrong.status} "${wrong.json?.message ?? ''}"`);
+  const tooMany = await call('POST', `${pub}/orders/${code}/returns`, { phone, reason: 'Smoke test: too many', lines: [{ lineId: line.lineId, quantity: line.returnable + 1 }] });
+  ok(tooMany.status === 400, 'public: more than was bought is refused', `HTTP ${tooMany.status}`);
+  const ask = await call('POST', `${pub}/orders/${code}/returns`, { phone, reason: 'Smoke test: not needed', lines: [{ lineId: line.lineId, quantity: 1 }] });
+  if (!ok(ask.status === 200 && ask.json?.status === 'REQUESTED', 'public: the return request is sent', ask.status === 200 ? `${ask.json.code}, worth ${ask.json.refundAmount}` : `HTTP ${ask.status} ${ask.json?.message ?? ''}`)) return;
+
+  const list = await call('GET', `${staff}/returns?q=${encodeURIComponent(code)}&status=`, undefined, true);
+  const row = Array.isArray(list.json) ? list.json.find((x) => x.code === ask.json.code) : null;
+  if (!ok(!!row && row.status === 'REQUESTED', 'staff: the request is listed under Returns')) return;
+  const early2 = await call('POST', `${staff}/returns/${row.id}/process`, {}, true);
+  ok(early2.status === 400, 'staff: a return that is not approved cannot be processed', `HTTP ${early2.status}`);
+  const approve = await call('POST', `${staff}/returns/${row.id}/approve`, { note: 'Smoke test: bring it in' }, true);
+  ok(approve.status === 200 && approve.json?.status === 'APPROVED', 'staff: approve', approve.status === 200 ? '' : `HTTP ${approve.status} ${approve.json?.message ?? ''}`);
+  const done = await call('POST', `${staff}/returns/${row.id}/process`, { locationId: null, manual: false, reference: null, note: 'Smoke test: cash handed back' }, true);
+  ok(done.status === 200 && done.json?.status === 'REFUNDED' && done.json?.refundMethod === 'CASH' && !!done.json?.salesOrderReturnNumber, 'staff: process (stock back, books, cash handed back)', done.status === 200 ? `sale order return ${done.json.salesOrderReturnNumber}, ${done.json.refundAmount}` : `HTTP ${done.status} ${done.json?.message ?? ''}`);
+  const twice = await call('POST', `${staff}/returns/${row.id}/process`, {}, true);
+  ok(twice.status === 400, 'staff: processing twice is refused', `HTTP ${twice.status}`);
+  const after = await call('GET', `${pub}/orders/${code}/returns`);
+  ok(after.json?.returns?.[0]?.status === 'REFUNDED', 'public: the customer sees the return as refunded');
+
+  const left = after.json?.lines?.find((l) => l.lineId === line.lineId)?.returnable ?? 0;
+  if (left > 0) {
+    const ask2 = await call('POST', `${pub}/orders/${code}/returns`, { phone, reason: 'Smoke test: second request', lines: [{ lineId: line.lineId, quantity: 1 }] });
+    const list2 = await call('GET', `${staff}/returns?q=${encodeURIComponent(code)}&status=REQUESTED`, undefined, true);
+    const row2 = Array.isArray(list2.json) ? list2.json.find((x) => x.code === ask2.json?.code) : null;
+    if (ok(!!row2, 'public + staff: a second request is made and listed')) {
+      const noReason = await call('POST', `${staff}/returns/${row2.id}/refuse`, { note: '' }, true);
+      ok(noReason.status === 400, 'staff: refusing needs a reason', `HTTP ${noReason.status}`);
+      const refuse = await call('POST', `${staff}/returns/${row2.id}/refuse`, { note: 'Smoke test: used goods' }, true);
+      ok(refuse.status === 200 && refuse.json?.status === 'REFUSED', 'staff: refuse with a reason');
+    }
+  } else {
+    console.log('SKIP  the order had one unit only: the refuse path is not tried');
+  }
+  const pc = await call('GET', `${staff}/orders/pending-count`, undefined, true);
+  ok(pc.status === 200 && typeof pc.json?.returnsRequested === 'number' && typeof pc.json?.returnsToRefund === 'number', 'staff: the returns counters answer', pc.status === 200 ? JSON.stringify(pc.json) : `HTTP ${pc.status}`);
+}
+
 async function main() {
   console.log(`Shop at ${base}\n`);
 
@@ -495,6 +561,7 @@ async function main() {
   await accounts(s, lines);
   await texts(s, lines);
   await coupons(s, lines);
+  await returns(s, lines);
 
   // ---- the staff screen counters
   const pc = await call('GET', `${staff}/orders/pending-count`, undefined, true);

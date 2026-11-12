@@ -32,6 +32,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
       <div class="flex justify-between align-center mb-3" style="flex-wrap:wrap; gap:0.5rem;">
         <h3>{{ 'Online orders' | translate }}</h3>
         <div class="flex gap-2">
+          <a class="btn btn-outline-secondary" routerLink="/admin/online-store/returns">{{ 'Returns' | translate }}<span *ngIf="returnsWaiting > 0"> ({{ returnsWaiting }})</span></a>
           <a class="btn btn-outline-secondary" routerLink="/admin/online-store/payments">{{ 'Online payments' | translate }}<span *ngIf="attention > 0"> ({{ attention }})</span></a>
           <a class="btn btn-outline-secondary" routerLink="/admin/online-store/setup">{{ 'Shop settings' | translate }}</a>
           <a class="btn btn-outline-secondary" href="/shop" target="_blank" rel="noopener">{{ 'Open the shop' | translate }}</a>
@@ -87,6 +88,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
             <button class="btn btn-outline-secondary so-refund-manual" [disabled]="busy" (click)="refund(o, true)">{{ 'I refunded it myself' | translate }}</button>
           </div>
         </div>
+        <div class="text-muted mt-1 so-part-refund" *ngIf="o.paymentStatus === 'PAID' && o.refundedTotal > 0" style="font-size:0.85rem;">{{ 'Given back so far for returns: {p0} of {p1}' | translate: { p0: (o.refundedTotal | number: '1.0-2'), p1: (o.paidAmount | number: '1.0-2') } }}</div>
         <div class="text-muted mt-1" *ngIf="o.paymentStatus === 'REFUNDED'" style="font-size:0.85rem;">{{ 'Refunded {p0} · reference {p1}' | translate: { p0: (o.paidAmount | number: '1.0-2'), p1: o.refundReference } }}</div>
 
         <div *ngIf="o.status === 'PLACED'" class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
@@ -148,6 +150,8 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   alertMinutes = 0;
   awaiting = 0;
   refundsDue = 0;
+  /** Returns waiting for an answer or for the goods: the badge on the Returns button. */
+  returnsWaiting = 0;
   /** Refunds to give and payments to look at: the badge on the Online payments button. */
   attention = 0;
   refundRef: Record<number, string> = {};
@@ -241,6 +245,7 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
         this.awaiting = r.awaitingPayment ?? 0;
         this.refundsDue = r.refundsDue ?? 0;
         this.attention = (r.refundsDue ?? 0) + (r.paymentsToReview ?? 0);
+        this.returnsWaiting = (r.returnsRequested ?? 0) + (r.returnsToRefund ?? 0);
       },
       error: () => {},
     });

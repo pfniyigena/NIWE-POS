@@ -38,9 +38,11 @@ public class PublicStoreController {
     private final OnlinePaymentService payments;
     private final SimulatedPaymentProvider simulated;
     private final ShopAccountService accounts;
+    private final OnlineReturnService returns;
 
     public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated,
-                                 ShopAccountService accounts) {
+                                 ShopAccountService accounts, OnlineReturnService returns) {
+        this.returns = returns;
         this.accounts = accounts;
         this.payments = payments;
         this.simulated = simulated;
@@ -103,6 +105,20 @@ public class PublicStoreController {
     public Track cancel(@PathVariable String code, HttpServletRequest http) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
         return service.cancelByCustomer(code, ip(http));
+    }
+
+    /** What can still be returned on a completed order, and the returns already asked. */
+    @GetMapping("/orders/{code}/returns")
+    public OnlineStoreDtos.ReturnOptions returnOptions(@PathVariable String code, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return returns.options(code, ip(http));
+    }
+
+    /** The customer asks to return goods. Needs the phone number of the order, or the sign-in token of the account that holds it. */
+    @PostMapping("/orders/{code}/returns")
+    public OnlineStoreDtos.PublicReturn requestReturn(@PathVariable String code, @Valid @RequestBody OnlineStoreDtos.ReturnRequest request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return returns.request(code, request, ip(http), accounts.optionalCustomerId(http.getHeader(ShopAccountController.TOKEN_HEADER)));
     }
 
     /** The customer pays again, or the other way, for an order that is waiting for its payment. */

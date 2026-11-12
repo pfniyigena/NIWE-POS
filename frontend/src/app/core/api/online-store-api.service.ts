@@ -51,7 +51,7 @@ export interface StoreOrder {
   subtotal: number; total: number; language: string; salesOrderId: number | null; salesOrderNumber: string | null; invoiceId: number | null;
   invoiceNumber: string | null; rejectReason: string | null; decidedBy: string | null; decidedAt: string | null; createdAt: string;
   paymentStatus: string; paymentChannel: string | null; paymentReference: string | null; paidAmount: number | null; paidAt: string | null; refundedAt: string | null; refundReference: string | null;
-  couponCode: string | null; discountAmount: number; feeWaived: number;
+  couponCode: string | null; discountAmount: number; feeWaived: number; refundedTotal: number;
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
@@ -60,7 +60,7 @@ export interface StoreSettings {
   pickupAddress: string | null; pickupEnabled: boolean; deliveryEnabled: boolean; codEnabled: boolean; stockBuffer: number; minOrder: number;
   freeDeliveryOver: number | null; maxPendingPerPhone: number; maxPerIpPerHour: number; deliveryProductId: number | null; deliveryProductName: string | null; notifyEmail: string | null; unansweredAlertMinutes: number;
   onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number; accountsEnabled: boolean;
-  textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null;
+  textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null; returnWindowDays: number;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED or SKIPPED; purpose is ORDER, OWNER, SIGNIN or TEST. */
@@ -74,12 +74,27 @@ export interface PaymentRow {
 }
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
-export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number }
+export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number }
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
 }
 export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number }
+
+/** What the customer sees about a return: its status, what staff said and, once done, what was given back and how. */
+export interface ShopReturn {
+  code: string; status: 'REQUESTED' | 'APPROVED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null;
+  refundReference: string | null; requestedAt: string; decidedAt: string | null; refundedAt: string | null; lines: { name: string; quantity: number; amount: number }[];
+}
+export interface ShopReturnLine { lineId: number; name: string; quantity: number; unitPaid: number; returnable: number }
+/** allowed is false with a message saying why not (period over, not completed, everything already asked back). */
+export interface ShopReturnOptions { allowed: boolean; message: string | null; windowDays: number; lastDay: string | null; lines: ShopReturnLine[]; returns: ShopReturn[] }
+export interface StoreReturn {
+  id: number; code: string; orderId: number; orderCode: string; customerName: string; customerPhone: string; customerEmail: string | null;
+  status: 'REQUESTED' | 'APPROVED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: 'PROVIDER' | 'MANUAL' | 'CASH' | null;
+  refundReference: string | null; paymentMethod: string; paymentStatus: string; requestedAt: string; decidedBy: string | null; decidedAt: string | null;
+  refundedBy: string | null; refundedAt: string | null; salesOrderReturnNumber: string | null; lines: { lineId: number; name: string; quantity: number; amount: number }[];
+}
 
 const TOKEN_KEY = 'niwe.shop.token';
 /** The signed-in customer's session token, kept in this browser only. Storage can be blocked, so every access is guarded. */
@@ -116,6 +131,12 @@ export class OnlineStoreApiService {
   place(payload: ShopOrderPayload): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders`, payload, { headers: this.shopHeaders() }); }
   track(code: string): Observable<ShopTrack> { return this.http.get<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}`); }
   cancel(code: string): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/cancel`, {}); }
+  /** What can still be returned on a completed order, and the returns already asked. */
+  returnOptions(code: string): Observable<ShopReturnOptions> { return this.http.get<ShopReturnOptions>(`${this.pub}/orders/${encodeURIComponent(code)}/returns`); }
+  /** Asks to return goods. The phone number of the order is needed unless the customer is signed in to the account that holds it. */
+  requestReturn(code: string, body: { phone: string | null; reason: string; lines: { lineId: number; quantity: number }[] }): Observable<ShopReturn> {
+    return this.http.post<ShopReturn>(`${this.pub}/orders/${encodeURIComponent(code)}/returns`, body, { headers: this.shopHeaders() });
+  }
   /** Pay again, or the other way, for an order that is waiting for its payment. */
   payAgain(code: string, payment: string, payPhone: string | null): Observable<ShopTrack> {
     return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/pay`, { payment, payPhone });
@@ -162,6 +183,17 @@ export class OnlineStoreApiService {
 
   /** Gives the money back: manual = true records a refund made outside the system (reference required); otherwise the provider is asked. */
   refund(id: number, body: { manual: boolean; reference?: string | null; note?: string | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/refund`, body); }
+
+  // ---- staff: returns
+  returnsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReturn>> {
+    return pagedList<StoreReturn>(this.http, `${this.base}/returns`, f, page, size, {});
+  }
+  approveReturn(id: number, note: string): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/approve`, { note: note.trim() || null }); }
+  refuseReturn(id: number, note: string): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/refuse`, { note }); }
+  /** The goods are back: stock and books through the sale order return, and the money given back the way the customer paid. */
+  processReturn(id: number, body: { locationId: number | null; manual: boolean; reference: string | null; note: string | null }): Observable<StoreReturn> {
+    return this.http.post<StoreReturn>(`${this.base}/returns/${id}/process`, body);
+  }
 
   // ---- staff: online payments
   payments(from: string, to: string, status: string): Observable<Reconciliation> {

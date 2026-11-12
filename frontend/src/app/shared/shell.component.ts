@@ -166,6 +166,7 @@ import { LanguageSwitcherComponent } from './language-switcher.component';
         <ng-container *ngIf="isOpen('onlinestore') && modules.on('ONLINE_STORE')">
           <a *ngIf="canSee('/admin/online-store/orders')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/orders" routerLinkActive="active"><span class="sidenav-icon">📲</span> {{ 'Online orders' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/payments')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> {{ 'Online payments' | translate }}</a>
+          <a *ngIf="canSee('/admin/online-store/returns')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> {{ 'Returns' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/coupons')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/coupons" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> {{ 'Coupons' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/texts')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/texts" routerLinkActive="active"><span class="sidenav-icon">💬</span> {{ 'Text messages' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/setup')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/setup" routerLinkActive="active"><span class="sidenav-icon">⚙️</span> {{ 'Shop settings' | translate }}</a>

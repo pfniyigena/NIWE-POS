@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopTrack } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, Shop, ShopReturn, ShopReturnOptions, ShopTrack, shopToken } from '../core/api/online-store-api.service';
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
 import { ShopMoneyPipe } from './shop-money.pipe';
@@ -64,6 +64,41 @@ import { ShopMoneyPipe } from './shop-money.pipe';
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="t.payment?.method !== 'ONLINE'">{{ t.deliveryMethod === 'DELIVERY' ? ('Pay in cash when your order arrives.' | translate) : ('Pay in cash when you collect.' | translate) }}</div>
         </div>
 
+        <div class="card mb-3 st-returns" *ngIf="t.status === 'COMPLETED' && ro && (ro.returns.length || ro.allowed || ro.message)" style="padding:0.75rem;">
+          <h4 class="mb-2">{{ 'Returns' | translate }}</h4>
+          <div class="alert alert-success st-return-sent" *ngIf="returnSent">{{ returnSent }}</div>
+          <div *ngFor="let r of ro.returns" class="st-return" style="border-top:1px solid #e5e7eb; padding:0.4rem 0;">
+            <div class="flex justify-between"><strong>{{ r.code }}</strong><span class="st-return-status" style="font-weight:600;" [style.color]="returnColor(r)">{{ returnLabel(r.status) | translate }}</span></div>
+            <div class="text-muted" style="font-size:0.85rem;">{{ returnWhat(r) }}</div>
+            <div class="text-muted" style="font-size:0.85rem;" *ngIf="r.status === 'REQUESTED'">{{ 'We will answer as soon as we can.' | translate }}</div>
+            <div *ngIf="r.staffNote" style="font-size:0.85rem;">{{ r.staffNote }}</div>
+            <div *ngIf="r.status === 'APPROVED'" style="font-size:0.85rem;">{{ 'Please bring the goods back to us. We refund you when we have them.' | translate }}</div>
+            <div *ngIf="r.status === 'REFUNDED'" class="st-return-done" style="color:#15803d; font-size:0.85rem;">{{ (r.refundMethod === 'CASH' ? 'Handed back {p0} in cash.' : 'Refunded {p0}.') | translate: { p0: (r.refundAmount | shopMoney: cur) } }}<span *ngIf="r.refundReference && r.refundMethod !== 'CASH'"> {{ 'Reference {p0}' | translate: { p0: r.refundReference } }}</span></div>
+          </div>
+          <ng-container *ngIf="ro.allowed">
+            <div class="text-muted mt-1" style="font-size:0.85rem;" *ngIf="ro.lastDay && !returning">{{ 'You can return goods until {p0}.' | translate: { p0: (ro.lastDay | date: 'mediumDate') } }}</div>
+            <button class="btn btn-outline-primary mt-2 st-return-open" *ngIf="!returning" (click)="startReturn()">{{ 'Return goods' | translate }}</button>
+            <form *ngIf="returning" class="st-return-form mt-2" (ngSubmit)="sendReturn()">
+              <div class="text-muted" style="font-size:0.85rem;">{{ 'Choose what you are sending back.' | translate }}</div>
+              <div *ngFor="let l of ro.lines" class="flex justify-between align-center" style="padding:0.25rem 0; gap:0.5rem;" [style.opacity]="l.returnable > 0 ? 1 : 0.5">
+                <span>{{ l.name }}<span class="text-muted" style="font-size:0.8rem;"> · {{ l.unitPaid | shopMoney: cur }} · {{ 'up to {p0}' | translate: { p0: (l.returnable | number: '1.0-4') } }}</span></span>
+                <input class="form-control st-return-qty" type="number" min="0" [max]="l.returnable" step="any" style="width:90px;" [disabled]="l.returnable <= 0" [(ngModel)]="rq[l.lineId]" [name]="'rq' + l.lineId" />
+              </div>
+              <div class="form-group mt-2"><label class="form-label">{{ 'Phone number of this order' | translate }}<span class="text-muted" *ngIf="signedIn"> ({{ 'not needed when you are signed in' | translate }})</span></label>
+                <input class="form-control st-return-phone" maxlength="40" inputmode="tel" name="rphone" [(ngModel)]="rphone" /></div>
+              <div class="form-group"><label class="form-label">{{ 'Why are you returning them?' | translate }}</label>
+                <textarea class="form-control st-return-reason" rows="2" maxlength="300" name="rreason" [(ngModel)]="rreason"></textarea></div>
+              <div class="st-return-worth" *ngIf="returnWorth() > 0" style="font-weight:600;">{{ 'Worth {p0}. The delivery fee is not refunded.' | translate: { p0: (returnWorth() | shopMoney: cur) } }}</div>
+              <div class="alert alert-danger mt-1 st-return-error" *ngIf="returnError">{{ returnError }}</div>
+              <div class="flex gap-2 mt-2">
+                <button class="btn btn-primary st-return-send" type="submit" [disabled]="busy">{{ 'Send the return request' | translate }}</button>
+                <button class="btn btn-outline-secondary" type="button" (click)="returning = false">{{ 'Cancel' | translate }}</button>
+              </div>
+            </form>
+          </ng-container>
+          <div class="text-muted st-return-why" *ngIf="!ro.allowed && ro.message" style="font-size:0.85rem;">{{ ro.message }}</div>
+        </div>
+
         <div class="flex gap-2" style="flex-wrap:wrap; justify-content:center;">
           <button class="btn btn-outline-danger st-cancel" *ngIf="t.status === 'PLACED' || t.status === 'AWAITING_PAYMENT'" [disabled]="busy" (click)="cancel()">{{ 'Cancel this order' | translate }}</button>
           <a class="btn btn-primary" routerLink="/shop">{{ 'Order again' | translate }}</a>
@@ -78,6 +113,14 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   payPhone = '';
   error: string | null = null;
   busy = false;
+  /** Returns after completion: what may still be sent back, and the form to ask. */
+  ro: ShopReturnOptions | null = null;
+  returning = false;
+  rq: Record<number, number | null> = {};
+  rphone = '';
+  rreason = '';
+  returnError: string | null = null;
+  returnSent: string | null = null;
   private code = '';
   private poll: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
@@ -113,6 +156,7 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
       next: (t) => {
         this.t = t;
         this.error = null;
+        if (t.status === 'COMPLETED' && !this.returning) this.loadReturns();
         // The payment ways the shop offers are only needed once there is something to retry.
         if (t.payment?.canRetry && !this.shop) this.api.shop().subscribe({ next: (s) => (this.shop = s), error: () => {} });
         this.schedule();
@@ -140,6 +184,61 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
       },
       error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
     });
+  }
+
+  get signedIn(): boolean {
+    return !!shopToken.get();
+  }
+
+  private loadReturns(): void {
+    this.api.returnOptions(this.code).subscribe({ next: (o) => (this.ro = o), error: () => {} });
+  }
+
+  startReturn(): void {
+    this.returning = true;
+    this.returnError = null;
+    this.returnSent = null;
+    this.rq = {};
+  }
+
+  /** What the customer gets back for the quantities typed so far (the server works it out again for real). */
+  returnWorth(): number {
+    let sum = 0;
+    for (const l of this.ro?.lines ?? []) sum += Math.min(Math.max(Number(this.rq[l.lineId]) || 0, 0), l.returnable) * l.unitPaid;
+    return Math.round(sum * 100) / 100;
+  }
+
+  sendReturn(): void {
+    this.returnError = null;
+    const lines = (this.ro?.lines ?? []).map((l) => ({ lineId: l.lineId, quantity: Number(this.rq[l.lineId]) || 0 })).filter((l) => l.quantity > 0);
+    if (!lines.length) { this.returnError = T('Choose at least one item to return.'); return; }
+    if (this.rreason.trim().length < 3) { this.returnError = T('Tell us why you are returning the goods.'); return; }
+    if (!this.signedIn && this.rphone.trim().length < 6) { this.returnError = T('Enter the phone number of this order.'); return; }
+    this.busy = true;
+    this.api.requestReturn(this.code, { phone: this.rphone.trim() || null, reason: this.rreason.trim(), lines }).subscribe({
+      next: (r) => {
+        this.busy = false;
+        this.returning = false;
+        this.rq = {};
+        this.rreason = '';
+        this.returnSent = T('Your return request {p0} was sent. We will answer as soon as we can.', { p0: r.code });
+        this.loadReturns();
+        this.load();
+      },
+      error: (e) => { this.busy = false; this.returnError = e?.error?.message ?? T('That did not work'); },
+    });
+  }
+
+  returnLabel(s: string): string {
+    return ({ REQUESTED: 'Waiting for an answer', APPROVED: 'Approved', REFUSED: 'Refused', REFUNDED: 'Refunded' } as Record<string, string>)[s] ?? s;
+  }
+
+  returnColor(r: ShopReturn): string {
+    return r.status === 'REFUSED' ? '#b91c1c' : r.status === 'REFUNDED' ? '#15803d' : r.status === 'APPROVED' ? '#1d4ed8' : '#b45309';
+  }
+
+  returnWhat(r: ShopReturn): string {
+    return r.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ');
   }
 
   bad(): boolean {

@@ -380,6 +380,7 @@ import { ShopPayTestComponent } from './online-store/shop-pay-test.component';
 import { StorePaymentsComponent } from './online-store/store-payments.component';
 import { StoreCouponsComponent } from './online-store/store-coupons.component';
 import { StoreTextsComponent } from './online-store/store-texts.component';
+import { StoreReturnsComponent } from './online-store/store-returns.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
 import { QrPrintComponent } from './restaurant/qr-print.component';
 import { PublicOrderComponent } from './restaurant/public-order.component';
@@ -1086,6 +1087,7 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/payments', component: StorePaymentsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/coupons', component: StoreCouponsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/texts', component: StoreTextsComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/returns', component: StoreReturnsComponent, canActivate: [authGuard] },
   { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/pay-test/:reference', component: ShopPayTestComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },

@@ -365,28 +365,11 @@ public class OnlinePaymentService {
     public OnlineOrder refund(Long orderId, boolean manual, String reference, String note) {
         OnlineOrder o = orders.findById(orderId).orElseThrow(() -> ApiException.notFound(I18n.t("Online order not found")));
         if (!"REFUND_DUE".equals(o.getPaymentStatus())) throw ApiException.badRequest(I18n.t("There is no refund due on this order"));
-        String ref;
-        if (manual) {
-            ref = reference == null ? "" : reference.trim();
-            if (ref.length() < 3) throw ApiException.badRequest(I18n.t("Enter the reference of the refund you made (at least 3 characters)"));
-        } else {
-            OnlinePayment paid = payments.findByReference(o.getPaymentReference() == null ? "" : o.getPaymentReference()).orElse(null);
-            PaymentProvider p = paid == null ? null : provider(paid.getProvider());
-            if (p == null || !p.available()) throw ApiException.badRequest(I18n.t("The payment provider is not available. Refund by hand and enter the reference."));
-            PaymentProvider.RefundResult r;
-            try {
-                r = p.refund(paid.getReference(), o.getPaidAmount(), note);
-            } catch (RuntimeException e) {
-                log.warn("Refund of {} failed with {}: {}", paid.getReference(), p.code(), e.getMessage());
-                throw ApiException.badRequest(I18n.t("The provider could not refund this payment. Refund it by hand and enter the reference."));
-            }
-            if (!r.ok()) throw ApiException.badRequest(r.message() == null || r.message().isBlank()
-                    ? I18n.t("The provider could not refund this payment. Refund it by hand and enter the reference.") : r.message());
-            ref = r.refundReference() == null ? "provider" : r.refundReference();
-        }
+        String ref = giveBack(o, o.getPaidAmount(), manual, reference, note);
         o.setPaymentStatus("REFUNDED");
         o.setRefundedAt(Instant.now());
         o.setRefundReference(ref);
+        o.setRefundedTotal(o.getPaidAmount());
         event(o, o.getStatus(), I18n.t("Refunded {0}, reference {1}", OnlineStoreService.money(o.getPaidAmount()), ref) + (note == null || note.isBlank() ? "" : ": " + note.trim()), user());
         orders.save(o);
         audit("ONLINE_PAYMENT_REFUNDED", "Refunded online order " + o.getCode() + " " + OnlineStoreService.money(o.getPaidAmount()) + " (" + ref + ")", o);
@@ -394,6 +377,52 @@ public class OnlinePaymentService {
                 OnlineMessages.m("We refunded {0} for your order {1}. Reference: {2}. It may take a few days to show on your account.",
                         OnlineStoreService.money(o.getPaidAmount()), o.getCode(), ref));
         return o;
+    }
+
+    /**
+     * Gives back part of what the customer paid online, for a return of some of the goods (see OnlineReturnService). The order stays as it is, with the
+     * total given back so far noted on it; once everything that was paid is back, the payment becomes REFUNDED. Returns the refund reference. The
+     * customer is not told here: the return's own message does that.
+     */
+    @Transactional
+    public String refundPart(OnlineOrder o, BigDecimal amount, boolean manual, String reference, String note) {
+        if (!"PAID".equals(o.getPaymentStatus()) || o.getPaidAmount() == null) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
+        BigDecimal left = o.getPaidAmount().subtract(o.getRefundedTotal() == null ? BigDecimal.ZERO : o.getRefundedTotal());
+        if (amount == null || amount.signum() <= 0 || amount.compareTo(left) > 0) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
+        String ref = giveBack(o, amount, manual, reference, note);
+        BigDecimal total = (o.getRefundedTotal() == null ? BigDecimal.ZERO : o.getRefundedTotal()).add(amount);
+        o.setRefundedTotal(total);
+        if (total.compareTo(o.getPaidAmount()) >= 0) {
+            o.setPaymentStatus("REFUNDED");
+            o.setRefundedAt(Instant.now());
+            o.setRefundReference(ref);
+        }
+        event(o, o.getStatus(), I18n.t("Refunded {0}, reference {1}", OnlineStoreService.money(amount), ref), user());
+        orders.save(o);
+        audit("ONLINE_PAYMENT_REFUNDED", "Refunded online order " + o.getCode() + " " + OnlineStoreService.money(amount) + " for a return (" + ref + ")", o);
+        return ref;
+    }
+
+    /** The refund itself: by the provider, or the reference of one staff made by hand. Returns the reference. Throws when it cannot be done. */
+    private String giveBack(OnlineOrder o, BigDecimal amount, boolean manual, String reference, String note) {
+        if (manual) {
+            String ref = reference == null ? "" : reference.trim();
+            if (ref.length() < 3) throw ApiException.badRequest(I18n.t("Enter the reference of the refund you made (at least 3 characters)"));
+            return ref;
+        }
+        OnlinePayment paid = payments.findByReference(o.getPaymentReference() == null ? "" : o.getPaymentReference()).orElse(null);
+        PaymentProvider p = paid == null ? null : provider(paid.getProvider());
+        if (p == null || !p.available()) throw ApiException.badRequest(I18n.t("The payment provider is not available. Refund by hand and enter the reference."));
+        PaymentProvider.RefundResult r;
+        try {
+            r = p.refund(paid.getReference(), amount, note);
+        } catch (RuntimeException e) {
+            log.warn("Refund of {} failed with {}: {}", paid.getReference(), p.code(), e.getMessage());
+            throw ApiException.badRequest(I18n.t("The provider could not refund this payment. Refund it by hand and enter the reference."));
+        }
+        if (!r.ok()) throw ApiException.badRequest(r.message() == null || r.message().isBlank()
+                ? I18n.t("The provider could not refund this payment. Refund it by hand and enter the reference.") : r.message());
+        return r.refundReference() == null ? "provider" : r.refundReference();
     }
 
     /** Staff looked at a payment flagged for review and dealt with it (usually refunded it by hand). */
@@ -445,7 +474,10 @@ public class OnlinePaymentService {
                     case "REFUND_DUE" -> due = due.add(p.getAmount());
                     case "REFUNDED" -> refunded = refunded.add(p.getAmount());
                     default -> {
-                        if (o.getStatus().equals("COMPLETED")) inBooks = inBooks.add(p.getAmount());
+                        // Goods returned after completion: that part was given back, the rest stays in the books.
+                        BigDecimal part = o.getRefundedTotal() == null ? BigDecimal.ZERO : o.getRefundedTotal().min(p.getAmount());
+                        refunded = refunded.add(part);
+                        if (o.getStatus().equals("COMPLETED")) inBooks = inBooks.add(p.getAmount().subtract(part));
                         else held = held.add(p.getAmount());
                     }
                 }

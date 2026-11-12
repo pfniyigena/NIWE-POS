@@ -123,7 +123,7 @@ public final class OnlineStoreDtos {
                            Long invoiceId, String invoiceNumber, String rejectReason, String decidedBy, Instant decidedAt, Instant createdAt,
                            String paymentStatus, String paymentChannel, String paymentReference, BigDecimal paidAmount, Instant paidAt,
                            Instant refundedAt, String refundReference, String couponCode, BigDecimal discountAmount, BigDecimal feeWaived,
-                           List<OrderLineDto> lines, List<EventDto> events) {
+                           BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events) {
     }
 
     public record RejectRequest(@NotNull @Size(min = 1, max = 160) String reason) {
@@ -145,7 +145,7 @@ public final class OnlineStoreDtos {
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
-                              String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone) {
+                              String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)
@@ -215,5 +215,49 @@ public final class OnlineStoreDtos {
     }
 
     public record ZoneRequest(@NotNull @Size(min = 1, max = 80) String name, BigDecimal fee, BigDecimal minOrder, Boolean active, Integer sortOrder) {
+    }
+
+    // ---------------------------------------------------------------- returns (public)
+
+    /** What the customer sees about one return; the lines show what they are sending back and what it is worth. */
+    public record PublicReturnLine(String name, BigDecimal quantity, BigDecimal amount) {
+    }
+
+    public record PublicReturn(String code, String status, String reason, String staffNote, BigDecimal refundAmount, String refundMethod,
+                               String refundReference, Instant requestedAt, Instant decidedAt, Instant refundedAt, List<PublicReturnLine> lines) {
+    }
+
+    /** returnable is what may still be asked back on the line (what was bought, less what other returns already hold). */
+    public record ReturnOptionLine(Long lineId, String name, BigDecimal quantity, BigDecimal unitPaid, BigDecimal returnable) {
+    }
+
+    /** allowed is false with a message saying why not; lastDay is the end of the return period. */
+    public record ReturnOptions(boolean allowed, String message, int windowDays, Instant lastDay, List<ReturnOptionLine> lines, List<PublicReturn> returns) {
+    }
+
+    public record ReturnLineRequest(@NotNull Long lineId, @NotNull BigDecimal quantity) {
+    }
+
+    /** phone is the number on the order (not needed by a signed-in customer whose account holds the order). */
+    public record ReturnRequest(@Size(max = 40) String phone, @NotNull @Size(min = 3, max = 300) String reason,
+                                @NotNull @Size(min = 1, max = 40) List<ReturnLineRequest> lines) {
+    }
+
+    // ---------------------------------------------------------------- returns (staff)
+
+    public record ReturnLineDto(Long lineId, String name, BigDecimal quantity, BigDecimal amount) {
+    }
+
+    public record ReturnDto(Long id, String code, Long orderId, String orderCode, String customerName, String customerPhone, String customerEmail,
+                            String status, String reason, String staffNote, BigDecimal refundAmount, String refundMethod, String refundReference,
+                            String paymentMethod, String paymentStatus, Instant requestedAt, String decidedBy, Instant decidedAt, String refundedBy,
+                            Instant refundedAt, String salesOrderReturnNumber, List<ReturnLineDto> lines) {
+    }
+
+    public record ReturnDecision(@Size(max = 300) String note) {
+    }
+
+    /** manual = the refund was made outside (mobile money, the provider's dashboard); reference is then required for money paid online. */
+    public record ReturnProcess(Long locationId, boolean manual, @Size(max = 80) String reference, @Size(max = 300) String note) {
     }
 }

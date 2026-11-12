@@ -31,8 +31,10 @@ public class OnlineStoreController {
     private final OnlineOrderService orders;
     private final OnlineStoreAdminService admin;
     private final OnlinePaymentService payments;
+    private final OnlineReturnService returns;
 
-    public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments) {
+    public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns) {
+        this.returns = returns;
         this.payments = payments;
         this.orders = orders;
         this.admin = admin;
@@ -50,7 +52,9 @@ public class OnlineStoreController {
     @PreAuthorize(VIEW)
     @GetMapping("/orders/pending-count")
     public Map<String, Long> pendingCount() {
-        return orders.pendingSummary();
+        Map<String, Long> out = new java.util.LinkedHashMap<>(orders.pendingSummary());
+        out.putAll(returns.counts());
+        return out;
     }
 
     @PreAuthorize(VIEW)
@@ -148,6 +152,40 @@ public class OnlineStoreController {
     @PostMapping("/orders/{id}/cancel")
     public OrderDto cancel(@PathVariable Long id, @RequestBody(required = false) StatusNote request) {
         return orders.cancel(id, request == null ? null : request.note());
+    }
+
+    // ---------------------------------------------------------------- returns
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/returns")
+    public ResponseEntity<List<ReturnDto>> returnList(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+                                                      @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return ListPaging.of(returns.list(q, status), page, size);
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/returns/{id}")
+    public ReturnDto returnGet(@PathVariable Long id) {
+        return returns.get(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/returns/{id}/approve")
+    public ReturnDto returnApprove(@PathVariable Long id, @RequestBody(required = false) ReturnDecision request) {
+        return returns.approve(id, request == null ? null : request.note());
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/returns/{id}/refuse")
+    public ReturnDto returnRefuse(@PathVariable Long id, @RequestBody(required = false) ReturnDecision request) {
+        return returns.refuse(id, request == null ? null : request.note());
+    }
+
+    /** The goods are back: stock and books through the sale order return, and the money given back the way the customer paid. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/returns/{id}/process")
+    public ReturnDto returnProcess(@PathVariable Long id, @RequestBody(required = false) ReturnProcess request) {
+        return returns.process(id, request);
     }
 
     // ---------------------------------------------------------------- settings

@@ -79,6 +79,9 @@ import { API_BASE } from '../core/constants';
           <div class="form-group"><label class="form-label">{{ 'Text the owner at (empty = nobody)' | translate }}</label><input class="form-control" style="width:200px;" name="notifyPhone" maxlength="40" inputmode="tel" [(ngModel)]="s.notifyPhone" /></div>
         </div>
         <p class="text-muted" style="font-size:0.85rem;">{{ 'The country code is put in front of numbers that start with 0, for example 250 for Rwanda. The daily limit keeps the cost, and any misuse, in check.' | translate }} <a routerLink="/admin/online-store/texts">{{ 'Text messages sent' | translate }}</a></p>
+        <h4 class="mt-3 mb-2">{{ 'Returns' | translate }}</h4>
+        <div class="form-group" style="max-width:420px;"><label class="form-label">{{ 'Customers can return goods up to this many days after the order is completed (0 = no returns through the shop)' | translate }}</label><input class="form-control" name="returnDays" type="number" min="0" max="365" style="width:140px;" [(ngModel)]="s.returnWindowDays" /></div>
+        <p class="text-muted" style="font-size:0.85rem;">{{ 'The customer asks from their order page with the phone number of the order; you approve or refuse on Online Store > Returns.' | translate }}</p>
         <h4 class="mt-3 mb-2">{{ 'Online payments' | translate }}</h4>
         <p class="text-muted">{{ 'Let customers pay at checkout (mobile money or card). Their order reaches the shop only once the payment is confirmed. Set the currency of the business to the currency you charge in.' | translate }}</p>
         <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="onlinePay" [(ngModel)]="s.onlinePaymentsEnabled" /> {{ 'Customers can pay online' | translate }}</label>

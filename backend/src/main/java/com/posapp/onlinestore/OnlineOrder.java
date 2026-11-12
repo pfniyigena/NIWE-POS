@@ -41,6 +41,8 @@ public class OnlineOrder extends BaseEntity {
     private Instant paidAt;
     private Instant refundedAt;
     private String refundReference;
+    /** How much of the money paid online has been given back so far (the whole of it, or part of it for returned goods). */
+    private BigDecimal refundedTotal = BigDecimal.ZERO;
     private String customerName;
     private String customerPhone;
     private String customerEmail;

@@ -154,6 +154,8 @@ public class OnlineStoreAdminService {
         if (in.paymentExpiryMinutes() < 5 || in.paymentExpiryMinutes() > 1440) throw ApiException.badRequest(I18n.t("The time to pay must be between 5 and 1440 minutes"));
         s.setPaymentExpiryMinutes(in.paymentExpiryMinutes());
         applyTexting(s, in);
+        if (in.returnWindowDays() < 0 || in.returnWindowDays() > 365) throw ApiException.badRequest(I18n.t("The return period must be between 0 and 365 days"));
+        s.setReturnWindowDays(in.returnWindowDays());
         settingsRepository.save(s);
         auditLogService.record("ONLINE_STORE_SETTINGS", "Updated the Online Store settings (" + (s.isEnabled() ? "on" : "off") + (s.isPaused() ? ", paused" : "") + ")");
         return toDto(s);
@@ -172,7 +174,7 @@ public class OnlineStoreAdminService {
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
-                s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone());
+                s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays());
     }
 
     // ------------------------------------------------------------------ listings

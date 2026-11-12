@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.33.0 - Online Store phase 3 (4 of 4): returns and refunds after completion
+
+A customer can ask to return goods from a completed order (items and quantities, within a return period of 14 days by default; order code plus the order's phone number). Staff approve or refuse on Online Store > Returns; processing puts the goods back in stock through the existing sale order return and gives the money back the way the customer paid (payment provider or by hand for online payments, cash for cash on delivery), partial refunds included. The customer is e-mailed (and texted, if they ticked the box) at every step. The delivery fee is not refunded. Migration V71. Details in `RELEASE-NOTES-v1.33.0.md`.
+
 ### Version 1.32.0 - Online Store phase 3 (3 of 4): text messages (SMS / WhatsApp)
 
 The shop can text customers (order updates, only for those who ticked the box at checkout), send sign-in codes by text (a phone number can now open and sign in to an account, once confirmed by a code), and text the owner about new orders. A provider interface plus a built-in test sender; a real SMS or WhatsApp provider is one more class (`docs/online-store-text-providers.md`). Daily limit, text log with a test form (Online Store > Text messages), failures never break an order. Migration V70. Details in `RELEASE-NOTES-v1.32.0.md`.

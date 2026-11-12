@@ -37,6 +37,8 @@ public class OnlineStoreSettings extends BaseEntity {
     private int textDailyLimit = 300;
     /** The owner's phone: texted about new orders and orders waiting too long. Empty = nobody is texted. */
     private String notifyPhone;
+    /** A customer may ask to return goods up to this many days after the order was completed. 0 = no returns through the shop. */
+    private int returnWindowDays = 14;
     /** The code of the payment provider (see PaymentProvider), e.g. SIMULATED while testing. */
     private String paymentProvider;
     /** A try to pay that is not confirmed after this many minutes is closed. */

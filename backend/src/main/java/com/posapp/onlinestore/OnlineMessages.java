@@ -109,6 +109,19 @@ final class OnlineMessages {
         }
     }
 
+    /** A short notice to the shop's e-mail (or the business e-mail) and to the owner's phone, in the business language. Never blocks or fails what triggered it. */
+    static void notifyShopNote(MailService mailService, StoreSettingsService storeSettingsService, OnlineStoreSettings settings, String subject, String text) {
+        textOwner(settings, text);
+        try {
+            String to = settings.getNotifyEmail();
+            if (to == null || to.isBlank()) to = storeSettingsService.getSettingsEntity().getEmail();
+            if (to == null || to.isBlank() || !mailService.isConfigured()) return;
+            mailService.send(to, subject, "<p>" + escape(text) + "</p>", List.of());
+        } catch (RuntimeException e) {
+            log.warn("Could not e-mail the shop: {}", e.getMessage());
+        }
+    }
+
     /** The shop is told that these orders are still waiting for an answer. */
     static void alertShop(MailService mailService, StoreSettingsService storeSettingsService, OnlineStoreSettings settings, List<OnlineOrder> orders,
                           int minutes, java.time.Instant now) {
