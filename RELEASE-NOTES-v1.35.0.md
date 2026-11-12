@@ -21,7 +21,7 @@ All texts are edited by staff in **Online Store > Shop settings > Front page**: 
 - A new review is **waiting**; staff **approve** or **hide** it (or delete it) in the new **Online Store > Reviews** screen. Only approved reviews appear on the shop, and only they count in the product and shop ratings. The shop owner is notified of a new review, and the waiting count shows in the menu pending counter.
 
 ## Newsletter
-- Visitors subscribe at the bottom of the page and receive a **confirmation e-mail**; an address counts only after the link is opened (double opt-in). Every e-mail has an unsubscribe link. Nobody can learn from the form whether an address is already registered.
+- Visitors subscribe at the bottom of the page and receive a **confirmation e-mail**; an address counts only after the link is opened (double opt-in). The person can unsubscribe from the page that opens when they confirm; the program sends no newsletters itself, so a mailing tool used with the exported list must add its own unsubscribe link (staff can also remove an address). Nobody can learn from the form whether an address is already registered.
 - New screen **Online Store > Newsletter**: list with Subscribed / Not confirmed / Unsubscribed, remove an address, and **download the confirmed addresses as CSV**. Sending the newsletter itself is not part of this release.
 - Protection: hidden trap field against robots, 6 sign-ups per hour per address, one confirmation e-mail every 10 minutes per address; confirmation tokens are stored hashed.
 - The links in the e-mail use `app.frontend-url`: **set it to the public address of the site** (for example `https://shop.example.com`), or the links will point to the wrong place.
