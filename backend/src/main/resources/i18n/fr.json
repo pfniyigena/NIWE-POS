@@ -1856,5 +1856,9 @@
  "Social links": "Réseaux sociaux",
  "{0}: write each line as Label|address, the address starting with / or https://. Problem with: {1}": "{0} : écrivez chaque ligne sous la forme Libellé|adresse, l'adresse commençant par / ou https://. Problème avec : {1}",
  "{0}: at most {1} lines": "{0} : {1} lignes au maximum",
- "{0} is too long": "{0} est trop long"
+ "{0} is too long": "{0} est trop long",
+ "Choose a picture to add.": "Choisissez une image à ajouter.",
+ "A picture can be at most 8 MB.": "Une image peut faire 8 Mo au plus.",
+ "At most {0} banner pictures can be on the shop. Remove one first.": "La boutique peut avoir {0} images de bannière au plus. Retirez-en une d'abord.",
+ "The banner must be a JPEG, PNG, WebP or GIF picture.": "La bannière doit être une image JPEG, PNG, WebP ou GIF."
 }

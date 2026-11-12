@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The shop's front page (v1.35.0): the rows of products staff picked (featured, best-selling, special offers, new arrivals), the popular categories and
+ * The shop's front page (v1.35.0): the rows of products staff picked (featured, best-selling, special offers, new arrivals), the banner pictures and
  * the best of the approved reviews, plus the star rating that goes on a product. Nothing here changes anything.
  */
 @Service
@@ -26,8 +26,10 @@ public class OnlineFrontService {
     private final OnlineStoreService store;
     private final OnlineListingRepository listings;
     private final OnlineReviewRepository reviews;
+    private final OnlineBannerService banners;
 
-    public OnlineFrontService(OnlineStoreService store, OnlineListingRepository listings, OnlineReviewRepository reviews) {
+    public OnlineFrontService(OnlineStoreService store, OnlineListingRepository listings, OnlineReviewRepository reviews, OnlineBannerService banners) {
+        this.banners = banners;
         this.store = store;
         this.listings = listings;
         this.reviews = reviews;
@@ -42,11 +44,6 @@ public class OnlineFrontService {
         List<OnlineStoreDtos.PublicProduct> best = row(listings.findBestSellers(top), s);
         List<OnlineStoreDtos.PublicProduct> offers = row(listings.findOffers(top), s);
         List<OnlineStoreDtos.PublicProduct> fresh = row(listings.findNewArrivals(top), s);
-        List<PublicCategory> categories = new ArrayList<>();
-        for (Object[] c : listings.categoryCounts()) {
-            if (categories.size() >= ROW) break;
-            categories.add(new PublicCategory((String) c[0], ((Number) c[1]).longValue(), c[2] == null ? null : "/api/public/store/products/" + ((Number) c[2]).longValue() + "/image"));
-        }
         List<PublicReview> shown = reviews.findShown(PageRequest.of(0, 6)).stream()
                 .map(r -> new PublicReview(r.getProductName(), r.getReviewerName(), r.getRating(), r.getReviewText(), r.getCreatedAt())).toList();
         Double avg = null;
@@ -56,7 +53,7 @@ public class OnlineFrontService {
             avg = round1(((Number) overall.get(0)[0]).doubleValue());
             count = ((Number) overall.get(0)[1]).longValue();
         }
-        return new PublicHome(featured, best, offers, fresh, categories, shown, avg, count);
+        return new PublicHome(featured, best, offers, fresh, banners.urls(), shown, avg, count);
     }
 
     private List<OnlineStoreDtos.PublicProduct> row(List<OnlineListing> rows, OnlineStoreSettings s) {

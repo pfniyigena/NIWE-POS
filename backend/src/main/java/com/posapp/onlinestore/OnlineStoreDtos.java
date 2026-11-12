@@ -34,15 +34,12 @@ public final class OnlineStoreDtos {
                              List<PublicLink> footerLinks, List<PublicLink> socialLinks) {
     }
 
-    public record PublicCategory(String name, long count, String imageUrl) {
-    }
-
     public record PublicReview(String productName, String reviewerName, int rating, String text, Instant at) {
     }
 
-    /** The rows of the front page, chosen by staff, and the best of the approved reviews. */
+    /** The rows of the front page, chosen by staff, the banner pictures (addresses, in sliding order) and the best of the approved reviews. */
     public record PublicHome(List<PublicProduct> featured, List<PublicProduct> bestSellers, List<PublicProduct> offers, List<PublicProduct> newArrivals,
-                             List<PublicCategory> categories, List<PublicReview> reviews, Double ratingAverage, long ratingCount) {
+                             List<String> banners, List<PublicReview> reviews, Double ratingAverage, long ratingCount) {
     }
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,

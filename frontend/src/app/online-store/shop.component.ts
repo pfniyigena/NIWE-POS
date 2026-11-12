@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -51,32 +51,42 @@ import { T } from '../core/i18n/t';
 
         <ng-container *ngIf="step === 'shop' && !showAccount">
         <ng-container *ngIf="landing">
-          <section class="shop-hero" style="margin-top:1rem; border-radius:14px; padding:2.5rem 1.5rem; color:#fff; background-color:#1f2937; background-size:cover; background-position:center; position:relative; overflow:hidden;" [style.background-image]="heroImage">
-            <div style="position:absolute; inset:0; background:rgba(17,24,39,0.55);"></div>
-            <div style="position:relative; max-width:600px;">
+          <section class="shop-hero" style="margin-top:1rem; border-radius:14px; color:#fff; background-color:#1f2937; position:relative; overflow:hidden; min-height:300px; display:flex; align-items:center;"
+                   (mouseenter)="heroHold = true" (mouseleave)="heroHold = false" (touchstart)="heroTouchStart($event)" (touchend)="heroTouchEnd($event)">
+            <div class="shop-hero-track" *ngIf="bannerUrls.length" [style.transform]="'translateX(-' + (heroIndex * 100) + '%)'"
+                 style="position:absolute; inset:0; display:flex; transition:transform 0.8s ease-in-out;">
+              <div class="shop-hero-slide" *ngFor="let u of bannerUrls" style="flex:0 0 100%; height:100%; background-size:cover; background-position:center;" [style.background-image]="slide(u)"></div>
+            </div>
+            <div style="position:absolute; inset:0; background:rgba(17,24,39,0.5);"></div>
+            <div style="position:relative; max-width:600px; padding:2.5rem 3rem 3rem;">
               <h1 class="shop-hero-title" style="margin:0 0 0.5rem; font-size:2rem; line-height:1.2;">{{ heroTitle }}</h1>
               <p class="shop-hero-sub" *ngIf="heroSubtitle" style="margin:0 0 1rem; font-size:1.05rem;">{{ heroSubtitle }}</p>
               <button class="btn btn-primary shop-hero-cta" style="font-size:1.05rem; padding:0.6rem 1.4rem;" (click)="cta()">{{ heroButton }}</button>
             </div>
-          </section>
-
-          <section class="shop-cats mt-4" *ngIf="home && home.categories.length > 0">
-            <h3>{{ 'Popular categories' | translate }}</h3>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:0.75rem;">
-              <button type="button" class="card shop-cat" *ngFor="let c of home.categories" (click)="pickCategory(c.name); scrollAll()" style="padding:0.6rem; text-align:left; cursor:pointer;">
-                <img *ngIf="c.imageUrl" [src]="catImg(c.imageUrl)" [alt]="c.name" loading="lazy" style="width:100%; height:90px; object-fit:cover; border-radius:6px;" />
-                <div *ngIf="!c.imageUrl" style="width:100%; height:90px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🗂️</div>
-                <div class="mt-1"><strong>{{ c.name }}</strong></div>
-                <div class="text-muted" style="font-size:0.8rem;">{{ '{p0} products' | translate: { p0: c.count } }}</div>
-              </button>
-            </div>
+            <ng-container *ngIf="bannerUrls.length > 1">
+              <button type="button" class="shop-hero-prev" [attr.aria-label]="'Previous picture' | translate" (click)="heroGo(-1)" style="position:absolute; left:0.5rem; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; border:0; background:rgba(255,255,255,0.85); color:#111827; font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
+              <button type="button" class="shop-hero-next" [attr.aria-label]="'Next picture' | translate" (click)="heroGo(1)" style="position:absolute; right:0.5rem; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; border:0; background:rgba(255,255,255,0.85); color:#111827; font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
+              <div style="position:absolute; left:0; right:0; bottom:0.6rem; display:flex; justify-content:center; gap:0.4rem;">
+                <button type="button" class="shop-hero-dot" *ngFor="let u of bannerUrls; let i = index" [attr.aria-label]="(i + 1) + ' / ' + bannerUrls.length" (click)="heroSet(i)"
+                        [style.background]="i === heroIndex ? '#ffffff' : 'rgba(255,255,255,0.45)'" style="width:10px; height:10px; border-radius:50%; border:0; padding:0; cursor:pointer;"></button>
+              </div>
+            </ng-container>
           </section>
 
           <section class="shop-row mt-4" *ngFor="let r of rows" [attr.data-row]="r.key">
             <h3>{{ r.title | translate }}</h3>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
-              <ng-container *ngFor="let p of r.items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
+            <div class="shop-carousel" *ngIf="r.key === 'featured'; else plainRow" style="position:relative;" (mouseenter)="railHold = true" (mouseleave)="railHold = false" (touchstart)="railHold = true" (touchend)="railHold = false" (focusin)="railHold = true" (focusout)="railHold = false">
+              <button type="button" class="shop-car-prev" [attr.aria-label]="'Previous products' | translate" (click)="railGo(-1)" style="position:absolute; left:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
+              <div #featRail class="car-rail" style="display:flex; gap:0.75rem; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:0.25rem 0.1rem 0.5rem; scrollbar-width:none;">
+                <div class="car-item" *ngFor="let p of r.items" style="flex:0 0 210px; scroll-snap-align:start;"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
+              </div>
+              <button type="button" class="shop-car-next" [attr.aria-label]="'Next products' | translate" (click)="railGo(1)" style="position:absolute; right:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
             </div>
+            <ng-template #plainRow>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
+                <ng-container *ngFor="let p of r.items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
+              </div>
+            </ng-template>
           </section>
           <h3 class="mt-4" id="shop-all">{{ 'All products' | translate }}</h3>
         </ng-container>
@@ -275,8 +285,9 @@ import { T } from '../core/i18n/t';
           </div>
       </ng-template>
   `,
+  styles: ['.car-rail::-webkit-scrollbar { display: none; }'],
 })
-export class ShopComponent implements OnInit {
+export class ShopComponent implements OnInit, OnDestroy {
   shop: Shop | null = null;
   error: string | null = null;
   /** shop = browsing; order = the cart and the place-order form. */
@@ -322,7 +333,7 @@ export class ShopComponent implements OnInit {
   /** What could not be put back in the cart when ordering again. */
   reorderNote: string | null = null;
 
-  /** The front page rows chosen by staff, the popular categories and the approved reviews (null until loaded, or when they cannot be). */
+  /** The front page rows chosen by staff, the banner pictures and the approved reviews (null until loaded, or when they cannot be). */
   home: ShopHome | null = null;
   logo: string | null = null;
   trackCode = '';
@@ -334,7 +345,7 @@ export class ShopComponent implements OnInit {
 
   constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService, private publicSettings: PublicSettingsApiService) {}
 
-  /** The landing sections (hero, categories, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
+  /** The landing sections (hero, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
   get landing(): boolean {
     return this.step === 'shop' && !this.showAccount && !this.q.trim() && !this.category;
   }
@@ -362,9 +373,74 @@ export class ShopComponent implements OnInit {
     return this.shop?.page?.heroButtonText || T('Shop now');
   }
 
-  get heroImage(): string | null {
-    const u = this.shop?.page?.heroImageUrl;
-    return u && /^(https:\/\/|\/)/.test(u) ? `url("${u}")` : null;
+  /** The banner pictures staff uploaded, in sliding order (full addresses). */
+  get bannerUrls(): string[] {
+    return (this.home?.banners ?? []).map((u) => this.api.imageUrl(u));
+  }
+
+  // ---- the banner slideshow and the Featured products rail: both move by themselves, and stop while the visitor points at them or the tab is hidden
+  heroIndex = 0;
+  heroHold = false;
+  railHold = false;
+  @ViewChild('featRail') featRail?: ElementRef<HTMLElement>;
+  private heroTimer: ReturnType<typeof setInterval> | null = null;
+  private railTimer: ReturnType<typeof setInterval> | null = null;
+  private touchX = 0;
+
+  private get calm(): boolean {
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  private startMotion(): void {
+    if (this.calm) return;
+    if (!this.heroTimer) this.heroTimer = setInterval(() => { if (!this.heroHold && !document.hidden && this.bannerUrls.length > 1) this.heroGo(1); }, 5000);
+    if (!this.railTimer) this.railTimer = setInterval(() => { if (!this.railHold && !document.hidden) this.railGo(1); }, 3500);
+  }
+
+  ngOnDestroy(): void {
+    if (this.heroTimer) clearInterval(this.heroTimer);
+    if (this.railTimer) clearInterval(this.railTimer);
+  }
+
+  /** The CSS value of a slide's picture. */
+  slide(u: string): string {
+    return `url("${u}")`;
+  }
+
+  heroGo(step: number): void {
+    const n = this.bannerUrls.length;
+    if (n > 0) this.heroIndex = (this.heroIndex + step + n) % n;
+  }
+
+  heroSet(i: number): void {
+    this.heroIndex = i;
+  }
+
+  heroTouchStart(e: TouchEvent): void {
+    this.touchX = e.touches[0]?.clientX ?? 0;
+    this.heroHold = true;
+  }
+
+  heroTouchEnd(e: TouchEvent): void {
+    const dx = (e.changedTouches[0]?.clientX ?? 0) - this.touchX;
+    if (Math.abs(dx) > 40) this.heroGo(dx < 0 ? 1 : -1);
+    this.heroHold = false;
+  }
+
+  /** One screen of Featured products to the left or right; on its own, the rail goes back to the start after the last product. */
+  railGo(dir: number): void {
+    const el = this.featRail?.nativeElement;
+    if (!el) return;
+    const step = Math.max(200, el.clientWidth * 0.8);
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+    const atStart = el.scrollLeft <= 4;
+    if (dir > 0 && atEnd) {
+      el.scrollTo({ left: 0, behavior: 'smooth' });
+    } else if (dir < 0 && atStart) {
+      el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+    } else {
+      el.scrollBy({ left: dir * step, behavior: 'smooth' });
+    }
   }
 
   /** The banner button: staff's link, or down to the products. */
@@ -397,10 +473,6 @@ export class ShopComponent implements OnInit {
     this.page = 0;
     this.load();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  catImg(path: string): string {
-    return this.api.imageUrl(path) + '?w=300';
   }
 
   stars(r: number): string {
@@ -447,7 +519,7 @@ export class ShopComponent implements OnInit {
           this.api.accountMe().subscribe({ next: (p) => this.accountChanged(p), error: () => shopToken.clear() });
         }
         this.load();
-        this.api.home().subscribe({ next: (h) => (this.home = h), error: () => (this.home = null) });
+        this.api.home().subscribe({ next: (h) => { this.home = h; this.startMotion(); }, error: () => (this.home = null) });
         this.publicSettings.branding().subscribe({ next: (b) => (this.logo = b.logoDataUrl || null), error: () => {} });
       },
       error: (e) => (this.error = e?.error?.message ?? T('The shop is not available right now.')),

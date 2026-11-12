@@ -24,12 +24,11 @@ export interface ShopPageContent {
   heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
   footerLinks: ShopLink[]; socialLinks: ShopLink[];
 }
-export interface ShopCategory { name: string; count: number; imageUrl: string | null }
 export interface ShopReview { productName: string; reviewerName: string; rating: number; text: string; at: string }
 /** The rows of the front page, chosen by staff, and the best approved reviews. */
 export interface ShopHome {
   featured: ShopProduct[]; bestSellers: ShopProduct[]; offers: ShopProduct[]; newArrivals: ShopProduct[];
-  categories: ShopCategory[]; reviews: ShopReview[]; ratingAverage: number | null; ratingCount: number;
+  banners: string[]; reviews: ShopReview[]; ratingAverage: number | null; ratingCount: number;
 }
 export interface ShopReviewItem { productId: number; name: string; rating: number | null; text: string | null; status: string | null }
 export interface ShopReviewOptions { canReview: boolean; why: string | null; items: ShopReviewItem[] }
@@ -105,6 +104,7 @@ export interface StorePageContent {
   heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
   footerLinks: string | null; socialLinks: string | null;
 }
+export interface StoreBanner { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
 export interface StoreReview {
   id: number; orderCode: string | null; productId: number; productName: string; reviewerName: string; rating: number; text: string | null;
   status: 'PENDING' | 'APPROVED' | 'HIDDEN'; createdAt: string; moderatedBy: string | null;
@@ -275,6 +275,14 @@ export class OnlineStoreApiService {
   // ---- staff: front page wording, reviews, newsletter
   pageContent(): Observable<StorePageContent> { return this.http.get<StorePageContent>(`${this.base}/page-content`); }
   savePageContent(c: StorePageContent): Observable<StorePageContent> { return this.http.put<StorePageContent>(`${this.base}/page-content`, c); }
+  banners(): Observable<StoreBanner[]> { return this.http.get<StoreBanner[]>(`${this.base}/banners`); }
+  uploadBanner(file: File): Observable<StoreBanner> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<StoreBanner>(`${this.base}/banners`, form);
+  }
+  deleteBanner(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/banners/${id}`); }
+  moveBanner(id: number, direction: 'up' | 'down'): Observable<StoreBanner[]> { return this.http.post<StoreBanner[]>(`${this.base}/banners/${id}/move?direction=${direction}`, {}); }
   reviewsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReview>> {
     return pagedList<StoreReview>(this.http, `${this.base}/reviews`, f, page, size, {});
   }

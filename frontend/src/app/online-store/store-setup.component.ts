@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, StorePageContent, PaymentProvider, StoreListing, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -116,8 +116,24 @@ import { API_BASE } from '../core/constants';
           <div class="form-group" style="flex:1; min-width:240px;"><label class="form-label">{{ 'Banner button link (empty = down to the products)' | translate }}</label>
             <input class="form-control" maxlength="300" name="fpBtnLink" [(ngModel)]="pc.heroButtonLink" /></div>
         </div>
-        <div class="form-group"><label class="form-label">{{ 'Banner picture (an https:// address of an image; empty = a plain banner)' | translate }}</label>
-          <input class="form-control" maxlength="300" name="fpImg" [(ngModel)]="pc.heroImageUrl" /></div>
+        <div class="form-group fp-banners">
+          <label class="form-label">{{ 'Banner pictures' | translate }}</label>
+          <p class="text-muted" style="font-size:0.85rem; margin:0 0 0.4rem;">{{ 'Upload up to 8 pictures (JPEG, PNG, WebP or GIF, at most 8 MB each). They slide one after the other on the front page, in the order shown here. A wide picture works best (for example 1600 × 600).' | translate }}</p>
+          <div style="display:flex; flex-wrap:wrap; gap:0.6rem; margin-bottom:0.5rem;">
+            <div class="fp-banner" *ngFor="let b of banners; let i = index" style="width:200px; border:1px solid #e5e7eb; border-radius:8px; padding:0.4rem;">
+              <img [src]="bannerThumb(b)" [alt]="b.fileName" style="width:100%; height:90px; object-fit:cover; border-radius:6px; background:#f3f4f6;" />
+              <div class="text-muted" style="font-size:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" [title]="b.fileName">{{ i + 1 }}. {{ b.fileName }}</div>
+              <div class="flex gap-1 mt-1">
+                <button type="button" class="btn btn-sm btn-outline-secondary fp-banner-up" [disabled]="i === 0 || bannerBusy" [attr.aria-label]="'Move earlier' | translate" (click)="moveBanner(b, 'up')">←</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary fp-banner-down" [disabled]="i === banners.length - 1 || bannerBusy" [attr.aria-label]="'Move later' | translate" (click)="moveBanner(b, 'down')">→</button>
+                <button type="button" class="btn btn-sm btn-outline-danger fp-banner-del" [disabled]="bannerBusy" (click)="deleteBanner(b)">{{ 'Remove' | translate }}</button>
+              </div>
+            </div>
+          </div>
+          <p class="text-muted" *ngIf="!banners.length" style="margin:0 0 0.4rem;">{{ 'No banner picture yet: the banner shows a plain colour.' | translate }}</p>
+          <input type="file" class="form-control fp-banner-file" accept="image/jpeg,image/png,image/webp,image/gif" multiple [disabled]="bannerBusy || banners.length >= 8" (change)="pickBanners($event)" />
+          <div class="text-muted" *ngIf="bannerBusy" style="font-size:0.85rem;">{{ 'Uploading…' | translate }}</div>
+        </div>
         <div class="form-group"><label class="form-label">{{ 'About the shop (footer)' | translate }}</label>
           <textarea class="form-control" rows="2" maxlength="400" name="fpAbout" [(ngModel)]="pc.aboutText"></textarea></div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
@@ -223,6 +239,9 @@ export class StoreSetupComponent implements OnInit {
   listings: StoreListing[] = [];
   /** The front page's wording. */
   pc: StorePageContent | null = null;
+  /** The banner pictures of the front page, in the order they slide. */
+  banners: StoreBanner[] = [];
+  bannerBusy = false;
   /** The products table is paged on screen: what is typed in a row stays in the row while another page is shown. */
   listFilter = '';
   listSize = 10;
@@ -247,9 +266,57 @@ export class StoreSetupComponent implements OnInit {
     this.api.providers().subscribe({ next: (p) => (this.providers = p), error: () => {} });
     this.api.textProviders().subscribe({ next: (p) => (this.textProviders = p), error: () => {} });
     this.api.pageContent().subscribe({ next: (c) => (this.pc = c), error: () => {} });
+    this.api.banners().subscribe({ next: (b) => (this.banners = b), error: () => {} });
     this.loadListings();
     this.loadZones();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });
+  }
+
+  bannerThumb(b: StoreBanner): string {
+    return this.api.imageUrl(b.url) + '?w=300';
+  }
+
+  /** Uploads the chosen pictures one after the other; one that is refused is reported and the rest carry on. */
+  pickBanners(ev: Event): void {
+    const input = ev.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length) return;
+    this.bannerBusy = true;
+    this.error = null;
+    this.message = null;
+    const room = Math.max(0, 8 - this.banners.length);
+    const queue = files.slice(0, room);
+    const next = (): void => {
+      const f = queue.shift();
+      if (!f) {
+        this.bannerBusy = false;
+        if (!this.error) this.ok('Banner pictures saved');
+        return;
+      }
+      this.api.uploadBanner(f).subscribe({
+        next: (b) => { this.banners = [...this.banners, b]; next(); },
+        error: (e) => { this.error = (e?.error?.message ?? T('Could not add the picture')) + ' (' + f.name + ')'; next(); },
+      });
+    };
+    next();
+  }
+
+  moveBanner(b: StoreBanner, direction: 'up' | 'down'): void {
+    this.bannerBusy = true;
+    this.api.moveBanner(b.id, direction).subscribe({
+      next: (list) => { this.banners = list; this.bannerBusy = false; },
+      error: (e) => { this.bannerBusy = false; this.fail(e, 'Could not move the picture'); },
+    });
+  }
+
+  deleteBanner(b: StoreBanner): void {
+    if (!confirm(T('Remove this banner picture?'))) return;
+    this.bannerBusy = true;
+    this.api.deleteBanner(b.id).subscribe({
+      next: () => { this.banners = this.banners.filter((x) => x.id !== b.id); this.bannerBusy = false; this.ok('Removed'); },
+      error: (e) => { this.bannerBusy = false; this.fail(e, 'Could not remove the picture'); },
+    });
   }
 
   private fail(e: any, fallback: string): void {
