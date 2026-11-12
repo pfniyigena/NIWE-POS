@@ -1777,5 +1777,20 @@
  "Choose what the coupon gives.": "Choisissez ce que donne le code promo.",
  "The minimum order cannot be negative.": "La commande minimale ne peut pas être négative.",
  "The coupon cannot end before it starts.": "Le code promo ne peut pas finir avant de commencer.",
- "The number of uses must be at least 1.": "Le nombre d'utilisations doit être d'au moins 1."
+ "The number of uses must be at least 1.": "Le nombre d'utilisations doit être d'au moins 1.",
+ "Choose SMS or WhatsApp for text messages": "Choisissez SMS ou WhatsApp pour les messages texte",
+ "The country code must be 1 to 4 digits, for example 250": "L'indicatif du pays doit comporter 1 à 4 chiffres, par exemple 250",
+ "The daily limit of text messages must be between 0 and 100000": "La limite quotidienne de messages texte doit être comprise entre 0 et 100000",
+ "Choose a text provider that is available": "Choisissez un fournisseur de messages texte disponible",
+ "This text provider cannot send on the channel you chose": "Ce fournisseur ne peut pas envoyer sur le canal choisi",
+ "The shop phone number for texts does not look right": "Le numéro de téléphone de la boutique pour les messages texte semble incorrect",
+ "Enter the phone number to send the test to": "Saisissez le numéro de téléphone auquel envoyer le test",
+ "Text messages are off. Choose a provider in the shop settings first.": "Les messages texte sont désactivés. Choisissez d'abord un fournisseur dans les paramètres de la boutique.",
+ "This is a test message from your online shop.": "Ceci est un message de test de votre boutique en ligne.",
+ "New online order {0} from {1} ({2}), total {3}. Open Online Store > Online orders.": "Nouvelle commande en ligne {0} de {1} ({2}), total {3}. Ouvrez Boutique en ligne > Commandes en ligne.",
+ "We cannot send text messages right now. Please try again later.": "Nous ne pouvons pas envoyer de messages texte pour le moment. Réessayez plus tard.",
+ "Save your phone number first": "Enregistrez d'abord votre numéro de téléphone",
+ "This number already belongs to another account.": "Ce numéro appartient déjà à un autre compte.",
+ "The phone number of this account cannot be changed here: it is how you sign in.": "Le numéro de téléphone de ce compte ne peut pas être modifié ici : il sert à vous connecter.",
+ "Your code to confirm this phone number is {0}. It works for 10 minutes. If you did not ask for it, ignore this message.": "Votre code pour confirmer ce numéro de téléphone est {0}. Il est valable 10 minutes. Si vous ne l'avez pas demandé, ignorez ce message."
 }

@@ -27,6 +27,16 @@ public class OnlineStoreSettings extends BaseEntity {
     /** Customers may sign in with an e-mailed code to see their orders and keep their address (phase 3). */
     private boolean accountsEnabled = false;
     private boolean onlinePaymentsEnabled = false;
+    /** Text messages (phase 3): the code of the text provider (see TextProvider), e.g. SIMULATED while testing. Empty = texting is off. */
+    private String textProvider;
+    /** SMS or WHATSAPP: how texts are delivered. */
+    private String textChannel = "SMS";
+    /** Put in front of local numbers (0788...) to make them international: 250 for Rwanda. */
+    private String textCountryCode = "250";
+    /** At most this many texts are sent in 24 hours (0 = no limit). Keeps the cost, and any abuse, bounded. */
+    private int textDailyLimit = 300;
+    /** The owner's phone: texted about new orders and orders waiting too long. Empty = nobody is texted. */
+    private String notifyPhone;
     /** The code of the payment provider (see PaymentProvider), e.g. SIMULATED while testing. */
     private String paymentProvider;
     /** A try to pay that is not confirmed after this many minutes is closed. */

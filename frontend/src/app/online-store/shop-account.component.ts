@@ -33,7 +33,8 @@ import { T } from '../core/i18n/t';
           <input class="form-control acc-identifier" maxlength="160" inputmode="email" autocomplete="username" name="accid" [(ngModel)]="identifier" (keyup.enter)="sendCode()" />
         </div>
         <button class="btn btn-primary acc-send" [disabled]="busy || !identifier.trim()" (click)="sendCode()">{{ busy ? ('Sending…' | translate) : ('Send me a code' | translate) }}</button>
-        <p class="text-muted mt-2" style="font-size:0.8rem;">{{ 'A phone number only works once it is saved on your account. The first time, use your e-mail address.' | translate }}</p>
+        <p class="text-muted mt-2 acc-hint-mail" *ngIf="!textChannel" style="font-size:0.8rem;">{{ 'A phone number only works once it is saved on your account. The first time, use your e-mail address.' | translate }}</p>
+        <p class="text-muted mt-2 acc-hint-text" *ngIf="textChannel" style="font-size:0.8rem;">{{ 'Type your e-mail address and we e-mail you a code, or type your phone number and we text it to you.' | translate }}</p>
       </ng-container>
 
       <!-- Signed out: type the code -->
@@ -52,14 +53,34 @@ import { T } from '../core/i18n/t';
 
       <!-- Signed in -->
       <ng-container *ngIf="profile">
-        <div class="text-muted mb-2">{{ 'Signed in as {p0}' | translate: { p0: profile.email } }}</div>
+        <div class="text-muted mb-2">{{ 'Signed in as {p0}' | translate: { p0: profile.email || profile.phone } }}</div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <div class="form-group"><label class="form-label">{{ 'Your name' | translate }}</label><input class="form-control acc-name" maxlength="80" name="accname" [(ngModel)]="form.name" /></div>
-          <div class="form-group"><label class="form-label">{{ 'Your phone number' | translate }}</label><input class="form-control acc-phone" maxlength="40" inputmode="tel" name="accphone" [(ngModel)]="form.phone" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Your phone number' | translate }}</label><input class="form-control acc-phone" maxlength="40" inputmode="tel" name="accphone" [(ngModel)]="form.phone" [readonly]="!profile.email" /></div>
         </div>
         <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control acc-address" maxlength="240" name="accaddr" [(ngModel)]="form.address" /></div>
-        <div class="text-muted" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A saved phone number lets you sign in with it.' | translate }}</div>
+        <div class="text-muted" *ngIf="!textChannel" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A saved phone number lets you sign in with it.' | translate }}</div>
+        <div class="text-muted" *ngIf="textChannel" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A phone number you confirm by text message lets you sign in with it.' | translate }}</div>
         <button class="btn btn-primary mt-2 acc-save" [disabled]="busy" (click)="save()">{{ 'Save my details' | translate }}</button>
+
+        <!-- The phone number: proved with a text message before it can be used to sign in -->
+        <div class="mt-2 acc-phone-box" *ngIf="textChannel && profile.phone">
+          <div class="text-muted acc-phone-ok" *ngIf="profile.phoneVerified" style="font-size:0.85rem;">✓ {{ 'This number is confirmed: you can sign in with it.' | translate }}</div>
+          <div class="text-muted acc-phone-fixed" *ngIf="profile.phoneVerified && !profile.email" style="font-size:0.85rem;">{{ 'This number is how you sign in, so it cannot be changed here.' | translate }}</div>
+          <ng-container *ngIf="!profile.phoneVerified">
+            <div class="text-muted" *ngIf="!phoneCodeSent" style="font-size:0.85rem;">{{ 'Confirm this number to sign in with it by text message.' | translate }}</div>
+            <button class="btn btn-sm btn-outline-primary mt-1 acc-phone-send" *ngIf="!phoneCodeSent" [disabled]="busy || phoneUnsaved()" (click)="sendPhoneCode()">{{ 'Text me a code to confirm this number' | translate }}</button>
+            <div class="text-muted" *ngIf="!phoneCodeSent && phoneUnsaved()" style="font-size:0.8rem;">{{ 'Save your details first.' | translate }}</div>
+            <div *ngIf="phoneCodeSent">
+              <div class="text-muted" style="font-size:0.85rem;">{{ 'A code was texted to {p0}. It works for 10 minutes.' | translate: { p0: profile.phone } }}</div>
+              <div class="flex gap-2 mt-1" style="flex-wrap:wrap; align-items:center;">
+                <input class="form-control acc-phone-code" style="max-width:180px; letter-spacing:0.3em;" maxlength="12" inputmode="numeric" autocomplete="one-time-code" name="accphonecode" [(ngModel)]="phoneCode" (keyup.enter)="verifyPhone()" />
+                <button class="btn btn-sm btn-primary acc-phone-verify" [disabled]="busy || !phoneCode.trim()" (click)="verifyPhone()">{{ 'Confirm' | translate }}</button>
+                <button class="btn btn-sm btn-outline-secondary acc-phone-again" [disabled]="busy" (click)="sendPhoneCode()">{{ 'Send a new code' | translate }}</button>
+              </div>
+            </div>
+          </ng-container>
+        </div>
 
         <h5 class="mt-3">{{ 'My orders' | translate }}</h5>
         <div class="text-muted" *ngIf="orders === null">{{ 'Loading…' | translate }}</div>
@@ -94,6 +115,8 @@ export class ShopAccountComponent implements OnInit {
   @Input() profile: AccountProfile | null = null;
   /** The shop's currency, written after amounts. */
   @Input() currency = '';
+  /** SMS or WHATSAPP when the shop texts customers (phone sign-in and number confirmation then work), else null. */
+  @Input() textChannel: string | null = null;
   @Output() profileChange = new EventEmitter<AccountProfile | null>();
   @Output() reordered = new EventEmitter<Reorder>();
   @Output() closed = new EventEmitter<void>();
@@ -107,6 +130,8 @@ export class ShopAccountComponent implements OnInit {
   confirmDelete = false;
   orders: AccountOrder[] | null = null;
   form = { name: '', phone: '', address: '' };
+  phoneCodeSent = false;
+  phoneCode = '';
 
   constructor(private api: OnlineStoreApiService, private lang: LanguageService) {}
 
@@ -136,6 +161,8 @@ export class ShopAccountComponent implements OnInit {
   private loaded(): void {
     const p = this.profile!;
     this.form = { name: p.name ?? '', phone: p.phone ?? '', address: p.address ?? '' };
+    this.phoneCodeSent = false;
+    this.phoneCode = '';
     this.orders = null;
     this.api.accountOrders().subscribe({
       next: (o) => (this.orders = o),
@@ -208,8 +235,50 @@ export class ShopAccountComponent implements OnInit {
       next: (p) => {
         this.busy = false;
         this.profile = p;
+        this.form.phone = p.phone ?? '';
         this.profileChange.emit(p);
         this.info = T('Saved.');
+      },
+      error: (e) => {
+        this.busy = false;
+        this.expired(e);
+      },
+    });
+  }
+
+  /** The number in the box is not the one saved on the account yet: it has to be saved before it can be confirmed. */
+  phoneUnsaved(): boolean {
+    return (this.form.phone ?? '').trim() !== (this.profile?.phone ?? '');
+  }
+
+  sendPhoneCode(): void {
+    this.error = null;
+    this.info = null;
+    this.busy = true;
+    this.api.accountPhoneCode().subscribe({
+      next: () => {
+        this.busy = false;
+        this.phoneCodeSent = true;
+        this.phoneCode = '';
+      },
+      error: (e) => {
+        this.busy = false;
+        this.expired(e);
+      },
+    });
+  }
+
+  verifyPhone(): void {
+    this.error = null;
+    this.busy = true;
+    this.api.accountPhoneVerify(this.phoneCode.trim()).subscribe({
+      next: (p) => {
+        this.busy = false;
+        this.profile = p;
+        this.profileChange.emit(p);
+        this.phoneCodeSent = false;
+        this.phoneCode = '';
+        this.info = T('Your number is confirmed.');
       },
       error: (e) => {
         this.busy = false;

@@ -29,7 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Customer accounts on the public shop (phase 3). A customer proves an e-mail address with a one-time code and gets a session; there are no passwords.
+ * Customer accounts on the public shop (phase 3). A customer proves an e-mail address, or a phone number (by text message), with a one-time code and gets a session; there are no passwords.
  * The shop works without an account: an account only adds order history, a saved address and one-click reorder. Guest orders placed with the same
  * e-mail address join the account when the address is proved.
  * <p>
@@ -56,6 +56,7 @@ public class ShopAccountService {
     private final OnlineStoreService storeService;
     private final List<ShopCodeChannel> channels;
     private final AuditLogService auditLogService;
+    private final OnlineTextService texts;
     private final String devCode;
     private final Environment environment;
 
@@ -64,7 +65,7 @@ public class ShopAccountService {
 
     public ShopAccountService(ShopCustomerRepository customers, ShopLoginCodeRepository codes, ShopSessionRepository sessions, OnlineOrderRepository orders,
                               OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository, OnlineStoreService storeService,
-                              List<ShopCodeChannel> channels, AuditLogService auditLogService,
+                              List<ShopCodeChannel> channels, AuditLogService auditLogService, OnlineTextService texts,
                               @Value("${app.online-store.accounts.dev-code:}") String devCode, Environment environment) {
         this.customers = customers;
         this.codes = codes;
@@ -75,6 +76,7 @@ public class ShopAccountService {
         this.storeService = storeService;
         this.channels = channels;
         this.auditLogService = auditLogService;
+        this.texts = texts;
         this.devCode = devCode == null ? "" : devCode.trim();
         this.environment = environment;
     }
@@ -116,8 +118,8 @@ public class ShopAccountService {
         }
     }
 
-    private static String codeHash(String code, String email) {
-        return sha256(code + "|" + email);
+    private static String codeHash(String code, String identifier) {
+        return sha256(code + "|" + identifier);
     }
 
     static String normalizePhone(String phone) {
@@ -128,93 +130,129 @@ public class ShopAccountService {
         return "fr".equalsIgnoreCase(l) ? "fr" : "en";
     }
 
-    /** The e-mail address a sign-in goes to: the address typed, or the address of the one account that has the phone number typed. Null when there is none. */
-    private String resolveEmail(String identifier) {
+    /** What a sign-in is about: an e-mail address (lower case) or a phone number in international form. */
+    private record Ident(String value, boolean phone) {
+    }
+
+    /**
+     * Works out who the customer typed: an e-mail address, or a phone number. With texting on a phone number is proved by a text message to that number.
+     * With texting off a phone number only works for the one account that has it saved, and the code goes to that account's e-mail address.
+     * Null when no code can be sent (no such account), which the caller must answer like any other request.
+     */
+    private Ident resolve(String identifier) {
         String id = identifier == null ? "" : identifier.trim();
         if (id.isEmpty()) throw ApiException.badRequest(I18n.t("Enter your e-mail address or phone number"));
         if (id.contains("@")) {
             String email = id.toLowerCase(Locale.ROOT);
             if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") || email.length() > 160) throw ApiException.badRequest(I18n.t("That e-mail address does not look right"));
-            return email;
+            return new Ident(email, false);
         }
         String phone = normalizePhone(id);
         if (phone.replaceAll("\\D", "").length() < 7 || id.replaceAll("[0-9+\\-() ]", "").length() > 0) throw ApiException.badRequest(I18n.t("Enter your e-mail address or phone number"));
+        if (texts.enabled()) {
+            String e164 = texts.toE164(id);
+            if (e164 == null) throw ApiException.badRequest(I18n.t("Enter a phone number we can call"));
+            return new Ident(e164, true);
+        }
         List<ShopCustomer> found = customers.findByPhone(phone);
-        return found.size() == 1 ? found.get(0).getEmail() : null;
+        return found.size() == 1 && found.get(0).getEmail() != null ? new Ident(found.get(0).getEmail(), false) : null;
     }
 
     // ------------------------------------------------------------------ signing in
 
     /**
-     * Sends a sign-in code. The answer is the same whether or not an account exists, so the form cannot be used to find out who has one.
-     * A phone number only works for an account that already has it saved; the code then goes to that account's e-mail address.
+     * Sends a sign-in code, by e-mail or by text message. The answer is the same whether or not an account exists, so the form cannot be used to find out who has one.
      */
     @Transactional
     public AccountCodeResult requestCode(AccountCodeRequest in, String ip) {
         open();
         throttle("c:" + ip, 12);
-        String email = resolveEmail(in.identifier());
-        if (email == null) return new AccountCodeResult(true);
+        Ident who = resolve(in.identifier());
+        if (who == null) return new AccountCodeResult(true);
+        issueCode(who.value(), who.phone() ? "SMS" : "EMAIL", lang(in.language()), false);
+        return new AccountCodeResult(true);
+    }
+
+    /** Makes a code for the address or number and sends it through the channel. */
+    private void issueCode(String identifier, String channelCode, String language, boolean confirmation) {
         Instant now = Instant.now();
-        if (codes.countByEmailAndCreatedAtAfter(email, now.minus(Duration.ofHours(1))) >= MAX_CODES_PER_HOUR) {
+        if (codes.countByIdentifierAndCreatedAtAfter(identifier, now.minus(Duration.ofHours(1))) >= MAX_CODES_PER_HOUR) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, I18n.t("Too many codes were asked for this address. Please try again later."));
         }
-        ShopCodeChannel channel = channels.stream().filter(c -> c.code().equals("EMAIL")).findFirst().orElse(null);
+        ShopCodeChannel channel = channels.stream().filter(c -> c.code().equals(channelCode)).findFirst().orElse(null);
         boolean canSend = channel != null && channel.available();
-        // With the development code set, no mail server is needed: the code is always that value.
-        if (!canSend && devCode.isEmpty()) throw ApiException.badRequest(I18n.t("We cannot send e-mails right now. Please try again later."));
-        for (ShopLoginCode old : codes.lockOpen(email)) old.setUsed(true);
+        // With the development code set, no mail server or text provider is needed: the code is always that value.
+        if (!canSend && devCode.isEmpty()) {
+            throw ApiException.badRequest(channelCode.equals("SMS") ? I18n.t("We cannot send text messages right now. Please try again later.") : I18n.t("We cannot send e-mails right now. Please try again later."));
+        }
+        for (ShopLoginCode old : codes.lockOpen(identifier)) old.setUsed(true);
         String value = devCode.isEmpty() ? String.format("%06d", RANDOM.nextInt(1_000_000)) : devCode;
         ShopLoginCode c = new ShopLoginCode();
-        c.setEmail(email);
-        c.setCodeHash(codeHash(value, email));
+        c.setIdentifier(identifier);
+        c.setCodeHash(codeHash(value, identifier));
         c.setExpiresAt(now.plus(CODE_LIFE));
         codes.save(c);
         if (canSend) {
             try {
-                channel.send(email, value, lang(in.language()));
+                if (confirmation) channel.sendConfirmation(identifier, value, language);
+                else channel.send(identifier, value, language);
             } catch (RuntimeException e) {
                 log.warn("Could not send a shop sign-in code: {}", e.getMessage());
                 if (devCode.isEmpty()) throw ApiException.badRequest(I18n.t("We could not send the code. Please try again later."));
             }
         }
-        return new AccountCodeResult(true);
     }
 
     /**
-     * Checks the code. A wrong code counts against the newest code of the address (the count is kept even though the answer is an error) and after 5 it is dead.
-     * A right code opens the account (made on the first sign-in), joins the guest orders placed with the same e-mail address, and starts a session.
+     * Checks a code against the newest open code of the address or number. A wrong code counts against it (the count is kept even though the answer is
+     * an error, see noRollbackFor on the callers) and after 5 it is dead; a right code is used up.
      */
-    @Transactional(noRollbackFor = ApiException.class)
-    public AccountSession verify(AccountVerifyRequest in, String ip) {
-        open();
-        throttle("v:" + ip, 40);
-        String email = resolveEmail(in.identifier());
-        String given = in.code() == null ? "" : in.code().replaceAll("\\s", "");
-        if (email == null || given.isEmpty()) throw ApiException.badRequest(I18n.t(WRONG_CODE));
-        Instant now = Instant.now();
-        List<ShopLoginCode> open = codes.lockOpen(email);
+    private void checkCode(String identifier, String given, Instant now) {
+        if (given.isEmpty()) throw ApiException.badRequest(I18n.t(WRONG_CODE));
+        List<ShopLoginCode> open = codes.lockOpen(identifier);
         if (open.isEmpty()) throw ApiException.badRequest(I18n.t(WRONG_CODE));
         ShopLoginCode c = open.get(0);
         if (!c.getExpiresAt().isAfter(now) || c.getAttempts() >= MAX_ATTEMPTS) {
             c.setUsed(true);
             throw ApiException.badRequest(I18n.t(WRONG_CODE));
         }
-        if (!MessageDigest.isEqual(codeHash(given, email).getBytes(StandardCharsets.UTF_8), c.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
+        if (!MessageDigest.isEqual(codeHash(given, identifier).getBytes(StandardCharsets.UTF_8), c.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
             c.setAttempts(c.getAttempts() + 1);
             if (c.getAttempts() >= MAX_ATTEMPTS) c.setUsed(true);
             throw ApiException.badRequest(I18n.t(WRONG_CODE));
         }
         c.setUsed(true);
-        ShopCustomer customer = customers.findByEmail(email).orElseGet(() -> {
+    }
+
+    /**
+     * A right code opens the account (made on the first sign-in), joins the guest orders placed with the same e-mail address or the same proved phone number,
+     * and starts a session. A phone number proved this way becomes the account's verified number.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public AccountSession verify(AccountVerifyRequest in, String ip) {
+        open();
+        throttle("v:" + ip, 40);
+        Ident who = resolve(in.identifier());
+        String given = in.code() == null ? "" : in.code().replaceAll("\\s", "");
+        if (who == null || given.isEmpty()) throw ApiException.badRequest(I18n.t(WRONG_CODE));
+        Instant now = Instant.now();
+        checkCode(who.value(), given, now);
+        String key = who.phone() ? OnlineCouponService.phoneKey(who.value()) : null;
+        ShopCustomer customer = (who.phone() ? customers.findByPhoneKeyAndPhoneVerifiedTrue(key) : customers.findByEmail(who.value())).orElseGet(() -> {
             ShopCustomer n = new ShopCustomer();
-            n.setEmail(email);
+            if (who.phone()) {
+                n.setPhone(who.value());
+                n.setPhoneKey(key);
+                n.setPhoneVerified(true);
+            } else {
+                n.setEmail(who.value());
+            }
             return n;
         });
         boolean created = customer.getId() == null;
         customer.setLastLoginAt(now);
         customer = customers.save(customer);
-        int linked = orders.linkGuestOrders(customer.getId(), email);
+        int linked = who.phone() ? orders.linkGuestOrdersByPhone(customer.getId(), key) : orders.linkGuestOrders(customer.getId(), who.value());
         byte[] raw = new byte[32];
         RANDOM.nextBytes(raw);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
@@ -224,7 +262,7 @@ public class ShopAccountService {
         s.setExpiresAt(now.plus(SESSION_LIFE));
         s.setLastUsedAt(now);
         sessions.save(s);
-        if (created) auditLogService.record("SHOP_ACCOUNT_CREATED", "A shop account was opened (" + linked + " earlier order(s) joined it)", "ShopCustomer", customer.getId());
+        if (created) auditLogService.record("SHOP_ACCOUNT_CREATED", "A shop account was opened with " + (who.phone() ? "a phone number" : "an e-mail address") + " (" + linked + " earlier order(s) joined it)", "ShopCustomer", customer.getId());
         return new AccountSession(token, profile(customer));
     }
 
@@ -266,7 +304,7 @@ public class ShopAccountService {
     // ------------------------------------------------------------------ the account
 
     private static AccountProfile profile(ShopCustomer c) {
-        return new AccountProfile(c.getEmail(), c.getPhone(), c.getName(), c.getAddress(), c.getLanguage());
+        return new AccountProfile(c.getEmail(), c.getPhone(), c.getName(), c.getAddress(), c.getLanguage(), c.isPhoneVerified());
     }
 
     @Transactional
@@ -286,8 +324,50 @@ public class ShopAccountService {
         }
         c.setName(name == null || name.isEmpty() ? null : name);
         c.setAddress(address == null || address.isEmpty() ? null : address);
-        c.setPhone(phone);
+        String key = phone == null ? null : OnlineCouponService.phoneKey(phone);
+        if (c.getEmail() == null) {
+            // An account opened with a phone number: that verified number is how it signs in, so it stays.
+            if (key == null || !key.equals(c.getPhoneKey())) throw ApiException.badRequest(I18n.t("The phone number of this account cannot be changed here: it is how you sign in."));
+        } else {
+            // A different number has to be proved again before it can be used to sign in.
+            if (!java.util.Objects.equals(key, c.getPhoneKey())) c.setPhoneVerified(false);
+            c.setPhone(phone);
+            c.setPhoneKey(key);
+        }
         c.setLanguage(lang(in.language()));
+        return profile(customers.save(c));
+    }
+
+    /** Texts a code to the phone number saved on the account. Once proved, that number can be used to sign in (by text) to this account. */
+    @Transactional
+    public void requestPhoneCode(String token, String ip) {
+        open();
+        throttle("c:" + ip, 12);
+        ShopCustomer c = authenticate(token);
+        if (!texts.enabled()) throw ApiException.badRequest(I18n.t("We cannot send text messages right now. Please try again later."));
+        if (c.getPhone() == null) throw ApiException.badRequest(I18n.t("Save your phone number first"));
+        if (c.isPhoneVerified()) return;
+        String e164 = texts.toE164(c.getPhone());
+        if (e164 == null) throw ApiException.badRequest(I18n.t("Enter a phone number we can call"));
+        issueCode(e164, "SMS", lang(c.getLanguage()), true);
+    }
+
+    /** Checks the code sent to the saved phone number. A number that already belongs to another account is refused (the code proves the customer owns it, so saying so is safe). */
+    @Transactional(noRollbackFor = ApiException.class)
+    public AccountProfile verifyPhone(String token, PhoneVerifyRequest in, String ip) {
+        open();
+        throttle("v:" + ip, 40);
+        ShopCustomer c = authenticate(token);
+        String e164 = c.getPhone() == null ? null : texts.toE164(c.getPhone());
+        String given = in == null || in.code() == null ? "" : in.code().replaceAll("\\s", "");
+        if (e164 == null) throw ApiException.badRequest(I18n.t(WRONG_CODE));
+        checkCode(e164, given, Instant.now());
+        String key = OnlineCouponService.phoneKey(e164);
+        ShopCustomer other = customers.findByPhoneKeyAndPhoneVerifiedTrue(key).orElse(null);
+        if (other != null && !other.getId().equals(c.getId())) throw ApiException.badRequest(I18n.t("This number already belongs to another account."));
+        c.setPhoneKey(key);
+        c.setPhoneVerified(true);
+        orders.linkGuestOrdersByPhone(c.getId(), key);
         return profile(customers.save(c));
     }
 

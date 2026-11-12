@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.32.0 - Online Store phase 3 (3 of 4): text messages (SMS / WhatsApp)
+
+The shop can text customers (order updates, only for those who ticked the box at checkout), send sign-in codes by text (a phone number can now open and sign in to an account, once confirmed by a code), and text the owner about new orders. A provider interface plus a built-in test sender; a real SMS or WhatsApp provider is one more class (`docs/online-store-text-providers.md`). Daily limit, text log with a test form (Online Store > Text messages), failures never break an order. Migration V70. Details in `RELEASE-NOTES-v1.32.0.md`.
+
 ### Version 1.31.0 - Online Store phase 3 (2 of 4): coupons
 
 Customers can type a coupon code at checkout: percent off the items (with a cap), a fixed amount off, or free delivery, with minimum order, dates, total uses and once per customer. The server decides the discount (under a lock on the coupon) and carries it onto the sale order and invoice by lowering line prices, so the invoice equals what the customer pays. New Online Store > Coupons screen; the coupon box appears when a coupon is active. Migration V69. Details in `RELEASE-NOTES-v1.31.0.md`.

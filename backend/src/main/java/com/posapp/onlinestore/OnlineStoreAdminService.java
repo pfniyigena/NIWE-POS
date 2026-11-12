@@ -24,13 +24,15 @@ public class OnlineStoreAdminService {
     private final AuditLogService auditLogService;
     private final OnlinePaymentService payments;
     private final OnlineCouponRepository couponRepository;
+    private final OnlineTextService texts;
     private final OnlineOrderRepository orderRepository;
 
     public OnlineStoreAdminService(OnlineStoreService storeService, OnlineStoreSettingsRepository settingsRepository,
                                    OnlineListingRepository listingRepository, OnlineDeliveryZoneRepository zoneRepository,
                                    CatalogService catalogService, AuditLogService auditLogService, OnlinePaymentService payments,
-                                   OnlineCouponRepository couponRepository, OnlineOrderRepository orderRepository) {
+                                   OnlineCouponRepository couponRepository, OnlineOrderRepository orderRepository, OnlineTextService texts) {
         this.payments = payments;
+        this.texts = texts;
         this.couponRepository = couponRepository;
         this.orderRepository = orderRepository;
         this.storeService = storeService;
@@ -52,6 +54,52 @@ public class OnlineStoreAdminService {
         if (v == null) return BigDecimal.ZERO;
         if (v.signum() < 0) throw ApiException.badRequest(what + I18n.t(" cannot be negative"));
         return v;
+    }
+
+    // ------------------------------------------------------------------ text messages
+
+    /** Checks and applies the text message part of the settings. Switching texting on needs a provider that is available and carries the channel. */
+    private void applyTexting(OnlineStoreSettings s, SettingsDto in) {
+        String channel = in.textChannel() == null || in.textChannel().isBlank() ? "SMS" : in.textChannel().trim().toUpperCase();
+        if (!channel.equals("SMS") && !channel.equals("WHATSAPP")) throw ApiException.badRequest(I18n.t("Choose SMS or WhatsApp for text messages"));
+        String cc = in.textCountryCode() == null ? "" : in.textCountryCode().trim();
+        if (!cc.matches("[0-9]{1,4}")) throw ApiException.badRequest(I18n.t("The country code must be 1 to 4 digits, for example 250"));
+        if (in.textDailyLimit() < 0 || in.textDailyLimit() > 100000) throw ApiException.badRequest(I18n.t("The daily limit of text messages must be between 0 and 100000"));
+        String provider = text(in.textProvider(), 30);
+        if (provider != null) {
+            var chosen = texts.find(provider);
+            if (chosen == null || !chosen.available()) throw ApiException.badRequest(I18n.t("Choose a text provider that is available"));
+            if (!chosen.supports(channel)) throw ApiException.badRequest(I18n.t("This text provider cannot send on the channel you chose"));
+            provider = chosen.code();
+        }
+        String phone = text(in.notifyPhone(), 40);
+        if (phone != null && OnlineTextService.toE164(phone, cc) == null) throw ApiException.badRequest(I18n.t("The shop phone number for texts does not look right"));
+        s.setTextProvider(provider);
+        s.setTextChannel(channel);
+        s.setTextCountryCode(cc);
+        s.setTextDailyLimit(in.textDailyLimit());
+        s.setNotifyPhone(phone);
+    }
+
+    public List<TextProviderDto> textProviders() {
+        return texts.providers().stream().map(p -> new TextProviderDto(p.code(), p.label(), p.available(),
+                java.util.stream.Stream.of("SMS", "WHATSAPP").filter(p::supports).toList())).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TextPage textLog(int page, int size) {
+        var p = texts.history(page, size);
+        return new TextPage(p.getContent().stream().map(m -> new TextMessageDto(m.getId(), m.getCreatedAt(), m.getChannel(), m.getToPhone(), m.getPurpose(),
+                m.getBody(), m.getStatus(), m.getProvider(), m.getError(), m.getOnlineOrderId())).toList(), p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
+    }
+
+    /** Sends one text to the number typed, through the same limits and log as every other text. */
+    public TextTestResult testText(TextTestRequest in) {
+        if (in == null || in.phone() == null || in.phone().isBlank()) throw ApiException.badRequest(I18n.t("Enter the phone number to send the test to"));
+        if (!texts.enabled()) throw ApiException.badRequest(I18n.t("Text messages are off. Choose a provider in the shop settings first."));
+        var o = texts.test(in.phone(), in.text());
+        auditLogService.record("ONLINE_TEXT_TEST", "Sent a test text message (" + o.status() + ")");
+        return new TextTestResult(o.status(), o.error(), texts.toE164(in.phone()));
     }
 
     // ------------------------------------------------------------------ settings
@@ -105,6 +153,7 @@ public class OnlineStoreAdminService {
         s.setPaymentProvider(prov == null ? null : prov.toUpperCase());
         if (in.paymentExpiryMinutes() < 5 || in.paymentExpiryMinutes() > 1440) throw ApiException.badRequest(I18n.t("The time to pay must be between 5 and 1440 minutes"));
         s.setPaymentExpiryMinutes(in.paymentExpiryMinutes());
+        applyTexting(s, in);
         settingsRepository.save(s);
         auditLogService.record("ONLINE_STORE_SETTINGS", "Updated the Online Store settings (" + (s.isEnabled() ? "on" : "off") + (s.isPaused() ? ", paused" : "") + ")");
         return toDto(s);
@@ -122,7 +171,8 @@ public class OnlineStoreAdminService {
         return new SettingsDto(s.isEnabled(), s.isPaused(), s.getPauseMessage(), s.getShopName(), s.getIntroText(), s.getContactPhone(), s.getPickupAddress(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
-                s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled());
+                s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
+                s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone());
     }
 
     // ------------------------------------------------------------------ listings

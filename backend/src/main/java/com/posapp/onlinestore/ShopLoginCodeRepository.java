@@ -13,10 +13,10 @@ import java.util.List;
 public interface ShopLoginCodeRepository extends JpaRepository<ShopLoginCode, Long> {
     /** The newest codes of an address first, locked, so two verifications at once cannot both count or both use the same code. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select c from ShopLoginCode c where c.email = :email and c.used = false order by c.id desc")
-    List<ShopLoginCode> lockOpen(@Param("email") String email);
+    @Query("select c from ShopLoginCode c where c.identifier = :identifier and c.used = false order by c.id desc")
+    List<ShopLoginCode> lockOpen(@Param("identifier") String identifier);
 
-    long countByEmailAndCreatedAtAfter(String email, Instant since);
+    long countByIdentifierAndCreatedAtAfter(String identifier, Instant since);
 
     @Modifying
     @Query("delete from ShopLoginCode c where c.createdAt < :before")

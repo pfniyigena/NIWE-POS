@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Customer accounts on the public shop: no staff login. The sign-in code goes by e-mail; the session token is sent in the {@code X-Shop-Token} header.
+ * Customer accounts on the public shop: no staff login. The sign-in code goes by e-mail or, with texting on, by text message; the session token is sent in the {@code X-Shop-Token} header.
  * Everything here answers "not available" until the module and the shop are on and Accounts is switched on in the shop settings.
  */
 @RestController
@@ -78,6 +78,20 @@ public class ShopAccountController {
     public Reorder reorder(@RequestHeader(value = TOKEN_HEADER, required = false) String token, @PathVariable String code) {
         on();
         return accounts.reorder(token, code);
+    }
+
+    /** Texts a code to the phone number saved on the account. */
+    @PostMapping("/phone/code")
+    public ResponseEntity<Void> phoneCode(@RequestHeader(value = TOKEN_HEADER, required = false) String token, HttpServletRequest http) {
+        on();
+        accounts.requestPhoneCode(token, ip(http));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/phone/verify")
+    public AccountProfile phoneVerify(@RequestHeader(value = TOKEN_HEADER, required = false) String token, @Valid @RequestBody PhoneVerifyRequest request, HttpServletRequest http) {
+        on();
+        return accounts.verifyPhone(token, request, ip(http));
     }
 
     @PostMapping("/logout")

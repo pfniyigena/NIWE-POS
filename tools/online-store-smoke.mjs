@@ -16,6 +16,10 @@
 // (app.online-store.accounts.dev-code, set in application-dev.properties: 123456) as DEV_CODE or the 6th argument; otherwise that part is skipped.
 // The script then signs in with an address of its own (smoke-<number>@example.test) and deletes that account at the end.
 //
+// Text messages (phase 3) are tried when the shop has texting switched on (Online Store > Shop settings > Text messages, with the test sender in
+// development): the tick box at checkout, order updates, the owner alert, a test message and (with DEV_CODE) sign-in by text with a phone number.
+// Check Online Store > Text messages afterwards: every text is listed there.
+//
 // Coupons (phase 3) are always tried: the script makes a 10% coupon of its own (SMK<number>), orders with it, checks that the invoice equals what
 // the customer was charged, and deletes the coupon at the end.
 
@@ -255,6 +259,69 @@ async function accounts(s, lines) {
   }
 }
 
+async function texts(s, lines) {
+  if (!s.textChannel) {
+    console.log('SKIP  text messages: texting is not switched on in the shop settings (choose a text provider)');
+    return;
+  }
+  console.log('\nText messages');
+  const log = async () => (await call('GET', `${staff}/texts?page=0&size=100`, undefined, true)).json?.items ?? [];
+  const settings = (await call('GET', `${staff}/settings`, undefined, true)).json ?? {};
+  const phoneOf = (n) => `0788${stamp}${String(n).padStart(2, '0')}`;
+  const intl = (p) => `+250${p.replace(/^0/, '')}`;
+
+  const ticked = await place(41, { lines, payment: 'CASH', payPhone: null, textUpdates: true });
+  if (!ok(ticked.status === 200, 'public: an order placed with "send me updates by text" ticked', ticked.status === 200 ? `code ${ticked.json.code}` : `HTTP ${ticked.status} ${ticked.json?.message ?? ''}`)) return;
+  const plain = await place(42, { lines, payment: 'CASH', payPhone: null, textUpdates: false });
+  ok(plain.status === 200, 'public: an order placed without ticking it', plain.status === 200 ? `code ${plain.json.code}` : `HTTP ${plain.status}`);
+  let rows = await log();
+  const mine = rows.filter((m) => m.purpose === 'ORDER' && m.body.includes(ticked.json.code));
+  ok(mine.length > 0 && mine[0].to === intl(phoneOf(41)) && mine[0].status === 'SENT', 'staff: the customer who ticked was texted about the order, to the number in international form', mine.length ? `${mine[0].status} ${mine[0].to}` : 'no text in the log');
+  ok(plain.status !== 200 || !rows.some((m) => m.purpose === 'ORDER' && m.body.includes(plain.json.code)), 'staff: the customer who did NOT tick was not texted');
+  if (settings.notifyPhone) {
+    ok(rows.some((m) => m.purpose === 'OWNER' && m.body.includes(ticked.json.code)), 'staff: the owner was texted about the new order', `(${settings.notifyPhone})`);
+  } else {
+    console.log('SKIP  owner text: no owner phone in the shop settings');
+  }
+  const o = await findOrder(ticked.json.code);
+  if (o) {
+    const acc = await step(o, 'accept the order that asked for texts', 'accept', { overrideShortage: false });
+    if (acc) {
+      rows = await log();
+      ok(rows.some((m) => m.purpose === 'ORDER' && m.to === intl(phoneOf(41)) && m.id > mine[0].id), 'staff: a status change texted the customer again');
+    }
+  }
+  const t1 = await call('POST', `${staff}/texts/test`, { phone: phoneOf(43), text: null }, true);
+  ok(t1.status === 200 && t1.json?.status === 'SENT', 'staff: a test message is sent', t1.status === 200 ? t1.json.status : `HTTP ${t1.status} ${t1.json?.message ?? ''}`);
+  if (settings.textProvider === 'SIMULATED') {
+    const t2 = await call('POST', `${staff}/texts/test`, { phone: '0788000000', text: null }, true);
+    ok(t2.status === 200 && t2.json?.status === 'FAILED', 'staff: the test sender refuses a number ending in 0000 (failure is shown, nothing breaks)', t2.status === 200 ? t2.json.status : `HTTP ${t2.status}`);
+  }
+  const bad = await call('POST', `${staff}/texts/test`, { phone: 'abc', text: null }, true);
+  ok(bad.status === 200 && bad.json?.status === 'SKIPPED', 'staff: a number that is not a phone number is skipped', bad.status === 200 ? bad.json.status : `HTTP ${bad.status}`);
+
+  if (!s.accounts || !devCode) {
+    console.log(`SKIP  sign-in by text: ${!s.accounts ? 'customer accounts are not switched on' : 'no DEV_CODE given'}`);
+    return;
+  }
+  const acc = (path) => `${pub}/account/${path}`;
+  const num = phoneOf(44);
+  const asked = await call('POST', acc('code'), { identifier: num, language: 'en' });
+  ok(asked.status === 200 && asked.json?.sent === true, 'public: a sign-in code is asked for with a phone number', asked.status === 200 ? '' : `HTTP ${asked.status} ${asked.json?.message ?? ''}`);
+  rows = await log();
+  const sign = rows.find((m) => m.purpose === 'SIGNIN' && m.to === intl(num));
+  ok(!!sign && sign.status === 'SENT' && !sign.body.includes(devCode), 'staff: the code was texted and the log does not keep it', sign ? sign.body : 'no text in the log');
+  const v = await call('POST', acc('verify'), { identifier: num, code: devCode });
+  if (!ok(v.status === 200 && v.json?.profile?.phoneVerified === true && v.json?.profile?.email == null, 'public: the right code opens an account with the number alone (no e-mail)', v.status === 200 ? '' : `HTTP ${v.status} ${v.json?.message ?? ''}`)) return;
+  const h = { 'X-Shop-Token': v.json.token };
+  const bn = await call('PUT', acc('me'), { name: 'Smoke Phone', phone: '0788000111', address: null, language: 'en' }, false, h);
+  ok(bn.status === 400, 'public: the number of a phone-only account cannot be changed', `HTTP ${bn.status}`);
+  const nm = await call('PUT', acc('me'), { name: 'Smoke Phone', phone: num, address: null, language: 'en' }, false, h);
+  ok(nm.status === 200 && nm.json?.name === 'Smoke Phone', 'public: its name can be saved');
+  const del = await call('DELETE', `${pub}/account`, undefined, false, h);
+  ok(del.status === 204 || del.status === 200, 'public: the test account is deleted', `HTTP ${del.status}`);
+}
+
 async function coupons(s, lines) {
   console.log('\nCoupons');
   const code = `SMK${stamp}`;
@@ -426,6 +493,7 @@ async function main() {
 
   await payments(s, lines);
   await accounts(s, lines);
+  await texts(s, lines);
   await coupons(s, lines);
 
   // ---- the staff screen counters

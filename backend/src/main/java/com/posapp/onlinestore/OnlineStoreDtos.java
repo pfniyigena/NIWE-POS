@@ -25,7 +25,8 @@ public final class OnlineStoreDtos {
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
-                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons) {
+                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons,
+                             String textChannel) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -38,7 +39,7 @@ public final class OnlineStoreDtos {
     public record PlaceRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 160) String email,
                                @Size(max = 240) String address, String method, Long zoneId, @Size(max = 300) String notes,
                                String language, String website, @Valid List<PublicLine> lines,
-                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode) {
+                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode, Boolean textUpdates) {
     }
 
     /** "Apply" at checkout: only asks what the code is worth now; the order asks again when it is placed. */
@@ -85,7 +86,11 @@ public final class OnlineStoreDtos {
     public record AccountVerifyRequest(@Size(max = 160) String identifier, @Size(max = 12) String code) {
     }
 
-    public record AccountProfile(String email, String phone, String name, String address, String language) {
+    public record AccountProfile(String email, String phone, String name, String address, String language, boolean phoneVerified) {
+    }
+
+    /** The code that proves the phone number saved on the account. */
+    public record PhoneVerifyRequest(@Size(max = 12) String code) {
     }
 
     public record AccountSession(String token, AccountProfile profile) {
@@ -139,7 +144,8 @@ public final class OnlineStoreDtos {
                               String pickupAddress, boolean pickupEnabled, boolean deliveryEnabled, boolean codEnabled, int stockBuffer,
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
-                              int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled) {
+                              int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
+                              String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)
@@ -167,6 +173,24 @@ public final class OnlineStoreDtos {
     }
 
     public record Reconciliation(ReconSummary summary, List<PaymentRow> rows) {
+    }
+
+    // ---------------------------------------------------------------- text messages (staff)
+
+    public record TextProviderDto(String code, String label, boolean available, List<String> channels) {
+    }
+
+    public record TextMessageDto(Long id, Instant at, String channel, String to, String purpose, String body, String status, String provider, String error, Long orderId) {
+    }
+
+    public record TextPage(List<TextMessageDto> items, int page, int size, long total, int totalPages) {
+    }
+
+    public record TextTestRequest(@Size(max = 40) String phone, @Size(max = 200) String text) {
+    }
+
+    /** status is SENT, FAILED or SKIPPED; error says why not. */
+    public record TextTestResult(String status, String error, String to) {
     }
 
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,

@@ -82,6 +82,26 @@ public class OnlineStoreController {
         return ResponseEntity.noContent().build();
     }
 
+    // ---- text messages
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/text-providers")
+    public List<TextProviderDto> textProviders() {
+        return admin.textProviders();
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/texts")
+    public TextPage texts(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return admin.textLog(page, size);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/texts/test")
+    public TextTestResult testText(@Valid @RequestBody TextTestRequest request) {
+        return admin.testText(request);
+    }
+
     @PreAuthorize(VIEW)
     @GetMapping("/payment-providers")
     public List<ProviderDto> paymentProviders() {

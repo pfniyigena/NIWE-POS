@@ -61,6 +61,10 @@ public class OnlineOrder extends BaseEntity {
     private String couponCode;
     /** The customer's phone number reduced to its last 9 digits, to count "once per customer" whatever way the number is written. */
     private String couponKey;
+    /** The customer ticked "send me updates by text" at checkout. Nothing is texted to anyone who did not. */
+    private boolean textOptIn;
+    /** Last 9 digits of the phone: 0788 123 456 and +250 788 123 456 are the same. */
+    private String phoneKey;
     /** What the coupon took off the items; subtotal is before it, total after it. */
     private BigDecimal discountAmount = BigDecimal.ZERO;
     /** The delivery fee a free-delivery coupon waived (deliveryFee is what the customer pays). */

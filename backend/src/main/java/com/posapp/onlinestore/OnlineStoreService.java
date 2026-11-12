@@ -53,13 +53,16 @@ public class OnlineStoreService {
 
     /** Requests per connection in the last hour, to slow down scripts that fill the order list. */
     private final OnlineCouponService coupons;
+    private final OnlineTextService texts;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
 
     public OnlineStoreService(OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository,
                               OnlineDeliveryZoneRepository zoneRepository, OnlineOrderRepository orderRepository,
                               StockReservationService stockReservationService, StoreSettingsService storeSettingsService,
-                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, OnlineCouponService coupons) {
+                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, OnlineCouponService coupons,
+                              OnlineTextService texts) {
         this.payments = payments;
+        this.texts = texts;
         this.coupons = coupons;
         this.settingsRepository = settingsRepository;
         this.listingRepository = listingRepository;
@@ -158,7 +161,7 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive());
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel());
     }
 
     static final int DEFAULT_PAGE_SIZE = 16;
@@ -412,6 +415,9 @@ public class OnlineStoreService {
         o.setDeliveryMethod(method);
         o.setCustomerName(name);
         o.setCustomerPhone(phone);
+        o.setPhoneKey(OnlineCouponService.phoneKey(phone));
+        // The tick box counts only while texting is on: a customer is never texted without having ticked it, and never for a channel that is off.
+        o.setTextOptIn(Boolean.TRUE.equals(in.textUpdates()) && texts.enabled());
         o.setCustomerEmail(email);
         o.setCustomerAddress(address);
         if (zone != null) {

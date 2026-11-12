@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, PaymentProvider, StoreListing, StoreSettings, StoreZone } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, PaymentProvider, StoreListing, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -60,8 +60,25 @@ import { API_BASE } from '../core/constants';
           </select>
         </div>
         <h4 class="mt-3 mb-2">{{ 'Customer accounts' | translate }}</h4>
-        <p class="text-muted">{{ 'Customers can sign in with an e-mailed code to see their orders, save their details and order again. Guests can still buy. Needs e-mail to be set up.' | translate }}</p>
+        <p class="text-muted">{{ 'Customers can sign in with an e-mailed code (or a texted one, when text messages are on) to see their orders, save their details and order again. Guests can still buy. Needs e-mail or text messages to be set up.' | translate }}</p>
         <label class="flex gap-1 mb-2" style="align-items:center;"><input type="checkbox" name="accounts" [(ngModel)]="s.accountsEnabled" /> {{ 'Customers can sign in to see their orders (optional, by e-mailed code)' | translate }}</label>
+        <h4 class="mt-3 mb-2">{{ 'Text messages (SMS or WhatsApp)' | translate }}</h4>
+        <p class="text-muted">{{ 'Text customers about their order (only those who ticked the box at checkout), text sign-in codes, and text the shop owner about new orders. Nothing is sent until you choose a provider.' | translate }}</p>
+        <div class="flex gap-3" style="flex-wrap:wrap;">
+          <div class="form-group" style="min-width:260px;">
+            <label class="form-label">{{ 'Text provider' | translate }}</label>
+            <select class="form-select" name="textProvider" [(ngModel)]="s.textProvider">
+              <option [ngValue]="null">{{ '— none (text messages are off) —' | translate }}</option>
+              <option *ngFor="let p of textProviders" [ngValue]="p.code" [disabled]="!p.available">{{ p.label }}{{ p.available ? '' : (' (' + ('not set up' | translate) + ')') }}</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">{{ 'Send as' | translate }}</label>
+            <select class="form-select" style="width:140px;" name="textChannel" [(ngModel)]="s.textChannel"><option value="SMS">SMS</option><option value="WHATSAPP">WhatsApp</option></select></div>
+          <div class="form-group"><label class="form-label">{{ 'Country code' | translate }}</label><input class="form-control" style="width:110px;" name="textCc" maxlength="4" inputmode="numeric" [(ngModel)]="s.textCountryCode" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Most texts per day (0 = no limit)' | translate }}</label><input class="form-control" type="number" min="0" max="100000" style="width:160px;" name="textLimit" [(ngModel)]="s.textDailyLimit" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Text the owner at (empty = nobody)' | translate }}</label><input class="form-control" style="width:200px;" name="notifyPhone" maxlength="40" inputmode="tel" [(ngModel)]="s.notifyPhone" /></div>
+        </div>
+        <p class="text-muted" style="font-size:0.85rem;">{{ 'The country code is put in front of numbers that start with 0, for example 250 for Rwanda. The daily limit keeps the cost, and any misuse, in check.' | translate }} <a routerLink="/admin/online-store/texts">{{ 'Text messages sent' | translate }}</a></p>
         <h4 class="mt-3 mb-2">{{ 'Online payments' | translate }}</h4>
         <p class="text-muted">{{ 'Let customers pay at checkout (mobile money or card). Their order reaches the shop only once the payment is confirmed. Set the currency of the business to the currency you charge in.' | translate }}</p>
         <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="onlinePay" [(ngModel)]="s.onlinePaymentsEnabled" /> {{ 'Customers can pay online' | translate }}</label>
@@ -168,6 +185,7 @@ export class StoreSetupComponent implements OnInit {
   busy = false;
 
   providers: PaymentProvider[] = [];
+  textProviders: TextProvider[] = [];
   apiBase = API_BASE;
 
   constructor(private api: OnlineStoreApiService, private catalog: CatalogApiService) {}
@@ -175,6 +193,7 @@ export class StoreSetupComponent implements OnInit {
   ngOnInit(): void {
     this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => this.fail(e, 'Failed to load the settings') });
     this.api.providers().subscribe({ next: (p) => (this.providers = p), error: () => {} });
+    this.api.textProviders().subscribe({ next: (p) => (this.textProviders = p), error: () => {} });
     this.loadListings();
     this.loadZones();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });

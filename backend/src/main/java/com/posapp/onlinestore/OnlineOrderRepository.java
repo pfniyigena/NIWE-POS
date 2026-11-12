@@ -38,6 +38,11 @@ public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> 
     @org.springframework.data.jpa.repository.Query("update OnlineOrder o set o.shopCustomerId = :id where o.shopCustomerId is null and lower(o.customerEmail) = :email")
     int linkGuestOrders(@org.springframework.data.repository.query.Param("id") Long id, @org.springframework.data.repository.query.Param("email") String email);
 
+    /** The same for orders placed with the phone number that was just proved by a text message. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("update OnlineOrder o set o.shopCustomerId = :id where o.shopCustomerId is null and o.phoneKey = :key")
+    int linkGuestOrdersByPhone(@org.springframework.data.repository.query.Param("id") Long id, @org.springframework.data.repository.query.Param("key") String key);
+
     /** The account is deleted: its orders stay (the shop needs them for its books) but no longer belong to it. */
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("update OnlineOrder o set o.shopCustomerId = null where o.shopCustomerId = :id")

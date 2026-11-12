@@ -12,7 +12,8 @@ import java.time.Instant;
 @Setter
 @Entity
 public class ShopLoginCode extends BaseEntity {
-    private String email;
+    /** The e-mail address, or the phone number in international form, the code was sent to. */
+    private String identifier;
     private String codeHash;
     private Instant expiresAt;
     private int attempts;

@@ -13,6 +13,13 @@ final class OnlineMessages {
 
     private static final Logger log = LoggerFactory.getLogger(OnlineMessages.class);
 
+    /** Set once at start-up by {@link OnlineTextService}. Null (no texts at all) in anything that does not start it. */
+    private static volatile OnlineTextService texts;
+
+    static void texts(OnlineTextService service) {
+        texts = service;
+    }
+
     private OnlineMessages() {
     }
 
@@ -30,6 +37,7 @@ final class OnlineMessages {
 
     /** The mail goes in the language the customer chose in the shop (stored on the order), not the business language. */
     static void send(MailService mailService, StoreSettingsService storeSettingsService, OnlineOrder o, Msg subjectMsg, Msg textMsg) {
+        textOrder(o, textMsg);
         if (o.getCustomerEmail() == null || o.getCustomerEmail().isBlank() || !mailService.isConfigured()) return;
         try {
             String subject = I18n.tIn(o.getLanguage(), subjectMsg.english(), subjectMsg.args());
@@ -42,11 +50,33 @@ final class OnlineMessages {
         }
     }
 
+    /** The same update by text, only when the customer ticked the box at checkout and texting is on. A text never blocks or fails the order. */
+    private static void textOrder(OnlineOrder o, Msg textMsg) {
+        OnlineTextService t = texts;
+        if (t == null || !o.isTextOptIn()) return;
+        try {
+            t.orderUpdate(o, I18n.tIn(o.getLanguage(), textMsg.english(), textMsg.args()) + textMsg.suffix());
+        } catch (RuntimeException e) {
+            log.warn("Could not text online order {}: {}", o.getCode(), e.getMessage());
+        }
+    }
+
+    private static void textOwner(OnlineStoreSettings settings, String text) {
+        OnlineTextService t = texts;
+        if (t == null) return;
+        try {
+            t.owner(settings, text);
+        } catch (RuntimeException e) {
+            log.warn("Could not text the shop owner: {}", e.getMessage());
+        }
+    }
+
     /**
      * Tells the shop that a customer placed an order: to the e-mail set in the Online Store settings, or the business e-mail when that is empty.
      * Like the customer's mails it never blocks or fails the order.
      */
     static void notifyShop(MailService mailService, StoreSettingsService storeSettingsService, OnlineStoreSettings settings, OnlineOrder o) {
+        textOwner(settings, I18n.t("New online order {0} from {1} ({2}), total {3}. Open Online Store > Online orders.", o.getCode(), o.getCustomerName(), o.getCustomerPhone(), OnlineStoreService.money(o.getTotal())));
         try {
             String to = settings.getNotifyEmail();
             if (to == null || to.isBlank()) to = storeSettingsService.getSettingsEntity().getEmail();
@@ -82,6 +112,7 @@ final class OnlineMessages {
     /** The shop is told that these orders are still waiting for an answer. */
     static void alertShop(MailService mailService, StoreSettingsService storeSettingsService, OnlineStoreSettings settings, List<OnlineOrder> orders,
                           int minutes, java.time.Instant now) {
+        textOwner(settings, I18n.t("{0} online order(s) have waited more than {1} minutes for an answer.", orders.size(), minutes));
         try {
             String to = settings.getNotifyEmail();
             if (to == null || to.isBlank()) to = storeSettingsService.getSettingsEntity().getEmail();

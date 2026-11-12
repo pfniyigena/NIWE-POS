@@ -11,4 +11,6 @@ public interface ShopCustomerRepository extends JpaRepository<ShopCustomer, Long
     Optional<ShopCustomer> findByEmail(String email);
 
     List<ShopCustomer> findByPhone(String phone);
+
+    Optional<ShopCustomer> findByPhoneKeyAndPhoneVerifiedTrue(String phoneKey);
 }

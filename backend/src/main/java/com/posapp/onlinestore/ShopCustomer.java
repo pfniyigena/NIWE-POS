@@ -7,14 +7,18 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-/** A customer's account on the public shop. Identified by an e-mail address they proved they own; the rest is what they chose to keep. */
+/** A customer's account on the public shop. Identified by an e-mail address, or a phone number, that they proved they own; the rest is what they chose to keep. */
 @Getter
 @Setter
 @Entity
 public class ShopCustomer extends BaseEntity {
-    /** Lower case. */
+    /** Lower case. Empty for an account opened with a phone number only. */
     private String email;
     private String phone;
+    /** Last 9 digits of the phone. */
+    private String phoneKey;
+    /** The customer proved the phone with a text message: it can then be used to sign in. At most one account holds a verified number. */
+    private boolean phoneVerified;
     private String name;
     private String address;
     /** en or fr. */

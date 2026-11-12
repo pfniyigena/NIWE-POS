@@ -30,7 +30,7 @@ import { T } from '../core/i18n/t';
             <div class="text-muted" *ngIf="shop.phone">📞 {{ shop.phone }}</div>
           </div>
           <div class="flex gap-1" style="align-items:center;">
-            <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email) : ('Sign in' | translate) }}</button>
+            <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
             <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
             <button class="btn btn-sm" [class.btn-primary]="lang.current === 'fr'" [class.btn-outline-secondary]="lang.current !== 'fr'" (click)="lang.choose('fr')">FR</button>
           </div>
@@ -39,7 +39,7 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
-        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
         <ng-container *ngIf="step === 'shop' && !showAccount">
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
@@ -98,7 +98,7 @@ import { T } from '../core/i18n/t';
           <hr />
 
           <div class="text-muted mb-2 shop-account-hint" *ngIf="shop.accounts" style="font-size:0.85rem;">
-            <ng-container *ngIf="account">{{ 'Signed in as {p0}. This order will be saved in your account.' | translate: { p0: account.email } }}</ng-container>
+            <ng-container *ngIf="account">{{ 'Signed in as {p0}. This order will be saved in your account.' | translate: { p0: account.email || account.phone } }}</ng-container>
             <ng-container *ngIf="!account">{{ 'Buying as a guest.' | translate }} <a href="javascript:void(0)" class="shop-signin-link" (click)="showAccount = true">{{ 'Sign in' | translate }}</a> {{ 'to save your details and see your orders.' | translate }}</ng-container>
           </div>
 
@@ -122,6 +122,10 @@ import { T } from '../core/i18n/t';
             <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control shop-address" maxlength="240" name="caddr" [(ngModel)]="address" /></div>
           </ng-container>
           <div class="form-group"><label class="form-label">{{ 'Note for the shop (optional)' | translate }}</label><input class="form-control" maxlength="300" name="cnotes" [(ngModel)]="notes" /></div>
+          <label class="flex gap-1 mb-2 shop-text-opt" *ngIf="shop.textChannel" style="align-items:flex-start;">
+            <input type="checkbox" name="textUpdates" [(ngModel)]="textUpdates" style="margin-top:0.25rem;" />
+            <span>{{ shop.textChannel === 'WHATSAPP' ? ('Send me updates about this order by WhatsApp message' | translate) : ('Send me updates about this order by text message (SMS)' | translate) }}</span>
+          </label>
           <!-- A real visitor never sees this field; a bot that fills in every box does. -->
           <input type="text" name="website" [(ngModel)]="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px; width:1px; height:1px;" />
 
@@ -197,6 +201,8 @@ export class ShopComponent implements OnInit {
   /** How the customer pays: cash on delivery or at pick-up, or online. */
   payment: 'CASH' | 'MOBILE_MONEY' | 'CARD' = 'CASH';
   payPhone = '';
+  /** "Send me updates by text message": off unless ticked, and only shown when the shop texts customers. */
+  textUpdates = false;
   busy = false;
   /** The signed-in customer (accounts are optional: null = guest). */
   account: AccountProfile | null = null;
@@ -239,7 +245,7 @@ export class ShopComponent implements OnInit {
     if (!p) return;
     if (!this.name.trim() && p.name) this.name = p.name;
     if (!this.phone.trim() && p.phone) this.phone = p.phone;
-    if (!this.email.trim()) this.email = p.email;
+    if (!this.email.trim() && p.email) this.email = p.email;
     if (!this.address.trim() && p.address) this.address = p.address;
   }
 
@@ -434,6 +440,7 @@ export class ShopComponent implements OnInit {
         lines: this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty })),
         payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.payPhone || this.phone) : null,
         couponCode: this.couponCode.trim() || null,
+        textUpdates: !!this.shop?.textChannel && this.textUpdates,
       })
       .subscribe({
         next: (t) => {

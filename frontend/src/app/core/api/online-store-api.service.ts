@@ -11,12 +11,16 @@ export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
   zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string; coupons: boolean;
+  /** SMS or WHATSAPP when the shop texts customers, else null: the tick box and the phone sign-in only show then. */
+  textChannel: string | null;
 }
 export interface ShopPage { items: ShopProduct[]; page: number; size: number; total: number; totalPages: number }
 export interface ShopOrderPayload {
   name: string; phone: string; email: string | null; address: string | null; method: 'DELIVERY' | 'PICKUP'; zoneId: number | null;
   notes: string | null; language: string; website: string; lines: { productId: number; quantity: number }[];
   payment: 'CASH' | 'MOBILE_MONEY' | 'CARD'; payPhone: string | null; couponCode: string | null;
+  /** The customer ticked "send me updates by text message". */
+  textUpdates: boolean;
 }
 /** What the customer sees about paying: method COD or ONLINE; status NONE, AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED. */
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
@@ -27,8 +31,8 @@ export interface ShopTrack {
   payment: ShopPayment;
   couponCode: string | null; discount: number; feeWaived: number;
 }
-/** A customer account on the public shop (no passwords: an e-mailed code proves the address). */
-export interface AccountProfile { email: string; phone: string | null; name: string | null; address: string | null; language: string }
+/** A customer account on the public shop (no passwords: a code by e-mail or text message proves the address or number). An account opened with a phone number has no e-mail. */
+export interface AccountProfile { email: string | null; phone: string | null; name: string | null; address: string | null; language: string; phoneVerified: boolean }
 export interface AccountSession { token: string; profile: AccountProfile }
 export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
@@ -56,7 +60,13 @@ export interface StoreSettings {
   pickupAddress: string | null; pickupEnabled: boolean; deliveryEnabled: boolean; codEnabled: boolean; stockBuffer: number; minOrder: number;
   freeDeliveryOver: number | null; maxPendingPerPhone: number; maxPerIpPerHour: number; deliveryProductId: number | null; deliveryProductName: string | null; notifyEmail: string | null; unansweredAlertMinutes: number;
   onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number; accountsEnabled: boolean;
+  textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null;
 }
+export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
+/** status is SENT, FAILED or SKIPPED; purpose is ORDER, OWNER, SIGNIN or TEST. */
+export interface TextMessage { id: number; at: string; channel: string; to: string; purpose: string; body: string; status: string; provider: string | null; error: string | null; orderId: number | null }
+export interface TextPage { items: TextMessage[]; page: number; size: number; total: number; totalPages: number }
+export interface TextTestResult { status: string; error: string | null; to: string | null }
 export interface PaymentProvider { code: string; label: string; available: boolean; methods: string[] }
 export interface PaymentRow {
   id: number; orderId: number; orderCode: string; createdAt: string; provider: string; reference: string; providerReference: string | null; method: string; phone: string | null;
@@ -131,6 +141,9 @@ export class OnlineStoreApiService {
   couponCheck(body: { code: string; method: string; zoneId: number | null; phone: string; lines: { productId: number; quantity: number }[] }): Observable<CouponCheckResult> {
     return this.http.post<CouponCheckResult>(`${this.pub}/coupons/check`, body, { headers: this.shopHeaders() });
   }
+  /** Texts a code to the phone number saved on the account (needed before that number can be used to sign in). */
+  accountPhoneCode(): Observable<void> { return this.http.post<void>(`${this.pub}/account/phone/code`, {}, { headers: this.shopHeaders() }); }
+  accountPhoneVerify(code: string): Observable<AccountProfile> { return this.http.post<AccountProfile>(`${this.pub}/account/phone/verify`, { code }, { headers: this.shopHeaders() }); }
   accountDelete(): Observable<void> { return this.http.delete<void>(`${this.pub}/account`, { headers: this.shopHeaders() }); }
   imageUrl(path: string): string { return `${API_BASE.replace(/\/api$/, '')}${path}`; }
 
@@ -160,6 +173,11 @@ export class OnlineStoreApiService {
   }
   resolvePayment(id: number, note: string): Observable<void> { return this.http.post<void>(`${this.base}/payments/${id}/resolve`, { note }); }
   providers(): Observable<PaymentProvider[]> { return this.http.get<PaymentProvider[]>(`${this.base}/payment-providers`); }
+
+  // ---- staff: text messages
+  textProviders(): Observable<TextProvider[]> { return this.http.get<TextProvider[]>(`${this.base}/text-providers`); }
+  texts(page: number, size: number): Observable<TextPage> { return this.http.get<TextPage>(`${this.base}/texts`, { params: new HttpParams().set('page', page).set('size', size) }); }
+  testText(phone: string, text: string): Observable<TextTestResult> { return this.http.post<TextTestResult>(`${this.base}/texts/test`, { phone, text: text.trim() || null }); }
 
   // ---- staff: coupons
   coupons(): Observable<StoreCoupon[]> { return this.http.get<StoreCoupon[]>(`${this.base}/coupons`); }
