@@ -260,6 +260,7 @@ async function main() {
   if (!ok(shop.status === 200, 'public: the shop answers', shop.status === 200 ? `"${shop.json.name}"` : `HTTP ${shop.status} ${shop.json?.message ?? ''} (is the module on and the shop open?)`)) return;
   const s = shop.json;
   ok(s.open, 'public: the shop is taking orders');
+  ok(typeof s.currency === 'string' && s.currency.length >= 3, 'public: the shop gives its currency to show next to prices', s.currency ?? '');
   ok(Array.isArray(s.categories), 'public: the shop lists its categories', `(${s.categories?.length})`);
 
   const page1 = await call('GET', `${pub}/products?page=0&size=16`);

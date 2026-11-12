@@ -10,7 +10,7 @@ export interface ShopProduct { id: number; name: string; description: string | n
 export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
-  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean;
+  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string;
 }
 export interface ShopPage { items: ShopProduct[]; page: number; size: number; total: number; totalPages: number }
 export interface ShopOrderPayload {

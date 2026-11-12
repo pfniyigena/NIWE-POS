@@ -8828,5 +8828,8 @@
  "Not added, because they are gone or sold out: {p0}": "Non ajoutés, car ils ne sont plus disponibles ou sont épuisés : {p0}",
  "Customer accounts": "Comptes clients",
  "Customers can sign in with an e-mailed code to see their orders, save their details and order again. Guests can still buy. Needs e-mail to be set up.": "Les clients peuvent se connecter avec un code envoyé par e-mail pour voir leurs commandes, enregistrer leurs coordonnées et recommander. Les invités peuvent toujours acheter. Nécessite que l'e-mail soit configuré.",
- "Customers can sign in to see their orders (optional, by e-mailed code)": "Les clients peuvent se connecter pour voir leurs commandes (facultatif, par code envoyé par e-mail)"
+ "Customers can sign in to see their orders (optional, by e-mailed code)": "Les clients peuvent se connecter pour voir leurs commandes (facultatif, par code envoyé par e-mail)",
+ "Filter the products on the shop": "Filtrer les produits de la boutique",
+ "No product matches.": "Aucun produit ne correspond.",
+ "Per page": "Par page"
 }

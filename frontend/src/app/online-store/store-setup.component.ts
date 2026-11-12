@@ -90,10 +90,14 @@ import { API_BASE } from '../core/constants';
           <span>{{ p.name }} <span class="text-muted">{{ p.sku }} · {{ p.unitPrice | number: '1.0-2' }}</span></span>
           <button class="btn btn-sm btn-primary" type="button" [disabled]="isListed(p.id)" (click)="add(p)">{{ isListed(p.id) ? ('Added' | translate) : ('Add' | translate) }}</button>
         </div>
+        <div class="flex justify-between align-center mt-3 mb-1 listing-tools" *ngIf="listings.length" style="flex-wrap:wrap; gap:0.5rem;">
+          <input class="form-control listing-filter" style="width:260px;" [placeholder]="'Filter the products on the shop' | translate" [ngModel]="listFilter" (ngModelChange)="filterChanged($event)" name="listFilter" />
+          <span class="text-muted" style="font-size:0.85rem;">{{ 'Showing {p0}–{p1} of {p2}' | translate: { p0: firstShown(), p1: lastShown(), p2: filteredListings().length } }}</span>
+        </div>
         <table class="table-sm mt-2" *ngIf="listings.length">
           <thead><tr><th>{{ 'Product' | translate }}</th><th>{{ 'Title on the shop' | translate }}</th><th class="text-end">{{ 'Price' | translate }}</th><th class="text-end">{{ 'Online price' | translate }}</th><th>{{ 'Order' | translate }}</th><th>{{ 'Shown' | translate }}</th><th>{{ 'Stock' | translate }}</th><th></th></tr></thead>
           <tbody>
-            <tr *ngFor="let l of listings">
+            <tr *ngFor="let l of pageListings()">
               <td>{{ l.productName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="!l.hasImage">{{ 'No picture yet' | translate }}</div></td>
               <td><input class="form-control" style="width:200px;" maxlength="160" [name]="'t' + l.id" [(ngModel)]="l.webTitle" [placeholder]="l.productName" /></td>
               <td class="text-end">{{ l.unitPrice | number: '1.0-2' }}</td>
@@ -105,6 +109,19 @@ import { API_BASE } from '../core/constants';
             </tr>
           </tbody>
         </table>
+        <p class="text-muted listing-none" *ngIf="listings.length && !filteredListings().length">{{ 'No product matches.' | translate }}</p>
+        <nav class="flex justify-between align-center mt-2 listing-pager" *ngIf="listings.length && filteredListings().length" style="flex-wrap:wrap; gap:0.5rem;">
+          <label class="flex gap-1" style="align-items:center; font-size:0.85rem;">{{ 'Per page' | translate }}
+            <select class="form-select" style="width:auto;" name="listSize" [ngModel]="listSize" (ngModelChange)="sizeChanged($event)">
+              <option *ngFor="let n of [10, 25, 50, 100]" [ngValue]="n">{{ n }}</option>
+            </select>
+          </label>
+          <div class="flex gap-1" style="align-items:center;">
+            <button class="btn btn-sm btn-outline-secondary listing-prev" type="button" [disabled]="listPage === 0" (click)="goListing(listPage - 1)">{{ 'Previous' | translate }}</button>
+            <span style="font-size:0.85rem;">{{ 'Page {p0} of {p1}' | translate: { p0: listPage + 1, p1: listingPages() } }}</span>
+            <button class="btn btn-sm btn-outline-secondary listing-next" type="button" [disabled]="listPage + 1 >= listingPages()" (click)="goListing(listPage + 1)">{{ 'Next' | translate }}</button>
+          </div>
+        </nav>
         <p class="text-muted" *ngIf="!listings.length">{{ 'Nothing is on the shop yet.' | translate }}</p>
       </div>
 
@@ -137,6 +154,10 @@ import { API_BASE } from '../core/constants';
 export class StoreSetupComponent implements OnInit {
   s: StoreSettings | null = null;
   listings: StoreListing[] = [];
+  /** The products table is paged on screen: what is typed in a row stays in the row while another page is shown. */
+  listFilter = '';
+  listSize = 10;
+  listPage = 0;
   zones: StoreZone[] = [];
   serviceProducts: Product[] = [];
   found: Product[] = [];
@@ -183,7 +204,43 @@ export class StoreSetupComponent implements OnInit {
   }
 
   loadListings(): void {
-    this.api.listings().subscribe({ next: (l) => (this.listings = l), error: (e) => this.fail(e, 'Failed to load the products') });
+    this.api.listings().subscribe({ next: (l) => { this.listings = l; this.listPage = Math.min(this.listPage, this.listingPages() - 1); }, error: (e) => this.fail(e, 'Failed to load the products') });
+  }
+
+  filteredListings(): StoreListing[] {
+    const q = this.listFilter.trim().toLowerCase();
+    if (!q) return this.listings;
+    return this.listings.filter((l) => l.productName.toLowerCase().includes(q) || (l.webTitle ?? '').toLowerCase().includes(q) || (l.sku ?? '').toLowerCase().includes(q) || (l.category ?? '').toLowerCase().includes(q));
+  }
+
+  listingPages(): number {
+    return Math.max(1, Math.ceil(this.filteredListings().length / this.listSize));
+  }
+
+  pageListings(): StoreListing[] {
+    return this.filteredListings().slice(this.listPage * this.listSize, (this.listPage + 1) * this.listSize);
+  }
+
+  firstShown(): number {
+    return this.filteredListings().length === 0 ? 0 : this.listPage * this.listSize + 1;
+  }
+
+  lastShown(): number {
+    return Math.min(this.filteredListings().length, (this.listPage + 1) * this.listSize);
+  }
+
+  filterChanged(v: string): void {
+    this.listFilter = v ?? '';
+    this.listPage = 0;
+  }
+
+  sizeChanged(n: number): void {
+    this.listSize = Number(n) || 10;
+    this.listPage = 0;
+  }
+
+  goListing(p: number): void {
+    this.listPage = Math.max(0, Math.min(this.listingPages() - 1, p));
   }
 
   isListed(productId: number): boolean {

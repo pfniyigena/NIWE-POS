@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ShopMoneyPipe } from './shop-money.pipe';
 import { AccountOrder, AccountProfile, OnlineStoreApiService, Reorder, shopToken } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -14,7 +15,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop-account',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopMoneyPipe],
   template: `
     <div class="card shop-account mt-3" style="padding:1rem; max-width:640px;">
       <div class="flex justify-between align-center mb-2" style="gap:0.5rem;">
@@ -67,7 +68,7 @@ import { T } from '../core/i18n/t';
           <div>
             <a [routerLink]="['/shop/order', o.code]"><strong>{{ o.code }}</strong></a>
             <span class="text-muted" style="font-size:0.85rem;"> · {{ o.placedAt | date: 'mediumDate' }} · {{ statusLabel(o.status) | translate }}</span>
-            <div class="text-muted" style="font-size:0.85rem;">{{ 'Total' | translate }} {{ o.total | number: '1.0-2' }} · {{ o.items }} {{ 'items' | translate }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Total' | translate }} {{ o.total | shopMoney: currency }} · {{ o.items }} {{ 'items' | translate }}</div>
           </div>
           <button class="btn btn-sm btn-outline-primary acc-reorder" [disabled]="busy" (click)="reorder(o)">{{ 'Order again' | translate }}</button>
         </div>
@@ -91,6 +92,8 @@ import { T } from '../core/i18n/t';
 export class ShopAccountComponent implements OnInit {
   /** The signed-in customer, or null. The shop page owns it; this component asks for changes through the outputs. */
   @Input() profile: AccountProfile | null = null;
+  /** The shop's currency, written after amounts. */
+  @Input() currency = '';
   @Output() profileChange = new EventEmitter<AccountProfile | null>();
   @Output() reordered = new EventEmitter<Reorder>();
   @Output() closed = new EventEmitter<void>();

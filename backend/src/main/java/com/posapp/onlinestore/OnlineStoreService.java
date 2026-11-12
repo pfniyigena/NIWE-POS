@@ -156,7 +156,7 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled());
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode());
     }
 
     static final int DEFAULT_PAGE_SIZE = 16;
@@ -176,6 +176,12 @@ public class OnlineStoreService {
         List<PublicProduct> items = new ArrayList<>();
         for (OnlineListing l : result.getContent()) items.add(publicProduct(l, s));
         return new PublicProductPage(items, pageNo, pageSize, result.getTotalElements(), result.getTotalPages());
+    }
+
+    /** The currency the shop charges in (the business currency), shown next to every price on the public shop. */
+    private String currencyCode() {
+        String c = storeSettingsService.getSettingsEntity().getCurrencyCode();
+        return c == null || c.isBlank() ? "RWF" : c.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
     /** One product as the public shop shows it: web title and description, today's price, a picture link, and a stock word (never a number). */

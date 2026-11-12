@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AccountProfile, OnlineStoreApiService, Reorder, Shop, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { ShopAccountComponent } from './shop-account.component';
+import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
 
@@ -15,7 +16,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, ShopAccountComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShopAccountComponent, ShopMoneyPipe],
   template: `
     <div class="shop-page" style="max-width:980px; margin:0 auto; padding:1rem 0.75rem 6rem;">
       <div class="alert alert-danger shop-error" *ngIf="error">{{ error }}</div>
@@ -38,7 +39,7 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
-        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
         <ng-container *ngIf="step === 'shop' && !showAccount">
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
@@ -55,7 +56,7 @@ import { T } from '../core/i18n/t';
             <div class="mt-1"><strong>{{ p.name }}</strong></div>
             <div class="text-muted" style="font-size:0.8rem; min-height:2.2em;" *ngIf="p.description">{{ p.description | slice: 0 : 80 }}</div>
             <div class="flex justify-between align-center mt-1">
-              <strong>{{ p.price | number: '1.0-2' }}</strong>
+              <strong>{{ p.price | shopMoney: cur }}</strong>
               <span *ngIf="p.stock === 'LOW'" class="text-muted" style="font-size:0.75rem; color:#b45309;">{{ 'Few left' | translate }}</span>
               <span *ngIf="p.stock === 'SOLD_OUT'" class="text-muted" style="font-size:0.75rem;">{{ 'Sold out' | translate }}</span>
             </div>
@@ -92,7 +93,7 @@ import { T } from '../core/i18n/t';
               <span style="min-width:1.5em; text-align:center;">{{ l.qty }}</span>
               <button class="btn btn-sm btn-outline-secondary" (click)="change(l.p, 1)" [disabled]="l.qty >= 20">+</button>
             </span>
-            <span style="min-width:4.5em; text-align:right;">{{ l.qty * l.p.price | number: '1.0-2' }}</span>
+            <span style="min-width:4.5em; text-align:right;">{{ l.qty * l.p.price | shopMoney: cur }}</span>
           </div>
           <hr />
 
@@ -116,7 +117,7 @@ import { T } from '../core/i18n/t';
             <div class="form-group" *ngIf="shop.zones.length"><label class="form-label">{{ 'Delivery area' | translate }}</label>
               <select class="form-select" style="max-width:320px;" name="zone" [(ngModel)]="zoneId">
                 <option [ngValue]="null" disabled>{{ 'Choose your area…' | translate }}</option>
-                <option *ngFor="let z of shop.zones" [ngValue]="z.id">{{ z.name }} ({{ z.fee | number: '1.0-2' }})</option>
+                <option *ngFor="let z of shop.zones" [ngValue]="z.id">{{ z.name }} ({{ z.fee | shopMoney: cur }})</option>
               </select></div>
             <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control shop-address" maxlength="240" name="caddr" [(ngModel)]="address" /></div>
           </ng-container>
@@ -137,17 +138,17 @@ import { T } from '../core/i18n/t';
             </div>
           </div>
           <hr />
-          <div class="flex justify-between"><span>{{ 'Items' | translate }}</span><span>{{ subtotal() | number: '1.0-2' }}</span></div>
-          <div class="flex justify-between" *ngIf="method === 'DELIVERY'"><span>{{ 'Delivery' | translate }}</span><span>{{ fee() | number: '1.0-2' }}</span></div>
-          <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="shop-total">{{ subtotal() + fee() | number: '1.0-2' }}</strong></div>
+          <div class="flex justify-between"><span>{{ 'Items' | translate }}</span><span>{{ subtotal() | shopMoney: cur }}</span></div>
+          <div class="flex justify-between" *ngIf="method === 'DELIVERY'"><span>{{ 'Delivery' | translate }}</span><span>{{ fee() | shopMoney: cur }}</span></div>
+          <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="shop-total">{{ subtotal() + fee() | shopMoney: cur }}</strong></div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment === 'CASH'">{{ method === 'DELIVERY' ? ('Pay in cash when your order arrives. Prices include tax.' | translate) : ('Pay in cash when you collect. Prices include tax.' | translate) }}</div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment !== 'CASH'">{{ 'You pay now. The shop gets your order as soon as the payment is confirmed. Prices include tax.' | translate }}</div>
-          <div class="text-muted" style="font-size:0.8rem;" *ngIf="shop.minOrder > 0">{{ 'Minimum order {p0}' | translate: { p0: (shop.minOrder | number: '1.0-2') } }}</div>
+          <div class="text-muted" style="font-size:0.8rem;" *ngIf="shop.minOrder > 0">{{ 'Minimum order {p0}' | translate: { p0: (shop.minOrder | shopMoney: cur) } }}</div>
           <button class="btn btn-primary shop-place mt-2" style="width:100%;" [disabled]="busy || !shop.open || (!shop.cash && !shop.payOnline)" (click)="place()">{{ busy ? ('Sending…' | translate) : payment === 'CASH' ? ('Place order' | translate) : ('Place order and pay' | translate) }}</button>
         </div>
 
         <div *ngIf="step === 'shop' && !showAccount && count() > 0" style="position:fixed; left:0; right:0; bottom:0; background:#111827; color:#fff; padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center; z-index:50;">
-          <span>🛒 {{ count() }} · {{ subtotal() | number: '1.0-2' }}</span>
+          <span>🛒 {{ count() }} · {{ subtotal() | shopMoney: cur }}</span>
           <button class="btn btn-sm btn-primary shop-checkout-btn" (click)="checkout()">{{ 'Proceed to checkout' | translate }}</button>
         </div>
       </ng-container>
@@ -193,6 +194,11 @@ export class ShopComponent implements OnInit {
   reorderNote: string | null = null;
 
   constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService) {}
+
+  /** The shop's currency, written after every price. */
+  get cur(): string {
+    return this.shop?.currency ?? '';
+  }
 
   ngOnInit(): void {
     this.api.shop().subscribe({

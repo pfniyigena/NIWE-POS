@@ -5,12 +5,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OnlineStoreApiService, Shop, ShopTrack } from '../core/api/online-store-api.service';
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
+import { ShopMoneyPipe } from './shop-money.pipe';
 
 /** Where a customer follows a shop order by its code. Refreshes by itself. */
 @Component({
   selector: 'app-shop-track',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule],
+  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe],
   template: `
     <div class="st-page" style="max-width:520px; margin:0 auto; padding:1rem 0.75rem 3rem;">
       <div class="alert alert-danger st-error" *ngIf="error">{{ error }}</div>
@@ -38,9 +39,9 @@ import { T } from '../core/i18n/t';
               <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'This page updates by itself. You can also pay another way below.' | translate }}</div>
             </div>
             <div *ngSwitchCase="'FAILED'" class="st-pay-failed" style="color:#b91c1c; font-weight:600;">{{ 'Your payment did not go through.' | translate }}</div>
-            <div *ngSwitchCase="'PAID'" class="st-pay-paid" style="color:#15803d; font-weight:600;">{{ 'Paid {p0}. Thank you.' | translate: { p0: (t.payment.paidAmount | number: '1.0-2') } }}</div>
-            <div *ngSwitchCase="'REFUND_DUE'" class="st-pay-refund" style="font-weight:600;">{{ 'We will refund {p0} to the account you paid with.' | translate: { p0: (t.payment.paidAmount | number: '1.0-2') } }}</div>
-            <div *ngSwitchCase="'REFUNDED'" class="st-pay-refunded" style="font-weight:600;">{{ 'Refunded {p0}.' | translate: { p0: (t.payment.paidAmount | number: '1.0-2') } }}</div>
+            <div *ngSwitchCase="'PAID'" class="st-pay-paid" style="color:#15803d; font-weight:600;">{{ 'Paid {p0}. Thank you.' | translate: { p0: (t.payment.paidAmount | shopMoney: cur) } }}</div>
+            <div *ngSwitchCase="'REFUND_DUE'" class="st-pay-refund" style="font-weight:600;">{{ 'We will refund {p0} to the account you paid with.' | translate: { p0: (t.payment.paidAmount | shopMoney: cur) } }}</div>
+            <div *ngSwitchCase="'REFUNDED'" class="st-pay-refunded" style="font-weight:600;">{{ 'Refunded {p0}.' | translate: { p0: (t.payment.paidAmount | shopMoney: cur) } }}</div>
           </ng-container>
           <div *ngIf="t.payment.canRetry && shop" class="mt-2 st-retry">
             <div class="flex gap-2" style="justify-content:center; flex-wrap:wrap; align-items:flex-end;">
@@ -54,10 +55,10 @@ import { T } from '../core/i18n/t';
         </div>
 
         <div class="card mb-3" style="padding:0.75rem;">
-          <div *ngFor="let l of t.lines" class="flex justify-between" style="padding:0.2rem 0;"><span>{{ l.quantity }} × {{ l.name }}</span><span>{{ l.lineTotal | number: '1.0-2' }}</span></div>
-          <div class="flex justify-between" *ngIf="t.deliveryFee > 0" style="padding-top:0.3rem;"><span>{{ 'Delivery fee ({p0})' | translate: { p0: (t.zoneName) } }}</span><span>{{ t.deliveryFee | number: '1.0-2' }}</span></div>
+          <div *ngFor="let l of t.lines" class="flex justify-between" style="padding:0.2rem 0;"><span>{{ l.quantity }} × {{ l.name }}</span><span>{{ l.lineTotal | shopMoney: cur }}</span></div>
+          <div class="flex justify-between" *ngIf="t.deliveryFee > 0" style="padding-top:0.3rem;"><span>{{ 'Delivery fee ({p0})' | translate: { p0: (t.zoneName) } }}</span><span>{{ t.deliveryFee | shopMoney: cur }}</span></div>
           <hr />
-          <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="st-total">{{ t.total | number: '1.0-2' }}</strong></div>
+          <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="st-total">{{ t.total | shopMoney: cur }}</strong></div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="t.payment?.method !== 'ONLINE'">{{ t.deliveryMethod === 'DELIVERY' ? ('Pay in cash when your order arrives.' | translate) : ('Pay in cash when you collect.' | translate) }}</div>
         </div>
 
@@ -83,7 +84,14 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.code = this.route.snapshot.paramMap.get('code') ?? '';
+    // The shop gives the currency written after the amounts (and the ways to pay again).
+    this.api.shop().subscribe({ next: (sh) => (this.shop = sh), error: () => {} });
     this.load();
+  }
+
+  /** The shop's currency, written after every amount. */
+  get cur(): string {
+    return this.shop?.currency ?? '';
   }
 
   ngOnDestroy(): void {

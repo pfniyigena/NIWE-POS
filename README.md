@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.30.1 - Currency on the public shop, paged products in the shop settings
+
+Every price on the public shop now shows the currency (for example 1,500 RWF). The shop's products table in Shop settings is paged (10, 25, 50, 100) with a filter box. No migration. Details in `RELEASE-NOTES-v1.30.1.md`.
+
 ### Version 1.30.0 - Online Store phase 3 (1 of 4): customer accounts
 
 Shop customers can sign in (e-mail or saved phone + a one-time code sent by e-mail, no password) to see their orders, save their details and order again at today's prices. Guest checkout stays; guest orders with the same e-mail join the account when it is proved. Codes are hashed, expire in 10 minutes, die after 5 wrong tries and are rate limited; asking for a code never reveals whether an account exists. Off by default (Shop settings > Customer accounts). Migration V68. Details in `RELEASE-NOTES-v1.30.0.md`.
