@@ -161,7 +161,42 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel());
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
+                page(s));
+    }
+
+    /** The front page's wording as the public sees it. */
+    static PublicPage page(OnlineStoreSettings s) {
+        return new PublicPage(blank(s.getAnnouncementText()), blank(s.getAnnouncementLink()), blank(s.getHeroTitle()), blank(s.getHeroSubtitle()),
+                blank(s.getHeroButtonText()), blank(s.getHeroButtonLink()), blank(s.getHeroImageUrl()), blank(s.getAboutText()), blank(s.getContactEmail()),
+                blank(s.getOpeningHours()), links(s.getFooterLinks(), 8), links(s.getSocialLinks(), 6));
+    }
+
+    private static String blank(String v) {
+        return v == null || v.isBlank() ? null : v.trim();
+    }
+
+    /** "Label|address" lines. A line that is not valid is skipped (staff's input is checked when saved, this is only a second guard). */
+    static List<PublicLink> links(String text, int max) {
+        List<PublicLink> out = new ArrayList<>();
+        if (text == null) return out;
+        for (String line : text.split("\\r?\\n")) {
+            int bar = line.indexOf('|');
+            if (bar < 1) continue;
+            String label = line.substring(0, bar).trim();
+            String url = line.substring(bar + 1).trim();
+            if (label.isEmpty() || !safeLink(url)) continue;
+            out.add(new PublicLink(label.length() > 40 ? label.substring(0, 40) : label, url));
+            if (out.size() >= max) break;
+        }
+        return out;
+    }
+
+    /** An address on this site (/shop...), or https / http, or mailto and tel. Never javascript: or anything else. */
+    static boolean safeLink(String url) {
+        if (url == null || url.isBlank() || url.length() > 300 || url.chars().anyMatch(c -> c < 32 || c == ' ' || c == '"' || c == '<' || c == '>')) return false;
+        String u = url.toLowerCase(java.util.Locale.ROOT);
+        return (u.startsWith("/") && !u.startsWith("//")) || u.startsWith("https://") || u.startsWith("http://") || u.startsWith("mailto:") || u.startsWith("tel:");
     }
 
     static final int DEFAULT_PAGE_SIZE = 16;
@@ -197,7 +232,13 @@ public class OnlineStoreService {
         return new PublicProduct(p.getId(), title, description, shown(p, basePrice(l)),
                 p.getCategory() == null ? null : p.getCategory().getName(),
                 p.getIconDataUrl() == null || p.getIconDataUrl().isBlank() ? null : "/api/public/store/products/" + p.getId() + "/image",
-                stockLabel(sellable(p, s.getStockBuffer())));
+                stockLabel(sellable(p, s.getStockBuffer())), wasPrice(l, p), 0, 0);
+    }
+
+    /** The normal price, shown struck through, when staff set a lower online price. */
+    private static BigDecimal wasPrice(OnlineListing l, Product p) {
+        if (l.getOnlinePrice() == null || l.getOnlinePrice().compareTo(p.getUnitPrice()) >= 0) return null;
+        return shown(p, p.getUnitPrice());
     }
 
     /** Scaled copies already made, so a busy shop does not decode and shrink the same picture again for every visitor. */

@@ -20,13 +20,35 @@ public final class OnlineStoreDtos {
     }
 
     /** stock is IN_STOCK, LOW or SOLD_OUT: never an exact number. */
-    public record PublicProduct(Long id, String name, String description, BigDecimal price, String category, String imageUrl, String stock) {
+    public record PublicProduct(Long id, String name, String description, BigDecimal price, String category, String imageUrl, String stock,
+                                 BigDecimal wasPrice, double rating, int ratingCount) {
+    }
+
+    /** A link of the footer (label and address) written by staff in Shop settings. */
+    public record PublicLink(String label, String url) {
+    }
+
+    /** The front page's wording. Anything empty is simply not shown. */
+    public record PublicPage(String announcementText, String announcementLink, String heroTitle, String heroSubtitle, String heroButtonText,
+                             String heroButtonLink, String heroImageUrl, String aboutText, String contactEmail, String openingHours,
+                             List<PublicLink> footerLinks, List<PublicLink> socialLinks) {
+    }
+
+    public record PublicCategory(String name, long count, String imageUrl) {
+    }
+
+    public record PublicReview(String productName, String reviewerName, int rating, String text, Instant at) {
+    }
+
+    /** The rows of the front page, chosen by staff, and the best of the approved reviews. */
+    public record PublicHome(List<PublicProduct> featured, List<PublicProduct> bestSellers, List<PublicProduct> offers, List<PublicProduct> newArrivals,
+                             List<PublicCategory> categories, List<PublicReview> reviews, Double ratingAverage, long ratingCount) {
     }
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
                              List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons,
-                             String textChannel) {
+                             String textChannel, PublicPage page) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -194,11 +216,12 @@ public final class OnlineStoreDtos {
     }
 
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,
-                             String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock) {
+                             String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock,
+                             boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival) {
     }
 
     public record ListingRequest(@NotNull Long productId, Boolean listed, @Size(max = 160) String webTitle, @Size(max = 2000) String webDescription,
-                                 BigDecimal onlinePrice, Integer sortOrder) {
+                                 BigDecimal onlinePrice, Integer sortOrder, Boolean featured, Boolean bestSeller, Boolean specialOffer, Boolean newArrival) {
     }
 
     public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder) {
@@ -259,5 +282,41 @@ public final class OnlineStoreDtos {
 
     /** manual = the refund was made outside (mobile money, the provider's dashboard); reference is then required for money paid online. */
     public record ReturnProcess(Long locationId, boolean manual, @Size(max = 80) String reference, @Size(max = 300) String note) {
+    }
+
+    // ---------------------------------------------------------------- front page (v1.35.0)
+
+    /** Staff's wording of the front page (Shop settings > Front page). */
+    public record PageContent(@Size(max = 200) String announcementText, @Size(max = 300) String announcementLink, @Size(max = 120) String heroTitle,
+                              @Size(max = 300) String heroSubtitle, @Size(max = 40) String heroButtonText, @Size(max = 300) String heroButtonLink,
+                              @Size(max = 300) String heroImageUrl, @Size(max = 400) String aboutText, @Size(max = 160) String contactEmail,
+                              @Size(max = 200) String openingHours, @Size(max = 1200) String footerLinks, @Size(max = 800) String socialLinks) {
+    }
+
+    // reviews
+
+    public record ReviewItem(Long productId, String name, Integer rating, String text, String status) {
+    }
+
+    public record ReviewOptions(boolean canReview, String why, List<ReviewItem> items) {
+    }
+
+    public record ReviewRequest(@Size(max = 40) String phone, Long productId, int rating, @Size(max = 1000) String text, @Size(max = 40) String name) {
+    }
+
+    public record ReviewDto(Long id, String orderCode, Long productId, String productName, String reviewerName, int rating, String text, String status,
+                            Instant createdAt, String moderatedBy) {
+    }
+
+    // newsletter
+
+    /** website is a hidden field real visitors leave empty; a robot that fills it is ignored. */
+    public record NewsletterRequest(@Size(max = 160) String email, @Size(max = 2) String language, @Size(max = 100) String website) {
+    }
+
+    public record NewsletterToken(@Size(max = 64) String token) {
+    }
+
+    public record NewsletterDto(Long id, String email, String language, String status, Instant createdAt, Instant confirmedAt, Instant unsubscribedAt) {
     }
 }

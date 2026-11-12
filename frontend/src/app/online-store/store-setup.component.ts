@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, PaymentProvider, StoreListing, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, StorePageContent, PaymentProvider, StoreListing, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -99,6 +99,40 @@ import { API_BASE } from '../core/constants';
         <div class="mt-2"><button class="btn btn-primary" type="submit" [disabled]="busy">{{ 'Save settings' | translate }}</button></div>
       </form>
 
+      <form class="card mb-3 front-page-card" style="padding:1rem;" *ngIf="pc" (ngSubmit)="savePageContent()">
+        <h4 class="mb-2">{{ 'Front page' | translate }}</h4>
+        <p class="text-muted">{{ 'The wording of the shop’s first page. Everything is optional: a part you leave empty is not shown. Which products appear in the Featured, Best-selling, Special offers and New arrivals rows is set in the products table below.' | translate }}</p>
+        <div class="form-group"><label class="form-label">{{ 'Announcement bar (a short message above the page)' | translate }}</label>
+          <input class="form-control fp-announcement" maxlength="200" name="fpAnn" [(ngModel)]="pc.announcementText" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Announcement link (optional: / for a page of the shop, or https://)' | translate }}</label>
+          <input class="form-control" maxlength="300" name="fpAnnLink" [(ngModel)]="pc.announcementLink" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Banner title' | translate }}</label>
+          <input class="form-control fp-hero-title" maxlength="120" name="fpTitle" [(ngModel)]="pc.heroTitle" [placeholder]="'Empty = the shop name' | translate" /></div>
+        <div class="form-group"><label class="form-label">{{ 'Banner text' | translate }}</label>
+          <input class="form-control" maxlength="300" name="fpSub" [(ngModel)]="pc.heroSubtitle" [placeholder]="'Empty = the introduction above' | translate" /></div>
+        <div class="flex gap-2" style="flex-wrap:wrap;">
+          <div class="form-group" style="min-width:200px;"><label class="form-label">{{ 'Banner button text' | translate }}</label>
+            <input class="form-control" maxlength="40" name="fpBtn" [(ngModel)]="pc.heroButtonText" [placeholder]="'Shop now' | translate" /></div>
+          <div class="form-group" style="flex:1; min-width:240px;"><label class="form-label">{{ 'Banner button link (empty = down to the products)' | translate }}</label>
+            <input class="form-control" maxlength="300" name="fpBtnLink" [(ngModel)]="pc.heroButtonLink" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">{{ 'Banner picture (an https:// address of an image; empty = a plain banner)' | translate }}</label>
+          <input class="form-control" maxlength="300" name="fpImg" [(ngModel)]="pc.heroImageUrl" /></div>
+        <div class="form-group"><label class="form-label">{{ 'About the shop (footer)' | translate }}</label>
+          <textarea class="form-control" rows="2" maxlength="400" name="fpAbout" [(ngModel)]="pc.aboutText"></textarea></div>
+        <div class="flex gap-2" style="flex-wrap:wrap;">
+          <div class="form-group" style="flex:1; min-width:220px;"><label class="form-label">{{ 'Contact e-mail (footer)' | translate }}</label>
+            <input class="form-control" type="email" maxlength="160" name="fpMail" [(ngModel)]="pc.contactEmail" /></div>
+          <div class="form-group" style="flex:1; min-width:220px;"><label class="form-label">{{ 'Opening hours (footer)' | translate }}</label>
+            <input class="form-control" maxlength="200" name="fpHours" [(ngModel)]="pc.openingHours" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">{{ 'Footer links: one per line, written Label|address (at most 8). The address starts with / (a page of this site) or https://' | translate }}</label>
+          <textarea class="form-control fp-links" rows="4" maxlength="1200" name="fpLinks" [(ngModel)]="pc.footerLinks" placeholder="Delivery|https://example.com/delivery"></textarea></div>
+        <div class="form-group"><label class="form-label">{{ 'Social links: one per line, written Label|address (at most 6)' | translate }}</label>
+          <textarea class="form-control" rows="3" maxlength="800" name="fpSocial" [(ngModel)]="pc.socialLinks" placeholder="Facebook|https://facebook.com/yourshop"></textarea></div>
+        <div class="flex gap-2"><button class="btn btn-primary fp-save" type="submit" [disabled]="busy">{{ 'Save the front page' | translate }}</button></div>
+      </form>
+
       <div class="card mb-3" style="padding:1rem;">
         <h4 class="mb-2">{{ 'Products on the shop' | translate }}</h4>
         <p class="text-muted">{{ 'Only the products you add here are shown and sold online. The photo is the product’s own picture. Leave the online price empty to use the normal price.' | translate }}</p>
@@ -115,7 +149,7 @@ import { API_BASE } from '../core/constants';
           <span class="text-muted" style="font-size:0.85rem;">{{ 'Showing {p0}–{p1} of {p2}' | translate: { p0: firstShown(), p1: lastShown(), p2: filteredListings().length } }}</span>
         </div>
         <table class="table-sm mt-2" *ngIf="listings.length">
-          <thead><tr><th>{{ 'Product' | translate }}</th><th>{{ 'Title on the shop' | translate }}</th><th class="text-end">{{ 'Price' | translate }}</th><th class="text-end">{{ 'Online price' | translate }}</th><th>{{ 'Order' | translate }}</th><th>{{ 'Shown' | translate }}</th><th>{{ 'Stock' | translate }}</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Product' | translate }}</th><th>{{ 'Title on the shop' | translate }}</th><th class="text-end">{{ 'Price' | translate }}</th><th class="text-end">{{ 'Online price' | translate }}</th><th>{{ 'Order' | translate }}</th><th>{{ 'Shown' | translate }}</th><th title="{{ 'Featured products' | translate }}">{{ 'Featured' | translate }}</th><th title="{{ 'Best-selling products' | translate }}">{{ 'Best seller' | translate }}</th><th title="{{ 'Special offers and discounts' | translate }}">{{ 'Offer' | translate }}</th><th title="{{ 'New arrivals' | translate }}">{{ 'New' | translate }}</th><th>{{ 'Stock' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let l of pageListings()">
               <td>{{ l.productName }}<div class="text-muted" style="font-size:0.75rem;" *ngIf="!l.hasImage">{{ 'No picture yet' | translate }}</div></td>
@@ -124,6 +158,10 @@ import { API_BASE } from '../core/constants';
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" [name]="'p' + l.id" [(ngModel)]="l.onlinePrice" /></td>
               <td><input class="form-control" type="number" style="width:70px;" [name]="'o' + l.id" [(ngModel)]="l.sortOrder" /></td>
               <td><input type="checkbox" [name]="'v' + l.id" [(ngModel)]="l.listed" /></td>
+              <td><input type="checkbox" class="tag-featured" [name]="'tf' + l.id" [(ngModel)]="l.featured" /></td>
+              <td><input type="checkbox" class="tag-best" [name]="'tb' + l.id" [(ngModel)]="l.bestSeller" /></td>
+              <td><input type="checkbox" class="tag-offer" [name]="'to' + l.id" [(ngModel)]="l.specialOffer" /></td>
+              <td><input type="checkbox" class="tag-new" [name]="'tn' + l.id" [(ngModel)]="l.newArrival" /></td>
               <td>{{ stockLabel(l.stock) | translate }}</td>
               <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveListing(l)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="removeListing(l)">{{ 'Remove' | translate }}</button></td>
             </tr>
@@ -174,6 +212,8 @@ import { API_BASE } from '../core/constants';
 export class StoreSetupComponent implements OnInit {
   s: StoreSettings | null = null;
   listings: StoreListing[] = [];
+  /** The front page's wording. */
+  pc: StorePageContent | null = null;
   /** The products table is paged on screen: what is typed in a row stays in the row while another page is shown. */
   listFilter = '';
   listSize = 10;
@@ -197,6 +237,7 @@ export class StoreSetupComponent implements OnInit {
     this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => this.fail(e, 'Failed to load the settings') });
     this.api.providers().subscribe({ next: (p) => (this.providers = p), error: () => {} });
     this.api.textProviders().subscribe({ next: (p) => (this.textProviders = p), error: () => {} });
+    this.api.pageContent().subscribe({ next: (c) => (this.pc = c), error: () => {} });
     this.loadListings();
     this.loadZones();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });
@@ -222,6 +263,15 @@ export class StoreSetupComponent implements OnInit {
     this.api.saveSettings(this.s).subscribe({
       next: (s) => { this.s = s; this.busy = false; this.ok('Settings saved'); },
       error: (e) => { this.busy = false; this.fail(e, 'Could not save the settings'); },
+    });
+  }
+
+  savePageContent(): void {
+    if (!this.pc) return;
+    this.busy = true;
+    this.api.savePageContent(this.pc).subscribe({
+      next: (c) => { this.pc = c; this.busy = false; this.ok('Front page saved'); },
+      error: (e) => { this.busy = false; this.fail(e, 'Could not save the front page'); },
     });
   }
 
@@ -278,7 +328,7 @@ export class StoreSetupComponent implements OnInit {
   }
 
   saveListing(l: StoreListing): void {
-    this.api.saveListing({ productId: l.productId, listed: l.listed, webTitle: l.webTitle, webDescription: l.webDescription, onlinePrice: l.onlinePrice === null || (l.onlinePrice as any) === '' ? null : l.onlinePrice, sortOrder: l.sortOrder })
+    this.api.saveListing({ productId: l.productId, featured: l.featured, bestSeller: l.bestSeller, specialOffer: l.specialOffer, newArrival: l.newArrival, listed: l.listed, webTitle: l.webTitle, webDescription: l.webDescription, onlinePrice: l.onlinePrice === null || (l.onlinePrice as any) === '' ? null : l.onlinePrice, sortOrder: l.sortOrder })
       .subscribe({ next: () => { this.loadListings(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the product') });
   }
 

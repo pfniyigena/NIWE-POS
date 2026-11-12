@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopReturn, ShopReturnOptions, ShopTrack, shopToken } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, Shop, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopTrack, shopToken } from '../core/api/online-store-api.service';
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
 import { ShopMoneyPipe } from './shop-money.pipe';
@@ -99,6 +99,25 @@ import { ShopMoneyPipe } from './shop-money.pipe';
           <div class="text-muted st-return-why" *ngIf="!ro.allowed && ro.message" style="font-size:0.85rem;">{{ ro.message }}</div>
         </div>
 
+        <div class="card mb-3 st-reviews" *ngIf="t.status === 'COMPLETED' && rvo && rvo.canReview && rvo.items.length > 0" style="padding:0.75rem;">
+          <h4 class="mb-2">{{ 'Review your products' | translate }}</h4>
+          <p class="text-muted" style="font-size:0.85rem;">{{ 'Tell other customers what you think. Your review is shown after we have looked at it.' | translate }}</p>
+          <div class="alert alert-success st-review-sent" *ngIf="reviewSent">{{ reviewSent }}</div>
+          <div *ngFor="let i of rvo.items" class="st-review" style="border-top:1px solid #e5e7eb; padding:0.5rem 0;">
+            <strong>{{ i.name }}</strong>
+            <div *ngIf="i.status" class="text-muted st-review-done" style="font-size:0.85rem;"><span style="color:#d97706;">{{ stars(i.rating ?? 0) }}</span> {{ i.status === 'APPROVED' ? ('Published. Thank you.' | translate) : i.status === 'HIDDEN' ? ('Thank you. Your review is not shown.' | translate) : ('Thank you. Your review is waiting to be checked.' | translate) }}<span *ngIf="i.text"> · {{ i.text }}</span></div>
+            <div *ngIf="!i.status">
+              <div class="flex gap-1" style="font-size:1.5rem; cursor:pointer; line-height:1.2;">
+                <span *ngFor="let n of [1, 2, 3, 4, 5]" class="st-star" role="button" [attr.aria-label]="n + ' / 5'" [style.color]="(rr[i.productId] || 0) >= n ? '#d97706' : '#9ca3af'" (click)="rr[i.productId] = n">{{ (rr[i.productId] || 0) >= n ? '★' : '☆' }}</span>
+              </div>
+              <textarea class="form-control st-review-text mt-1" rows="2" maxlength="1000" [name]="'rt' + i.productId" [(ngModel)]="rt[i.productId]" [placeholder]="'Your review (optional)' | translate"></textarea>
+              <div class="mt-1" *ngIf="!signedIn"><input class="form-control st-review-phone" style="max-width:260px;" maxlength="40" inputmode="tel" [name]="'rp' + i.productId" [(ngModel)]="reviewPhone" [placeholder]="'Phone number of this order' | translate" /></div>
+              <div class="alert alert-danger mt-1 st-review-error" *ngIf="reviewError[i.productId]">{{ reviewError[i.productId] }}</div>
+              <button class="btn btn-sm btn-primary mt-1 st-review-send" type="button" [disabled]="busy" (click)="sendReview(i)">{{ 'Send my review' | translate }}</button>
+            </div>
+          </div>
+        </div>
+
         <div class="flex gap-2" style="flex-wrap:wrap; justify-content:center;">
           <button class="btn btn-outline-danger st-cancel" *ngIf="t.status === 'PLACED' || t.status === 'AWAITING_PAYMENT'" [disabled]="busy" (click)="cancel()">{{ 'Cancel this order' | translate }}</button>
           <a class="btn btn-primary" routerLink="/shop">{{ 'Order again' | translate }}</a>
@@ -121,6 +140,13 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   rreason = '';
   returnError: string | null = null;
   returnSent: string | null = null;
+  /** Reviews of the products of a completed order: what can be reviewed, and the forms. */
+  rvo: ShopReviewOptions | null = null;
+  rr: Record<number, number> = {};
+  rt: Record<number, string> = {};
+  reviewPhone = '';
+  reviewError: Record<number, string | null> = {};
+  reviewSent: string | null = null;
   private code = '';
   private poll: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
@@ -157,6 +183,7 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
         this.t = t;
         this.error = null;
         if (t.status === 'COMPLETED' && !this.returning) this.loadReturns();
+        if (t.status === 'COMPLETED' && !this.rvo) this.loadReviews();
         // The payment ways the shop offers are only needed once there is something to retry.
         if (t.payment?.canRetry && !this.shop) this.api.shop().subscribe({ next: (s) => (this.shop = s), error: () => {} });
         this.schedule();
@@ -192,6 +219,32 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
 
   private loadReturns(): void {
     this.api.returnOptions(this.code).subscribe({ next: (o) => (this.ro = o), error: () => {} });
+  }
+
+  private loadReviews(): void {
+    this.api.reviewOptions(this.code).subscribe({ next: (o) => (this.rvo = o), error: () => {} });
+  }
+
+  stars(r: number): string {
+    const n = Math.max(0, Math.min(5, Math.round(r)));
+    return '★'.repeat(n) + '☆'.repeat(5 - n);
+  }
+
+  sendReview(i: ShopReviewItem): void {
+    this.reviewError[i.productId] = null;
+    this.reviewSent = null;
+    const rating = this.rr[i.productId] ?? 0;
+    if (rating < 1) { this.reviewError[i.productId] = T('Choose a rating from 1 to 5 stars.'); return; }
+    if (!this.signedIn && this.reviewPhone.trim().length < 6) { this.reviewError[i.productId] = T('Enter the phone number of this order.'); return; }
+    this.busy = true;
+    this.api.submitReview(this.code, { phone: this.reviewPhone.trim() || null, productId: i.productId, rating, text: (this.rt[i.productId] ?? '').trim() || null, name: null }).subscribe({
+      next: () => {
+        this.busy = false;
+        this.reviewSent = T('Thank you. Your review is waiting to be checked.');
+        this.loadReviews();
+      },
+      error: (e) => { this.busy = false; this.reviewError[i.productId] = e?.error?.message ?? T('That did not work'); },
+    });
   }
 
   startReturn(): void {

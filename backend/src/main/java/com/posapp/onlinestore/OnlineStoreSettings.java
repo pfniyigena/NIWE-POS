@@ -57,4 +57,18 @@ public class OnlineStoreSettings extends BaseEntity {
     private int maxPerIpPerHour = 20;
     /** A service product used to put the delivery fee on the sale order and the invoice. Needed before any delivery order can be accepted. */
     private Long deliveryProductId;
+    /** The front page's wording (v1.35.0). Each is optional; a part with nothing set is not shown. */
+    private String announcementText;
+    private String announcementLink;
+    private String heroTitle;
+    private String heroSubtitle;
+    private String heroButtonText;
+    private String heroButtonLink;
+    private String heroImageUrl;
+    private String aboutText;
+    private String contactEmail;
+    private String openingHours;
+    /** One link per line, written "Label|address". */
+    private String footerLinks;
+    private String socialLinks;
 }

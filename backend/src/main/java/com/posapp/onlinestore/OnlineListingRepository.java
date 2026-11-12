@@ -25,4 +25,22 @@ public interface OnlineListingRepository extends JpaRepository<OnlineListing, Lo
 
     @Query("select distinct c.name from OnlineListing l join l.product p join p.category c where l.listed = true and p.active = true order by c.name")
     List<String> findShopCategories();
+
+    /** The rows of the front page: products staff ticked, most recently listed last. */
+    @Query("select l from OnlineListing l join l.product p where l.listed = true and p.active = true and l.featured = true order by l.sortOrder asc, l.id asc")
+    List<OnlineListing> findFeatured(Pageable page);
+
+    @Query("select l from OnlineListing l join l.product p where l.listed = true and p.active = true and l.bestSeller = true order by l.sortOrder asc, l.id asc")
+    List<OnlineListing> findBestSellers(Pageable page);
+
+    @Query("select l from OnlineListing l join l.product p where l.listed = true and p.active = true and l.specialOffer = true order by l.sortOrder asc, l.id asc")
+    List<OnlineListing> findOffers(Pageable page);
+
+    @Query("select l from OnlineListing l join l.product p where l.listed = true and p.active = true and l.newArrival = true order by l.id desc")
+    List<OnlineListing> findNewArrivals(Pageable page);
+
+    /** Per category: name, number of products on the shop, and the id of one of its products that has a picture (or null). */
+    @Query("select c.name, count(l), min(case when p.iconDataUrl is not null then p.id else null end) from OnlineListing l join l.product p join p.category c "
+            + "where l.listed = true and p.active = true group by c.name order by count(l) desc, c.name")
+    List<Object[]> categoryCounts();
 }

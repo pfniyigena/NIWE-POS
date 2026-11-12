@@ -6,14 +6,33 @@ import { ListFilter, pagedList } from './list-state';
 import { PageResult } from './paged';
 
 export interface ShopZone { id: number; name: string; fee: number; minOrder: number }
-export interface ShopProduct { id: number; name: string; description: string | null; price: number; category: string | null; imageUrl: string | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT' }
+export interface ShopProduct { id: number; name: string; description: string | null; price: number; category: string | null; imageUrl: string | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT';
+  /** The normal price when staff set a lower online price (shown struck through); 0 stars and 0 reviews when nobody reviewed it. */
+  wasPrice: number | null; rating: number; ratingCount: number }
 export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
   zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string; coupons: boolean;
   /** SMS or WHATSAPP when the shop texts customers, else null: the tick box and the phone sign-in only show then. */
   textChannel: string | null;
+  /** The front page's wording, written by staff in Shop settings > Front page. */
+  page: ShopPageContent;
 }
+export interface ShopLink { label: string; url: string }
+export interface ShopPageContent {
+  announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
+  heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
+  footerLinks: ShopLink[]; socialLinks: ShopLink[];
+}
+export interface ShopCategory { name: string; count: number; imageUrl: string | null }
+export interface ShopReview { productName: string; reviewerName: string; rating: number; text: string; at: string }
+/** The rows of the front page, chosen by staff, and the best approved reviews. */
+export interface ShopHome {
+  featured: ShopProduct[]; bestSellers: ShopProduct[]; offers: ShopProduct[]; newArrivals: ShopProduct[];
+  categories: ShopCategory[]; reviews: ShopReview[]; ratingAverage: number | null; ratingCount: number;
+}
+export interface ShopReviewItem { productId: number; name: string; rating: number | null; text: string | null; status: string | null }
+export interface ShopReviewOptions { canReview: boolean; why: string | null; items: ShopReviewItem[] }
 export interface ShopPage { items: ShopProduct[]; page: number; size: number; total: number; totalPages: number }
 export interface ShopOrderPayload {
   name: string; phone: string; email: string | null; address: string | null; method: 'DELIVERY' | 'PICKUP'; zoneId: number | null;
@@ -74,11 +93,23 @@ export interface PaymentRow {
 }
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
-export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number }
+export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; reviewsPending?: number }
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
+  featured: boolean; bestSeller: boolean; specialOffer: boolean; newArrival: boolean;
 }
+/** Staff's wording of the front page (Shop settings > Front page). Links are one per line, written Label|address. */
+export interface StorePageContent {
+  announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
+  heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
+  footerLinks: string | null; socialLinks: string | null;
+}
+export interface StoreReview {
+  id: number; orderCode: string | null; productId: number; productName: string; reviewerName: string; rating: number; text: string | null;
+  status: 'PENDING' | 'APPROVED' | 'HIDDEN'; createdAt: string; moderatedBy: string | null;
+}
+export interface StoreSubscriber { id: number; email: string; language: string; status: 'PENDING' | 'CONFIRMED' | 'UNSUBSCRIBED'; createdAt: string; confirmedAt: string | null; unsubscribedAt: string | null }
 export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number }
 
 /** What the customer sees about a return: its status, what staff said and, once done, what was given back and how. */
@@ -137,6 +168,20 @@ export class OnlineStoreApiService {
   requestReturn(code: string, body: { phone: string | null; reason: string; lines: { lineId: number; quantity: number }[] }): Observable<ShopReturn> {
     return this.http.post<ShopReturn>(`${this.pub}/orders/${encodeURIComponent(code)}/returns`, body, { headers: this.shopHeaders() });
   }
+  // ---- the front page, reviews and the newsletter
+  home(): Observable<ShopHome> { return this.http.get<ShopHome>(`${this.pub}/home`); }
+  reviewOptions(code: string): Observable<ShopReviewOptions> { return this.http.get<ShopReviewOptions>(`${this.pub}/orders/${encodeURIComponent(code)}/reviews`); }
+  /** A review of one product of a completed order; it waits for staff. The phone number is needed unless the customer is signed in. */
+  submitReview(code: string, body: { phone: string | null; productId: number; rating: number; text: string | null; name: string | null }): Observable<ShopReviewItem> {
+    return this.http.post<ShopReviewItem>(`${this.pub}/orders/${encodeURIComponent(code)}/reviews`, body, { headers: this.shopHeaders() });
+  }
+  subscribeNewsletter(email: string, language: string, website: string): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${this.pub}/newsletter`, { email, language, website });
+  }
+  confirmNewsletter(token: string): Observable<{ ok: boolean; unsubscribeToken: string }> {
+    return this.http.post<{ ok: boolean; unsubscribeToken: string }>(`${this.pub}/newsletter/confirm`, { token });
+  }
+  unsubscribeNewsletter(token: string): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.pub}/newsletter/unsubscribe`, { token }); }
   /** Pay again, or the other way, for an order that is waiting for its payment. */
   payAgain(code: string, payment: string, payPhone: string | null): Observable<ShopTrack> {
     return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/pay`, { payment, payPhone });
@@ -222,10 +267,26 @@ export class OnlineStoreApiService {
   settings(): Observable<StoreSettings> { return this.http.get<StoreSettings>(`${this.base}/settings`); }
   saveSettings(s: StoreSettings): Observable<StoreSettings> { return this.http.put<StoreSettings>(`${this.base}/settings`, s); }
   listings(): Observable<StoreListing[]> { return this.http.get<StoreListing[]>(`${this.base}/listings`); }
-  saveListing(body: { productId: number; listed?: boolean; webTitle?: string | null; webDescription?: string | null; onlinePrice?: number | null; sortOrder?: number }): Observable<StoreListing> {
+  saveListing(body: { productId: number; listed?: boolean; webTitle?: string | null; webDescription?: string | null; onlinePrice?: number | null; sortOrder?: number;
+    featured?: boolean; bestSeller?: boolean; specialOffer?: boolean; newArrival?: boolean }): Observable<StoreListing> {
     return this.http.post<StoreListing>(`${this.base}/listings`, body);
   }
   removeListing(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/listings/${id}`); }
+  // ---- staff: front page wording, reviews, newsletter
+  pageContent(): Observable<StorePageContent> { return this.http.get<StorePageContent>(`${this.base}/page-content`); }
+  savePageContent(c: StorePageContent): Observable<StorePageContent> { return this.http.put<StorePageContent>(`${this.base}/page-content`, c); }
+  reviewsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReview>> {
+    return pagedList<StoreReview>(this.http, `${this.base}/reviews`, f, page, size, {});
+  }
+  approveReview(id: number): Observable<StoreReview> { return this.http.post<StoreReview>(`${this.base}/reviews/${id}/approve`, {}); }
+  hideReview(id: number): Observable<StoreReview> { return this.http.post<StoreReview>(`${this.base}/reviews/${id}/hide`, {}); }
+  deleteReview(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/reviews/${id}`); }
+  subscribersPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreSubscriber>> {
+    return pagedList<StoreSubscriber>(this.http, `${this.base}/newsletter`, f, page, size, {});
+  }
+  subscriberCounts(): Observable<Record<string, number>> { return this.http.get<Record<string, number>>(`${this.base}/newsletter/counts`); }
+  exportSubscribers(): Observable<Blob> { return this.http.get(`${this.base}/newsletter/export`, { responseType: 'blob' }); }
+  deleteSubscriber(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/newsletter/${id}`); }
   zones(): Observable<StoreZone[]> { return this.http.get<StoreZone[]>(`${this.base}/zones`); }
   saveZone(id: number | null, body: Partial<StoreZone>): Observable<StoreZone> {
     return id == null ? this.http.post<StoreZone>(`${this.base}/zones`, body) : this.http.put<StoreZone>(`${this.base}/zones/${id}`, body);

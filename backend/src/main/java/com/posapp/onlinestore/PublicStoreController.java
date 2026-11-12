@@ -2,6 +2,7 @@ package com.posapp.onlinestore;
 
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
+import com.posapp.onlinestore.OnlineStoreDtos.*;
 import com.posapp.onlinestore.OnlineStoreDtos.CouponCheck;
 import com.posapp.onlinestore.OnlineStoreDtos.CouponResult;
 import com.posapp.onlinestore.OnlineStoreDtos.PayRequest;
@@ -39,9 +40,16 @@ public class PublicStoreController {
     private final SimulatedPaymentProvider simulated;
     private final ShopAccountService accounts;
     private final OnlineReturnService returns;
+    private final OnlineFrontService front;
+    private final OnlineReviewService reviews;
+    private final NewsletterService newsletter;
 
     public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated,
-                                 ShopAccountService accounts, OnlineReturnService returns) {
+                                 ShopAccountService accounts, OnlineReturnService returns, OnlineFrontService front, OnlineReviewService reviews,
+                                 NewsletterService newsletter) {
+        this.front = front;
+        this.reviews = reviews;
+        this.newsletter = newsletter;
         this.returns = returns;
         this.accounts = accounts;
         this.payments = payments;
@@ -70,7 +78,51 @@ public class PublicStoreController {
     public PublicProductPage products(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "16") int size,
                                       @RequestParam(required = false) String q, @RequestParam(required = false) String category) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
-        return service.products(page, size, q, category);
+        PublicProductPage p = service.products(page, size, q, category);
+        return new PublicProductPage(front.withRatings(p.items()), p.page(), p.size(), p.total(), p.totalPages());
+    }
+
+    /** The front page: the rows staff picked, the popular categories and the best approved reviews. */
+    @GetMapping("/home")
+    public PublicHome home() {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return front.home();
+    }
+
+    /** Asks for the newsletter; an e-mail with a confirmation link is sent. The answer never says whether the address was already known. */
+    @PostMapping("/newsletter")
+    public java.util.Map<String, Object> subscribe(@Valid @RequestBody NewsletterRequest request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        newsletter.subscribe(request, ip(http));
+        return java.util.Map.of("ok", true);
+    }
+
+    /** The visitor opened the link of the confirmation e-mail. */
+    @PostMapping("/newsletter/confirm")
+    public java.util.Map<String, Object> confirmNewsletter(@Valid @RequestBody NewsletterToken request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return java.util.Map.of("ok", true, "unsubscribeToken", newsletter.confirm(request.token(), ip(http)));
+    }
+
+    @PostMapping("/newsletter/unsubscribe")
+    public java.util.Map<String, Object> unsubscribeNewsletter(@Valid @RequestBody NewsletterToken request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        newsletter.unsubscribe(request.token(), ip(http));
+        return java.util.Map.of("ok", true);
+    }
+
+    /** What can be reviewed on a completed order, and what was already said. */
+    @GetMapping("/orders/{code}/reviews")
+    public ReviewOptions reviewOptions(@PathVariable String code, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return reviews.options(code, ip(http));
+    }
+
+    /** A review of one product of a completed order; it waits for staff. Needs the phone number of the order, or the sign-in token of the account that holds it. */
+    @PostMapping("/orders/{code}/reviews")
+    public ReviewItem submitReview(@PathVariable String code, @Valid @RequestBody ReviewRequest request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return reviews.submit(code, request, ip(http), accounts.optionalCustomerId(http.getHeader(ShopAccountController.TOKEN_HEADER)));
     }
 
     @GetMapping("/products/{id}/image")
@@ -131,7 +183,7 @@ public class PublicStoreController {
     /**
      * Where the payment provider tells us a payment was made or failed. Not gated by the module switch on purpose: money that arrives must always be
      * recorded. A call without a valid signature is answered 401 and changes nothing; a valid one is always answered ok.
-     * POST for most providers; PUT because MTN MoMo calls back with PUT.
+     * POST for most providers, PUT because MTN MoMo calls back with PUT.
      */
     @RequestMapping(value = "/payments/{provider}/webhook", method = {org.springframework.web.bind.annotation.RequestMethod.POST, org.springframework.web.bind.annotation.RequestMethod.PUT}, consumes = MediaType.ALL_VALUE)
     public java.util.Map<String, Object> webhook(@PathVariable String provider, @RequestBody String body, HttpServletRequest http) {

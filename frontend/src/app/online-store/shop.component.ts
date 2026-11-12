@@ -3,7 +3,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopHome, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
@@ -18,56 +19,76 @@ import { T } from '../core/i18n/t';
   standalone: true,
   imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe],
   template: `
-    <div class="shop-page" style="max-width:980px; margin:0 auto; padding:1rem 0.75rem 6rem;">
+    <div class="shop-announce" *ngIf="shop?.page?.announcementText" style="background:#1d4ed8; color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
+      <a *ngIf="shop?.page?.announcementLink; else announceText" class="shop-announce-link" style="color:#fff; text-decoration:underline; cursor:pointer;" (click)="openLink(shop?.page?.announcementLink)">{{ shop?.page?.announcementText }}</a>
+      <ng-template #announceText>{{ shop?.page?.announcementText }}</ng-template>
+    </div>
+    <div class="shop-header" *ngIf="shop" style="background:#fff; border-bottom:1px solid #e5e7eb; position:sticky; top:0; z-index:20;">
+      <div style="max-width:1100px; margin:0 auto; padding:0.6rem 0.75rem; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <a class="shop-brand" (click)="goHome()" style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; color:inherit; text-decoration:none;">
+          <img *ngIf="logo" [src]="logo" alt="" class="shop-logo" style="height:36px; max-width:120px; object-fit:contain;" />
+          <strong class="shop-name" style="font-size:1.2rem;">{{ shop.name }}</strong>
+        </a>
+        <input *ngIf="step === 'shop' && !showAccount" class="form-control shop-search" style="flex:1; min-width:150px; max-width:420px;" [placeholder]="'Search' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" name="q" />
+        <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
+          <button *ngIf="count() > 0 && step === 'shop' && !showAccount" class="btn btn-sm btn-outline-secondary shop-cart-btn" (click)="checkout()">🛒 {{ count() }}</button>
+          <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
+          <button class="btn btn-sm" [class.btn-primary]="lang.current === 'fr'" [class.btn-outline-secondary]="lang.current !== 'fr'" (click)="lang.choose('fr')">FR</button>
+          <a class="btn btn-sm btn-outline-secondary shop-staff-login" routerLink="/login">{{ 'Staff Login' | translate }}</a>
+        </div>
+      </div>
+    </div>
+    <div class="shop-page" style="max-width:1100px; margin:0 auto; padding:1rem 0.75rem 2rem;">
       <div class="alert alert-danger shop-error" *ngIf="error">{{ error }}</div>
       <div *ngIf="!shop && !error" class="text-muted">{{ 'Loading the shop…' | translate }}</div>
 
       <ng-container *ngIf="shop">
-        <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.5rem;">
-          <div>
-            <h2 class="shop-name" style="margin:0;">{{ shop.name }}</h2>
-            <div class="text-muted" *ngIf="shop.intro">{{ shop.intro }}</div>
-            <div class="text-muted" *ngIf="shop.phone">📞 {{ shop.phone }}</div>
-          </div>
-          <div class="flex gap-1" style="align-items:center;">
-            <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
-            <a class="btn btn-sm btn-outline-secondary shop-staff-login" routerLink="/login">{{ 'Staff Login' | translate }}</a>
-            <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
-            <button class="btn btn-sm" [class.btn-primary]="lang.current === 'fr'" [class.btn-outline-secondary]="lang.current !== 'fr'" (click)="lang.choose('fr')">FR</button>
-          </div>
-        </div>
-
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
         <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
         <ng-container *ngIf="step === 'shop' && !showAccount">
+        <ng-container *ngIf="landing">
+          <section class="shop-hero" style="margin-top:1rem; border-radius:14px; padding:2.5rem 1.5rem; color:#fff; background-color:#1f2937; background-size:cover; background-position:center; position:relative; overflow:hidden;" [style.background-image]="heroImage">
+            <div style="position:absolute; inset:0; background:rgba(17,24,39,0.55);"></div>
+            <div style="position:relative; max-width:600px;">
+              <h1 class="shop-hero-title" style="margin:0 0 0.5rem; font-size:2rem; line-height:1.2;">{{ heroTitle }}</h1>
+              <p class="shop-hero-sub" *ngIf="heroSubtitle" style="margin:0 0 1rem; font-size:1.05rem;">{{ heroSubtitle }}</p>
+              <button class="btn btn-primary shop-hero-cta" style="font-size:1.05rem; padding:0.6rem 1.4rem;" (click)="cta()">{{ heroButton }}</button>
+            </div>
+          </section>
+
+          <section class="shop-cats mt-4" *ngIf="home && home.categories.length > 0">
+            <h3>{{ 'Popular categories' | translate }}</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:0.75rem;">
+              <button type="button" class="card shop-cat" *ngFor="let c of home.categories" (click)="pickCategory(c.name); scrollAll()" style="padding:0.6rem; text-align:left; cursor:pointer;">
+                <img *ngIf="c.imageUrl" [src]="catImg(c.imageUrl)" [alt]="c.name" loading="lazy" style="width:100%; height:90px; object-fit:cover; border-radius:6px;" />
+                <div *ngIf="!c.imageUrl" style="width:100%; height:90px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🗂️</div>
+                <div class="mt-1"><strong>{{ c.name }}</strong></div>
+                <div class="text-muted" style="font-size:0.8rem;">{{ '{p0} products' | translate: { p0: c.count } }}</div>
+              </button>
+            </div>
+          </section>
+
+          <section class="shop-row mt-4" *ngFor="let r of rows" [attr.data-row]="r.key">
+            <h3>{{ r.title | translate }}</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
+              <ng-container *ngFor="let p of r.items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
+            </div>
+          </section>
+          <h3 class="mt-4" id="shop-all">{{ 'All products' | translate }}</h3>
+        </ng-container>
+
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
-          <input class="form-control shop-search" style="max-width:260px;" [placeholder]="'Search' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" name="q" />
           <button class="btn btn-sm" [class.btn-primary]="category === ''" [class.btn-outline-secondary]="category !== ''" (click)="pickCategory('')">{{ 'All' | translate }}</button>
           <button *ngFor="let c of shop.categories" class="btn btn-sm" [class.btn-primary]="category === c" [class.btn-outline-secondary]="category !== c" (click)="pickCategory(c)">{{ c }}</button>
         </div>
 
         <div id="shop-top"></div>
         <div class="shop-grid mt-3" [style.opacity]="loading ? 0.5 : 1" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
-          <div class="card shop-product" *ngFor="let p of items" style="padding:0.6rem;">
-            <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; height:130px; object-fit:cover; border-radius:6px;" />
-            <div *ngIf="!p.imageUrl" style="width:100%; height:130px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
-            <div class="mt-1"><strong>{{ p.name }}</strong></div>
-            <div class="text-muted" style="font-size:0.8rem; min-height:2.2em;" *ngIf="p.description">{{ p.description | slice: 0 : 80 }}</div>
-            <div class="flex justify-between align-center mt-1">
-              <strong>{{ p.price | shopMoney: cur }}</strong>
-              <span *ngIf="p.stock === 'LOW'" class="text-muted" style="font-size:0.75rem; color:#b45309;">{{ 'Few left' | translate }}</span>
-              <span *ngIf="p.stock === 'SOLD_OUT'" class="text-muted" style="font-size:0.75rem;">{{ 'Sold out' | translate }}</span>
-            </div>
-            <div class="flex gap-1 mt-1" *ngIf="qty(p) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
-              <button class="btn btn-sm btn-outline-secondary" (click)="change(p, -1)">−</button>
-              <span>{{ qty(p) }}</span>
-              <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= 20">+</button>
-            </div>
-            <ng-template #addBtn><button class="btn btn-sm btn-primary mt-1 shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
-          </div>
+          <ng-container *ngFor="let p of items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
         </div>
         <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && !q.trim() && !category">{{ 'Nothing is for sale yet. Please come back soon.' | translate }}</p>
         <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && (q.trim() || category)">{{ 'No products match.' | translate }}</p>
@@ -80,6 +101,35 @@ import { T } from '../core/i18n/t';
             <button class="btn btn-sm btn-outline-secondary shop-next" [disabled]="page + 1 >= totalPages || loading" (click)="go(page + 1)">{{ 'Next' | translate }}</button>
           </div>
         </nav>
+
+        <ng-container *ngIf="landing">
+          <section class="shop-reviews mt-4">
+            <h3>{{ 'Customer reviews' | translate }}</h3>
+            <div *ngIf="home && home.reviews.length > 0; else noReviews">
+              <div class="text-muted shop-reviews-avg" *ngIf="home.ratingAverage !== null" style="margin-bottom:0.5rem;"><span style="color:#d97706;">{{ stars(home.ratingAverage) }}</span> {{ home.ratingAverage }} / 5 · {{ '{p0} reviews' | translate: { p0: home.ratingCount } }}</div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:0.75rem;">
+                <div class="card shop-review" *ngFor="let r of home.reviews" style="padding:0.75rem;">
+                  <div style="color:#d97706;">{{ stars(r.rating) }}</div>
+                  <div class="mt-1">{{ r.text }}</div>
+                  <div class="text-muted mt-1" style="font-size:0.8rem;">{{ r.reviewerName }} · {{ r.productName }}</div>
+                </div>
+              </div>
+            </div>
+            <ng-template #noReviews><p class="text-muted shop-reviews-none">{{ 'No reviews yet. When your order is completed, you can review the products from your order page.' | translate }}</p></ng-template>
+          </section>
+
+          <section class="shop-newsletter card mt-4" style="padding:1.25rem; text-align:center;">
+            <h3 style="margin-top:0;">{{ 'Newsletter' | translate }}</h3>
+            <p class="text-muted">{{ 'Get news and offers by e-mail. We send you a message to confirm your address first.' | translate }}</p>
+            <form class="flex gap-2" style="justify-content:center; flex-wrap:wrap;" (ngSubmit)="subscribe()">
+              <input class="form-control shop-nl-email" type="email" style="max-width:320px;" maxlength="160" [placeholder]="'Your e-mail address' | translate" [(ngModel)]="nlEmail" name="nlemail" required />
+              <input class="shop-nl-hp" name="nlweb" [(ngModel)]="nlWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px; width:1px; height:1px;" />
+              <button class="btn btn-primary shop-nl-send" type="submit" [disabled]="nlBusy">{{ 'Subscribe' | translate }}</button>
+            </form>
+            <div class="alert alert-success mt-2 shop-nl-done" *ngIf="nlDone">{{ nlDone }}</div>
+            <div class="alert alert-danger mt-2 shop-nl-error" *ngIf="nlError">{{ nlError }}</div>
+          </section>
+        </ng-container>
         </ng-container>
 
         <button class="btn btn-sm btn-outline-secondary mt-3 shop-back" *ngIf="step === 'order' && !showAccount" (click)="back()">← {{ 'Continue shopping' | translate }}</button>
@@ -168,8 +218,62 @@ import { T } from '../core/i18n/t';
           <button class="btn btn-sm btn-primary shop-checkout-btn" (click)="checkout()">{{ 'Proceed to checkout' | translate }}</button>
         </div>
       </ng-container>
-      <div class="text-muted shop-staff-footer mt-3" style="text-align:center; font-size:0.8rem;"><a routerLink="/login">{{ 'Staff Login' | translate }}</a></div>
     </div>
+
+    <footer class="shop-footer" *ngIf="shop" style="background:#111827; color:#d1d5db; padding:2rem 0.75rem 6rem;">
+      <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:1.5rem;">
+        <div>
+          <strong style="color:#fff;">{{ shop.name }}</strong>
+          <p *ngIf="shop.page.aboutText" class="shop-about" style="margin:0.4rem 0 0;">{{ shop.page.aboutText }}</p>
+        </div>
+        <div>
+          <strong style="color:#fff;">{{ 'Quick links' | translate }}</strong>
+          <ul style="list-style:none; padding:0; margin:0.4rem 0 0; line-height:1.9;">
+            <li><a style="color:#d1d5db; cursor:pointer;" (click)="goHome()">{{ 'Shop' | translate }}</a></li>
+            <li *ngFor="let l of shop.page.footerLinks"><a class="shop-footer-link" style="color:#d1d5db; cursor:pointer;" (click)="openLink(l.url)">{{ l.label }}</a></li>
+            <li><a class="shop-footer-staff" style="color:#d1d5db;" routerLink="/login">{{ 'Staff Login' | translate }}</a></li>
+          </ul>
+        </div>
+        <div>
+          <strong style="color:#fff;">{{ 'Track your order' | translate }}</strong>
+          <form class="flex gap-1 mt-1" (ngSubmit)="trackOrder()">
+            <input class="form-control shop-track-code" style="max-width:150px;" maxlength="20" [placeholder]="'Order code' | translate" [(ngModel)]="trackCode" name="trackcode" />
+            <button class="btn btn-sm btn-primary shop-track-go" type="submit">{{ 'Go' | translate }}</button>
+          </form>
+        </div>
+        <div class="shop-contact">
+          <strong style="color:#fff;">{{ 'Contact' | translate }}</strong>
+          <div style="margin-top:0.4rem;">
+            <div *ngIf="shop.phone">📞 {{ shop.phone }}</div>
+            <div *ngIf="shop.page.contactEmail">✉️ <a style="color:#d1d5db;" [href]="'mailto:' + shop.page.contactEmail">{{ shop.page.contactEmail }}</a></div>
+            <div *ngIf="shop.pickupAddress">📍 {{ shop.pickupAddress }}</div>
+            <div *ngIf="shop.page.openingHours">🕒 {{ shop.page.openingHours }}</div>
+            <div class="flex gap-2 mt-1" style="flex-wrap:wrap;"><a class="shop-social" *ngFor="let l of shop.page.socialLinks" style="color:#d1d5db; cursor:pointer; text-decoration:underline;" (click)="openLink(l.url)">{{ l.label }}</a></div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+      <ng-template #card let-p>
+          <div class="card shop-product" style="padding:0.6rem;">
+            <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; height:130px; object-fit:cover; border-radius:6px;" />
+            <div *ngIf="!p.imageUrl" style="width:100%; height:130px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
+            <div class="mt-1"><strong>{{ p.name }}</strong><span class="shop-offer-badge" *ngIf="p.wasPrice" style="margin-left:0.3rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.35rem; font-size:0.7rem;">{{ 'Offer' | translate }}</span></div>
+            <div class="shop-rating" *ngIf="p.ratingCount > 0" style="color:#d97706; font-size:0.85rem;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }} <span class="text-muted">({{ p.ratingCount }})</span></div>
+            <div class="text-muted" style="font-size:0.8rem; min-height:2.2em;" *ngIf="p.description">{{ p.description | slice: 0 : 80 }}</div>
+            <div class="flex justify-between align-center mt-1">
+              <span><strong>{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.3rem;">{{ p.wasPrice | shopMoney: cur }}</s></span>
+              <span *ngIf="p.stock === 'LOW'" class="text-muted" style="font-size:0.75rem; color:#b45309;">{{ 'Few left' | translate }}</span>
+              <span *ngIf="p.stock === 'SOLD_OUT'" class="text-muted" style="font-size:0.75rem;">{{ 'Sold out' | translate }}</span>
+            </div>
+            <div class="flex gap-1 mt-1" *ngIf="qty(p) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
+              <button class="btn btn-sm btn-outline-secondary" (click)="change(p, -1)">−</button>
+              <span>{{ qty(p) }}</span>
+              <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= 20">+</button>
+            </div>
+            <ng-template #addBtn><button class="btn btn-sm btn-primary mt-1 shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop?.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
+          </div>
+      </ng-template>
   `,
 })
 export class ShopComponent implements OnInit {
@@ -218,7 +322,114 @@ export class ShopComponent implements OnInit {
   /** What could not be put back in the cart when ordering again. */
   reorderNote: string | null = null;
 
-  constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService) {}
+  /** The front page rows chosen by staff, the popular categories and the approved reviews (null until loaded, or when they cannot be). */
+  home: ShopHome | null = null;
+  logo: string | null = null;
+  trackCode = '';
+  nlEmail = '';
+  nlWebsite = '';
+  nlBusy = false;
+  nlDone: string | null = null;
+  nlError: string | null = null;
+
+  constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService, private publicSettings: PublicSettingsApiService) {}
+
+  /** The landing sections (hero, categories, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
+  get landing(): boolean {
+    return this.step === 'shop' && !this.showAccount && !this.q.trim() && !this.category;
+  }
+
+  get rows(): { key: string; title: string; items: ShopProduct[] }[] {
+    const h = this.home;
+    if (!h) return [];
+    return [
+      { key: 'featured', title: 'Featured products', items: h.featured },
+      { key: 'best', title: 'Best-selling products', items: h.bestSellers },
+      { key: 'offers', title: 'Special offers and discounts', items: h.offers },
+      { key: 'new', title: 'New arrivals', items: h.newArrivals },
+    ].filter((r) => r.items.length > 0);
+  }
+
+  get heroTitle(): string {
+    return this.shop?.page?.heroTitle || this.shop?.name || '';
+  }
+
+  get heroSubtitle(): string | null {
+    return this.shop?.page?.heroSubtitle || this.shop?.intro || null;
+  }
+
+  get heroButton(): string {
+    return this.shop?.page?.heroButtonText || T('Shop now');
+  }
+
+  get heroImage(): string | null {
+    const u = this.shop?.page?.heroImageUrl;
+    return u && /^(https:\/\/|\/)/.test(u) ? `url("${u}")` : null;
+  }
+
+  /** The banner button: staff's link, or down to the products. */
+  cta(): void {
+    const link = this.shop?.page?.heroButtonLink;
+    if (link) this.openLink(link);
+    else this.scrollAll();
+  }
+
+  /** A link written by staff: a page of this site stays in the app, anything else opens as an address. Only / https:// http:// mailto: tel: are ever used. */
+  openLink(url: string | null | undefined): void {
+    if (!url) return;
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      void this.router.navigateByUrl(url);
+    } else if (/^(https?:\/\/|mailto:|tel:)/i.test(url)) {
+      window.location.href = url;
+    }
+  }
+
+  scrollAll(): void {
+    setTimeout(() => (document.getElementById('shop-all') ?? document.getElementById('shop-top'))?.scrollIntoView({ behavior: 'smooth' }), 50);
+  }
+
+  /** The brand in the header: back to the start of the shop. */
+  goHome(): void {
+    this.step = 'shop';
+    this.showAccount = false;
+    this.q = '';
+    this.category = '';
+    this.page = 0;
+    this.load();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  catImg(path: string): string {
+    return this.api.imageUrl(path) + '?w=300';
+  }
+
+  stars(r: number): string {
+    const n = Math.max(0, Math.min(5, Math.round(r)));
+    return '★'.repeat(n) + '☆'.repeat(5 - n);
+  }
+
+  trackOrder(): void {
+    const c = this.trackCode.trim().toUpperCase();
+    if (c) void this.router.navigateByUrl('/shop/track/' + encodeURIComponent(c));
+  }
+
+  subscribe(): void {
+    this.nlError = null;
+    this.nlDone = null;
+    if (!this.nlEmail.trim()) return;
+    this.nlBusy = true;
+    this.api.subscribeNewsletter(this.nlEmail.trim(), this.lang.current, this.nlWebsite).subscribe({
+      next: () => {
+        this.nlBusy = false;
+        this.nlDone = T('Thank you. We sent you an e-mail: open the link in it to confirm your subscription.');
+        this.nlEmail = '';
+      },
+      error: (e) => {
+        this.nlBusy = false;
+        this.nlError = e?.error?.message ?? T('That did not work');
+      },
+    });
+  }
 
   /** The shop's currency, written after every price. */
   get cur(): string {
@@ -236,6 +447,8 @@ export class ShopComponent implements OnInit {
           this.api.accountMe().subscribe({ next: (p) => this.accountChanged(p), error: () => shopToken.clear() });
         }
         this.load();
+        this.api.home().subscribe({ next: (h) => (this.home = h), error: () => (this.home = null) });
+        this.publicSettings.branding().subscribe({ next: (b) => (this.logo = b.logoDataUrl || null), error: () => {} });
       },
       error: (e) => (this.error = e?.error?.message ?? T('The shop is not available right now.')),
     });

@@ -32,8 +32,13 @@ public class OnlineStoreController {
     private final OnlineStoreAdminService admin;
     private final OnlinePaymentService payments;
     private final OnlineReturnService returns;
+    private final OnlineReviewService reviews;
+    private final NewsletterService newsletter;
 
-    public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns) {
+    public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns,
+                                 OnlineReviewService reviews, NewsletterService newsletter) {
+        this.reviews = reviews;
+        this.newsletter = newsletter;
         this.returns = returns;
         this.payments = payments;
         this.orders = orders;
@@ -54,6 +59,7 @@ public class OnlineStoreController {
     public Map<String, Long> pendingCount() {
         Map<String, Long> out = new java.util.LinkedHashMap<>(orders.pendingSummary());
         out.putAll(returns.counts());
+        out.putAll(reviews.counts());
         return out;
     }
 
@@ -274,6 +280,74 @@ public class OnlineStoreController {
     @DeleteMapping("/zones/{id}")
     public ResponseEntity<Void> deleteZone(@PathVariable Long id) {
         admin.deleteZone(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- front page (v1.35.0)
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/page-content")
+    public PageContent pageContent() {
+        return admin.pageContent();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/page-content")
+    public PageContent savePageContent(@Valid @RequestBody PageContent request) {
+        return admin.savePageContent(request);
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/reviews")
+    public ResponseEntity<List<ReviewDto>> reviewList(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+                                                      @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return ListPaging.of(reviews.list(q, status), page, size);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/reviews/{id}/approve")
+    public ReviewDto approveReview(@PathVariable Long id) {
+        return reviews.approve(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/reviews/{id}/hide")
+    public ReviewDto hideReview(@PathVariable Long id) {
+        return reviews.hide(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/reviews/{id}")
+    public ResponseEntity<Void> deleteReview(@PathVariable Long id) {
+        reviews.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/newsletter")
+    public ResponseEntity<List<NewsletterDto>> newsletterList(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
+                                                              @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return ListPaging.of(newsletter.list(status, q), page, size);
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/newsletter/counts")
+    public Map<String, Long> newsletterCounts() {
+        return newsletter.counts();
+    }
+
+    /** The confirmed addresses as a CSV file. */
+    @PreAuthorize(MANAGE)
+    @GetMapping("/newsletter/export")
+    public ResponseEntity<byte[]> newsletterExport() {
+        return ResponseEntity.ok().header("Content-Type", "text/csv; charset=UTF-8").header("Content-Disposition", "attachment; filename=\"newsletter-subscribers.csv\"")
+                .body(newsletter.csv().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/newsletter/{id}")
+    public ResponseEntity<Void> deleteSubscriber(@PathVariable Long id) {
+        newsletter.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

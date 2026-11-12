@@ -199,6 +199,10 @@ public class OnlineStoreAdminService {
         if (in.onlinePrice() != null && in.onlinePrice().signum() < 0) throw ApiException.badRequest(I18n.t("The online price cannot be negative"));
         l.setOnlinePrice(in.onlinePrice());
         if (in.sortOrder() != null) l.setSortOrder(in.sortOrder());
+        if (in.featured() != null) l.setFeatured(in.featured());
+        if (in.bestSeller() != null) l.setBestSeller(in.bestSeller());
+        if (in.specialOffer() != null) l.setSpecialOffer(in.specialOffer());
+        if (in.newArrival() != null) l.setNewArrival(in.newArrival());
         OnlineListing saved = listingRepository.save(l);
         auditLogService.record("ONLINE_LISTING_SAVED", (saved.isListed() ? "Listed " : "Unlisted ") + p.getName() + " on the online shop", "OnlineListing", saved.getId());
         return toDto(saved, storeService.settings().getStockBuffer());
@@ -215,7 +219,69 @@ public class OnlineStoreAdminService {
         Product p = l.getProduct();
         return new ListingDto(l.getId(), p.getId(), p.getName(), p.getSku(), p.getCategory() == null ? null : p.getCategory().getName(), p.getUnitPrice(),
                 l.isListed(), l.getWebTitle(), l.getWebDescription(), l.getOnlinePrice(), l.getSortOrder(),
-                p.getIconDataUrl() != null && !p.getIconDataUrl().isBlank(), OnlineStoreService.stockLabel(storeService.sellable(p, buffer)));
+                p.getIconDataUrl() != null && !p.getIconDataUrl().isBlank(), OnlineStoreService.stockLabel(storeService.sellable(p, buffer)),
+                l.isFeatured(), l.isBestSeller(), l.isSpecialOffer(), l.isNewArrival());
+    }
+
+
+    // ------------------------------------------------------------------ front page wording (v1.35.0)
+
+    @Transactional
+    public PageContent pageContent() {
+        OnlineStoreSettings s = storeService.settings();
+        return new PageContent(s.getAnnouncementText(), s.getAnnouncementLink(), s.getHeroTitle(), s.getHeroSubtitle(), s.getHeroButtonText(), s.getHeroButtonLink(),
+                s.getHeroImageUrl(), s.getAboutText(), s.getContactEmail(), s.getOpeningHours(), s.getFooterLinks(), s.getSocialLinks());
+    }
+
+    @Transactional
+    public PageContent savePageContent(PageContent in) {
+        OnlineStoreSettings s = storeService.settings();
+        s.setAnnouncementText(text(in.announcementText(), 200));
+        s.setAnnouncementLink(link(in.announcementLink(), I18n.t("The announcement link")));
+        s.setHeroTitle(text(in.heroTitle(), 120));
+        s.setHeroSubtitle(text(in.heroSubtitle(), 300));
+        s.setHeroButtonText(text(in.heroButtonText(), 40));
+        s.setHeroButtonLink(link(in.heroButtonLink(), I18n.t("The banner button link")));
+        String image = text(in.heroImageUrl(), 300);
+        if (image != null && !(image.startsWith("https://") || (image.startsWith("/") && !image.startsWith("//"))) || image != null && !OnlineStoreService.safeLink(image)) {
+            throw ApiException.badRequest(I18n.t("The banner picture must be an https address."));
+        }
+        s.setHeroImageUrl(image);
+        s.setAboutText(text(in.aboutText(), 400));
+        String mail = text(in.contactEmail(), 160);
+        if (mail != null && !mail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw ApiException.badRequest(I18n.t("The contact e-mail address does not look right"));
+        s.setContactEmail(mail);
+        s.setOpeningHours(text(in.openingHours(), 200));
+        s.setFooterLinks(lines(in.footerLinks(), 8, 1200, I18n.t("Footer links")));
+        s.setSocialLinks(lines(in.socialLinks(), 6, 800, I18n.t("Social links")));
+        settingsRepository.save(s);
+        auditLogService.record("ONLINE_STORE_FRONT_PAGE", "Updated the wording of the shop's front page");
+        return pageContent();
+    }
+
+    private static String link(String v, String what) {
+        String x = text(v, 300);
+        if (x != null && !OnlineStoreService.safeLink(x)) throw ApiException.badRequest(I18n.t("{0} must start with / or https://", what));
+        return x;
+    }
+
+    /** Lines written "Label|address": checked one by one, blank lines dropped. */
+    private static String lines(String v, int max, int maxChars, String what) {
+        if (v == null || v.isBlank()) return null;
+        List<String> out = new java.util.ArrayList<>();
+        for (String line : v.split("\\r?\\n")) {
+            String t = line.trim();
+            if (t.isEmpty()) continue;
+            int bar = t.indexOf('|');
+            if (bar < 1 || bar > 40 || !OnlineStoreService.safeLink(t.substring(bar + 1).trim())) {
+                throw ApiException.badRequest(I18n.t("{0}: write each line as Label|address, the address starting with / or https://. Problem with: {1}", what, t.length() > 40 ? t.substring(0, 40) : t));
+            }
+            out.add(t.substring(0, bar).trim() + "|" + t.substring(bar + 1).trim());
+        }
+        if (out.size() > max) throw ApiException.badRequest(I18n.t("{0}: at most {1} lines", what, max));
+        String joined = String.join("\n", out);
+        if (joined.length() > maxChars) throw ApiException.badRequest(I18n.t("{0} is too long", what));
+        return joined.isEmpty() ? null : joined;
     }
 
     // ------------------------------------------------------------------ delivery areas

@@ -27,4 +27,9 @@ public class OnlineListing extends BaseEntity {
     /** Empty = the product's normal selling price. */
     private BigDecimal onlinePrice;
     private int sortOrder = 0;
+    /** Staff's picks for the rows of the shop's front page. */
+    private boolean featured = false;
+    private boolean bestSeller = false;
+    private boolean specialOffer = false;
+    private boolean newArrival = false;
 }

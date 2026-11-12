@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.35.0 - Online Store: a full front page
+
+The shop's first page now has an announcement bar, header with search, hero banner, popular categories, Featured / Best-selling / Special offers / New arrivals rows (products ticked by staff), customer reviews (real reviews approved by staff), a newsletter sign-up with e-mail confirmation, and a footer with links. Wording is edited in Shop settings > Front page; new screens Online Store > Reviews and > Newsletter. Migration V72. Set `app.frontend-url` to the public address. Details in `RELEASE-NOTES-v1.35.0.md`.
+
 ### Version 1.34.1 - Online Store: the shop is the front page
 
 With the Online Store module on, the root address opens the shop for visitors who are not logged in (logged-in users still go to their usual page; module off, the home page as before). The shop has a Staff Login link. Frontend only. Details in `RELEASE-NOTES-v1.34.1.md`.
