@@ -10,13 +10,13 @@ export interface ShopProduct { id: number; name: string; description: string | n
 export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
-  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string;
+  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string; coupons: boolean;
 }
 export interface ShopPage { items: ShopProduct[]; page: number; size: number; total: number; totalPages: number }
 export interface ShopOrderPayload {
   name: string; phone: string; email: string | null; address: string | null; method: 'DELIVERY' | 'PICKUP'; zoneId: number | null;
   notes: string | null; language: string; website: string; lines: { productId: number; quantity: number }[];
-  payment: 'CASH' | 'MOBILE_MONEY' | 'CARD'; payPhone: string | null;
+  payment: 'CASH' | 'MOBILE_MONEY' | 'CARD'; payPhone: string | null; couponCode: string | null;
 }
 /** What the customer sees about paying: method COD or ONLINE; status NONE, AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED. */
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
@@ -25,6 +25,7 @@ export interface ShopTrack {
   rejectReason: string | null; placedAt: string; lines: { name: string; quantity: number; unitPrice: number; lineTotal: number }[];
   history: { status: string; note: string | null; at: string }[];
   payment: ShopPayment;
+  couponCode: string | null; discount: number; feeWaived: number;
 }
 /** A customer account on the public shop (no passwords: an e-mailed code proves the address). */
 export interface AccountProfile { email: string; phone: string | null; name: string | null; address: string | null; language: string }
@@ -32,6 +33,12 @@ export interface AccountSession { token: string; profile: AccountProfile }
 export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
 export interface Reorder { lines: { product: ShopProduct; quantity: number }[]; unavailable: string[] }
+/** What a coupon code is worth on the cart: discount off the items, feeWaived off the delivery fee. */
+export interface CouponCheckResult { code: string; type: string; discount: number; feeWaived: number }
+export interface StoreCoupon {
+  id: number; code: string; description: string | null; type: 'PERCENT' | 'FIXED' | 'FREE_DELIVERY'; value: number; maxDiscount: number | null; minOrder: number;
+  validFrom: string | null; validUntil: string | null; maxUses: number | null; oncePerCustomer: boolean; active: boolean; used: number;
+}
 export interface TestPayment { reference: string; amount: number; currency: string; method: string; state: string }
 
 export interface StoreOrder {
@@ -40,6 +47,7 @@ export interface StoreOrder {
   subtotal: number; total: number; language: string; salesOrderId: number | null; salesOrderNumber: string | null; invoiceId: number | null;
   invoiceNumber: string | null; rejectReason: string | null; decidedBy: string | null; decidedAt: string | null; createdAt: string;
   paymentStatus: string; paymentChannel: string | null; paymentReference: string | null; paidAmount: number | null; paidAt: string | null; refundedAt: string | null; refundReference: string | null;
+  couponCode: string | null; discountAmount: number; feeWaived: number;
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
@@ -119,6 +127,10 @@ export class OnlineStoreApiService {
   accountOrders(): Observable<AccountOrder[]> { return this.http.get<AccountOrder[]>(`${this.pub}/account/orders`, { headers: this.shopHeaders() }); }
   accountReorder(code: string): Observable<Reorder> { return this.http.get<Reorder>(`${this.pub}/account/orders/${encodeURIComponent(code)}/reorder`, { headers: this.shopHeaders() }); }
   accountLogout(): Observable<void> { return this.http.post<void>(`${this.pub}/account/logout`, {}, { headers: this.shopHeaders() }); }
+  /** "Apply" at checkout: only asks what the code is worth now. */
+  couponCheck(body: { code: string; method: string; zoneId: number | null; phone: string; lines: { productId: number; quantity: number }[] }): Observable<CouponCheckResult> {
+    return this.http.post<CouponCheckResult>(`${this.pub}/coupons/check`, body, { headers: this.shopHeaders() });
+  }
   accountDelete(): Observable<void> { return this.http.delete<void>(`${this.pub}/account`, { headers: this.shopHeaders() }); }
   imageUrl(path: string): string { return `${API_BASE.replace(/\/api$/, '')}${path}`; }
 
@@ -148,6 +160,13 @@ export class OnlineStoreApiService {
   }
   resolvePayment(id: number, note: string): Observable<void> { return this.http.post<void>(`${this.base}/payments/${id}/resolve`, { note }); }
   providers(): Observable<PaymentProvider[]> { return this.http.get<PaymentProvider[]>(`${this.base}/payment-providers`); }
+
+  // ---- staff: coupons
+  coupons(): Observable<StoreCoupon[]> { return this.http.get<StoreCoupon[]>(`${this.base}/coupons`); }
+  saveCoupon(id: number | null, body: Partial<StoreCoupon>): Observable<StoreCoupon> {
+    return id == null ? this.http.post<StoreCoupon>(`${this.base}/coupons`, body) : this.http.put<StoreCoupon>(`${this.base}/coupons/${id}`, body);
+  }
+  deleteCoupon(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/coupons/${id}`); }
 
   // ---- staff: setup
   settings(): Observable<StoreSettings> { return this.http.get<StoreSettings>(`${this.base}/settings`); }

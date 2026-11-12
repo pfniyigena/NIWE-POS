@@ -9,6 +9,13 @@ import java.util.Optional;
 public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> {
     Optional<OnlineOrder> findByCode(String code);
 
+    /** Orders that hold a use of a coupon: everything except rejected and cancelled ones. */
+    long countByCouponIdAndStatusNotIn(Long couponId, java.util.Collection<String> statuses);
+
+    long countByCouponIdAndCouponKeyAndStatusNotIn(Long couponId, String couponKey, java.util.Collection<String> statuses);
+
+    long countByCouponIdAndShopCustomerIdAndStatusNotIn(Long couponId, Long shopCustomerId, java.util.Collection<String> statuses);
+
     List<OnlineOrder> findAllByOrderByCreatedAtDesc();
 
     List<OnlineOrder> findByStatusOrderByCreatedAtAsc(String status);

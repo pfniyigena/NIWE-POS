@@ -56,6 +56,15 @@ public class OnlineOrder extends BaseEntity {
     private Long customerId;
     /** The shop account the order belongs to (a customer who was signed in, or who verified the same e-mail address later). */
     private Long shopCustomerId;
+    /** The coupon used (the code is kept as typed on the order, even if the coupon is deleted later). */
+    private Long couponId;
+    private String couponCode;
+    /** The customer's phone number reduced to its last 9 digits, to count "once per customer" whatever way the number is written. */
+    private String couponKey;
+    /** What the coupon took off the items; subtotal is before it, total after it. */
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+    /** The delivery fee a free-delivery coupon waived (deliveryFee is what the customer pays). */
+    private BigDecimal feeWaived = BigDecimal.ZERO;
     private Long salesOrderId;
     private String salesOrderNumber;
     private Long invoiceId;

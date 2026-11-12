@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AccountProfile, OnlineStoreApiService, Reorder, Shop, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
@@ -103,8 +103,8 @@ import { T } from '../core/i18n/t';
           </div>
 
           <div class="flex gap-3 mb-2" style="flex-wrap:wrap;">
-            <label *ngIf="shop.delivery" class="flex gap-1" style="align-items:center;"><input type="radio" name="method" value="DELIVERY" [(ngModel)]="method" /> {{ 'Delivery' | translate }}</label>
-            <label *ngIf="shop.pickup" class="flex gap-1" style="align-items:center;"><input type="radio" name="method" value="PICKUP" [(ngModel)]="method" /> {{ 'Pick-up' | translate }}</label>
+            <label *ngIf="shop.delivery" class="flex gap-1" style="align-items:center;"><input type="radio" name="method" value="DELIVERY" [(ngModel)]="method" (ngModelChange)="recheckCoupon()" /> {{ 'Delivery' | translate }}</label>
+            <label *ngIf="shop.pickup" class="flex gap-1" style="align-items:center;"><input type="radio" name="method" value="PICKUP" [(ngModel)]="method" (ngModelChange)="recheckCoupon()" /> {{ 'Pick-up' | translate }}</label>
           </div>
           <div class="text-muted mb-2" *ngIf="method === 'PICKUP' && shop.pickupAddress">📍 {{ shop.pickupAddress }}</div>
 
@@ -115,7 +115,7 @@ import { T } from '../core/i18n/t';
           </div>
           <ng-container *ngIf="method === 'DELIVERY'">
             <div class="form-group" *ngIf="shop.zones.length"><label class="form-label">{{ 'Delivery area' | translate }}</label>
-              <select class="form-select" style="max-width:320px;" name="zone" [(ngModel)]="zoneId">
+              <select class="form-select" style="max-width:320px;" name="zone" [(ngModel)]="zoneId" (ngModelChange)="recheckCoupon()">
                 <option [ngValue]="null" disabled>{{ 'Choose your area…' | translate }}</option>
                 <option *ngFor="let z of shop.zones" [ngValue]="z.id">{{ z.name }} ({{ z.fee | shopMoney: cur }})</option>
               </select></div>
@@ -137,10 +137,21 @@ import { T } from '../core/i18n/t';
               <input class="form-control shop-pay-phone" style="max-width:260px;" maxlength="40" inputmode="tel" name="payphone" [(ngModel)]="payPhone" [placeholder]="phone" />
             </div>
           </div>
+          <div class="mb-2 shop-coupon-box" *ngIf="shop.coupons">
+            <label class="form-label">{{ 'Coupon code (optional)' | translate }}</label>
+            <div class="flex gap-2" style="flex-wrap:wrap;">
+              <input class="form-control shop-coupon" style="max-width:220px; text-transform:uppercase;" maxlength="40" name="coupon" [(ngModel)]="couponCode" [disabled]="!!coupon" (keyup.enter)="applyCoupon()" />
+              <button type="button" class="btn btn-outline-primary shop-coupon-apply" *ngIf="!coupon" [disabled]="couponBusy || !couponCode.trim()" (click)="applyCoupon()">{{ couponBusy ? ('Checking…' | translate) : ('Apply' | translate) }}</button>
+              <button type="button" class="btn btn-outline-secondary shop-coupon-remove" *ngIf="coupon" (click)="removeCoupon()">{{ 'Remove' | translate }}</button>
+            </div>
+            <div class="shop-coupon-ok" *ngIf="coupon" style="color:#15803d; font-size:0.9rem;">{{ 'Coupon {p0} applied.' | translate: { p0: coupon.code } }}</div>
+            <div class="shop-coupon-error" *ngIf="couponError" style="color:#b91c1c; font-size:0.9rem;">{{ couponError }}</div>
+          </div>
           <hr />
           <div class="flex justify-between"><span>{{ 'Items' | translate }}</span><span>{{ subtotal() | shopMoney: cur }}</span></div>
-          <div class="flex justify-between" *ngIf="method === 'DELIVERY'"><span>{{ 'Delivery' | translate }}</span><span>{{ fee() | shopMoney: cur }}</span></div>
-          <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="shop-total">{{ subtotal() + fee() | shopMoney: cur }}</strong></div>
+          <div class="flex justify-between shop-discount" *ngIf="discount() > 0" style="color:#15803d;"><span>{{ 'Discount ({p0})' | translate: { p0: coupon?.code } }}</span><span>−{{ discount() | shopMoney: cur }}</span></div>
+          <div class="flex justify-between" *ngIf="method === 'DELIVERY'"><span>{{ 'Delivery' | translate }}</span><span>{{ feeShown() | shopMoney: cur }}<span *ngIf="waived() > 0" style="color:#15803d;"> ({{ 'free with the coupon' | translate }})</span></span></div>
+          <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="shop-total">{{ orderTotal() | shopMoney: cur }}</strong></div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment === 'CASH'">{{ method === 'DELIVERY' ? ('Pay in cash when your order arrives. Prices include tax.' | translate) : ('Pay in cash when you collect. Prices include tax.' | translate) }}</div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment !== 'CASH'">{{ 'You pay now. The shop gets your order as soon as the payment is confirmed. Prices include tax.' | translate }}</div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="shop.minOrder > 0">{{ 'Minimum order {p0}' | translate: { p0: (shop.minOrder | shopMoney: cur) } }}</div>
@@ -190,6 +201,12 @@ export class ShopComponent implements OnInit {
   /** The signed-in customer (accounts are optional: null = guest). */
   account: AccountProfile | null = null;
   showAccount = false;
+  /** The coupon box: what the customer typed, and what the server says it is worth on this cart (the order asks the server again). */
+  couponCode = '';
+  coupon: CouponCheckResult | null = null;
+  couponError: string | null = null;
+  couponBusy = false;
+  private couponSeq = 0;
   /** What could not be put back in the cart when ordering again. */
   reorderNote: string | null = null;
 
@@ -314,6 +331,7 @@ export class ShopComponent implements OnInit {
       this.cartProducts[p.id] = p;
     }
     if (this.step === 'order' && this.count() === 0) this.back();
+    this.recheckCoupon();
   }
 
   cartLines(): { p: ShopProduct; qty: number }[] {
@@ -326,6 +344,62 @@ export class ShopComponent implements OnInit {
 
   subtotal(): number {
     return this.cartLines().reduce((a, l) => a + l.qty * l.p.price, 0);
+  }
+
+  discount(): number {
+    return this.coupon?.discount ?? 0;
+  }
+
+  waived(): number {
+    return this.coupon?.feeWaived ?? 0;
+  }
+
+  /** The delivery fee the customer pays: the area's fee, less what a free-delivery coupon waives. */
+  feeShown(): number {
+    return Math.max(0, this.fee() - this.waived());
+  }
+
+  orderTotal(): number {
+    return this.subtotal() - this.discount() + this.feeShown();
+  }
+
+  /** "Apply": asks the server what the code is worth on this cart. silent = re-asking after the cart changed (a failure then just drops the coupon, with the reason). */
+  applyCoupon(silent = false): void {
+    const code = this.couponCode.trim();
+    if (!code) return;
+    const mine = ++this.couponSeq;
+    if (!silent) {
+      this.couponBusy = true;
+      this.couponError = null;
+    }
+    this.api.couponCheck({ code, method: this.method, zoneId: this.method === 'DELIVERY' ? this.zoneId : null, phone: this.phone, lines: this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty })) }).subscribe({
+      next: (r) => {
+        if (mine !== this.couponSeq) return;
+        this.couponBusy = false;
+        this.coupon = r;
+        this.couponCode = r.code;
+        this.couponError = null;
+      },
+      error: (e) => {
+        if (mine !== this.couponSeq) return;
+        this.couponBusy = false;
+        this.coupon = null;
+        this.couponError = e?.error?.message ?? T('That coupon could not be checked. Please try again.');
+      },
+    });
+  }
+
+  removeCoupon(): void {
+    this.couponSeq++;
+    this.coupon = null;
+    this.couponError = null;
+    this.couponCode = '';
+  }
+
+  /** The cart, the way of getting it, or the area changed: what the coupon is worth may have changed too. */
+  recheckCoupon(): void {
+    if (!this.coupon) return;
+    setTimeout(() => this.applyCoupon(true));
   }
 
   /** Same rule as the server (which checks it again): the area's fee, or nothing when the items reach the free-delivery amount. */
@@ -359,6 +433,7 @@ export class ShopComponent implements OnInit {
         zoneId: this.method === 'DELIVERY' ? this.zoneId : null, notes: this.notes || null, language: this.lang.current, website: this.website,
         lines: this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty })),
         payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.payPhone || this.phone) : null,
+        couponCode: this.couponCode.trim() || null,
       })
       .subscribe({
         next: (t) => {

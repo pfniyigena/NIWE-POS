@@ -23,11 +23,16 @@ public class OnlineStoreAdminService {
     private final CatalogService catalogService;
     private final AuditLogService auditLogService;
     private final OnlinePaymentService payments;
+    private final OnlineCouponRepository couponRepository;
+    private final OnlineOrderRepository orderRepository;
 
     public OnlineStoreAdminService(OnlineStoreService storeService, OnlineStoreSettingsRepository settingsRepository,
                                    OnlineListingRepository listingRepository, OnlineDeliveryZoneRepository zoneRepository,
-                                   CatalogService catalogService, AuditLogService auditLogService, OnlinePaymentService payments) {
+                                   CatalogService catalogService, AuditLogService auditLogService, OnlinePaymentService payments,
+                                   OnlineCouponRepository couponRepository, OnlineOrderRepository orderRepository) {
         this.payments = payments;
+        this.couponRepository = couponRepository;
+        this.orderRepository = orderRepository;
         this.storeService = storeService;
         this.settingsRepository = settingsRepository;
         this.listingRepository = listingRepository;
@@ -195,5 +200,79 @@ public class OnlineStoreAdminService {
 
     private static ZoneDto toDto(OnlineDeliveryZone z) {
         return new ZoneDto(z.getId(), z.getName(), z.getFee(), z.getMinOrder(), z.isActive(), z.getSortOrder());
+    }
+
+    // ------------------------------------------------------------------ coupons
+
+    @Transactional(readOnly = true)
+    public List<CouponDto> coupons() {
+        return couponRepository.findAllByOrderByCreatedAtDesc().stream().map(this::toDto).toList();
+    }
+
+    @Transactional
+    public CouponDto createCoupon(CouponRequest in) {
+        return saveCoupon(new OnlineCoupon(), in);
+    }
+
+    @Transactional
+    public CouponDto updateCoupon(Long id, CouponRequest in) {
+        return saveCoupon(couponRepository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Coupon not found"))), in);
+    }
+
+    /** Orders keep the code they used, so deleting a coupon never changes an order that was already placed. */
+    @Transactional
+    public void deleteCoupon(Long id) {
+        OnlineCoupon c = couponRepository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Coupon not found")));
+        couponRepository.delete(c);
+        auditLogService.record("ONLINE_COUPON_DELETED", "Deleted coupon " + c.getCode(), "OnlineCoupon", id);
+    }
+
+    private CouponDto saveCoupon(OnlineCoupon c, CouponRequest in) {
+        String code = OnlineCouponService.normalize(in.code());
+        if (!code.matches("[A-Z0-9_-]{3,40}")) throw ApiException.badRequest(I18n.t("The coupon code must be 3 to 40 letters, digits, - or _ (no spaces)."));
+        couponRepository.findByCode(code).filter(x -> !x.getId().equals(c.getId())).ifPresent(x -> {
+            throw ApiException.conflict(I18n.t("There is already a coupon with this code."));
+        });
+        String type = in.type() == null ? "" : in.type().trim().toUpperCase(java.util.Locale.ROOT);
+        BigDecimal value = in.value() == null ? BigDecimal.ZERO : in.value();
+        BigDecimal max = in.maxDiscount() == null || in.maxDiscount().signum() <= 0 ? null : in.maxDiscount();
+        switch (type) {
+            case "PERCENT" -> {
+                if (value.signum() <= 0 || value.compareTo(BigDecimal.valueOf(100)) > 0) throw ApiException.badRequest(I18n.t("A percentage must be above 0 and at most 100."));
+            }
+            case "FIXED" -> {
+                if (value.signum() <= 0) throw ApiException.badRequest(I18n.t("The amount off must be above 0."));
+                max = null;
+            }
+            case "FREE_DELIVERY" -> {
+                value = BigDecimal.ZERO;
+                max = null;
+            }
+            default -> throw ApiException.badRequest(I18n.t("Choose what the coupon gives."));
+        }
+        BigDecimal min = in.minOrder() == null ? BigDecimal.ZERO : in.minOrder();
+        if (min.signum() < 0) throw ApiException.badRequest(I18n.t("The minimum order cannot be negative."));
+        if (in.validFrom() != null && in.validUntil() != null && in.validUntil().isBefore(in.validFrom())) throw ApiException.badRequest(I18n.t("The coupon cannot end before it starts."));
+        if (in.maxUses() != null && in.maxUses() < 1) throw ApiException.badRequest(I18n.t("The number of uses must be at least 1."));
+        boolean isNew = c.getId() == null;
+        c.setCode(code);
+        c.setDescription(text(in.description(), 160));
+        c.setType(type);
+        c.setValue(value.setScale(2, java.math.RoundingMode.HALF_UP));
+        c.setMaxDiscount(max);
+        c.setMinOrder(min);
+        c.setValidFrom(in.validFrom());
+        c.setValidUntil(in.validUntil());
+        c.setMaxUses(in.maxUses());
+        if (in.oncePerCustomer() != null) c.setOncePerCustomer(in.oncePerCustomer());
+        if (in.active() != null) c.setActive(in.active());
+        OnlineCoupon saved = couponRepository.save(c);
+        auditLogService.record(isNew ? "ONLINE_COUPON_CREATED" : "ONLINE_COUPON_UPDATED", (isNew ? "Created" : "Changed") + " coupon " + code, "OnlineCoupon", saved.getId());
+        return toDto(saved);
+    }
+
+    private CouponDto toDto(OnlineCoupon c) {
+        return new CouponDto(c.getId(), c.getCode(), c.getDescription(), c.getType(), c.getValue(), c.getMaxDiscount(), c.getMinOrder(), c.getValidFrom(), c.getValidUntil(),
+                c.getMaxUses(), c.isOncePerCustomer(), c.isActive(), orderRepository.countByCouponIdAndStatusNotIn(c.getId(), OnlineCouponService.RELEASED));
     }
 }

@@ -123,6 +123,41 @@ public class OnlineOrderService {
 
     // ------------------------------------------------------------------ decisions
 
+    /**
+     * The sale order line(s) of an order line. With no coupon discount it is one line at the list price. With one, the line price is lowered so the
+     * invoice total equals what the customer pays: prices have 2 decimals, so when the discounted line total does not divide evenly over the quantity,
+     * the line is split in two prices one cent apart (for example 3 x 1,333.33 would be 3,999.99, so it becomes 2 x 1,333.33 + 1 x 1,333.34 = 4,000.00).
+     */
+    static void saleLines(List<SalesOrderRequest.LineEntry> out, OnlineOrderLine l) {
+        BigDecimal disc = l.getDiscountAmount() == null ? BigDecimal.ZERO : l.getDiscountAmount();
+        BigDecimal gross = l.getLineTotal();
+        if (disc.signum() <= 0 || gross == null || gross.signum() <= 0) {
+            out.add(saleLine(l.getProductId(), l.getQuantity(), l.getBasePrice()));
+            return;
+        }
+        BigDecimal qty = l.getQuantity();
+        // What the customer pays for the line, in the same terms as the sale order (list price, tax added by the sale order if it is not inclusive).
+        BigDecimal target = l.getBasePrice().multiply(qty).multiply(gross.subtract(disc)).divide(gross, 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal unit = target.divide(qty, 2, java.math.RoundingMode.DOWN);
+        BigDecimal rest = target.subtract(unit.multiply(qty));
+        int dearer = rest.movePointRight(2).setScale(0, java.math.RoundingMode.HALF_UP).intValue();
+        BigDecimal dearerQty = BigDecimal.valueOf(dearer);
+        if (dearer <= 0 || dearerQty.compareTo(qty) >= 0) {
+            out.add(saleLine(l.getProductId(), qty, dearer <= 0 ? unit : unit.add(new BigDecimal("0.01"))));
+            return;
+        }
+        out.add(saleLine(l.getProductId(), qty.subtract(dearerQty), unit));
+        out.add(saleLine(l.getProductId(), dearerQty, unit.add(new BigDecimal("0.01"))));
+    }
+
+    private static SalesOrderRequest.LineEntry saleLine(Long productId, BigDecimal qty, BigDecimal unitPrice) {
+        SalesOrderRequest.LineEntry e = new SalesOrderRequest.LineEntry();
+        e.setProductId(productId);
+        e.setQuantityOrdered(qty);
+        e.setUnitPrice(unitPrice);
+        return e;
+    }
+
     @Transactional
     public OrderDto accept(Long id, boolean overrideShortage) {
         OnlineOrder o = getOrThrow(id);
@@ -138,13 +173,7 @@ public class OnlineOrderService {
         req.setNotes(I18n.t("Online order {0}", o.getCode()) + " (" + o.getDeliveryMethod().toLowerCase(Locale.ROOT) + ")"
                 + (o.getCustomerAddress() == null ? "" : ", " + o.getCustomerAddress()) + (o.getNotes() == null ? "" : ": " + o.getNotes()));
         List<SalesOrderRequest.LineEntry> lines = new ArrayList<>();
-        for (OnlineOrderLine l : o.getLines()) {
-            SalesOrderRequest.LineEntry e = new SalesOrderRequest.LineEntry();
-            e.setProductId(l.getProductId());
-            e.setQuantityOrdered(l.getQuantity());
-            e.setUnitPrice(l.getBasePrice());
-            lines.add(e);
-        }
+        for (OnlineOrderLine l : o.getLines()) saleLines(lines, l);
         if (fee.signum() > 0) {
             SalesOrderRequest.LineEntry e = new SalesOrderRequest.LineEntry();
             e.setProductId(s.getDeliveryProductId());
@@ -339,7 +368,7 @@ public class OnlineOrderService {
                 o.getCustomerEmail(), o.getCustomerAddress(), o.getZoneName(), o.getDeliveryFee(), o.getNotes(), o.getSubtotal(), o.getTotal(), o.getLanguage(),
                 o.getSalesOrderId(), o.getSalesOrderNumber(), o.getInvoiceId(), o.getInvoiceNumber(), o.getRejectReason(), o.getDecidedBy(), o.getDecidedAt(),
                 o.getCreatedAt(),
-                o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(),
+                o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(),
                 o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList(),
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList());
     }

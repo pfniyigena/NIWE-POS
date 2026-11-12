@@ -25,7 +25,7 @@ public final class OnlineStoreDtos {
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
-                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency) {
+                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -38,7 +38,15 @@ public final class OnlineStoreDtos {
     public record PlaceRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 160) String email,
                                @Size(max = 240) String address, String method, Long zoneId, @Size(max = 300) String notes,
                                String language, String website, @Valid List<PublicLine> lines,
-                               String payment, @Size(max = 40) String payPhone) {
+                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode) {
+    }
+
+    /** "Apply" at checkout: only asks what the code is worth now; the order asks again when it is placed. */
+    public record CouponCheck(@Size(max = 40) String code, String method, Long zoneId, @Size(max = 40) String phone, @Valid List<PublicLine> lines) {
+    }
+
+    /** discount comes off the items, feeWaived off the delivery fee; type is PERCENT, FIXED or FREE_DELIVERY. */
+    public record CouponResult(String code, String type, BigDecimal discount, BigDecimal feeWaived) {
     }
 
     public record TrackLine(String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
@@ -56,7 +64,8 @@ public final class OnlineStoreDtos {
 
     public record Track(String code, String status, String deliveryMethod, String name, String zoneName, BigDecimal subtotal,
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
-                        List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment) {
+                        List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
+                        String couponCode, BigDecimal discount, BigDecimal feeWaived) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -108,7 +117,7 @@ public final class OnlineStoreDtos {
                            String notes, BigDecimal subtotal, BigDecimal total, String language, Long salesOrderId, String salesOrderNumber,
                            Long invoiceId, String invoiceNumber, String rejectReason, String decidedBy, Instant decidedAt, Instant createdAt,
                            String paymentStatus, String paymentChannel, String paymentReference, BigDecimal paidAmount, Instant paidAt,
-                           Instant refundedAt, String refundReference,
+                           Instant refundedAt, String refundReference, String couponCode, BigDecimal discountAmount, BigDecimal feeWaived,
                            List<OrderLineDto> lines, List<EventDto> events) {
     }
 
@@ -169,6 +178,16 @@ public final class OnlineStoreDtos {
     }
 
     public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder) {
+    }
+
+    /** used = orders holding a use of it (not rejected or cancelled). */
+    public record CouponDto(Long id, String code, String description, String type, BigDecimal value, BigDecimal maxDiscount, BigDecimal minOrder,
+                            java.time.LocalDate validFrom, java.time.LocalDate validUntil, Integer maxUses, boolean oncePerCustomer, boolean active, long used) {
+    }
+
+    public record CouponRequest(@NotNull @Size(min = 3, max = 40) String code, @Size(max = 160) String description, @NotNull String type, BigDecimal value,
+                                BigDecimal maxDiscount, BigDecimal minOrder, java.time.LocalDate validFrom, java.time.LocalDate validUntil,
+                                Integer maxUses, Boolean oncePerCustomer, Boolean active) {
     }
 
     public record ZoneRequest(@NotNull @Size(min = 1, max = 80) String name, BigDecimal fee, BigDecimal minOrder, Boolean active, Integer sortOrder) {

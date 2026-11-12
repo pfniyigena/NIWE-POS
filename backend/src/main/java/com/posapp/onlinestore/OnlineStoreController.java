@@ -165,6 +165,33 @@ public class OnlineStoreController {
         return ResponseEntity.noContent().build();
     }
 
+    // ---------------------------------------------------------------- coupons
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/coupons")
+    public List<CouponDto> coupons() {
+        return admin.coupons();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/coupons")
+    public CouponDto createCoupon(@Valid @RequestBody CouponRequest request) {
+        return admin.createCoupon(request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/coupons/{id}")
+    public CouponDto updateCoupon(@PathVariable Long id, @Valid @RequestBody CouponRequest request) {
+        return admin.updateCoupon(id, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/coupons/{id}")
+    public ResponseEntity<Void> deleteCoupon(@PathVariable Long id) {
+        admin.deleteCoupon(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // ---------------------------------------------------------------- delivery areas
 
     @PreAuthorize(VIEW)

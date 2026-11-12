@@ -25,4 +25,6 @@ public class OnlineOrderLine extends BaseEntity {
     /** What the customer was shown per unit (tax included). */
     private BigDecimal unitPrice = BigDecimal.ZERO;
     private BigDecimal lineTotal = BigDecimal.ZERO;
+    /** The part of the order's coupon discount that falls on this line (lineTotal is before it). */
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 }

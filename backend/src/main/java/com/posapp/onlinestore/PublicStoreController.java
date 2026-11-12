@@ -2,6 +2,8 @@ package com.posapp.onlinestore;
 
 import com.posapp.modules.ModuleKey;
 import com.posapp.modules.ModuleService;
+import com.posapp.onlinestore.OnlineStoreDtos.CouponCheck;
+import com.posapp.onlinestore.OnlineStoreDtos.CouponResult;
 import com.posapp.onlinestore.OnlineStoreDtos.PayRequest;
 import com.posapp.onlinestore.OnlineStoreDtos.PlaceRequest;
 import com.posapp.onlinestore.OnlineStoreDtos.PublicProductPage;
@@ -75,6 +77,13 @@ public class PublicStoreController {
         OnlineStoreService.Image image = service.image(id, w);
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
                 .contentType(MediaType.parseMediaType(image.contentType())).body(image.bytes());
+    }
+
+    /** "Apply" at checkout: what a coupon is worth on this cart. Changes nothing. */
+    @PostMapping("/coupons/check")
+    public CouponResult checkCoupon(@Valid @RequestBody CouponCheck request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return service.checkCoupon(request, ip(http), accounts.optionalCustomerId(http.getHeader(ShopAccountController.TOKEN_HEADER)));
     }
 
     @PostMapping("/orders")

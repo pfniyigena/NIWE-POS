@@ -15,6 +15,9 @@
 // Customer accounts (phase 3) are tried too when the shop has them switched on and you give the development sign-in code
 // (app.online-store.accounts.dev-code, set in application-dev.properties: 123456) as DEV_CODE or the 6th argument; otherwise that part is skipped.
 // The script then signs in with an address of its own (smoke-<number>@example.test) and deletes that account at the end.
+//
+// Coupons (phase 3) are always tried: the script makes a 10% coupon of its own (SMK<number>), orders with it, checks that the invoice equals what
+// the customer was charged, and deletes the coupon at the end.
 
 const base = (process.argv[2] || process.env.BASE || 'http://localhost:8080').replace(/\/+$/, '');
 const user = process.argv[3] || process.env.ADMIN_USER || 'admin';
@@ -49,7 +52,7 @@ async function call(method, url, body, auth = false, extra = {}) {
 }
 
 const place = (n, extra = {}) => call('POST', `${pub}/orders`, {
-  name: `Smoke Test ${stamp}-${n}`, phone: `07880${stamp}${n}`.slice(0, 12), email: process.env.SMOKE_EMAIL || null, address: null, method: 'PICKUP', zoneId: null,
+  name: `Smoke Test ${stamp}-${n}`, phone: `0788${stamp}${String(n).padStart(2, '0')}`, email: process.env.SMOKE_EMAIL || null, address: null, method: 'PICKUP', zoneId: null,
   notes: 'online-store-smoke', language: n % 2 ? 'fr' : 'en', website: '', lines: [], ...extra,
 });
 
@@ -252,6 +255,54 @@ async function accounts(s, lines) {
   }
 }
 
+async function coupons(s, lines) {
+  console.log('\nCoupons');
+  const code = `SMK${stamp}`;
+  const created = await call('POST', `${staff}/coupons`, { code, description: 'online-store-smoke', type: 'PERCENT', value: 10, maxDiscount: null, minOrder: 0, validFrom: null, validUntil: null, maxUses: 5, oncePerCustomer: false, active: true }, true);
+  if (!ok(created.status === 200 && created.json?.code === code, 'staff: a 10% coupon is created', created.status === 200 ? code : `HTTP ${created.status} ${created.json?.message ?? ''}`)) return;
+  const dup = await call('POST', `${staff}/coupons`, { code, type: 'FIXED', value: 5 }, true);
+  ok(dup.status === 409 || dup.status === 400, 'staff: the same code twice is refused', `HTTP ${dup.status}`);
+  const bad = await call('POST', `${staff}/coupons`, { code: 'BAD CODE', type: 'FIXED', value: 5 }, true);
+  ok(bad.status === 400, 'staff: a code with a space is refused', `HTTP ${bad.status}`);
+  const shop2 = await call('GET', `${pub}/shop`);
+  ok(shop2.json?.coupons === true, 'public: the shop now offers the coupon box');
+
+  const cart = { method: 'PICKUP', zoneId: null, phone: '', lines };
+  const none = await call('POST', `${pub}/coupons/check`, { ...cart, code: 'NOSUCHCODE' });
+  ok(none.status === 400, 'public: an unknown coupon is refused', `HTTP ${none.status} "${none.json?.message ?? ''}"`);
+  const prev = await call('POST', `${pub}/coupons/check`, { ...cart, code: code.toLowerCase() });
+  if (!ok(prev.status === 200 && prev.json?.discount > 0 && prev.json?.type === 'PERCENT', 'public: the preview says what the coupon is worth (code in lower case works)', prev.status === 200 ? `discount ${prev.json.discount}` : `HTTP ${prev.status} ${prev.json?.message ?? ''}`)) return;
+
+  const plain = await place(9, { lines });
+  const r = await place(10, { lines, couponCode: ` ${code} ` });
+  if (!ok(r.status === 200 && plain.status === 200, 'public: an order is placed with the coupon', r.status === 200 ? `code ${r.json.code}` : `HTTP ${r.status} ${r.json?.message ?? ''}`)) return;
+  ok(r.json.couponCode === code && Math.abs(r.json.discount - prev.json.discount) < 0.01, 'public: the order discount equals the preview', `${r.json.discount}`);
+  ok(Math.abs(r.json.total - (plain.json.total - r.json.discount)) < 0.01, 'public: the total is the price without coupon minus the discount', `${plain.json.total} -> ${r.json.total}`);
+  const tr = await call('GET', `${pub}/orders/${r.json.code}`);
+  ok(tr.json?.discount === r.json.discount && tr.json?.couponCode === code, 'public: the tracking page shows the coupon and the discount');
+  const bogus = await place(11, { lines, couponCode: 'NOSUCHCODE' });
+  ok(bogus.status === 400, 'public: an order with a wrong coupon is refused, not placed without it', `HTTP ${bogus.status}`);
+
+  const o = await findOrder(r.json.code);
+  ok(!!o && o.couponCode === code && Math.abs(o.discountAmount - r.json.discount) < 0.01, 'staff: the order shows the coupon and its discount');
+  if (o) {
+    const acc = await step(o, 'accept the order (the sale order carries the discounted prices)', 'accept', { overrideShortage: true });
+    if (acc) {
+      await step(o, 'ready for pick-up', 'ready-for-pickup', {});
+      const done = await step(o, 'complete (invoice and cash)', 'complete', { collectPayment: true, method: 'CASH' });
+      if (done?.invoiceId) {
+        const inv = await call('GET', `${base}/api/invoices/${done.invoiceId}`, undefined, true);
+        ok(inv.status === 200 && Math.abs(Number(inv.json.totalAmount) - r.json.total) < 0.01, 'staff: the invoice total equals what the customer was charged', inv.status === 200 ? `invoice ${inv.json.totalAmount}, customer ${r.json.total}` : `HTTP ${inv.status}`);
+      }
+    }
+  }
+  const list = await call('GET', `${staff}/coupons`, undefined, true);
+  const mine = list.json?.find((c) => c.code === code);
+  ok(!!mine && mine.used >= 1, 'staff: the coupon list counts the use', mine ? `used ${mine.used} of ${mine.maxUses}` : '');
+  const gone = await call('DELETE', `${staff}/coupons/${created.json.id}`, undefined, true);
+  ok(gone.status === 204 || gone.status === 200, 'staff: the test coupon is deleted', `HTTP ${gone.status}`);
+}
+
 async function main() {
   console.log(`Shop at ${base}\n`);
 
@@ -375,6 +426,7 @@ async function main() {
 
   await payments(s, lines);
   await accounts(s, lines);
+  await coupons(s, lines);
 
   // ---- the staff screen counters
   const pc = await call('GET', `${staff}/orders/pending-count`, undefined, true);

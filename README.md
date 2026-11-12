@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.31.0 - Online Store phase 3 (2 of 4): coupons
+
+Customers can type a coupon code at checkout: percent off the items (with a cap), a fixed amount off, or free delivery, with minimum order, dates, total uses and once per customer. The server decides the discount (under a lock on the coupon) and carries it onto the sale order and invoice by lowering line prices, so the invoice equals what the customer pays. New Online Store > Coupons screen; the coupon box appears when a coupon is active. Migration V69. Details in `RELEASE-NOTES-v1.31.0.md`.
+
 ### Version 1.30.1 - Currency on the public shop, paged products in the shop settings
 
 Every price on the public shop now shows the currency (for example 1,500 RWF). The shop's products table in Shop settings is paged (10, 25, 50, 100) with a filter box. No migration. Details in `RELEASE-NOTES-v1.30.1.md`.

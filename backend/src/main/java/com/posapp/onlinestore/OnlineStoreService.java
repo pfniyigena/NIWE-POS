@@ -52,13 +52,15 @@ public class OnlineStoreService {
     private final OnlinePaymentService payments;
 
     /** Requests per connection in the last hour, to slow down scripts that fill the order list. */
+    private final OnlineCouponService coupons;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
 
     public OnlineStoreService(OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository,
                               OnlineDeliveryZoneRepository zoneRepository, OnlineOrderRepository orderRepository,
                               StockReservationService stockReservationService, StoreSettingsService storeSettingsService,
-                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments) {
+                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, OnlineCouponService coupons) {
         this.payments = payments;
+        this.coupons = coupons;
         this.settingsRepository = settingsRepository;
         this.listingRepository = listingRepository;
         this.zoneRepository = zoneRepository;
@@ -156,7 +158,7 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode());
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive());
     }
 
     static final int DEFAULT_PAGE_SIZE = 16;
@@ -382,6 +384,27 @@ public class OnlineStoreService {
         }
         if (s.getFreeDeliveryOver() != null && subtotal.compareTo(s.getFreeDeliveryOver()) >= 0) fee = BigDecimal.ZERO;
 
+        // A coupon: the server decides what it is worth (under a lock on the coupon); whatever the browser showed is not used.
+        BigDecimal discount = BigDecimal.ZERO;
+        BigDecimal waived = BigDecimal.ZERO;
+        String couponCode = OnlineCouponService.normalize(in.couponCode());
+        if (!couponCode.isEmpty()) {
+            OnlineCouponService.Applied a = coupons.evaluate(couponCode, subtotal, fee, method, phone, shopCustomerId, true);
+            discount = a.discount();
+            waived = a.feeWaived();
+            fee = fee.subtract(waived);
+            List<BigDecimal> parts = OnlineCouponService.allocate(o.getLines().stream().map(OnlineOrderLine::getLineTotal).toList(), discount);
+            for (int i = 0; i < parts.size(); i++) o.getLines().get(i).setDiscountAmount(parts.get(i));
+            o.setCouponId(a.coupon().getId());
+            o.setCouponCode(a.coupon().getCode());
+            o.setCouponKey(OnlineCouponService.phoneKey(phone));
+        }
+        o.setDiscountAmount(discount);
+        o.setFeeWaived(waived);
+        if (online && subtotal.subtract(discount).add(fee).signum() <= 0) {
+            throw ApiException.badRequest(I18n.t("Your order is free, so there is nothing to pay online. Please choose to pay in cash."));
+        }
+
         String code = newCode();
         while (orderRepository.findByCode(code).isPresent()) code = newCode();
         o.setCode(code);
@@ -398,7 +421,7 @@ public class OnlineStoreService {
         o.setDeliveryFee(fee);
         o.setNotes(clean(in.notes(), 300, I18n.t("The note"), false));
         o.setSubtotal(subtotal);
-        o.setTotal(subtotal.add(fee));
+        o.setTotal(subtotal.subtract(discount).add(fee));
         o.setLanguage("fr".equalsIgnoreCase(in.language()) ? "fr" : "en");
         // An order paid online is not the shop's to answer until the payment is confirmed; it waits as AWAITING_PAYMENT (holding no stock).
         o.setStatus(online ? "AWAITING_PAYMENT" : "PLACED");
@@ -420,6 +443,38 @@ public class OnlineStoreService {
             OnlineMessages.notifyShop(mailService, storeSettingsService, s, saved);
         }
         return track(saved);
+    }
+
+    /**
+     * "Apply" on the order form: what this code would be worth on this cart, using the shop's current prices. It changes nothing; placing the order
+     * checks everything again. Limited per connection so codes cannot be tried one after another.
+     */
+    @Transactional(readOnly = true)
+    public CouponResult checkCoupon(CouponCheck in, String ip, Long shopCustomerId) {
+        OnlineStoreSettings s = openSettings();
+        coupons.throttle(ip, 60);
+        String method = in.method() == null ? "" : in.method().trim().toUpperCase();
+        List<PublicLine> lines = in.lines() == null ? List.of() : in.lines();
+        if (lines.isEmpty() || lines.size() > MAX_LINES) throw ApiException.badRequest(I18n.t("Add something to your order first"));
+        BigDecimal subtotal = BigDecimal.ZERO;
+        Map<Long, BigDecimal> wanted = new LinkedHashMap<>();
+        for (PublicLine l : lines) {
+            if (l.quantity() == null || l.quantity().signum() <= 0 || l.quantity().compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) continue;
+            wanted.merge(l.productId(), l.quantity(), BigDecimal::add);
+        }
+        for (Map.Entry<Long, BigDecimal> e : wanted.entrySet()) {
+            OnlineListing l = listingRepository.findByProductId(e.getKey()).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).orElse(null);
+            if (l == null) continue;
+            subtotal = subtotal.add(shown(l.getProduct(), basePrice(l)).multiply(e.getValue()).setScale(2, RoundingMode.HALF_UP));
+        }
+        BigDecimal fee = BigDecimal.ZERO;
+        if (method.equals("DELIVERY")) {
+            OnlineDeliveryZone zone = in.zoneId() == null ? null : zoneRepository.findById(in.zoneId()).filter(OnlineDeliveryZone::isActive).orElse(null);
+            if (zone != null && zone.getFee() != null) fee = zone.getFee();
+            if (s.getFreeDeliveryOver() != null && subtotal.compareTo(s.getFreeDeliveryOver()) >= 0) fee = BigDecimal.ZERO;
+        }
+        OnlineCouponService.Applied a = coupons.evaluate(in.code(), subtotal, fee, method, in.phone(), shopCustomerId, false);
+        return new CouponResult(a.coupon().getCode(), a.coupon().getType(), a.discount(), a.feeWaived());
     }
 
     // ------------------------------------------------------------------ following an order
@@ -470,6 +525,6 @@ public class OnlineStoreService {
         List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList();
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
-                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o));
+                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived());
     }
 }
