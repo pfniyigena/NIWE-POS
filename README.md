@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.28.2 - Online Store: phase 1 gaps closed
+
+The shop is told by e-mail when an order has waited too long for an answer (setting "Alert by e-mail when an order waits this many minutes", default 30, 0 = never), the Online orders screen shows how long each new order has waited and marks late ones, customer e-mails go out in the language the customer chose in the shop, and product photos on the shop are shrunk and kept. New: `tools/online-store-smoke.mjs`, a script that runs a whole order against a running backend. Migration V66. Details in `RELEASE-NOTES-v1.28.2.md`.
+
 ### Version 1.28.1 - Demo data only for development
 
 `app.seed-demo-data` now defaults to `false` and is switched on only by the dev profile. The administrator, the payment methods, a register and the walk-in customer are created on every first start; the sample cashier, categories, products and tax rate only in demo mode. The administrator never gets a fixed password any more, and the log warns when a demo account still has its demo password. Details in `RELEASE-NOTES-v1.28.1.md`.

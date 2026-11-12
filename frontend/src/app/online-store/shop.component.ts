@@ -230,7 +230,8 @@ export class ShopComponent implements OnInit {
   }
 
   img(p: ShopProduct): string {
-    return this.api.imageUrl(p.imageUrl as string);
+    // A small copy is enough for the product cards; the server shrinks it once and keeps it.
+    return this.api.imageUrl(p.imageUrl as string) + '?w=420';
   }
 
   qty(p: ShopProduct): number {

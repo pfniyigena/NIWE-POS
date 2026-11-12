@@ -48,7 +48,7 @@ public class OnlineStoreController {
     @PreAuthorize(VIEW)
     @GetMapping("/orders/pending-count")
     public Map<String, Long> pendingCount() {
-        return Map.of("pending", orders.pendingCount());
+        return orders.pendingSummary();
     }
 
     @PreAuthorize(VIEW)

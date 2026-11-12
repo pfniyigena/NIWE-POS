@@ -66,6 +66,8 @@ public class OnlineStoreAdminService {
         String notify = text(in.notifyEmail(), 160);
         if (notify != null && !notify.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw ApiException.badRequest(I18n.t("The shop e-mail address does not look right"));
         s.setNotifyEmail(notify);
+        if (in.unansweredAlertMinutes() < 0 || in.unansweredAlertMinutes() > 1440) throw ApiException.badRequest(I18n.t("The alert time must be between 0 and 1440 minutes"));
+        s.setUnansweredAlertMinutes(in.unansweredAlertMinutes());
         s.setPickupAddress(text(in.pickupAddress(), 240));
         s.setPickupEnabled(in.pickupEnabled());
         s.setDeliveryEnabled(in.deliveryEnabled());
@@ -101,7 +103,7 @@ public class OnlineStoreAdminService {
         }
         return new SettingsDto(s.isEnabled(), s.isPaused(), s.getPauseMessage(), s.getShopName(), s.getIntroText(), s.getContactPhone(), s.getPickupAddress(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
-                s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail());
+                s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes());
     }
 
     // ------------------------------------------------------------------ listings

@@ -41,6 +41,7 @@ import { T } from '../core/i18n/t';
           <div class="form-group" style="min-width:260px;"><label class="form-label">{{ 'Pick-up address' | translate }}</label><input class="form-control" name="pickupAddress" maxlength="240" [(ngModel)]="s.pickupAddress" /></div>
         </div>
         <div class="form-group mt-2" style="max-width:420px;"><label class="form-label">{{ 'Send new-order e-mails to (empty = business e-mail)' | translate }}</label><input class="form-control" name="notifyEmail" type="email" maxlength="160" [(ngModel)]="s.notifyEmail" /></div>
+        <div class="form-group mt-2" style="max-width:420px;"><label class="form-label">{{ 'Alert by e-mail when an order waits this many minutes (0 = never)' | translate }}</label><input class="form-control" name="alertMinutes" type="number" min="0" max="1440" [(ngModel)]="s.unansweredAlertMinutes" /></div>
         <div class="form-group mt-2"><label class="form-label">{{ 'Welcome text' | translate }}</label><input class="form-control" name="intro" maxlength="300" [(ngModel)]="s.introText" /></div>
         <div class="form-group mt-2" *ngIf="s.paused"><label class="form-label">{{ 'Message shown while paused' | translate }}</label><input class="form-control" name="pauseMessage" maxlength="200" [(ngModel)]="s.pauseMessage" /></div>
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap;">

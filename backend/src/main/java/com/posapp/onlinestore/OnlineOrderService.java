@@ -107,6 +107,14 @@ public class OnlineOrderService {
         return repository.countByStatus("PLACED");
     }
 
+    /** How many orders wait for an answer, how many of them for longer than the alert time (0 = no alert time), and that time in minutes. */
+    @Transactional
+    public java.util.Map<String, Long> pendingSummary() {
+        int minutes = storeService.settings().getUnansweredAlertMinutes();
+        long overdue = minutes > 0 ? repository.countByStatusAndCreatedAtBefore("PLACED", java.time.Instant.now().minusSeconds(60L * minutes)) : 0;
+        return java.util.Map.of("pending", repository.countByStatus("PLACED"), "overdue", overdue, "alertMinutes", (long) minutes);
+    }
+
     // ------------------------------------------------------------------ decisions
 
     @Transactional
@@ -150,7 +158,7 @@ public class OnlineOrderService {
         move(o, "ACCEPTED", I18n.t("Sale order {0} created", so.orderNumber()));
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_ACCEPTED", "Accepted online order " + o.getCode() + " as sale order " + so.orderNumber(), "OnlineOrder", o.getId());
-        tell(o, I18n.t("Your order {0} is accepted", o.getCode()), I18n.t("Good news: your order {0} is accepted and we are preparing it.", o.getCode()));
+        tell(o, OnlineMessages.m("Your order {0} is accepted", o.getCode()), OnlineMessages.m("Good news: your order {0} is accepted and we are preparing it.", o.getCode()));
         return dto(o);
     }
 
@@ -164,7 +172,7 @@ public class OnlineOrderService {
         move(o, "REJECTED", o.getRejectReason());
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_REJECTED", "Rejected online order " + o.getCode() + ": " + o.getRejectReason(), "OnlineOrder", o.getId());
-        tell(o, I18n.t("About your order {0}", o.getCode()), I18n.t("Sorry, we cannot take your order {0}: {1}", o.getCode(), o.getRejectReason()));
+        tell(o, OnlineMessages.m("About your order {0}", o.getCode()), OnlineMessages.m("Sorry, we cannot take your order {0}: {1}", o.getCode(), o.getRejectReason()));
         return dto(o);
     }
 
@@ -177,7 +185,7 @@ public class OnlineOrderService {
         move(o, "CANCELLED", note == null || note.isBlank() ? I18n.t("Cancelled by staff") : note.trim());
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_CANCELLED", "Cancelled online order " + o.getCode(), "OnlineOrder", o.getId());
-        tell(o, I18n.t("Your order {0} is cancelled", o.getCode()), I18n.t("Your order {0} has been cancelled.", o.getCode()));
+        tell(o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), OnlineMessages.m("Your order {0} has been cancelled.", o.getCode()));
         return dto(o);
     }
 
@@ -189,7 +197,7 @@ public class OnlineOrderService {
         expect(o, "ACCEPTED");
         move(o, "PACKED", note);
         repository.save(o);
-        tell(o, I18n.t("Your order {0} is being prepared", o.getCode()), I18n.t("Your order {0} is packed. We will tell you when it is on its way or ready for pick-up.", o.getCode()));
+        tell(o, OnlineMessages.m("Your order {0} is being prepared", o.getCode()), OnlineMessages.m("Your order {0} is packed. We will tell you when it is on its way or ready for pick-up.", o.getCode()));
         return dto(o);
     }
 
@@ -200,7 +208,7 @@ public class OnlineOrderService {
         if (!o.getDeliveryMethod().equals("DELIVERY")) throw ApiException.badRequest(I18n.t("This is a pick-up order"));
         move(o, "OUT_FOR_DELIVERY", note);
         repository.save(o);
-        tell(o, I18n.t("Your order {0} is on its way", o.getCode()), I18n.t("Your order {0} is on its way. Please keep {1} ready to pay on delivery.", o.getCode(), OnlineStoreService.money(o.getTotal())));
+        tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), OnlineMessages.m("Your order {0} is on its way. Please keep {1} ready to pay on delivery.", o.getCode(), OnlineStoreService.money(o.getTotal())));
         return dto(o);
     }
 
@@ -212,8 +220,8 @@ public class OnlineOrderService {
         move(o, "READY_FOR_PICKUP", note);
         repository.save(o);
         OnlineStoreSettings s = storeService.settings();
-        tell(o, I18n.t("Your order {0} is ready", o.getCode()), I18n.t("Your order {0} is ready for pick-up. Please bring {1} to pay.", o.getCode(), OnlineStoreService.money(o.getTotal()))
-                + (s.getPickupAddress() == null ? "" : " " + s.getPickupAddress()));
+        tell(o, OnlineMessages.m("Your order {0} is ready", o.getCode()), OnlineMessages.m("Your order {0} is ready for pick-up. Please bring {1} to pay.", o.getCode(), OnlineStoreService.money(o.getTotal()))
+                .plus(s.getPickupAddress() == null ? "" : " " + s.getPickupAddress()));
         return dto(o);
     }
 
@@ -253,7 +261,7 @@ public class OnlineOrderService {
         move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (collect ? "" : ", " + I18n.t("payment not collected")));
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
-        tell(o, I18n.t("Thank you for your order {0}", o.getCode()), I18n.t("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber()));
+        tell(o, OnlineMessages.m("Thank you for your order {0}", o.getCode()), OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber()));
         return dto(o);
     }
 
@@ -269,7 +277,7 @@ public class OnlineOrderService {
         });
     }
 
-    private void tell(OnlineOrder o, String subject, String text) {
+    private void tell(OnlineOrder o, OnlineMessages.Msg subject, OnlineMessages.Msg text) {
         OnlineMessages.send(mailService, storeSettingsService, o, subject, text);
     }
 

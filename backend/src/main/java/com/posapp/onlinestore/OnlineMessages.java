@@ -16,9 +16,24 @@ final class OnlineMessages {
     private OnlineMessages() {
     }
 
-    static void send(MailService mailService, StoreSettingsService storeSettingsService, OnlineOrder o, String subject, String text) {
+    /** A text written in English with {0}, {1} values; it is put into the customer's language only when the mail is sent. */
+    record Msg(String english, Object[] args, String suffix) {
+        /** The same text followed by something that needs no translation (an address, say). */
+        Msg plus(String more) {
+            return new Msg(english, args, suffix + (more == null ? "" : more));
+        }
+    }
+
+    static Msg m(String english, Object... args) {
+        return new Msg(english, args, "");
+    }
+
+    /** The mail goes in the language the customer chose in the shop (stored on the order), not the business language. */
+    static void send(MailService mailService, StoreSettingsService storeSettingsService, OnlineOrder o, Msg subjectMsg, Msg textMsg) {
         if (o.getCustomerEmail() == null || o.getCustomerEmail().isBlank() || !mailService.isConfigured()) return;
         try {
+            String subject = I18n.tIn(o.getLanguage(), subjectMsg.english(), subjectMsg.args());
+            String text = I18n.tIn(o.getLanguage(), textMsg.english(), textMsg.args()) + textMsg.suffix();
             String shop = storeSettingsService.getSettingsEntity().getBusinessName();
             String body = "<p>" + escape(text) + "</p>" + (shop == null || shop.isBlank() ? "" : "<p>" + escape(shop) + "</p>");
             mailService.send(o.getCustomerEmail(), subject, body, List.of());
@@ -59,6 +74,27 @@ final class OnlineMessages {
             mailService.send(to, I18n.t("New online order {0}", o.getCode()), b.toString(), List.of());
         } catch (RuntimeException e) {
             log.warn("Could not e-mail the shop about online order {}: {}", o.getCode(), e.getMessage());
+        }
+    }
+
+    /** The shop is told that these orders are still waiting for an answer. */
+    static void alertShop(MailService mailService, StoreSettingsService storeSettingsService, OnlineStoreSettings settings, List<OnlineOrder> orders,
+                          int minutes, java.time.Instant now) {
+        try {
+            String to = settings.getNotifyEmail();
+            if (to == null || to.isBlank()) to = storeSettingsService.getSettingsEntity().getEmail();
+            if (to == null || to.isBlank() || !mailService.isConfigured()) return;
+            StringBuilder b = new StringBuilder();
+            b.append("<p><strong>").append(escape(I18n.t("{0} online order(s) have waited more than {1} minutes for an answer.", orders.size(), minutes))).append("</strong></p><ul>");
+            for (OnlineOrder o : orders) {
+                long waited = java.time.Duration.between(o.getCreatedAt(), now).toMinutes();
+                b.append("<li>").append(escape(o.getCode())).append(" — ").append(escape(o.getCustomerName())).append(", ").append(escape(o.getCustomerPhone()))
+                        .append(", ").append(escape(OnlineStoreService.money(o.getTotal()))).append(" (").append(waited).append(" min)</li>");
+            }
+            b.append("</ul><p>").append(escape(I18n.t("Open Online Store > Online orders to accept or reject it."))).append("</p>");
+            mailService.send(to, I18n.t("Online orders are waiting for an answer"), b.toString(), List.of());
+        } catch (RuntimeException e) {
+            log.warn("Could not e-mail the shop about waiting online orders: {}", e.getMessage());
         }
     }
 

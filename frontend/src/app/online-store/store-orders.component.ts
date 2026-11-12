@@ -39,12 +39,12 @@ interface LocationOption { id: number; label: string; type: string | null; prima
 
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
         <button *ngFor="let t of tabs" class="btn btn-sm so-tab" [class.btn-primary]="tab === t.key" [class.btn-outline-secondary]="tab !== t.key" (click)="setTab(t.key)">
-          {{ t.label | translate }}<span *ngIf="t.key === 'PLACED' && pending > 0"> ({{ pending }})</span>
+          {{ t.label | translate }}<span *ngIf="t.key === 'PLACED' && pending > 0"> ({{ pending }}<ng-container *ngIf="overdue > 0">, {{ overdue }} {{ 'late' | translate }}</ng-container>)</span>
         </button>
         <input class="form-control so-search" style="width:220px;" [placeholder]="'Search code, name, phone' | translate" [(ngModel)]="q" name="soq" (keyup.enter)="reload()" (blur)="reload()" />
       </div>
 
-      <div class="card so-card mb-2" *ngFor="let o of list.rows" style="padding:0.75rem;">
+      <div class="card so-card mb-2" *ngFor="let o of list.rows" style="padding:0.75rem;" [style.border-left]="o.status === 'PLACED' && late(o) ? '4px solid #b91c1c' : ''">
         <div class="flex justify-between" style="flex-wrap:wrap; gap:0.5rem;">
           <div>
             <strong class="so-code">{{ o.code }}</strong>
@@ -57,6 +57,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           <div style="text-align:right;">
             <div><strong>{{ o.total | number: '1.0-2' }}</strong></div>
             <div class="text-muted" style="font-size:0.8rem;">{{ o.createdAt | date: 'short' }}</div>
+            <div *ngIf="o.status === 'PLACED'" class="so-waiting" style="font-size:0.8rem;" [style.color]="late(o) ? '#b91c1c' : ''" [style.font-weight]="late(o) ? '600' : '400'">{{ 'Waiting {p0} min' | translate: { p0: waiting(o) } }}</div>
             <a *ngIf="o.salesOrderId" [routerLink]="['/admin/sales-orders', o.salesOrderId]">{{ o.salesOrderNumber }}</a>
             <a *ngIf="o.invoiceId" style="margin-left:0.5rem;" [routerLink]="['/admin/invoices', o.invoiceId]">{{ o.invoiceNumber }}</a>
           </div>
@@ -119,6 +120,8 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   tab = 'PLACED';
   q = '';
   pending = 0;
+  overdue = 0;
+  alertMinutes = 0;
   error: string | null = null;
   busy = false;
   reason: Record<number, string> = {};
@@ -190,8 +193,25 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     this.count();
   }
 
+  /** Whole minutes since the customer placed the order. */
+  waiting(o: StoreOrder): number {
+    return Math.max(0, Math.floor((Date.now() - new Date(o.createdAt).getTime()) / 60000));
+  }
+
+  /** Waiting longer than the alert time set in the shop settings (no alert time = never late). */
+  late(o: StoreOrder): boolean {
+    return this.alertMinutes > 0 && this.waiting(o) >= this.alertMinutes;
+  }
+
   count(): void {
-    this.api.pendingCount().subscribe({ next: (r) => (this.pending = r.pending), error: () => {} });
+    this.api.pendingCount().subscribe({
+      next: (r) => {
+        this.pending = r.pending;
+        this.overdue = r.overdue ?? 0;
+        this.alertMinutes = r.alertMinutes ?? 0;
+      },
+      error: () => {},
+    });
   }
 
   /** Runs one order action and refreshes the list. */

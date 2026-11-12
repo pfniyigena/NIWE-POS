@@ -184,19 +184,83 @@ public class OnlineStoreService {
         return new PublicProductPage(items, pageNo, pageSize, result.getTotalElements(), result.getTotalPages());
     }
 
-    /** The product's own picture as bytes; the shop page asks for it per product so the product list stays small. */
+    /** Scaled copies already made, so a busy shop does not decode and shrink the same picture again for every visitor. */
+    private static final Map<String, Image> SCALED = java.util.Collections.synchronizedMap(new java.util.LinkedHashMap<>(64, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Image> eldest) {
+            return size() > 400;
+        }
+    });
+
+    /**
+     * The product's own picture as bytes. With a width (in pixels, 64 to 1200) the picture is shrunk to at most that width, so the product
+     * grid does not download full-size photos; without one, or when the picture is already small enough, it is returned as it is.
+     */
     @Transactional(readOnly = true)
-    public Image image(Long productId) {
+    public Image image(Long productId, int width) {
         OnlineListing l = listingRepository.findByProductId(productId).filter(OnlineListing::isListed).orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
         String url = l.getProduct().getIconDataUrl();
         if (url == null || !url.startsWith("data:") || !url.contains(";base64,")) throw ApiException.notFound(I18n.t("Not found."));
         String type = url.substring(5, url.indexOf(';'));
         if (!type.startsWith("image/")) throw ApiException.notFound(I18n.t("Not found."));
+        int w = width <= 0 ? 0 : Math.max(64, Math.min(width, 1200));
+        String key = productId + ":" + w + ":" + url.length() + ":" + url.hashCode();
+        if (w > 0) {
+            Image cached = SCALED.get(key);
+            if (cached != null) return cached;
+        }
+        byte[] bytes;
         try {
-            return new Image(type, Base64.getDecoder().decode(url.substring(url.indexOf(";base64,") + 8)));
+            bytes = Base64.getDecoder().decode(url.substring(url.indexOf(";base64,") + 8));
         } catch (IllegalArgumentException e) {
             throw ApiException.notFound(I18n.t("Not found."));
         }
+        Image out = w == 0 ? new Image(type, bytes) : scale(type, bytes, w);
+        if (w > 0) SCALED.put(key, out);
+        return out;
+    }
+
+    /** Shrinks a picture to at most maxWidth pixels wide (JPEG, or PNG when it has transparency). Anything that cannot be read or is small enough stays as it is. */
+    static Image scale(String type, byte[] bytes, int maxWidth) {
+        try {
+            java.awt.image.BufferedImage src = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+            if (src == null || src.getWidth() <= maxWidth) return new Image(type, bytes);
+            boolean alpha = src.getColorModel().hasAlpha();
+            int w = src.getWidth();
+            int h = src.getHeight();
+            java.awt.image.BufferedImage cur = src;
+            // Halve while far above the target, then the last step: a straight big jump looks jagged.
+            while (w / 2 >= maxWidth) {
+                w = w / 2;
+                h = Math.max(1, h / 2);
+                cur = resize(cur, w, h, alpha);
+            }
+            int th = Math.max(1, (int) Math.round(h * (maxWidth / (double) w)));
+            cur = resize(cur, maxWidth, th, alpha);
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            if (!javax.imageio.ImageIO.write(cur, alpha ? "png" : "jpg", bos)) return new Image(type, bytes);
+            byte[] scaled = bos.toByteArray();
+            return scaled.length >= bytes.length ? new Image(type, bytes) : new Image(alpha ? "image/png" : "image/jpeg", scaled);
+        } catch (java.io.IOException | RuntimeException e) {
+            return new Image(type, bytes);
+        }
+    }
+
+    private static java.awt.image.BufferedImage resize(java.awt.image.BufferedImage src, int w, int h, boolean alpha) {
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(w, h, alpha ? java.awt.image.BufferedImage.TYPE_INT_ARGB : java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = out.createGraphics();
+        try {
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+            if (!alpha) {
+                g.setColor(java.awt.Color.WHITE);
+                g.fillRect(0, 0, w, h);
+            }
+            g.drawImage(src, 0, 0, w, h, null);
+        } finally {
+            g.dispose();
+        }
+        return out;
     }
 
     public record Image(String contentType, byte[] bytes) {
@@ -319,8 +383,8 @@ public class OnlineStoreService {
         OnlineOrder saved = orderRepository.save(o);
         auditLogService.record("ONLINE_ORDER_PLACED", "Online order " + saved.getCode() + " from " + name + " (" + money(saved.getTotal()) + ")", "OnlineOrder", saved.getId());
         OnlineMessages.send(mailService, storeSettingsService, saved,
-                I18n.t("We received your order {0}", saved.getCode()),
-                I18n.t("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())));
+                OnlineMessages.m("We received your order {0}", saved.getCode()),
+                OnlineMessages.m("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())));
         OnlineMessages.notifyShop(mailService, storeSettingsService, s, saved);
         return track(saved);
     }
@@ -350,7 +414,7 @@ public class OnlineStoreService {
         ev.setByUser("customer");
         o.getEvents().add(ev);
         orderRepository.save(o);
-        OnlineMessages.send(mailService, storeSettingsService, o, I18n.t("Your order {0} is cancelled", o.getCode()), I18n.t("Your order {0} has been cancelled.", o.getCode()));
+        OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), OnlineMessages.m("Your order {0} has been cancelled.", o.getCode()));
         return track(o);
     }
 

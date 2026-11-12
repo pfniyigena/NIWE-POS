@@ -86,6 +86,21 @@ public class I18n {
         return s;
     }
 
+    /** Same as {@link #t(String, Object...)} but in a language given by the caller ("fr" or anything else = English), e.g. the language a customer chose. */
+    public static String tIn(String lang, String english, Object... values) {
+        if (english == null) return null;
+        I18n i = instance;
+        String s = english;
+        if (i != null && "fr".equalsIgnoreCase(lang)) {
+            String f = i.fr.get(english);
+            if (f != null) s = f;
+        }
+        if (values != null) {
+            for (int k = 0; k < values.length; k++) s = s.replace("{" + k + "}", String.valueOf(values[k]));
+        }
+        return s;
+    }
+
     public static Locale locale() {
         return french() ? Locale.FRENCH : Locale.ENGLISH;
     }

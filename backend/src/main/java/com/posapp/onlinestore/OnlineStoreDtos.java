@@ -83,7 +83,8 @@ public final class OnlineStoreDtos {
     public record SettingsDto(boolean enabled, boolean paused, String pauseMessage, String shopName, String introText, String contactPhone,
                               String pickupAddress, boolean pickupEnabled, boolean deliveryEnabled, boolean codEnabled, int stockBuffer,
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
-                              Long deliveryProductId, String deliveryProductName, String notifyEmail) {
+                              Long deliveryProductId, String deliveryProductName, String notifyEmail,
+                              int unansweredAlertMinutes) {
     }
 
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,

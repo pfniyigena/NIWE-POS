@@ -34,7 +34,7 @@ export interface StoreOrder {
 export interface StoreSettings {
   enabled: boolean; paused: boolean; pauseMessage: string | null; shopName: string | null; introText: string | null; contactPhone: string | null;
   pickupAddress: string | null; pickupEnabled: boolean; deliveryEnabled: boolean; codEnabled: boolean; stockBuffer: number; minOrder: number;
-  freeDeliveryOver: number | null; maxPendingPerPhone: number; maxPerIpPerHour: number; deliveryProductId: number | null; deliveryProductName: string | null; notifyEmail: string | null;
+  freeDeliveryOver: number | null; maxPendingPerPhone: number; maxPerIpPerHour: number; deliveryProductId: number | null; deliveryProductName: string | null; notifyEmail: string | null; unansweredAlertMinutes: number;
 }
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
@@ -68,7 +68,7 @@ export class OnlineStoreApiService {
   page(f: ListFilter, page: number, size: number): Observable<PageResult<StoreOrder>> {
     return pagedList<StoreOrder>(this.http, `${this.base}/orders`, f, page, size, {});
   }
-  pendingCount(): Observable<{ pending: number }> { return this.http.get<{ pending: number }>(`${this.base}/orders/pending-count`); }
+  pendingCount(): Observable<{ pending: number; overdue: number; alertMinutes: number }> { return this.http.get<{ pending: number; overdue: number; alertMinutes: number }>(`${this.base}/orders/pending-count`); }
   accept(id: number, overrideShortage: boolean): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/accept`, { overrideShortage }); }
   reject(id: number, reason: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/reject`, { reason }); }
   pack(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/pack`, {}); }

@@ -1700,5 +1700,8 @@
  "Delivery area": "Zone de livraison",
  "Delivery fee": "Frais de livraison",
  "Open Online Store > Online orders to accept or reject it.": "Ouvrez Boutique en ligne > Commandes en ligne pour l'accepter ou la refuser.",
- "The shop e-mail address does not look right": "L'adresse e-mail de la boutique ne semble pas correcte"
+ "The shop e-mail address does not look right": "L'adresse e-mail de la boutique ne semble pas correcte",
+ "{0} online order(s) have waited more than {1} minutes for an answer.": "{0} commande(s) en ligne attendent une réponse depuis plus de {1} minutes.",
+ "Online orders are waiting for an answer": "Des commandes en ligne attendent une réponse",
+ "The alert time must be between 0 and 1440 minutes": "Le délai d'alerte doit être compris entre 0 et 1440 minutes"
 }

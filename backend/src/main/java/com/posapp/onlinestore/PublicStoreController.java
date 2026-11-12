@@ -61,9 +61,9 @@ public class PublicStoreController {
     }
 
     @GetMapping("/products/{id}/image")
-    public ResponseEntity<byte[]> image(@PathVariable Long id) {
+    public ResponseEntity<byte[]> image(@PathVariable Long id, @RequestParam(defaultValue = "0") int w) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
-        OnlineStoreService.Image image = service.image(id);
+        OnlineStoreService.Image image = service.image(id, w);
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
                 .contentType(MediaType.parseMediaType(image.contentType())).body(image.bytes());
     }

@@ -21,6 +21,8 @@ public class OnlineStoreSettings extends BaseEntity {
     private String contactPhone;
     /** Told by e-mail when a customer places an order. Empty = the business e-mail from Settings. */
     private String notifyEmail;
+    /** An order that waits this many minutes as PLACED is reported to the shop by e-mail, once. 0 = never. */
+    private int unansweredAlertMinutes = 30;
     private String pickupAddress;
     private boolean pickupEnabled = true;
     private boolean deliveryEnabled = true;

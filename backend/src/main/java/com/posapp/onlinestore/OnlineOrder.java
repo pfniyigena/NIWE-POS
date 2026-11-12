@@ -23,6 +23,8 @@ import java.util.List;
 public class OnlineOrder extends BaseEntity {
     /** What the customer quotes and tracks the order with. */
     private String code;
+    /** When the shop was told by e-mail that this order is waiting for an answer (once per order). */
+    private Instant alertedAt;
     /** PLACED, ACCEPTED, PACKED, OUT_FOR_DELIVERY, READY_FOR_PICKUP, COMPLETED, REJECTED or CANCELLED. */
     private String status = "PLACED";
     /** DELIVERY or PICKUP. */
