@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
@@ -16,7 +16,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, ShopAccountComponent, ShopMoneyPipe],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe],
   template: `
     <div class="shop-page" style="max-width:980px; margin:0 auto; padding:1rem 0.75rem 6rem;">
       <div class="alert alert-danger shop-error" *ngIf="error">{{ error }}</div>
@@ -31,6 +31,7 @@ import { T } from '../core/i18n/t';
           </div>
           <div class="flex gap-1" style="align-items:center;">
             <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
+            <a class="btn btn-sm btn-outline-secondary shop-staff-login" routerLink="/login">{{ 'Staff Login' | translate }}</a>
             <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
             <button class="btn btn-sm" [class.btn-primary]="lang.current === 'fr'" [class.btn-outline-secondary]="lang.current !== 'fr'" (click)="lang.choose('fr')">FR</button>
           </div>
@@ -167,6 +168,7 @@ import { T } from '../core/i18n/t';
           <button class="btn btn-sm btn-primary shop-checkout-btn" (click)="checkout()">{{ 'Proceed to checkout' | translate }}</button>
         </div>
       </ng-container>
+      <div class="text-muted shop-staff-footer mt-3" style="text-align:center; font-size:0.8rem;"><a routerLink="/login">{{ 'Staff Login' | translate }}</a></div>
     </div>
   `,
 })

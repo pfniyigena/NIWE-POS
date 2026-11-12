@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard, moduleGuard, publicModuleGuard } from './core/auth.guard';
+import { authGuard, adminGuard, moduleGuard, publicModuleGuard, shopFirstGuard } from './core/auth.guard';
 import { ModuleKey } from './core/api/module-api.service';
 import { PurchaseReportListComponent } from './admin/reports/purchase-report-list.component';
 import { ModulesComponent } from './admin/modules.component';
@@ -424,7 +424,8 @@ const baseRoutes: Routes = [
   // now this public landing page, not a straight redirect to 'registers'. PublicHomeComponent
   // itself sends an already-logged-in visitor on to their usual landing (same split LoginComponent
   // uses), so a staff member hitting '/' still ends up where they always did.
-  { path: '', pathMatch: 'full', component: PublicHomeComponent },
+  // v1.34.1: with the Online Store module on, a visitor who is not logged in goes to the shop instead (shopFirstGuard); the shop has the Staff Login link.
+  { path: '', pathMatch: 'full', component: PublicHomeComponent, canActivate: [shopFirstGuard] },
 
   // Self-service "My Profile" (Task: "Add my profile, change my password") — any logged-in user,
   // not admin-only; there's no id in the path, the backend always resolves "you" from the JWT.

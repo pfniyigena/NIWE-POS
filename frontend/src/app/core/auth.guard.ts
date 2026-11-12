@@ -119,3 +119,18 @@ export function publicModuleGuard(key: 'RESTAURANT' | 'ONLINE_STORE' | 'HELPDESK
     );
   };
 }
+
+/**
+ * The root address ('/'): when the Online Store module is on, a visitor who is not logged in lands on the shop (/shop) instead of the home page,
+ * and the shop carries the Staff Login link. A logged-in user still gets the home component's own redirect to their usual page, and with the
+ * module off (or the settings unreachable) the home page shows as before.
+ */
+export const shopFirstGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.isLoggedIn()) return true;
+  return inject(PublicSettingsApiService).modules().pipe(
+    map((m) => (m['ONLINE_STORE'] ? router.createUrlTree(['/shop']) : true)),
+    catchError(() => of(true))
+  );
+};

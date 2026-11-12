@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.34.1 - Online Store: the shop is the front page
+
+With the Online Store module on, the root address opens the shop for visitors who are not logged in (logged-in users still go to their usual page; module off, the home page as before). The shop has a Staff Login link. Frontend only. Details in `RELEASE-NOTES-v1.34.1.md`.
+
 ### Version 1.34.0 - Online Store: MTN Mobile Money (MoMo) payment provider
 
 Customers can pay online by MTN mobile money: they enter their MTN number at checkout and approve on their phone; refunds (whole and partial, for returns) go back through MTN, with staff refunding by hand if MTN refuses. MTN does not sign its callbacks, so the shop never believes one: it asks MTN for the payment's status and acts only when MTN agrees. All settings are properties or environment variables (`app.online-store.payments.mtn.*`), never in the database. Written from MTN's documentation and tested against a local imitation of MTN; not yet tried against the real MTN service: follow `docs/online-store-mtn-momo.md` to get sandbox keys first. No database change. Details in `RELEASE-NOTES-v1.34.0.md`.
