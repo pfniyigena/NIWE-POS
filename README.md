@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.34.0 - Online Store: MTN Mobile Money (MoMo) payment provider
+
+Customers can pay online by MTN mobile money: they enter their MTN number at checkout and approve on their phone; refunds (whole and partial, for returns) go back through MTN, with staff refunding by hand if MTN refuses. MTN does not sign its callbacks, so the shop never believes one: it asks MTN for the payment's status and acts only when MTN agrees. All settings are properties or environment variables (`app.online-store.payments.mtn.*`), never in the database. Written from MTN's documentation and tested against a local imitation of MTN; not yet tried against the real MTN service: follow `docs/online-store-mtn-momo.md` to get sandbox keys first. No database change. Details in `RELEASE-NOTES-v1.34.0.md`.
+
 ### Version 1.33.0 - Online Store phase 3 (4 of 4): returns and refunds after completion
 
 A customer can ask to return goods from a completed order (items and quantities, within a return period of 14 days by default; order code plus the order's phone number). Staff approve or refuse on Online Store > Returns; processing puts the goods back in stock through the existing sale order return and gives the money back the way the customer paid (payment provider or by hand for online payments, cash for cash on delivery), partial refunds included. The customer is e-mailed (and texted, if they ticked the box) at every step. The delivery fee is not refunded. Migration V71. Details in `RELEASE-NOTES-v1.33.0.md`.

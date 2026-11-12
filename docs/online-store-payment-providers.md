@@ -2,7 +2,7 @@
 
 The Online Store takes payments through one interface, `com.posapp.onlinestore.payment.PaymentProvider`. A provider is a Spring component; adding one means writing that class and nothing else: no database change, no screen change. The shop settings list every provider and let the owner choose the one in use.
 
-`SimulatedPaymentProvider` is the working example. Read it first.
+`SimulatedPaymentProvider` is the working example for a provider that signs its webhooks. Read it first. `MtnMomoPaymentProvider` is the real one (setup in `online-store-mtn-momo.md`), and shows what to do when the provider does **not** sign its callbacks: `verifySignature` asks the provider for the payment's status itself and accepts the callback only when the provider's own answer agrees.
 
 ## What a provider must do
 

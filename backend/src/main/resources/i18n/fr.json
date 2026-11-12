@@ -1825,5 +1825,14 @@
  "Your refund for return {0}": "Votre remboursement pour le retour {0}",
  "We handed back {0} in cash for your return {1} of order {2}. Thank you.": "Nous vous avons rendu {0} en espèces pour votre retour {1} de la commande {2}. Merci.",
  "We refunded {0} for your return {1} of order {2}. Reference: {3}. It may take a few days to show on your account.": "Nous avons remboursé {0} pour votre retour {1} de la commande {2}. Référence : {3}. Cela peut prendre quelques jours pour apparaître sur votre compte.",
- "The return period must be between 0 and 365 days": "Le délai de retour doit être compris entre 0 et 365 jours"
+ "The return period must be between 0 and 365 days": "Le délai de retour doit être compris entre 0 et 365 jours",
+ "That number has no MTN mobile money account. Check it or choose another way to pay.": "Ce numéro n'a pas de compte MTN Mobile Money. Vérifiez-le ou choisissez un autre moyen de paiement.",
+ "MTN could not be reached to check the payment. Refund it by hand and enter the reference.": "MTN n'a pas pu être joint pour vérifier le paiement. Remboursez à la main et saisissez la référence.",
+ "MTN does not show this payment as successful. Refund it by hand and enter the reference.": "MTN n'affiche pas ce paiement comme réussi. Remboursez à la main et saisissez la référence.",
+ "MTN could not be reached for the refund. Refund it by hand and enter the reference.": "MTN n'a pas pu être joint pour le remboursement. Remboursez à la main et saisissez la référence.",
+ "MTN did not accept the refund. Refund it by hand and enter the reference.": "MTN n'a pas accepté le remboursement. Remboursez à la main et saisissez la référence.",
+ "MTN did not accept the refund ({0}). Refund it by hand and enter the reference.": "MTN n'a pas accepté le remboursement ({0}). Remboursez à la main et saisissez la référence.",
+ "MTN refused the refund. Refund it by hand and enter the reference.": "MTN a refusé le remboursement. Remboursez à la main et saisissez la référence.",
+ "MTN refused the refund ({0}). Refund it by hand and enter the reference.": "MTN a refusé le remboursement ({0}). Remboursez à la main et saisissez la référence.",
+ "MTN has not confirmed the refund yet (MTN reference {0}). Look at it in your MTN portal. If it went through, record it with \"I refunded it myself\" and this reference. Do not refund it twice.": "MTN n'a pas encore confirmé le remboursement (référence MTN {0}). Consultez-le dans votre portail MTN. S'il a abouti, enregistrez-le avec « Je l'ai remboursé moi-même » et cette référence. Ne le remboursez pas deux fois."
 }

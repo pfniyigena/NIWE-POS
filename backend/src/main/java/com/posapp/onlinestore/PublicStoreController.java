@@ -131,8 +131,9 @@ public class PublicStoreController {
     /**
      * Where the payment provider tells us a payment was made or failed. Not gated by the module switch on purpose: money that arrives must always be
      * recorded. A call without a valid signature is answered 401 and changes nothing; a valid one is always answered ok.
+     * POST for most providers; PUT because MTN MoMo calls back with PUT.
      */
-    @PostMapping(value = "/payments/{provider}/webhook", consumes = MediaType.ALL_VALUE)
+    @RequestMapping(value = "/payments/{provider}/webhook", method = {org.springframework.web.bind.annotation.RequestMethod.POST, org.springframework.web.bind.annotation.RequestMethod.PUT}, consumes = MediaType.ALL_VALUE)
     public java.util.Map<String, Object> webhook(@PathVariable String provider, @RequestBody String body, HttpServletRequest http) {
         java.util.Map<String, String> headers = new java.util.HashMap<>();
         java.util.Collections.list(http.getHeaderNames()).forEach(n -> headers.put(n.toLowerCase(java.util.Locale.ROOT), http.getHeader(n)));
