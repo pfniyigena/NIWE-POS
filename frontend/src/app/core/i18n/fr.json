@@ -9131,5 +9131,7 @@
  "No customer accounts found.": "Aucun compte client trouvé.",
  "Add or remove points": "Ajouter ou retirer des points",
  "Points (minus to remove)": "Points (moins pour retirer)",
- "No points yet.": "Pas encore de points."
+ "No points yet.": "Pas encore de points.",
+ "Pay from my phone number above": "Payer depuis mon numéro de téléphone ci-dessus",
+ "Enter the mobile money number to pay from": "Saisissez le numéro mobile money depuis lequel payer"
 }

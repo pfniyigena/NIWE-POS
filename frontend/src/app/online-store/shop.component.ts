@@ -194,8 +194,11 @@ import { T } from '../core/i18n/t';
               <label *ngIf="shop.payMethods.includes('CARD')" class="flex gap-1" style="align-items:center;"><input type="radio" name="pay" value="CARD" [(ngModel)]="payment" /> {{ 'Card' | translate }}</label>
             </div>
             <div class="form-group mt-1" *ngIf="payment === 'MOBILE_MONEY'">
-              <label class="form-label">{{ 'Mobile money number to pay from' | translate }}</label>
-              <input class="form-control shop-pay-phone" style="max-width:260px;" maxlength="40" inputmode="tel" name="payphone" [(ngModel)]="payPhone" [placeholder]="phone" />
+              <label class="flex gap-1 shop-pay-same" style="align-items:center;"><input type="checkbox" name="paysame" [(ngModel)]="paySame" /> {{ 'Pay from my phone number above' | translate }}<span *ngIf="phone.trim()">&nbsp;({{ phone.trim() }})</span></label>
+              <ng-container *ngIf="!paySame">
+                <label class="form-label mt-1">{{ 'Mobile money number to pay from' | translate }}</label>
+                <input class="form-control shop-pay-phone" style="max-width:260px;" maxlength="40" inputmode="tel" name="payphone" [(ngModel)]="payPhone" />
+              </ng-container>
             </div>
           </div>
           <div class="mb-2 shop-coupon-box" *ngIf="shop.coupons">
@@ -325,6 +328,8 @@ export class ShopComponent implements OnInit, OnDestroy {
   /** How the customer pays: cash on delivery or at pick-up, or online. */
   payment: 'CASH' | 'MOBILE_MONEY' | 'CARD' = 'CASH';
   payPhone = '';
+  /** Ticked by default: the mobile money prompt goes to the contact phone number. Unticked: the customer types another number to pay from. */
+  paySame = true;
   /** "Send me updates by text message": off unless ticked, and only shown when the shop texts customers. */
   textUpdates = false;
   busy = false;
@@ -791,13 +796,17 @@ export class ShopComponent implements OnInit, OnDestroy {
 
   place(): void {
     this.orderError = null;
+    if (this.payment === 'MOBILE_MONEY' && !this.paySame && !this.payPhone.trim()) {
+      this.orderError = T('Enter the mobile money number to pay from');
+      return;
+    }
     this.busy = true;
     this.api
       .place({
         name: this.name, phone: this.phone, email: this.email || null, address: this.method === 'DELIVERY' ? this.address : null, method: this.method,
         zoneId: this.method === 'DELIVERY' ? this.zoneId : null, notes: this.notes || null, language: this.lang.current, website: this.website,
         lines: this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty })),
-        payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.payPhone || this.phone) : null,
+        payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.paySame ? this.phone : this.payPhone.trim()) : null,
         couponCode: this.couponCode.trim() || null,
         pointsToUse: this.pointsUsed() || null,
         textUpdates: !!this.shop?.textChannel && this.textUpdates,

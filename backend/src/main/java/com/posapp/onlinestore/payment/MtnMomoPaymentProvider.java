@@ -74,7 +74,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
     static final int CHECKS_PER_MINUTE = 60;
 
     public MtnMomoPaymentProvider(@Value("${app.online-store.payments.mtn.enabled:false}") boolean enabled,
-                                  @Value("${app.online-store.payments.mtn.base-url:https://sandbox.momodeveloper.mtn.co.rw}") String baseUrl,
+                                  @Value("${app.online-store.payments.mtn.base-url:https://sandbox.momodeveloper.mtn.com}") String baseUrl,
                                   @Value("${app.online-store.payments.mtn.target-environment:sandbox}") String targetEnvironment,
                                   @Value("${app.online-store.payments.mtn.subscription-key:}") String subscriptionKey,
                                   @Value("${app.online-store.payments.mtn.api-user:}") String apiUser,
