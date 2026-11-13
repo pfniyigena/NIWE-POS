@@ -24,3 +24,8 @@ logs/
 /_to_delete/
 /Claude outputs/
 /backend/config/
+
+# local secrets: admin passwords, keys (never committed)
+/backend/src/main/resources/application-*-local.properties
+.env
+*.env
