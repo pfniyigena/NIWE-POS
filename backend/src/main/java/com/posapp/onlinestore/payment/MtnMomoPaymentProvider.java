@@ -53,6 +53,9 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
     private final boolean enabled;
     private final String baseUrl;
     private final String targetEnvironment;
+    /** In the sandbox MTN only knows EUR, so requests go out in EUR whatever the shop's currency is and the currency MTN reports back is not compared (the amount still is). */
+    private final boolean sandbox;
+    private static final String SANDBOX_CURRENCY = "EUR";
     private final String subscriptionKey;
     private final String apiUser;
     private final String apiKey;
@@ -84,6 +87,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
         this.enabled = enabled;
         this.baseUrl = trim(baseUrl).replaceAll("/+$", "");
         this.targetEnvironment = trim(targetEnvironment);
+        this.sandbox = this.targetEnvironment.equalsIgnoreCase("sandbox");
         this.subscriptionKey = trim(subscriptionKey);
         this.apiUser = trim(apiUser);
         this.apiKey = trim(apiKey);
@@ -104,7 +108,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
         if (!enabled) return;
         if (!available()) log.warn("The MTN_MOMO payment provider is switched on but not usable: it needs the subscription key, API user, API key and an https base URL.");
         else if (callbackUrl.isEmpty()) log.info("MTN_MOMO: no callback URL set, payments are confirmed by the status check only (about once a minute).");
-        if (available() && targetEnvironment.equalsIgnoreCase("sandbox")) log.warn("MTN_MOMO uses the SANDBOX: no real money moves. Set the live target environment and base URL for a live shop.");
+        if (available() && targetEnvironment.equalsIgnoreCase("sandbox")) log.warn("MTN_MOMO uses the SANDBOX: no real money moves and payments are requested in EUR whatever the shop currency is. Set the live target environment and base URL for a live shop.");
     }
 
     // ------------------------------------------------------------------ the interface
@@ -138,7 +142,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
         if (msisdn.length() < 9) throw ApiException.badRequest(I18n.t("Enter the mobile money number to pay from"));
         ObjectNode body = json.createObjectNode();
         body.put("amount", amount(r.amount()));
-        body.put("currency", r.currency());
+        body.put("currency", sandbox ? SANDBOX_CURRENCY : r.currency());
         body.put("externalId", r.reference());
         ObjectNode payer = body.putObject("payer");
         payer.put("partyIdType", "MSISDN");
@@ -160,7 +164,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
     public StatusResult status(String reference) {
         Remote r = fetch(uuid(reference));
         if (r == null) return new StatusResult(State.PENDING, null, null, null, null);
-        return new StatusResult(r.state, r.amount, r.currency, r.transactionId, r.reason);
+        return new StatusResult(r.state, r.amount, sandbox ? null : r.currency, r.transactionId, r.reason);
     }
 
     /**
@@ -273,7 +277,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
     public WebhookEvent parseWebhook(String rawBody) {
         try {
             Event e = parse(json.readTree(rawBody));
-            return new WebhookEvent(e.reference, e.state, e.amount, e.currency, e.transactionId, e.reason);
+            return new WebhookEvent(e.reference, e.state, e.amount, sandbox ? null : e.currency, e.transactionId, e.reason);
         } catch (IOException | RuntimeException e) {
             throw ApiException.badRequest("The webhook body is not valid");
         }

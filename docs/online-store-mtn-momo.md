@@ -37,7 +37,7 @@ Provider code: `MTN_MOMO`. The customer enters their MTN number at checkout, get
    - **API key** = the `apiKey` from the answer
 
    In the sandbox MTN only calls back to the host you gave as `providerCallbackHost`; to test callbacks the shop must be reachable from the internet at that host (a tunnel such as ngrok works). Without callbacks the shop still finds the result by its status check.
-4. **The sandbox only accepts the currency EUR.** For sandbox tests set the business currency (Settings > Business settings) to EUR; set it back to RWF for the real service.
+4. **The sandbox only accepts the currency EUR.** You do not need to change anything: while `target-environment` is `sandbox`, the shop asks MTN for the payment in EUR whatever the business currency is (the amount stays the same number, and the currency MTN reports back is not compared). The order and the payment keep the shop's own currency. For the live service use the live target environment and the shop asks in the shop's currency (RWF).
 5. Sandbox test numbers (they never move real money; **check** the portal's list for the current ones): `46733123450` always fails, `46733123451` is rejected, `46733123452` times out, `46733123453` stays pending, `46733123454` is slow; any other number succeeds. Type them at checkout in the international form (without +).
 
 ## Configure the shop
@@ -84,6 +84,6 @@ Then, in Online Store > Shop settings > Online payments, choose **MTN Mobile Mon
 | MTN MoMo is not in the list of providers, or cannot be chosen | Not switched on, a key is missing, or the base address is not https (the log says which) |
 | Checkout says the payment could not be started | The keys are wrong, the subscription is not on the Collection product, or the target environment does not match the keys. The log shows MTN's answer (never the keys or the full phone number) |
 | Orders stay waiting for payment after the customer paid | MTN could not be reached by the status check; look at the log; the payment is checked again every minute until it expires |
-| A payment is "under review" | The amount or currency MTN reports differs from the order (the sandbox only knows EUR) |
+| A payment is "under review" | The amount MTN reports differs from the order (in the live service the currency too) |
 | Refund says MTN has not confirmed | Look at the refund in the MTN portal; if it went through, record it by hand with the MTN reference shown, do not refund twice |
 | Callbacks never arrive | Normal in the sandbox unless the callback host matches and the shop is reachable from the internet; the status check covers it |
