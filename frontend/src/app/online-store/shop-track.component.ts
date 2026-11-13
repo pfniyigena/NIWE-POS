@@ -37,14 +37,15 @@ import { PayProviderPickerComponent } from './pay-provider-picker.component';
             <div *ngSwitchCase="'AWAITING'">
               <div class="st-pay-wait" style="font-weight:600;">{{ (t.payment.channel === 'CARD' ? 'Waiting for your card payment…' : 'Waiting for your payment. Approve it on your phone.') | translate }}</div>
               <a *ngIf="t.payment.redirectUrl" class="btn btn-primary mt-2 st-pay-open" [href]="t.payment.redirectUrl">{{ 'Open the payment page' | translate }}</a>
-              <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'This page updates by itself. You can also pay another way below.' | translate }}</div>
+              <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'This page updates by itself.' | translate }}</div>
+              <button *ngIf="t.payment.canRetry && !otherWay" type="button" class="btn btn-outline-secondary mt-2 st-other-way" (click)="otherWay = true">{{ 'Pay another way' | translate }}</button>
             </div>
             <div *ngSwitchCase="'FAILED'" class="st-pay-failed" style="color:#b91c1c; font-weight:600;">{{ 'Your payment did not go through.' | translate }}</div>
             <div *ngSwitchCase="'PAID'" class="st-pay-paid" style="color:#15803d; font-weight:600;">{{ 'Paid {p0}. Thank you.' | translate: { p0: (t.payment.paidAmount | shopMoney: cur) } }}</div>
             <div *ngSwitchCase="'REFUND_DUE'" class="st-pay-refund" style="font-weight:600;">{{ 'We will refund {p0} to the account you paid with.' | translate: { p0: (t.payment.paidAmount | shopMoney: cur) } }}</div>
             <div *ngSwitchCase="'REFUNDED'" class="st-pay-refunded" style="font-weight:600;">{{ 'Refunded {p0}.' | translate: { p0: (t.payment.paidAmount | shopMoney: cur) } }}</div>
           </ng-container>
-          <div *ngIf="t.payment.canRetry && shop" class="mt-2 st-retry">
+          <div *ngIf="t.payment.canRetry && shop && (otherWay || t.payment.status !== 'AWAITING')" class="mt-2 st-retry">
             <div class="flex gap-2" style="justify-content:center; flex-wrap:wrap; align-items:flex-end;">
               <ng-container *ngIf="shop.payMethods.includes('MOBILE_MONEY')">
                 <app-pay-provider-picker *ngIf="momoProviders().length > 1" [providers]="momoProviders()" [(value)]="payProvider"></app-pay-provider-picker>
@@ -136,6 +137,8 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   payPhone = '';
   /** The mobile money provider chosen when the shop offers several. */
   payProvider = '';
+  /** While a payment is waiting, the other-way choices stay hidden until the customer asks for them. */
+  otherWay = false;
   error: string | null = null;
   busy = false;
   /** Returns after completion: what may still be sent back, and the form to ask. */

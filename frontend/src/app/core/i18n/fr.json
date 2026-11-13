@@ -9136,5 +9136,7 @@
  "Enter the mobile money number to pay from": "Saisissez le numéro mobile money depuis lequel payer",
  "Payment providers": "Fournisseurs de paiement",
  "Customers choose between the ones you tick at checkout.": "Les clients choisissent parmi ceux que vous cochez au moment de payer.",
- "Choose which provider to pay with": "Choisissez avec quel fournisseur payer"
+ "Choose which provider to pay with": "Choisissez avec quel fournisseur payer",
+ "This page updates by itself.": "Cette page se met à jour toute seule.",
+ "Pay another way": "Payer autrement"
 }
