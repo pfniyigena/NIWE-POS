@@ -34,11 +34,13 @@ public class OnlineStoreController {
     private final OnlineReturnService returns;
     private final OnlineReviewService reviews;
     private final NewsletterService newsletter;
+    private final NewsletterCampaignService campaigns;
 
     public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns,
-                                 OnlineReviewService reviews, NewsletterService newsletter) {
+                                 OnlineReviewService reviews, NewsletterService newsletter, NewsletterCampaignService campaigns) {
         this.reviews = reviews;
         this.newsletter = newsletter;
+        this.campaigns = campaigns;
         this.returns = returns;
         this.payments = payments;
         this.orders = orders;
@@ -349,5 +351,76 @@ public class OnlineStoreController {
     public ResponseEntity<Void> deleteSubscriber(@PathVariable Long id) {
         newsletter.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ---- Sending the newsletter (v1.38.0) ----
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/newsletter/campaigns")
+    public List<CampaignDto> campaignList() {
+        return campaigns.list();
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/newsletter/campaigns/info")
+    public Map<String, Object> campaignInfo() {
+        return campaigns.info();
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/newsletter/campaigns/{id}")
+    public CampaignDto campaignGet(@PathVariable Long id) {
+        return campaigns.get(id);
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/newsletter/campaigns/{id}/deliveries")
+    public ResponseEntity<List<DeliveryDto>> campaignDeliveries(@PathVariable Long id, @RequestParam(required = false) String status,
+                                                                @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return ListPaging.of(campaigns.deliveriesOf(id, status), page, size);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/newsletter/campaigns")
+    public CampaignDto campaignCreate(@Valid @RequestBody CampaignRequest request) {
+        return campaigns.create(request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/newsletter/campaigns/{id}")
+    public CampaignDto campaignUpdate(@PathVariable Long id, @Valid @RequestBody CampaignRequest request) {
+        return campaigns.update(id, request);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/newsletter/campaigns/{id}")
+    public ResponseEntity<Void> campaignDelete(@PathVariable Long id) {
+        campaigns.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/newsletter/campaigns/{id}/test")
+    public Map<String, Object> campaignTest(@PathVariable Long id, @Valid @RequestBody CampaignTestRequest request) {
+        campaigns.sendTest(id, request.email());
+        return Map.of("ok", true);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/newsletter/campaigns/{id}/send")
+    public CampaignDto campaignSend(@PathVariable Long id) {
+        return campaigns.start(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/newsletter/campaigns/{id}/cancel")
+    public CampaignDto campaignCancel(@PathVariable Long id) {
+        return campaigns.cancel(id);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/newsletter/campaigns/{id}/retry")
+    public CampaignDto campaignRetry(@PathVariable Long id) {
+        return campaigns.retryFailed(id);
     }
 }

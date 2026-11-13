@@ -12,7 +12,7 @@ import { downloadBlob } from '../core/download-file';
 
 /**
  * Online Store > Newsletter: the e-mail addresses that asked for the shop's newsletter. Only confirmed ones (the link in the e-mail was opened) are
- * subscribers. The confirmed addresses can be downloaded as a CSV file; sending the newsletter itself is done outside this screen for now.
+ * subscribers. The confirmed addresses can be downloaded as a CSV file, and a newsletter can be sent to them from Send a newsletter.
  */
 @Component({
   selector: 'app-store-newsletter',
@@ -26,6 +26,7 @@ import { downloadBlob } from '../core/download-file';
         <h3>{{ 'Newsletter' | translate }}</h3>
         <div class="flex gap-2">
           <button class="btn btn-primary nl-export" (click)="download()" [disabled]="busy">{{ 'Download confirmed addresses (CSV)' | translate }}</button>
+          <a class="btn btn-success nl-compose" routerLink="/admin/online-store/newsletters">{{ 'Send a newsletter' | translate }}</a>
           <a class="btn btn-outline-secondary" routerLink="/admin/online-store/reviews">{{ 'Reviews' | translate }}</a>
         </div>
       </div>

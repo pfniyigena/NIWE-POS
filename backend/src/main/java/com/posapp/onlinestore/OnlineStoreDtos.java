@@ -324,4 +324,18 @@ public final class OnlineStoreDtos {
 
     public record NewsletterDto(Long id, String email, String language, String status, Instant createdAt, Instant confirmedAt, Instant unsubscribedAt) {
     }
+
+    public record CampaignRequest(@Size(max = 160) String subject, @Size(max = 5000) String body, @Size(max = 60) String buttonLabel, @Size(max = 300) String buttonLink,
+                                  @Size(max = 3) String audience) {
+    }
+
+    public record CampaignTestRequest(@Size(max = 160) String email) {
+    }
+
+    public record CampaignDto(Long id, String subject, String body, String buttonLabel, String buttonLink, String audience, String status, int recipients, int sent, int failed,
+                              int skipped, int pending, String createdBy, Instant createdAt, Instant startedAt, Instant finishedAt, String lastError) {
+    }
+
+    public record DeliveryDto(Long id, String email, String language, String status, String error, Instant sentAt) {
+    }
 }

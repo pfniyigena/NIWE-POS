@@ -17,4 +17,10 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
     List<NewsletterSubscriber> findAllByOrderByIdDesc();
 
     List<NewsletterSubscriber> findByStatusOrderByIdDesc(String status);
+
+    List<NewsletterSubscriber> findByStatusOrderByIdAsc(String status);
+
+    List<NewsletterSubscriber> findByStatusAndLanguageOrderByIdAsc(String status, String language);
+
+    long countByStatusAndLanguage(String status, String language);
 }

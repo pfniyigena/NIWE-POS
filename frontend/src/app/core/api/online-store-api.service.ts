@@ -112,6 +112,10 @@ export interface StoreReview {
   status: 'PENDING' | 'APPROVED' | 'HIDDEN'; createdAt: string; moderatedBy: string | null;
 }
 export interface StoreSubscriber { id: number; email: string; language: string; status: 'PENDING' | 'CONFIRMED' | 'UNSUBSCRIBED'; createdAt: string; confirmedAt: string | null; unsubscribedAt: string | null }
+export interface StoreCampaign { id: number; subject: string; body: string; buttonLabel: string | null; buttonLink: string | null; audience: 'ALL' | 'EN' | 'FR'; status: 'DRAFT' | 'SENDING' | 'SENT' | 'CANCELLED'; recipients: number; sent: number; failed: number; skipped: number; pending: number; createdBy: string | null; createdAt: string; startedAt: string | null; finishedAt: string | null; lastError: string | null }
+export interface StoreCampaignForm { subject: string; body: string; buttonLabel: string; buttonLink: string; audience: 'ALL' | 'EN' | 'FR' }
+export interface StoreCampaignInfo { confirmedAll: number; confirmedEn: number; confirmedFr: number; mailConfigured: boolean; dailyLimit: number; sentLast24h: number; batchSize: number }
+export interface StoreDelivery { id: number; email: string; language: string; status: 'PENDING' | 'SENDING' | 'SENT' | 'FAILED' | 'SKIPPED'; error: string | null; sentAt: string | null }
 export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number }
 
 /** What the customer sees about a return: its status, what staff said and, once done, what was given back and how. */
@@ -297,6 +301,17 @@ export class OnlineStoreApiService {
   subscriberCounts(): Observable<Record<string, number>> { return this.http.get<Record<string, number>>(`${this.base}/newsletter/counts`); }
   exportSubscribers(): Observable<Blob> { return this.http.get(`${this.base}/newsletter/export`, { responseType: 'blob' }); }
   deleteSubscriber(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/newsletter/${id}`); }
+  campaigns(): Observable<StoreCampaign[]> { return this.http.get<StoreCampaign[]>(`${this.base}/newsletter/campaigns`); }
+  campaignInfo(): Observable<StoreCampaignInfo> { return this.http.get<StoreCampaignInfo>(`${this.base}/newsletter/campaigns/info`); }
+  campaign(id: number): Observable<StoreCampaign> { return this.http.get<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}`); }
+  campaignDeliveries(id: number, status: string): Observable<StoreDelivery[]> { return this.http.get<StoreDelivery[]>(`${this.base}/newsletter/campaigns/${id}/deliveries?size=200&status=${status}`); }
+  createCampaign(f: StoreCampaignForm): Observable<StoreCampaign> { return this.http.post<StoreCampaign>(`${this.base}/newsletter/campaigns`, f); }
+  updateCampaign(id: number, f: StoreCampaignForm): Observable<StoreCampaign> { return this.http.put<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}`, f); }
+  deleteCampaign(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/newsletter/campaigns/${id}`); }
+  testCampaign(id: number, email: string): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.base}/newsletter/campaigns/${id}/test`, { email }); }
+  sendCampaign(id: number): Observable<StoreCampaign> { return this.http.post<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}/send`, {}); }
+  cancelCampaign(id: number): Observable<StoreCampaign> { return this.http.post<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}/cancel`, {}); }
+  retryCampaign(id: number): Observable<StoreCampaign> { return this.http.post<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}/retry`, {}); }
   zones(): Observable<StoreZone[]> { return this.http.get<StoreZone[]>(`${this.base}/zones`); }
   saveZone(id: number | null, body: Partial<StoreZone>): Observable<StoreZone> {
     return id == null ? this.http.post<StoreZone>(`${this.base}/zones`, body) : this.http.put<StoreZone>(`${this.base}/zones/${id}`, body);

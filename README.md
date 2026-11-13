@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.38.0 - Online Store: send the newsletter from the program
+
+Online Store > Send a newsletter: write a message (subject, text, optional button), choose everyone or only English or French readers, send a test to yourself, then send in batches with a daily limit. Progress, stop, retry of failed addresses, and each e-mail has the person's own unsubscribe link. New migration V74. Details in `RELEASE-NOTES-v1.38.0.md`.
+
 ### Version 1.37.0 - Online Store: sales reports
 
 Six online sales reports under Online Store > Sales reports (by day, orders with invoices, payment methods, orders not counted as sales, coupons, best-selling products). A sale counts on the day the order was completed and the totals match the invoices. Also available as scheduled reports. Details in `RELEASE-NOTES-v1.37.0.md`.
