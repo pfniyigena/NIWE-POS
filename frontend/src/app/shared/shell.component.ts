@@ -97,8 +97,6 @@ import { LanguageSwitcherComponent } from './language-switcher.component';
           <!-- Sessions lists individual CashierSessions (not shifts). Open to any user; the backend scopes what comes back — an admin sees every session, a cashier sees only their own. -->
           <a class="sidenav-link" routerLink="/sessions" routerLinkActive="active"><span class="sidenav-icon">📋</span> {{ 'Sessions' | translate }}</a>
           <a class="sidenav-link" routerLink="/returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> {{ 'Returns' | translate }}</a>
-          <a *ngIf="canSee('/admin/online-store/reviews')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/reviews" routerLinkActive="active"><span class="sidenav-icon">⭐</span> {{ 'Reviews' | translate }}</a>
-          <a *ngIf="canSee('/admin/online-store/newsletter')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/newsletter" routerLinkActive="active"><span class="sidenav-icon">✉️</span> {{ 'Newsletter' | translate }}</a>
           <a class="sidenav-link" routerLink="/receipts" routerLinkActive="active"><span class="sidenav-icon">🧾</span> {{ 'Receipts' | translate }}</a>
           <!-- Shifts moved here from the flat Admin list (Task: "Move Shifts menu under POS") — it's the other everyday POS oversight screen, just ADMIN-only within this group. -->
           <a *ngIf="canSee('/admin/shifts')" class="sidenav-link" routerLink="/admin/shifts" routerLinkActive="active"
@@ -170,6 +168,8 @@ import { LanguageSwitcherComponent } from './language-switcher.component';
           <a *ngIf="canSee('/admin/online-store/payments')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/payments" routerLinkActive="active"><span class="sidenav-icon">💳</span> {{ 'Online payments' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/returns')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/returns" routerLinkActive="active"><span class="sidenav-icon">↩️</span> {{ 'Returns' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/coupons')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/coupons" routerLinkActive="active"><span class="sidenav-icon">🏷️</span> {{ 'Coupons' | translate }}</a>
+          <a *ngIf="canSee('/admin/online-store/reviews')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/reviews" routerLinkActive="active"><span class="sidenav-icon">⭐</span> {{ 'Reviews' | translate }}</a>
+          <a *ngIf="canSee('/admin/online-store/newsletter')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/newsletter" routerLinkActive="active"><span class="sidenav-icon">✉️</span> {{ 'Newsletter' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/newsletters')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/newsletters" routerLinkActive="active"><span class="sidenav-icon">📣</span> {{ 'Send a newsletter' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/carts')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/carts" routerLinkActive="active"><span class="sidenav-icon">🛒</span> {{ 'Abandoned carts' | translate }}</a>
           <a *ngIf="canSee('/admin/online-store/loyalty')" class="sidenav-link sidenav-sublink" routerLink="/admin/online-store/loyalty" routerLinkActive="active"><span class="sidenav-icon">⭐</span> {{ 'Loyalty points' | translate }}</a>
