@@ -172,7 +172,7 @@ public class OnlineStoreService {
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
-                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
+                listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), payments.payOptions(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
                 s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyMaxPercent(), page(s));
     }
 
@@ -505,7 +505,7 @@ public class OnlineStoreService {
         auditLogService.record("ONLINE_ORDER_PLACED", "Online order " + saved.getCode() + " from " + name + " (" + money(saved.getTotal()) + (online ? ", to be paid online" : "") + ")", "OnlineOrder", saved.getId());
         if (online) {
             // Starting the payment can fail (bad number, provider down): the whole order is then not placed, and the customer fixes it and sends again.
-            payments.start(saved, pay, in.payPhone(), s);
+            payments.start(saved, pay, in.payPhone(), s, in.paymentProvider());
             orderRepository.save(saved);
         } else {
             OnlineMessages.send(mailService, storeSettingsService, saved,
@@ -588,7 +588,7 @@ public class OnlineStoreService {
         throttle("t:" + ip, 60);
         OnlineOrder o = orderRepository.findByCode(code == null ? "" : code.trim().toUpperCase()).orElseThrow(() -> ApiException.notFound(I18n.t("We could not find that order. Check the code.")));
         if (!o.getStatus().equals("AWAITING_PAYMENT") || o.getPaymentStatus().equals("PAID")) throw ApiException.badRequest(I18n.t("This order cannot be paid now."));
-        payments.start(o, in == null ? null : in.payment(), in == null ? null : in.payPhone(), s);
+        payments.start(o, in == null ? null : in.payment(), in == null ? null : in.payPhone(), s, in == null ? null : in.provider());
         orderRepository.save(o);
         return track(o);
     }

@@ -3,9 +3,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopHome, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
+import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -17,7 +18,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent],
   template: `
     <div class="shop-announce" *ngIf="shop?.page?.announcementText" style="background:#1d4ed8; color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
       <a *ngIf="shop?.page?.announcementLink; else announceText" class="shop-announce-link" style="color:#fff; text-decoration:underline; cursor:pointer;" (click)="openLink(shop?.page?.announcementLink)">{{ shop?.page?.announcementText }}</a>
@@ -193,6 +194,10 @@ import { T } from '../core/i18n/t';
               <label *ngIf="shop.payMethods.includes('MOBILE_MONEY')" class="flex gap-1" style="align-items:center;"><input type="radio" name="pay" value="MOBILE_MONEY" [(ngModel)]="payment" /> {{ 'Mobile money' | translate }}</label>
               <label *ngIf="shop.payMethods.includes('CARD')" class="flex gap-1" style="align-items:center;"><input type="radio" name="pay" value="CARD" [(ngModel)]="payment" /> {{ 'Card' | translate }}</label>
             </div>
+            <div class="mt-1" *ngIf="providersFor(payment).length > 1">
+              <div class="form-label">{{ 'Pay with' | translate }}</div>
+              <app-pay-provider-picker [providers]="providersFor(payment)" [(value)]="payProvider"></app-pay-provider-picker>
+            </div>
             <div class="form-group mt-1" *ngIf="payment === 'MOBILE_MONEY'">
               <label class="flex gap-1 shop-pay-same" style="align-items:center;"><input type="checkbox" name="paysame" [(ngModel)]="paySame" /> {{ 'Pay from my phone number above' | translate }}<span *ngIf="phone.trim()">&nbsp;({{ phone.trim() }})</span></label>
               <ng-container *ngIf="!paySame">
@@ -330,6 +335,8 @@ export class ShopComponent implements OnInit, OnDestroy {
   payPhone = '';
   /** Ticked by default: the mobile money prompt goes to the contact phone number. Unticked: the customer types another number to pay from. */
   paySame = true;
+  /** The provider chosen when the shop offers several for the way to pay (MTN, Airtel, ...). */
+  payProvider = '';
   /** "Send me updates by text message": off unless ticked, and only shown when the shop texts customers. */
   textUpdates = false;
   busy = false;
@@ -794,12 +801,19 @@ export class ShopComponent implements OnInit, OnDestroy {
     window.scrollTo({ top: 0 });
   }
 
+  /** The providers that offer this way to pay (when there are several the customer chooses). */
+  providersFor(way: string): ShopPayProvider[] {
+    return way === 'CASH' ? [] : (this.shop?.payProviders ?? []).filter((p) => p.methods.includes(way));
+  }
+
   place(): void {
     this.orderError = null;
     if (this.payment === 'MOBILE_MONEY' && !this.paySame && !this.payPhone.trim()) {
       this.orderError = T('Enter the mobile money number to pay from');
       return;
     }
+    const providers = this.providersFor(this.payment);
+    const provider = this.payment === 'CASH' ? null : (providers.some((p) => p.code === this.payProvider) ? this.payProvider : (providers[0]?.code ?? null));
     this.busy = true;
     this.api
       .place({
@@ -809,6 +823,7 @@ export class ShopComponent implements OnInit, OnDestroy {
         payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.paySame ? this.phone : this.payPhone.trim()) : null,
         couponCode: this.couponCode.trim() || null,
         pointsToUse: this.pointsUsed() || null,
+        paymentProvider: provider,
         textUpdates: !!this.shop?.textChannel && this.textUpdates,
       })
       .subscribe({

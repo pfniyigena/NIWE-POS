@@ -87,3 +87,7 @@ Then, in Online Store > Shop settings > Online payments, choose **MTN Mobile Mon
 | A payment is "under review" | The amount MTN reports differs from the order (in the live service the currency too) |
 | Refund says MTN has not confirmed | Look at the refund in the MTN portal; if it went through, record it by hand with the MTN reference shown, do not refund twice |
 | Callbacks never arrive | Normal in the sandbox unless the callback host matches and the shop is reachable from the internet; the status check covers it |
+
+## Offering several providers (v1.42.0)
+
+You can offer MTN MoMo and another provider together: in Online Store > Shop settings > Online payments, tick every provider you want. The customer picks one at checkout. Each button shows a logo if you place the official PNG in `frontend/src/assets/payment/` (`mtn_momo.png`), then rebuild the frontend; without it the button shows the name only.

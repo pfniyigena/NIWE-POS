@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.42.0 - Online Store: several payment providers, chosen at checkout
+
+Staff can now switch on more than one payment provider (Online Store > Shop settings > Online payments: tick MTN MoMo and/or Airtel Money). At checkout (and when paying again from the tracking page) the customer sees one chip per provider and picks the one to pay with; each chip shows a logo when one is supplied in `frontend/src/assets/payment/` (`mtn_momo.png`, `airtel_money.png`, see the README there). With a single provider nothing changes. Migration V77. See `RELEASE-NOTES-v1.42.0.md`.
+
 ### Version 1.41.0 - Online Store: Airtel Money payment provider
 
 A second real payment provider next to MTN MoMo: Airtel Money (Rwanda, code `AIRTEL_MONEY`), customer approves on the phone. Callbacks are never trusted (the shop asks Airtel for the status), refunds are done by hand, keys only in properties or git-ignored files in `backend/config/` (profile groups: `dev` brings `airtel-sandbox`, `store` brings `airtel-production`). Not yet tried against the real Airtel service. See `docs/online-store-airtel-money.md` and `RELEASE-NOTES-v1.41.0.md`.

@@ -1912,5 +1912,6 @@
  "Thank you. Your order {0} is complete. Invoice {1}. You earned {2} loyalty points.": "Merci. Votre commande {0} est terminée. Facture {1}. Vous avez gagné {2} points de fidélité.",
  "That number has no Airtel Money account. Check it or choose another way to pay.": "Ce numéro n'a pas de compte Airtel Money. Vérifiez-le ou choisissez un autre moyen de payer.",
  "Airtel Money refunds are done by hand: refund the customer from your Airtel Money account and record it with \"I refunded it myself\" and the Airtel reference.": "Les remboursements Airtel Money se font à la main : remboursez le client depuis votre compte Airtel Money et enregistrez-le avec « Je l'ai remboursé moi-même » et la référence Airtel.",
- "Airtel Money refunds are done by hand: refund the customer from your Airtel Money account and record it with \"I refunded it myself\" and the Airtel reference {0}.": "Les remboursements Airtel Money se font à la main : remboursez le client depuis votre compte Airtel Money et enregistrez-le avec « Je l'ai remboursé moi-même » et la référence Airtel {0}."
+ "Airtel Money refunds are done by hand: refund the customer from your Airtel Money account and record it with \"I refunded it myself\" and the Airtel reference {0}.": "Les remboursements Airtel Money se font à la main : remboursez le client depuis votre compte Airtel Money et enregistrez-le avec « Je l'ai remboursé moi-même » et la référence Airtel {0}.",
+ "Choose which provider to pay with": "Choisissez avec quel fournisseur payer"
 }

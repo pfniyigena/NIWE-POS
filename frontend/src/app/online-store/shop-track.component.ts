@@ -6,12 +6,13 @@ import { OnlineStoreApiService, Shop, ShopReturn, ShopReturnOptions, ShopReviewI
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
 import { ShopMoneyPipe } from './shop-money.pipe';
+import { PayProviderPickerComponent } from './pay-provider-picker.component';
 
 /** Where a customer follows a shop order by its code. Refreshes by itself. */
 @Component({
   selector: 'app-shop-track',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe],
+  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe, PayProviderPickerComponent],
   template: `
     <div class="st-page" style="max-width:520px; margin:0 auto; padding:1rem 0.75rem 3rem;">
       <div class="alert alert-danger st-error" *ngIf="error">{{ error }}</div>
@@ -46,6 +47,7 @@ import { ShopMoneyPipe } from './shop-money.pipe';
           <div *ngIf="t.payment.canRetry && shop" class="mt-2 st-retry">
             <div class="flex gap-2" style="justify-content:center; flex-wrap:wrap; align-items:flex-end;">
               <ng-container *ngIf="shop.payMethods.includes('MOBILE_MONEY')">
+                <app-pay-provider-picker *ngIf="momoProviders().length > 1" [providers]="momoProviders()" [(value)]="payProvider"></app-pay-provider-picker>
                 <input class="form-control st-pay-phone" style="max-width:200px;" maxlength="40" inputmode="tel" [(ngModel)]="payPhone" name="paphone" [placeholder]="'Mobile money number' | translate" />
                 <button class="btn btn-primary st-pay-momo" [disabled]="busy" (click)="again('MOBILE_MONEY')">{{ 'Pay with mobile money' | translate }}</button>
               </ng-container>
@@ -132,6 +134,8 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   t: ShopTrack | null = null;
   shop: Shop | null = null;
   payPhone = '';
+  /** The mobile money provider chosen when the shop offers several. */
+  payProvider = '';
   error: string | null = null;
   busy = false;
   /** Returns after completion: what may still be sent back, and the form to ask. */
@@ -197,11 +201,17 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
     });
   }
 
+  momoProviders() {
+    return (this.shop?.payProviders ?? []).filter((p) => p.methods.includes('MOBILE_MONEY'));
+  }
+
   /** Try again, with the same way or the other. */
   again(way: 'MOBILE_MONEY' | 'CARD'): void {
     this.busy = true;
     this.error = null;
-    this.api.payAgain(this.code, way, way === 'MOBILE_MONEY' ? this.payPhone : null).subscribe({
+    const list = way === 'MOBILE_MONEY' ? this.momoProviders() : (this.shop?.payProviders ?? []).filter((p) => p.methods.includes(way));
+    const provider = list.some((p) => p.code === this.payProvider) ? this.payProvider : (list[0]?.code ?? null);
+    this.api.payAgain(this.code, way, way === 'MOBILE_MONEY' ? this.payPhone : null, provider).subscribe({
       next: (t) => {
         this.t = t;
         this.busy = false;

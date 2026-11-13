@@ -63,3 +63,7 @@ With the profile groups in `application.properties`, put the test values in `bac
 | "That number has no Airtel Money account" | Airtel answered DP00800001006 (invalid number) |
 | Orders stay waiting after the customer paid | Airtel could not be reached by the status check; look at the log; the payment is checked again every minute until it expires |
 | Callbacks answered 401 in the log | Normal for forged or unfinished ones; a real callback is accepted only when Airtel's own status says the same |
+
+## Offering several providers (v1.42.0)
+
+You can offer Airtel Money and another provider together: in Online Store > Shop settings > Online payments, tick every provider you want. The customer picks one at checkout. Each button shows a logo if you place the official PNG in `frontend/src/assets/payment/` (`airtel_money.png`), then rebuild the frontend; without it the button shows the name only.

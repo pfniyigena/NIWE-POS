@@ -83,11 +83,42 @@ public class OnlinePaymentService {
         return providers.stream().filter(p -> p.code().equalsIgnoreCase(code.trim())).findFirst().orElse(null);
     }
 
-    /** The provider customers pay with right now, or null when online payments are off or the provider is not available. */
-    public PaymentProvider active(OnlineStoreSettings s) {
-        if (s == null || !s.isOnlinePaymentsEnabled()) return null;
-        PaymentProvider p = provider(s.getPaymentProvider());
-        return p != null && p.available() ? p : null;
+    /** The codes chosen in the settings: one, or several separated by commas (MTN_MOMO,AIRTEL_MONEY), in the order staff gave them. */
+    public List<String> codes(OnlineStoreSettings s) {
+        List<String> out = new ArrayList<>();
+        String raw = s == null ? null : s.getPaymentProvider();
+        if (raw == null) return out;
+        for (String c : raw.split(",")) {
+            String v = c.trim().toUpperCase(Locale.ROOT);
+            if (!v.isEmpty() && !out.contains(v)) out.add(v);
+        }
+        return out;
+    }
+
+    /** The providers customers can pay with right now: those chosen in the settings that are available. Empty when online payments are off. */
+    public List<PaymentProvider> activeProviders(OnlineStoreSettings s) {
+        List<PaymentProvider> out = new ArrayList<>();
+        if (s == null || !s.isOnlinePaymentsEnabled()) return out;
+        for (String c : codes(s)) {
+            PaymentProvider p = provider(c);
+            if (p != null && p.available() && !out.contains(p)) out.add(p);
+        }
+        return out;
+    }
+
+    /** The providers a customer may choose from at checkout (code, name, ways to pay). */
+    public List<ProviderDto> payOptions(OnlineStoreSettings s) {
+        return activeProviders(s).stream().map(p -> new ProviderDto(p.code(), p.label(), true, p.methods())).toList();
+    }
+
+    /** The provider for this payment: the one asked for, or the only one that offers the way to pay. */
+    private PaymentProvider pick(List<PaymentProvider> usable, String method, String providerCode) {
+        List<PaymentProvider> c = usable.stream().filter(x -> x.methods().contains(method)).toList();
+        if (c.isEmpty()) throw ApiException.badRequest(I18n.t("Choose how you want to pay"));
+        String want = providerCode == null ? "" : providerCode.trim();
+        if (!want.isEmpty()) return c.stream().filter(x -> x.code().equalsIgnoreCase(want)).findFirst().orElseThrow(() -> ApiException.badRequest(I18n.t("Choose how you want to pay")));
+        if (c.size() == 1) return c.get(0);
+        throw ApiException.badRequest(I18n.t("Choose which provider to pay with"));
     }
 
     public List<ProviderDto> providerList() {
@@ -96,20 +127,23 @@ public class OnlinePaymentService {
 
     /** How a customer may pay online right now (empty = not at all). */
     public List<String> payMethods(OnlineStoreSettings s) {
-        PaymentProvider p = active(s);
-        return p == null ? List.of() : p.methods();
+        List<String> out = new ArrayList<>();
+        for (PaymentProvider p : activeProviders(s)) {
+            for (String m : p.methods()) if (!out.contains(m)) out.add(m);
+        }
+        return out;
     }
 
     // ------------------------------------------------------------------ starting a payment
 
     /** Starts a try to pay the order. The caller saves the order. Throws a message the customer can read when it cannot start. */
     @Transactional
-    public OnlinePayment start(OnlineOrder o, String method, String phone, OnlineStoreSettings s) {
+    public OnlinePayment start(OnlineOrder o, String method, String phone, OnlineStoreSettings s, String providerCode) {
         if (!"AWAITING_PAYMENT".equals(o.getStatus()) || "PAID".equals(o.getPaymentStatus())) throw ApiException.badRequest(I18n.t("This order cannot be paid now."));
-        PaymentProvider p = active(s);
-        if (p == null) throw ApiException.badRequest(I18n.t("Paying online is not available right now. Please choose to pay in cash."));
+        List<PaymentProvider> usable = activeProviders(s);
+        if (usable.isEmpty()) throw ApiException.badRequest(I18n.t("Paying online is not available right now. Please choose to pay in cash."));
         String m = method == null ? "" : method.trim().toUpperCase(Locale.ROOT);
-        if (!p.methods().contains(m)) throw ApiException.badRequest(I18n.t("Choose how you want to pay"));
+        PaymentProvider p = pick(usable, m, providerCode);
         String number = phone == null ? null : phone.trim();
         if (m.equals("MOBILE_MONEY")) {
             if (number == null || number.replaceAll("\\D", "").length() < 7 || number.replaceAll("[0-9+\\-() ]", "").length() > 0) {

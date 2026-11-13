@@ -150,13 +150,23 @@ public class OnlineStoreAdminService {
         s.setLoyaltyPointsPer100(in.loyaltyPointsPer100());
         s.setLoyaltyMaxPercent(in.loyaltyMaxPercent());
         s.setOnlinePaymentsEnabled(in.onlinePaymentsEnabled());
-        String prov = text(in.paymentProvider(), 30);
+        // One provider, or several separated by commas: the customer then chooses at checkout.
+        String prov = text(in.paymentProvider(), 200);
         if (in.onlinePaymentsEnabled()) {
-            var chosen = payments.provider(prov);
-            if (chosen == null || !chosen.available()) throw ApiException.badRequest(I18n.t("Choose a payment provider that is available before switching online payments on"));
-            prov = chosen.code();
+            java.util.List<String> chosen = new java.util.ArrayList<>();
+            for (String c : prov == null ? new String[0] : prov.split(",")) {
+                if (c.isBlank()) continue;
+                var p = payments.provider(c.trim());
+                if (p == null || !p.available()) throw ApiException.badRequest(I18n.t("Choose a payment provider that is available before switching online payments on"));
+                if (!chosen.contains(p.code())) chosen.add(p.code());
+            }
+            if (chosen.isEmpty()) throw ApiException.badRequest(I18n.t("Choose a payment provider that is available before switching online payments on"));
+            prov = String.join(",", chosen);
+        } else if (prov != null) {
+            prov = prov.toUpperCase().replaceAll("[^A-Z0-9_,]", "");
+            if (prov.isEmpty()) prov = null;
         }
-        s.setPaymentProvider(prov == null ? null : prov.toUpperCase());
+        s.setPaymentProvider(prov);
         if (in.paymentExpiryMinutes() < 5 || in.paymentExpiryMinutes() > 1440) throw ApiException.badRequest(I18n.t("The time to pay must be between 5 and 1440 minutes"));
         s.setPaymentExpiryMinutes(in.paymentExpiryMinutes());
         applyTexting(s, in);

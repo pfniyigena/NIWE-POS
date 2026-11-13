@@ -9133,5 +9133,8 @@
  "Points (minus to remove)": "Points (moins pour retirer)",
  "No points yet.": "Pas encore de points.",
  "Pay from my phone number above": "Payer depuis mon numéro de téléphone ci-dessus",
- "Enter the mobile money number to pay from": "Saisissez le numéro mobile money depuis lequel payer"
+ "Enter the mobile money number to pay from": "Saisissez le numéro mobile money depuis lequel payer",
+ "Payment providers": "Fournisseurs de paiement",
+ "Customers choose between the ones you tick at checkout.": "Les clients choisissent parmi ceux que vous cochez au moment de payer.",
+ "Choose which provider to pay with": "Choisissez avec quel fournisseur payer"
 }

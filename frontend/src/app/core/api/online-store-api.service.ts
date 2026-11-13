@@ -9,10 +9,12 @@ export interface ShopZone { id: number; name: string; fee: number; minOrder: num
 export interface ShopProduct { id: number; name: string; description: string | null; price: number; category: string | null; imageUrl: string | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT';
   /** The normal price when staff set a lower online price (shown struck through); 0 stars and 0 reviews when nobody reviewed it. */
   wasPrice: number | null; rating: number; ratingCount: number }
+/** A provider the customer may pay with (several can be switched on: the customer chooses). */
+export interface ShopPayProvider { code: string; label: string; available: boolean; methods: string[] }
 export interface Shop {
   name: string; intro: string | null; phone: string | null; pickupAddress: string | null; open: boolean; message: string | null;
   pickup: boolean; delivery: boolean; cash: boolean; minOrder: number; freeDeliveryOver: number | null;
-  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string; coupons: boolean;
+  zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; payProviders: ShopPayProvider[]; accounts: boolean; currency: string; coupons: boolean;
   /** SMS or WHATSAPP when the shop texts customers, else null: the tick box and the phone sign-in only show then. */
   textChannel: string | null;
   /** True when the shop keeps carts to remind customers who typed an e-mail address: the notice under the e-mail box shows then. */
@@ -46,6 +48,8 @@ export interface ShopOrderPayload {
   textUpdates: boolean;
   /** Loyalty points the signed-in customer wants to use; the server decides how many may be used. */
   pointsToUse?: number | null;
+  /** The provider chosen when the shop offers several (MTN_MOMO, AIRTEL_MONEY); null for cash. */
+  paymentProvider?: string | null;
 }
 /** What the customer sees about paying: method COD or ONLINE; status NONE, AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED. */
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
@@ -219,8 +223,8 @@ export class OnlineStoreApiService {
   stopCartReminders(token: string): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.pub}/carts/stop`, { token }); }
   unsubscribeNewsletter(token: string): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.pub}/newsletter/unsubscribe`, { token }); }
   /** Pay again, or the other way, for an order that is waiting for its payment. */
-  payAgain(code: string, payment: string, payPhone: string | null): Observable<ShopTrack> {
-    return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/pay`, { payment, payPhone });
+  payAgain(code: string, payment: string, payPhone: string | null, provider: string | null = null): Observable<ShopTrack> {
+    return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/pay`, { payment, payPhone, provider });
   }
   /** The test provider's pretend payment page (404 unless the simulated provider is on). */
   testPayment(reference: string): Observable<TestPayment> { return this.http.get<TestPayment>(`${this.pub}/payments/simulated/${encodeURIComponent(reference)}`); }

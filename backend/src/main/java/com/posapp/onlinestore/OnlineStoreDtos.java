@@ -44,7 +44,7 @@ public final class OnlineStoreDtos {
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
-                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons,
+                             List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, List<ProviderDto> payProviders, boolean accounts, String currency, boolean coupons,
                              String textChannel, boolean cartReminders, boolean loyalty, int loyaltyMaxPercent, PublicPage page) {
     }
 
@@ -58,7 +58,8 @@ public final class OnlineStoreDtos {
     public record PlaceRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 160) String email,
                                @Size(max = 240) String address, String method, Long zoneId, @Size(max = 300) String notes,
                                String language, String website, @Valid List<PublicLine> lines,
-                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode, Boolean textUpdates, Integer pointsToUse) {
+                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode, Boolean textUpdates, Integer pointsToUse,
+                               @Size(max = 30) String paymentProvider) {
     }
 
     /** "Apply" at checkout: only asks what the code is worth now; the order asks again when it is placed. */
@@ -89,7 +90,7 @@ public final class OnlineStoreDtos {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
-    public record PayRequest(String payment, @Size(max = 40) String payPhone) {
+    public record PayRequest(String payment, @Size(max = 40) String payPhone, @Size(max = 30) String provider) {
     }
 
     // ---------------------------------------------------------------- customer accounts

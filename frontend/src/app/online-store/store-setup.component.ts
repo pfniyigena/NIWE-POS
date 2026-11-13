@@ -97,11 +97,12 @@ import { API_BASE } from '../core/constants';
         <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="onlinePay" [(ngModel)]="s.onlinePaymentsEnabled" /> {{ 'Customers can pay online' | translate }}</label>
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap;" *ngIf="s.onlinePaymentsEnabled || s.paymentProvider">
           <div class="form-group" style="min-width:260px;">
-            <label class="form-label">{{ 'Payment provider' | translate }}</label>
-            <select class="form-select" name="provider" [(ngModel)]="s.paymentProvider">
-              <option [ngValue]="null">{{ '— none —' | translate }}</option>
-              <option *ngFor="let p of providers" [ngValue]="p.code" [disabled]="!p.available">{{ p.label }}{{ p.available ? '' : (' (' + ('not set up' | translate) + ')') }}</option>
-            </select>
+            <label class="form-label">{{ 'Payment providers' | translate }}</label>
+            <label *ngFor="let p of providers" class="flex gap-1 st-provider" style="align-items:center;">
+              <input type="checkbox" [checked]="hasProvider(p.code)" [disabled]="!p.available && !hasProvider(p.code)" (change)="toggleProvider(p.code, $any($event.target).checked)" [attr.data-provider]="p.code" />
+              {{ p.label }}{{ p.available ? '' : (' (' + ('not set up' | translate) + ')') }}
+            </label>
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Customers choose between the ones you tick at checkout.' | translate }}</div>
           </div>
           <div class="form-group"><label class="form-label">{{ 'Minutes the customer has to pay' | translate }}</label><input class="form-control" type="number" min="5" max="1440" style="width:140px;" name="expiry" [(ngModel)]="s.paymentExpiryMinutes" /></div>
         </div>
@@ -270,6 +271,22 @@ export class StoreSetupComponent implements OnInit {
   busy = false;
 
   providers: PaymentProvider[] = [];
+
+  /** The providers ticked: the settings keep their codes separated by commas. */
+  private chosenProviders(): string[] {
+    return (this.s?.paymentProvider ?? '').split(',').map((c) => c.trim()).filter((c) => c);
+  }
+
+  hasProvider(code: string): boolean {
+    return this.chosenProviders().includes(code);
+  }
+
+  toggleProvider(code: string, on: boolean): void {
+    if (!this.s) return;
+    const list = this.chosenProviders().filter((c) => c !== code);
+    if (on) list.push(code);
+    this.s.paymentProvider = list.length ? list.join(',') : null;
+  }
   textProviders: TextProvider[] = [];
   apiBase = API_BASE;
 
