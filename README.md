@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.36.3 - Online Store: unsubscribe links in the newsletter list
+
+The downloaded newsletter list has an `unsubscribe_link` column for each confirmed address. Manuals and wiki updated. Details in `RELEASE-NOTES-v1.36.3.md`.
+
 ### Version 1.36.2 - Online Store: Sellable now
 
 Shop settings shows, under each product, the figures behind its stock: sellable warehouse stock − reserved − shop buffer. Details in `RELEASE-NOTES-v1.36.2.md`.

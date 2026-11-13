@@ -176,12 +176,16 @@ public class NewsletterService {
                 "UNSUBSCRIBED", subscribers.countByStatus("UNSUBSCRIBED"));
     }
 
-    /** The confirmed addresses, one per line with language and date, ready to open in a spreadsheet. */
+    /**
+     * The confirmed addresses, one per line with language, date and the person's own unsubscribe link, ready to open in a spreadsheet. A mailing tool puts the
+     * link in every message it sends, so anyone can leave with one click (the link opens the page /shop/newsletter/unsubscribe/&lt;token&gt;).
+     */
     @Transactional(readOnly = true)
     public String csv() {
-        StringBuilder sb = new StringBuilder("email,language,confirmed_at\r\n");
+        StringBuilder sb = new StringBuilder("email,language,confirmed_at,unsubscribe_link\r\n");
         for (NewsletterSubscriber n : subscribers.findByStatusOrderByIdDesc("CONFIRMED")) {
-            sb.append(cell(n.getEmail())).append(',').append(n.getLanguage()).append(',').append(n.getConfirmedAt() == null ? "" : n.getConfirmedAt().toString()).append("\r\n");
+            sb.append(cell(n.getEmail())).append(',').append(n.getLanguage()).append(',').append(n.getConfirmedAt() == null ? "" : n.getConfirmedAt().toString())
+                    .append(',').append(n.getUnsubscribeToken() == null ? "" : frontendUrl + "/shop/newsletter/unsubscribe/" + n.getUnsubscribeToken()).append("\r\n");
         }
         auditLogService.record("NEWSLETTER_EXPORTED", "Exported the confirmed newsletter addresses");
         return sb.toString();
