@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.37.0 - Online Store: sales reports
+
+Six online sales reports under Online Store > Sales reports (by day, orders with invoices, payment methods, orders not counted as sales, coupons, best-selling products). A sale counts on the day the order was completed and the totals match the invoices. Also available as scheduled reports. Details in `RELEASE-NOTES-v1.37.0.md`.
+
 ### Version 1.36.3 - Online Store: unsubscribe links in the newsletter list
 
 The downloaded newsletter list has an `unsubscribe_link` column for each confirmed address. Manuals and wiki updated. Details in `RELEASE-NOTES-v1.36.3.md`.

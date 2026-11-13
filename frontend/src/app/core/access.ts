@@ -52,6 +52,7 @@ const RULES: AccessRule[] = [
   { prefix: 'admin/time/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/work-orders/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/booking/reports', areas: ['REPORTS', 'OPERATIONS'] },
+  { prefix: 'admin/online-store/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/law/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/realestate/reports', areas: ['REPORTS', 'OPERATIONS'] },
   { prefix: 'admin/propertymgmt/reports', areas: ['REPORTS', 'OPERATIONS'] },

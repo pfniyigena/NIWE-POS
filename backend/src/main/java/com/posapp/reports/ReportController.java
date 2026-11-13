@@ -79,11 +79,12 @@ public class ReportController {
     private final TimeReportService timeReportService;
     private final WorkOrderReportService workOrderReportService;
     private final BookingReportService bookingReportService;
+    private final OnlineSalesReportService onlineSalesReportService;
     private final LawReportService lawReportService;
     private final ReportExportService exportService;
     private final com.posapp.tracking.TrackingService trackingService;
 
-    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, HelpDeskReportService helpDeskReportService, ExpenseReportService expenseReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
+    public ReportController(ReportService reportService, PurchaseReportService purchaseReportService, SalesReportService salesReportService, AssetReportService assetReportService, HrReportService hrReportService, InstallmentReportService installmentReportService, SubscriptionReportService subscriptionReportService, HelpDeskReportService helpDeskReportService, ExpenseReportService expenseReportService, TimeReportService timeReportService, WorkOrderReportService workOrderReportService, BookingReportService bookingReportService, OnlineSalesReportService onlineSalesReportService, LawReportService lawReportService, ReportExportService exportService, com.posapp.tracking.TrackingService trackingService) {
         this.reportService = reportService;
         this.purchaseReportService = purchaseReportService;
         this.salesReportService = salesReportService;
@@ -96,6 +97,7 @@ public class ReportController {
         this.timeReportService = timeReportService;
         this.workOrderReportService = workOrderReportService;
         this.bookingReportService = bookingReportService;
+        this.onlineSalesReportService = onlineSalesReportService;
         this.lawReportService = lawReportService;
         this.exportService = exportService;
         this.trackingService = trackingService;
@@ -1709,6 +1711,110 @@ public class ReportController {
     private Instant end(LocalDate to) {
         LocalDate effective = to != null ? to : LocalDate.now(ZoneOffset.UTC);
         return effective.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().minusMillis(1);
+    }
+
+    // ---- Online sales reports — see OnlineSalesReportService. A sale counts on the day its online order was completed. ----
+
+    @GetMapping("/online-sales-daily")
+    public ResponseEntity<?> onlineSalesDaily(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                   @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = onlineSalesReportService.daily(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Orders", "Delivery", "Pick-up", "Goods", "Discounts", "Delivery fees", "Invoiced", "Returns", "Refunded", "Net");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.date()), String.valueOf(r.orders()), String.valueOf(r.delivery()), String.valueOf(r.pickup()), money(r.goods()), money(r.discounts()), money(r.deliveryFees()), money(r.invoiced()), String.valueOf(r.returns()), money(r.refunded()), money(r.net())));
+            }
+            return export("Online Sales by Day", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/online-sales-orders")
+    public ResponseEntity<?> onlineSalesOrders(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                   @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = onlineSalesReportService.orders(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Date", "Time", "Order", "Customer", "Delivery", "Payment", "Coupon", "Goods", "Discount", "Delivery fee", "Order total", "Invoice", "Invoiced", "Paid", "Refunded");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(String.valueOf(r.date()), r.time(), r.order(), r.customer(), r.delivery(), r.payment(), orDash(r.coupon()), money(r.goods()), money(r.discount()), money(r.deliveryFee()), money(r.orderTotal()), orDash(r.invoice()), money(r.invoiced()), money(r.paid()), money(r.refunded())));
+            }
+            return export("Online Sales Orders", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/online-sales-payments")
+    public ResponseEntity<?> onlineSalesPayments(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                   @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = onlineSalesReportService.payments(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Payment method", "Payments", "Received");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.method(), String.valueOf(r.payments()), money(r.received())));
+            }
+            return export("Online Sales by Payment Method", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/online-sales-not-sales")
+    public ResponseEntity<?> onlineSalesNotSales(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                   @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = onlineSalesReportService.notSales(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Group", "Orders", "Value", "Paid online", "Refunded");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.group(), String.valueOf(r.orders()), money(r.value()), money(r.received()), money(r.refunded())));
+            }
+            return export("Online Orders Not Counted as Sales", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/online-sales-coupons")
+    public ResponseEntity<?> onlineSalesCoupons(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                   @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = onlineSalesReportService.coupons(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Coupon", "Orders", "Discounts", "Delivery fees waived", "Invoiced");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.coupon(), String.valueOf(r.orders()), money(r.discounts()), money(r.deliveryWaived()), money(r.invoiced())));
+            }
+            return export("Online Sales by Coupon", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
+    }
+
+    @GetMapping("/online-sales-products")
+    public ResponseEntity<?> onlineSalesProducts(@RequestParam(required = false) LocalDate from, @RequestParam(required = false) LocalDate to,
+                                   @RequestParam(defaultValue = "json") String format) {
+        LocalDate end = to != null ? to : LocalDate.now(ZoneOffset.UTC);
+        LocalDate start = from != null ? from : end.withDayOfMonth(1);
+        var rows = onlineSalesReportService.products(start, end);
+        if (isDownload(format)) {
+            List<String> headers = List.of("Product", "Sold", "Returned", "Net quantity", "Revenue", "Refunded", "Net");
+            List<List<String>> body = new ArrayList<>();
+            for (var r : rows) {
+                body.add(List.of(r.product(), dec(r.sold()), dec(r.returned()), dec(r.netQuantity()), money(r.revenue()), money(r.refunded()), money(r.net())));
+            }
+            return export("Online Best-Selling Products", headers, body, format);
+        }
+        return ResponseEntity.ok(rows);
     }
 
     private boolean isDownload(String format) {

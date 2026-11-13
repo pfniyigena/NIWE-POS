@@ -1860,5 +1860,16 @@
  "Choose a picture to add.": "Choisissez une image à ajouter.",
  "A picture can be at most 8 MB.": "Une image peut faire 8 Mo au plus.",
  "At most {0} banner pictures can be on the shop. Remove one first.": "La boutique peut avoir {0} images de bannière au plus. Retirez-en une d'abord.",
- "The banner must be a JPEG, PNG, WebP or GIF picture.": "La bannière doit être une image JPEG, PNG, WebP ou GIF."
+ "The banner must be a JPEG, PNG, WebP or GIF picture.": "La bannière doit être une image JPEG, PNG, WebP ou GIF.",
+ "Unknown": "Inconnu",
+ "Cash": "Espèces",
+ "Mobile money": "Mobile money",
+ "Card": "Carte",
+ "Paid online": "Payé en ligne",
+ "Online: {0}": "En ligne : {0}",
+ "On delivery / pick-up": "À la livraison / au retrait",
+ "Not collected yet": "Pas encore encaissé",
+ "Open (being handled)": "En cours de traitement",
+ "Waiting for online payment": "En attente du paiement en ligne",
+ "Never paid (cancelled)": "Jamais payée (annulée)"
 }

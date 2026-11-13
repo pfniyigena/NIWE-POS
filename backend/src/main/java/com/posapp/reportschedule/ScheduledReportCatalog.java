@@ -180,6 +180,18 @@ public final class ScheduledReportCatalog {
                 (c, p) -> c.bookingUtilisation(p.from(), p.to(), p.format())));
         add(new Def("booking-services", "Bookings by service", "Booking", true, false, false, false, false, null,
                 (c, p) -> c.bookingServices(p.from(), p.to(), p.format())));
+        add(new Def("online-sales-daily", "Online sales by day", "Online Store", true, false, false, false, false, null,
+                (c, p) -> c.onlineSalesDaily(p.from(), p.to(), p.format())));
+        add(new Def("online-sales-orders", "Online sales orders", "Online Store", true, false, false, false, false, null,
+                (c, p) -> c.onlineSalesOrders(p.from(), p.to(), p.format())));
+        add(new Def("online-sales-payments", "Online sales by payment method", "Online Store", true, false, false, false, false, null,
+                (c, p) -> c.onlineSalesPayments(p.from(), p.to(), p.format())));
+        add(new Def("online-sales-not-sales", "Online orders not counted as sales", "Online Store", true, false, false, false, false, null,
+                (c, p) -> c.onlineSalesNotSales(p.from(), p.to(), p.format())));
+        add(new Def("online-sales-coupons", "Online sales by coupon", "Online Store", true, false, false, false, false, null,
+                (c, p) -> c.onlineSalesCoupons(p.from(), p.to(), p.format())));
+        add(new Def("online-sales-products", "Online best-selling products", "Online Store", true, false, false, false, false, null,
+                (c, p) -> c.onlineSalesProducts(p.from(), p.to(), p.format())));
         add(new Def("law-matters", "Law matters", "Law Firm", true, false, false, false, false, null,
                 (c, p) -> c.lawMatters(p.from(), p.to(), p.format())));
         add(new Def("law-deadlines", "Law deadlines", "Law Firm", true, false, false, false, false, null,

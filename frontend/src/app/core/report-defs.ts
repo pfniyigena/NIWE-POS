@@ -20,7 +20,7 @@ export interface ReportColumn {
 export interface ReportDef {
   key: string;
   title: string;
-  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Expenses' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing' | 'Subscriptions';
+  section: 'POS Sales-Transactions' | 'POS Profit' | 'POS Credit' | 'POS Operations' | 'Inventory' | 'Purchases' | 'Sales' | 'Restaurant' | 'Help Desk' | 'Expenses' | 'Assets' | 'HR' | 'Installments' | 'Time Tracking' | 'Work Orders' | 'Booking' | 'Online Store' | 'Law Firm' | 'Real Estate' | 'Property Management' | 'Manufacturing' | 'Subscriptions';
   /** Path segment under /api/reports/ — see ReportController. */
   endpoint: string;
   columns: ReportColumn[];
@@ -86,6 +86,8 @@ export function reportListRouteForSection(section: ReportDef['section']): string
       return '/admin/manufacturing/reports';
     case 'Booking':
       return '/admin/booking/reports';
+    case 'Online Store':
+      return '/admin/online-store/reports';
     case 'Law Firm':
       return '/admin/law/reports';
     case 'Real Estate':
@@ -2015,6 +2017,112 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'noShows', label: 'No-shows', format: 'int' },
       { key: 'noShowPercent', label: 'No-show %', format: 'percent' },
       { key: 'value', label: 'Value', format: 'money' },
+    ],
+  },
+  {
+    key: 'online-sales-daily',
+    title: 'Online sales by day',
+    section: 'Online Store',
+    endpoint: 'online-sales-daily',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'date', label: 'Date', format: 'text' },
+      { key: 'orders', label: 'Orders', format: 'int' },
+      { key: 'delivery', label: 'Delivery', format: 'int' },
+      { key: 'pickup', label: 'Pick-up', format: 'int' },
+      { key: 'goods', label: 'Goods', format: 'money' },
+      { key: 'discounts', label: 'Discounts', format: 'money' },
+      { key: 'deliveryFees', label: 'Delivery fees', format: 'money' },
+      { key: 'invoiced', label: 'Invoiced', format: 'money' },
+      { key: 'returns', label: 'Returns', format: 'int' },
+      { key: 'refunded', label: 'Refunded', format: 'money' },
+      { key: 'net', label: 'Net', format: 'money' },
+    ],
+  },
+  {
+    key: 'online-sales-orders',
+    title: 'Online sales orders',
+    section: 'Online Store',
+    endpoint: 'online-sales-orders',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'date', label: 'Date', format: 'text' },
+      { key: 'time', label: 'Time', format: 'text' },
+      { key: 'order', label: 'Order', format: 'text' },
+      { key: 'customer', label: 'Customer', format: 'text' },
+      { key: 'delivery', label: 'Delivery', format: 'text' },
+      { key: 'payment', label: 'Payment', format: 'text' },
+      { key: 'coupon', label: 'Coupon', format: 'text' },
+      { key: 'goods', label: 'Goods', format: 'money' },
+      { key: 'discount', label: 'Discount', format: 'money' },
+      { key: 'deliveryFee', label: 'Delivery fee', format: 'money' },
+      { key: 'orderTotal', label: 'Order total', format: 'money' },
+      { key: 'invoice', label: 'Invoice', format: 'text' },
+      { key: 'invoiced', label: 'Invoiced', format: 'money' },
+      { key: 'paid', label: 'Paid', format: 'money' },
+      { key: 'refunded', label: 'Refunded', format: 'money' },
+    ],
+  },
+  {
+    key: 'online-sales-payments',
+    title: 'Online sales by payment method',
+    section: 'Online Store',
+    endpoint: 'online-sales-payments',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'method', label: 'Payment method', format: 'text' },
+      { key: 'payments', label: 'Payments', format: 'int' },
+      { key: 'received', label: 'Received', format: 'money' },
+    ],
+  },
+  {
+    key: 'online-sales-not-sales',
+    title: 'Online orders not counted as sales',
+    section: 'Online Store',
+    endpoint: 'online-sales-not-sales',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'group', label: 'Group', format: 'text' },
+      { key: 'orders', label: 'Orders', format: 'int' },
+      { key: 'value', label: 'Value', format: 'money' },
+      { key: 'received', label: 'Paid online', format: 'money' },
+      { key: 'refunded', label: 'Refunded', format: 'money' },
+    ],
+  },
+  {
+    key: 'online-sales-coupons',
+    title: 'Online sales by coupon',
+    section: 'Online Store',
+    endpoint: 'online-sales-coupons',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'coupon', label: 'Coupon', format: 'text' },
+      { key: 'orders', label: 'Orders', format: 'int' },
+      { key: 'discounts', label: 'Discounts', format: 'money' },
+      { key: 'deliveryWaived', label: 'Delivery fees waived', format: 'money' },
+      { key: 'invoiced', label: 'Invoiced', format: 'money' },
+    ],
+  },
+  {
+    key: 'online-sales-products',
+    title: 'Online best-selling products',
+    section: 'Online Store',
+    endpoint: 'online-sales-products',
+    categoryFilter: false,
+    filterMode: 'dateOnly',
+    columns: [
+      { key: 'product', label: 'Product', format: 'text' },
+      { key: 'sold', label: 'Sold', format: 'int' },
+      { key: 'returned', label: 'Returned', format: 'int' },
+      { key: 'netQuantity', label: 'Net quantity', format: 'int' },
+      { key: 'revenue', label: 'Revenue', format: 'money' },
+      { key: 'refunded', label: 'Refunded', format: 'money' },
+      { key: 'net', label: 'Net', format: 'money' },
     ],
   },
   {

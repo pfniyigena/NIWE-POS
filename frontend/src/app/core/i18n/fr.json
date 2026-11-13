@@ -9039,5 +9039,19 @@
  "Could not move the picture": "Impossible de déplacer l'image",
  "Could not remove the picture": "Impossible de retirer l'image",
  "In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − shop buffer {p2} = sellable now {p3}": "Dans les emplacements vendables des entrepôts {p0} − réservé sur commandes confirmées {p1} − réserve de la boutique {p2} = vendable maintenant {p3}",
- "Stock is not tracked for this product: the shop always shows it as in stock.": "Le stock n'est pas suivi pour ce produit : la boutique l'affiche toujours en stock."
+ "Stock is not tracked for this product: the shop always shows it as in stock.": "Le stock n'est pas suivi pour ce produit : la boutique l'affiche toujours en stock.",
+ "Online sales by day": "Ventes en ligne par jour",
+ "Online sales orders": "Commandes des ventes en ligne",
+ "Online sales by payment method": "Ventes en ligne par moyen de paiement",
+ "Online orders not counted as sales": "Commandes en ligne non comptées comme ventes",
+ "Online sales by coupon": "Ventes en ligne par coupon",
+ "Online best-selling products": "Produits les plus vendus en ligne",
+ "Goods": "Marchandises",
+ "Delivery fees": "Frais de livraison",
+ "Order total": "Total de la commande",
+ "Delivery fees waived": "Frais de livraison offerts",
+ "Net quantity": "Quantité nette",
+ "Online sales reports": "Rapports des ventes en ligne",
+ "Sales reports": "Rapports de ventes",
+ "An order counts as a sale on the day it was completed, and the money is what its invoice says. Orders that were not completed are listed apart.": "Une commande compte comme une vente le jour où elle a été terminée, et le montant est celui de sa facture. Les commandes non terminées sont listées à part."
 }
