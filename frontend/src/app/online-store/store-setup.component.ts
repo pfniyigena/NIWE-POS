@@ -65,6 +65,13 @@ import { API_BASE } from '../core/constants';
         <h4 class="mt-3 mb-2">{{ 'Abandoned-cart reminders' | translate }}</h4>
         <p class="text-muted">{{ 'When a visitor types an e-mail address at checkout and leaves without ordering, the shop reminds them about their cart by e-mail: once after 1 hour and once after 3 days. No discount is offered. Every e-mail has a link to stop the reminders, and nobody is reminded after they order. Needs e-mail to be set up (Settings > Email).' | translate }}</p>
         <label class="flex gap-1 mb-2" style="align-items:center;"><input type="checkbox" name="cartReminders" [(ngModel)]="s.cartRemindersEnabled" /> {{ 'Send reminders for abandoned carts' | translate }} <a routerLink="/admin/online-store/carts" style="margin-left:0.5rem;">{{ 'See the carts' | translate }}</a></label>
+        <h4 class="mt-3 mb-2">{{ 'Loyalty points' | translate }}</h4>
+        <p class="text-muted">{{ 'Customers who are signed in earn points when an order is completed (a share of what they paid for the goods) and spend them at checkout: 1 point takes 1 off, up to the share of the goods you set. Points do not expire. They belong to shop accounts and are separate from the loyalty programme at the till. Needs Customer accounts to be on.' | translate }}</p>
+        <label class="flex gap-1 mb-2" style="align-items:center;"><input type="checkbox" name="loyalty" [(ngModel)]="s.loyaltyEnabled" /> {{ 'Customers earn and spend loyalty points' | translate }} <a routerLink="/admin/online-store/loyalty" style="margin-left:0.5rem;">{{ 'See the points' | translate }}</a></label>
+        <div class="flex gap-3" style="flex-wrap:wrap;" *ngIf="s.loyaltyEnabled">
+          <div class="form-group"><label class="form-label">{{ 'Points earned per 100 paid for the goods' | translate }}</label><input class="form-control" type="number" min="1" max="100" style="max-width:140px;" name="loyaltyPer100" [(ngModel)]="s.loyaltyPointsPer100" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Points may pay at most (% of the goods)' | translate }}</label><input class="form-control" type="number" min="0" max="100" style="max-width:140px;" name="loyaltyMax" [(ngModel)]="s.loyaltyMaxPercent" /></div>
+        </div>
         <h4 class="mt-3 mb-2">{{ 'Text messages (SMS or WhatsApp)' | translate }}</h4>
         <p class="text-muted">{{ 'Text customers about their order (only those who ticked the box at checkout), text sign-in codes, and text the shop owner about new orders. Nothing is sent until you choose a provider.' | translate }}</p>
         <div class="flex gap-3" style="flex-wrap:wrap;">

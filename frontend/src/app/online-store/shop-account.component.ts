@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShopMoneyPipe } from './shop-money.pipe';
-import { AccountOrder, AccountProfile, OnlineStoreApiService, Reorder, shopToken } from '../core/api/online-store-api.service';
+import { AccountOrder, AccountProfile, LoyaltyView, OnlineStoreApiService, Reorder, shopToken } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
 
@@ -82,6 +82,15 @@ import { T } from '../core/i18n/t';
           </ng-container>
         </div>
 
+        <ng-container *ngIf="loyalty && points && points.enabled">
+          <h5 class="mt-3">{{ 'Loyalty points' | translate }}</h5>
+          <div class="acc-points"><strong>{{ points.points }}</strong> {{ 'points' | translate }}</div>
+          <p class="text-muted" style="font-size:0.85rem;">{{ 'You earn {p0} point(s) for every 100 you pay for goods, when the order is completed. Each point takes 1 off a later order, up to {p1}% of the goods.' | translate: { p0: points.pointsPer100, p1: points.maxPercent } }}</p>
+          <div class="acc-point-row flex justify-between" *ngFor="let e of points.entries" style="padding:0.25rem 0; border-top:1px solid #e5e7eb; gap:0.5rem; flex-wrap:wrap; font-size:0.9rem;">
+            <span>{{ e.at | date: 'mediumDate' }} · {{ pointLabel(e.kind) | translate }}<span *ngIf="e.orderCode"> ({{ e.orderCode }})</span></span>
+            <strong [style.color]="e.points < 0 ? '#b42318' : '#15803d'">{{ e.points > 0 ? '+' : '' }}{{ e.points }}</strong>
+          </div>
+        </ng-container>
         <h5 class="mt-3">{{ 'My orders' | translate }}</h5>
         <div class="text-muted" *ngIf="orders === null">{{ 'Loading…' | translate }}</div>
         <div class="text-muted acc-no-orders" *ngIf="orders && orders.length === 0">{{ 'No orders yet. Orders you place while signed in, and earlier ones sent with your e-mail address, appear here.' | translate }}</div>
@@ -117,6 +126,8 @@ export class ShopAccountComponent implements OnInit {
   @Input() currency = '';
   /** SMS or WHATSAPP when the shop texts customers (phone sign-in and number confirmation then work), else null. */
   @Input() textChannel: string | null = null;
+  /** True when the shop has loyalty points on: the balance and history show. */
+  @Input() loyalty = false;
   @Output() profileChange = new EventEmitter<AccountProfile | null>();
   @Output() reordered = new EventEmitter<Reorder>();
   @Output() closed = new EventEmitter<void>();
@@ -129,6 +140,7 @@ export class ShopAccountComponent implements OnInit {
   info: string | null = null;
   confirmDelete = false;
   orders: AccountOrder[] | null = null;
+  points: LoyaltyView | null = null;
   form = { name: '', phone: '', address: '' };
   phoneCodeSent = false;
   phoneCode = '';
@@ -164,6 +176,8 @@ export class ShopAccountComponent implements OnInit {
     this.phoneCodeSent = false;
     this.phoneCode = '';
     this.orders = null;
+    this.points = null;
+    if (this.loyalty) this.api.accountLoyalty().subscribe({ next: (v) => (this.points = v), error: () => (this.points = null) });
     this.api.accountOrders().subscribe({
       next: (o) => (this.orders = o),
       error: (e) => this.expired(e),
@@ -285,6 +299,17 @@ export class ShopAccountComponent implements OnInit {
         this.expired(e);
       },
     });
+  }
+
+  pointLabel(kind: string): string {
+    switch (kind) {
+      case 'EARN': return 'Order completed';
+      case 'SPEND': return 'Used on an order';
+      case 'SPEND_BACK': return 'Order cancelled: points returned';
+      case 'RET_BACK': return 'Return: points returned';
+      case 'RET_TAKE': return 'Return: points taken back';
+      default: return 'Changed by the shop';
+    }
   }
 
   reorder(o: AccountOrder): void {

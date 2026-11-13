@@ -28,6 +28,12 @@ public class OnlineStoreSettings extends BaseEntity {
     private boolean accountsEnabled = false;
     /** A visitor who typed an e-mail address at checkout and left gets two reminders about the cart (1 hour and 3 days later), no discount. Off until the shop switches it on. */
     private boolean cartRemindersEnabled = false;
+    /** Signed-in customers earn loyalty points on completed orders and spend them at checkout (1 point = 1 unit of the currency). Off until switched on. */
+    private boolean loyaltyEnabled = false;
+    /** Points earned per 100 of the currency paid for the goods. */
+    private int loyaltyPointsPer100 = 1;
+    /** Points may pay at most this share (percent) of what is left to pay for the goods. */
+    private int loyaltyMaxPercent = 50;
     private boolean onlinePaymentsEnabled = false;
     /** Text messages (phase 3): the code of the text provider (see TextProvider), e.g. SIMULATED while testing. Empty = texting is off. */
     private String textProvider;

@@ -44,7 +44,7 @@ public class OnlineSalesReportService {
 
     private record Sale(Instant at, String code, String customer, String delivery, String paymentMethod, String channel, String coupon, BigDecimal goods,
                         BigDecimal discount, BigDecimal fee, BigDecimal feeWaived, BigDecimal orderTotal, String invoice, BigDecimal invoiced, String invoiceStatus,
-                        BigDecimal paid, BigDecimal refunded, long invoiceId) {
+                        BigDecimal paid, BigDecimal refunded, long invoiceId, BigDecimal points) {
     }
 
     private static Instant instant(Object o) {
@@ -82,7 +82,7 @@ public class OnlineSalesReportService {
                                o.subtotal, o.discount_amount, o.delivery_fee, o.fee_waived, o.total,
                                o.invoice_number, i.total_amount, i.status,
                                coalesce((select sum(a.amount_applied) from customer_payment_allocation a where a.invoice_id = i.id), 0),
-                               o.refunded_total, coalesce(i.id, 0)
+                               o.refunded_total, coalesce(i.id, 0), o.loyalty_discount
                           from online_order o
                           join (select online_order_id, min(created_at) as done_at from online_order_event where status = 'COMPLETED' group by online_order_id) e
                             on e.online_order_id = o.id
@@ -95,7 +95,7 @@ public class OnlineSalesReportService {
         for (Object[] r : rows) {
             boolean voided = "VOID".equals(str(r[14]));
             out.add(new Sale(instant(r[0]), str(r[1]), str(r[2]), str(r[3]), str(r[4]), str(r[5]), str(r[6]), bd(r[7]), bd(r[8]), bd(r[9]), bd(r[10]), bd(r[11]),
-                    str(r[12]), voided ? ZERO : bd(r[13]), str(r[14]), voided ? ZERO : bd(r[15]), bd(r[16]), ((Number) r[17]).longValue()));
+                    str(r[12]), voided ? ZERO : bd(r[13]), str(r[14]), voided ? ZERO : bd(r[15]), bd(r[16]), ((Number) r[17]).longValue(), bd(r[18])));
         }
         return out;
     }
@@ -263,7 +263,7 @@ public class OnlineSalesReportService {
         for (Sale s : sales(from, to)) {
             if (s.coupon() == null || s.coupon().isBlank()) continue;
             BigDecimal[] m = by.computeIfAbsent(s.coupon(), k -> new BigDecimal[]{ZERO, ZERO, ZERO});
-            m[0] = m[0].add(s.discount());
+            m[0] = m[0].add(s.discount().subtract(s.points()));
             m[1] = m[1].add(s.feeWaived());
             m[2] = m[2].add(s.invoiced());
             counts.merge(s.coupon(), 1, Integer::sum);

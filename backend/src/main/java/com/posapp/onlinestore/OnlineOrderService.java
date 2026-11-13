@@ -36,6 +36,8 @@ import java.util.Set;
 @Service
 public class OnlineOrderService {
 
+    private final ShopLoyaltyService loyalty;
+
     private static final Set<String> OPEN = Set.of("PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
 
     private final OnlineOrderRepository repository;
@@ -50,7 +52,8 @@ public class OnlineOrderService {
 
     public OnlineOrderService(OnlineOrderRepository repository, OnlineStoreService storeService, CustomerRepository customerRepository,
                               SalesOrderService salesOrderService, InvoiceService invoiceService, StoreSettingsService storeSettingsService,
-                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments) {
+                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, ShopLoyaltyService loyalty) {
+        this.loyalty = loyalty;
         this.payments = payments;
         this.repository = repository;
         this.storeService = storeService;
@@ -206,6 +209,7 @@ public class OnlineOrderService {
         o.setDecidedBy(user());
         move(o, "REJECTED", o.getRejectReason());
         boolean refundDue = payments.afterClosed(o);
+        loyalty.giveBackSpent(o);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_REJECTED", "Rejected online order " + o.getCode() + ": " + o.getRejectReason(), "OnlineOrder", o.getId());
         tell(o, OnlineMessages.m("About your order {0}", o.getCode()), refundDue
@@ -222,6 +226,7 @@ public class OnlineOrderService {
         if (o.getSalesOrderId() != null) salesOrderService.cancel(o.getSalesOrderId());
         move(o, "CANCELLED", note == null || note.isBlank() ? I18n.t("Cancelled by staff") : note.trim());
         boolean refundDue = payments.afterClosed(o);
+        loyalty.giveBackSpent(o);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_CANCELLED", "Cancelled online order " + o.getCode(), "OnlineOrder", o.getId());
         tell(o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), refundDue
@@ -317,7 +322,10 @@ public class OnlineOrderService {
         move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
-        tell(o, OnlineMessages.m("Thank you for your order {0}", o.getCode()), OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber()));
+        int earned = loyalty.earn(o);
+        tell(o, OnlineMessages.m("Thank you for your order {0}", o.getCode()), earned > 0
+                ? OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}. You earned {2} loyalty points.", o.getCode(), inv.invoiceNumber(), earned)
+                : OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber()));
         return dto(o);
     }
 
@@ -370,6 +378,7 @@ public class OnlineOrderService {
                 o.getCreatedAt(),
                 o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getRefundedTotal(),
                 o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList(),
-                o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList());
+                o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList(),
+                o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned());
     }
 }

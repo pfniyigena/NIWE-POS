@@ -23,6 +23,10 @@ import java.util.List;
 public class OnlineOrder extends BaseEntity {
     /** What the customer quotes and tracks the order with. */
     private String code;
+    /** Loyalty points spent on this order, what they were worth (part of discountAmount) and the points this order earned when it was completed. */
+    private int loyaltyPointsUsed;
+    private java.math.BigDecimal loyaltyDiscount = java.math.BigDecimal.ZERO;
+    private int loyaltyPointsEarned;
     /** When the shop was told by e-mail that this order is waiting for an answer (once per order). */
     private Instant alertedAt;
     /** AWAITING_PAYMENT (online payment not confirmed yet), PLACED, ACCEPTED, PACKED, OUT_FOR_DELIVERY, READY_FOR_PICKUP, COMPLETED, REJECTED or CANCELLED. */

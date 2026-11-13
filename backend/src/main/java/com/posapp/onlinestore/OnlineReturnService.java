@@ -41,6 +41,8 @@ import java.util.Set;
 @Service
 public class OnlineReturnService {
 
+    private final ShopLoyaltyService loyalty;
+
     private static final Set<String> HOLDING = Set.of("REQUESTED", "APPROVED", "REFUNDED");
     private static final long HOUR = 3_600_000L;
 
@@ -57,7 +59,8 @@ public class OnlineReturnService {
 
     public OnlineReturnService(OnlineReturnRepository returns, OnlineOrderRepository orders, OnlineStoreService storeService, SalesOrderService salesOrderService,
                                SalesOrderReturnService salesOrderReturns, OnlinePaymentService payments, MailService mailService,
-                               StoreSettingsService storeSettingsService, AuditLogService auditLogService) {
+                               StoreSettingsService storeSettingsService, AuditLogService auditLogService, ShopLoyaltyService loyalty) {
+        this.loyalty = loyalty;
         this.returns = returns;
         this.orders = orders;
         this.storeService = storeService;
@@ -374,6 +377,7 @@ public class OnlineReturnService {
         if (r.getStaffNote() != null && r.getStaffNote().length() > 300) r.setStaffNote(r.getStaffNote().substring(0, 300));
         returns.save(r);
         event(o, I18n.t("Return {0} done: {1} given back", r.getCode(), OnlineStoreService.money(amount)) + (method.equals("CASH") ? " (" + I18n.t("cash") + ")" : ""), user());
+        loyalty.afterReturn(o, r);
         orders.save(o);
         auditLogService.record("ONLINE_RETURN_REFUNDED", "Processed return " + r.getCode() + " of online order " + o.getCode() + " as " + done.returnNumber()
                 + ", " + OnlineStoreService.money(amount) + " (" + method + ")", "OnlineReturn", r.getId());

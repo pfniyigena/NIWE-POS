@@ -69,7 +69,9 @@ interface LocationOption { id: number; label: string; type: string | null; prima
         <ul style="margin:0.4rem 0; padding-left:1.1rem;">
           <li *ngFor="let l of o.lines">{{ l.quantity }} × {{ l.name }} <span class="text-muted">({{ l.lineTotal | number: '1.0-2' }})</span></li>
           <li *ngIf="o.deliveryFee > 0">{{ 'Delivery fee {p0}' | translate: { p0: (o.deliveryFee | number: '1.0-2') } }}</li>
-          <li *ngIf="o.couponCode && o.discountAmount > 0">{{ 'Coupon {p0}: {p1} off the items' | translate: { p0: o.couponCode, p1: (o.discountAmount | number: '1.0-2') } }}</li>
+          <li *ngIf="o.couponCode && o.discountAmount - o.loyaltyDiscount > 0">{{ 'Coupon {p0}: {p1} off the items' | translate: { p0: o.couponCode, p1: (o.discountAmount - o.loyaltyDiscount | number: '1.0-2') } }}</li>
+          <li *ngIf="o.loyaltyPointsUsed > 0">{{ 'Loyalty points used: {p0} ({p1} off the items)' | translate: { p0: o.loyaltyPointsUsed, p1: (o.loyaltyDiscount | number: '1.0-2') } }}</li>
+          <li *ngIf="o.loyaltyPointsEarned > 0">{{ 'Loyalty points earned on this order: {p0}' | translate: { p0: o.loyaltyPointsEarned } }}</li>
           <li *ngIf="o.couponCode && o.feeWaived > 0">{{ 'Coupon {p0}: delivery fee waived ({p1})' | translate: { p0: o.couponCode, p1: (o.feeWaived | number: '1.0-2') } }}</li>
         </ul>
         <div class="text-muted" *ngIf="o.rejectReason">{{ 'Reason: {p0}' | translate: { p0: (o.rejectReason) } }}</div>

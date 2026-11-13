@@ -56,7 +56,9 @@ import { ShopMoneyPipe } from './shop-money.pipe';
 
         <div class="card mb-3" style="padding:0.75rem;">
           <div *ngFor="let l of t.lines" class="flex justify-between" style="padding:0.2rem 0;"><span>{{ l.quantity }} × {{ l.name }}</span><span>{{ l.lineTotal | shopMoney: cur }}</span></div>
-          <div class="flex justify-between st-discount" *ngIf="t.discount > 0" style="padding-top:0.3rem; color:#15803d;"><span>{{ 'Discount ({p0})' | translate: { p0: t.couponCode } }}</span><span>−{{ t.discount | shopMoney: cur }}</span></div>
+          <div class="flex justify-between st-discount" *ngIf="t.discount - t.loyaltyDiscount > 0" style="padding-top:0.3rem; color:#15803d;"><span>{{ 'Discount ({p0})' | translate: { p0: t.couponCode } }}</span><span>−{{ t.discount - t.loyaltyDiscount | shopMoney: cur }}</span></div>
+          <div class="flex justify-between st-points" *ngIf="t.loyaltyDiscount > 0" style="padding-top:0.3rem; color:#15803d;"><span>{{ 'Loyalty points' | translate }}</span><span>−{{ t.loyaltyDiscount | shopMoney: cur }}</span></div>
+          <div class="st-earned text-muted" *ngIf="t.pointsEarned > 0" style="padding-top:0.3rem; font-size:0.85rem;">{{ 'You earned {p0} loyalty points on this order.' | translate: { p0: t.pointsEarned } }}</div>
           <div class="flex justify-between" *ngIf="t.feeWaived > 0" style="padding-top:0.3rem; color:#15803d;"><span>{{ 'Free delivery ({p0})' | translate: { p0: t.couponCode } }}</span><span>{{ 0 | shopMoney: cur }}</span></div>
           <div class="flex justify-between" *ngIf="t.deliveryFee > 0" style="padding-top:0.3rem;"><span>{{ 'Delivery fee ({p0})' | translate: { p0: (t.zoneName) } }}</span><span>{{ t.deliveryFee | shopMoney: cur }}</span></div>
           <hr />

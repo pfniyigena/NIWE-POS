@@ -385,6 +385,7 @@ import { StoreReviewsComponent } from './online-store/store-reviews.component';
 import { StoreNewsletterComponent } from './online-store/store-newsletter.component';
 import { StoreCampaignsComponent } from './online-store/store-campaigns.component';
 import { StoreCartsComponent } from './online-store/store-carts.component';
+import { StoreLoyaltyComponent } from './online-store/store-loyalty.component';
 import { ShopCartStopComponent } from './online-store/shop-cart-stop.component';
 import { StoreReportListComponent } from './online-store/store-report-list.component';
 import { ShopNewsletterComponent } from './online-store/shop-newsletter.component';
@@ -1100,6 +1101,7 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/newsletter', component: StoreNewsletterComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/newsletters', component: StoreCampaignsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/carts', component: StoreCartsComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/loyalty', component: StoreLoyaltyComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/reports', component: StoreReportListComponent, canActivate: [authGuard] },
   { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },

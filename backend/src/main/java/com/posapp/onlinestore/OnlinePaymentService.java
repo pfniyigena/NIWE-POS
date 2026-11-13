@@ -41,6 +41,8 @@ import java.util.Map;
 @Service
 public class OnlinePaymentService {
 
+    private final ShopLoyaltyService loyalty;
+
     private static final Logger log = LoggerFactory.getLogger(OnlinePaymentService.class);
     public static final int MAX_ATTEMPTS = 5;
     /** An order that is still not paid after this long is cancelled by the system. */
@@ -57,7 +59,8 @@ public class OnlinePaymentService {
 
     public OnlinePaymentService(OnlinePaymentRepository payments, OnlinePaymentWebhookRepository webhooks, OnlineOrderRepository orders,
                                 OnlineStoreSettingsRepository settingsRepository, List<PaymentProvider> providers, MailService mailService,
-                                StoreSettingsService storeSettingsService, AuditLogService auditLogService) {
+                                StoreSettingsService storeSettingsService, AuditLogService auditLogService, ShopLoyaltyService loyalty) {
+        this.loyalty = loyalty;
         this.payments = payments;
         this.webhooks = webhooks;
         this.orders = orders;
@@ -329,6 +332,7 @@ public class OnlinePaymentService {
         if (pending) return;
         o.setStatus("CANCELLED");
         event(o, "CANCELLED", I18n.t("Not paid in time"), "system");
+        loyalty.giveBackSpent(o);
         orders.save(o);
         audit("ONLINE_ORDER_ABANDONED", "Online order " + o.getCode() + " cancelled: not paid in time", o);
         OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()),

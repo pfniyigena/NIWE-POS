@@ -68,6 +68,12 @@ public class ShopAccountController {
         return accounts.update(token, request);
     }
 
+    @GetMapping("/loyalty")
+    public LoyaltyView loyalty(@RequestHeader(value = TOKEN_HEADER, required = false) String token) {
+        on();
+        return accounts.loyalty(token);
+    }
+
     @GetMapping("/orders")
     public List<AccountOrder> orders(@RequestHeader(value = TOKEN_HEADER, required = false) String token) {
         on();

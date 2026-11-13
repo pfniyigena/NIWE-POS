@@ -45,7 +45,7 @@ public final class OnlineStoreDtos {
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
                              List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons,
-                             String textChannel, boolean cartReminders, PublicPage page) {
+                             String textChannel, boolean cartReminders, boolean loyalty, int loyaltyMaxPercent, PublicPage page) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -58,7 +58,7 @@ public final class OnlineStoreDtos {
     public record PlaceRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 160) String email,
                                @Size(max = 240) String address, String method, Long zoneId, @Size(max = 300) String notes,
                                String language, String website, @Valid List<PublicLine> lines,
-                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode, Boolean textUpdates) {
+                               String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode, Boolean textUpdates, Integer pointsToUse) {
     }
 
     /** "Apply" at checkout: only asks what the code is worth now; the order asks again when it is placed. */
@@ -85,7 +85,7 @@ public final class OnlineStoreDtos {
     public record Track(String code, String status, String deliveryMethod, String name, String zoneName, BigDecimal subtotal,
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
-                        String couponCode, BigDecimal discount, BigDecimal feeWaived) {
+                        String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -105,7 +105,7 @@ public final class OnlineStoreDtos {
     public record AccountVerifyRequest(@Size(max = 160) String identifier, @Size(max = 12) String code) {
     }
 
-    public record AccountProfile(String email, String phone, String name, String address, String language, boolean phoneVerified) {
+    public record AccountProfile(String email, String phone, String name, String address, String language, boolean phoneVerified, int points) {
     }
 
     /** The code that proves the phone number saved on the account. */
@@ -126,6 +126,25 @@ public final class OnlineStoreDtos {
 
     /** lines are on the shop now at today's price; unavailable names the products that are gone or sold out. */
     public record Reorder(List<ReorderLine> lines, List<String> unavailable) {
+    }
+
+    // ---------------------------------------------------------------- loyalty points
+
+    /** kind: EARN, SPEND, SPEND_BACK, RET_BACK, RET_TAKE or ADJUST; points is signed. */
+    public record LoyaltyEntryDto(Long id, String kind, int points, int balanceAfter, String orderCode, String note, Instant at) {
+    }
+
+    /** What a customer (or staff looking at one customer) sees: the balance, the rules and the latest changes. */
+    public record LoyaltyView(boolean enabled, int points, int pointsPer100, int maxPercent, List<LoyaltyEntryDto> entries) {
+    }
+
+    public record LoyaltyCustomerDto(Long id, String name, String email, String phone, int points) {
+    }
+
+    public record LoyaltyList(long customersWithPoints, long pointsOutstanding, List<LoyaltyCustomerDto> items) {
+    }
+
+    public record LoyaltyAdjust(@NotNull Integer points, @Size(max = 200) String reason) {
     }
 
     // ---------------------------------------------------------------- abandoned carts
@@ -162,7 +181,8 @@ public final class OnlineStoreDtos {
                            Long invoiceId, String invoiceNumber, String rejectReason, String decidedBy, Instant decidedAt, Instant createdAt,
                            String paymentStatus, String paymentChannel, String paymentReference, BigDecimal paidAmount, Instant paidAt,
                            Instant refundedAt, String refundReference, String couponCode, BigDecimal discountAmount, BigDecimal feeWaived,
-                           BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events) {
+                           BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events,
+                           int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned) {
     }
 
     public record RejectRequest(@NotNull @Size(min = 1, max = 160) String reason) {
@@ -185,7 +205,7 @@ public final class OnlineStoreDtos {
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
                               String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
-                              boolean cartRemindersEnabled) {
+                              boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)

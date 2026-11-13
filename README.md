@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.40.0 - Online Store: loyalty points
+
+Signed-in shop customers earn points on completed orders (1 per 100 paid for goods by default) and spend them as a checkout discount (1 point = 1 unit of the currency, capped to a share of the goods, 50% by default). Off until switched on in the shop settings. Separate from the till's loyalty programme. Cancelled, refused or unpaid orders give points back; returns restore and take back the matching share. Staff screen **Online Store > Loyalty points** (list, history, adjust with a reason). Migration V76. See `RELEASE-NOTES-v1.40.0.md`.
+
 ### Version 1.39.0 - Online Store: abandoned-cart reminders
 
 A visitor who types an e-mail address at checkout and leaves gets two reminders (after 1 hour and after 3 days, no discount) with a link back to the cart and a link that stops the reminders. Off until switched on in Shop settings; Online Store > Abandoned carts lists them. New migration V75. Details in `RELEASE-NOTES-v1.39.0.md`.

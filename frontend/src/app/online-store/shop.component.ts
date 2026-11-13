@@ -47,7 +47,7 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
-        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
         <ng-container *ngIf="step === 'shop' && !showAccount">
         <ng-container *ngIf="landing">
@@ -208,9 +208,20 @@ import { T } from '../core/i18n/t';
             <div class="shop-coupon-ok" *ngIf="coupon" style="color:#15803d; font-size:0.9rem;">{{ 'Coupon {p0} applied.' | translate: { p0: coupon.code } }}</div>
             <div class="shop-coupon-error" *ngIf="couponError" style="color:#b91c1c; font-size:0.9rem;">{{ couponError }}</div>
           </div>
+          <div class="mb-2 shop-points-box" *ngIf="shop.loyalty && account && account.points > 0">
+            <label class="form-label">{{ 'Use loyalty points (optional)' | translate }}</label>
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'You have {p0} points. Each point takes 1 off, up to {p1} on this order.' | translate: { p0: account.points, p1: pointsCap() } }}</div>
+            <div class="flex gap-2" style="flex-wrap:wrap;">
+              <input class="form-control shop-points" type="number" min="0" [max]="pointsCap()" style="max-width:160px;" name="pointsToUse" [(ngModel)]="pointsToUse" />
+              <button type="button" class="btn btn-outline-primary shop-points-max" [disabled]="pointsCap() <= 0" (click)="pointsToUse = pointsCap()">{{ 'Use the most I can' | translate }}</button>
+              <button type="button" class="btn btn-outline-secondary shop-points-remove" *ngIf="pointsUsed() > 0" (click)="pointsToUse = 0">{{ 'Remove' | translate }}</button>
+            </div>
+          </div>
+          <div class="text-muted shop-points-hint mb-2" *ngIf="shop.loyalty && shop.accounts && !account" style="font-size:0.85rem;">{{ 'Sign in (👤 above) to earn loyalty points on your orders.' | translate }}</div>
           <hr />
           <div class="flex justify-between"><span>{{ 'Items' | translate }}</span><span>{{ subtotal() | shopMoney: cur }}</span></div>
           <div class="flex justify-between shop-discount" *ngIf="discount() > 0" style="color:#15803d;"><span>{{ 'Discount ({p0})' | translate: { p0: coupon?.code } }}</span><span>−{{ discount() | shopMoney: cur }}</span></div>
+          <div class="flex justify-between shop-points-row" *ngIf="pointsUsed() > 0" style="color:#15803d;"><span>{{ 'Loyalty points' | translate }}</span><span>−{{ pointsUsed() | shopMoney: cur }}</span></div>
           <div class="flex justify-between" *ngIf="method === 'DELIVERY'"><span>{{ 'Delivery' | translate }}</span><span>{{ feeShown() | shopMoney: cur }}<span *ngIf="waived() > 0" style="color:#15803d;"> ({{ 'free with the coupon' | translate }})</span></span></div>
           <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="shop-total">{{ orderTotal() | shopMoney: cur }}</strong></div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment === 'CASH'">{{ method === 'DELIVERY' ? ('Pay in cash when your order arrives. Prices include tax.' | translate) : ('Pay in cash when you collect. Prices include tax.' | translate) }}</div>
@@ -326,6 +337,8 @@ export class ShopComponent implements OnInit, OnDestroy {
   couponError: string | null = null;
   couponBusy = false;
   private couponSeq = 0;
+  /** Loyalty points the customer typed to use on this order. */
+  pointsToUse = 0;
   /** What could not be put back in the cart when ordering again. */
   reorderNote: string | null = null;
   /** The pending save of the cart for the reminder e-mail, what was last sent, and whether the order was placed (then nothing more is sent). */
@@ -698,7 +711,21 @@ export class ShopComponent implements OnInit, OnDestroy {
   }
 
   orderTotal(): number {
-    return this.subtotal() - this.discount() + this.feeShown();
+    return this.subtotal() - this.discount() - this.pointsUsed() + this.feeShown();
+  }
+
+  /** What loyalty points may take off this order: the signed-in customer's points, and at most the share of the goods the shop allows (the server checks again). */
+  pointsCap(): number {
+    if (!this.shop?.loyalty || !this.account) return 0;
+    const payable = this.subtotal() - this.discount();
+    const cap = Math.floor((payable * this.shop.loyaltyMaxPercent) / 100);
+    return Math.max(0, Math.min(this.account.points ?? 0, cap));
+  }
+
+  /** The points that will be used: what the customer typed, within what is allowed. */
+  pointsUsed(): number {
+    const n = Math.floor(Number(this.pointsToUse) || 0);
+    return Math.max(0, Math.min(n, this.pointsCap()));
   }
 
   /** "Apply": asks the server what the code is worth on this cart. silent = re-asking after the cart changed (a failure then just drops the coupon, with the reason). */
@@ -772,6 +799,7 @@ export class ShopComponent implements OnInit, OnDestroy {
         lines: this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty })),
         payment: this.payment, payPhone: this.payment === 'MOBILE_MONEY' ? (this.payPhone || this.phone) : null,
         couponCode: this.couponCode.trim() || null,
+        pointsToUse: this.pointsUsed() || null,
         textUpdates: !!this.shop?.textChannel && this.textUpdates,
       })
       .subscribe({

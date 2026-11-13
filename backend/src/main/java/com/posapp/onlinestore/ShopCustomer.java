@@ -24,4 +24,6 @@ public class ShopCustomer extends BaseEntity {
     /** en or fr. */
     private String language = "en";
     private Instant lastLoginAt;
+    /** Loyalty points: the balance (every change is a row of loyalty_entry). */
+    private int loyaltyPoints;
 }

@@ -1900,5 +1900,14 @@
  "Go back to my cart": "Retourner à mon panier",
  "You get this message because you typed your e-mail address when you started an order. To stop these reminders, open this link:": "Vous recevez ce message parce que vous avez saisi votre adresse e-mail en commençant une commande. Pour ne plus recevoir ces rappels, ouvrez ce lien :",
  "Stop these reminders": "Arrêter ces rappels",
- "That cart was not found.": "Ce panier est introuvable."
+ "That cart was not found.": "Ce panier est introuvable.",
+ "That account was not found.": "Ce compte est introuvable.",
+ "You do not have enough points.": "Vous n'avez pas assez de points.",
+ "Enter a number of points that is not zero.": "Saisissez un nombre de points différent de zéro.",
+ "That is too many points at once.": "C'est trop de points en une fois.",
+ "Tell why the points are changed.": "Indiquez pourquoi les points sont modifiés.",
+ "The balance cannot go below zero.": "Le solde ne peut pas devenir négatif.",
+ "Points per 100 must be between 1 and 100": "Les points par tranche de 100 doivent être compris entre 1 et 100",
+ "The share of an order that points may pay must be between 0 and 100 percent": "La part d'une commande que les points peuvent payer doit être comprise entre 0 et 100 %",
+ "Thank you. Your order {0} is complete. Invoice {1}. You earned {2} loyalty points.": "Merci. Votre commande {0} est terminée. Facture {1}. Vous avez gagné {2} points de fidélité."
 }

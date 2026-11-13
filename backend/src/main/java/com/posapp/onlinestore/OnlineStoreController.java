@@ -36,10 +36,12 @@ public class OnlineStoreController {
     private final NewsletterService newsletter;
     private final NewsletterCampaignService campaigns;
     private final CartReminderService cartReminders;
+    private final ShopLoyaltyService loyalty;
 
     public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns,
                                  OnlineReviewService reviews, NewsletterService newsletter, NewsletterCampaignService campaigns,
-                                 CartReminderService cartReminders) {
+                                 CartReminderService cartReminders, ShopLoyaltyService loyalty) {
+        this.loyalty = loyalty;
         this.cartReminders = cartReminders;
         this.reviews = reviews;
         this.newsletter = newsletter;
@@ -440,5 +442,25 @@ public class OnlineStoreController {
     public ResponseEntity<Void> cartDelete(@PathVariable Long id) {
         cartReminders.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- loyalty points
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/loyalty")
+    public LoyaltyList loyaltyList(@RequestParam(required = false) String query) {
+        return loyalty.list(query);
+    }
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/loyalty/{customerId}")
+    public LoyaltyView loyaltyLedger(@PathVariable Long customerId) {
+        return loyalty.ledger(customerId);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/loyalty/{customerId}/adjust")
+    public LoyaltyView loyaltyAdjust(@PathVariable Long customerId, @Valid @RequestBody LoyaltyAdjust request) {
+        return loyalty.adjust(customerId, request);
     }
 }

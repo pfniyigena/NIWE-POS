@@ -17,6 +17,9 @@ export interface Shop {
   textChannel: string | null;
   /** True when the shop keeps carts to remind customers who typed an e-mail address: the notice under the e-mail box shows then. */
   cartReminders: boolean;
+  /** True when signed-in customers earn and spend loyalty points; loyaltyMaxPercent is the share of the goods points may pay. */
+  loyalty: boolean;
+  loyaltyMaxPercent: number;
   /** The front page's wording, written by staff in Shop settings > Front page. */
   page: ShopPageContent;
 }
@@ -41,6 +44,8 @@ export interface ShopOrderPayload {
   payment: 'CASH' | 'MOBILE_MONEY' | 'CARD'; payPhone: string | null; couponCode: string | null;
   /** The customer ticked "send me updates by text message". */
   textUpdates: boolean;
+  /** Loyalty points the signed-in customer wants to use; the server decides how many may be used. */
+  pointsToUse?: number | null;
 }
 /** What the customer sees about paying: method COD or ONLINE; status NONE, AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED. */
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
@@ -50,13 +55,20 @@ export interface ShopTrack {
   history: { status: string; note: string | null; at: string }[];
   payment: ShopPayment;
   couponCode: string | null; discount: number; feeWaived: number;
+  /** The part of discount that was paid with loyalty points, and the points this order earned. */
+  loyaltyDiscount: number; pointsEarned: number;
 }
 /** A customer account on the public shop (no passwords: a code by e-mail or text message proves the address or number). An account opened with a phone number has no e-mail. */
-export interface AccountProfile { email: string | null; phone: string | null; name: string | null; address: string | null; language: string; phoneVerified: boolean }
+export interface AccountProfile { email: string | null; phone: string | null; name: string | null; address: string | null; language: string; phoneVerified: boolean; points: number }
 export interface AccountSession { token: string; profile: AccountProfile }
 export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
 export interface Reorder { lines: { product: ShopProduct; quantity: number }[]; unavailable: string[] }
+/** kind: EARN, SPEND, SPEND_BACK, RET_BACK, RET_TAKE or ADJUST; points is signed. */
+export interface LoyaltyEntry { id: number; kind: string; points: number; balanceAfter: number; orderCode: string | null; note: string | null; at: string }
+export interface LoyaltyView { enabled: boolean; points: number; pointsPer100: number; maxPercent: number; entries: LoyaltyEntry[] }
+export interface LoyaltyCustomer { id: number; name: string | null; email: string | null; phone: string | null; points: number }
+export interface LoyaltyList { customersWithPoints: number; pointsOutstanding: number; items: LoyaltyCustomer[] }
 /** The cart behind the link of a reminder e-mail, as the shop has it today. */
 export interface RestoredCart extends Reorder { email: string | null }
 export interface StoreCart {
@@ -79,6 +91,7 @@ export interface StoreOrder {
   invoiceNumber: string | null; rejectReason: string | null; decidedBy: string | null; decidedAt: string | null; createdAt: string;
   paymentStatus: string; paymentChannel: string | null; paymentReference: string | null; paidAmount: number | null; paidAt: string | null; refundedAt: string | null; refundReference: string | null;
   couponCode: string | null; discountAmount: number; feeWaived: number; refundedTotal: number;
+  loyaltyPointsUsed: number; loyaltyDiscount: number; loyaltyPointsEarned: number;
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
@@ -89,6 +102,7 @@ export interface StoreSettings {
   onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number; accountsEnabled: boolean;
   textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null; returnWindowDays: number;
   cartRemindersEnabled: boolean;
+  loyaltyEnabled: boolean; loyaltyPointsPer100: number; loyaltyMaxPercent: number;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED or SKIPPED; purpose is ORDER, OWNER, SIGNIN or TEST. */
@@ -220,6 +234,7 @@ export class OnlineStoreApiService {
   /** Sends a sign-in code to an e-mail address (or to the e-mail of the account that has this phone number). The answer is the same either way. */
   accountCode(identifier: string, language: string): Observable<{ sent: boolean }> { return this.http.post<{ sent: boolean }>(`${this.pub}/account/code`, { identifier, language }); }
   accountVerify(identifier: string, code: string): Observable<AccountSession> { return this.http.post<AccountSession>(`${this.pub}/account/verify`, { identifier, code }); }
+  accountLoyalty(): Observable<LoyaltyView> { return this.http.get<LoyaltyView>(`${this.pub}/account/loyalty`, { headers: this.shopHeaders() }); }
   accountMe(): Observable<AccountProfile> { return this.http.get<AccountProfile>(`${this.pub}/account/me`, { headers: this.shopHeaders() }); }
   accountSave(p: { name: string | null; phone: string | null; address: string | null; language: string }): Observable<AccountProfile> { return this.http.put<AccountProfile>(`${this.pub}/account/me`, p, { headers: this.shopHeaders() }); }
   accountOrders(): Observable<AccountOrder[]> { return this.http.get<AccountOrder[]>(`${this.pub}/account/orders`, { headers: this.shopHeaders() }); }
@@ -317,6 +332,9 @@ export class OnlineStoreApiService {
   subscriberCounts(): Observable<Record<string, number>> { return this.http.get<Record<string, number>>(`${this.base}/newsletter/counts`); }
   exportSubscribers(): Observable<Blob> { return this.http.get(`${this.base}/newsletter/export`, { responseType: 'blob' }); }
   deleteSubscriber(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/newsletter/${id}`); }
+  loyaltyList(query: string): Observable<LoyaltyList> { return this.http.get<LoyaltyList>(`${this.base}/loyalty`, { params: query ? { query } : {} }); }
+  loyaltyLedger(id: number): Observable<LoyaltyView> { return this.http.get<LoyaltyView>(`${this.base}/loyalty/${id}`); }
+  loyaltyAdjust(id: number, points: number, reason: string): Observable<LoyaltyView> { return this.http.post<LoyaltyView>(`${this.base}/loyalty/${id}/adjust`, { points, reason }); }
   carts(status: string): Observable<StoreCartList> { return this.http.get<StoreCartList>(`${this.base}/carts`, { params: status ? { status } : {} }); }
   deleteCart(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/carts/${id}`); }
   campaigns(): Observable<StoreCampaign[]> { return this.http.get<StoreCampaign[]>(`${this.base}/newsletter/campaigns`); }

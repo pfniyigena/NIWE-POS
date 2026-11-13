@@ -144,6 +144,11 @@ public class OnlineStoreAdminService {
         }
         s.setAccountsEnabled(in.accountsEnabled());
         s.setCartRemindersEnabled(in.cartRemindersEnabled());
+        s.setLoyaltyEnabled(in.loyaltyEnabled());
+        if (in.loyaltyPointsPer100() < 1 || in.loyaltyPointsPer100() > 100) throw ApiException.badRequest(I18n.t("Points per 100 must be between 1 and 100"));
+        if (in.loyaltyMaxPercent() < 0 || in.loyaltyMaxPercent() > 100) throw ApiException.badRequest(I18n.t("The share of an order that points may pay must be between 0 and 100 percent"));
+        s.setLoyaltyPointsPer100(in.loyaltyPointsPer100());
+        s.setLoyaltyMaxPercent(in.loyaltyMaxPercent());
         s.setOnlinePaymentsEnabled(in.onlinePaymentsEnabled());
         String prov = text(in.paymentProvider(), 30);
         if (in.onlinePaymentsEnabled()) {
@@ -176,7 +181,7 @@ public class OnlineStoreAdminService {
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
                 s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
-                s.isCartRemindersEnabled());
+                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent());
     }
 
     // ------------------------------------------------------------------ listings

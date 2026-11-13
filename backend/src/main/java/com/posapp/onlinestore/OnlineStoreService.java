@@ -33,6 +33,8 @@ import java.util.Map;
 @Service
 public class OnlineStoreService {
 
+    private final ShopLoyaltyService loyalty;
+
     private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int MAX_LINES = 40;
     private static final int MAX_QUANTITY = 20;
@@ -60,7 +62,8 @@ public class OnlineStoreService {
                               OnlineDeliveryZoneRepository zoneRepository, OnlineOrderRepository orderRepository,
                               StockReservationService stockReservationService, StoreSettingsService storeSettingsService,
                               MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, OnlineCouponService coupons,
-                              OnlineTextService texts) {
+                              OnlineTextService texts, ShopLoyaltyService loyalty) {
+        this.loyalty = loyalty;
         this.payments = payments;
         this.texts = texts;
         this.coupons = coupons;
@@ -170,7 +173,7 @@ public class OnlineStoreService {
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
                 listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
-                s.isCartRemindersEnabled(), page(s));
+                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyMaxPercent(), page(s));
     }
 
     /** The front page's wording as the public sees it. */
@@ -445,12 +448,24 @@ public class OnlineStoreService {
             discount = a.discount();
             waived = a.feeWaived();
             fee = fee.subtract(waived);
-            List<BigDecimal> parts = OnlineCouponService.allocate(o.getLines().stream().map(OnlineOrderLine::getLineTotal).toList(), discount);
-            for (int i = 0; i < parts.size(); i++) o.getLines().get(i).setDiscountAmount(parts.get(i));
             o.setCouponId(a.coupon().getId());
             o.setCouponCode(a.coupon().getCode());
             o.setCouponKey(OnlineCouponService.phoneKey(phone));
         }
+        // Loyalty points the signed-in customer chose to use: the server decides how many (balance, and a set share of what is left to pay for the goods).
+        int pointsUsed = 0;
+        BigDecimal pointsValue = BigDecimal.ZERO;
+        if (shopCustomerId != null && in.pointsToUse() != null && in.pointsToUse() > 0) {
+            pointsUsed = loyalty.usable(shopCustomerId, in.pointsToUse(), subtotal.subtract(discount), s);
+            pointsValue = BigDecimal.valueOf(pointsUsed).setScale(2, RoundingMode.UNNECESSARY);
+            discount = discount.add(pointsValue);
+        }
+        if (discount.signum() > 0) {
+            List<BigDecimal> parts = OnlineCouponService.allocate(o.getLines().stream().map(OnlineOrderLine::getLineTotal).toList(), discount);
+            for (int i = 0; i < parts.size(); i++) o.getLines().get(i).setDiscountAmount(parts.get(i));
+        }
+        o.setLoyaltyPointsUsed(pointsUsed);
+        o.setLoyaltyDiscount(pointsValue);
         o.setDiscountAmount(discount);
         o.setFeeWaived(waived);
         if (online && subtotal.subtract(discount).add(fee).signum() <= 0) {
@@ -486,6 +501,7 @@ public class OnlineStoreService {
         ev.setByUser("customer");
         o.getEvents().add(ev);
         OnlineOrder saved = orderRepository.save(o);
+        if (pointsUsed > 0) loyalty.recordSpend(saved, shopCustomerId, pointsUsed);
         auditLogService.record("ONLINE_ORDER_PLACED", "Online order " + saved.getCode() + " from " + name + " (" + money(saved.getTotal()) + (online ? ", to be paid online" : "") + ")", "OnlineOrder", saved.getId());
         if (online) {
             // Starting the payment can fail (bad number, provider down): the whole order is then not placed, and the customer fixes it and sends again.
@@ -557,6 +573,7 @@ public class OnlineStoreService {
         ev.setByUser("customer");
         o.getEvents().add(ev);
         boolean refundDue = payments.afterClosed(o);
+        loyalty.giveBackSpent(o);
         orderRepository.save(o);
         OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()),
                 refundDue ? OnlineMessages.m("Your order {0} has been cancelled. We will refund {1} to the account you paid with.", o.getCode(), money(o.getPaidAmount()))
@@ -580,6 +597,6 @@ public class OnlineStoreService {
         List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList();
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
-                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived());
+                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned());
     }
 }

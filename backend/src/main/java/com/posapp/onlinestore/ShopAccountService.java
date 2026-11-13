@@ -39,6 +39,8 @@ import java.util.Map;
 @Service
 public class ShopAccountService {
 
+    private final ShopLoyaltyService loyalty;
+
     private static final Logger log = LoggerFactory.getLogger(ShopAccountService.class);
     static final Duration CODE_LIFE = Duration.ofMinutes(10);
     static final Duration SESSION_LIFE = Duration.ofDays(30);
@@ -66,7 +68,8 @@ public class ShopAccountService {
     public ShopAccountService(ShopCustomerRepository customers, ShopLoginCodeRepository codes, ShopSessionRepository sessions, OnlineOrderRepository orders,
                               OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository, OnlineStoreService storeService,
                               List<ShopCodeChannel> channels, AuditLogService auditLogService, OnlineTextService texts,
-                              @Value("${app.online-store.accounts.dev-code:}") String devCode, Environment environment) {
+                              @Value("${app.online-store.accounts.dev-code:}") String devCode, Environment environment, ShopLoyaltyService loyalty) {
+        this.loyalty = loyalty;
         this.customers = customers;
         this.codes = codes;
         this.sessions = sessions;
@@ -304,7 +307,7 @@ public class ShopAccountService {
     // ------------------------------------------------------------------ the account
 
     private static AccountProfile profile(ShopCustomer c) {
-        return new AccountProfile(c.getEmail(), c.getPhone(), c.getName(), c.getAddress(), c.getLanguage(), c.isPhoneVerified());
+        return new AccountProfile(c.getEmail(), c.getPhone(), c.getName(), c.getAddress(), c.getLanguage(), c.isPhoneVerified(), c.getLoyaltyPoints());
     }
 
     @Transactional
@@ -401,11 +404,18 @@ public class ShopAccountService {
     }
 
     /** Deletes the account and its sign-ins. The orders stay (the shop needs them for its books) but are no longer tied to it. */
+    /** The signed-in customer's points and what changed them. */
+    @Transactional(readOnly = true)
+    public LoyaltyView loyalty(String token) {
+        return loyalty.view(authenticate(token));
+    }
+
     @Transactional
     public void deleteAccount(String token) {
         ShopCustomer c = authenticate(token);
         orders.unlinkOrders(c.getId());
         sessions.deleteForCustomer(c.getId());
+        loyalty.deleteFor(c.getId());
         customers.delete(c);
         auditLogService.record("SHOP_ACCOUNT_DELETED", "A shop account was deleted by its owner", "ShopCustomer", c.getId());
     }
