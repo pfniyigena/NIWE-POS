@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.41.0 - Online Store: Airtel Money payment provider
+
+A second real payment provider next to MTN MoMo: Airtel Money (Rwanda, code `AIRTEL_MONEY`), customer approves on the phone. Callbacks are never trusted (the shop asks Airtel for the status), refunds are done by hand, keys only in properties or git-ignored files in `backend/config/` (profile groups: `dev` brings `airtel-sandbox`, `store` brings `airtel-production`). Not yet tried against the real Airtel service. See `docs/online-store-airtel-money.md` and `RELEASE-NOTES-v1.41.0.md`.
+
 ### Version 1.40.0 - Online Store: loyalty points
 
 Signed-in shop customers earn points on completed orders (1 per 100 paid for goods by default) and spend them as a checkout discount (1 point = 1 unit of the currency, capped to a share of the goods, 50% by default). Off until switched on in the shop settings. Separate from the till's loyalty programme. Cancelled, refused or unpaid orders give points back; returns restore and take back the matching share. Staff screen **Online Store > Loyalty points** (list, history, adjust with a reason). Migration V76. See `RELEASE-NOTES-v1.40.0.md`.
