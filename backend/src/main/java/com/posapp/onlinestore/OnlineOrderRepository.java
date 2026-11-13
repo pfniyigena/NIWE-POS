@@ -9,6 +9,9 @@ import java.util.Optional;
 public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> {
     Optional<OnlineOrder> findByCode(String code);
 
+    /** An order from that e-mail address was placed after the given time (an abandoned cart that was finished after all). */
+    boolean existsByCustomerEmailIgnoreCaseAndCreatedAtAfter(String email, java.time.Instant after);
+
     /** The order under a lock: a customer's return request is checked against what other returns already hold, so two requests cannot both take the last unit. */
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select o from OnlineOrder o where o.code = :code")

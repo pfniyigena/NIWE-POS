@@ -384,6 +384,8 @@ import { StoreReturnsComponent } from './online-store/store-returns.component';
 import { StoreReviewsComponent } from './online-store/store-reviews.component';
 import { StoreNewsletterComponent } from './online-store/store-newsletter.component';
 import { StoreCampaignsComponent } from './online-store/store-campaigns.component';
+import { StoreCartsComponent } from './online-store/store-carts.component';
+import { ShopCartStopComponent } from './online-store/shop-cart-stop.component';
 import { StoreReportListComponent } from './online-store/store-report-list.component';
 import { ShopNewsletterComponent } from './online-store/shop-newsletter.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
@@ -1097,11 +1099,14 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/reviews', component: StoreReviewsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/newsletter', component: StoreNewsletterComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/newsletters', component: StoreCampaignsComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/carts', component: StoreCartsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/reports', component: StoreReportListComponent, canActivate: [authGuard] },
   { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/pay-test/:reference', component: ShopPayTestComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/newsletter/:action/:token', component: ShopNewsletterComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  { path: 'shop/cart/stop/:token', component: ShopCartStopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  { path: 'shop/cart/:token', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'admin/restaurant/online-orders', component: OnlineOrdersComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/online-setup', component: OnlineSetupComponent, canActivate: [authGuard] },
   { path: 'admin/restaurant/qr-print', component: QrPrintComponent, canActivate: [authGuard] },

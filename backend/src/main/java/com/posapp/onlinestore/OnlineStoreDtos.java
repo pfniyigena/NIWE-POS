@@ -45,7 +45,7 @@ public final class OnlineStoreDtos {
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
                              List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, boolean accounts, String currency, boolean coupons,
-                             String textChannel, PublicPage page) {
+                             String textChannel, boolean cartReminders, PublicPage page) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -128,6 +128,26 @@ public final class OnlineStoreDtos {
     public record Reorder(List<ReorderLine> lines, List<String> unavailable) {
     }
 
+    // ---------------------------------------------------------------- abandoned carts
+
+    /** The cart a visitor has so far, sent when they type an e-mail address at checkout (nothing is kept unless the shop has the reminders on). */
+    public record CartSave(@Size(max = 160) String email, @Size(max = 2) String language, @Size(max = 100) String website, @Valid List<PublicLine> lines) {
+    }
+
+    public record CartToken(@Size(max = 64) String token) {
+    }
+
+    /** The cart behind the link of a reminder, as the shop has it today. */
+    public record RestoredCart(List<ReorderLine> lines, List<String> unavailable, String email) {
+    }
+
+    public record CartDto(Long id, String email, String status, int items, int quantity, Instant savedAt, int reminders, Instant firstReminderAt,
+                          Instant secondReminderAt, Instant recoveredAt, String lastError) {
+    }
+
+    public record CartList(long waiting, long reminded, long done, long recovered, long stopped, long expired, List<CartDto> items) {
+    }
+
     // ---------------------------------------------------------------- staff
 
     public record OrderLineDto(Long productId, String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
@@ -164,7 +184,8 @@ public final class OnlineStoreDtos {
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
-                              String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays) {
+                              String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
+                              boolean cartRemindersEnabled) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)

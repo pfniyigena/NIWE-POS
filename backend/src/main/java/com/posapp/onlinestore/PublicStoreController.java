@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,10 +44,12 @@ public class PublicStoreController {
     private final OnlineFrontService front;
     private final OnlineReviewService reviews;
     private final NewsletterService newsletter;
+    private final CartReminderService cartReminders;
 
     public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated,
                                  ShopAccountService accounts, OnlineReturnService returns, OnlineFrontService front, OnlineReviewService reviews,
-                                 NewsletterService newsletter) {
+                                 NewsletterService newsletter, CartReminderService cartReminders) {
+        this.cartReminders = cartReminders;
         this.front = front;
         this.reviews = reviews;
         this.newsletter = newsletter;
@@ -108,6 +111,29 @@ public class PublicStoreController {
     public java.util.Map<String, Object> unsubscribeNewsletter(@Valid @RequestBody NewsletterToken request, HttpServletRequest http) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
         newsletter.unsubscribe(request.token(), ip(http));
+        return java.util.Map.of("ok", true);
+    }
+
+    /** The visitor's cart, kept for a reminder when the shop has them on and the visitor typed an e-mail address. Never fails the order flow: it answers ok either way. */
+    @PutMapping("/carts")
+    public java.util.Map<String, Object> saveCart(@Valid @RequestBody CartSave request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        cartReminders.save(request, ip(http));
+        return java.util.Map.of("ok", true);
+    }
+
+    /** The visitor opened the "back to my cart" link of a reminder. */
+    @GetMapping("/carts/{token}")
+    public RestoredCart restoreCart(@PathVariable String token) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return cartReminders.restore(token);
+    }
+
+    /** The visitor opened the "stop these reminders" link. */
+    @PostMapping("/carts/stop")
+    public java.util.Map<String, Object> stopCartReminders(@Valid @RequestBody CartToken request) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        cartReminders.stop(request.token());
         return java.util.Map.of("ok", true);
     }
 

@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren } fro
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopHome, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
@@ -167,8 +167,9 @@ import { T } from '../core/i18n/t';
           <div class="flex gap-2" style="flex-wrap:wrap;">
             <div class="form-group"><label class="form-label">{{ 'Your name' | translate }}</label><input class="form-control shop-name-input" maxlength="80" name="cname" [(ngModel)]="name" /></div>
             <div class="form-group"><label class="form-label">{{ 'Your phone number' | translate }}</label><input class="form-control shop-phone" maxlength="40" inputmode="tel" name="cphone" [(ngModel)]="phone" /></div>
-            <div class="form-group"><label class="form-label">{{ 'E-mail (optional)' | translate }}</label><input class="form-control" maxlength="160" inputmode="email" name="cemail" [(ngModel)]="email" /></div>
+            <div class="form-group"><label class="form-label">{{ 'E-mail (optional)' | translate }}</label><input class="form-control" maxlength="160" inputmode="email" name="cemail" [(ngModel)]="email" (change)="cartChanged()" /></div>
           </div>
+          <div class="text-muted shop-cart-note mb-2" *ngIf="shop.cartReminders" style="font-size:0.85rem;">{{ 'If you do not finish your order, we may remind you about your cart by e-mail: once after about 1 hour and once after 3 days. Each e-mail has a link to stop the reminders.' | translate }}</div>
           <ng-container *ngIf="method === 'DELIVERY'">
             <div class="form-group" *ngIf="shop.zones.length"><label class="form-label">{{ 'Delivery area' | translate }}</label>
               <select class="form-select" style="max-width:320px;" name="zone" [(ngModel)]="zoneId" (ngModelChange)="recheckCoupon()">
@@ -327,6 +328,10 @@ export class ShopComponent implements OnInit, OnDestroy {
   private couponSeq = 0;
   /** What could not be put back in the cart when ordering again. */
   reorderNote: string | null = null;
+  /** The pending save of the cart for the reminder e-mail, what was last sent, and whether the order was placed (then nothing more is sent). */
+  private cartTimer: ReturnType<typeof setTimeout> | null = null;
+  private cartSent = '';
+  private ordered = false;
 
   /** The front page rows chosen by staff, the banner pictures and the approved reviews (null until loaded, or when they cannot be). */
   home: ShopHome | null = null;
@@ -338,7 +343,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   nlDone: string | null = null;
   nlError: string | null = null;
 
-  constructor(private api: OnlineStoreApiService, private router: Router, public lang: LanguageService, private publicSettings: PublicSettingsApiService) {}
+  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService) {}
 
   /** The landing sections (hero, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
   get landing(): boolean {
@@ -404,6 +409,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.cartTimer) clearTimeout(this.cartTimer);
     if (this.heroTimer) clearInterval(this.heroTimer);
     if (this.railTimer) clearInterval(this.railTimer);
   }
@@ -524,6 +530,9 @@ export class ShopComponent implements OnInit, OnDestroy {
           this.api.accountMe().subscribe({ next: (p) => this.accountChanged(p), error: () => shopToken.clear() });
         }
         this.load();
+        // The "back to my cart" link of a reminder e-mail: /shop/cart/<token>.
+        const cartToken = this.route.snapshot.paramMap.get('token');
+        if (cartToken) this.restoreCart(cartToken);
         this.api.home().subscribe({ next: (h) => { this.home = h; this.startMotion(); }, error: () => (this.home = null) });
         this.publicSettings.branding().subscribe({ next: (b) => (this.logo = b.logoDataUrl || null), error: () => {} });
       },
@@ -541,6 +550,35 @@ export class ShopComponent implements OnInit, OnDestroy {
     if (!this.address.trim() && p.address) this.address = p.address;
   }
 
+  /** The cart behind the link of a reminder e-mail: today's prices go into the cart and the customer lands on the order form. */
+  private restoreCart(token: string): void {
+    this.api.restoreCart(token).subscribe({
+      next: (r) => {
+        if (r.email && !this.email.trim()) this.email = r.email;
+        this.reordered({ lines: r.lines, unavailable: r.unavailable });
+      },
+      error: () => (this.reorderNote = T('This link is not valid, or it was already used.')),
+    });
+  }
+
+  /** The cart is sent to the shop a moment after the customer types an e-mail address or changes the cart, so it can remind them if they leave. Only when the shop has reminders on. */
+  cartChanged(): void {
+    if (!this.shop?.cartReminders || this.ordered) return;
+    if (this.cartTimer) clearTimeout(this.cartTimer);
+    this.cartTimer = setTimeout(() => this.sendCart(), 1500);
+  }
+
+  private sendCart(): void {
+    this.cartTimer = null;
+    const email = this.email.trim();
+    if (!this.shop?.cartReminders || this.ordered || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
+    const lines = this.cartLines().map((l) => ({ productId: l.p.id, quantity: l.qty }));
+    const key = email.toLowerCase() + JSON.stringify(lines);
+    if (key === this.cartSent) return;
+    this.cartSent = key;
+    this.api.saveCart({ email, language: this.lang.current, website: this.website, lines }).subscribe({ error: () => (this.cartSent = '') });
+  }
+
   /** "Order again": today's products and prices go into the cart, and the customer lands on the order form. */
   reordered(r: Reorder): void {
     this.cart = {};
@@ -551,6 +589,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     }
     this.reorderNote = r.unavailable.length > 0 ? T('Not added, because they are gone or sold out: {p0}', { p0: r.unavailable.join(', ') }) : null;
     this.showAccount = false;
+    this.cartChanged();
     if (this.count() > 0) this.checkout();
     else this.step = 'shop';
   }
@@ -630,6 +669,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     }
     if (this.step === 'order' && this.count() === 0) this.back();
     this.recheckCoupon();
+    this.cartChanged();
   }
 
   cartLines(): { p: ShopProduct; qty: number }[] {
@@ -737,6 +777,8 @@ export class ShopComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (t) => {
           this.busy = false;
+          this.ordered = true;
+          if (this.cartTimer) clearTimeout(this.cartTimer);
           // A card payment (or a provider that shows its own page) sends the customer there; otherwise the order page shows what to do next.
           if (t.payment?.status === 'AWAITING' && t.payment.redirectUrl) {
             window.location.assign(t.payment.redirectUrl);

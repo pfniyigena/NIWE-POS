@@ -35,9 +35,12 @@ public class OnlineStoreController {
     private final OnlineReviewService reviews;
     private final NewsletterService newsletter;
     private final NewsletterCampaignService campaigns;
+    private final CartReminderService cartReminders;
 
     public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns,
-                                 OnlineReviewService reviews, NewsletterService newsletter, NewsletterCampaignService campaigns) {
+                                 OnlineReviewService reviews, NewsletterService newsletter, NewsletterCampaignService campaigns,
+                                 CartReminderService cartReminders) {
+        this.cartReminders = cartReminders;
         this.reviews = reviews;
         this.newsletter = newsletter;
         this.campaigns = campaigns;
@@ -422,5 +425,20 @@ public class OnlineStoreController {
     @PostMapping("/newsletter/campaigns/{id}/retry")
     public CampaignDto campaignRetry(@PathVariable Long id) {
         return campaigns.retryFailed(id);
+    }
+
+    // ---------------------------------------------------------------- abandoned carts
+
+    @PreAuthorize(VIEW)
+    @GetMapping("/carts")
+    public CartList cartList(@RequestParam(required = false) String status) {
+        return cartReminders.list(status);
+    }
+
+    @PreAuthorize(MANAGE)
+    @DeleteMapping("/carts/{id}")
+    public ResponseEntity<Void> cartDelete(@PathVariable Long id) {
+        cartReminders.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

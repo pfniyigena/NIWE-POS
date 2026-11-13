@@ -170,7 +170,7 @@ public class OnlineStoreService {
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
                 listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
-                page(s));
+                s.isCartRemindersEnabled(), page(s));
     }
 
     /** The front page's wording as the public sees it. */
@@ -227,7 +227,7 @@ public class OnlineStoreService {
     }
 
     /** The currency the shop charges in (the business currency), shown next to every price on the public shop. */
-    private String currencyCode() {
+    String currencyCode() {
         String c = storeSettingsService.getSettingsEntity().getCurrencyCode();
         return c == null || c.isBlank() ? "RWF" : c.trim().toUpperCase(java.util.Locale.ROOT);
     }

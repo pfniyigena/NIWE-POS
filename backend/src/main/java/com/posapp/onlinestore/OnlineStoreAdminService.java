@@ -143,6 +143,7 @@ public class OnlineStoreAdminService {
             s.setDeliveryProductId(p.getId());
         }
         s.setAccountsEnabled(in.accountsEnabled());
+        s.setCartRemindersEnabled(in.cartRemindersEnabled());
         s.setOnlinePaymentsEnabled(in.onlinePaymentsEnabled());
         String prov = text(in.paymentProvider(), 30);
         if (in.onlinePaymentsEnabled()) {
@@ -174,7 +175,8 @@ public class OnlineStoreAdminService {
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getStockBuffer(), s.getMinOrder(), s.getFreeDeliveryOver(),
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
-                s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays());
+                s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
+                s.isCartRemindersEnabled());
     }
 
     // ------------------------------------------------------------------ listings

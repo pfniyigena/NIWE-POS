@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.39.0 - Online Store: abandoned-cart reminders
+
+A visitor who types an e-mail address at checkout and leaves gets two reminders (after 1 hour and after 3 days, no discount) with a link back to the cart and a link that stops the reminders. Off until switched on in Shop settings; Online Store > Abandoned carts lists them. New migration V75. Details in `RELEASE-NOTES-v1.39.0.md`.
+
 ### Version 1.38.0 - Online Store: send the newsletter from the program
 
 Online Store > Send a newsletter: write a message (subject, text, optional button), choose everyone or only English or French readers, send a test to yourself, then send in batches with a daily limit. Progress, stop, retry of failed addresses, and each e-mail has the person's own unsubscribe link. New migration V74. Details in `RELEASE-NOTES-v1.38.0.md`.

@@ -9088,5 +9088,21 @@
  "Try it, then send it": "Essayer, puis envoyer",
  "Try the failed ones again": "Réessayer les échecs",
  "Who gets it": "Qui le reçoit",
- "The confirmed addresses can be downloaded as a CSV file, and a newsletter can be sent to them from Send a newsletter.": "Les adresses confirmées peuvent être téléchargées en fichier CSV, et une newsletter peut leur être envoyée depuis Envoyer une newsletter."
+ "The confirmed addresses can be downloaded as a CSV file, and a newsletter can be sent to them from Send a newsletter.": "Les adresses confirmées peuvent être téléchargées en fichier CSV, et une newsletter peut leur être envoyée depuis Envoyer une newsletter.",
+ "If you do not finish your order, we may remind you about your cart by e-mail: once after about 1 hour and once after 3 days. Each e-mail has a link to stop the reminders.": "Si vous ne terminez pas votre commande, nous pouvons vous rappeler votre panier par e-mail : une fois après environ 1 heure et une fois après 3 jours. Chaque e-mail contient un lien pour arrêter les rappels.",
+ "Abandoned-cart reminders": "Rappels de paniers abandonnés",
+ "When a visitor types an e-mail address at checkout and leaves without ordering, the shop reminds them about their cart by e-mail: once after 1 hour and once after 3 days. No discount is offered. Every e-mail has a link to stop the reminders, and nobody is reminded after they order. Needs e-mail to be set up (Settings > Email).": "Quand un visiteur saisit une adresse e-mail au paiement puis part sans commander, la boutique lui rappelle son panier par e-mail : une fois après 1 heure et une fois après 3 jours. Aucune réduction n'est proposée. Chaque e-mail contient un lien pour arrêter les rappels, et personne n'est relancé après avoir commandé. Nécessite que l'e-mail soit configuré (Paramètres > E-mail).",
+ "Send reminders for abandoned carts": "Envoyer des rappels pour les paniers abandonnés",
+ "See the carts": "Voir les paniers",
+ "Abandoned carts": "Paniers abandonnés",
+ "Carts of visitors who typed an e-mail address at checkout and did not order. Each gets a reminder after 1 hour and another after 3 days, with no discount. Switch the reminders on in Shop settings.": "Paniers des visiteurs qui ont saisi une adresse e-mail au paiement sans commander. Chacun reçoit un rappel après 1 heure et un autre après 3 jours, sans réduction. Activez les rappels dans les paramètres de la boutique.",
+ "Reminded once": "Relancé une fois",
+ "Reminded twice": "Relancé deux fois",
+ "Nothing to remind": "Rien à rappeler",
+ "Pieces": "Pièces",
+ "Last change": "Dernière modification",
+ "Second reminder": "Deuxième rappel",
+ "No carts here yet.": "Aucun panier ici pour l'instant.",
+ "Remove this cart and its e-mail address?": "Supprimer ce panier et son adresse e-mail ?",
+ "You will not get any more reminders about your cart.": "Vous ne recevrez plus de rappels au sujet de votre panier."
 }

@@ -62,6 +62,9 @@ import { API_BASE } from '../core/constants';
         <h4 class="mt-3 mb-2">{{ 'Customer accounts' | translate }}</h4>
         <p class="text-muted">{{ 'Customers can sign in with an e-mailed code (or a texted one, when text messages are on) to see their orders, save their details and order again. Guests can still buy. Needs e-mail or text messages to be set up.' | translate }}</p>
         <label class="flex gap-1 mb-2" style="align-items:center;"><input type="checkbox" name="accounts" [(ngModel)]="s.accountsEnabled" /> {{ 'Customers can sign in to see their orders (optional, by e-mailed code)' | translate }}</label>
+        <h4 class="mt-3 mb-2">{{ 'Abandoned-cart reminders' | translate }}</h4>
+        <p class="text-muted">{{ 'When a visitor types an e-mail address at checkout and leaves without ordering, the shop reminds them about their cart by e-mail: once after 1 hour and once after 3 days. No discount is offered. Every e-mail has a link to stop the reminders, and nobody is reminded after they order. Needs e-mail to be set up (Settings > Email).' | translate }}</p>
+        <label class="flex gap-1 mb-2" style="align-items:center;"><input type="checkbox" name="cartReminders" [(ngModel)]="s.cartRemindersEnabled" /> {{ 'Send reminders for abandoned carts' | translate }} <a routerLink="/admin/online-store/carts" style="margin-left:0.5rem;">{{ 'See the carts' | translate }}</a></label>
         <h4 class="mt-3 mb-2">{{ 'Text messages (SMS or WhatsApp)' | translate }}</h4>
         <p class="text-muted">{{ 'Text customers about their order (only those who ticked the box at checkout), text sign-in codes, and text the shop owner about new orders. Nothing is sent until you choose a provider.' | translate }}</p>
         <div class="flex gap-3" style="flex-wrap:wrap;">

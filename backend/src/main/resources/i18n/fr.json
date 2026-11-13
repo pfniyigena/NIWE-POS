@@ -1890,5 +1890,15 @@
  "This newsletter cannot be retried.": "Cette newsletter ne peut pas être relancée.",
  "Nothing failed.": "Aucun échec.",
  "You receive this e-mail because you subscribed to the newsletter of {0}.": "Vous recevez cet e-mail parce que vous vous êtes abonné à la newsletter de {0}.",
- "Unsubscribe": "Se désabonner"
+ "Unsubscribe": "Se désabonner",
+ "Your cart at {0} is still waiting for you": "Votre panier chez {0} vous attend toujours",
+ "You left something in your cart at {0}": "Vous avez laissé des articles dans votre panier chez {0}",
+ "A last reminder: your cart is still waiting. Items can sell out, so do not wait too long.": "Un dernier rappel : votre panier vous attend toujours. Les articles peuvent s'épuiser, ne tardez pas trop.",
+ "You started an order but did not finish it. Your cart is saved, and these items are still on sale:": "Vous avez commencé une commande sans la terminer. Votre panier est conservé, et ces articles sont toujours en vente :",
+ "Total: {0}": "Total : {0}",
+ "No longer available: {0}": "Plus disponible : {0}",
+ "Go back to my cart": "Retourner à mon panier",
+ "You get this message because you typed your e-mail address when you started an order. To stop these reminders, open this link:": "Vous recevez ce message parce que vous avez saisi votre adresse e-mail en commençant une commande. Pour ne plus recevoir ces rappels, ouvrez ce lien :",
+ "Stop these reminders": "Arrêter ces rappels",
+ "That cart was not found.": "Ce panier est introuvable."
 }

@@ -15,6 +15,8 @@ export interface Shop {
   zones: ShopZone[]; categories: string[]; payOnline: boolean; payMethods: string[]; accounts: boolean; currency: string; coupons: boolean;
   /** SMS or WHATSAPP when the shop texts customers, else null: the tick box and the phone sign-in only show then. */
   textChannel: string | null;
+  /** True when the shop keeps carts to remind customers who typed an e-mail address: the notice under the e-mail box shows then. */
+  cartReminders: boolean;
   /** The front page's wording, written by staff in Shop settings > Front page. */
   page: ShopPageContent;
 }
@@ -55,6 +57,13 @@ export interface AccountSession { token: string; profile: AccountProfile }
 export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
 export interface Reorder { lines: { product: ShopProduct; quantity: number }[]; unavailable: string[] }
+/** The cart behind the link of a reminder e-mail, as the shop has it today. */
+export interface RestoredCart extends Reorder { email: string | null }
+export interface StoreCart {
+  id: number; email: string; status: 'ACTIVE' | 'REMINDED' | 'DONE' | 'RECOVERED' | 'STOPPED' | 'EXPIRED'; items: number; quantity: number; savedAt: string;
+  reminders: number; firstReminderAt: string | null; secondReminderAt: string | null; recoveredAt: string | null; lastError: string | null;
+}
+export interface StoreCartList { waiting: number; reminded: number; done: number; recovered: number; stopped: number; expired: number; items: StoreCart[] }
 /** What a coupon code is worth on the cart: discount off the items, feeWaived off the delivery fee. */
 export interface CouponCheckResult { code: string; type: string; discount: number; feeWaived: number }
 export interface StoreCoupon {
@@ -79,6 +88,7 @@ export interface StoreSettings {
   freeDeliveryOver: number | null; maxPendingPerPhone: number; maxPerIpPerHour: number; deliveryProductId: number | null; deliveryProductName: string | null; notifyEmail: string | null; unansweredAlertMinutes: number;
   onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number; accountsEnabled: boolean;
   textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null; returnWindowDays: number;
+  cartRemindersEnabled: boolean;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED or SKIPPED; purpose is ORDER, OWNER, SIGNIN or TEST. */
@@ -187,6 +197,12 @@ export class OnlineStoreApiService {
   confirmNewsletter(token: string): Observable<{ ok: boolean; unsubscribeToken: string }> {
     return this.http.post<{ ok: boolean; unsubscribeToken: string }>(`${this.pub}/newsletter/confirm`, { token });
   }
+  /** The cart so far, sent a moment after the customer types an e-mail address (the shop keeps it only when its reminders are on). */
+  saveCart(c: { email: string; language: string; website: string; lines: { productId: number; quantity: number }[] }): Observable<{ ok: boolean }> {
+    return this.http.put<{ ok: boolean }>(`${this.pub}/carts`, c);
+  }
+  restoreCart(token: string): Observable<RestoredCart> { return this.http.get<RestoredCart>(`${this.pub}/carts/${encodeURIComponent(token)}`); }
+  stopCartReminders(token: string): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.pub}/carts/stop`, { token }); }
   unsubscribeNewsletter(token: string): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.pub}/newsletter/unsubscribe`, { token }); }
   /** Pay again, or the other way, for an order that is waiting for its payment. */
   payAgain(code: string, payment: string, payPhone: string | null): Observable<ShopTrack> {
@@ -301,6 +317,8 @@ export class OnlineStoreApiService {
   subscriberCounts(): Observable<Record<string, number>> { return this.http.get<Record<string, number>>(`${this.base}/newsletter/counts`); }
   exportSubscribers(): Observable<Blob> { return this.http.get(`${this.base}/newsletter/export`, { responseType: 'blob' }); }
   deleteSubscriber(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/newsletter/${id}`); }
+  carts(status: string): Observable<StoreCartList> { return this.http.get<StoreCartList>(`${this.base}/carts`, { params: status ? { status } : {} }); }
+  deleteCart(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/carts/${id}`); }
   campaigns(): Observable<StoreCampaign[]> { return this.http.get<StoreCampaign[]>(`${this.base}/newsletter/campaigns`); }
   campaignInfo(): Observable<StoreCampaignInfo> { return this.http.get<StoreCampaignInfo>(`${this.base}/newsletter/campaigns/info`); }
   campaign(id: number): Observable<StoreCampaign> { return this.http.get<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}`); }

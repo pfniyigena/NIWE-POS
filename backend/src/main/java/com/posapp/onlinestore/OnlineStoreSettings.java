@@ -26,6 +26,8 @@ public class OnlineStoreSettings extends BaseEntity {
     /** Customers may pay at checkout through the payment provider below (phase 2). */
     /** Customers may sign in with an e-mailed code to see their orders and keep their address (phase 3). */
     private boolean accountsEnabled = false;
+    /** A visitor who typed an e-mail address at checkout and left gets two reminders about the cart (1 hour and 3 days later), no discount. Off until the shop switches it on. */
+    private boolean cartRemindersEnabled = false;
     private boolean onlinePaymentsEnabled = false;
     /** Text messages (phase 3): the code of the text provider (see TextProvider), e.g. SIMULATED while testing. Empty = texting is off. */
     private String textProvider;
