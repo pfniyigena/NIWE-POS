@@ -52,7 +52,7 @@ import { T } from '../core/i18n/t';
         <div class="card" style="padding:0.75rem; max-width:520px;" *ngIf="canAdjust">
           <h5>{{ 'Add or remove points' | translate }}</h5>
           <div class="flex gap-2" style="flex-wrap:wrap;">
-            <input class="form-control lo-adj-points" type="number" style="max-width:140px;" [placeholder]="'Points (minus to remove)' | translate" [(ngModel)]="adjPoints" name="adjpoints" />
+            <input class="form-control lo-adj-points" type="number" style="max-width:210px;" [placeholder]="'Points (minus to remove)' | translate" [(ngModel)]="adjPoints" name="adjpoints" />
             <input class="form-control lo-adj-reason" style="max-width:280px;" maxlength="200" [placeholder]="'Why' | translate" [(ngModel)]="adjReason" name="adjreason" />
             <button class="btn btn-primary lo-adj-save" [disabled]="busy || !adjPoints || !adjReason.trim()" (click)="adjust()">{{ 'Save' | translate }}</button>
           </div>

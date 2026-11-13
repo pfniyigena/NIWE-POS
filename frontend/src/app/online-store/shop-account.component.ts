@@ -61,7 +61,7 @@ import { T } from '../core/i18n/t';
         <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control acc-address" maxlength="240" name="accaddr" [(ngModel)]="form.address" /></div>
         <div class="text-muted" *ngIf="!textChannel" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A saved phone number lets you sign in with it.' | translate }}</div>
         <div class="text-muted" *ngIf="textChannel" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A phone number you confirm by text message lets you sign in with it.' | translate }}</div>
-        <button class="btn btn-primary mt-2 acc-save" [disabled]="busy" (click)="save()">{{ 'Save my details' | translate }}</button>
+        <button class="btn btn-primary mt-2 mb-3 acc-save" [disabled]="busy" (click)="save()">{{ 'Save my details' | translate }}</button>
 
         <!-- The phone number: proved with a text message before it can be used to sign in -->
         <div class="mt-2 acc-phone-box" *ngIf="textChannel && profile.phone">
