@@ -135,6 +135,16 @@ export interface StorePageContent {
   footerLinks: string | null; socialLinks: string | null;
 }
 export interface StoreBanner { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
+/** Advertising (v1.43.0): the businesses that pay for ads, their ads, the ads the shop shows today and the report. */
+export interface StoreAdvertiser { id: number; name: string; contactName: string | null; email: string | null; phone: string | null; notes: string | null; active: boolean; adCount: number }
+export interface StoreAdvertiserForm { name: string; contactName: string; email: string; phone: string; notes: string; active: boolean }
+export interface StoreAd { id: number; advertiserId: number; advertiserName: string; title: string; placements: string[]; linkUrl: string; altText: string | null; startsOn: string | null; endsOn: string | null;
+  active: boolean; fee: number | null; feeNote: string | null; feePaid: boolean; sortOrder: number; fileName: string; sizeBytes: number; imageUrl: string; showingNow: boolean; views: number; clicks: number }
+export interface StoreAdForm { advertiserId: number | null; title: string; placements: string[]; linkUrl: string; altText: string; startsOn: string; endsOn: string; active: boolean; fee: string; feeNote: string; feePaid: boolean }
+export interface ShopAd { id: number; title: string; altText: string | null; imageUrl: string; clickUrl: string }
+export interface AdReportRow { adId: number; advertiserId: number; advertiserName: string; title: string; views: number; clicks: number; clickRate: number;
+  byPlacement: { placement: string; views: number; clicks: number }[]; fee: number | null; feeNote: string | null; feePaid: boolean }
+export interface AdReport { from: string; to: string; views: number; clicks: number; clickRate: number; rows: AdReportRow[] }
 export interface StoreReview {
   id: number; orderCode: string | null; productId: number; productName: string; reviewerName: string; rating: number; text: string | null;
   status: 'PENDING' | 'APPROVED' | 'HIDDEN'; createdAt: string; moderatedBy: string | null;
@@ -324,6 +334,39 @@ export class OnlineStoreApiService {
   }
   deleteBanner(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/banners/${id}`); }
   moveBanner(id: number, direction: 'up' | 'down'): Observable<StoreBanner[]> { return this.http.post<StoreBanner[]>(`${this.base}/banners/${id}/move?direction=${direction}`, {}); }
+  advertisers(): Observable<StoreAdvertiser[]> { return this.http.get<StoreAdvertiser[]>(`${this.base}/advertisers`); }
+  saveAdvertiser(id: number | null, f: StoreAdvertiserForm): Observable<StoreAdvertiser> { return this.http.post<StoreAdvertiser>(id ? `${this.base}/advertisers/${id}` : `${this.base}/advertisers`, f); }
+  deleteAdvertiser(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/advertisers/${id}`); }
+  ads(): Observable<StoreAd[]> { return this.http.get<StoreAd[]>(`${this.base}/ads`); }
+  /** The picture is sent with the other fields as a form; on a change, leave file out to keep the picture. */
+  saveAd(id: number | null, f: StoreAdForm, file: File | null): Observable<StoreAd> {
+    const form = new FormData();
+    form.append('advertiserId', String(f.advertiserId ?? ''));
+    form.append('title', f.title);
+    form.append('placements', f.placements.join(','));
+    form.append('linkUrl', f.linkUrl);
+    form.append('altText', f.altText);
+    form.append('startsOn', f.startsOn);
+    form.append('endsOn', f.endsOn);
+    form.append('active', String(f.active));
+    form.append('fee', f.fee);
+    form.append('feeNote', f.feeNote);
+    form.append('feePaid', String(f.feePaid));
+    if (file) form.append('file', file);
+    return this.http.post<StoreAd>(id ? `${this.base}/ads/${id}` : `${this.base}/ads`, form);
+  }
+  deleteAd(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/ads/${id}`); }
+  adReport(from: string, to: string, advertiserId: number | null): Observable<AdReport> {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    if (advertiserId) params = params.set('advertiserId', String(advertiserId));
+    return this.http.get<AdReport>(`${this.base}/ads/report`, { params });
+  }
+  /** The ads the shop may show today, by space (HOME_TOP, PRODUCT, ORDER). */
+  shopAds(): Observable<Record<string, ShopAd[]>> { return this.http.get<Record<string, ShopAd[]>>(`${this.pub}/ads`); }
+  /** Tell the shop these ads were shown in this space (counted once per visitor and half hour). */
+  adSeen(placement: string, ids: number[]): Observable<void> { return this.http.post<void>(`${this.pub}/ads/seen`, { placement, ids }); }
   reviewsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReview>> {
     return pagedList<StoreReview>(this.http, `${this.base}/reviews`, f, page, size, {});
   }

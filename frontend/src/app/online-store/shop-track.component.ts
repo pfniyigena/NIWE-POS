@@ -2,17 +2,18 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopTrack, shopToken } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, Shop, ShopAd, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopTrack, shopToken } from '../core/api/online-store-api.service';
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
+import { ShopAdComponent } from './shop-ad.component';
 
 /** Where a customer follows a shop order by its code. Refreshes by itself. */
 @Component({
   selector: 'app-shop-track',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe, PayProviderPickerComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent],
   template: `
     <div class="st-page" style="max-width:520px; margin:0 auto; padding:1rem 0.75rem 3rem;">
       <div class="alert alert-danger st-error" *ngIf="error">{{ error }}</div>
@@ -68,6 +69,8 @@ import { PayProviderPickerComponent } from './pay-provider-picker.component';
           <div class="flex justify-between"><strong>{{ 'Total' | translate }}</strong><strong class="st-total">{{ t.total | shopMoney: cur }}</strong></div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="t.payment?.method !== 'ONLINE'">{{ t.deliveryMethod === 'DELIVERY' ? ('Pay in cash when your order arrives.' | translate) : ('Pay in cash when you collect.' | translate) }}</div>
         </div>
+
+        <app-shop-ad *ngIf="ads.length" placement="ORDER" [ads]="ads"></app-shop-ad>
 
         <div class="card mb-3 st-returns" *ngIf="t.status === 'COMPLETED' && ro && (ro.returns.length || ro.allowed || ro.message)" style="padding:0.75rem;">
           <h4 class="mb-2">{{ 'Returns' | translate }}</h4>
@@ -139,6 +142,8 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   payProvider = '';
   /** While a payment is waiting, the other-way choices stay hidden until the customer asks for them. */
   otherWay = false;
+  /** The adverts for this page (the shop's ORDER space). */
+  ads: ShopAd[] = [];
   error: string | null = null;
   busy = false;
   /** Returns after completion: what may still be sent back, and the form to ask. */
@@ -166,6 +171,7 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
     this.code = this.route.snapshot.paramMap.get('code') ?? '';
     // The shop gives the currency written after the amounts (and the ways to pay again).
     this.api.shop().subscribe({ next: (sh) => (this.shop = sh), error: () => {} });
+    this.api.shopAds().subscribe({ next: (a) => (this.ads = a['ORDER'] ?? []), error: () => {} });
     this.load();
   }
 

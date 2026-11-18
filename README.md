@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.43.0 - Online Store: advertising
+
+Sell space on the shop to other businesses: Online Store > Advertising has advertisers, ads (picture, link, places, dates, fee note, paid flag) and a printable report. Three places in the shop (top of the home page, above the product list, the order tracking page), every ad labelled "Advertisement", views counted only when on screen and clicks counted through the server. Migration V78. See `docs/online-store-advertising.md` and `RELEASE-NOTES-v1.43.0.md`.
+
 ### Version 1.42.0 - Online Store: several payment providers, chosen at checkout
 
 Staff can now switch on more than one payment provider (Online Store > Shop settings > Online payments: tick MTN MoMo and/or Airtel Money). At checkout (and when paying again from the tracking page) the customer sees one chip per provider and picks the one to pay with; each chip shows a logo when one is supplied in `frontend/src/assets/payment/` (`mtn_momo.png`, `airtel_money.png`, see the README there). With a single provider nothing changes. Migration V77. See `RELEASE-NOTES-v1.42.0.md`.

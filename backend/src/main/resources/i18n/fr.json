@@ -1913,5 +1913,19 @@
  "That number has no Airtel Money account. Check it or choose another way to pay.": "Ce numéro n'a pas de compte Airtel Money. Vérifiez-le ou choisissez un autre moyen de payer.",
  "Airtel Money refunds are done by hand: refund the customer from your Airtel Money account and record it with \"I refunded it myself\" and the Airtel reference.": "Les remboursements Airtel Money se font à la main : remboursez le client depuis votre compte Airtel Money et enregistrez-le avec « Je l'ai remboursé moi-même » et la référence Airtel.",
  "Airtel Money refunds are done by hand: refund the customer from your Airtel Money account and record it with \"I refunded it myself\" and the Airtel reference {0}.": "Les remboursements Airtel Money se font à la main : remboursez le client depuis votre compte Airtel Money et enregistrez-le avec « Je l'ai remboursé moi-même » et la référence Airtel {0}.",
- "Choose which provider to pay with": "Choisissez avec quel fournisseur payer"
+ "Choose which provider to pay with": "Choisissez avec quel fournisseur payer",
+ "A date does not look right.": "Une date n'est pas correcte.",
+ "A picture can be at most 5 MB.": "Une image peut faire 5 Mo au maximum.",
+ "Choose the ad's picture.": "Choisissez l'image de l'annonce.",
+ "Choose the advertiser.": "Choisissez l'annonceur.",
+ "Choose where the ad is shown.": "Choisissez où l'annonce est affichée.",
+ "Enter a title for the ad (staff see it, the shop does not).": "Saisissez un titre pour l'annonce (le personnel le voit, la boutique non).",
+ "Enter the address the ad links to (starting with https://).": "Saisissez l'adresse vers laquelle l'annonce renvoie (commençant par https://).",
+ "Enter the advertiser's name.": "Saisissez le nom de l'annonceur.",
+ "Fill in the ad first.": "Remplissez d'abord l'annonce.",
+ "The ad must be a JPEG, PNG, WebP or GIF picture.": "L'annonce doit être une image JPEG, PNG, WebP ou GIF.",
+ "The fee must be a number, zero or more.": "Le tarif doit être un nombre, zéro ou plus.",
+ "The link must be a web address starting with http:// or https://.": "Le lien doit être une adresse web commençant par http:// ou https://.",
+ "This advertiser still has ads. Delete the ads first, or just switch the advertiser off.": "Cet annonceur a encore des annonces. Supprimez d'abord les annonces, ou désactivez simplement l'annonceur.",
+ "Not found.": "Introuvable."
 }

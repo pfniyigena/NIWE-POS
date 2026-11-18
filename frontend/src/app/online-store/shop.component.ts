@@ -3,10 +3,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAd, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
+import { ShopAdComponent } from './shop-ad.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -18,7 +19,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent],
   template: `
     <div class="shop-announce" *ngIf="shop?.page?.announcementText" style="background:#1d4ed8; color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
       <a *ngIf="shop?.page?.announcementLink; else announceText" class="shop-announce-link" style="color:#fff; text-decoration:underline; cursor:pointer;" (click)="openLink(shop?.page?.announcementLink)">{{ shop?.page?.announcementText }}</a>
@@ -74,6 +75,8 @@ import { T } from '../core/i18n/t';
             </ng-container>
           </section>
 
+          <app-shop-ad *ngIf="adsFor('HOME_TOP').length" placement="HOME_TOP" [ads]="adsFor('HOME_TOP')"></app-shop-ad>
+
           <section class="shop-row mt-4" *ngFor="let r of rows" [attr.data-row]="r.key">
             <h3>{{ r.title | translate }}</h3>
             <div class="shop-carousel" style="position:relative;" (mouseenter)="hold(rail, true)" (mouseleave)="hold(rail, false)" (touchstart)="hold(rail, true)" (touchend)="hold(rail, false)" (focusin)="hold(rail, true)" (focusout)="hold(rail, false)">
@@ -92,6 +95,7 @@ import { T } from '../core/i18n/t';
           <button *ngFor="let c of shop.categories" class="btn btn-sm" [class.btn-primary]="category === c" [class.btn-outline-secondary]="category !== c" (click)="pickCategory(c)">{{ c }}</button>
         </div>
 
+        <app-shop-ad *ngIf="adsFor('PRODUCT').length" placement="PRODUCT" [ads]="adsFor('PRODUCT')"></app-shop-ad>
         <div id="shop-top"></div>
         <div class="shop-grid mt-3" [style.opacity]="loading ? 0.5 : 1" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
           <ng-container *ngFor="let p of items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
@@ -544,7 +548,15 @@ export class ShopComponent implements OnInit, OnDestroy {
     return this.shop?.currency ?? '';
   }
 
+  /** The ads the shop may show today, by space (empty until loaded, or when none is set up). */
+  ads: Record<string, ShopAd[]> = {};
+
+  adsFor(space: string): ShopAd[] {
+    return this.ads[space] ?? [];
+  }
+
   ngOnInit(): void {
+    this.api.shopAds().subscribe({ next: (a) => (this.ads = a), error: () => {} });
     this.api.shop().subscribe({
       next: (s) => {
         this.shop = s;
