@@ -93,7 +93,7 @@ public class MtnMomoPaymentProvider implements PaymentProvider {
         this.apiKey = trim(apiKey);
         this.callbackUrl = trim(callbackUrl);
         this.countryCode = trim(countryCode).isEmpty() ? "250" : trim(countryCode);
-        this.refundPath = trim(refundPath).isEmpty() ? "/collection/v2_0/refund" : "/" + trim(refundPath).replaceAll("^/+", "").replaceAll("/+$", "");
+        this.refundPath = trim(refundPath).isEmpty() ? "/collection/v1_0/refund" : "/" + trim(refundPath).replaceAll("^/+", "").replaceAll("/+$", "");
         this.refundWaitSeconds = Math.max(0, Math.min(20, refundWaitSeconds));
         this.timeout = Duration.ofSeconds(Math.max(3, Math.min(60, timeoutSeconds)));
         this.http = HttpClient.newBuilder().connectTimeout(this.timeout).build();
