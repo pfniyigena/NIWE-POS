@@ -209,6 +209,26 @@ public class InvoiceService {
     }
 
     /**
+     * Same as {@link #generate} but sends no e-mail yet: for a caller that records a payment on the invoice straight away (an order paid online) and
+     * then calls {@link #emailIssued}, so the copy the customer receives already shows what was paid instead of "unpaid".
+     */
+    @Transactional
+    public InvoiceDto generateWithoutEmail(Long salesOrderId) {
+        Invoice saved = buildFromSalesOrder(salesOrderId, InvoiceStatus.ISSUED);
+        auditLogService.record("INVOICE_GENERATED",
+                "Generated invoice " + saved.getInvoiceNumber() + " for sales order " + saved.getSalesOrderNumber()
+                        + " (" + saved.getTotalAmount() + ")",
+                "Invoice", saved.getId());
+        return toDto(saved);
+    }
+
+    /** The "invoice issued" e-mail for an invoice made with {@link #generateWithoutEmail}, built from its current state (payments included). */
+    @Transactional(readOnly = true)
+    public void emailIssued(Long id) {
+        sendIssuedEmail(getById(id));
+    }
+
+    /**
      * Fourier: "Once Sale order is FULFILLED it will create automatically a draft invoice" — the
      * exact same snapshot {@link #generate} builds, just left as {@code DRAFT} rather than
      * immediately {@code ISSUED}, since nobody explicitly asked for this one — it's a side effect

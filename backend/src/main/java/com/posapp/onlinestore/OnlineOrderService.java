@@ -295,7 +295,8 @@ public class OnlineOrderService {
             fr.setLines(entries);
             salesOrderService.fulfillLines(so.id(), fr);
         }
-        InvoiceDto inv = invoiceService.generate(so.id());
+        // No e-mail yet: it goes out below, after the payment is recorded, so the invoice the customer receives is not marked unpaid.
+        InvoiceDto inv = invoiceService.generateWithoutEmail(so.id());
         o.setInvoiceId(inv.id());
         o.setInvoiceNumber(inv.invoiceNumber());
         boolean prepaid = paid(o);
@@ -319,6 +320,7 @@ public class OnlineOrderService {
             pay.setNote(I18n.t("Online order {0}", o.getCode()));
             invoiceService.recordPayment(inv.id(), pay, caller);
         }
+        invoiceService.emailIssued(inv.id());
         move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
