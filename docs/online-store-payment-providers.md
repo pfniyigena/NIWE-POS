@@ -38,3 +38,5 @@ The Online Store takes payments through one interface, `com.posapp.onlinestore.p
 ## Testing without a provider
 
 Set `app.online-store.payments.simulated.enabled=true` and a `app.online-store.payments.simulated.secret` (the development profile already does). In the shop choose Online payments > Simulated provider. At checkout the customer lands on a test page with **Pay** and **Decline**; both go through the same signed webhook a real provider would call. `node tools/online-store-smoke.mjs <base> <user> <password> <secret>` runs the whole flow.
+
+The pretend provider is for development only: it is offered (in the shop settings and at checkout) only in the `dev` profile and only while `app.online-store.payments.simulated.enabled=true`. On any other profile it is ignored and hidden, whatever the settings say, so a live shop lists only the real providers (MTN MoMo, Airtel Money). To hide it in dev too, remove that setting.

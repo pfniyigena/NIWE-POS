@@ -274,7 +274,9 @@ export class StoreSetupComponent implements OnInit {
 
   /** The providers ticked: the settings keep their codes separated by commas. */
   private chosenProviders(): string[] {
-    return (this.s?.paymentProvider ?? '').split(',').map((c) => c.trim()).filter((c) => c);
+    // Only codes still on offer count: a provider that is no longer listed (e.g. the pretend one) is dropped on the next save.
+    const offered = this.providers.map((p) => p.code);
+    return (this.s?.paymentProvider ?? '').split(',').map((c) => c.trim()).filter((c) => c && (!offered.length || offered.includes(c)));
   }
 
   hasProvider(code: string): boolean {

@@ -122,7 +122,9 @@ public class OnlinePaymentService {
     }
 
     public List<ProviderDto> providerList() {
-        return providers.stream().map(p -> new ProviderDto(p.code(), p.label(), p.available(), p.methods())).toList();
+        // The pretend provider is listed only while it is usable (dev profile, switched on): a live shop shows just the real providers.
+        return providers.stream().filter(p -> !com.posapp.onlinestore.payment.SimulatedPaymentProvider.CODE.equals(p.code()) || p.available())
+                .map(p -> new ProviderDto(p.code(), p.label(), p.available(), p.methods())).toList();
     }
 
     /** How a customer may pay online right now (empty = not at all). */

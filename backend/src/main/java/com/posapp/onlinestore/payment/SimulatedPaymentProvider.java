@@ -50,7 +50,7 @@ public class SimulatedPaymentProvider implements PaymentProvider {
     void warn() {
         if (!enabled) return;
         boolean dev = List.of(environment.getActiveProfiles()).contains("dev");
-        if (!dev) log.warn("The SIMULATED payment provider is enabled outside the dev profile: no real money moves. Switch it off on a live shop.");
+        if (!dev) log.warn("The SIMULATED payment provider is switched on outside the dev profile: it is ignored and hidden. Remove app.online-store.payments.simulated.enabled from this server's config.");
         if (secret.length() < 8) log.warn("app.online-store.payments.simulated.secret is empty or too short: the simulated webhook cannot be signed, so no simulated payment will be confirmed.");
     }
 
@@ -85,7 +85,8 @@ public class SimulatedPaymentProvider implements PaymentProvider {
 
     @Override
     public boolean available() {
-        return enabled;
+        // The pretend provider exists for development only: outside the dev profile it is never offered, whatever the settings say.
+        return enabled && List.of(environment.getActiveProfiles()).contains("dev");
     }
 
     @Override
