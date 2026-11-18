@@ -1927,5 +1927,13 @@
  "The fee must be a number, zero or more.": "Le tarif doit être un nombre, zéro ou plus.",
  "The link must be a web address starting with http:// or https://.": "Le lien doit être une adresse web commençant par http:// ou https://.",
  "This advertiser still has ads. Delete the ads first, or just switch the advertiser off.": "Cet annonceur a encore des annonces. Supprimez d'abord les annonces, ou désactivez simplement l'annonceur.",
- "Not found.": "Introuvable."
+ "Not found.": "Introuvable.",
+ "Each specification needs a name and a value.": "Chaque caractéristique doit avoir un nom et une valeur.",
+ "A specification name can be at most {0} characters.": "Le nom d'une caractéristique peut avoir au plus {0} caractères.",
+ "A specification value can be at most {0} characters.": "La valeur d'une caractéristique peut avoir au plus {0} caractères.",
+ "At most {0} specifications can be written for a product.": "Au plus {0} caractéristiques peuvent être saisies pour un produit.",
+ "The specifications could not be saved.": "Les caractéristiques n'ont pas pu être enregistrées.",
+ "At most {0} extra pictures can be added to a product. Remove one first.": "Au plus {0} photos supplémentaires peuvent être ajoutées à un produit. Supprimez-en une d'abord.",
+ "The picture must be a JPEG, PNG, WebP or GIF picture.": "La photo doit être une image JPEG, PNG, WebP ou GIF.",
+ "Put the product on the shop first.": "Mettez d'abord le produit en vente sur la boutique."
 }

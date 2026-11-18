@@ -190,7 +190,7 @@ export class StoreAdsComponent implements OnInit {
 
   readonly spaces = [
     { code: 'HOME_TOP', label: 'Top of the shop home page' },
-    { code: 'PRODUCT', label: 'Above the product list' },
+    { code: 'PRODUCT', label: 'Above the product list and on product pages' },
     { code: 'ORDER', label: 'Order tracking page (also after paying)' },
   ];
 

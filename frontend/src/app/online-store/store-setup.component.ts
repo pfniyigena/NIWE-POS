@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -205,6 +205,42 @@ import { API_BASE } from '../core/constants';
               <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'Special offers and discounts' | translate }}"><input type="checkbox" class="tag-offer" [name]="'to' + l.id" [(ngModel)]="l.specialOffer" /> {{ 'Offer' | translate }}</label>
               <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'New arrivals' | translate }}"><input type="checkbox" class="tag-new" [name]="'tn' + l.id" [(ngModel)]="l.newArrival" /> {{ 'New' | translate }}</label>
             </div>
+            <div style="margin-top:0.6rem;">
+              <button type="button" class="btn btn-sm btn-outline-secondary lst-details-btn" (click)="toggleDetails(l)">{{ detailsFor === l.productId ? ('Hide the product page details' | translate) : ('Product page: pictures, description, specifications' | translate) }}</button>
+            </div>
+            <div class="lst-details" *ngIf="detailsFor === l.productId" style="margin-top:0.6rem; padding:0.75rem; background:rgba(128,128,128,0.12); border-radius:8px;">
+              <div class="text-muted" *ngIf="!details" style="font-size:0.85rem;">{{ 'Loading…' | translate }}</div>
+              <ng-container *ngIf="details">
+                <label class="form-label" style="font-size:0.8rem;">{{ 'Description on the shop' | translate }}</label>
+                <textarea class="form-control lst-desc" rows="4" maxlength="2000" style="width:100%;" [name]="'d' + l.id" [(ngModel)]="l.webDescription" [placeholder]="'Empty: the product description is shown' | translate"></textarea>
+                <div class="text-muted" style="font-size:0.8rem;">{{ 'Press Save above to keep the description.' | translate }}</div>
+
+                <label class="form-label mt-3" style="font-size:0.8rem;">{{ 'More pictures (the product picture is always shown first)' | translate }}</label>
+                <div class="flex gap-2" style="flex-wrap:wrap;">
+                  <div class="lst-pic" *ngFor="let i of details.images; let k = index" style="width:120px; border:1px solid #e5e7eb; border-radius:8px; padding:0.3rem; background:rgba(128,128,128,0.1);">
+                    <img [src]="pictureThumb(i.url)" [alt]="i.fileName" style="width:100%; height:80px; object-fit:cover; border-radius:6px;" />
+                    <div class="flex gap-1 mt-1" style="justify-content:center;">
+                      <button type="button" class="btn btn-sm btn-outline-secondary lst-pic-up" [disabled]="k === 0 || detailsBusy" [attr.aria-label]="'Move earlier' | translate" (click)="movePicture(i.id, 'up')">←</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary lst-pic-down" [disabled]="k === details.images.length - 1 || detailsBusy" [attr.aria-label]="'Move later' | translate" (click)="movePicture(i.id, 'down')">→</button>
+                      <button type="button" class="btn btn-sm btn-outline-danger lst-pic-del" [disabled]="detailsBusy" [attr.aria-label]="'Remove' | translate" (click)="deletePicture(i.id)">✕</button>
+                    </div>
+                  </div>
+                </div>
+                <input type="file" class="form-control lst-pic-file mt-1" accept="image/jpeg,image/png,image/webp,image/gif" multiple [disabled]="detailsBusy || details.images.length >= details.maxImages" (change)="pickPictures($event, l)" style="max-width:360px;" />
+                <div class="text-muted" style="font-size:0.8rem;">{{ 'Up to {p0} more pictures, each at most 5 MB.' | translate: { p0: details.maxImages } }}</div>
+
+                <label class="form-label mt-3" style="font-size:0.8rem;">{{ 'Specifications (for example Size: 5 kg)' | translate }}</label>
+                <div class="lst-spec flex gap-1 mb-1" *ngFor="let r of specRows; let k = index" style="align-items:center;">
+                  <input class="form-control" style="flex:1; min-width:0;" maxlength="60" [name]="'sl' + l.id + '_' + k" [(ngModel)]="r.label" [placeholder]="'Name' | translate" />
+                  <input class="form-control" style="flex:2; min-width:0;" maxlength="200" [name]="'sv' + l.id + '_' + k" [(ngModel)]="r.value" [placeholder]="'Value' | translate" />
+                  <button type="button" class="btn btn-sm btn-outline-danger" [attr.aria-label]="'Remove' | translate" (click)="specRows.splice(k, 1)">✕</button>
+                </div>
+                <div class="flex gap-2 mt-1">
+                  <button type="button" class="btn btn-sm btn-outline-secondary lst-spec-add" [disabled]="specRows.length >= 20" (click)="specRows.push({ label: '', value: '' })">{{ 'Add a row' | translate }}</button>
+                  <button type="button" class="btn btn-sm btn-primary lst-spec-save" [disabled]="detailsBusy" (click)="saveSpecs(l)">{{ 'Save the specifications' | translate }}</button>
+                </div>
+              </ng-container>
+            </div>
           </div>
         </div>
         <p class="text-muted listing-none" *ngIf="listings.length && !filteredListings().length">{{ 'No product matches.' | translate }}</p>
@@ -303,6 +339,86 @@ export class StoreSetupComponent implements OnInit {
     this.loadListings();
     this.loadZones();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });
+  }
+
+  // ---- the product page details of one product (pictures and specifications); the description is saved with the listing's own Save button
+  detailsFor: number | null = null;
+  details: ListingDetails | null = null;
+  specRows: ProductSpec[] = [];
+  detailsBusy = false;
+
+  toggleDetails(l: StoreListing): void {
+    if (this.detailsFor === l.productId) {
+      this.detailsFor = null;
+      this.details = null;
+      return;
+    }
+    this.detailsFor = l.productId;
+    this.details = null;
+    this.api.listingDetails(l.productId).subscribe({
+      next: (d) => this.applyDetails(d),
+      error: (e) => { this.detailsFor = null; this.fail(e, 'Could not load the details'); },
+    });
+  }
+
+  private applyDetails(d: ListingDetails): void {
+    this.details = d;
+    this.specRows = d.specs.map((r) => ({ ...r }));
+    if (!this.specRows.length) this.specRows.push({ label: '', value: '' });
+  }
+
+  pictureThumb(url: string): string {
+    return this.api.imageUrl(url) + '?w=240';
+  }
+
+  /** Uploads the chosen pictures one after the other; one that is refused is reported and the rest carry on. */
+  pickPictures(ev: Event, l: StoreListing): void {
+    const input = ev.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length || !this.details) return;
+    this.detailsBusy = true;
+    this.error = null;
+    this.message = null;
+    const queue = files.slice(0, Math.max(0, this.details.maxImages - this.details.images.length));
+    const next = (): void => {
+      const f = queue.shift();
+      if (!f) {
+        this.detailsBusy = false;
+        if (!this.error) this.ok('Pictures saved');
+        return;
+      }
+      this.api.addListingImage(l.productId, f).subscribe({
+        next: (d) => { this.details = d; next(); },
+        error: (e) => { this.error = (e?.error?.message ?? T('Could not add the picture')) + ' (' + f.name + ')'; next(); },
+      });
+    };
+    next();
+  }
+
+  movePicture(id: number, direction: 'up' | 'down'): void {
+    this.detailsBusy = true;
+    this.api.moveListingImage(id, direction).subscribe({
+      next: (d) => { this.details = d; this.detailsBusy = false; },
+      error: (e) => { this.detailsBusy = false; this.fail(e, 'Could not move the picture'); },
+    });
+  }
+
+  deletePicture(id: number): void {
+    if (!confirm(T('Remove this picture?'))) return;
+    this.detailsBusy = true;
+    this.api.deleteListingImage(id).subscribe({
+      next: (d) => { this.details = d; this.detailsBusy = false; this.ok('Removed'); },
+      error: (e) => { this.detailsBusy = false; this.fail(e, 'Could not remove the picture'); },
+    });
+  }
+
+  saveSpecs(l: StoreListing): void {
+    this.detailsBusy = true;
+    this.api.saveListingSpecs(l.productId, this.specRows).subscribe({
+      next: (d) => { this.applyDetails(d); this.detailsBusy = false; this.ok('Saved'); },
+      error: (e) => { this.detailsBusy = false; this.fail(e, 'Could not save the specifications'); },
+    });
   }
 
   bannerThumb(b: StoreBanner): string {

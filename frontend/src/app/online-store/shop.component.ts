@@ -8,6 +8,7 @@ import { PublicSettingsApiService } from '../core/api/public-settings-api.servic
 import { ShopAccountComponent } from './shop-account.component';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopAdComponent } from './shop-ad.component';
+import { ShopProductComponent } from './shop-product.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -19,7 +20,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent],
   template: `
     <div class="shop-announce" *ngIf="shop?.page?.announcementText" style="background:#1d4ed8; color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
       <a *ngIf="shop?.page?.announcementLink; else announceText" class="shop-announce-link" style="color:#fff; text-decoration:underline; cursor:pointer;" (click)="openLink(shop?.page?.announcementLink)">{{ shop?.page?.announcementText }}</a>
@@ -51,7 +52,9 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
         <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
-        <ng-container *ngIf="step === 'shop' && !showAccount">
+        <app-shop-product *ngIf="step === 'shop' && !showAccount && viewId" [productId]="viewId" [cur]="cur" [open]="shop.open" [cart]="cart" [ads]="adsFor('PRODUCT')" (change)="change($event.p, $event.by)"></app-shop-product>
+
+        <ng-container *ngIf="step === 'shop' && !showAccount && !viewId">
         <ng-container *ngIf="landing">
           <section class="shop-hero" style="margin-top:1rem; border-radius:14px; color:#fff; background-color:#1f2937; position:relative; overflow:hidden; min-height:300px; display:flex; align-items:center;"
                    (mouseenter)="heroHold = true" (mouseleave)="heroHold = false" (touchstart)="heroTouchStart($event)" (touchend)="heroTouchEnd($event)">
@@ -294,9 +297,11 @@ import { T } from '../core/i18n/t';
 
       <ng-template #card let-p>
           <div class="card shop-product" style="padding:0.6rem;">
+            <a class="shop-product-link" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="display:block; color:inherit; text-decoration:none;">
             <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; height:130px; object-fit:cover; border-radius:6px;" />
             <div *ngIf="!p.imageUrl" style="width:100%; height:130px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
             <div class="mt-1"><strong>{{ p.name }}</strong><span class="shop-offer-badge" *ngIf="p.wasPrice" style="margin-left:0.3rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.35rem; font-size:0.7rem;">{{ 'Offer' | translate }}</span></div>
+            </a>
             <div class="shop-rating" *ngIf="p.ratingCount > 0" style="color:#d97706; font-size:0.85rem;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }} <span class="text-muted">({{ p.ratingCount }})</span></div>
             <div class="text-muted" style="font-size:0.8rem; min-height:2.2em;" *ngIf="p.description">{{ p.description | slice: 0 : 80 }}</div>
             <div class="flex justify-between align-center mt-1">
@@ -526,6 +531,7 @@ export class ShopComponent implements OnInit, OnDestroy {
 
   /** The brand in the header: back to the start of the shop. */
   goHome(): void {
+    this.closeProduct();
     this.step = 'shop';
     this.showAccount = false;
     this.q = '';
@@ -575,7 +581,14 @@ export class ShopComponent implements OnInit, OnDestroy {
     return this.ads[space] ?? [];
   }
 
+  /** The product whose page is open (/shop?product=ID), or null while the shop's own pages show. It follows the address, so the back button and shared links work. */
+  viewId: number | null = null;
+
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe((m) => {
+      const v = Number(m.get('product'));
+      this.viewId = Number.isInteger(v) && v > 0 ? v : null;
+    });
     this.api.shopAds().subscribe({ next: (a) => (this.ads = a), error: () => {} });
     this.api.shop().subscribe({
       next: (s) => {
@@ -677,8 +690,14 @@ export class ShopComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Leaves a product page for the shop's own pages. */
+  private closeProduct(): void {
+    if (this.viewId) void this.router.navigate([], { relativeTo: this.route, queryParams: { product: null }, queryParamsHandling: 'merge' });
+  }
+
   searchChanged(v: string): void {
     this.q = v ?? '';
+    this.closeProduct();
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => {
       this.page = 0;

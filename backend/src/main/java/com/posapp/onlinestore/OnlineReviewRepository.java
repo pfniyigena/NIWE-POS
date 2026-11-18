@@ -30,4 +30,12 @@ public interface OnlineReviewRepository extends JpaRepository<OnlineReview, Long
     /** Over the whole shop: average rating and number of approved reviews. */
     @Query("select avg(r.rating), count(r) from OnlineReview r where r.status = 'APPROVED'")
     List<Object[]> overall();
+
+    /** The newest approved reviews of one product that have words in them. */
+    @Query("select r from OnlineReview r where r.status = 'APPROVED' and r.productId = :productId and r.reviewText is not null and r.reviewText <> '' order by r.id desc")
+    List<OnlineReview> findShownForProduct(@Param("productId") Long productId, org.springframework.data.domain.Pageable page);
+
+    /** Per star count (1 to 5): how many approved reviews of the product gave it. */
+    @Query("select r.rating, count(r) from OnlineReview r where r.status = 'APPROVED' and r.productId = :productId group by r.rating")
+    List<Object[]> breakdown(@Param("productId") Long productId);
 }

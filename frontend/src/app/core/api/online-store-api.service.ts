@@ -9,6 +9,18 @@ export interface ShopZone { id: number; name: string; fee: number; minOrder: num
 export interface ShopProduct { id: number; name: string; description: string | null; price: number; category: string | null; imageUrl: string | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT';
   /** The normal price when staff set a lower online price (shown struck through); 0 stars and 0 reviews when nobody reviewed it. */
   wasPrice: number | null; rating: number; ratingCount: number }
+/** One row of the specifications table of a product page. */
+export interface ProductSpec { label: string; value: string }
+export interface ProductReview { productName: string; reviewerName: string; rating: number; text: string | null; at: string }
+/** The product page: images are the gallery addresses in order (the product's own picture first). stars[0] counts 1-star reviews, stars[4] 5-star ones. */
+export interface ProductDetail {
+  product: ShopProduct; brand: string | null; images: string[]; specs: ProductSpec[];
+  rating: { average: number; count: number; stars: number[] };
+  reviews: ProductReview[]; related: ShopProduct[];
+}
+/** What staff edit for a product on the shop: extra pictures and specification rows. */
+export interface ListingImage { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
+export interface ListingDetails { images: ListingImage[]; specs: ProductSpec[]; hasMainImage: boolean; maxImages: number }
 /** A provider the customer may pay with (several can be switched on: the customer chooses). */
 export interface ShopPayProvider { code: string; label: string; available: boolean; methods: string[] }
 export interface Shop {
@@ -322,6 +334,15 @@ export class OnlineStoreApiService {
     featured?: boolean; bestSeller?: boolean; specialOffer?: boolean; newArrival?: boolean }): Observable<StoreListing> {
     return this.http.post<StoreListing>(`${this.base}/listings`, body);
   }
+  listingDetails(productId: number): Observable<ListingDetails> { return this.http.get<ListingDetails>(`${this.base}/listings/${productId}/details`); }
+  saveListingSpecs(productId: number, specs: ProductSpec[]): Observable<ListingDetails> { return this.http.put<ListingDetails>(`${this.base}/listings/${productId}/specs`, { specs }); }
+  addListingImage(productId: number, file: File): Observable<ListingDetails> {
+    const f = new FormData();
+    f.append('file', file);
+    return this.http.post<ListingDetails>(`${this.base}/listings/${productId}/images`, f);
+  }
+  deleteListingImage(id: number): Observable<ListingDetails> { return this.http.delete<ListingDetails>(`${this.base}/listing-images/${id}`); }
+  moveListingImage(id: number, direction: 'up' | 'down'): Observable<ListingDetails> { return this.http.post<ListingDetails>(`${this.base}/listing-images/${id}/move?direction=${direction}`, {}); }
   removeListing(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/listings/${id}`); }
   // ---- staff: front page wording, reviews, newsletter
   pageContent(): Observable<StorePageContent> { return this.http.get<StorePageContent>(`${this.base}/page-content`); }
@@ -366,6 +387,7 @@ export class OnlineStoreApiService {
   /** The ads the shop may show today, by space (HOME_TOP, PRODUCT, ORDER). */
   shopAds(): Observable<Record<string, ShopAd[]>> { return this.http.get<Record<string, ShopAd[]>>(`${this.pub}/ads`); }
   /** Tell the shop these ads were shown in this space (counted once per visitor and half hour). */
+  productDetail(id: number): Observable<ProductDetail> { return this.http.get<ProductDetail>(`${this.pub}/products/${id}`); }
   adSeen(placement: string, ids: number[]): Observable<void> { return this.http.post<void>(`${this.pub}/ads/seen`, { placement, ids }); }
   reviewsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReview>> {
     return pagedList<StoreReview>(this.http, `${this.base}/reviews`, f, page, size, {});

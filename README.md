@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.44.0 - Online Store: product page
+
+Every product on the shop now has its own page (an address customers can share: `/shop?product=ID`): bigger picture and a gallery of up to 5 more pictures, price and stock, full description, a specifications table (staff write rows like "Size: 5 kg"), the star rating with the approved reviews, and related products. Staff manage the pictures, description and specifications in Shop settings > Products on the shop > "Product page". Ratings stay as before: only buyers can review, from their completed order, and staff approve. Ads placed "above the product list" also show on product pages. Migration V79. See `docs/online-store-product-page.md` and `RELEASE-NOTES-v1.44.0.md`.
+
 ### Version 1.43.0 - Online Store: advertising
 
 Sell space on the shop to other businesses: Online Store > Advertising has advertisers, ads (picture, link, places, dates, fee note, paid flag) and a printable report. Three places in the shop (top of the home page, above the product list, the order tracking page), every ad labelled "Advertisement", views counted only when on screen and clicks counted through the server. Migration V78. See `docs/online-store-advertising.md` and `RELEASE-NOTES-v1.43.0.md`.

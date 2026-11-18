@@ -32,4 +32,7 @@ public class OnlineListing extends BaseEntity {
     private boolean bestSeller = false;
     private boolean specialOffer = false;
     private boolean newArrival = false;
+    /** The specifications table of the product page: a JSON list of {label, value}. */
+    @Column(columnDefinition = "TEXT")
+    private String specs;
 }
