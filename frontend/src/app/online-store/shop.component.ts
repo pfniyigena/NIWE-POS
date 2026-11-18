@@ -77,16 +77,8 @@ import { T } from '../core/i18n/t';
 
           <app-shop-ad *ngIf="adsFor('HOME_TOP').length" placement="HOME_TOP" [ads]="adsFor('HOME_TOP')"></app-shop-ad>
 
-          <section class="shop-row mt-4" *ngFor="let r of rows" [attr.data-row]="r.key">
-            <h3>{{ r.title | translate }}</h3>
-            <div class="shop-carousel" style="position:relative;" (mouseenter)="hold(rail, true)" (mouseleave)="hold(rail, false)" (touchstart)="hold(rail, true)" (touchend)="hold(rail, false)" (focusin)="hold(rail, true)" (focusout)="hold(rail, false)">
-              <button type="button" class="shop-car-prev" *ngIf="r.items.length > 4" [attr.aria-label]="'Previous products' | translate" (click)="railGo(rail, -1)" style="position:absolute; left:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
-              <div #rail class="car-rail" [attr.data-rail]="r.key" style="display:flex; gap:0.75rem; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:0.25rem 0.1rem 0.5rem; scrollbar-width:none;">
-                <div class="car-item" *ngFor="let p of r.items" style="flex:0 0 210px; scroll-snap-align:start;"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
-              </div>
-              <button type="button" class="shop-car-next" *ngIf="r.items.length > 4" [attr.aria-label]="'Next products' | translate" (click)="railGo(rail, 1)" style="position:absolute; right:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
-            </div>
-          </section>
+          <!-- Front page order: New arrivals, All products, Featured products, Best-selling (then special offers). -->
+          <ng-container *ngFor="let r of rowsBefore"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
           <h3 class="mt-4" id="shop-all">{{ 'All products' | translate }}</h3>
         </ng-container>
 
@@ -111,6 +103,10 @@ import { T } from '../core/i18n/t';
             <button class="btn btn-sm btn-outline-secondary shop-next" [disabled]="page + 1 >= totalPages || loading" (click)="go(page + 1)">{{ 'Next' | translate }}</button>
           </div>
         </nav>
+
+        <ng-container *ngIf="landing">
+          <ng-container *ngFor="let r of rowsAfter"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
+        </ng-container>
 
         <ng-container *ngIf="landing">
           <section class="shop-reviews mt-4">
@@ -283,6 +279,19 @@ import { T } from '../core/i18n/t';
       </div>
     </footer>
 
+      <ng-template #rowTpl let-r>
+          <section class="shop-row mt-4" [attr.data-row]="r.key">
+            <h3>{{ r.title | translate }}</h3>
+            <div class="shop-carousel" style="position:relative;" (mouseenter)="hold(rail, true)" (mouseleave)="hold(rail, false)" (touchstart)="hold(rail, true)" (touchend)="hold(rail, false)" (focusin)="hold(rail, true)" (focusout)="hold(rail, false)">
+              <button type="button" class="shop-car-prev" *ngIf="r.items.length > 4" [attr.aria-label]="'Previous products' | translate" (click)="railGo(rail, -1)" style="position:absolute; left:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
+              <div #rail class="car-rail" [attr.data-rail]="r.key" style="display:flex; gap:0.75rem; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:0.25rem 0.1rem 0.5rem; scrollbar-width:none;">
+                <div class="car-item" *ngFor="let p of r.items" style="flex:0 0 210px; scroll-snap-align:start;"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
+              </div>
+              <button type="button" class="shop-car-next" *ngIf="r.items.length > 4" [attr.aria-label]="'Next products' | translate" (click)="railGo(rail, 1)" style="position:absolute; right:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
+            </div>
+          </section>
+      </ng-template>
+
       <ng-template #card let-p>
           <div class="card shop-product" style="padding:0.6rem;">
             <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; height:130px; object-fit:cover; border-radius:6px;" />
@@ -379,15 +388,26 @@ export class ShopComponent implements OnInit, OnDestroy {
     return this.step === 'shop' && !this.showAccount && !this.q.trim() && !this.category;
   }
 
+  /** Every row that has products, in the order the front page shows them. */
   get rows(): { key: string; title: string; items: ShopProduct[] }[] {
     const h = this.home;
     if (!h) return [];
     return [
+      { key: 'new', title: 'New arrivals', items: h.newArrivals },
       { key: 'featured', title: 'Featured products', items: h.featured },
       { key: 'best', title: 'Best-selling products', items: h.bestSellers },
       { key: 'offers', title: 'Special offers and discounts', items: h.offers },
-      { key: 'new', title: 'New arrivals', items: h.newArrivals },
     ].filter((r) => r.items.length > 0);
+  }
+
+  /** The row above the product list: New arrivals. */
+  get rowsBefore(): { key: string; title: string; items: ShopProduct[] }[] {
+    return this.rows.filter((r) => r.key === 'new');
+  }
+
+  /** The rows under the product list: Featured, Best-selling, then special offers. */
+  get rowsAfter(): { key: string; title: string; items: ShopProduct[] }[] {
+    return this.rows.filter((r) => r.key !== 'new');
   }
 
   get heroTitle(): string {
