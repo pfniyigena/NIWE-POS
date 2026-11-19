@@ -755,7 +755,7 @@ export interface RecordInvoicePaymentRequest {
  * never rewrites an already-rung sale.
  *
  * `inclusive` (Task: "On Tax rate add inclusive attribute where if it is true the in the tax in
- * price is inclusive"): false (the default) means tax is added on top of a product's unitPrice at
+ * price is inclusive"): false means tax is added on top (a new tax rate is inclusive by default) of a product's unitPrice at
  * checkout — the classic "+ tax" behavior. true means unitPrice already has this rate's tax folded
  * into it (the shelf price the customer sees is the final price), so checkout/receipts extract the
  * tax back out of the line total instead of adding it. Snapshotted onto OrderLine.taxInclusive at

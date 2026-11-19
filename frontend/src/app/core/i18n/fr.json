@@ -1535,7 +1535,6 @@
  "New tax rate": "Nouveau taux de taxe",
  "Rate (%)": "Taux (%)",
  "Tax-inclusive price": "Prix TTC",
- "When checked, a product's price already has this tax folded in (the shelf price is the final price). When unchecked (default), tax is added on top of the price at checkout.": "Si la case est cochée, le prix d'un produit contient déjà cette taxe (le prix en rayon est le prix final). Si elle est décochée (par défaut), la taxe est ajoutée au prix à l'encaissement.",
  "Active (selectable on a product)": "Actif (sélectionnable sur un produit)",
  "Taxes": "Taxes",
  "+ New tax rate": "+ Nouveau taux de taxe",
@@ -9273,5 +9272,6 @@
  "The rating counts again.": "La note compte de nouveau.",
  "Customers pay on the shop": "Les clients paient sur la boutique",
  "the price {p0} plus {p1}% tax": "le prix {p0} plus {p1} % de taxe",
- "no tax added": "aucune taxe ajoutée"
+ "no tax added": "aucune taxe ajoutée",
+ "When checked (default), a product's price already has this tax folded in (the shelf price is the final price). When unchecked, tax is added on top of the price at checkout.": "Si la case est cochée (par défaut), le prix d'un produit contient déjà cette taxe (le prix en rayon est le prix final). Si elle est décochée, la taxe est ajoutée au prix à l'encaissement."
 }

@@ -36,7 +36,7 @@ import { T } from '../core/i18n/t';
             <input type="checkbox" name="inclusive" [(ngModel)]="inclusive" /> {{ 'Tax-inclusive price' | translate }}
           </label>
           <div class="text-muted" style="font-size:0.8rem; margin-top:0.25rem;">
-            {{ 'When checked, a product\\'s price already has this tax folded in (the shelf price is the final price). When unchecked (default), tax is added on top of the price at checkout.' | translate }}
+            {{ 'When checked (default), a product\\'s price already has this tax folded in (the shelf price is the final price). When unchecked, tax is added on top of the price at checkout.' | translate }}
           </div>
         </div>
         <div class="form-group" *ngIf="id">
@@ -58,7 +58,8 @@ export class TaxRateFormComponent implements OnInit {
   name = '';
   ratePercent: number | null = null;
   active = true;
-  inclusive = false;
+  /** A new tax rate is tax-inclusive by default: the product price is the price the customer pays. */
+  inclusive = true;
   error: string | null = null;
 
   constructor(

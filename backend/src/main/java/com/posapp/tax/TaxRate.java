@@ -52,5 +52,5 @@ public class TaxRate extends BaseEntity {
      * changes the math: {@code lineTax} extracts the embedded tax instead of computing it on top,
      * and the order's subtotal/total are adjusted so nothing is double-counted.
      */
-    private boolean inclusive = false;
+    private boolean inclusive = true;
 }

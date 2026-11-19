@@ -21,8 +21,8 @@ public class TaxRateRequest {
     @DecimalMax(value = "100", message = "Rate cannot exceed 100%")
     private BigDecimal ratePercent;
 
-    /** See TaxRate.inclusive's javadoc. Defaults to false (tax added on top) if omitted. */
-    private boolean inclusive = false;
+    /** See TaxRate.inclusive's javadoc. Defaults to true (tax already in the price) if omitted. */
+    private boolean inclusive = true;
 
     public String getCode() { return code; }
     public void setCode(String code) { this.code = code; }
