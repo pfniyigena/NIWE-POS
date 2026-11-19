@@ -179,6 +179,13 @@ public class OnlineStoreController {
         return orders.refundDifference(id, request);
     }
 
+    /** Makes a new delivery / pick-up code and sends it to the customer; the old one stops working. Staff never see the code. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/orders/{id}/reissue-code")
+    public OrderDto reissueCode(@PathVariable Long id) {
+        return orders.reissueCode(id);
+    }
+
     /** The goods are in the customer's hands: the delivery code the customer gave and/or the customer's signature drawn on this phone. Completes the order. */
     @PreAuthorize(MANAGE)
     @PostMapping("/orders/{id}/receive")

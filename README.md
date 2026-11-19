@@ -5,9 +5,13 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.58.1 - Online Store: staff re-issue a delivery code
+
+On an order that is out for delivery or ready for pick-up, staff can press "Send a new code to the customer": the old code stops working, the wrong-code counter starts again and the customer gets the new code by e-mail/text. Staff never see the code. See `RELEASE-NOTES-v1.58.1.md` and `docs/online-store-reception.md`. No database change.
+
 ### Version 1.58.0 - Online Store: failed and partial deliveries
 
-Staff can record that a delivery failed (reason, number of tries; the order goes back to Packed, the customer is told, the stock stays reserved) and that the customer took only part of the goods (invoice, stock and cash cover only what was kept; for an order paid online the difference becomes a refund to give back). Only staff record these, the driver's phone screen is unchanged, and staff cannot re-issue the delivery code. See `docs/online-store-delivery-problems.md` and `RELEASE-NOTES-v1.58.0.md`. Database: migration V91.
+Staff can record that a delivery failed (reason, number of tries; the order goes back to Packed, the customer is told, the stock stays reserved) and that the customer took only part of the goods (invoice, stock and cash cover only what was kept; for an order paid online the difference becomes a refund to give back). Only staff record these and the driver's phone screen is unchanged. See `docs/online-store-delivery-problems.md` and `RELEASE-NOTES-v1.58.0.md`. Database: migration V91.
 
 ### Version 1.57.0 - Online Store: driver cash hand-in
 

@@ -7080,6 +7080,8 @@ export const FR: Record<string, string> = {
   "Send \"{p0}\" to {p1} people now? You can stop it while it is going out, but what was sent cannot be taken back.": "Envoyer « {p0} » à {p1} personnes maintenant ? Vous pouvez l'arrêter pendant l'envoi, mais ce qui est parti ne peut pas être repris.",
   "Send a document to the firm": "Envoyer un document au cabinet",
   "Send a new code": "Envoyer un nouveau code",
+  "Send a new code for order {p0} to the customer? The old code will stop working.": "Envoyer un nouveau code pour la commande {p0} au client ? L'ancien code ne fonctionnera plus.",
+  "Send a new code to the customer": "Envoyer un nouveau code au client",
   "Send a newsletter": "Envoyer une newsletter",
   "Send a test message": "Envoyer un message de test",
   "Send again": "Renvoyer",

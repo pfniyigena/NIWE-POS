@@ -191,7 +191,8 @@ interface LocationOption { id: number; label: string; type: string | null; prima
             <input class="form-control mt-1 so-signed-name" maxlength="120" [(ngModel)]="sigName[o.id]" [name]="'sname' + o.id" [placeholder]="'Name of the person who signs (optional)' | translate" />
             <button class="btn btn-primary mt-1 so-confirm-sign" [disabled]="busy || !sig[o.id]" (click)="receive(o, false)">{{ 'Confirm with the signature' | translate }}</button>
           </div>
-          <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'The code is in the customer\\'s account and message; it is never shown here. After five wrong codes it is blocked for half an hour.' | translate }}</div>
+          <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'The code is in the customer\\'s account and message; it is never shown here. After five wrong codes it is blocked for half an hour.' | translate }}
+            <button class="btn btn-sm btn-outline-secondary so-reissue" style="margin-left:0.5rem;" [disabled]="busy" (click)="reissue(o)">{{ 'Send a new code to the customer' | translate }}</button></div>
         </div>
         <div *ngIf="o.receivedAt" class="so-received mt-2" style="font-size:0.9rem;">
           ✔ {{ 'Received' | translate }} {{ o.receivedAt | date: 'short' }} · {{ receivedHow(o) | translate }}<span *ngIf="o.signedName"> · {{ o.signedName }}</span>
@@ -519,6 +520,11 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     const by = new Map<number, number>();
     o.lines.forEach((l, i) => by.set(l.productId, (by.get(l.productId) ?? 0) + this.keptOf(o, i)));
     return Array.from(by, ([productId, quantity]) => ({ productId, quantity }));
+  }
+
+  reissue(o: StoreOrder): void {
+    if (!confirm(T('Send a new code for order {p0} to the customer? The old code will stop working.', { p0: o.code }))) return;
+    this.run(this.api.reissueCode(o.id));
   }
 
   failDelivery(o: StoreOrder): void {

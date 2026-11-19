@@ -26,7 +26,7 @@ Note: when the delivery-fee product has tax added on top, the invoice can be hig
 Points are earned on the goods delivered. Points the customer spent come back in proportion to the discount that belonged to the goods not delivered.
 
 ## The delivery code
-Staff cannot re-issue or reset the code. A failed visit keeps the same code and the same wrong-code counter; the next "Out for delivery" message repeats that same code to the customer.
+A failed visit keeps the same code and the same wrong-code counter; the next "Out for delivery" message repeats that same code to the customer. If the customer lost it, staff press **Send a new code to the customer** on the order (see `docs/online-store-reception.md`).
 
 ## Who can do it
 Anyone who can manage the Online Store (staff). The driver's phone screen (My deliveries) does not record failed or partial deliveries.

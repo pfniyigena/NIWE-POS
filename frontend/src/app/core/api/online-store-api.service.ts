@@ -415,6 +415,8 @@ export class OnlineStoreApiService {
   /** The goods are in the customer's hands: the delivery code the customer gave and/or the customer's signature (a PNG data URL). Completes the order. */
   receive(id: number, body: { code?: string | null; signature?: string | null; signedName?: string | null; locationId?: number | null; kept?: KeptLine[] | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/receive`, body); }
   orderSignature(id: number): Observable<Blob> { return this.http.get(`${this.base}/orders/${id}/signature`, { responseType: 'blob' }); }
+  /** Sends the customer a new delivery / pick-up code (the old one stops working). */
+  reissueCode(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/reissue-code`, {}); }
   /** The driver could not hand the goods over: the order goes back to Packed with the reason. */
   deliveryFailed(id: number, reason: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/delivery-failed`, { reason }); }
   /** Gives back what an order paid online and delivered in part cost more than what was delivered. */

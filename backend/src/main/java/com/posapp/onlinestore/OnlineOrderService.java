@@ -399,6 +399,30 @@ public class OnlineOrderService {
         return sig == null ? null : java.util.Base64.getDecoder().decode(sig.substring(sig.indexOf(',') + 1));
     }
 
+    /**
+     * Staff make a new delivery / pick-up code (the customer lost it, never got the message, or the code was blocked after wrong tries). The old code stops
+     * working, the wrong-code counter starts again, and the customer gets the new code the same way as the first one. Staff never see the code.
+     */
+    @Transactional
+    public OrderDto reissueCode(Long id) {
+        OnlineOrder o = getOrThrow(id);
+        expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
+        String code = o.reissueReceiptCode();
+        OnlineOrderEvent ev = new OnlineOrderEvent();
+        ev.setOnlineOrder(o);
+        ev.setStatus(o.getStatus());
+        ev.setNote(I18n.t("A new code was sent to the customer"));
+        ev.setByUser(user());
+        o.getEvents().add(ev);
+        repository.save(o);
+        auditLogService.record("ONLINE_ORDER_CODE_REISSUED", "Re-issued the " + ("DELIVERY".equals(o.getDeliveryMethod()) ? "delivery" : "pick-up") + " code of online order " + o.getCode(), "OnlineOrder", o.getId());
+        boolean delivery = "DELIVERY".equals(o.getDeliveryMethod());
+        tell(o, OnlineMessages.m("Your new code for order {0}", o.getCode()), delivery
+                ? OnlineMessages.m("Your new delivery code for order {0} is {1}. The old code no longer works. Give it to the driver only when you hold your goods.", o.getCode(), code)
+                : OnlineMessages.m("Your new pick-up code for order {0} is {1}. The old code no longer works. Give it at the counter only when you collect your goods.", o.getCode(), code));
+        return dto(o);
+    }
+
     private String receiptCode(OnlineOrder o) {
         return o.ensureReceiptCode();
     }

@@ -9487,5 +9487,7 @@
  "Back to packed, try again later": "Retour à « Emballée », réessayer plus tard",
  "The order goes back to Packed with the reason. The customer is told and the stock stays reserved. Send it out again later, or cancel it.": "La commande repasse à « Emballée » avec le motif. Le client est prévenu et le stock reste réservé. Renvoyez-la plus tard, ou annulez-la.",
  "Refund due for the goods not delivered: {p0}": "Remboursement dû pour les marchandises non livrées : {p0}",
- "The customer paid online for more than was delivered. Give the difference back, then record it here.": "Le client a payé en ligne plus que ce qui a été livré. Rendez la différence, puis enregistrez-le ici."
+ "The customer paid online for more than was delivered. Give the difference back, then record it here.": "Le client a payé en ligne plus que ce qui a été livré. Rendez la différence, puis enregistrez-le ici.",
+ "Send a new code to the customer": "Envoyer un nouveau code au client",
+ "Send a new code for order {p0} to the customer? The old code will stop working.": "Envoyer un nouveau code pour la commande {p0} au client ? L'ancien code ne fonctionnera plus."
 }

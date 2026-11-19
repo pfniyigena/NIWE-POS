@@ -9,7 +9,7 @@
 
 ## Rules
 - Only staff record a failed or partial delivery (screen Online orders). The driver's phone screen is unchanged.
-- Staff cannot re-issue the delivery code. A failed visit does not change the code or reset the wrong-code counter; sending the order out again repeats the same code to the customer.
+- A failed visit does not change the delivery code or reset the wrong-code counter; sending the order out again repeats the same code to the customer. (Staff can make a new code: see v1.58.1.)
 - Nothing delivered at all is refused: use "Delivery failed" (or cancel the order).
 
 ## Technical

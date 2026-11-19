@@ -133,6 +133,19 @@ public class OnlineOrder extends BaseEntity {
         return receiptCode;
     }
 
+    /** A new delivery code, different from the one before; the wrong-code counter starts again (staff re-issue it, v1.58.1). */
+    public String reissueReceiptCode() {
+        String old = receiptCode;
+        String fresh;
+        do {
+            fresh = String.format("%04d", new java.security.SecureRandom().nextInt(10000));
+        } while (fresh.equals(old));
+        receiptCode = fresh;
+        receiptFailures = 0;
+        receiptFailedAt = null;
+        return fresh;
+    }
+
     @OneToMany(mappedBy = "onlineOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OnlineOrderLine> lines = new ArrayList<>();
 

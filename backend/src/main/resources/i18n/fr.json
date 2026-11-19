@@ -2039,5 +2039,9 @@
  "About the delivery of your order {0}": "À propos de la livraison de votre commande {0}",
  "We could not deliver your order {0}: {1}. We will contact you to arrange a new delivery.": "Nous n'avons pas pu livrer votre commande {0} : {1}. Nous vous contacterons pour convenir d'une nouvelle livraison.",
  "We refunded {0} for the goods of your order {1} that were not delivered. Reference: {2}.": "Nous avons remboursé {0} pour les marchandises de votre commande {1} qui n'ont pas été livrées. Référence : {2}.",
- "Part of the order was not delivered": "Une partie de la commande n'a pas été livrée"
+ "Part of the order was not delivered": "Une partie de la commande n'a pas été livrée",
+ "A new code was sent to the customer": "Un nouveau code a été envoyé au client",
+ "Your new code for order {0}": "Votre nouveau code pour la commande {0}",
+ "Your new delivery code for order {0} is {1}. The old code no longer works. Give it to the driver only when you hold your goods.": "Votre nouveau code de livraison pour la commande {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au livreur que lorsque vous avez vos marchandises.",
+ "Your new pick-up code for order {0} is {1}. The old code no longer works. Give it at the counter only when you collect your goods.": "Votre nouveau code de retrait pour la commande {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au comptoir que lorsque vous retirez vos marchandises."
 }

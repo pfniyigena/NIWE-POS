@@ -27,3 +27,6 @@ Online Store > My deliveries (`/admin/online-store/driver`). Pick your name once
 - A customer's own tap cannot prove that the driver collected the cash: keep checking the driver's cash with the run sheet.
 - A customer who loses the code can open the order page again; a signature always works.
 - No setting to switch on: it works for every delivery and pick-up order.
+
+## Re-issuing the code (v1.58.1)
+When the customer lost the code, never received the message, or the code was blocked after five wrong tries, staff press **Send a new code to the customer** on the order (out for delivery or ready for pick-up). The old code stops working, the wrong-code counter starts again, and the customer receives the new code by e-mail/text and sees it on the order page. Staff never see the code. The history shows who re-issued it and the audit log records it.
