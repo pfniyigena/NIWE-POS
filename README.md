@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.51.1 - Online Store: answer a contact message inside the ERP
+
+"Reply by e-mail" in Online Store > Messages now opens a writing box; "Send the answer" e-mails the customer from the shop's e-mail (in their language, with their message quoted) and marks the message answered; the sent answer stays under the message. Database: migration V86. See `RELEASE-NOTES-v1.51.1.md`.
+
 ### Version 1.51.0 - Online Store: contact form and information pages
 
 The shop has a contact page (shop details and a form) whose messages arrive in Online Store > Messages (New / Answered, reply by e-mail or WhatsApp, note), with an e-mail alert to the shop and a confirmation copy to the visitor. Four information pages (Terms & Conditions, Privacy Policy, Returns & Refunds, Delivery & Shipping) are linked in the footer; each starts with a general starter text in English and French that staff edit in Online Store > Shop pages (not legal advice: read and adapt). Checkout says the customer agrees to Terms and Returns. See `docs/online-store-pages-contact.md` and `RELEASE-NOTES-v1.51.0.md`. Database: migration V85.

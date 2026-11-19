@@ -158,7 +158,7 @@ export interface InfoPage { slug: string; title: string; body: string }
 export interface InfoPageAdmin { slug: string; title: string; body: string; published: boolean; edited: boolean }
 export interface ContactForm { name: string; email: string; phone: string; subject: string; message: string; orderCode: string; language: string; website: string }
 export interface ContactMessage { id: number; name: string; email: string | null; phone: string | null; subject: string | null; message: string; orderCode: string | null; language: string;
-  status: 'NEW' | 'ANSWERED'; note: string | null; handledBy: string | null; handledAt: string | null; createdAt: string }
+  status: 'NEW' | 'ANSWERED'; note: string | null; handledBy: string | null; handledAt: string | null; createdAt: string; reply: string | null; repliedAt: string | null }
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
@@ -348,6 +348,7 @@ export class OnlineStoreApiService {
     return pagedList<ContactMessage>(this.http, `${this.base}/messages`, f, page, size, {});
   }
   messageAnswered(id: number, note: string): Observable<ContactMessage> { return this.http.post<ContactMessage>(`${this.base}/messages/${id}/answered`, { note }); }
+  replyMessage(id: number, text: string): Observable<ContactMessage> { return this.http.post<ContactMessage>(`${this.base}/messages/${id}/reply`, { text }); }
   messageReopen(id: number): Observable<ContactMessage> { return this.http.post<ContactMessage>(`${this.base}/messages/${id}/reopen`, {}); }
   deleteMessage(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/messages/${id}`); }
 

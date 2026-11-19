@@ -9356,5 +9356,13 @@
  "Replace your text with the starter text?": "Remplacer votre texte par le texte de départ ?",
  "The starter text is back.": "Le texte de départ est revenu.",
  "These pages are linked in the footer of the shop. The texts below are general starter texts: read them, adapt them to your shop and, where the law asks for it, have them checked. They are not legal advice.": "Ces pages sont liées dans le pied de page de la boutique. Les textes ci-dessous sont des textes de départ généraux : lisez-les, adaptez-les à votre boutique et, là où la loi l'exige, faites-les vérifier. Ils ne constituent pas un avis juridique.",
- "Write paragraphs separated by an empty line. A line starting with ## is a heading and a line starting with - is a bullet. {shop}, {phone}, {email} and {address} are replaced by the details of your shop.": "Écrivez des paragraphes séparés par une ligne vide. Une ligne commençant par ## est un titre et une ligne commençant par - est une puce. {shop}, {phone}, {email} et {address} sont remplacés par les coordonnées de votre boutique."
+ "Write paragraphs separated by an empty line. A line starting with ## is a heading and a line starting with - is a bullet. {shop}, {phone}, {email} and {address} are replaced by the details of your shop.": "Écrivez des paragraphes séparés par une ligne vide. Une ligne commençant par ## est un titre et une ligne commençant par - est une puce. {shop}, {phone}, {email} et {address} sont remplacés par les coordonnées de votre boutique.",
+ "Close the answer": "Fermer la réponse",
+ "Write another answer": "Écrire une autre réponse",
+ "No e-mail address: use the phone number or WhatsApp.": "Pas d'adresse e-mail : utilisez le téléphone ou WhatsApp.",
+ "Answer sent by e-mail": "Réponse envoyée par e-mail",
+ "The answer is sent to {p0}, with the customer’s message under it.": "La réponse est envoyée à {p0}, avec le message du client en dessous.",
+ "Write your answer here": "Écrivez votre réponse ici",
+ "Send the answer": "Envoyer la réponse",
+ "The answer was sent by e-mail.": "La réponse a été envoyée par e-mail."
 }

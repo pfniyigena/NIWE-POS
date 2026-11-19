@@ -1955,5 +1955,10 @@
  "Order {0}": "Commande {0}",
  "New message from {0}": "Nouveau message de {0}",
  "We received your message and will answer as soon as we can. Here is a copy.": "Nous avons bien reçu votre message et vous répondrons dès que possible. En voici une copie.",
- "We received your message": "Nous avons bien reçu votre message"
+ "We received your message": "Nous avons bien reçu votre message",
+ "Your message": "Votre message",
+ "Write your answer.": "Écrivez votre réponse.",
+ "This customer gave no e-mail address. Use the phone number or WhatsApp.": "Ce client n'a pas donné d'adresse e-mail. Utilisez le téléphone ou WhatsApp.",
+ "E-mail is not set up yet: ask an administrator to set it up in Settings > Email.": "L'e-mail n'est pas encore configuré : demandez à un administrateur de le configurer dans Paramètres > E-mail.",
+ "The e-mail could not be sent. Please try again later.": "L'e-mail n'a pas pu être envoyé. Veuillez réessayer plus tard."
 }

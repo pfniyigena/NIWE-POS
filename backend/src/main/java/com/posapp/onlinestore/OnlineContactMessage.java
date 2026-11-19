@@ -23,5 +23,8 @@ public class OnlineContactMessage extends BaseEntity {
     private String note;
     private String handledBy;
     private Instant handledAt;
+    /** The answer staff sent by e-mail from the Messages screen, and when. */
+    private String reply;
+    private Instant repliedAt;
     private String sourceIp;
 }

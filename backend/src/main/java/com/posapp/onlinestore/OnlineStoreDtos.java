@@ -426,7 +426,10 @@ public final class OnlineStoreDtos {
     }
 
     public record ContactMessageDto(Long id, String name, String email, String phone, String subject, String message, String orderCode, String language,
-                                    String status, String note, String handledBy, Instant handledAt, Instant createdAt) {
+                                    String status, String note, String handledBy, Instant handledAt, Instant createdAt, String reply, Instant repliedAt) {
+    }
+
+    public record ContactReplyRequest(@Size(max = 2000) String text) {
     }
 
     public record ContactNoteRequest(@Size(max = 500) String note) {

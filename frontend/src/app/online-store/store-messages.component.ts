@@ -52,8 +52,19 @@ import { T } from '../core/i18n/t';
         <div class="msg-subject mt-1" *ngIf="m.subject"><strong>{{ m.subject }}</strong></div>
         <p class="msg-text mt-1" style="white-space:pre-line; margin-bottom:0;">{{ m.message }}</p>
         <p class="text-muted msg-note mt-1" *ngIf="m.note && m.status === 'ANSWERED'" style="margin-bottom:0;">{{ 'Note' | translate }}: {{ m.note }}</p>
+        <div class="msg-sent mt-2" *ngIf="m.reply" style="padding:0.5rem 0.75rem; border-left:3px solid #15803d; background:rgba(21,128,61,0.08); border-radius:4px;">
+          <div class="text-muted" style="font-size:0.8rem;">{{ 'Answer sent by e-mail' | translate }} · {{ m.repliedAt | date: 'short' }}<span *ngIf="m.handledBy"> · {{ m.handledBy }}</span></div>
+          <div style="white-space:pre-line;">{{ m.reply }}</div>
+        </div>
+        <div class="msg-reply-box mt-2" *ngIf="replyFor === m.id" style="padding:0.75rem; background:rgba(128,128,128,0.12); border-radius:8px;">
+          <div class="text-muted" style="font-size:0.85rem; margin-bottom:0.3rem;">{{ 'The answer is sent to {p0}, with the customer’s message under it.' | translate: { p0: m.email } }}</div>
+          <textarea class="form-control msg-reply-text" rows="6" maxlength="2000" [name]="'r' + m.id" [(ngModel)]="replyText" [placeholder]="'Write your answer here' | translate"></textarea>
+          <div class="flex gap-2 mt-2"><button class="btn btn-primary msg-reply-send" [disabled]="busy || replyText.trim().length < 2" (click)="sendReply(m)">{{ 'Send the answer' | translate }}</button>
+            <button class="btn btn-outline-secondary" [disabled]="busy" (click)="replyFor = null">{{ 'Cancel' | translate }}</button></div>
+        </div>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:center;">
-          <a class="btn btn-sm btn-outline-secondary msg-mail" *ngIf="m.email" [href]="mailto(m)">{{ 'Reply by e-mail' | translate }}</a>
+          <button class="btn btn-sm btn-primary msg-reply-open" *ngIf="m.email" [disabled]="busy" (click)="openReply(m)">{{ (replyFor === m.id ? 'Close the answer' : (m.reply ? 'Write another answer' : 'Reply by e-mail')) | translate }}</button>
+          <span class="text-muted" *ngIf="!m.email" style="font-size:0.85rem;">{{ 'No e-mail address: use the phone number or WhatsApp.' | translate }}</span>
           <a class="btn btn-sm btn-outline-secondary msg-wa" *ngIf="m.phone" [href]="wa(m)" target="_blank" rel="noopener">WhatsApp</a>
           <ng-container *ngIf="m.status === 'NEW'">
             <input class="form-control msg-note-in" style="width:240px;" maxlength="500" [name]="'n' + m.id" [(ngModel)]="notes[m.id]" [placeholder]="'Note (optional)' | translate" />
@@ -115,9 +126,24 @@ export class StoreMessagesComponent implements OnInit, OnDestroy {
     this.api.pendingCount().subscribe({ next: (c) => (this.news = c.messagesNew ?? 0), error: () => {} });
   }
 
-  mailto(m: ContactMessage): string {
-    const subject = 'Re: ' + (m.subject || (m.language === 'fr' ? 'Votre message' : 'Your message'));
-    return 'mailto:' + (m.email ?? '') + '?subject=' + encodeURIComponent(subject);
+  /** The message whose answer is being written, and the text. */
+  replyFor: number | null = null;
+  replyText = '';
+
+  openReply(m: ContactMessage): void {
+    this.replyFor = this.replyFor === m.id ? null : m.id;
+    this.replyText = '';
+  }
+
+  /** Sends the answer from the server by e-mail (nothing opens on this computer); the message becomes Answered. */
+  sendReply(m: ContactMessage): void {
+    this.busy = true;
+    this.error = null;
+    this.message = null;
+    this.api.replyMessage(m.id, this.replyText).subscribe({
+      next: () => { this.busy = false; this.replyFor = null; this.replyText = ''; this.message = T('The answer was sent by e-mail.'); this.reload(); },
+      error: (e) => { this.busy = false; this.error = e?.error?.message ?? T('That did not work'); },
+    });
   }
 
   wa(m: ContactMessage): string {

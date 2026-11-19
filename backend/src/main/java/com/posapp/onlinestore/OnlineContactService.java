@@ -154,6 +154,40 @@ public class OnlineContactService {
         return dto(messages.save(m));
     }
 
+    /**
+     * Sends staff's answer to the customer's e-mail address, in the customer's language, quoting the message, and marks the message answered. Fails with a
+     * clear message when the customer gave no e-mail address or the shop's e-mail is not set up (nothing is saved then).
+     */
+    @Transactional
+    public ContactMessageDto reply(Long id, String text) {
+        OnlineContactMessage m = find(id);
+        String answer = clean(text, 2000);
+        if (answer.length() < 2) throw ApiException.badRequest(I18n.t("Write your answer."));
+        if (m.getEmail() == null) throw ApiException.badRequest(I18n.t("This customer gave no e-mail address. Use the phone number or WhatsApp."));
+        if (!mailService.isConfigured()) throw ApiException.badRequest(I18n.t("E-mail is not set up yet: ask an administrator to set it up in Settings > Email."));
+        OnlineStoreSettings s = storeService.settings();
+        String shop = s.getShopName() != null && !s.getShopName().isBlank() ? s.getShopName() : storeSettingsService.getSettingsEntity().getBusinessName();
+        String subject = "Re: " + (m.getSubject() != null ? m.getSubject() : I18n.tIn(m.getLanguage(), "Your message") + (shop == null || shop.isBlank() ? "" : " - " + shop));
+        String quoted = I18n.tIn(m.getLanguage(), "Your message");
+        String body = "<p>" + escape(answer) + "</p>" + (shop == null || shop.isBlank() ? "" : "<p>" + escape(shop) + "</p>")
+                + "<hr><p style=\"color:#666; font-size:0.9em;\">" + escape(quoted) + ":</p><blockquote style=\"margin:0; padding-left:0.8em; border-left:3px solid #ccc; color:#666;\">"
+                + escape(m.getMessage()) + "</blockquote>";
+        try {
+            mailService.send(m.getEmail(), subject, body, List.of());
+        } catch (ApiException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw ApiException.badRequest(I18n.t("The e-mail could not be sent. Please try again later."));
+        }
+        m.setReply(answer);
+        m.setRepliedAt(Instant.now());
+        m.setStatus("ANSWERED");
+        m.setHandledBy(who());
+        m.setHandledAt(m.getRepliedAt());
+        auditLogService.record("SHOP_MESSAGE_REPLIED", "Answered a contact message from the shop by e-mail");
+        return dto(messages.save(m));
+    }
+
     @Transactional
     public ContactMessageDto reopen(Long id) {
         OnlineContactMessage m = find(id);
@@ -182,6 +216,6 @@ public class OnlineContactService {
 
     private static ContactMessageDto dto(OnlineContactMessage m) {
         return new ContactMessageDto(m.getId(), m.getName(), m.getEmail(), m.getPhone(), m.getSubject(), m.getMessage(), m.getOrderCode(), m.getLanguage(),
-                m.getStatus(), m.getNote(), m.getHandledBy(), m.getHandledAt(), m.getCreatedAt());
+                m.getStatus(), m.getNote(), m.getHandledBy(), m.getHandledAt(), m.getCreatedAt(), m.getReply(), m.getRepliedAt());
     }
 }

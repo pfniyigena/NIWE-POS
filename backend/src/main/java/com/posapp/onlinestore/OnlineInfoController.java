@@ -92,6 +92,13 @@ public class OnlineInfoController {
         return contact.answered(id, request == null ? null : request.note());
     }
 
+    /** Sends the written answer to the customer's e-mail address and marks the message answered. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/api/online-store/messages/{id}/reply")
+    public ContactMessageDto reply(@PathVariable Long id, @Valid @RequestBody ContactReplyRequest request) {
+        return contact.reply(id, request.text());
+    }
+
     @PreAuthorize(MANAGE)
     @PostMapping("/api/online-store/messages/{id}/reopen")
     public ContactMessageDto reopen(@PathVariable Long id) {
