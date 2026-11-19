@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ShopSeoService } from './shop-seo.service';
+import { PORTAL_SECTIONS, PortalSection, ShopPortalComponent } from './shop-portal.component';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,7 +28,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent, ShopQuickViewComponent, ShopRailComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopPortalComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent, ShopQuickViewComponent, ShopRailComponent],
   host: { '[class.shop-branded]': '!!brand', '[style.--shop-brand]': 'brand' },
   template: `
     <div class="shop-announce" *ngIf="shop?.page?.announcementText" [style.background]="brand || '#1d4ed8'" style="color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
@@ -55,8 +56,8 @@ import { T } from '../core/i18n/t';
         </div>
         <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
           <button *ngIf="step === 'shop' && !showAccount" class="btn btn-sm shop-wish-open" [class.btn-primary]="showWish" [class.btn-outline-secondary]="!showWish" [attr.aria-label]="'My wishlist' | translate" (click)="openWishlist()"><span [style.color]="showWish ? '#fff' : '#dc2626'">♥</span> {{ wish.count }}</button>
-          <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
-          <button *ngIf="count() > 0 && step === 'shop' && !showAccount" class="btn btn-sm btn-outline-secondary shop-cart-btn" (click)="checkout()">🛒 {{ count() }}</button>
+          <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="accountButton()">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
+          <button *ngIf="count() > 0 && step === 'shop' && !accountOverlay" class="btn btn-sm btn-outline-secondary shop-cart-btn" (click)="openCart()">🛒 {{ count() }}</button>
           <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
           <button class="btn btn-sm" [class.btn-primary]="lang.current === 'fr'" [class.btn-outline-secondary]="lang.current !== 'fr'" (click)="lang.choose('fr')">FR</button>
           <a class="btn btn-sm btn-outline-secondary shop-staff-login" routerLink="/login">{{ 'Staff Login' | translate }}</a>
@@ -70,8 +71,10 @@ import { T } from '../core/i18n/t';
       <ng-container *ngIf="shop">
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
+        <div class="alert alert-success shop-flash mt-2" *ngIf="flash">{{ flash }}</div>
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
-        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" [addresses]="addresses" [zones]="shop.zones" (addressesChange)="addresses = $event" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+        <app-shop-portal *ngIf="inPortal" [section]="portalSection" [shop]="shop" [profile]="account" [currency]="cur" [addresses]="addresses" (addressesChange)="addresses = $event" (profileChange)="accountChanged($event)" (reordered)="portalReordered($event)" (addToCart)="portalAdd($event)" (closed)="leavePortal()"></app-shop-portal>
+        <app-shop-account *ngIf="accountOverlay && !inPortal && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" [addresses]="addresses" [zones]="shop.zones" (addressesChange)="addresses = $event" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
         <section class="shop-wishlist" *ngIf="step === 'shop' && !showAccount && !viewId && showWish" style="margin-top:1rem;">
           <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
@@ -478,7 +481,54 @@ export class ShopComponent implements OnInit, OnDestroy {
   busy = false;
   /** The signed-in customer (accounts are optional: null = guest). */
   account: AccountProfile | null = null;
-  showAccount = false;
+  /** The sign-in / account card opened over the shop (from the order form). The customer portal (/shop/account) hides the shop's own pages the same way. */
+  accountOverlay = false;
+  get showAccount(): boolean {
+    return this.accountOverlay || this.inPortal;
+  }
+  set showAccount(v: boolean) {
+    this.accountOverlay = v;
+  }
+  /** The customer portal: /shop/account/<section> (v1.55.0). It shares this page, so the cart survives moving between the shop and the portal. */
+  portal = false;
+  portalSection: PortalSection = 'orders';
+  get inPortal(): boolean {
+    return this.portal && !!this.shop?.accounts;
+  }
+
+  /** The 👤 button: the portal (it shows the sign-in when nobody is signed in), or back to the shop when the portal is open. */
+  accountButton(): void {
+    this.accountOverlay = false;
+    void this.router.navigate(this.inPortal ? ['/shop'] : ['/shop/account']);
+  }
+
+  /** The cart button works from the portal too: it leaves the portal and opens the order form. */
+  openCart(): void {
+    if (this.inPortal) void this.router.navigate(['/shop']);
+    this.checkout();
+  }
+
+  leavePortal(): void {
+    void this.router.navigate(['/shop']);
+  }
+
+  /** "Order again" from My orders: the cart is filled and the customer lands on the order form. */
+  portalReordered(r: Reorder): void {
+    void this.router.navigate(['/shop']);
+    this.reordered(r);
+  }
+
+  /** The heart list's "Add to cart": a product with options opens its page to choose them, any other goes straight into the cart. */
+  portalAdd(p: ShopProduct): void {
+    if (p.variants) {
+      void this.router.navigate(['/shop'], { queryParams: { product: p.id } });
+      return;
+    }
+    this.change(p, 1);
+    this.flash = T('{p0} was added to your cart.', { p0: p.name });
+    setTimeout(() => (this.flash = null), 3000);
+  }
+  flash: string | null = null;
   /** The coupon box: what the customer typed, and what the server says it is worth on this cart (the order asks the server again). */
   couponCode = '';
   coupon: CouponCheckResult | null = null;
@@ -510,6 +560,10 @@ export class ShopComponent implements OnInit, OnDestroy {
   private shopSeo(): void {
     const s = this.shop;
     if (!s) return;
+    if (this.portal) {
+      this.seo.set({ title: `${T('My account')} | ${s.name}`, description: null, url: '/shop/account' });
+      return;
+    }
     this.seo.set({
       title: s.page?.heroTitle && s.page.heroTitle !== s.name ? `${s.name} | ${s.page.heroTitle}` : s.name,
       description: s.intro || s.page?.aboutText || s.name,
@@ -716,6 +770,18 @@ export class ShopComponent implements OnInit, OnDestroy {
   viewId: number | null = null;
 
   ngOnInit(): void {
+    this.route.paramMap.subscribe((m) => {
+      this.portal = m.get('area') === 'account';
+      const sec = m.get('section');
+      this.portalSection = (PORTAL_SECTIONS as readonly string[]).includes(sec ?? '') ? (sec as PortalSection) : 'orders';
+      if (this.portal) {
+        this.closeProduct();
+        this.shopSeo();
+        window.scrollTo({ top: 0 });
+      } else if (this.shop && !this.viewId) {
+        this.shopSeo();
+      }
+    });
     this.route.queryParamMap.subscribe((m) => {
       const v = Number(m.get('product'));
       this.viewId = Number.isInteger(v) && v > 0 ? v : null;

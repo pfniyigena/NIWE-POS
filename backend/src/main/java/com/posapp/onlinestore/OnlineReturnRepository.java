@@ -14,6 +14,8 @@ public interface OnlineReturnRepository extends JpaRepository<OnlineReturn, Long
 
     List<OnlineReturn> findAllByOrderByCreatedAtDesc();
 
+    List<OnlineReturn> findByOnlineOrderIdInOrderByIdDesc(java.util.Collection<Long> orderIds);
+
     long countByOnlineOrderId(Long onlineOrderId);
 
     long countByStatus(String status);

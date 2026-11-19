@@ -384,7 +384,12 @@ public class ShopAccountService {
         ShopCustomer c = authenticate(token);
         return orders.findTop50ByShopCustomerIdOrderByCreatedAtDesc(c.getId()).stream()
                 .map(o -> new AccountOrder(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getTotal(), o.getCreatedAt(),
-                        o.getLines().stream().mapToInt(l -> l.getQuantity().intValue()).sum(), o.getPaymentStatus())).toList();
+                        o.getLines().stream().mapToInt(l -> l.getQuantity().intValue()).sum(), o.getPaymentStatus(), o.getInvoiceNumber())).toList();
+    }
+
+    /** The id of the signed-in customer (401 when the token is not valid). */
+    public Long customerId(String token) {
+        return authenticate(token).getId();
     }
 
     /** The products of an earlier order as they are on the shop now (current price and stock); what is gone or sold out is listed apart. Prices are never copied from the old order. */

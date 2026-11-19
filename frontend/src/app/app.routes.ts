@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { authGuard, adminGuard, moduleGuard, publicModuleGuard, shopFirstGuard } from './core/auth.guard';
 import { ModuleKey } from './core/api/module-api.service';
 import { PurchaseReportListComponent } from './admin/reports/purchase-report-list.component';
@@ -1112,7 +1112,8 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/loyalty', component: StoreLoyaltyComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/ads', component: StoreAdsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/reports', component: StoreReportListComponent, canActivate: [authGuard] },
-  { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  // v1.55.0: /shop and the customer portal (/shop/account, /shop/account/<section>) are one route, so the page and its cart stay while moving between them.
+  { matcher: shopMatcher, component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/pay-test/:reference', component: ShopPayTestComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/info/:slug', component: ShopInfoComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
@@ -1209,6 +1210,16 @@ const MODULE_PREFIXES: { prefix: string; key: ModuleKey; except?: string[] }[] =
   { prefix: 'admin/hr/contracts', key: 'CONTRACTS' },
   { prefix: 'admin/hr/payroll', key: 'PAYROLL' },
 ];
+
+/** /shop, /shop/account and /shop/account/<section>: the shop page with or without the customer portal. */
+export function shopMatcher(segs: UrlSegment[]): UrlMatchResult | null {
+  if (!segs.length || segs[0].path !== 'shop') return null;
+  if (segs.length === 1) return { consumed: segs };
+  if (segs[1].path !== 'account' || segs.length > 3) return null;
+  const posParams: Record<string, UrlSegment> = { area: segs[1] };
+  if (segs[2]) posParams['section'] = segs[2];
+  return { consumed: segs, posParams };
+}
 
 export const routes: Routes = baseRoutes.map((route) => {
   const path = route.path ?? '';

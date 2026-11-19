@@ -140,7 +140,11 @@ public final class OnlineStoreDtos {
     public record InvoiceRequest(@Size(max = 40) String phone) {
     }
 
-    public record AccountOrder(String code, String status, String deliveryMethod, BigDecimal total, Instant placedAt, int items, String paymentStatus) {
+    public record AccountOrder(String code, String status, String deliveryMethod, BigDecimal total, Instant placedAt, int items, String paymentStatus, String invoiceNumber) {
+    }
+
+    /** A return of one of the signed-in customer's orders, for the portal's My returns page. */
+    public record AccountReturn(String orderCode, PublicReturn data) {
     }
 
     public record ReorderLine(PublicProduct product, BigDecimal quantity) {

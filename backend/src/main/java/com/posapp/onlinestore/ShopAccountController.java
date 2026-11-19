@@ -30,10 +30,12 @@ public class ShopAccountController {
 
     private final ShopAccountService accounts;
     private final ModuleService moduleService;
+    private final OnlineReturnService returns;
 
-    public ShopAccountController(ShopAccountService accounts, ModuleService moduleService) {
+    public ShopAccountController(ShopAccountService accounts, ModuleService moduleService, OnlineReturnService returns) {
         this.accounts = accounts;
         this.moduleService = moduleService;
+        this.returns = returns;
     }
 
     private void on() {
@@ -78,6 +80,13 @@ public class ShopAccountController {
     public List<AccountOrder> orders(@RequestHeader(value = TOKEN_HEADER, required = false) String token) {
         on();
         return accounts.orders(token);
+    }
+
+    /** The returns of the signed-in customer's orders (the My returns page of the portal). */
+    @GetMapping("/returns")
+    public List<AccountReturn> returns(@RequestHeader(value = TOKEN_HEADER, required = false) String token) {
+        on();
+        return returns.forCustomer(accounts.customerId(token));
     }
 
     @GetMapping("/orders/{code}/reorder")

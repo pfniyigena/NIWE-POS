@@ -18,7 +18,7 @@ import { T } from '../core/i18n/t';
   imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopMoneyPipe],
   template: `
     <div class="card shop-account mt-3" style="padding:1rem; max-width:640px;">
-      <div class="flex justify-between align-center mb-2" style="gap:0.5rem;">
+      <div class="flex justify-between align-center mb-2" style="gap:0.5rem;" *ngIf="section === 'all'">
         <h4 style="margin:0;">{{ 'My account' | translate }}</h4>
         <button class="btn btn-sm btn-outline-secondary acc-close" (click)="closed.emit()">{{ 'Close' | translate }}</button>
       </div>
@@ -53,6 +53,7 @@ import { T } from '../core/i18n/t';
 
       <!-- Signed in -->
       <ng-container *ngIf="profile">
+        <ng-container *ngIf="show('profile')">
         <div class="text-muted mb-2">{{ 'Signed in as {p0}' | translate: { p0: profile.email || profile.phone } }}</div>
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <div class="form-group"><label class="form-label">{{ 'Your name' | translate }}</label><input class="form-control acc-name" maxlength="80" name="accname" [(ngModel)]="form.name" /></div>
@@ -82,7 +83,9 @@ import { T } from '../core/i18n/t';
           </ng-container>
         </div>
 
-        <ng-container *ngIf="loyalty && points && points.enabled">
+        </ng-container>
+
+        <ng-container *ngIf="loyalty && points && points.enabled && show('points')">
           <h5 class="mt-3">{{ 'Loyalty points' | translate }}</h5>
           <div class="acc-points"><strong>{{ points.points }}</strong> {{ 'points' | translate }}</div>
           <p class="text-muted" style="font-size:0.85rem;">{{ 'You earn {p0} point(s) for every 100 you pay for goods, when the order is completed. Each point takes 1 off a later order, up to {p1}% of the goods.' | translate: { p0: points.pointsPer100, p1: points.maxPercent } }}</p>
@@ -91,7 +94,8 @@ import { T } from '../core/i18n/t';
             <strong [style.color]="e.points < 0 ? '#b42318' : '#15803d'">{{ e.points > 0 ? '+' : '' }}{{ e.points }}</strong>
           </div>
         </ng-container>
-        <h5 class="mt-3">{{ 'My delivery addresses' | translate }}</h5>
+        <ng-container *ngIf="show('addresses')">
+        <h5 class="mt-3" *ngIf="section === 'all'">{{ 'My delivery addresses' | translate }}</h5>
         <div class="text-muted acc-no-addr" *ngIf="addresses.length === 0" style="font-size:0.85rem;">{{ 'No saved address yet. Save one here, or tick "Save this address" when you order, and pick it next time in one tap.' | translate }}</div>
         <div class="acc-addr flex justify-between" *ngFor="let a of addresses" style="padding:0.4rem 0; border-top:1px solid #e5e7eb; gap:0.5rem; flex-wrap:wrap;">
           <div style="min-width:0;">
@@ -116,6 +120,9 @@ import { T } from '../core/i18n/t';
         </div>
         <button class="btn btn-sm btn-outline-primary acc-addr-add mt-2" *ngIf="!addrForm" [disabled]="busy" (click)="newAddress()">{{ '+ Add an address' | translate }}</button>
 
+        </ng-container>
+
+        <ng-container *ngIf="show('orders')">
         <h5 class="mt-3">{{ 'My orders' | translate }}</h5>
         <div class="text-muted" *ngIf="orders === null">{{ 'Loading…' | translate }}</div>
         <div class="text-muted acc-no-orders" *ngIf="orders && orders.length === 0">{{ 'No orders yet. Orders you place while signed in, and earlier ones sent with your e-mail address, appear here.' | translate }}</div>
@@ -128,6 +135,9 @@ import { T } from '../core/i18n/t';
           <button class="btn btn-sm btn-outline-primary acc-reorder" [disabled]="busy" (click)="reorder(o)">{{ 'Order again' | translate }}</button>
         </div>
 
+        </ng-container>
+
+        <ng-container *ngIf="show('profile')">
         <hr />
         <div class="flex gap-2" style="flex-wrap:wrap;">
           <button class="btn btn-outline-secondary acc-logout" [disabled]="busy" (click)="logout()">{{ 'Sign out' | translate }}</button>
@@ -140,6 +150,7 @@ import { T } from '../core/i18n/t';
             <button class="btn btn-outline-secondary" (click)="confirmDelete = false">{{ 'Keep my account' | translate }}</button>
           </div>
         </div>
+        </ng-container>
       </ng-container>
     </div>
   `,
@@ -156,6 +167,12 @@ export class ShopAccountComponent implements OnInit {
   /** The saved delivery addresses (the shop loads them), the delivery areas, and the new list after a change. */
   @Input() addresses: ShopAddress[] = [];
   @Input() zones: { id: number; name: string }[] = [];
+  /** all = the whole card (sign-in at checkout); profile, addresses, points or orders = one page of the portal. */
+  @Input() section: 'all' | 'profile' | 'addresses' | 'points' | 'orders' = 'all';
+
+  show(part: 'profile' | 'addresses' | 'points' | 'orders'): boolean {
+    return this.section === 'all' || this.section === part;
+  }
   @Output() addressesChange = new EventEmitter<ShopAddress[]>();
   @Output() profileChange = new EventEmitter<AccountProfile | null>();
   @Output() reordered = new EventEmitter<Reorder>();

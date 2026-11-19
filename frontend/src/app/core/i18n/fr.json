@@ -9409,5 +9409,21 @@
  "Hello! {p0} is back in stock: {p1}": "Bonjour ! {p0} est de nouveau en stock : {p1}",
  "Remove this request?": "Supprimer cette demande ?",
  "{p0} customer(s) told.": "{p0} client(s) prévenu(s).",
- "Nobody to tell right now: no waiting product can be sold yet, or e-mail and text messages are not set up.": "Personne à prévenir pour le moment : aucun produit attendu ne peut encore être vendu, ou l'e-mail et les SMS ne sont pas configurés."
+ "Nobody to tell right now: no waiting product can be sold yet, or e-mail and text messages are not set up.": "Personne à prévenir pour le moment : aucun produit attendu ne peut encore être vendu, ou l'e-mail et les SMS ne sont pas configurés.",
+ "Delivered": "Livrées",
+ "Download (PDF)": "Télécharger (PDF)",
+ "My addresses": "Mes adresses",
+ "My invoices": "Mes factures",
+ "My returns": "Mes retours",
+ "My wish list": "Ma liste de souhaits",
+ "No orders here yet. Orders you place while signed in, and earlier ones sent with your e-mail address, appear here.": "Aucune commande ici pour le moment. Les commandes passées une fois connecté, et les précédentes envoyées avec votre adresse e-mail, apparaissent ici.",
+ "Remove from my wish list": "Retirer de ma liste de souhaits",
+ "The invoice could not be opened. Please try again.": "La facture n'a pas pu être ouverte. Veuillez réessayer.",
+ "The shop says: {p0}": "La boutique indique : {p0}",
+ "To return goods, open the order (My orders > Track) once it is completed.": "Pour retourner des articles, ouvrez la commande (Mes commandes > Suivre) une fois terminée.",
+ "Track": "Suivre",
+ "You have not asked to return anything.": "Vous n'avez demandé aucun retour.",
+ "Your invoices appear here once your orders are completed.": "Vos factures apparaissent ici une fois vos commandes terminées.",
+ "Your wish list is empty. Tap the heart on a product to keep it here.": "Votre liste de souhaits est vide. Touchez le cœur d'un produit pour le garder ici.",
+ "{p0} was added to your cart.": "{p0} a été ajouté à votre panier."
 }

@@ -144,6 +144,14 @@ public class OnlineReturnService {
 
     // ------------------------------------------------------------------ the customer
 
+    /** The returns of the signed-in customer's recent orders, newest first. */
+    @Transactional(readOnly = true)
+    public List<OnlineStoreDtos.AccountReturn> forCustomer(Long shopCustomerId) {
+        List<Long> ids = orders.findTop50ByShopCustomerIdOrderByCreatedAtDesc(shopCustomerId).stream().map(OnlineOrder::getId).toList();
+        if (ids.isEmpty()) return List.of();
+        return returns.findByOnlineOrderIdInOrderByIdDesc(ids).stream().map(r -> new OnlineStoreDtos.AccountReturn(r.getOnlineOrder().getCode(), publicView(r))).toList();
+    }
+
     /** What can still be returned on an order and the returns already asked. The code is the key, like following an order. */
     @Transactional
     public ReturnOptions options(String code, String ip) {

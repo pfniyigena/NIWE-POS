@@ -150,6 +150,7 @@ public class OnlineSeoService {
                 + "Allow: /shop\n"
                 + "Allow: /api/public/store/products/\n"
                 + "Allow: /api/public/store/product-images/\n"
+                + "Disallow: /shop/account\n"
                 + "Disallow: /shop/order/\n"
                 + "Disallow: /shop/cart/\n"
                 + "Disallow: /shop/pay-test/\n"

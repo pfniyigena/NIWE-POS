@@ -98,7 +98,9 @@ export interface AccountProfile { email: string | null; phone: string | null; na
 /** A saved delivery address of the signed-in customer; zoneId is the delivery area it belongs to, when the shop has areas. */
 export interface ShopAddress { id: number; label: string; zoneId: number | null; address: string; isDefault: boolean }
 export interface AccountSession { token: string; profile: AccountProfile }
-export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
+export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string; invoiceNumber: string | null }
+/** A return of one of the customer's orders (My returns). */
+export interface AccountReturn { orderCode: string; data: { code: string; status: string; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null; refundReference: string | null; requestedAt: string; decidedAt: string | null; refundedAt: string | null; lines: { name: string; quantity: number; amount: number }[] } }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
 export interface Reorder { lines: { product: ShopProduct; quantity: number }[]; unavailable: string[] }
 /** kind: EARN, SPEND, SPEND_BACK, RET_BACK, RET_TAKE or ADJUST; points is signed. */
@@ -327,6 +329,7 @@ export class OnlineStoreApiService {
     return this.http.post(`${this.pub}/orders/${encodeURIComponent(code)}/invoice`, { phone }, { headers: this.shopHeaders(), responseType: 'blob' });
   }
   accountOrders(): Observable<AccountOrder[]> { return this.http.get<AccountOrder[]>(`${this.pub}/account/orders`, { headers: this.shopHeaders() }); }
+  accountReturns(): Observable<AccountReturn[]> { return this.http.get<AccountReturn[]>(`${this.pub}/account/returns`, { headers: this.shopHeaders() }); }
   accountReorder(code: string): Observable<Reorder> { return this.http.get<Reorder>(`${this.pub}/account/orders/${encodeURIComponent(code)}/reorder`, { headers: this.shopHeaders() }); }
   accountLogout(): Observable<void> { return this.http.post<void>(`${this.pub}/account/logout`, {}, { headers: this.shopHeaders() }); }
   /** "Apply" at checkout: only asks what the code is worth now. */
