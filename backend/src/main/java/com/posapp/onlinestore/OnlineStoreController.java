@@ -318,6 +318,18 @@ public class OnlineStoreController {
     }
 
     @PreAuthorize(MANAGE)
+    @PostMapping("/reviews/{id}/rating-off")
+    public ReviewDto ratingOff(@PathVariable Long id) {
+        return reviews.rating(id, false);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/reviews/{id}/rating-on")
+    public ReviewDto ratingOn(@PathVariable Long id) {
+        return reviews.rating(id, true);
+    }
+
+    @PreAuthorize(MANAGE)
     @PostMapping("/reviews/{id}/hide")
     public ReviewDto hideReview(@PathVariable Long id) {
         return reviews.hide(id);

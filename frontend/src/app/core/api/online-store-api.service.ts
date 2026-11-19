@@ -55,7 +55,7 @@ export interface ShopReview { productName: string; reviewerName: string; rating:
 /** The rows of the front page, chosen by staff, and the best approved reviews. */
 export interface ShopHome {
   featured: ShopProduct[]; bestSellers: ShopProduct[]; offers: ShopProduct[]; newArrivals: ShopProduct[];
-  banners: string[]; reviews: ShopReview[]; ratingAverage: number | null; ratingCount: number;
+  banners: string[]; reviews: ShopReview[]; ratingAverage: number | null; ratingCount: number; ratingStars: number[];
 }
 export interface ShopReviewItem { productId: number; name: string; rating: number | null; text: string | null; status: string | null }
 export interface ShopReviewOptions { canReview: boolean; why: string | null; items: ShopReviewItem[] }
@@ -168,7 +168,7 @@ export interface AdReportRow { adId: number; advertiserId: number; advertiserNam
 export interface AdReport { from: string; to: string; views: number; clicks: number; clickRate: number; rows: AdReportRow[] }
 export interface StoreReview {
   id: number; orderCode: string | null; productId: number; productName: string; reviewerName: string; rating: number; text: string | null;
-  status: 'PENDING' | 'APPROVED' | 'HIDDEN'; createdAt: string; moderatedBy: string | null;
+  status: 'PENDING' | 'APPROVED' | 'HIDDEN'; createdAt: string; moderatedBy: string | null; ratingCounted: boolean;
 }
 export interface StoreSubscriber { id: number; email: string; language: string; status: 'PENDING' | 'CONFIRMED' | 'UNSUBSCRIBED'; createdAt: string; confirmedAt: string | null; unsubscribedAt: string | null }
 export interface StoreCampaign { id: number; subject: string; body: string; buttonLabel: string | null; buttonLink: string | null; audience: 'ALL' | 'EN' | 'FR'; status: 'DRAFT' | 'SENDING' | 'SENT' | 'CANCELLED'; recipients: number; sent: number; failed: number; skipped: number; pending: number; createdBy: string | null; createdAt: string; startedAt: string | null; finishedAt: string | null; lastError: string | null }
@@ -244,7 +244,7 @@ export class OnlineStoreApiService {
   // ---- the front page, reviews and the newsletter
   home(): Observable<ShopHome> { return this.http.get<ShopHome>(`${this.pub}/home`); }
   reviewOptions(code: string): Observable<ShopReviewOptions> { return this.http.get<ShopReviewOptions>(`${this.pub}/orders/${encodeURIComponent(code)}/reviews`); }
-  /** A review of one product of a completed order; it waits for staff. The phone number is needed unless the customer is signed in. */
+  /** A rating (stars) and optional review (words) of one product of a completed order; the stars count at once, the words wait for staff. The phone number is needed unless the customer is signed in. */
   submitReview(code: string, body: { phone: string | null; productId: number; rating: number; text: string | null; name: string | null }): Observable<ShopReviewItem> {
     return this.http.post<ShopReviewItem>(`${this.pub}/orders/${encodeURIComponent(code)}/reviews`, body, { headers: this.shopHeaders() });
   }
@@ -414,6 +414,8 @@ export class OnlineStoreApiService {
     return pagedList<StoreReview>(this.http, `${this.base}/reviews`, f, page, size, {});
   }
   approveReview(id: number): Observable<StoreReview> { return this.http.post<StoreReview>(`${this.base}/reviews/${id}/approve`, {}); }
+  ratingOff(id: number): Observable<StoreReview> { return this.http.post<StoreReview>(`${this.base}/reviews/${id}/rating-off`, {}); }
+  ratingOn(id: number): Observable<StoreReview> { return this.http.post<StoreReview>(`${this.base}/reviews/${id}/rating-on`, {}); }
   hideReview(id: number): Observable<StoreReview> { return this.http.post<StoreReview>(`${this.base}/reviews/${id}/hide`, {}); }
   deleteReview(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/reviews/${id}`); }
   subscribersPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreSubscriber>> {

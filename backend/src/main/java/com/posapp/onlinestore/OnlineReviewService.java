@@ -23,8 +23,9 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Customer reviews (v1.35.0). Only someone who bought the product on a completed order can review it (the order code plus the order's phone number, or the
- * signed-in account that holds the order), once per product per order. A review waits for staff: only approved ones are shown on the shop.
+ * Customer ratings and reviews (v1.35.0, split in v1.46.0). Only someone who bought the product on a completed order can rate it (the order code plus the
+ * order's phone number, or the signed-in account that holds the order), once per product per order. The stars (the rating) count as soon as they are given;
+ * the words (the review) are optional and wait for staff, only approved words are shown on the shop.
  */
 @Service
 public class OnlineReviewService {
@@ -101,7 +102,7 @@ public class OnlineReviewService {
         return new ReviewOptions(true, null, new ArrayList<>(items.values()));
     }
 
-    /** A review of one product of a completed order. It waits for staff. */
+    /** A rating (stars, required) and review (words, optional) of one product of a completed order. The stars count at once; any words wait for staff. */
     @Transactional
     public ReviewItem submit(String code, ReviewRequest in, String ip, Long shopCustomerId) {
         OnlineStoreSettings s = openSettings();
@@ -132,10 +133,15 @@ public class OnlineReviewService {
         r.setReviewerName(name.length() > 60 ? name.substring(0, 60) : name);
         r.setRating(in.rating());
         r.setReviewText(text.isEmpty() ? null : text.length() > 1000 ? text.substring(0, 1000) : text);
+        // no words means nothing to check: only the words wait for staff
+        r.setStatus(r.getReviewText() == null ? "APPROVED" : "PENDING");
         reviews.save(r);
-        auditLogService.record("ONLINE_REVIEW_SUBMITTED", "Review of " + r.getProductName() + " (" + r.getRating() + "/5) on online order " + o.getCode(), "OnlineReview", r.getId());
-        OnlineMessages.notifyShopNote(mailService, storeSettingsService, s, I18n.t("New review waiting"),
-                I18n.t("{0} reviewed {1} ({2} of 5 stars). Open Online Store > Reviews to approve it or hide it.", r.getReviewerName(), r.getProductName(), r.getRating()));
+        auditLogService.record("ONLINE_REVIEW_SUBMITTED", "Rating of " + r.getProductName() + " (" + r.getRating() + "/5)" + (r.getReviewText() == null ? "" : " with a review")
+                + " on online order " + o.getCode(), "OnlineReview", r.getId());
+        if (r.getReviewText() != null) {
+            OnlineMessages.notifyShopNote(mailService, storeSettingsService, s, I18n.t("New review waiting"),
+                    I18n.t("{0} reviewed {1} ({2} of 5 stars). Open Online Store > Reviews to approve it or hide it.", r.getReviewerName(), r.getProductName(), r.getRating()));
+        }
         return new ReviewItem(r.getProductId(), r.getProductName(), r.getRating(), r.getReviewText(), r.getStatus());
     }
 
@@ -143,8 +149,11 @@ public class OnlineReviewService {
 
     @Transactional(readOnly = true)
     public List<ReviewDto> list(String q, String status) {
-        List<OnlineReview> all = status == null || status.isBlank() || status.equals("ALL") ? reviews.findAllByOrderByIdDesc()
-                : reviews.findByStatusOrderByIdDesc(status.trim().toUpperCase(Locale.ROOT));
+        String st = status == null ? "" : status.trim().toUpperCase(Locale.ROOT);
+        List<OnlineReview> all = st.isEmpty() || st.equals("ALL") ? reviews.findAllByOrderByIdDesc()
+                : st.equals("RATING") ? reviews.findAllByOrderByIdDesc().stream().filter(r -> r.getReviewText() == null || r.getReviewText().isBlank()).toList()
+                : st.equals("APPROVED") ? reviews.findByStatusOrderByIdDesc(st).stream().filter(r -> r.getReviewText() != null && !r.getReviewText().isBlank()).toList()
+                : reviews.findByStatusOrderByIdDesc(st);
         Map<Long, String> codes = new HashMap<>();
         orders.findAllById(all.stream().map(OnlineReview::getOnlineOrderId).distinct().toList()).forEach(o -> codes.put(o.getId(), o.getCode()));
         String needle = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
@@ -168,13 +177,27 @@ public class OnlineReviewService {
         return moderate(id, "HIDDEN");
     }
 
+    /** Takes the stars out of the averages (for a rating that is not honest), or puts them back. The words are not touched. */
+    @Transactional
+    public ReviewDto rating(Long id, boolean counted) {
+        OnlineReview r = reviews.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Review not found")));
+        r.setRatingCounted(counted);
+        r.setModeratedBy(user());
+        r.setModeratedAt(Instant.now());
+        reviews.save(r);
+        auditLogService.record(counted ? "ONLINE_RATING_COUNTED" : "ONLINE_RATING_REMOVED", "Rating of " + r.getProductName() + " by " + r.getReviewerName()
+                + (counted ? " counts again" : " no longer counts"), "OnlineReview", id);
+        OnlineOrder o = orders.findById(r.getOnlineOrderId()).orElse(null);
+        return toDto(r, o == null ? null : o.getCode());
+    }
+
     private ReviewDto moderate(Long id, String status) {
         OnlineReview r = reviews.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Review not found")));
         r.setStatus(status);
         r.setModeratedBy(user());
         r.setModeratedAt(Instant.now());
         reviews.save(r);
-        auditLogService.record("ONLINE_REVIEW_" + status, "Review of " + r.getProductName() + " by " + r.getReviewerName() + " set to " + status, "OnlineReview", id);
+        auditLogService.record("ONLINE_REVIEW_" + status, "Review words of " + r.getProductName() + " by " + r.getReviewerName() + " set to " + status, "OnlineReview", id);
         OnlineOrder o = orders.findById(r.getOnlineOrderId()).orElse(null);
         return toDto(r, o == null ? null : o.getCode());
     }
@@ -188,6 +211,6 @@ public class OnlineReviewService {
 
     private static ReviewDto toDto(OnlineReview r, String orderCode) {
         return new ReviewDto(r.getId(), orderCode, r.getProductId(), r.getProductName(), r.getReviewerName(), r.getRating(), r.getReviewText(), r.getStatus(),
-                r.getCreatedAt(), r.getModeratedBy());
+                r.getCreatedAt(), r.getModeratedBy(), r.isRatingCounted());
     }
 }

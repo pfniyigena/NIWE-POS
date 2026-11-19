@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.46.0 - Online Store: ratings and reviews are separate
+
+The stars (the rating) count as soon as a customer who bought the product gives them; the words (the review) are optional and shown only after staff approve them. The shop says "ratings" for the stars and "reviews" for the words. The front page shows the shop's overall rating with the count per star, then the newest written reviews. Staff (Online Store > Reviews) approve or hide only the words, and can take an unfair rating out of the averages. Migration V81. See `docs/online-store-ratings-reviews.md` and `RELEASE-NOTES-v1.46.0.md`.
+
 ### Version 1.45.0 - Online Store: better cards, search and filters, product page extras, category tiles
 
 Product cards are the same height with a two-line name, a discount badge, stars, "In stock / Out of stock" and a Quick view window. The search finds products by name, SKU, barcode, brand, category or description (every word typed must match), with suggestions while typing, and the list can be filtered by price, brand, rating and availability and sorted (newest, most popular, best rated, price). Recently viewed products are remembered in the visitor's own browser. The product page gets a zoom and full-screen view, a quantity selector, delivery information with an estimated date, Share on WhatsApp and "Frequently bought together". The home page has "Shop by category" tiles with pictures, and staff can set the shop's colour and the estimated delivery days (Shop settings > Front page). Not built (left for later): wishlist, product variants, bank card payments. Migration V80. See `docs/online-store-shop-experience.md` and `RELEASE-NOTES-v1.45.0.md`.

@@ -16,7 +16,7 @@ import java.util.Map;
 
 /**
  * The shop's front page (v1.35.0): the rows of products staff picked (featured, best-selling, special offers, new arrivals), the banner pictures and
- * the best of the approved reviews, plus the star rating that goes on a product. Nothing here changes anything.
+ * the best of the approved reviews, the shop's overall rating, plus the star rating that goes on a product. Nothing here changes anything.
  */
 @Service
 public class OnlineFrontService {
@@ -53,14 +53,19 @@ public class OnlineFrontService {
             avg = round1(((Number) overall.get(0)[0]).doubleValue());
             count = ((Number) overall.get(0)[1]).longValue();
         }
-        return new PublicHome(featured, best, offers, fresh, banners.urls(), shown, avg, count);
+        long[] stars = new long[5];
+        for (Object[] r : reviews.overallBreakdown()) {
+            int n = ((Number) r[0]).intValue();
+            if (n >= 1 && n <= 5) stars[n - 1] = ((Number) r[1]).longValue();
+        }
+        return new PublicHome(featured, best, offers, fresh, banners.urls(), shown, avg, count, List.of(stars[0], stars[1], stars[2], stars[3], stars[4]));
     }
 
     private List<OnlineStoreDtos.PublicProduct> row(List<OnlineListing> rows, OnlineStoreSettings s) {
         return withRatings(rows.stream().map(l -> store.publicProduct(l, s)).toList());
     }
 
-    /** The same products with their star rating (average of the approved reviews, and how many). Products with no review keep 0. */
+    /** The same products with their star rating (average of the ratings that count, and how many). Products nobody rated keep 0. */
     @Transactional(readOnly = true)
     public List<OnlineStoreDtos.PublicProduct> withRatings(List<OnlineStoreDtos.PublicProduct> in) {
         if (in.isEmpty()) return in;

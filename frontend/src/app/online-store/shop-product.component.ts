@@ -44,8 +44,8 @@ import { T } from '../core/i18n/t';
           <div class="shop-pp-info">
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="x.product.category || x.brand">{{ x.product.category }}<ng-container *ngIf="x.product.category && x.brand"> · </ng-container>{{ x.brand }}</div>
             <h2 class="shop-pp-name" style="margin:0.15rem 0 0.4rem;">{{ x.product.name }}</h2>
-            <div class="shop-pp-rating" *ngIf="x.rating.count > 0" style="color:#d97706;">{{ stars(x.rating.average) }} <span class="text-muted">{{ x.rating.average }} / 5 · {{ '{p0} reviews' | translate: { p0: x.rating.count } }}</span></div>
-            <div class="text-muted shop-pp-norating" *ngIf="x.rating.count === 0" style="font-size:0.85rem;">{{ 'No reviews yet' | translate }}</div>
+            <div class="shop-pp-rating" *ngIf="x.rating.count > 0" style="color:#d97706;">{{ stars(x.rating.average) }} <span class="text-muted">{{ x.rating.average }} / 5 · {{ '{p0} ratings' | translate: { p0: x.rating.count } }}</span></div>
+            <div class="text-muted shop-pp-norating" *ngIf="x.rating.count === 0" style="font-size:0.85rem;">{{ 'No ratings yet' | translate }}</div>
             <div class="mt-2" style="font-size:1.6rem;"><strong class="shop-pp-price">{{ x.product.price | shopMoney: cur }}</strong><s class="text-muted shop-pp-was" *ngIf="x.product.wasPrice" style="font-size:1rem; margin-left:0.5rem;">{{ x.product.wasPrice | shopMoney: cur }}</s>
               <span *ngIf="x.product.wasPrice" style="margin-left:0.5rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; vertical-align:middle;">{{ 'Offer' | translate }}</span></div>
             <div class="mt-1 shop-pp-stock" [style.color]="x.product.stock === 'IN_STOCK' ? '#15803d' : x.product.stock === 'LOW' ? '#b45309' : '#6b7280'">
@@ -116,12 +116,12 @@ import { T } from '../core/i18n/t';
         <app-shop-ad *ngIf="ads.length" placement="PRODUCT" [ads]="ads"></app-shop-ad>
 
         <section class="shop-pp-reviews" id="shop-pp-reviews" style="margin-top:2rem;">
-          <h3 style="margin:0 0 0.6rem;">{{ 'Customer reviews' | translate }}</h3>
+          <h3 style="margin:0 0 0.6rem;">{{ 'Customer ratings and reviews' | translate }}</h3>
           <div *ngIf="x.rating.count > 0; else noRev" style="display:flex; gap:2rem; flex-wrap:wrap; align-items:center;">
             <div style="text-align:center;">
               <div style="font-size:2.2rem; font-weight:700;">{{ x.rating.average }}</div>
               <div style="color:#d97706;">{{ stars(x.rating.average) }}</div>
-              <div class="text-muted" style="font-size:0.85rem;">{{ '{p0} reviews' | translate: { p0: x.rating.count } }}</div>
+              <div class="text-muted" style="font-size:0.85rem;">{{ '{p0} ratings' | translate: { p0: x.rating.count } }}</div>
             </div>
             <div style="flex:1; min-width:200px; max-width:360px;">
               <div *ngFor="let n of [5, 4, 3, 2, 1]" class="flex gap-2" style="align-items:center; font-size:0.85rem;">
@@ -132,13 +132,14 @@ import { T } from '../core/i18n/t';
             </div>
           </div>
           <div class="mt-3" *ngIf="x.reviews.length">
+            <h4 class="shop-pp-reviews-title" style="margin:0 0 0.3rem;">{{ 'Reviews' | translate }}</h4>
             <div class="shop-pp-review" *ngFor="let r of x.reviews" style="padding:0.6rem 0; border-top:1px solid rgba(128,128,128,0.3);">
               <span style="color:#d97706;">{{ stars(r.rating) }}</span> <strong style="margin-left:0.4rem;">{{ r.reviewerName }}</strong> <span class="text-muted" style="font-size:0.8rem; margin-left:0.4rem;">{{ r.at | date: 'mediumDate' }}</span>
               <div>{{ r.text }}</div>
             </div>
           </div>
-          <ng-template #noRev><p class="text-muted shop-pp-noreviews">{{ 'No reviews yet' | translate }}</p></ng-template>
-          <p class="text-muted mt-2" style="font-size:0.85rem;">{{ 'Only customers who bought this product can review it, from their order page.' | translate }}</p>
+          <ng-template #noRev><p class="text-muted shop-pp-noreviews">{{ 'No ratings yet' | translate }}</p></ng-template>
+          <p class="text-muted mt-2" style="font-size:0.85rem;">{{ 'Only customers who bought this product can rate or review it, from their order page.' | translate }}</p>
         </section>
 
         <section class="shop-pp-related" style="margin-top:2rem;" *ngIf="x.related.length">

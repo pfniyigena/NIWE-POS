@@ -108,12 +108,12 @@ import { ShopAdComponent } from './shop-ad.component';
         </div>
 
         <div class="card mb-3 st-reviews" *ngIf="t.status === 'COMPLETED' && rvo && rvo.canReview && rvo.items.length > 0" style="padding:0.75rem;">
-          <h4 class="mb-2">{{ 'Review your products' | translate }}</h4>
-          <p class="text-muted" style="font-size:0.85rem;">{{ 'Tell other customers what you think. Your review is shown after we have looked at it.' | translate }}</p>
+          <h4 class="mb-2">{{ 'Rate your products' | translate }}</h4>
+          <p class="text-muted" style="font-size:0.85rem;">{{ 'Give stars, and add a few words if you like. Your stars count right away; your words are shown after we have looked at them.' | translate }}</p>
           <div class="alert alert-success st-review-sent" *ngIf="reviewSent">{{ reviewSent }}</div>
           <div *ngFor="let i of rvo.items" class="st-review" style="border-top:1px solid #e5e7eb; padding:0.5rem 0;">
             <strong>{{ i.name }}</strong>
-            <div *ngIf="i.status" class="text-muted st-review-done" style="font-size:0.85rem;"><span style="color:#d97706;">{{ stars(i.rating ?? 0) }}</span> {{ i.status === 'APPROVED' ? ('Published. Thank you.' | translate) : i.status === 'HIDDEN' ? ('Thank you. Your review is not shown.' | translate) : ('Thank you. Your review is waiting to be checked.' | translate) }}<span *ngIf="i.text"> · {{ i.text }}</span></div>
+            <div *ngIf="i.status" class="text-muted st-review-done" style="font-size:0.85rem;"><span style="color:#d97706;">{{ stars(i.rating ?? 0) }}</span> {{ i.status === 'APPROVED' ? (i.text ? ('Published. Thank you.' | translate) : ('Thank you for your rating.' | translate)) : i.status === 'HIDDEN' ? ('Thank you. Your review is not shown.' | translate) : ('Thank you. Your review is waiting to be checked.' | translate) }}<span *ngIf="i.text"> · {{ i.text }}</span></div>
             <div *ngIf="!i.status">
               <div class="flex gap-1" style="font-size:1.5rem; cursor:pointer; line-height:1.2;">
                 <span *ngFor="let n of [1, 2, 3, 4, 5]" class="st-star" role="button" [attr.aria-label]="n + ' / 5'" [style.color]="(rr[i.productId] || 0) >= n ? '#d97706' : '#9ca3af'" (click)="rr[i.productId] = n">{{ (rr[i.productId] || 0) >= n ? '★' : '☆' }}</span>
@@ -121,7 +121,7 @@ import { ShopAdComponent } from './shop-ad.component';
               <textarea class="form-control st-review-text mt-1" rows="2" maxlength="1000" [name]="'rt' + i.productId" [(ngModel)]="rt[i.productId]" [placeholder]="'Your review (optional)' | translate"></textarea>
               <div class="mt-1" *ngIf="!signedIn"><input class="form-control st-review-phone" style="max-width:260px;" maxlength="40" inputmode="tel" [name]="'rp' + i.productId" [(ngModel)]="reviewPhone" [placeholder]="'Phone number of this order' | translate" /></div>
               <div class="alert alert-danger mt-1 st-review-error" *ngIf="reviewError[i.productId]">{{ reviewError[i.productId] }}</div>
-              <button class="btn btn-sm btn-primary mt-1 st-review-send" type="button" [disabled]="busy" (click)="sendReview(i)">{{ 'Send my review' | translate }}</button>
+              <button class="btn btn-sm btn-primary mt-1 st-review-send" type="button" [disabled]="busy" (click)="sendReview(i)">{{ 'Send my rating' | translate }}</button>
             </div>
           </div>
         </div>
@@ -258,10 +258,11 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
     if (rating < 1) { this.reviewError[i.productId] = T('Choose a rating from 1 to 5 stars.'); return; }
     if (!this.signedIn && this.reviewPhone.trim().length < 6) { this.reviewError[i.productId] = T('Enter the phone number of this order.'); return; }
     this.busy = true;
-    this.api.submitReview(this.code, { phone: this.reviewPhone.trim() || null, productId: i.productId, rating, text: (this.rt[i.productId] ?? '').trim() || null, name: null }).subscribe({
+    const words = (this.rt[i.productId] ?? '').trim();
+    this.api.submitReview(this.code, { phone: this.reviewPhone.trim() || null, productId: i.productId, rating, text: words || null, name: null }).subscribe({
       next: () => {
         this.busy = false;
-        this.reviewSent = T('Thank you. Your review is waiting to be checked.');
+        this.reviewSent = words ? T('Thank you. Your rating is counted. Your review is waiting to be checked.') : T('Thank you. Your rating is counted.');
         this.loadReviews();
       },
       error: (e) => { this.busy = false; this.reviewError[i.productId] = e?.error?.message ?? T('That did not work'); },

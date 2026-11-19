@@ -39,7 +39,7 @@ public final class OnlineStoreDtos {
 
     /** The rows of the front page, chosen by staff, the banner pictures (addresses, in sliding order) and the best of the approved reviews. */
     public record PublicHome(List<PublicProduct> featured, List<PublicProduct> bestSellers, List<PublicProduct> offers, List<PublicProduct> newArrivals,
-                             List<String> banners, List<PublicReview> reviews, Double ratingAverage, long ratingCount) {
+                             List<String> banners, List<PublicReview> reviews, Double ratingAverage, long ratingCount, List<Long> ratingStars) {
     }
 
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
@@ -362,7 +362,7 @@ public final class OnlineStoreDtos {
     }
 
     public record ReviewDto(Long id, String orderCode, Long productId, String productName, String reviewerName, int rating, String text, String status,
-                            Instant createdAt, String moderatedBy) {
+                            Instant createdAt, String moderatedBy, boolean ratingCounted) {
     }
 
     // newsletter

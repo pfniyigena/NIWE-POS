@@ -180,9 +180,22 @@ import { T } from '../core/i18n/t';
 
         <ng-container *ngIf="landing">
           <section class="shop-reviews" style="margin-top:2rem;">
-            <h3>{{ 'Customer reviews' | translate }}</h3>
-            <div *ngIf="home && home.reviews.length > 0; else noReviews">
-              <div class="text-muted shop-reviews-avg" *ngIf="home.ratingAverage !== null" style="margin-bottom:0.5rem;"><span style="color:#d97706;">{{ stars(home.ratingAverage) }}</span> {{ home.ratingAverage }} / 5 · {{ '{p0} reviews' | translate: { p0: home.ratingCount } }}</div>
+            <h3>{{ 'Customer ratings and reviews' | translate }}</h3>
+            <div *ngIf="home && (home.reviews.length > 0 || home.ratingCount > 0); else noReviews">
+              <div class="shop-reviews-avg" *ngIf="home.ratingAverage !== null && home.ratingCount > 0" style="display:flex; gap:2rem; flex-wrap:wrap; align-items:center; margin-bottom:0.75rem;">
+                <div style="text-align:center;">
+                  <div style="font-size:2.2rem; font-weight:700;">{{ home.ratingAverage }}</div>
+                  <div style="color:#d97706;">{{ stars(home.ratingAverage) }}</div>
+                  <div class="text-muted" style="font-size:0.85rem;">{{ '{p0} ratings' | translate: { p0: home.ratingCount } }}</div>
+                </div>
+                <div style="flex:1; min-width:200px; max-width:360px;">
+                  <div *ngFor="let n of [5, 4, 3, 2, 1]" class="flex gap-2" style="align-items:center; font-size:0.85rem;">
+                    <span style="width:2.2em;">{{ n }} ★</span>
+                    <div style="flex:1; height:8px; background:rgba(128,128,128,0.3); border-radius:4px; overflow:hidden;"><div style="height:100%; background:#d97706;" [style.width.%]="starShare(n)"></div></div>
+                    <span class="text-muted" style="width:2.5em; text-align:right;">{{ home.ratingStars[n - 1] }}</span>
+                  </div>
+                </div>
+              </div>
               <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:0.75rem;">
                 <div class="card shop-review" *ngFor="let r of home.reviews" style="padding:0.75rem;">
                   <div style="color:#d97706;">{{ stars(r.rating) }}</div>
@@ -191,7 +204,7 @@ import { T } from '../core/i18n/t';
                 </div>
               </div>
             </div>
-            <ng-template #noReviews><p class="text-muted shop-reviews-none">{{ 'No reviews yet. When your order is completed, you can review the products from your order page.' | translate }}</p></ng-template>
+            <ng-template #noReviews><p class="text-muted shop-reviews-none">{{ 'No ratings yet. When your order is completed, you can rate the products from your order page.' | translate }}</p></ng-template>
           </section>
 
           <section class="shop-newsletter card" style="margin-top:2rem; padding:1.25rem; text-align:center;">
@@ -375,7 +388,7 @@ import { T } from '../core/i18n/t';
             <a class="shop-product-name" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" [title]="p.name" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em; line-height:1.3; margin-top:0.4rem; font-weight:600; color:inherit; text-decoration:none;">{{ p.name }}</a>
             <div class="shop-rating" style="min-height:1.3em; font-size:0.85rem;">
               <ng-container *ngIf="p.ratingCount > 0; else noStars"><span style="color:#d97706;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }}</span> <span class="text-muted">({{ p.ratingCount }})</span></ng-container>
-              <ng-template #noStars><span class="text-muted" style="font-size:0.78rem;">{{ 'No reviews yet' | translate }}</span></ng-template>
+              <ng-template #noStars><span class="text-muted" style="font-size:0.78rem;">{{ 'No ratings yet' | translate }}</span></ng-template>
             </div>
             <div style="margin-top:0.2rem;"><strong class="shop-price" style="font-size:1.15rem;">{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.4rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
             <div class="shop-avail" style="font-size:0.8rem; min-height:1.2em;" [style.color]="p.stock === 'SOLD_OUT' ? '#b91c1c' : p.stock === 'LOW' ? '#b45309' : '#15803d'">
@@ -624,6 +637,12 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.page = 0;
     this.load();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Share (in percent) of the shop's ratings that gave n stars. */
+  starShare(n: number): number {
+    const h = this.home;
+    return h && h.ratingCount > 0 && h.ratingStars ? Math.round(((h.ratingStars[n - 1] ?? 0) * 100) / h.ratingCount) : 0;
   }
 
   stars(r: number): string {

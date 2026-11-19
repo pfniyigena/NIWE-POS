@@ -10,8 +10,8 @@ import { OnlineStoreApiService, StoreReview } from '../core/api/online-store-api
 import { T } from '../core/i18n/t';
 
 /**
- * Online Store > Reviews: what customers wrote about products they bought on a completed order. A review is shown on the shop only after it is approved;
- * a hidden one is kept but not shown; a delete removes it for good.
+ * Online Store > Reviews: the ratings (stars) and reviews (words) customers gave to products they bought on a completed order. The stars count at once; staff
+ * approve or hide only the words. A rating that is not honest can be taken out of the averages; a delete removes the whole entry for good.
  */
 @Component({
   selector: 'app-store-reviews',
@@ -28,7 +28,7 @@ import { T } from '../core/i18n/t';
           <a class="btn btn-outline-secondary" routerLink="/admin/online-store/setup">{{ 'Shop settings' | translate }}</a>
         </div>
       </div>
-      <p class="text-muted">{{ 'Customers can review a product after their order is completed. A review is shown on the shop only after you approve it.' | translate }}</p>
+      <p class="text-muted">{{ 'Customers can rate a product after their order is completed. The stars count at once; any words are shown on the shop only after you approve them.' | translate }}</p>
 
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
         <button *ngFor="let t of tabs" class="btn btn-sm rv-tab" [class.btn-primary]="tab === t.key" [class.btn-outline-secondary]="tab !== t.key" (click)="setTab(t.key)">
@@ -41,7 +41,8 @@ import { T } from '../core/i18n/t';
         <div class="flex justify-between" style="flex-wrap:wrap; gap:0.5rem;">
           <div>
             <strong class="rv-product">{{ r.productName }}</strong>
-            <span class="badge rv-status" style="margin-left:0.4rem;" [style.color]="color(r)">{{ label(r.status) | translate }}</span>
+            <span class="badge rv-status" style="margin-left:0.4rem;" [style.color]="color(r)">{{ label(r) | translate }}</span>
+            <span class="badge rv-notcounted" *ngIf="!r.ratingCounted" style="margin-left:0.4rem; color:#b91c1c;">{{ 'Rating not counted' | translate }}</span>
             <div><span style="color:#d97706;">{{ stars(r.rating) }}</span> · {{ r.reviewerName }}<span class="text-muted" *ngIf="r.orderCode"> · {{ 'Order {p0}' | translate: { p0: r.orderCode } }}</span></div>
           </div>
           <div class="text-muted" style="font-size:0.8rem;">{{ r.createdAt | date: 'short' }}<span *ngIf="r.moderatedBy"> · {{ r.moderatedBy }}</span></div>
@@ -49,8 +50,10 @@ import { T } from '../core/i18n/t';
         <p class="rv-text mt-1" *ngIf="r.text" style="margin-bottom:0;">{{ r.text }}</p>
         <p class="text-muted mt-1" *ngIf="!r.text" style="margin-bottom:0;">{{ 'Rating only, no words.' | translate }}</p>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
-          <button class="btn btn-sm btn-primary rv-approve" *ngIf="r.status !== 'APPROVED'" [disabled]="busy" (click)="approve(r)">{{ 'Approve' | translate }}</button>
-          <button class="btn btn-sm btn-outline-secondary rv-hide" *ngIf="r.status !== 'HIDDEN'" [disabled]="busy" (click)="hide(r)">{{ 'Hide' | translate }}</button>
+          <button class="btn btn-sm btn-primary rv-approve" *ngIf="r.text && r.status !== 'APPROVED'" [disabled]="busy" (click)="approve(r)">{{ 'Approve' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary rv-hide" *ngIf="r.text && r.status !== 'HIDDEN'" [disabled]="busy" (click)="hide(r)">{{ 'Hide' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary rv-rating-off" *ngIf="r.ratingCounted" [disabled]="busy" (click)="ratingOff(r)">{{ 'Remove rating' | translate }}</button>
+          <button class="btn btn-sm btn-outline-secondary rv-rating-on" *ngIf="!r.ratingCounted" [disabled]="busy" (click)="ratingOn(r)">{{ 'Count rating again' | translate }}</button>
           <button class="btn btn-sm btn-outline-danger rv-delete" [disabled]="busy" (click)="remove(r)">{{ 'Delete' | translate }}</button>
         </div>
       </div>
@@ -63,6 +66,7 @@ export class StoreReviewsComponent implements OnInit, OnDestroy {
   tabs = [
     { key: 'PENDING', label: 'Waiting' },
     { key: 'APPROVED', label: 'Shown' },
+    { key: 'RATING', label: 'Rating only' },
     { key: 'HIDDEN', label: 'Hidden' },
     { key: '', label: 'Everything' },
   ];
@@ -89,12 +93,14 @@ export class StoreReviewsComponent implements OnInit, OnDestroy {
     if (this.poll) clearInterval(this.poll);
   }
 
-  label(s: string): string {
-    return ({ PENDING: 'Waiting', APPROVED: 'Shown', HIDDEN: 'Hidden' } as Record<string, string>)[s] ?? s;
+  /** The status is about the words: an entry with no words has nothing to check. */
+  label(r: StoreReview): string {
+    if (!r.text) return 'Rating only';
+    return ({ PENDING: 'Waiting', APPROVED: 'Shown', HIDDEN: 'Hidden' } as Record<string, string>)[r.status] ?? r.status;
   }
 
   color(r: StoreReview): string {
-    return r.status === 'APPROVED' ? '#15803d' : r.status === 'HIDDEN' ? '#6b7280' : '#b45309';
+    return !r.text ? '#6b7280' : r.status === 'APPROVED' ? '#15803d' : r.status === 'HIDDEN' ? '#6b7280' : '#b45309';
   }
 
   stars(n: number): string {
@@ -142,6 +148,15 @@ export class StoreReviewsComponent implements OnInit, OnDestroy {
 
   hide(r: StoreReview): void {
     this.run(this.api.hideReview(r.id), T('The review is hidden.'));
+  }
+
+  ratingOff(r: StoreReview): void {
+    if (!confirm(T('Take this rating out of the averages? The words, if any, are not changed.'))) return;
+    this.run(this.api.ratingOff(r.id), T('The rating no longer counts.'));
+  }
+
+  ratingOn(r: StoreReview): void {
+    this.run(this.api.ratingOn(r.id), T('The rating counts again.'));
   }
 
   remove(r: StoreReview): void {
