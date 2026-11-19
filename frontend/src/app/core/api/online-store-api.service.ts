@@ -151,7 +151,14 @@ export interface PaymentRow {
 }
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
-export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; reviewsPending?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
+export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; reviewsPending?: number; messagesNew?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
+/** Information pages (Terms, Privacy, Returns, Delivery) and the contact form. */
+export interface InfoLink { slug: string; title: string }
+export interface InfoPage { slug: string; title: string; body: string }
+export interface InfoPageAdmin { slug: string; title: string; body: string; published: boolean; edited: boolean }
+export interface ContactForm { name: string; email: string; phone: string; subject: string; message: string; orderCode: string; language: string; website: string }
+export interface ContactMessage { id: number; name: string; email: string | null; phone: string | null; subject: string | null; message: string; orderCode: string | null; language: string;
+  status: 'NEW' | 'ANSWERED'; note: string | null; handledBy: string | null; handledAt: string | null; createdAt: string }
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
@@ -328,6 +335,22 @@ export class OnlineStoreApiService {
   page(f: ListFilter, page: number, size: number): Observable<PageResult<StoreOrder>> {
     return pagedList<StoreOrder>(this.http, `${this.base}/orders`, f, page, size, {});
   }
+  // ---- information pages and the contact form
+  infoLinks(lang: string): Observable<InfoLink[]> { return this.http.get<InfoLink[]>(`${this.pub}/info`, { params: { lang } }); }
+  infoPage(slug: string, lang: string): Observable<InfoPage> { return this.http.get<InfoPage>(`${this.pub}/info/${slug}`, { params: { lang } }); }
+  sendContact(f: ContactForm): Observable<{ ok: boolean }> { return this.http.post<{ ok: boolean }>(`${this.pub}/contact`, f); }
+  adminInfoPages(lang: string): Observable<InfoPageAdmin[]> { return this.http.get<InfoPageAdmin[]>(`${this.base}/info-pages`, { params: { lang } }); }
+  saveInfoPage(slug: string, p: { title: string; body: string; published: boolean }, lang: string): Observable<InfoPageAdmin> {
+    return this.http.put<InfoPageAdmin>(`${this.base}/info-pages/${slug}`, p, { params: { lang } });
+  }
+  restoreInfoPage(slug: string, lang: string): Observable<InfoPageAdmin> { return this.http.post<InfoPageAdmin>(`${this.base}/info-pages/${slug}/restore`, {}, { params: { lang } }); }
+  messagesPage(f: ListFilter, page: number, size: number): Observable<PageResult<ContactMessage>> {
+    return pagedList<ContactMessage>(this.http, `${this.base}/messages`, f, page, size, {});
+  }
+  messageAnswered(id: number, note: string): Observable<ContactMessage> { return this.http.post<ContactMessage>(`${this.base}/messages/${id}/answered`, { note }); }
+  messageReopen(id: number): Observable<ContactMessage> { return this.http.post<ContactMessage>(`${this.base}/messages/${id}/reopen`, {}); }
+  deleteMessage(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/messages/${id}`); }
+
   pendingCount(): Observable<PendingCounts> { return this.http.get<PendingCounts>(`${this.base}/orders/pending-count`); }
   accept(id: number, overrideShortage: boolean): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/accept`, { overrideShortage }); }
   reject(id: number, reason: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/reject`, { reason }); }

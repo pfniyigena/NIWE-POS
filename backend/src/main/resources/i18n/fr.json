@@ -1947,5 +1947,13 @@
  "The invoice is ready once your order is completed.": "La facture est disponible une fois votre commande terminée.",
  "View your order {0}": "Voir votre commande {0}",
  "Open order {0} in Online orders": "Ouvrir la commande {0} dans Commandes en ligne",
- "Open Online orders": "Ouvrir Commandes en ligne"
+ "Open Online orders": "Ouvrir Commandes en ligne",
+ "Write the text of the page.": "Écrivez le texte de la page.",
+ "Write the title of the page.": "Écrivez le titre de la page.",
+ "Give an e-mail address or a phone number so we can answer you.": "Indiquez une adresse e-mail ou un numéro de téléphone pour que nous puissions vous répondre.",
+ "Write your message.": "Écrivez votre message.",
+ "Order {0}": "Commande {0}",
+ "New message from {0}": "Nouveau message de {0}",
+ "We received your message and will answer as soon as we can. Here is a copy.": "Nous avons bien reçu votre message et vous répondrons dès que possible. En voici une copie.",
+ "We received your message": "Nous avons bien reçu votre message"
 }

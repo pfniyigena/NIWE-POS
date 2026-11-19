@@ -390,6 +390,9 @@ import { StoreAdsComponent } from './online-store/store-ads.component';
 import { ShopCartStopComponent } from './online-store/shop-cart-stop.component';
 import { StoreReportListComponent } from './online-store/store-report-list.component';
 import { ShopNewsletterComponent } from './online-store/shop-newsletter.component';
+import { ShopInfoComponent } from './online-store/shop-info.component';
+import { StoreMessagesComponent } from './online-store/store-messages.component';
+import { StorePagesComponent } from './online-store/store-pages.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
 import { QrPrintComponent } from './restaurant/qr-print.component';
 import { PublicOrderComponent } from './restaurant/public-order.component';
@@ -1101,6 +1104,8 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/reviews', component: StoreReviewsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/newsletter', component: StoreNewsletterComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/newsletters', component: StoreCampaignsComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/messages', component: StoreMessagesComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/pages', component: StorePagesComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/carts', component: StoreCartsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/loyalty', component: StoreLoyaltyComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/ads', component: StoreAdsComponent, canActivate: [authGuard] },
@@ -1108,6 +1113,7 @@ const baseRoutes: Routes = [
   { path: 'shop', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/pay-test/:reference', component: ShopPayTestComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  { path: 'shop/info/:slug', component: ShopInfoComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/newsletter/:action/:token', component: ShopNewsletterComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/cart/stop/:token', component: ShopCartStopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/cart/:token', component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },

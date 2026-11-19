@@ -37,10 +37,12 @@ public class OnlineStoreController {
     private final NewsletterCampaignService campaigns;
     private final CartReminderService cartReminders;
     private final ShopLoyaltyService loyalty;
+    private final OnlineContactService contacts;
 
     public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns,
                                  OnlineReviewService reviews, NewsletterService newsletter, NewsletterCampaignService campaigns,
-                                 CartReminderService cartReminders, ShopLoyaltyService loyalty) {
+                                 CartReminderService cartReminders, ShopLoyaltyService loyalty, OnlineContactService contacts) {
+        this.contacts = contacts;
         this.loyalty = loyalty;
         this.cartReminders = cartReminders;
         this.reviews = reviews;
@@ -67,6 +69,7 @@ public class OnlineStoreController {
         Map<String, Long> out = new java.util.LinkedHashMap<>(orders.pendingSummary());
         out.putAll(returns.counts());
         out.putAll(reviews.counts());
+        out.putAll(contacts.counts());
         return out;
     }
 

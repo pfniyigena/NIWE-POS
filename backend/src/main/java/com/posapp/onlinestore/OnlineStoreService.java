@@ -96,7 +96,7 @@ public class OnlineStoreService {
         return settings().isEnabled();
     }
 
-    private OnlineStoreSettings openSettings() {
+    OnlineStoreSettings openSettings() {
         OnlineStoreSettings s = settings();
         if (!s.isEnabled()) throw ApiException.notFound(I18n.t("This shop is not available."));
         return s;

@@ -402,4 +402,33 @@ public final class OnlineStoreDtos {
 
     public record DeliveryDto(Long id, String email, String language, String status, String error, Instant sentAt) {
     }
+
+    // ---- information pages and the contact form (v1.51.0)
+
+    /** A published information page, for the footer links. */
+    public record InfoLink(String slug, String title) {
+    }
+
+    /** What a visitor reads: the title and the text with the shop's own details filled in. */
+    public record InfoPageDto(String slug, String title, String body) {
+    }
+
+    /** What staff edit: the text as written (with {shop}, {phone}, {email}, {address} still in it); edited = staff wrote it, else it is the starter text. */
+    public record InfoPageAdminDto(String slug, String title, String body, boolean published, boolean edited) {
+    }
+
+    public record InfoPageRequest(@Size(max = 120) String title, @Size(max = 12000) String body, Boolean published) {
+    }
+
+    /** website is a hidden field real visitors leave empty. At least an e-mail or a phone number is needed so the shop can answer. */
+    public record ContactRequest(@Size(max = 80) String name, @Size(max = 160) String email, @Size(max = 40) String phone, @Size(max = 120) String subject,
+                                 @Size(max = 2000) String message, @Size(max = 20) String orderCode, @Size(max = 2) String language, @Size(max = 100) String website) {
+    }
+
+    public record ContactMessageDto(Long id, String name, String email, String phone, String subject, String message, String orderCode, String language,
+                                    String status, String note, String handledBy, Instant handledAt, Instant createdAt) {
+    }
+
+    public record ContactNoteRequest(@Size(max = 500) String note) {
+    }
 }

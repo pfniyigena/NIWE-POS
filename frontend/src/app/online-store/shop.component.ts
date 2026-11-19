@@ -16,6 +16,7 @@ import { WishlistService } from './wishlist.service';
 import { PwaService } from '../core/pwa.service';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
+import { InfoLink } from '../core/api/online-store-api.service';
 import { T } from '../core/i18n/t';
 
 /**
@@ -338,6 +339,8 @@ import { T } from '../core/i18n/t';
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment === 'CASH'">{{ method === 'DELIVERY' ? ('Pay in cash when your order arrives. Prices include tax.' | translate) : ('Pay in cash when you collect. Prices include tax.' | translate) }}</div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="payment !== 'CASH'">{{ 'You pay now. The shop gets your order as soon as the payment is confirmed. Prices include tax.' | translate }}</div>
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="shop.minOrder > 0">{{ 'Minimum order {p0}' | translate: { p0: (shop.minOrder | shopMoney: cur) } }}</div>
+          <div class="text-muted shop-terms" *ngIf="termsLinks().length" style="font-size:0.8rem;">{{ 'By placing your order you agree to' | translate }}
+            <ng-container *ngFor="let l of termsLinks(); let i = index"><ng-container *ngIf="i > 0">, </ng-container><a [routerLink]="['/shop/info', l.slug]" target="_blank">{{ l.title }}</a></ng-container>.</div>
           <button class="btn btn-primary shop-place mt-2" style="width:100%;" [disabled]="busy || !shop.open || (!shop.cash && !shop.payOnline)" (click)="place()">{{ busy ? ('Sending…' | translate) : payment === 'CASH' ? ('Place order' | translate) : ('Place order and pay' | translate) }}</button>
         </div>
 
@@ -359,6 +362,8 @@ import { T } from '../core/i18n/t';
           <ul style="list-style:none; padding:0; margin:0.4rem 0 0; line-height:1.9;">
             <li><a style="color:#d1d5db; cursor:pointer;" (click)="goHome()">{{ 'Shop' | translate }}</a></li>
             <li *ngFor="let l of shop.page.footerLinks"><a class="shop-footer-link" style="color:#d1d5db; cursor:pointer;" (click)="openLink(l.url)">{{ l.label }}</a></li>
+            <li *ngFor="let l of infoLinks"><a class="shop-footer-info" style="color:#d1d5db;" [routerLink]="['/shop/info', l.slug]">{{ l.title }}</a></li>
+            <li><a class="shop-footer-contact" style="color:#d1d5db;" routerLink="/shop/info/contact">{{ 'Contact us' | translate }}</a></li>
             <li><a class="shop-footer-staff" style="color:#d1d5db;" routerLink="/login">{{ 'Staff Login' | translate }}</a></li>
           </ul>
         </div>
@@ -616,6 +621,18 @@ export class ShopComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** The information pages linked in the footer (Terms, Privacy, Returns, Delivery), in the visitor's language. */
+  infoLinks: InfoLink[] = [];
+
+  private loadInfoLinks(): void {
+    this.api.infoLinks(this.lang.current === 'fr' ? 'fr' : 'en').subscribe({ next: (l) => (this.infoLinks = l), error: () => {} });
+  }
+
+  /** Terms and Returns, the two pages the customer agrees to when ordering (only the ones that are shown). */
+  termsLinks(): InfoLink[] {
+    return this.infoLinks.filter((l) => l.slug === 'terms' || l.slug === 'returns');
+  }
+
   scrollAll(): void {
     setTimeout(() => (document.getElementById('shop-all') ?? document.getElementById('shop-top'))?.scrollIntoView({ behavior: 'smooth' }), 50);
   }
@@ -690,6 +707,7 @@ export class ShopComponent implements OnInit, OnDestroy {
       if (!this.viewId) this.loadRecent();
     });
     this.api.shopAds().subscribe({ next: (a) => (this.ads = a), error: () => {} });
+    this.loadInfoLinks();
     this.api.shop().subscribe({
       next: (s) => {
         this.shop = s;

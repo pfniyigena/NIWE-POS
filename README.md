@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.51.0 - Online Store: contact form and information pages
+
+The shop has a contact page (shop details and a form) whose messages arrive in Online Store > Messages (New / Answered, reply by e-mail or WhatsApp, note), with an e-mail alert to the shop and a confirmation copy to the visitor. Four information pages (Terms & Conditions, Privacy Policy, Returns & Refunds, Delivery & Shipping) are linked in the footer; each starts with a general starter text in English and French that staff edit in Online Store > Shop pages (not legal advice: read and adapt). Checkout says the customer agrees to Terms and Returns. See `docs/online-store-pages-contact.md` and `RELEASE-NOTES-v1.51.0.md`. Database: migration V85.
+
 ### Version 1.50.0 - Online Store: product variants (size, colour, model)
 
 The shop reuses the ERP's variants: a product with sizes, colours or models is **one card** with option pickers on its page. Each option has its own price (cards say "Starting at"), stock and optional pictures; sold-out options stay visible but cannot be bought; ratings and reviews are pooled on the whole product. Staff put the template on the shop once and manage each option's online price, switch and pictures under it. Cart, orders, invoices, stock and returns work on the chosen option. See `docs/online-store-variants.md` and `RELEASE-NOTES-v1.50.0.md`. Database: migration V84.
