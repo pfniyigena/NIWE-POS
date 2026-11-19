@@ -1,0 +1,13 @@
+# Release 1.49.0 - Progressive Web App
+
+- **Installable app** for the whole site (staff screens and the shop): web manifest, icons (192, 512, maskable, Apple touch icon, favicon) and a service worker. An "Install the app" card appears where the browser allows installing (Chrome, Edge, Android); on iPhone / iPad Safari it explains Share > Add to Home Screen. "Not now" hides it for two weeks. It never shows on the customer display window or when the app is already installed.
+- **The shop is installed under the shop's own name and colour** (name, short name and theme colour come from Shop settings; start page `/shop`). Staff screens are installed as "NIWE ERP".
+- **Faster start**: the built files of the app (their names carry a hash) are kept on the device; shop pictures (products, ads, banner) are shown from the device and refreshed in the background.
+- **Offline**: the app opens without a connection and a red strip says "You are offline"; if the page was never opened on this device, a plain "You are offline" page (English and French) is shown. **Nothing from /api is kept or answered by the worker**: sales, stock, prices and customers always come from the server, so a sale cannot be saved offline and no old figure is ever shown as current.
+- **Updates**: a new version of the worker waits and a card offers "Reload" (a till is never reloaded by itself in the middle of a sale). The worker looks for a new version every hour and when the tab comes back. The page itself is always asked from the network first, so a new release is loaded on the next visit as before.
+- Only on real builds (production, niweSoft, accounting, store): a development build does not register the worker.
+- New files `frontend/src/pwa/*` (copied to the site root by `angular.json`), `core/pwa.service.ts`, `shared/pwa-bar.component.ts`. No database change, no backend change. French texts. See `docs/pwa.md`.
+
+Known limits: no offline selling and no background sync (a real offline till is a larger piece of work); the shop icon is the NIWE icon (a shop logo as installed icon is not built); push notifications are not part of this release; HTTPS is required by browsers (http://localhost works for tests).
+
+Tested with a production build in a headless browser: manifest and icons served, worker registered and active, files and shop pictures kept, no other /api entry kept, offline reload opens the app with the strip, the strip goes away when the connection returns, the install card (simulated browser offer) appears, installs and "Not now" is remembered, the shop manifest carries the shop name, colour and start page. Not tested: a real install on Android / iPhone / Windows, `--configuration store`, French screens.

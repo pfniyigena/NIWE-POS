@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.49.0 - Progressive Web App (installable app)
+
+The site can be installed on a phone, tablet or PC (Chrome, Edge, Android: an "Install the app" card; iPhone: Share > Add to Home Screen) and opens in its own window with its own icon. The app starts faster (built files are kept on the device), and without a connection it opens and says it is offline; sales and changes still need the connection. The shop is installed under the shop's own name and colour. See `docs/pwa.md` and `RELEASE-NOTES-v1.49.0.md`. Needs HTTPS (or localhost) and two lines in the web server's settings (see the doc).
+
 ### Version 1.48.0 - Online Store: product rows that slide
 
 Featured, Best sellers, New arrivals, Special offers, You may also like and Recently viewed are now one kind of row: one line, cards of the same size, arrow buttons, swipe / trackpad / horizontal wheel, smooth, no scrollbar. Sliding by itself is off unless staff switch on "Product rows slide by themselves" in Shop settings > Front page. Migration V83. See `docs/online-store-product-rows.md` and `RELEASE-NOTES-v1.48.0.md`.

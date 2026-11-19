@@ -13,6 +13,7 @@ import { ShopRailComponent } from './shop-rail.component';
 import { ShopQuickViewComponent } from './shop-quick-view.component';
 import { recentIds } from './recent';
 import { WishlistService } from './wishlist.service';
+import { PwaService } from '../core/pwa.service';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -494,7 +495,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   nlDone: string | null = null;
   nlError: string | null = null;
 
-  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService, public wish: WishlistService) {}
+  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService, public wish: WishlistService, private pwa: PwaService) {}
 
   /** The landing sections (hero, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
   get landing(): boolean {
@@ -689,6 +690,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.api.shop().subscribe({
       next: (s) => {
         this.shop = s;
+        this.pwa.useShopManifest(s.name, s.page?.brandColor ?? null);
         this.method = s.delivery ? 'DELIVERY' : 'PICKUP';
         if (!s.cash && s.payMethods.length > 0) this.payment = s.payMethods[0] as 'MOBILE_MONEY' | 'CARD';
         if (s.accounts && shopToken.get()) {

@@ -9300,5 +9300,12 @@
  "WhatsApp number of the shop (empty = the phone above)": "Numéro WhatsApp de la boutique (vide = le téléphone ci-dessus)",
  "Customers can send their order to this number on WhatsApp from the order page.": "Les clients peuvent envoyer leur commande à ce numéro sur WhatsApp depuis la page de la commande.",
  "Product rows slide by themselves": "Les rangées de produits défilent toutes seules",
- "Off (recommended): visitors slide the rows with the arrows, a swipe or the trackpad. On: the rows also move on their own and stop while pointed at.": "Désactivé (conseillé) : les visiteurs font défiler les rangées avec les flèches, en glissant le doigt ou avec le pavé tactile. Activé : les rangées avancent aussi seules et s'arrêtent quand on les pointe."
+ "Off (recommended): visitors slide the rows with the arrows, a swipe or the trackpad. On: the rows also move on their own and stop while pointed at.": "Désactivé (conseillé) : les visiteurs font défiler les rangées avec les flèches, en glissant le doigt ou avec le pavé tactile. Activé : les rangées avancent aussi seules et s'arrêtent quand on les pointe.",
+ "You are offline. Sales and changes cannot be saved until the connection is back.": "Vous êtes hors ligne. Les ventes et les modifications ne peuvent pas être enregistrées tant que la connexion n'est pas rétablie.",
+ "A new version of the app is ready.": "Une nouvelle version de l'application est prête.",
+ "Reload": "Recharger",
+ "Install the app": "Installer l'application",
+ "Opens in its own window and starts faster.": "S'ouvre dans sa propre fenêtre et démarre plus vite.",
+ "Tap Share, then \"Add to Home Screen\".": "Touchez Partager, puis « Sur l'écran d'accueil ».",
+ "Not now": "Plus tard"
 }

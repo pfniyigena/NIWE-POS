@@ -17,7 +17,10 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "polyfills": ["zone.js"],
-            "assets": [{ "glob": "**/*", "input": "src/assets", "output": "assets" }],
+            "assets": [
+              { "glob": "**/*", "input": "src/assets", "output": "assets" },
+              { "glob": "**/*", "input": "src/pwa", "output": "/" }
+            ],
             "styles": ["src/styles.scss"],
             "scripts": [],
             "allowedCommonJsDependencies": ["qrcode", "jsbarcode"]

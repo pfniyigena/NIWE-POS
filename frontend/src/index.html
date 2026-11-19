@@ -17,7 +17,15 @@
   -->
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="data:;base64,iVBORw0KGgo=">
+  <!-- Progressive Web App: the app can be installed; see src/pwa (manifest, icons, sw.js, offline.html) and docs/pwa.md -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#12151f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NIWE">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 </head>
 <body>
   <app-root></app-root>
