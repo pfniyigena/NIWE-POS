@@ -1,10 +1,11 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OnlineStoreApiService, ProductDetail, Shop, ShopAd, ShopProduct } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
 import { recentIds, rememberProduct } from './recent';
+import { ShopRailComponent } from './shop-rail.component';
 import { WishlistService } from './wishlist.service';
 import { ShopAdComponent } from './shop-ad.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
@@ -17,7 +18,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop-product',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, RouterLink, ShopMoneyPipe, ShopAdComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, ShopMoneyPipe, ShopAdComponent, ShopRailComponent],
   template: `
     <div class="shop-pp" style="margin-top:0.75rem;">
       <a class="shop-pp-back" [routerLink]="[]" [queryParams]="{ product: null }" queryParamsHandling="merge" style="font-size:0.9rem;">← {{ 'Back to the shop' | translate }}</a>
@@ -146,31 +147,27 @@ import { T } from '../core/i18n/t';
 
         <section class="shop-pp-related" style="margin-top:2rem;" *ngIf="x.related.length">
           <h3 style="margin:0 0 0.6rem;">{{ 'You may also like' | translate }}</h3>
-          <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:0.75rem;">
-            <a class="card shop-pp-rel" *ngFor="let p of x.related" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="padding:0.6rem; color:inherit; text-decoration:none;">
+          <app-shop-rail style="--rail-item:180px;" [auto]="!!shop?.page?.autoSlideRows" [count]="x.related.length">
+            <div *ngFor="let p of x.related"><a class="card shop-pp-rel" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="padding:0.6rem; color:inherit; text-decoration:none; flex:1 1 auto; min-width:0; display:flex; flex-direction:column;">
               <img *ngIf="p.imageUrl" [src]="thumb(p.imageUrl)" [alt]="p.name" loading="lazy" style="width:100%; height:110px; object-fit:cover; border-radius:6px;" />
               <div *ngIf="!p.imageUrl" style="width:100%; height:110px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
               <div class="mt-1"><strong>{{ p.name }}</strong></div>
               <div *ngIf="p.ratingCount > 0" style="color:#d97706; font-size:0.85rem;">{{ stars(p.rating) }} <span class="text-muted">({{ p.ratingCount }})</span></div>
               <div><strong>{{ p.price | shopMoney: cur }}</strong><s class="text-muted" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.3rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
-            </a>
-          </div>
+            </a></div>
+          </app-shop-rail>
         </section>
 
         <section class="shop-pp-recent" style="margin-top:2rem;" *ngIf="recent.length">
           <h3 style="margin:0 0 0.6rem;">{{ 'Recently viewed' | translate }}</h3>
-          <div class="shop-pp-carousel" style="position:relative;" (mouseenter)="rvHeld = true" (mouseleave)="rvHeld = false" (touchstart)="rvHeld = true" (touchend)="rvHeld = false" (focusin)="rvHeld = true" (focusout)="rvHeld = false">
-            <button type="button" class="shop-pp-rv-prev" *ngIf="recent.length > 3" [attr.aria-label]="'Previous products' | translate" (click)="rvGo(rv, -1)" style="position:absolute; left:-6px; top:42%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
-          <div #rv class="shop-pp-rv-rail" style="display:flex; gap:0.75rem; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:0.25rem 0.1rem 0.5rem; scrollbar-width:none;">
-            <a class="card shop-pp-rv" *ngFor="let p of recent" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="padding:0.6rem; color:inherit; text-decoration:none; flex:0 0 180px; scroll-snap-align:start;">
+          <app-shop-rail style="--rail-item:180px;" [auto]="!!shop?.page?.autoSlideRows" [count]="recent.length">
+            <div *ngFor="let p of recent"><a class="card shop-pp-rv" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="padding:0.6rem; color:inherit; text-decoration:none; flex:1 1 auto; min-width:0; display:flex; flex-direction:column;">
               <img *ngIf="p.imageUrl" [src]="thumb(p.imageUrl)" [alt]="p.name" loading="lazy" style="width:100%; height:110px; object-fit:cover; border-radius:6px;" />
               <div *ngIf="!p.imageUrl" style="width:100%; height:110px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
               <div class="mt-1"><strong>{{ p.name }}</strong></div>
               <div><strong>{{ p.price | shopMoney: cur }}</strong></div>
-            </a>
-          </div>
-            <button type="button" class="shop-pp-rv-next" *ngIf="recent.length > 3" [attr.aria-label]="'Next products' | translate" (click)="rvGo(rv, 1)" style="position:absolute; right:-6px; top:42%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
-          </div>
+            </a></div>
+          </app-shop-rail>
         </section>
       </ng-container>
 
@@ -183,7 +180,7 @@ import { T } from '../core/i18n/t';
     </div>
   `,
 })
-export class ShopProductComponent implements OnChanges, OnDestroy {
+export class ShopProductComponent implements OnChanges {
   @Input() productId = 0;
   /** The shop itself (delivery and pick-up details). */
   @Input() shop: Shop | null = null;
@@ -206,33 +203,7 @@ export class ShopProductComponent implements OnChanges, OnDestroy {
   origin = '50% 50%';
   lightbox = false;
   recent: ShopProduct[] = [];
-  /** The Recently viewed row slides by itself every few seconds; it stops while the visitor points at it, or the tab is hidden. */
-  rvHeld = false;
-  private rvTimer: ReturnType<typeof setInterval> | null = null;
-
-  rvGo(el: HTMLElement, dir: number): void {
-    const step = Math.max(180, el.clientWidth * 0.8);
-    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
-    const atStart = el.scrollLeft <= 4;
-    if (dir > 0 && atEnd) el.scrollTo({ left: 0, behavior: 'smooth' });
-    else if (dir < 0 && atStart) el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
-    else el.scrollBy({ left: dir * step, behavior: 'smooth' });
-  }
-
-  private startRv(): void {
-    if (this.rvTimer || (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-    this.rvTimer = setInterval(() => {
-      if (this.rvHeld || document.hidden || this.recent.length < 4) return;
-      const el = this.host.nativeElement.querySelector('.shop-pp-rv-rail') as HTMLElement | null;
-      if (el) this.rvGo(el, 1);
-    }, 4000);
-  }
-
-  ngOnDestroy(): void {
-    if (this.rvTimer) clearInterval(this.rvTimer);
-  }
-
-  constructor(private api: OnlineStoreApiService, private lang: LanguageService, public wish: WishlistService, private host: ElementRef<HTMLElement>) {}
+  constructor(private api: OnlineStoreApiService, private lang: LanguageService, public wish: WishlistService) {}
 
   @HostListener('document:keydown.escape')
   esc(): void {
@@ -258,7 +229,7 @@ export class ShopProductComponent implements OnChanges, OnDestroy {
         this.d = r;
         const before = recentIds().filter((i) => i !== this.productId);
         rememberProduct(this.productId);
-        if (before.length) this.api.recent(before.slice(0, 8)).subscribe({ next: (list) => { if (mine === this.seq) { this.recent = list; this.startRv(); } }, error: () => {} });
+        if (before.length) this.api.recent(before.slice(0, 8)).subscribe({ next: (list) => { if (mine === this.seq) { this.recent = list; } }, error: () => {} });
       },
       error: (e) => {
         if (mine === this.seq) this.error = e?.status === 404 ? T('This product is not available.') : (e?.error?.message ?? T('The shop is not available right now.'));

@@ -31,7 +31,7 @@ public final class OnlineStoreDtos {
     /** The front page's wording. Anything empty is simply not shown. */
     public record PublicPage(String announcementText, String announcementLink, String heroTitle, String heroSubtitle, String heroButtonText,
                              String heroButtonLink, String heroImageUrl, String aboutText, String contactEmail, String openingHours,
-                             List<PublicLink> footerLinks, List<PublicLink> socialLinks, String brandColor, Integer deliveryDaysMin, Integer deliveryDaysMax) {
+                             List<PublicLink> footerLinks, List<PublicLink> socialLinks, String brandColor, Integer deliveryDaysMin, Integer deliveryDaysMax, boolean autoSlideRows) {
     }
 
     public record PublicReview(String productName, String reviewerName, int rating, String text, Instant at) {
@@ -359,7 +359,7 @@ public final class OnlineStoreDtos {
                               @Size(max = 300) String heroSubtitle, @Size(max = 40) String heroButtonText, @Size(max = 300) String heroButtonLink,
                               @Size(max = 300) String heroImageUrl, @Size(max = 400) String aboutText, @Size(max = 160) String contactEmail,
                               @Size(max = 200) String openingHours, @Size(max = 1200) String footerLinks, @Size(max = 800) String socialLinks,
-                              @Size(max = 7) String brandColor, Integer deliveryDaysMin, Integer deliveryDaysMax) {
+                              @Size(max = 7) String brandColor, Integer deliveryDaysMin, Integer deliveryDaysMax, Boolean autoSlideRows) {
     }
 
     // reviews

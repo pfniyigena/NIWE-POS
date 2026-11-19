@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.48.0 - Online Store: product rows that slide
+
+Featured, Best sellers, New arrivals, Special offers, You may also like and Recently viewed are now one kind of row: one line, cards of the same size, arrow buttons, swipe / trackpad / horizontal wheel, smooth, no scrollbar. Sliding by itself is off unless staff switch on "Product rows slide by themselves" in Shop settings > Front page. Migration V83. See `docs/online-store-product-rows.md` and `RELEASE-NOTES-v1.48.0.md`.
+
 ### Version 1.47.0 - Online Store: invoice download, address book, wishlist, WhatsApp
 
 A completed order has a "Download invoice (PDF)" button on its order page (the phone number of the order, or being signed in, is needed). Signed-in customers keep up to 10 delivery addresses and pick one at checkout. A heart on product cards and product pages builds a wishlist (kept in the browser for guests, in the account when signed in). Staff can set the shop's WhatsApp number; the order page offers "Send this order to the shop on WhatsApp" and Online orders has a WhatsApp link beside the customer's phone. Migration V82. See `docs/online-store-account-extras.md` and `RELEASE-NOTES-v1.47.0.md`.

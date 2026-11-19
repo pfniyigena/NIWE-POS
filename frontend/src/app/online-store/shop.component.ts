@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +9,7 @@ import { ShopAccountComponent } from './shop-account.component';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopAdComponent } from './shop-ad.component';
 import { ShopProductComponent } from './shop-product.component';
+import { ShopRailComponent } from './shop-rail.component';
 import { ShopQuickViewComponent } from './shop-quick-view.component';
 import { recentIds } from './recent';
 import { WishlistService } from './wishlist.service';
@@ -23,7 +24,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent, ShopQuickViewComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent, ShopQuickViewComponent, ShopRailComponent],
   host: { '[class.shop-branded]': '!!brand', '[style.--shop-brand]': 'brand' },
   template: `
     <div class="shop-announce" *ngIf="shop?.page?.announcementText" [style.background]="brand || '#1d4ed8'" style="color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
@@ -383,13 +384,9 @@ import { T } from '../core/i18n/t';
       <ng-template #rowTpl let-r>
           <section class="shop-row" style="margin-top:2rem;" [attr.data-row]="r.key">
             <h3>{{ r.title | translate }}</h3>
-            <div class="shop-carousel" style="position:relative;" (mouseenter)="hold(rail, true)" (mouseleave)="hold(rail, false)" (touchstart)="hold(rail, true)" (touchend)="hold(rail, false)" (focusin)="hold(rail, true)" (focusout)="hold(rail, false)">
-              <button type="button" class="shop-car-prev" *ngIf="r.items.length > 4" [attr.aria-label]="'Previous products' | translate" (click)="railGo(rail, -1)" style="position:absolute; left:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
-              <div #rail class="car-rail" [attr.data-rail]="r.key" style="display:flex; gap:0.75rem; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:0.25rem 0.1rem 0.5rem; scrollbar-width:none;">
-                <div class="car-item" *ngFor="let p of r.items" style="flex:0 0 210px; scroll-snap-align:start; display:flex;"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
-              </div>
-              <button type="button" class="shop-car-next" *ngIf="r.items.length > 4" [attr.aria-label]="'Next products' | translate" (click)="railGo(rail, 1)" style="position:absolute; right:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
-            </div>
+            <app-shop-rail [auto]="autoSlide" [count]="r.items.length">
+              <div class="car-item" *ngFor="let p of r.items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
+            </app-shop-rail>
           </section>
       </ng-template>
 
@@ -548,14 +545,15 @@ export class ShopComponent implements OnInit, OnDestroy {
     return (this.home?.banners ?? []).map((u) => this.api.imageUrl(u));
   }
 
-  // ---- the banner slideshow and the four product rails: all move by themselves, and stop while the visitor points at them or the tab is hidden
+  // ---- the banner slideshow moves by itself and stops while the visitor points at it or the tab is hidden (product rows: see shop-rail.component.ts)
+  /** Staff's setting: the product rows also slide by themselves (off by default). */
+  get autoSlide(): boolean {
+    return !!this.shop?.page?.autoSlideRows;
+  }
+
   heroIndex = 0;
   heroHold = false;
-  @ViewChildren('rail') rails?: QueryList<ElementRef<HTMLElement>>;
-  private held = new Set<HTMLElement>();
-  private tick = 0;
   private heroTimer: ReturnType<typeof setInterval> | null = null;
-  private railTimer: ReturnType<typeof setInterval> | null = null;
   private touchX = 0;
 
   private get calm(): boolean {
@@ -565,23 +563,11 @@ export class ShopComponent implements OnInit, OnDestroy {
   private startMotion(): void {
     if (this.calm) return;
     if (!this.heroTimer) this.heroTimer = setInterval(() => { if (!this.heroHold && !document.hidden && this.bannerUrls.length > 1) this.heroGo(1); }, 5000);
-    // One rail moves every 1.2 seconds, in turn: each rail moves about every 4.8 seconds, and they do not all jump together.
-    if (!this.railTimer) {
-      this.railTimer = setInterval(() => {
-        if (document.hidden) return;
-        const list = this.rails?.toArray() ?? [];
-        if (!list.length) return;
-        this.tick = (this.tick + 1) % list.length;
-        const el = list[this.tick].nativeElement;
-        if (!this.held.has(el)) this.railGo(el, 1);
-      }, 1200);
-    }
   }
 
   ngOnDestroy(): void {
     if (this.cartTimer) clearTimeout(this.cartTimer);
     if (this.heroTimer) clearInterval(this.heroTimer);
-    if (this.railTimer) clearInterval(this.railTimer);
   }
 
   /** The CSS value of a slide's picture. */
@@ -607,21 +593,6 @@ export class ShopComponent implements OnInit, OnDestroy {
     const dx = (e.changedTouches[0]?.clientX ?? 0) - this.touchX;
     if (Math.abs(dx) > 40) this.heroGo(dx < 0 ? 1 : -1);
     this.heroHold = false;
-  }
-
-  hold(rail: HTMLElement, on: boolean): void {
-    if (on) this.held.add(rail);
-    else this.held.delete(rail);
-  }
-
-  /** One screen of products to the left or right; past the last product the rail goes back to the start (and the other way round). */
-  railGo(el: HTMLElement, dir: number): void {
-    const step = Math.max(200, el.clientWidth * 0.8);
-    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
-    const atStart = el.scrollLeft <= 4;
-    if (dir > 0 && atEnd) el.scrollTo({ left: 0, behavior: 'smooth' });
-    else if (dir < 0 && atStart) el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
-    else el.scrollBy({ left: dir * step, behavior: 'smooth' });
   }
 
   /** The banner button: staff's link, or down to the products. */

@@ -9298,5 +9298,7 @@
  "Message this customer on WhatsApp": "Écrire à ce client sur WhatsApp",
  "Hello {p0}, this is the shop about your order {p1}.": "Bonjour {p0}, c'est la boutique à propos de votre commande {p1}.",
  "WhatsApp number of the shop (empty = the phone above)": "Numéro WhatsApp de la boutique (vide = le téléphone ci-dessus)",
- "Customers can send their order to this number on WhatsApp from the order page.": "Les clients peuvent envoyer leur commande à ce numéro sur WhatsApp depuis la page de la commande."
+ "Customers can send their order to this number on WhatsApp from the order page.": "Les clients peuvent envoyer leur commande à ce numéro sur WhatsApp depuis la page de la commande.",
+ "Product rows slide by themselves": "Les rangées de produits défilent toutes seules",
+ "Off (recommended): visitors slide the rows with the arrows, a swipe or the trackpad. On: the rows also move on their own and stop while pointed at.": "Désactivé (conseillé) : les visiteurs font défiler les rangées avec les flèches, en glissant le doigt ou avec le pavé tactile. Activé : les rangées avancent aussi seules et s'arrêtent quand on les pointe."
 }

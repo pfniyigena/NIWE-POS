@@ -250,7 +250,7 @@ public class OnlineStoreAdminService {
         OnlineStoreSettings s = storeService.settings();
         return new PageContent(s.getAnnouncementText(), s.getAnnouncementLink(), s.getHeroTitle(), s.getHeroSubtitle(), s.getHeroButtonText(), s.getHeroButtonLink(),
                 s.getHeroImageUrl(), s.getAboutText(), s.getContactEmail(), s.getOpeningHours(), s.getFooterLinks(), s.getSocialLinks(),
-                s.getBrandColor(), s.getDeliveryDaysMin(), s.getDeliveryDaysMax());
+                s.getBrandColor(), s.getDeliveryDaysMin(), s.getDeliveryDaysMax(), s.isAutoSlideRows());
     }
 
     @Transactional
@@ -284,6 +284,7 @@ public class OnlineStoreAdminService {
         if (dMin != null && (dMin < 0 || dMax < dMin || dMax > 60)) throw ApiException.badRequest(I18n.t("The delivery estimate must be from 0 to 60 days, the first number not above the second."));
         s.setDeliveryDaysMin(dMin);
         s.setDeliveryDaysMax(dMax);
+        s.setAutoSlideRows(Boolean.TRUE.equals(in.autoSlideRows()));
         settingsRepository.save(s);
         auditLogService.record("ONLINE_STORE_FRONT_PAGE", "Updated the wording of the shop's front page");
         return pageContent();

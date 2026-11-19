@@ -168,6 +168,8 @@ import { API_BASE } from '../core/constants';
               <input class="form-control fp-days-max" type="number" min="0" max="60" style="width:80px;" name="fpDMax" [(ngModel)]="pc.deliveryDaysMax" />
               <span class="text-muted">{{ 'days' | translate }}</span>
             </div></div>
+          <div class="form-group" style="min-width:260px; max-width:420px;"><label class="flex gap-1" style="align-items:center;"><input type="checkbox" class="fp-autoslide" name="fpAuto" [(ngModel)]="pc.autoSlideRows" /> {{ 'Product rows slide by themselves' | translate }}</label>
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Off (recommended): visitors slide the rows with the arrows, a swipe or the trackpad. On: the rows also move on their own and stop while pointed at.' | translate }}</div></div>
         </div>
         </div>
         <div class="form-group"><label class="form-label">{{ 'Footer links: one per line, written Label|address (at most 8). The address starts with / (a page of this site) or https://' | translate }}</label>

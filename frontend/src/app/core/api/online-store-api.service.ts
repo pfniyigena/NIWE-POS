@@ -51,7 +51,7 @@ export interface ShopPageContent {
   heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
   footerLinks: ShopLink[]; socialLinks: ShopLink[];
   /** The shop's colour (#rrggbb) and the estimated delivery time in days; empty when staff set none. */
-  brandColor: string | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null;
+  brandColor: string | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null; autoSlideRows: boolean;
 }
 export interface ShopReview { productName: string; reviewerName: string; rating: number; text: string; at: string }
 /** The rows of the front page, chosen by staff, and the best approved reviews. */
@@ -161,7 +161,7 @@ export interface StorePageContent {
   announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
   heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
   footerLinks: string | null; socialLinks: string | null;
-  brandColor: string | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null;
+  brandColor: string | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null; autoSlideRows: boolean;
 }
 export interface StoreBanner { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
 /** Advertising (v1.43.0): the businesses that pay for ads, their ads, the ads the shop shows today and the report. */

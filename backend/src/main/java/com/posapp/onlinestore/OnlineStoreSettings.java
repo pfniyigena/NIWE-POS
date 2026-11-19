@@ -86,4 +86,7 @@ public class OnlineStoreSettings extends BaseEntity {
     /** Estimated delivery, in days after the order is accepted (both empty = no estimate shown). */
     private Integer deliveryDaysMin;
     private Integer deliveryDaysMax;
+    /** Product rows (Featured, Best sellers, ...) slide by themselves; off = the visitor slides them with the arrows or a swipe. */
+    @jakarta.persistence.Column(name = "auto_slide_rows", nullable = false)
+    private boolean autoSlideRows = false;
 }

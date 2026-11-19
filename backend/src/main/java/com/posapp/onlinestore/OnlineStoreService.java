@@ -195,7 +195,7 @@ public class OnlineStoreService {
     static PublicPage page(OnlineStoreSettings s) {
         return new PublicPage(blank(s.getAnnouncementText()), blank(s.getAnnouncementLink()), blank(s.getHeroTitle()), blank(s.getHeroSubtitle()),
                 blank(s.getHeroButtonText()), blank(s.getHeroButtonLink()), blank(s.getHeroImageUrl()), blank(s.getAboutText()), blank(s.getContactEmail()),
-                blank(s.getOpeningHours()), links(s.getFooterLinks(), 8), links(s.getSocialLinks(), 6), blank(s.getBrandColor()), s.getDeliveryDaysMin(), s.getDeliveryDaysMax());
+                blank(s.getOpeningHours()), links(s.getFooterLinks(), 8), links(s.getSocialLinks(), 6), blank(s.getBrandColor()), s.getDeliveryDaysMin(), s.getDeliveryDaysMax(), s.isAutoSlideRows());
     }
 
     private static String blank(String v) {
