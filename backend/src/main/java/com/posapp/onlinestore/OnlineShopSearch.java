@@ -29,14 +29,23 @@ public class OnlineShopSearch {
     public record Filter(String q, String category, String brand, BigDecimal minPrice, BigDecimal maxPrice, boolean inStock, int minRating, String sort) {
     }
 
-    /** The price the customer sees, as an expression: the online or normal price plus tax when the tax is added on top. */
-    private static final String SHOWN = "(coalesce(l.onlinePrice, p.unitPrice) * (1 + case when t.id is not null and t.inclusive = false then coalesce(t.ratePercent, 0) / 100 else 0 end))";
-    private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = p and ps.location.active = true "
+    /** The price the customer sees as an expression over the aliases of a listing (l), its product (p) and its tax rate (t). */
+    private static String shown(String l, String p, String t) {
+        return "(coalesce(" + l + ".onlinePrice, " + p + ".unitPrice) * (1 + case when " + t + ".id is not null and " + t + ".inclusive = false then coalesce(" + t + ".ratePercent, 0) / 100 else 0 end))";
+    }
+
+    private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = %1$s and ps.location.active = true "
             + "and (ps.location.type is null or ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)) "
-            + "- (select coalesce(sum(sl.quantityOrdered - sl.quantityFulfilled), 0) from SalesOrderLine sl where sl.product.id = p.id "
+            + "- (select coalesce(sum(sl.quantityOrdered - sl.quantityFulfilled), 0) from SalesOrderLine sl where sl.product.id = %1$s.id "
             + "and sl.salesOrder.status in (com.posapp.salesorder.SalesOrderStatus.CONFIRMED, com.posapp.salesorder.SalesOrderStatus.PARTIALLY_FULFILLED)))";
-    private static final String RATING = "(select coalesce(avg(r.rating), 0) from OnlineReview r where r.productId = p.id and r.status = 'APPROVED')";
-    private static final String SOLD = "(select coalesce(sum(ol.quantity), 0) from OnlineOrderLine ol where ol.productId = p.id)";
+    /** A product with variants is rated and counted as one product: the ratings and the sales of all its variants. */
+    private static final String SAME_GROUP = "coalesce(q.variantParentId, q.id) = coalesce(p.variantParentId, p.id)";
+    private static final String RATING = "(select coalesce(avg(r.rating), 0) from OnlineReview r where r.ratingCounted = true "
+            + "and r.productId in (select q.id from Product q where " + SAME_GROUP + "))";
+    private static final String SOLD = "(select coalesce(sum(ol.quantity), 0) from OnlineOrderLine ol where ol.productId in (select q.id from Product q where " + SAME_GROUP + "))";
+    /** The lowest price among the listed options of the product (a plain product: its own price), for sorting by price. */
+    private static final String LOWEST = "(select min(" + shown("l3", "q", "t3") + ") from OnlineListing l3 join l3.product q left join q.taxRate t3 "
+            + "where l3.listed = true and q.active = true and " + SAME_GROUP + ")";
 
     /** The words of a search: lower case, without the characters that mean something to LIKE, at most MAX_WORDS. */
     static List<String> words(String q) {
@@ -50,48 +59,21 @@ public class OnlineShopSearch {
         return out;
     }
 
-    /** buffer: the shop's safety stock (Shop settings), taken off what may be sold, exactly as the stock word on the card does. */
+    /**
+     * One page of the shop. A product with variants is ONE result: the first option that matches the search and the filters stands for it, so a page
+     * holds the number of products asked for and a product is never listed once per size and colour. buffer: the shop's safety stock (Shop settings),
+     * taken off what may be sold, exactly as the stock word on the card does.
+     */
     public Page<OnlineListing> search(Filter f, int page, int size, int buffer) {
-        StringBuilder from = new StringBuilder("from OnlineListing l join l.product p left join p.category c left join p.brand b left join p.taxRate t "
-                + "where l.listed = true and p.active = true");
         List<Object[]> params = new ArrayList<>();
-        if (f.category() != null && !f.category().isBlank()) {
-            from.append(" and c.name = :category");
-            params.add(new Object[]{"category", f.category().trim()});
-        }
-        if (f.brand() != null && !f.brand().isBlank()) {
-            from.append(" and b.name = :brand");
-            params.add(new Object[]{"brand", f.brand().trim()});
-        }
-        int i = 0;
-        for (String w : words(f.q())) {
-            String n = "w" + i++;
-            from.append(" and (lower(p.name) like :").append(n).append(" or lower(coalesce(l.webTitle, '')) like :").append(n)
-                    .append(" or lower(coalesce(p.sku, '')) like :").append(n).append(" or lower(coalesce(p.barcode, '')) like :").append(n)
-                    .append(" or lower(coalesce(b.name, '')) like :").append(n).append(" or lower(coalesce(c.name, '')) like :").append(n)
-                    .append(" or lower(coalesce(l.webDescription, p.description, '')) like :").append(n).append(")");
-            params.add(new Object[]{n, "%" + w + "%"});
-        }
-        if (f.minPrice() != null) {
-            from.append(" and ").append(SHOWN).append(" >= :minPrice");
-            params.add(new Object[]{"minPrice", f.minPrice()});
-        }
-        if (f.maxPrice() != null) {
-            from.append(" and ").append(SHOWN).append(" <= :maxPrice");
-            params.add(new Object[]{"maxPrice", f.maxPrice()});
-        }
-        // Same rule as the stock word on the card: sellable stock (active, undamaged locations) minus what confirmed orders promised minus the shop's buffer.
-        if (f.inStock()) {
-            from.append(" and (p.trackStock = false or p.service = true or ").append(SELLABLE).append(" - :buffer > 0)");
-            params.add(new Object[]{"buffer", java.math.BigDecimal.valueOf(Math.max(0, buffer))});
-        }
-        if (f.minRating() >= 1) {
-            from.append(" and ").append(RATING).append(" >= :minRating");
-            params.add(new Object[]{"minRating", (double) Math.min(5, f.minRating())});
-        }
+        String here = conditions(f, buffer, "l", "p", "c", "b", "t", params, true);
+        String there = conditions(f, buffer, "l2", "p2", "c2", "b2", "t2", params, false);
+        String from = "from OnlineListing l join l.product p left join p.category c left join p.brand b left join p.taxRate t where " + here
+                + " and (p.variantParentId is null or l.id = (select min(l2.id) from OnlineListing l2 join l2.product p2 left join p2.category c2 left join p2.brand b2 "
+                + "left join p2.taxRate t2 where " + there + " and p2.variantParentId = p.variantParentId))";
         String order = switch (f.sort() == null ? "" : f.sort()) {
-            case "price_asc" -> " order by " + SHOWN + " asc, l.id asc";
-            case "price_desc" -> " order by " + SHOWN + " desc, l.id asc";
+            case "price_asc" -> " order by " + LOWEST + " asc, l.id asc";
+            case "price_desc" -> " order by " + LOWEST + " desc, l.id asc";
             case "newest" -> " order by l.id desc";
             case "rating" -> " order by " + RATING + " desc, l.id asc";
             case "popular" -> " order by " + SOLD + " desc, l.id asc";
@@ -99,7 +81,9 @@ public class OnlineShopSearch {
         };
         Query count = em.createQuery("select count(l) " + from);
         Query rows = em.createQuery("select l " + from + order);
+        java.util.Set<String> done = new java.util.HashSet<>();
         for (Object[] p : params) {
+            if (!done.add((String) p[0])) continue;
             count.setParameter((String) p[0], p[1]);
             rows.setParameter((String) p[0], p[1]);
         }
@@ -111,13 +95,55 @@ public class OnlineShopSearch {
         return new PageImpl<>(content, PageRequest.of(page, size), total);
     }
 
-    /** Products most often bought in the same orders as this one (best first). */
+    /** The WHERE conditions of a search for the listing, product, category, brand and tax rate under the given aliases. Parameters are collected once. */
+    private static String conditions(Filter f, int buffer, String l, String p, String c, String b, String t, List<Object[]> params, boolean collect) {
+        StringBuilder w = new StringBuilder(l + ".listed = true and " + p + ".active = true");
+        List<Object[]> sink = collect ? params : new ArrayList<>();
+        if (f.category() != null && !f.category().isBlank()) {
+            w.append(" and ").append(c).append(".name = :category");
+            sink.add(new Object[]{"category", f.category().trim()});
+        }
+        if (f.brand() != null && !f.brand().isBlank()) {
+            w.append(" and ").append(b).append(".name = :brand");
+            sink.add(new Object[]{"brand", f.brand().trim()});
+        }
+        int i = 0;
+        for (String word : words(f.q())) {
+            String n = "w" + i++;
+            w.append(" and (lower(").append(p).append(".name) like :").append(n).append(" or lower(coalesce(").append(l).append(".webTitle, '')) like :").append(n)
+                    .append(" or lower(coalesce(").append(p).append(".sku, '')) like :").append(n).append(" or lower(coalesce(").append(p).append(".barcode, '')) like :").append(n)
+                    .append(" or lower(coalesce(").append(b).append(".name, '')) like :").append(n).append(" or lower(coalesce(").append(c).append(".name, '')) like :").append(n)
+                    .append(" or lower(coalesce(").append(l).append(".webDescription, ").append(p).append(".description, '')) like :").append(n).append(")");
+            sink.add(new Object[]{n, "%" + word + "%"});
+        }
+        if (f.minPrice() != null) {
+            w.append(" and ").append(shown(l, p, t)).append(" >= :minPrice");
+            sink.add(new Object[]{"minPrice", f.minPrice()});
+        }
+        if (f.maxPrice() != null) {
+            w.append(" and ").append(shown(l, p, t)).append(" <= :maxPrice");
+            sink.add(new Object[]{"maxPrice", f.maxPrice()});
+        }
+        // Same rule as the stock word on the card: sellable stock (active, undamaged locations) minus what confirmed orders promised minus the shop's buffer.
+        if (f.inStock()) {
+            w.append(" and (").append(p).append(".trackStock = false or ").append(p).append(".service = true or ").append(String.format(SELLABLE, p)).append(" - :buffer > 0)");
+            sink.add(new Object[]{"buffer", java.math.BigDecimal.valueOf(Math.max(0, buffer))});
+        }
+        if (f.minRating() >= 1) {
+            // the rating of the product as a whole (all its variants); the alias used in RATING is p, so the conditions of the inner query use p2 through a copy
+            w.append(" and ").append(RATING.replace("p.variantParentId", p + ".variantParentId").replace("p.id", p + ".id")).append(" >= :minRating");
+            sink.add(new Object[]{"minRating", (double) Math.min(5, f.minRating())});
+        }
+        return w.toString();
+    }
+
+    /** Products most often bought in the same orders as these (the options of one product together), best first. */
     @SuppressWarnings("unchecked")
-    public List<Long> boughtTogether(Long productId, int limit) {
+    public List<Long> boughtTogether(java.util.Collection<Long> productIds, int limit) {
         List<Object[]> rows = em.createQuery("select l2.productId, count(distinct l2.onlineOrder.id) from OnlineOrderLine l1, OnlineOrderLine l2 "
-                        + "where l1.onlineOrder = l2.onlineOrder and l1.productId = :id and l2.productId <> :id and l1.onlineOrder.status not in ('REJECTED', 'CANCELLED') "
+                        + "where l1.onlineOrder = l2.onlineOrder and l1.productId in :ids and l2.productId not in :ids and l1.onlineOrder.status not in ('REJECTED', 'CANCELLED') "
                         + "group by l2.productId order by count(distinct l2.onlineOrder.id) desc, l2.productId asc")
-                .setParameter("id", productId).setMaxResults(limit).getResultList();
+                .setParameter("ids", productIds).setMaxResults(limit).getResultList();
         List<Long> out = new ArrayList<>();
         for (Object[] r : rows) out.add(((Number) r[0]).longValue());
         return out;

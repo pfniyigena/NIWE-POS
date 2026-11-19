@@ -37,11 +37,13 @@ public class ShopExtrasService {
     private final OnlineStoreService storeService;
     private final InvoiceService invoices;
     private final AuditLogService auditLogService;
+    private final OnlineVariants variants;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
 
     public ShopExtrasService(ShopAccountService accounts, ShopAddressRepository addresses, ShopWishRepository wishes, OnlineDeliveryZoneRepository zones,
                              OnlineListingRepository listings, OnlineOrderRepository orders, OnlineStoreService storeService, InvoiceService invoices,
-                             AuditLogService auditLogService) {
+                             AuditLogService auditLogService, OnlineVariants variants) {
+        this.variants = variants;
         this.accounts = accounts;
         this.addresses = addresses;
         this.wishes = wishes;
@@ -158,7 +160,8 @@ public class ShopExtrasService {
     private void add(Long customerId, Long productId) {
         if (productId == null) throw ApiException.badRequest(I18n.t("Not found."));
         if (wishes.findByShopCustomerIdAndProductId(customerId, productId).isPresent()) return;
-        boolean listed = listings.findByProductId(productId).filter(OnlineListing::isListed).filter(l -> l.getProduct().isActive()).isPresent();
+        // a product with variants is wished as one product (the template's id)
+        boolean listed = listings.findByProductId(productId).filter(OnlineListing::isListed).filter(l -> l.getProduct().isActive()).isPresent() || !variants.rows(productId).isEmpty();
         if (!listed) throw ApiException.notFound(I18n.t("Not found."));
         if (wishes.countByShopCustomerId(customerId) >= MAX_WISHES) throw ApiException.badRequest(I18n.t("Your wishlist is full."));
         ShopWish w = new ShopWish();

@@ -21,7 +21,7 @@ public final class OnlineStoreDtos {
 
     /** stock is IN_STOCK, LOW or SOLD_OUT: never an exact number. */
     public record PublicProduct(Long id, String name, String description, BigDecimal price, String category, String imageUrl, String stock,
-                                 BigDecimal wasPrice, double rating, int ratingCount) {
+                                 BigDecimal wasPrice, double rating, int ratingCount, int variants, boolean priceFrom) {
     }
 
     /** A link of the footer (label and address) written by staff in Shop settings. */
@@ -277,7 +277,7 @@ public final class OnlineStoreDtos {
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,
                              String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock,
                              boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival, StockInfo stockInfo,
-                             BigDecimal taxOnTopPercent) {
+                             BigDecimal taxOnTopPercent, Long variantParentId, String variantLabel, String variantOptions, boolean variantOff, int variantCount) {
     }
 
     /**

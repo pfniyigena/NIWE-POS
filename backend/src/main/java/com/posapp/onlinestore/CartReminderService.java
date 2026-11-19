@@ -296,7 +296,7 @@ public class CartReminderService {
             OnlineListing listing = listings.findByProductId(l.getProductId()).orElse(null);
             if (listing == null) continue;
             boolean onSale = listing.isListed() && listing.getProduct().isActive();
-            PublicProduct p = storeService.publicProduct(listing, s);
+            PublicProduct p = storeService.publicVariant(listing, s);
             if (!onSale || "SOLD_OUT".equals(p.stock())) {
                 gone.add(p.name());
                 continue;

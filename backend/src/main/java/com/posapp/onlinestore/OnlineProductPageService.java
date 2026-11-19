@@ -3,6 +3,7 @@ package com.posapp.onlinestore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.posapp.audit.AuditLogService;
+import com.posapp.catalog.Product;
 import com.posapp.common.ApiException;
 import com.posapp.i18n.I18n;
 import com.posapp.onlinestore.OnlineStoreDtos.PublicProduct;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The product page of the shop (v1.44.0): one product with a gallery of pictures, a specifications table, its approved reviews and related products.
@@ -42,10 +44,12 @@ public class OnlineProductPageService {
     private final OnlineListingImageRepository images;
     private final OnlineReviewRepository reviews;
     private final AuditLogService audit;
+    private final OnlineVariants variants;
 
     public OnlineProductPageService(OnlineStoreService store, OnlineFrontService front, OnlineListingRepository listings, OnlineListingImageRepository images,
-                                    OnlineReviewRepository reviews, AuditLogService audit, OnlineShopSearch search) {
+                                    OnlineReviewRepository reviews, AuditLogService audit, OnlineShopSearch search, OnlineVariants variants) {
         this.search = search;
+        this.variants = variants;
         this.store = store;
         this.front = front;
         this.listings = listings;
@@ -73,7 +77,16 @@ public class OnlineProductPageService {
 
     /** images: the pictures of the gallery in order (the product's own first), as addresses a width can be added to with ?w=. */
     public record ProductDetail(PublicProduct product, String brand, List<String> images, List<SpecRow> specs, RatingSummary rating, List<PublicReview> reviews,
-                                List<PublicProduct> related, List<PublicProduct> bought) {
+                                List<PublicProduct> related, List<PublicProduct> bought, List<OnlineVariants.Option> options, List<VariantDto> variants,
+                                Long selectedVariantId) {
+    }
+
+    /**
+     * One option of a product with variants, as a customer chooses it: id is the product that goes into the cart, values are its option values in the order of
+     * the options, pictures are shown first when this option is chosen (empty: the product's own gallery).
+     */
+    public record VariantDto(Long id, String label, List<String> values, java.math.BigDecimal price, java.math.BigDecimal wasPrice, String stock, String sku,
+                             List<String> pictures) {
     }
 
     // ------------------------------------------------------------------ the public page
@@ -82,14 +95,26 @@ public class OnlineProductPageService {
     public ProductDetail detail(Long productId) {
         OnlineStoreSettings s = store.settings();
         if (!s.isEnabled()) throw ApiException.notFound(I18n.t("This shop is not available."));
-        OnlineListing l = shown(productId);
+        OnlineListing l = shown(productId, s);
+        Product self = l.getProduct();
+        Long group = self.getVariantParentId();
+        List<OnlineListing> rows = group == null ? List.of() : variants.rows(group);
+        boolean grouped = !rows.isEmpty();
         PublicProduct product = front.withRatings(List.of(store.publicProduct(l, s))).get(0);
+        // the gallery belongs to the product as a whole: the template's listing (a product without one uses the first option's)
+        OnlineListing galleryOwner = grouped ? listings.findByProductId(group).orElse(l) : l;
         List<String> pictures = new ArrayList<>();
         if (product.imageUrl() != null) pictures.add(product.imageUrl());
-        for (Long id : images.ids(l.getId())) pictures.add(url(id));
+        for (Long id : images.ids(galleryOwner.getId())) pictures.add(url(id));
 
+        List<Long> members = new ArrayList<>();
+        members.add(self.getId());
+        if (grouped) {
+            members.add(group);
+            for (OnlineListing r : listings.findAllGroupRows(group)) members.add(r.getProduct().getId());
+        }
         int[] stars = new int[5];
-        for (Object[] r : reviews.breakdown(productId)) {
+        for (Object[] r : reviews.breakdown(members)) {
             int n = ((Number) r[0]).intValue();
             if (n >= 1 && n <= 5) stars[n - 1] = ((Number) r[1]).intValue();
         }
@@ -100,21 +125,55 @@ public class OnlineProductPageService {
             sum += stars[i] * (i + 1);
         }
         RatingSummary rating = new RatingSummary(count == 0 ? 0 : Math.round(sum * 10.0 / count) / 10.0, count, stars);
-        List<PublicReview> shownReviews = reviews.findShownForProduct(productId, PageRequest.of(0, REVIEWS_SHOWN)).stream()
+        List<PublicReview> shownReviews = reviews.findShownForProduct(members, PageRequest.of(0, REVIEWS_SHOWN)).stream()
                 .map(r -> new PublicReview(r.getProductName(), r.getReviewerName(), r.getRating(), r.getReviewText(), r.getCreatedAt())).toList();
-        String brand = l.getProduct().getBrand() == null ? null : l.getProduct().getBrand().getName();
-        return new ProductDetail(product, brand, pictures, readSpecs(l.getSpecs()), rating, shownReviews, related(l, s), bought(l, s));
+        Product brandOf = grouped ? variants.template(group).orElse(self) : self;
+        String brand = brandOf.getBrand() == null ? null : brandOf.getBrand().getName();
+
+        List<OnlineVariants.Option> options = List.of();
+        List<VariantDto> options2 = List.of();
+        Long selected = null;
+        if (grouped) {
+            Product template = variants.template(group).orElse(null);
+            options = OnlineVariants.options(template);
+            boolean consistent = OnlineVariants.consistent(options, rows);
+            if (!consistent) {
+                List<String> labels = new ArrayList<>();
+                for (OnlineListing r : rows) labels.add(r.getProduct().getVariantLabel() == null ? r.getProduct().getName() : r.getProduct().getVariantLabel());
+                options = List.of(new OnlineVariants.Option(I18n.t("Option"), labels));
+            }
+            String templateIcon = template == null ? null : template.getIconDataUrl();
+            final List<VariantDto> built = new ArrayList<>();
+            for (OnlineListing r : rows) {
+                Product vp = r.getProduct();
+                PublicProduct v = store.publicVariant(r, s);
+                List<String> own = new ArrayList<>();
+                String icon = vp.getIconDataUrl();
+                if (icon != null && !icon.isBlank() && !icon.equals(templateIcon)) own.add(v.imageUrl());
+                for (Long id : images.ids(r.getId())) own.add(url(id));
+                String label = vp.getVariantLabel() == null ? vp.getName() : vp.getVariantLabel();
+                built.add(new VariantDto(vp.getId(), label, consistent ? OnlineVariants.values(vp) : List.of(label), v.price(), v.wasPrice(), v.stock(), vp.getSku(), own));
+            }
+            Long wanted = self.getId();
+            selected = rows.stream().map(r -> r.getProduct().getId()).filter(wanted::equals).findFirst()
+                    .orElseGet(() -> built.stream().filter(v -> !"SOLD_OUT".equals(v.stock())).map(VariantDto::id).findFirst().orElse(built.get(0).id()));
+            options2 = built;
+        }
+        Long selfId = product.id();
+        return new ProductDetail(product, brand, pictures, readSpecs(l.getSpecs()), rating, shownReviews, related(l, s, selfId), bought(members, s, selfId), options, options2, selected);
     }
 
-    /** Products often bought in the same orders (up to 3), left out when they are gone or sold out. */
-    private List<PublicProduct> bought(OnlineListing l, OnlineStoreSettings s) {
-        List<OnlineListing> picked = new ArrayList<>();
-        for (Long id : search.boughtTogether(l.getProduct().getId(), 8)) {
+    /** Products often bought in the same orders (up to 3), left out when they are gone or sold out. A product with options is not offered here (it needs a choice first). */
+    private List<PublicProduct> bought(List<Long> members, OnlineStoreSettings s, Long selfId) {
+        List<PublicProduct> picked = new ArrayList<>();
+        for (Long id : search.boughtTogether(members, 12)) {
             listings.findByProductId(id).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).ifPresent(x -> {
-                if (picked.size() < 3 && !"SOLD_OUT".equals(store.publicProduct(x, s).stock())) picked.add(x);
+                PublicProduct card = store.publicProduct(x, s);
+                if (picked.size() < 3 && card.variants() == 0 && !card.id().equals(selfId) && !"SOLD_OUT".equals(card.stock())
+                        && picked.stream().noneMatch(c -> c.id().equals(card.id()))) picked.add(card);
             });
         }
-        return front.withRatings(picked.stream().map(o -> store.publicProduct(o, s)).toList());
+        return front.withRatings(picked);
     }
 
     /** The products with these ids (comma separated, at most 12), in the same order, for "recently viewed". */
@@ -132,39 +191,51 @@ public class OnlineProductPageService {
     private List<PublicProduct> pick(String ids, int max) {
         OnlineStoreSettings s = store.settings();
         if (!s.isEnabled()) throw ApiException.notFound(I18n.t("This shop is not available."));
-        List<OnlineListing> found = new ArrayList<>();
+        List<PublicProduct> found = new ArrayList<>();
         for (String part : ids == null ? new String[0] : ids.split(",")) {
             if (found.size() >= max) break;
             try {
-                listings.findByProductId(Long.parseLong(part.trim())).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).ifPresent(found::add);
+                browse(Long.parseLong(part.trim()), s).map(l -> store.publicProduct(l, s)).ifPresent(card -> {
+                    if (found.stream().noneMatch(c -> c.id().equals(card.id()))) found.add(card);
+                });
             } catch (NumberFormatException ignored) {
                 // a bad id is simply skipped
             }
         }
-        return front.withRatings(found.stream().map(o -> store.publicProduct(o, s)).toList());
+        return front.withRatings(found);
     }
 
-    /** Other products of the same category first, then any others, never the product itself. */
-    private List<PublicProduct> related(OnlineListing l, OnlineStoreSettings s) {
-        List<OnlineListing> picked = new ArrayList<>();
-        String category = l.getProduct().getCategory() == null ? "" : l.getProduct().getCategory().getName();
+    /** Other products of the same category first, then any others, never the product itself and each product once. */
+    private List<PublicProduct> related(OnlineListing l, OnlineStoreSettings s, Long selfId) {
+        List<PublicProduct> picked = new ArrayList<>();
+        Product base = l.getProduct().getVariantParentId() == null ? l.getProduct() : variants.template(l.getProduct().getVariantParentId()).orElse(l.getProduct());
+        String category = base.getCategory() == null ? "" : base.getCategory().getName();
         if (!category.isEmpty()) {
-            for (OnlineListing o : listings.findShopPage("", category, PageRequest.of(0, RELATED + 1)).getContent()) {
-                if (!o.getId().equals(l.getId()) && picked.size() < RELATED) picked.add(o);
-            }
+            for (OnlineListing o : listings.findShopPage("", category, PageRequest.of(0, RELATED * 8)).getContent()) addRelated(picked, o, s, selfId);
         }
         if (picked.size() < RELATED) {
-            for (OnlineListing o : listings.findShopPage("", "", PageRequest.of(0, RELATED * 2 + 1)).getContent()) {
-                if (picked.size() >= RELATED) break;
-                if (!o.getId().equals(l.getId()) && picked.stream().noneMatch(x -> x.getId().equals(o.getId()))) picked.add(o);
-            }
+            for (OnlineListing o : listings.findShopPage("", "", PageRequest.of(0, RELATED * 8)).getContent()) addRelated(picked, o, s, selfId);
         }
-        return front.withRatings(picked.stream().map(o -> store.publicProduct(o, s)).toList());
+        return front.withRatings(picked);
     }
 
-    private OnlineListing shown(Long productId) {
-        return listings.findByProductId(productId).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive())
-                .orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
+    private void addRelated(List<PublicProduct> picked, OnlineListing o, OnlineStoreSettings s, Long selfId) {
+        if (picked.size() >= RELATED) return;
+        PublicProduct card = store.publicProduct(o, s);
+        if (!card.id().equals(selfId) && picked.stream().noneMatch(c -> c.id().equals(card.id()))) picked.add(card);
+    }
+
+    /** The listing a visitor lands on for an id: the product itself, or, for a product with variants (its template's id), the first option that can be bought. */
+    private Optional<OnlineListing> browse(Long id, OnlineStoreSettings s) {
+        Optional<OnlineListing> own = listings.findByProductId(id).filter(OnlineListing::isListed);
+        if (own.isPresent() && own.get().getProduct().isActive()) return own;
+        List<OnlineListing> rows = variants.rows(id);
+        if (rows.isEmpty()) return Optional.empty();
+        return Optional.of(variants.lead(rows, r -> !"SOLD_OUT".equals(store.publicVariant(r, s).stock())));
+    }
+
+    private OnlineListing shown(Long productId, OnlineStoreSettings s) {
+        return browse(productId, s).orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
     }
 
     static String url(Long imageId) {
@@ -175,7 +246,8 @@ public class OnlineProductPageService {
     @Transactional(readOnly = true)
     public OnlineStoreService.Image image(Long imageId, int width) {
         OnlineListingImage i = images.findById(imageId).orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
-        OnlineListing l = listings.findById(i.getListingId()).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive())
+        OnlineListing l = listings.findById(i.getListingId()).filter(OnlineListing::isListed)
+                .filter(x -> x.getProduct().isActive() || (x.getProduct().getVariantAttributes() != null && !x.getProduct().getVariantAttributes().isBlank()))
                 .orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
         int w = width <= 0 ? 0 : Math.max(64, Math.min(width, MAX_WIDTH));
         if (w == 0 || i.getContentType().equals("image/gif")) return new OnlineStoreService.Image(i.getContentType(), i.getData());

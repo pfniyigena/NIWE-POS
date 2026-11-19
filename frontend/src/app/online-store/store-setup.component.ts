@@ -187,7 +187,7 @@ import { API_BASE } from '../core/constants';
           <button class="btn btn-outline-secondary" type="button" (click)="find()">{{ 'Search' | translate }}</button>
         </div>
         <div *ngFor="let p of found" class="flex justify-between" style="padding:0.2rem 0; border-bottom:1px solid #e5e7eb;">
-          <span>{{ p.name }} <span class="text-muted">{{ p.sku }} · {{ p.unitPrice | number: '1.0-2' }}</span></span>
+          <span>{{ p.name }} <span class="text-muted">{{ p.sku }} · {{ p.unitPrice | number: '1.0-2' }}</span><span class="text-muted" *ngIf="p.variantAttributes"> · {{ 'with options' | translate }}: {{ p.variantAttributes }}</span></span>
           <button class="btn btn-sm btn-primary" type="button" [disabled]="isListed(p.id)" (click)="add(p)">{{ isListed(p.id) ? ('Added' | translate) : ('Add' | translate) }}</button>
         </div>
         <div class="flex justify-between align-center mt-3 mb-1 listing-tools" *ngIf="listings.length" style="flex-wrap:wrap; gap:0.5rem;">
@@ -199,11 +199,12 @@ import { API_BASE } from '../core/constants';
             <div class="flex justify-between" style="flex-wrap:wrap; gap:0.5rem; align-items:flex-start;">
               <div style="min-width:0;">
                 <strong class="lst-name">{{ l.productName }}</strong>
-                <div class="text-muted" style="font-size:0.8rem;">
+                <div class="text-muted lst-optsum" *ngIf="l.variantCount > 0" style="font-size:0.8rem;">{{ l.variantOptions }} · {{ '{p0} of {p1} options in stock' | translate: { p0: optionsInStock(l), p1: optionsOf(l).length } }}<span *ngIf="!l.hasImage"> · {{ 'No picture yet' | translate }}</span></div>
+                <div class="text-muted" *ngIf="!l.variantCount" style="font-size:0.8rem;">
                   {{ 'Price' | translate }}: {{ l.unitPrice | number: '1.0-2' }} · {{ 'Stock' | translate }}: {{ stockLabel(l.stock) | translate }}<span *ngIf="!l.hasImage"> · {{ 'No picture yet' | translate }}</span>
                 </div>
-                <div class="lst-shopprice" style="font-size:0.85rem; margin-top:0.15rem;"><strong>{{ 'Customers pay on the shop' | translate }}: {{ shopPrice(l) | number: '1.0-2' }}</strong><span class="text-muted" *ngIf="l.taxOnTopPercent"> ({{ 'the price {p0} plus {p1}% tax' | translate: { p0: (l.onlinePrice ?? l.unitPrice) | number: '1.0-2', p1: l.taxOnTopPercent } }})</span><span class="text-muted" *ngIf="!l.taxOnTopPercent"> ({{ 'no tax added' | translate }})</span></div>
-                <div class="lst-stock" style="font-size:0.8rem; margin-top:0.15rem;" [style.color]="l.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">
+                <div class="lst-shopprice" *ngIf="!l.variantCount" style="font-size:0.85rem; margin-top:0.15rem;"><strong>{{ 'Customers pay on the shop' | translate }}: {{ shopPrice(l) | number: '1.0-2' }}</strong><span class="text-muted" *ngIf="l.taxOnTopPercent"> ({{ 'the price {p0} plus {p1}% tax' | translate: { p0: (l.onlinePrice ?? l.unitPrice) | number: '1.0-2', p1: l.taxOnTopPercent } }})</span><span class="text-muted" *ngIf="!l.taxOnTopPercent"> ({{ 'no tax added' | translate }})</span></div>
+                <div class="lst-stock" *ngIf="!l.variantCount" style="font-size:0.8rem; margin-top:0.15rem;" [style.color]="l.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">
                   <ng-container *ngIf="l.stockInfo.tracked; else untracked">{{ 'In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − shop buffer {p2} = sellable now {p3}' | translate: { p0: l.stockInfo.inWarehouses, p1: l.stockInfo.reserved, p2: l.stockInfo.buffer, p3: l.stockInfo.sellable } }}</ng-container>
                   <ng-template #untracked>{{ 'Stock is not tracked for this product: the shop always shows it as in stock.' | translate }}</ng-template>
                 </div>
@@ -213,7 +214,7 @@ import { API_BASE } from '../core/constants';
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:0.6rem; margin-top:0.6rem;">
               <div style="grid-column: span 2; min-width:0;"><label class="form-label" style="font-size:0.8rem;">{{ 'Title on the shop' | translate }}</label>
                 <input class="form-control" style="width:100%;" maxlength="160" [name]="'t' + l.id" [(ngModel)]="l.webTitle" [placeholder]="l.productName" /></div>
-              <div><label class="form-label" style="font-size:0.8rem;">{{ 'Online price' | translate }}</label>
+              <div *ngIf="!l.variantCount"><label class="form-label" style="font-size:0.8rem;">{{ 'Online price' | translate }}</label>
                 <input class="form-control" type="number" min="0" style="width:100%;" [name]="'p' + l.id" [(ngModel)]="l.onlinePrice" /></div>
               <div><label class="form-label" style="font-size:0.8rem;">{{ 'Order' | translate }}</label>
                 <input class="form-control" type="number" style="width:100%;" [name]="'o' + l.id" [(ngModel)]="l.sortOrder" /></div>
@@ -224,6 +225,38 @@ import { API_BASE } from '../core/constants';
               <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'Best-selling products' | translate }}"><input type="checkbox" class="tag-best" [name]="'tb' + l.id" [(ngModel)]="l.bestSeller" /> {{ 'Best seller' | translate }}</label>
               <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'Special offers and discounts' | translate }}"><input type="checkbox" class="tag-offer" [name]="'to' + l.id" [(ngModel)]="l.specialOffer" /> {{ 'Offer' | translate }}</label>
               <label style="display:flex; align-items:center; gap:0.35rem;" title="{{ 'New arrivals' | translate }}"><input type="checkbox" class="tag-new" [name]="'tn' + l.id" [(ngModel)]="l.newArrival" /> {{ 'New' | translate }}</label>
+            </div>
+            <div class="lst-options" *ngIf="l.variantCount > 0" style="margin-top:0.75rem;">
+              <button type="button" class="btn btn-sm btn-outline-secondary lst-opts-btn" (click)="optsFor = optsFor === l.productId ? null : l.productId">{{ optsFor === l.productId ? ('Hide the options' | translate) : ('Options: price, stock, pictures' | translate) }} ({{ l.variantCount }})</button>
+              <div class="lst-opts mt-2" *ngIf="optsFor === l.productId" style="overflow-x:auto;">
+                <p class="text-muted" style="font-size:0.8rem; margin:0 0 0.4rem;">{{ 'Each option is sold with its own price and stock. The title, description, specifications and tags above are shared by all options. Leave the online price empty to use the option’s normal price.' | translate }}</p>
+                <div class="lst-opt" *ngFor="let o of optionsOf(l)" style="border-top:1px solid #e5e7eb; padding:0.5rem 0;">
+                  <div class="flex gap-2" style="flex-wrap:wrap; align-items:center;">
+                    <div style="flex:1 1 160px; min-width:0;"><strong class="lst-opt-label">{{ o.variantLabel }}</strong><div class="text-muted" style="font-size:0.78rem;">{{ o.sku }} · {{ o.unitPrice | number: '1.0-2' }} · <span [style.color]="o.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">{{ stockLabel(o.stock) | translate }}</span> ({{ o.stockInfo.sellable ?? '–' }})</div></div>
+                    <input class="form-control lst-opt-price" type="number" min="0" style="width:120px;" [name]="'op' + o.id" [(ngModel)]="o.onlinePrice" [placeholder]="'Online price' | translate" />
+                    <label style="display:flex; align-items:center; gap:0.35rem;"><input type="checkbox" class="lst-opt-on" [name]="'ov' + o.id" [(ngModel)]="o.listed" /> {{ 'Sold online' | translate }}</label>
+                    <button type="button" class="btn btn-sm btn-primary lst-opt-save" (click)="saveOption(o)">{{ 'Save' | translate }}</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary lst-opt-pics" (click)="toggleDetails(o)">{{ detailsFor === o.productId ? ('Hide pictures' | translate) : ('Pictures' | translate) }}</button>
+                  </div>
+                  <div class="lst-opt-gallery mt-2" *ngIf="detailsFor === o.productId" style="padding:0.6rem; background:rgba(128,128,128,0.12); border-radius:8px;">
+                    <div class="text-muted" *ngIf="!details" style="font-size:0.85rem;">{{ 'Loading…' | translate }}</div>
+                    <ng-container *ngIf="details">
+                      <div class="text-muted" style="font-size:0.8rem; margin-bottom:0.3rem;">{{ 'Pictures of this option: shown first when the customer chooses it.' | translate }}</div>
+                      <div class="flex gap-2" style="flex-wrap:wrap;">
+                        <div class="lst-pic" *ngFor="let i of details.images; let k = index" style="width:110px; border:1px solid #e5e7eb; border-radius:8px; padding:0.3rem; background:rgba(128,128,128,0.1);">
+                          <img [src]="pictureThumb(i.url)" [alt]="i.fileName" style="width:100%; height:70px; object-fit:cover; border-radius:6px;" />
+                          <div class="flex gap-1 mt-1" style="justify-content:center;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="k === 0 || detailsBusy" [attr.aria-label]="'Move earlier' | translate" (click)="movePicture(i.id, 'up')">←</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="k === details.images.length - 1 || detailsBusy" [attr.aria-label]="'Move later' | translate" (click)="movePicture(i.id, 'down')">→</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger lst-pic-del" [disabled]="detailsBusy" [attr.aria-label]="'Remove' | translate" (click)="deletePicture(i.id)">✕</button>
+                          </div>
+                        </div>
+                      </div>
+                      <input type="file" class="form-control lst-pic-file mt-1" accept="image/jpeg,image/png,image/webp,image/gif" multiple [disabled]="detailsBusy || details.images.length >= details.maxImages" (change)="pickPictures($event, o)" style="max-width:360px;" />
+                    </ng-container>
+                  </div>
+                </div>
+              </div>
             </div>
             <div style="margin-top:0.6rem;">
               <button type="button" class="btn btn-sm btn-outline-secondary lst-details-btn" (click)="toggleDetails(l)">{{ detailsFor === l.productId ? ('Hide the product page details' | translate) : ('Product page: pictures, description, specifications' | translate) }}</button>
@@ -524,10 +557,34 @@ export class StoreSetupComponent implements OnInit {
     this.api.listings().subscribe({ next: (l) => { this.listings = l; this.listPage = Math.min(this.listPage, this.listingPages() - 1); }, error: (e) => this.fail(e, 'Failed to load the products') });
   }
 
+  /** The options (sizes, colours, models) of a product with options. */
+  optionsOf(l: StoreListing): StoreListing[] {
+    return this.listings.filter((o) => o.variantParentId === l.productId).sort((x, y) => x.productId - y.productId);
+  }
+
+  optionsInStock(l: StoreListing): number {
+    return this.optionsOf(l).filter((o) => o.listed && o.stock !== 'SOLD_OUT').length;
+  }
+
+  /** The product whose options are open. */
+  optsFor: number | null = null;
+
+  /** An option keeps its own online price and whether it is sold online; everything else is the product's. */
+  saveOption(o: StoreListing): void {
+    this.api.saveListing({ productId: o.productId, listed: o.listed, onlinePrice: o.onlinePrice === null || (o.onlinePrice as any) === '' ? null : Number(o.onlinePrice) })
+      .subscribe({ next: () => { this.loadListings(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the product') });
+  }
+
+  /** The products of the list: options are shown under their product, not as rows of their own. */
+  private tops(): StoreListing[] {
+    return this.listings.filter((l) => !l.variantParentId);
+  }
+
   filteredListings(): StoreListing[] {
     const q = this.listFilter.trim().toLowerCase();
-    if (!q) return this.listings;
-    return this.listings.filter((l) => l.productName.toLowerCase().includes(q) || (l.webTitle ?? '').toLowerCase().includes(q) || (l.sku ?? '').toLowerCase().includes(q) || (l.category ?? '').toLowerCase().includes(q));
+    if (!q) return this.tops();
+    const hit = (l: StoreListing): boolean => l.productName.toLowerCase().includes(q) || (l.webTitle ?? '').toLowerCase().includes(q) || (l.sku ?? '').toLowerCase().includes(q) || (l.category ?? '').toLowerCase().includes(q);
+    return this.tops().filter((l) => hit(l) || this.optionsOf(l).some(hit));
   }
 
   listingPages(): number {
@@ -571,7 +628,7 @@ export class StoreSetupComponent implements OnInit {
   }
 
   find(): void {
-    this.catalog.searchProducts(null, this.search.trim() || null).subscribe({ next: (p) => (this.found = p.filter((x) => x.active).slice(0, 20)), error: (e) => this.fail(e, 'Search failed') });
+    this.catalog.searchProducts(null, this.search.trim() || null).subscribe({ next: (p) => (this.found = p.filter((x) => (x.active || !!x.variantAttributes) && !x.variantParentId).slice(0, 20)), error: (e) => this.fail(e, 'Search failed') });
   }
 
   add(p: Product): void {

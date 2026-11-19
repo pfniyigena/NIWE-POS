@@ -57,14 +57,16 @@ public class OnlineStoreService {
     private final OnlineCouponService coupons;
     private final OnlineTextService texts;
     private final OnlineShopSearch search;
+    private final OnlineVariants variants;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
 
     public OnlineStoreService(OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository,
                               OnlineDeliveryZoneRepository zoneRepository, OnlineOrderRepository orderRepository,
                               StockReservationService stockReservationService, StoreSettingsService storeSettingsService,
                               MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, OnlineCouponService coupons,
-                              OnlineTextService texts, ShopLoyaltyService loyalty, OnlineShopSearch search) {
+                              OnlineTextService texts, ShopLoyaltyService loyalty, OnlineShopSearch search, OnlineVariants variants) {
         this.search = search;
+        this.variants = variants;
         this.loyalty = loyalty;
         this.payments = payments;
         this.texts = texts;
@@ -269,15 +271,65 @@ public class OnlineStoreService {
         return c == null || c.isBlank() ? "RWF" : c.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
-    /** One product as the public shop shows it: web title and description, today's price, a picture link, and a stock word (never a number). */
+    /**
+     * One product as the public shop shows it when browsing (cards, search, rows, wishlist): web title and description, today's price, a picture link, and a
+     * stock word (never a number). A variant of a product with variants is shown as that ONE product (its id is the template's id, the price is the lowest one).
+     */
     PublicProduct publicProduct(OnlineListing l, OnlineStoreSettings s) {
+        Long group = l.getProduct().getVariantParentId();
+        if (group != null) {
+            List<OnlineListing> rows = variants.rows(group);
+            if (!rows.isEmpty()) return groupCard(group, rows, s);
+        }
+        return publicVariant(l, s);
+    }
+
+    /** The product exactly as it is sold (a variant is the variant itself): for carts, orders, reminders and "order again". */
+    PublicProduct publicVariant(OnlineListing l, OnlineStoreSettings s) {
         Product p = l.getProduct();
-        String title = l.getWebTitle() != null && !l.getWebTitle().isBlank() ? l.getWebTitle() : p.getName();
         String description = l.getWebDescription() != null && !l.getWebDescription().isBlank() ? l.getWebDescription() : p.getDescription();
-        return new PublicProduct(p.getId(), title, description, shown(p, basePrice(l)),
+        return new PublicProduct(p.getId(), displayName(l), description, shown(p, basePrice(l)),
                 p.getCategory() == null ? null : p.getCategory().getName(),
                 p.getIconDataUrl() == null || p.getIconDataUrl().isBlank() ? null : "/api/public/store/products/" + p.getId() + "/image",
-                stockLabel(sellable(p, s.getStockBuffer())), wasPrice(l, p), 0, 0);
+                stockLabel(sellable(p, s.getStockBuffer())), wasPrice(l, p), 0, 0, 0, false);
+    }
+
+    /** The name an order line and a cart line carry: the web title, plus the chosen option when the product has variants ("T-Shirt - Red / L"). */
+    static String displayName(OnlineListing l) {
+        Product p = l.getProduct();
+        boolean titled = l.getWebTitle() != null && !l.getWebTitle().isBlank();
+        if (!titled) return p.getName();
+        return p.getVariantLabel() != null && !p.getVariantLabel().isBlank() ? l.getWebTitle() + " - " + p.getVariantLabel() : l.getWebTitle();
+    }
+
+    private PublicProduct groupCard(Long group, List<OnlineListing> rows, OnlineStoreSettings s) {
+        Product template = variants.template(group).orElse(null);
+        OnlineListing first = rows.get(0);
+        BigDecimal min = null;
+        BigDecimal max = null;
+        OnlineListing cheapest = first;
+        String stock = "SOLD_OUT";
+        String picture = null;
+        for (OnlineListing r : rows) {
+            Product p = r.getProduct();
+            BigDecimal price = shown(p, basePrice(r));
+            if (min == null || price.compareTo(min) < 0) {
+                min = price;
+                cheapest = r;
+            }
+            if (max == null || price.compareTo(max) > 0) max = price;
+            String word = stockLabel(sellable(p, s.getStockBuffer()));
+            if (word.equals("IN_STOCK") || (word.equals("LOW") && !stock.equals("IN_STOCK"))) stock = word;
+            if (picture == null && p.getIconDataUrl() != null && !p.getIconDataUrl().isBlank()) picture = "/api/public/store/products/" + p.getId() + "/image";
+        }
+        if (template != null && template.getIconDataUrl() != null && !template.getIconDataUrl().isBlank()) picture = "/api/public/store/products/" + group + "/image";
+        boolean titled = first.getWebTitle() != null && !first.getWebTitle().isBlank();
+        String title = titled ? first.getWebTitle() : template != null ? template.getName() : first.getProduct().getName();
+        String description = first.getWebDescription() != null && !first.getWebDescription().isBlank() ? first.getWebDescription()
+                : template != null && template.getDescription() != null ? template.getDescription() : first.getProduct().getDescription();
+        Product catProduct = template != null && template.getCategory() != null ? template : first.getProduct();
+        return new PublicProduct(group, title, description, min, catProduct.getCategory() == null ? null : catProduct.getCategory().getName(), picture, stock,
+                wasPrice(cheapest, cheapest.getProduct()), 0, 0, rows.size(), max.compareTo(min) > 0);
     }
 
     /** The normal price, shown struck through, when staff set a lower online price. */
@@ -300,8 +352,7 @@ public class OnlineStoreService {
      */
     @Transactional(readOnly = true)
     public Image image(Long productId, int width) {
-        OnlineListing l = listingRepository.findByProductId(productId).filter(OnlineListing::isListed).orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
-        String url = l.getProduct().getIconDataUrl();
+        String url = pictureOf(productId);
         if (url == null || !url.startsWith("data:") || !url.contains(";base64,")) throw ApiException.notFound(I18n.t("Not found."));
         String type = url.substring(5, url.indexOf(';'));
         if (!type.startsWith("image/")) throw ApiException.notFound(I18n.t("Not found."));
@@ -320,6 +371,21 @@ public class OnlineStoreService {
         Image out = w == 0 ? new Image(type, bytes) : scale(type, bytes, w);
         if (w > 0) SCALED.put(key, out);
         return out;
+    }
+
+    /** The picture of a product on the shop; a product with variants shows its own picture, else the first option's that has one. */
+    private String pictureOf(Long productId) {
+        OnlineListing l = listingRepository.findByProductId(productId).filter(OnlineListing::isListed).orElse(null);
+        boolean template = l != null && l.getProduct().getVariantAttributes() != null && !l.getProduct().getVariantAttributes().isBlank();
+        if (l != null && !template) return l.getProduct().getIconDataUrl();
+        List<OnlineListing> rows = variants.rows(productId);
+        if (rows.isEmpty()) throw ApiException.notFound(I18n.t("Not found."));
+        if (l != null && l.getProduct().getIconDataUrl() != null && !l.getProduct().getIconDataUrl().isBlank()) return l.getProduct().getIconDataUrl();
+        for (OnlineListing r : rows) {
+            String icon = r.getProduct().getIconDataUrl();
+            if (icon != null && !icon.isBlank()) return icon;
+        }
+        return null;
     }
 
     /** Shrinks a picture to at most maxWidth pixels wide (JPEG, or PNG when it has transparency). Anything that cannot be read or is small enough stays as it is. */
@@ -444,7 +510,7 @@ public class OnlineStoreService {
             if (qty.compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) throw ApiException.badRequest(I18n.t("Quantities must be whole numbers between 1 and {0}", MAX_QUANTITY));
             BigDecimal sellable = sellable(p, s.getStockBuffer());
             if (sellable != null && qty.compareTo(sellable) > 0) {
-                String title = l.getWebTitle() != null && !l.getWebTitle().isBlank() ? l.getWebTitle() : p.getName();
+                String title = displayName(l);
                 throw ApiException.badRequest(sellable.signum() <= 0 ? I18n.t("{0} is sold out", title)
                         : I18n.t("Only {0} of {1} left", sellable.setScale(0, RoundingMode.DOWN).toPlainString(), title));
             }
@@ -453,7 +519,7 @@ public class OnlineStoreService {
             OnlineOrderLine line = new OnlineOrderLine();
             line.setOnlineOrder(o);
             line.setProductId(p.getId());
-            line.setName(l.getWebTitle() != null && !l.getWebTitle().isBlank() ? l.getWebTitle() : p.getName());
+            line.setName(displayName(l));
             line.setQuantity(qty);
             line.setBasePrice(base);
             line.setUnitPrice(unit);

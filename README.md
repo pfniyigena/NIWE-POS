@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.50.0 - Online Store: product variants (size, colour, model)
+
+The shop reuses the ERP's variants: a product with sizes, colours or models is **one card** with option pickers on its page. Each option has its own price (cards say "Starting at"), stock and optional pictures; sold-out options stay visible but cannot be bought; ratings and reviews are pooled on the whole product. Staff put the template on the shop once and manage each option's online price, switch and pictures under it. Cart, orders, invoices, stock and returns work on the chosen option. See `docs/online-store-variants.md` and `RELEASE-NOTES-v1.50.0.md`. Database: migration V84.
+
 ### Version 1.49.0 - Progressive Web App (installable app)
 
 The site can be installed on a phone, tablet or PC (Chrome, Edge, Android: an "Install the app" card; iPhone: Share > Add to Home Screen) and opens in its own window with its own icon. The app starts faster (built files are kept on the device), and without a connection it opens and says it is offline; sales and changes still need the connection. The shop is installed under the shop's own name and colour. See `docs/pwa.md` and `RELEASE-NOTES-v1.49.0.md`. Needs HTTPS (or localhost) and two lines in the web server's settings (see the doc).

@@ -26,11 +26,13 @@ public class OnlineStoreAdminService {
     private final OnlineCouponRepository couponRepository;
     private final OnlineTextService texts;
     private final OnlineOrderRepository orderRepository;
+    private final OnlineVariants variants;
 
     public OnlineStoreAdminService(OnlineStoreService storeService, OnlineStoreSettingsRepository settingsRepository,
                                    OnlineListingRepository listingRepository, OnlineDeliveryZoneRepository zoneRepository,
                                    CatalogService catalogService, AuditLogService auditLogService, OnlinePaymentService payments,
-                                   OnlineCouponRepository couponRepository, OnlineOrderRepository orderRepository, OnlineTextService texts) {
+                                   OnlineCouponRepository couponRepository, OnlineOrderRepository orderRepository, OnlineTextService texts, OnlineVariants variants) {
+        this.variants = variants;
         this.payments = payments;
         this.texts = texts;
         this.couponRepository = couponRepository;
@@ -199,6 +201,7 @@ public class OnlineStoreAdminService {
 
     @Transactional
     public List<ListingDto> listings() {
+        variants.syncAll();
         int buffer = storeService.settings().getStockBuffer();
         return listingRepository.findAllByOrderBySortOrderAscIdAsc().stream().map(l -> toDto(l, buffer)).toList();
     }
@@ -211,6 +214,18 @@ public class OnlineStoreAdminService {
             created.setProduct(p);
             return created;
         });
+        boolean option = p.getVariantParentId() != null && listingRepository.findByProductId(p.getVariantParentId()).isPresent();
+        if (option) {
+            // an option of a product with variants: staff only choose its online price and whether this option is offered; the rest follows the product
+            if (in.listed() != null) l.setVariantOff(!in.listed());
+            if (in.onlinePrice() != null && in.onlinePrice().signum() < 0) throw ApiException.badRequest(I18n.t("The online price cannot be negative"));
+            l.setOnlinePrice(in.onlinePrice());
+            OnlineListing savedOption = listingRepository.save(l);
+            variants.sync(p.getVariantParentId());
+            auditLogService.record("ONLINE_LISTING_SAVED", (l.isVariantOff() ? "Switched off " : "Offered ") + p.getName() + " on the online shop", "OnlineListing", savedOption.getId());
+            return toDto(listingRepository.findById(savedOption.getId()).orElse(savedOption), storeService.settings().getStockBuffer());
+        }
+        boolean template = p.getVariantAttributes() != null && !p.getVariantAttributes().isBlank();
         if (in.listed() != null) l.setListed(in.listed());
         l.setWebTitle(text(in.webTitle(), 160));
         l.setWebDescription(text(in.webDescription(), 2000));
@@ -222,6 +237,7 @@ public class OnlineStoreAdminService {
         if (in.specialOffer() != null) l.setSpecialOffer(in.specialOffer());
         if (in.newArrival() != null) l.setNewArrival(in.newArrival());
         OnlineListing saved = listingRepository.save(l);
+        if (template) variants.sync(p.getId());
         auditLogService.record("ONLINE_LISTING_SAVED", (saved.isListed() ? "Listed " : "Unlisted ") + p.getName() + " on the online shop", "OnlineListing", saved.getId());
         return toDto(saved, storeService.settings().getStockBuffer());
     }
@@ -229,6 +245,15 @@ public class OnlineStoreAdminService {
     @Transactional
     public void removeListing(Long id) {
         OnlineListing l = listingRepository.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Listing not found")));
+        Product removed = l.getProduct();
+        if (removed.getVariantParentId() != null && listingRepository.findByProductId(removed.getVariantParentId()).isPresent()) {
+            // one option of a product with variants is switched off, not removed (it would come back with the next update otherwise)
+            l.setVariantOff(true);
+            l.setListed(false);
+            listingRepository.save(l);
+            return;
+        }
+        if (removed.getVariantAttributes() != null && !removed.getVariantAttributes().isBlank()) listingRepository.deleteAll(listingRepository.findAllGroupRows(removed.getId()));
         listingRepository.delete(l);
         auditLogService.record("ONLINE_LISTING_REMOVED", "Removed " + l.getProduct().getName() + " from the online shop", "OnlineListing", id);
     }
@@ -239,7 +264,9 @@ public class OnlineStoreAdminService {
                 l.isListed(), l.getWebTitle(), l.getWebDescription(), l.getOnlinePrice(), l.getSortOrder(),
                 p.getIconDataUrl() != null && !p.getIconDataUrl().isBlank(), OnlineStoreService.stockLabel(storeService.sellable(p, buffer)),
                 l.isFeatured(), l.isBestSeller(), l.isSpecialOffer(), l.isNewArrival(), storeService.stockInfo(p, buffer),
-                p.getTaxRate() == null || p.getTaxRate().isInclusive() ? null : p.getTaxRate().getRatePercent());
+                p.getTaxRate() == null || p.getTaxRate().isInclusive() ? null : p.getTaxRate().getRatePercent(),
+                p.getVariantParentId(), p.getVariantLabel(), p.getVariantAttributes(), l.isVariantOff(),
+                p.getVariantAttributes() == null ? 0 : listingRepository.findAllGroupRows(p.getId()).size());
     }
 
 

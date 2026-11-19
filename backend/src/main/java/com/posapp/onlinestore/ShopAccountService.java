@@ -398,7 +398,7 @@ public class ShopAccountService {
         List<String> gone = new ArrayList<>();
         for (OnlineOrderLine l : o.getLines()) {
             OnlineListing listing = listingRepository.findByProductId(l.getProductId()).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).orElse(null);
-            PublicProduct p = listing == null ? null : storeService.publicProduct(listing, s);
+            PublicProduct p = listing == null ? null : storeService.publicVariant(listing, s);
             if (p == null || "SOLD_OUT".equals(p.stock())) {
                 gone.add(l.getName());
                 continue;

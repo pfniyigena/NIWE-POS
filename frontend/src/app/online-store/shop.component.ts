@@ -400,23 +400,26 @@ import { T } from '../core/i18n/t';
               </a>
               <span class="shop-offbadge" *ngIf="offPercent(p) > 0" style="position:absolute; left:6px; top:6px; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; font-weight:700;">-{{ offPercent(p) }}%</span>
               <button type="button" class="shop-wish-btn" (click)="wish.toggle(p.id)" [attr.aria-label]="(wish.has(p.id) ? 'Remove from my wishlist' : 'Add to my wishlist') | translate" [attr.aria-pressed]="wish.has(p.id)" [style.color]="wish.has(p.id) ? '#dc2626' : '#6b7280'" style="position:absolute; right:6px; top:6px; border:0; border-radius:999px; width:30px; height:30px; background:rgba(255,255,255,0.92); cursor:pointer; font-size:1.1rem; line-height:1; padding:0;">{{ wish.has(p.id) ? '♥' : '♡' }}</button>
-              <button type="button" class="shop-qv-btn" (click)="qv = p" [attr.aria-label]="'Quick view' | translate" style="position:absolute; right:6px; bottom:6px; border:0; border-radius:999px; background:rgba(17,24,39,0.72); color:#fff; font-size:0.72rem; padding:0.2rem 0.6rem; cursor:pointer;">👁 {{ 'Quick view' | translate }}</button>
+              <button type="button" class="shop-qv-btn" *ngIf="!p.variants" (click)="qv = p" [attr.aria-label]="'Quick view' | translate" style="position:absolute; right:6px; bottom:6px; border:0; border-radius:999px; background:rgba(17,24,39,0.72); color:#fff; font-size:0.72rem; padding:0.2rem 0.6rem; cursor:pointer;">👁 {{ 'Quick view' | translate }}</button>
             </div>
             <a class="shop-product-name" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" [title]="p.name" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em; line-height:1.3; margin-top:0.4rem; font-weight:600; color:inherit; text-decoration:none;">{{ p.name }}</a>
             <div class="shop-rating" style="min-height:1.3em; font-size:0.85rem;">
               <ng-container *ngIf="p.ratingCount > 0; else noStars"><span style="color:#d97706;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }}</span> <span class="text-muted">({{ p.ratingCount }})</span></ng-container>
               <ng-template #noStars><span class="text-muted" style="font-size:0.78rem;">{{ 'No ratings yet' | translate }}</span></ng-template>
             </div>
-            <div style="margin-top:0.2rem;"><strong class="shop-price" style="font-size:1.15rem;">{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.4rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
+            <div style="margin-top:0.2rem;"><span class="text-muted shop-from" *ngIf="p.priceFrom" style="font-size:0.8rem; margin-right:0.3rem;">{{ 'Starting at' | translate }}</span><strong class="shop-price" style="font-size:1.15rem;">{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.4rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
             <div class="shop-avail" style="font-size:0.8rem; min-height:1.2em;" [style.color]="p.stock === 'SOLD_OUT' ? '#b91c1c' : p.stock === 'LOW' ? '#b45309' : '#15803d'">
               {{ p.stock === 'SOLD_OUT' ? ('Out of stock' | translate) : p.stock === 'LOW' ? ('Few left' | translate) : ('In stock' | translate) }}</div>
             <div style="margin-top:auto; padding-top:0.5rem;">
+              <a class="btn btn-sm btn-primary shop-choose" *ngIf="p.variants; else plainBtn" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="width:100%; text-align:center;">{{ 'Choose options' | translate }}</a>
+              <ng-template #plainBtn>
               <div class="flex gap-1" *ngIf="qty(p) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
                 <button class="btn btn-sm btn-outline-secondary" (click)="change(p, -1)">−</button>
                 <span>{{ qty(p) }}</span>
                 <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= 20">+</button>
               </div>
               <ng-template #addBtn><button class="btn btn-sm btn-primary shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop?.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
+              </ng-template>
             </div>
           </div>
       </ng-template>

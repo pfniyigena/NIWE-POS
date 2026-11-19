@@ -16,6 +16,18 @@ public interface OnlineListingRepository extends JpaRepository<OnlineListing, Lo
 
     Optional<OnlineListing> findByProductId(Long productId);
 
+    /** The options of a product with variants that the shop offers right now (listed, product active), in staff's order. */
+    @Query("select l from OnlineListing l join l.product p where p.variantParentId = :templateId and l.listed = true and p.active = true order by l.sortOrder asc, l.id asc")
+    List<OnlineListing> findGroupRows(@Param("templateId") Long templateId);
+
+    /** Every variant row of a template, whatever its state. */
+    @Query("select l from OnlineListing l join l.product p where p.variantParentId = :templateId order by l.id asc")
+    List<OnlineListing> findAllGroupRows(@Param("templateId") Long templateId);
+
+    /** The listings of templates (the product-with-variants records). */
+    @Query("select l from OnlineListing l join l.product p where p.variantAttributes is not null")
+    List<OnlineListing> findMasters();
+
     /** One page of what the public shop shows. q is a lower-case fragment (or empty) and category a category name (or empty): both are matched in the database. */
     @Query("select l from OnlineListing l join l.product p left join p.category c where l.listed = true and p.active = true "
             + "and (:category = '' or c.name = :category) "
@@ -27,7 +39,7 @@ public interface OnlineListingRepository extends JpaRepository<OnlineListing, Lo
     List<String> findShopBrands();
 
     /** Per category: name, number of products and the id of one product that has a picture (or null). */
-    @Query("select c.name, count(l), min(case when p.iconDataUrl is not null and p.iconDataUrl <> '' then p.id else null end) from OnlineListing l join l.product p join p.category c "
+    @Query("select c.name, count(distinct coalesce(p.variantParentId, p.id)), min(case when p.iconDataUrl is not null and p.iconDataUrl <> '' then p.id else null end) from OnlineListing l join l.product p join p.category c "
             + "where l.listed = true and p.active = true group by c.name order by c.name")
     List<Object[]> findCategoryTiles();
 

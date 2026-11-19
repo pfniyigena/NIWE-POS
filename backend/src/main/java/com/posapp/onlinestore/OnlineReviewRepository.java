@@ -27,8 +27,9 @@ public interface OnlineReviewRepository extends JpaRepository<OnlineReview, Long
     @Query("select r from OnlineReview r where r.status = 'APPROVED' and r.reviewText is not null and r.reviewText <> '' order by r.id desc")
     List<OnlineReview> findShown(org.springframework.data.domain.Pageable page);
 
-    /** Per product: average rating and number of ratings that count. */
-    @Query("select r.productId, avg(r.rating), count(r) from OnlineReview r where r.ratingCounted = true and r.productId in :ids group by r.productId")
+    /** Per product: average rating and number of ratings that count. A product with variants is rated as one: the ratings of all its variants, under the template's id. */
+    @Query("select coalesce(p.variantParentId, p.id), avg(r.rating), count(r) from OnlineReview r, com.posapp.catalog.Product p where p.id = r.productId and r.ratingCounted = true "
+            + "and coalesce(p.variantParentId, p.id) in :ids group by coalesce(p.variantParentId, p.id)")
     List<Object[]> ratings(@Param("ids") Collection<Long> ids);
 
     /** Over the whole shop: average rating and number of ratings that count. */
@@ -36,10 +37,10 @@ public interface OnlineReviewRepository extends JpaRepository<OnlineReview, Long
     List<Object[]> overall();
 
     /** The newest approved reviews of one product that have words in them. */
-    @Query("select r from OnlineReview r where r.status = 'APPROVED' and r.productId = :productId and r.reviewText is not null and r.reviewText <> '' order by r.id desc")
-    List<OnlineReview> findShownForProduct(@Param("productId") Long productId, org.springframework.data.domain.Pageable page);
+    @Query("select r from OnlineReview r where r.status = 'APPROVED' and r.productId in :ids and r.reviewText is not null and r.reviewText <> '' order by r.id desc")
+    List<OnlineReview> findShownForProduct(@Param("ids") Collection<Long> ids, org.springframework.data.domain.Pageable page);
 
     /** Per star count (1 to 5): how many ratings of the product gave it. */
-    @Query("select r.rating, count(r) from OnlineReview r where r.ratingCounted = true and r.productId = :productId group by r.rating")
-    List<Object[]> breakdown(@Param("productId") Long productId);
+    @Query("select r.rating, count(r) from OnlineReview r where r.ratingCounted = true and r.productId in :ids group by r.rating")
+    List<Object[]> breakdown(@Param("ids") Collection<Long> ids);
 }

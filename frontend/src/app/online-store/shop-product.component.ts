@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Input, OnChanges, Output, Simple
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { OnlineStoreApiService, ProductDetail, Shop, ShopAd, ShopProduct } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, ProductDetail, ProductVariant, Shop, ShopAd, ShopProduct } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
 import { recentIds, rememberProduct } from './recent';
 import { ShopRailComponent } from './shop-rail.component';
@@ -31,12 +31,12 @@ import { T } from '../core/i18n/t';
           <div class="shop-pp-gallery">
             <div class="shop-pp-zoom" (mousemove)="zoomMove($event)" (mouseleave)="zoomOn = false" (click)="lightbox = true" [title]="'Click to enlarge' | translate"
                  style="background:#f3f4f6; border-radius:10px; display:flex; align-items:center; justify-content:center; min-height:260px; overflow:hidden; cursor:zoom-in;">
-              <img *ngIf="x.images.length" class="shop-pp-big" [src]="big(x.images[sel])" [alt]="x.product.name" [style.transform]="zoomOn ? 'scale(2)' : 'none'" [style.transform-origin]="origin"
+              <img *ngIf="gal.length" class="shop-pp-big" [src]="big(gal[sel])" [alt]="x.product.name" [style.transform]="zoomOn ? 'scale(2)' : 'none'" [style.transform-origin]="origin"
                    style="width:100%; max-height:460px; object-fit:contain; transition:transform 0.12s;" />
-              <span *ngIf="!x.images.length" style="font-size:4rem;">🛍️</span>
+              <span *ngIf="!gal.length" style="font-size:4rem;">🛍️</span>
             </div>
-            <div class="flex gap-1 mt-2" *ngIf="x.images.length > 1" style="flex-wrap:wrap;">
-              <button type="button" class="shop-pp-thumb" *ngFor="let u of x.images; let i = index" (click)="sel = i" [attr.aria-label]="(i + 1) + ' / ' + x.images.length"
+            <div class="flex gap-1 mt-2" *ngIf="gal.length > 1" style="flex-wrap:wrap;">
+              <button type="button" class="shop-pp-thumb" *ngFor="let u of gal; let i = index" (click)="sel = i" [attr.aria-label]="(i + 1) + ' / ' + gal.length"
                       [style.border]="i === sel ? '2px solid var(--shop-brand, #1d4ed8)' : '2px solid #e5e7eb'" style="padding:0; width:64px; height:64px; border-radius:8px; overflow:hidden; cursor:pointer; background:#fff;">
                 <img [src]="thumb(u)" alt="" style="width:100%; height:100%; object-fit:cover;" />
               </button>
@@ -48,16 +48,29 @@ import { T } from '../core/i18n/t';
             <h2 class="shop-pp-name" style="margin:0.15rem 0 0.4rem;">{{ x.product.name }}</h2>
             <div class="shop-pp-rating" *ngIf="x.rating.count > 0" style="color:#d97706;">{{ stars(x.rating.average) }} <span class="text-muted">{{ x.rating.average }} / 5 · {{ '{p0} ratings' | translate: { p0: x.rating.count } }}</span></div>
             <div class="text-muted shop-pp-norating" *ngIf="x.rating.count === 0" style="font-size:0.85rem;">{{ 'No ratings yet' | translate }}</div>
-            <div class="mt-2" style="font-size:1.6rem;"><strong class="shop-pp-price">{{ x.product.price | shopMoney: cur }}</strong><s class="text-muted shop-pp-was" *ngIf="x.product.wasPrice" style="font-size:1rem; margin-left:0.5rem;">{{ x.product.wasPrice | shopMoney: cur }}</s>
-              <span *ngIf="x.product.wasPrice" style="margin-left:0.5rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; vertical-align:middle;">{{ 'Offer' | translate }}</span></div>
-            <div class="mt-1 shop-pp-stock" [style.color]="x.product.stock === 'IN_STOCK' ? '#15803d' : x.product.stock === 'LOW' ? '#b45309' : '#6b7280'">
-              {{ x.product.stock === 'IN_STOCK' ? ('In stock' | translate) : x.product.stock === 'LOW' ? ('Few left' | translate) : ('Sold out' | translate) }}
+            <div class="mt-2" style="font-size:1.6rem;"><strong class="shop-pp-price">{{ it.price | shopMoney: cur }}</strong><s class="text-muted shop-pp-was" *ngIf="it.wasPrice" style="font-size:1rem; margin-left:0.5rem;">{{ it.wasPrice | shopMoney: cur }}</s>
+              <span *ngIf="it.wasPrice" style="margin-left:0.5rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; vertical-align:middle;">{{ 'Offer' | translate }}</span></div>
+            <div class="mt-1 shop-pp-stock" [style.color]="it.stock === 'IN_STOCK' ? '#15803d' : it.stock === 'LOW' ? '#b45309' : '#6b7280'">
+              {{ it.stock === 'IN_STOCK' ? ('In stock' | translate) : it.stock === 'LOW' ? ('Few left' | translate) : ('Sold out' | translate) }}
+            </div>
+            <div class="shop-pp-options mt-3" *ngIf="x.options?.length && x.variants?.length">
+              <div class="shop-pp-opt" *ngFor="let o of x.options; let oi = index" style="margin-bottom:0.75rem;">
+                <div style="font-size:0.9rem;"><strong>{{ o.name }}</strong>: <span class="shop-pp-opt-now">{{ chosen[oi] }}</span></div>
+                <div class="flex gap-1 mt-1" style="flex-wrap:wrap;">
+                  <button type="button" class="shop-pp-val" *ngFor="let v of o.values" (click)="choose(oi, v)" [attr.aria-pressed]="chosen[oi] === v"
+                          [attr.data-state]="valueState(oi, v)" [title]="valueState(oi, v) === 'out' ? ('Out of stock' | translate) : ''"
+                          [style.border]="chosen[oi] === v ? '2px solid var(--shop-brand, #1d4ed8)' : '1px solid #d1d5db'"
+                          [style.opacity]="valueState(oi, v) === 'out' ? 0.5 : 1" [style.text-decoration]="valueState(oi, v) === 'out' ? 'line-through' : 'none'"
+                          [style.background]="valueState(oi, v) === 'out' ? '#f3f4f6' : '#fff'" style="min-width:2.6rem; padding:0.35rem 0.8rem; border-radius:8px; cursor:pointer; color:#111827;">{{ v }}</button>
+                </div>
+              </div>
+              <div class="text-muted shop-pp-sku" *ngIf="curVariant?.sku" style="font-size:0.8rem;">{{ 'SKU' | translate }}: {{ curVariant?.sku }}</div>
             </div>
             <div class="mt-3" style="max-width:320px;">
-              <div class="flex gap-1" *ngIf="qty(x.product) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
-                <button class="btn btn-outline-secondary shop-pp-minus" (click)="change.emit({ p: x.product, by: -1 })">−</button>
-                <span>{{ qty(x.product) }} {{ 'in your cart' | translate }}</span>
-                <button class="btn btn-outline-secondary shop-pp-plus" (click)="change.emit({ p: x.product, by: 1 })" [disabled]="qty(x.product) >= 20">+</button>
+              <div class="flex gap-1" *ngIf="qty(it) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
+                <button class="btn btn-outline-secondary shop-pp-minus" (click)="change.emit({ p: it, by: -1 })">−</button>
+                <span>{{ qty(it) }} {{ 'in your cart' | translate }}</span>
+                <button class="btn btn-outline-secondary shop-pp-plus" (click)="change.emit({ p: it, by: 1 })" [disabled]="qty(it) >= 20">+</button>
               </div>
               <ng-template #addBtn>
                 <div class="flex gap-2" style="align-items:center;">
@@ -66,11 +79,11 @@ import { T } from '../core/i18n/t';
                     <span class="shop-pp-qnum" style="min-width:1.8em; text-align:center;">{{ pick }}</span>
                     <button type="button" class="btn btn-outline-secondary shop-pp-qplus" [disabled]="pick >= 20" [attr.aria-label]="'More' | translate" (click)="pick = pick + 1">+</button>
                   </div>
-                  <button class="btn btn-primary shop-pp-add" style="flex:1;" [disabled]="x.product.stock === 'SOLD_OUT' || !open" (click)="change.emit({ p: x.product, by: pick }); pick = 1">{{ 'Add to cart' | translate }}</button>
+                  <button class="btn btn-primary shop-pp-add" style="flex:1;" [disabled]="it.stock === 'SOLD_OUT' || !open" (click)="change.emit({ p: it, by: pick }); pick = 1">{{ it.stock === 'SOLD_OUT' && curVariant ? ('Out of stock' | translate) : ('Add to cart' | translate) }}</button>
                 </div>
               </ng-template>
               <button type="button" class="btn btn-outline-secondary shop-pp-wish mt-2" style="width:100%;" [attr.aria-pressed]="wish.has(x.product.id)" (click)="wish.toggle(x.product.id)"><span style="color:#dc2626; margin-right:0.4rem;">{{ wish.has(x.product.id) ? '♥' : '♡' }}</span>{{ (wish.has(x.product.id) ? 'In my wishlist' : 'Add to my wishlist') | translate }}</button>
-              <a class="btn btn-outline-secondary shop-pp-wa mt-2" [href]="waLink(x.product)" target="_blank" rel="noopener" style="width:100%;"><svg class="shop-pp-wa-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="fill:#25D366; vertical-align:-4px; margin-right:0.4rem;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>{{ 'Share on WhatsApp' | translate }}</a>
+              <a class="btn btn-outline-secondary shop-pp-wa mt-2" [href]="waLink(it)" target="_blank" rel="noopener" style="width:100%;"><svg class="shop-pp-wa-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="fill:#25D366; vertical-align:-4px; margin-right:0.4rem;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>{{ 'Share on WhatsApp' | translate }}</a>
             </div>
 
             <div class="shop-pp-delivery mt-3" *ngIf="shop && (shop.delivery || shop.pickup)" style="font-size:0.9rem; border:1px solid rgba(128,128,128,0.3); border-radius:8px; padding:0.6rem 0.75rem;">
@@ -137,7 +150,7 @@ import { T } from '../core/i18n/t';
           <div class="mt-3" *ngIf="x.reviews.length">
             <h4 class="shop-pp-reviews-title" style="margin:0 0 0.3rem;">{{ 'Reviews' | translate }}</h4>
             <div class="shop-pp-review" *ngFor="let r of x.reviews" style="padding:0.6rem 0; border-top:1px solid rgba(128,128,128,0.3);">
-              <span style="color:#d97706;">{{ stars(r.rating) }}</span> <strong style="margin-left:0.4rem;">{{ r.reviewerName }}</strong> <span class="text-muted" style="font-size:0.8rem; margin-left:0.4rem;">{{ r.at | date: 'mediumDate' }}</span>
+              <span style="color:#d97706;">{{ stars(r.rating) }}</span> <strong style="margin-left:0.4rem;">{{ r.reviewerName }}</strong> <span class="text-muted" style="font-size:0.8rem; margin-left:0.4rem;">{{ r.at | date: 'mediumDate' }}</span><span class="text-muted shop-pp-rv-variant" *ngIf="x.options?.length" style="font-size:0.8rem; margin-left:0.4rem;">· {{ variantOf(r.productName) }}</span>
               <div>{{ r.text }}</div>
             </div>
           </div>
@@ -171,10 +184,10 @@ import { T } from '../core/i18n/t';
         </section>
       </ng-container>
 
-      <div class="shop-pp-lightbox" *ngIf="lightbox && d && d.images.length" (click)="lightbox = false" style="position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:70; display:flex; align-items:center; justify-content:center; padding:1rem;">
-        <button type="button" class="shop-pp-lb-prev" *ngIf="d.images.length > 1" (click)="$event.stopPropagation(); step(-1)" [attr.aria-label]="'Previous picture' | translate" style="position:absolute; left:0.75rem; top:50%; width:44px; height:44px; border-radius:50%; border:0; font-size:1.4rem; cursor:pointer;">‹</button>
-        <img [src]="huge(d.images[sel])" [alt]="d.product.name" (click)="$event.stopPropagation()" style="max-width:100%; max-height:100%; object-fit:contain;" />
-        <button type="button" class="shop-pp-lb-next" *ngIf="d.images.length > 1" (click)="$event.stopPropagation(); step(1)" [attr.aria-label]="'Next picture' | translate" style="position:absolute; right:0.75rem; top:50%; width:44px; height:44px; border-radius:50%; border:0; font-size:1.4rem; cursor:pointer;">›</button>
+      <div class="shop-pp-lightbox" *ngIf="lightbox && d && gal.length" (click)="lightbox = false" style="position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:70; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <button type="button" class="shop-pp-lb-prev" *ngIf="gal.length > 1" (click)="$event.stopPropagation(); step(-1)" [attr.aria-label]="'Previous picture' | translate" style="position:absolute; left:0.75rem; top:50%; width:44px; height:44px; border-radius:50%; border:0; font-size:1.4rem; cursor:pointer;">‹</button>
+        <img [src]="huge(gal[sel])" [alt]="d.product.name" (click)="$event.stopPropagation()" style="max-width:100%; max-height:100%; object-fit:contain;" />
+        <button type="button" class="shop-pp-lb-next" *ngIf="gal.length > 1" (click)="$event.stopPropagation(); step(1)" [attr.aria-label]="'Next picture' | translate" style="position:absolute; right:0.75rem; top:50%; width:44px; height:44px; border-radius:50%; border:0; font-size:1.4rem; cursor:pointer;">›</button>
         <button type="button" class="shop-pp-lb-close" (click)="lightbox = false" [attr.aria-label]="'Close' | translate" style="position:absolute; right:0.9rem; top:0.6rem; border:0; background:none; color:#fff; font-size:2rem; cursor:pointer;">×</button>
       </div>
     </div>
@@ -192,6 +205,13 @@ export class ShopProductComponent implements OnChanges {
   @Output() change = new EventEmitter<{ p: ShopProduct; by: number }>();
 
   d: ProductDetail | null = null;
+  /** What the customer is looking at and may buy: the product, or the option chosen (its own id, name, price and stock). */
+  it!: ShopProduct;
+  /** The choice made for each option (Colour, Size ...), in the order of the options. */
+  chosen: string[] = [];
+  curVariant: ProductVariant | null = null;
+  /** The pictures shown: those of the chosen option first, then the product's. */
+  gal: string[] = [];
   error: string | null = null;
   /** The picture shown big. */
   sel = 0;
@@ -217,6 +237,7 @@ export class ShopProductComponent implements OnChanges {
   private load(): void {
     const mine = ++this.seq;
     this.d = null;
+    this.gal = [];
     this.error = null;
     this.sel = 0;
     this.pick = 1;
@@ -227,6 +248,10 @@ export class ShopProductComponent implements OnChanges {
       next: (r) => {
         if (mine !== this.seq) return;
         this.d = r;
+        this.chosen = [];
+        const first = r.variants?.find((v) => v.id === r.selectedVariantId) ?? r.variants?.[0];
+        if (r.options?.length && first) this.chosen = [...first.values];
+        this.refresh();
         const before = recentIds().filter((i) => i !== this.productId);
         rememberProduct(this.productId);
         if (before.length) this.api.recent(before.slice(0, 8)).subscribe({ next: (list) => { if (mine === this.seq) { this.recent = list; } }, error: () => {} });
@@ -235,6 +260,40 @@ export class ShopProductComponent implements OnChanges {
         if (mine === this.seq) this.error = e?.status === 404 ? T('This product is not available.') : (e?.error?.message ?? T('The shop is not available right now.'));
       },
     });
+  }
+
+  /** The option that matches the choices made, the item to buy and the pictures to show. */
+  private refresh(): void {
+    const x = this.d;
+    if (!x) return;
+    this.curVariant = x.options?.length ? (x.variants ?? []).find((v) => v.values.every((val, i) => val === this.chosen[i])) ?? null : null;
+    const v = this.curVariant;
+    this.it = v ? { ...x.product, id: v.id, name: x.product.name + ' - ' + v.label, price: v.price, wasPrice: v.wasPrice, stock: v.stock, variants: 0, priceFrom: false } : x.product;
+    this.gal = v && v.pictures.length ? [...v.pictures, ...x.images.filter((u) => !v.pictures.includes(u))] : x.images;
+    this.sel = 0;
+  }
+
+  /** ok = can be bought with the other choices made; out = sold out; none = this combination is not sold. */
+  valueState(oi: number, value: string): 'ok' | 'out' | 'none' {
+    const m = (this.d?.variants ?? []).find((v) => v.values[oi] === value && v.values.every((val, j) => j === oi || val === this.chosen[j]));
+    return !m ? 'none' : m.stock === 'SOLD_OUT' ? 'out' : 'ok';
+  }
+
+  /** The customer picked a value. When that combination is not sold, the closest one is taken (one that is in stock first). */
+  choose(oi: number, value: string): void {
+    const all = (this.d?.variants ?? []).filter((v) => v.values[oi] === value);
+    if (!all.length) return;
+    const exact = all.find((v) => v.values.every((val, j) => j === oi || val === this.chosen[j]));
+    const pick = exact ?? all.find((v) => v.stock !== 'SOLD_OUT') ?? all[0];
+    this.chosen = [...pick.values];
+    this.pick = 1;
+    this.refresh();
+  }
+
+  /** "Red / M" out of the review's product name "Classic Polo Shirt - Red / M". */
+  variantOf(name: string): string {
+    const i = name.lastIndexOf(' - ');
+    return i >= 0 ? name.substring(i + 3) : name;
   }
 
   qty(p: ShopProduct): number {
@@ -257,7 +316,7 @@ export class ShopProductComponent implements OnChanges {
   }
 
   step(by: number): void {
-    const n = this.d?.images.length ?? 0;
+    const n = this.gal.length;
     if (n > 1) this.sel = (this.sel + by + n) % n;
   }
 

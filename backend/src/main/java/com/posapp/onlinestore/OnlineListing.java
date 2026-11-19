@@ -35,4 +35,7 @@ public class OnlineListing extends BaseEntity {
     /** The specifications table of the product page: a JSON list of {label, value}. */
     @Column(columnDefinition = "TEXT")
     private String specs;
+    /** A variant of a template on the shop: staff switched this option off (it is not offered, but the rest of the product stays). */
+    @Column(name = "variant_off", nullable = false)
+    private boolean variantOff = false;
 }

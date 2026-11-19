@@ -39,7 +39,8 @@ public class OnlineFrontService {
     public PublicHome home() {
         OnlineStoreSettings s = store.settings();
         if (!s.isEnabled()) throw ApiException.notFound(I18n.t("This shop is not available."));
-        PageRequest top = PageRequest.of(0, ROW);
+        // a product with variants has one row per option: ask for more and show each product once
+        PageRequest top = PageRequest.of(0, ROW * 8);
         List<OnlineStoreDtos.PublicProduct> featured = row(listings.findFeatured(top), s);
         List<OnlineStoreDtos.PublicProduct> best = row(listings.findBestSellers(top), s);
         List<OnlineStoreDtos.PublicProduct> offers = row(listings.findOffers(top), s);
@@ -62,7 +63,13 @@ public class OnlineFrontService {
     }
 
     private List<OnlineStoreDtos.PublicProduct> row(List<OnlineListing> rows, OnlineStoreSettings s) {
-        return withRatings(rows.stream().map(l -> store.publicProduct(l, s)).toList());
+        List<OnlineStoreDtos.PublicProduct> cards = new ArrayList<>();
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (OnlineListing l : rows) {
+            OnlineStoreDtos.PublicProduct card = store.publicProduct(l, s);
+            if (cards.size() < ROW && seen.add(card.id())) cards.add(card);
+        }
+        return withRatings(cards);
     }
 
     /** The same products with their star rating (average of the ratings that count, and how many). Products nobody rated keep 0. */
@@ -77,7 +84,7 @@ public class OnlineFrontService {
         for (OnlineStoreDtos.PublicProduct p : in) {
             double[] x = by.get(p.id());
             out.add(x == null ? p : new OnlineStoreDtos.PublicProduct(p.id(), p.name(), p.description(), p.price(), p.category(), p.imageUrl(), p.stock(),
-                    p.wasPrice(), round1(x[0]), (int) x[1]));
+                    p.wasPrice(), round1(x[0]), (int) x[1], p.variants(), p.priceFrom()));
         }
         return out;
     }

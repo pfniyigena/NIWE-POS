@@ -8,7 +8,9 @@ import { PageResult } from './paged';
 export interface ShopZone { id: number; name: string; fee: number; minOrder: number }
 export interface ShopProduct { id: number; name: string; description: string | null; price: number; category: string | null; imageUrl: string | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT';
   /** The normal price when staff set a lower online price (shown struck through); 0 stars and 0 reviews when nobody reviewed it. */
-  wasPrice: number | null; rating: number; ratingCount: number }
+  wasPrice: number | null; rating: number; ratingCount: number;
+  /** A product with sizes, colours or models: how many options it has (0 = a plain product); priceFrom = the options do not all cost the same, so the card says "From". */
+  variants?: number; priceFrom?: boolean }
 /** One row of the specifications table of a product page. */
 export interface ProductSpec { label: string; value: string }
 export interface ProductReview { productName: string; reviewerName: string; rating: number; text: string | null; at: string }
@@ -17,7 +19,10 @@ export interface ProductDetail {
   product: ShopProduct; brand: string | null; images: string[]; specs: ProductSpec[];
   rating: { average: number; count: number; stars: number[] };
   reviews: ProductReview[]; related: ShopProduct[]; bought: ShopProduct[];
+  /** Only for a product with options: the choices (Colour: Red, Blue ...), every option with its own price, stock and pictures, and the one to show first. */
+  options?: { name: string; values: string[] }[]; variants?: ProductVariant[]; selectedVariantId?: number | null;
 }
+export interface ProductVariant { id: number; label: string; values: string[]; price: number; wasPrice: number | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT'; sku: string | null; pictures: string[] }
 /** What staff edit for a product on the shop: extra pictures and specification rows. */
 export interface ListingImage { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
 export interface ListingDetails { images: ListingImage[]; specs: ProductSpec[]; hasMainImage: boolean; maxImages: number }
@@ -153,6 +158,8 @@ export interface StoreListing {
   featured: boolean; bestSeller: boolean; specialOffer: boolean; newArrival: boolean; stockInfo: StoreStockInfo;
   /** The tax rate (percent) the shop adds on top of the price, or null when there is none or it is already in the price. */
   taxOnTopPercent: number | null;
+  /** Variants: an option has variantParentId (its product) and variantLabel; a product with options has variantOptions and variantCount; variantOff = this option is not sold online. */
+  variantParentId: number | null; variantLabel: string | null; variantOptions: string | null; variantOff: boolean; variantCount: number;
 }
 /** Why a product shows the stock it shows. tracked false = stock is not tracked for it, so the shop always shows it as in stock. */
 export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; buffer: number; sellable: number | null }

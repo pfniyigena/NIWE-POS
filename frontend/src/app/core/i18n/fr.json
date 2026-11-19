@@ -9307,5 +9307,16 @@
  "Install the app": "Installer l'application",
  "Opens in its own window and starts faster.": "S'ouvre dans sa propre fenêtre et démarre plus vite.",
  "Tap Share, then \"Add to Home Screen\".": "Touchez Partager, puis « Sur l'écran d'accueil ».",
- "Not now": "Plus tard"
+ "Not now": "Plus tard",
+ "Starting at": "À partir de",
+ "Choose options": "Choisir les options",
+ "with options": "avec options",
+ "{p0} of {p1} options in stock": "{p0} option(s) sur {p1} en stock",
+ "Hide the options": "Masquer les options",
+ "Options: price, stock, pictures": "Options : prix, stock, photos",
+ "Each option is sold with its own price and stock. The title, description, specifications and tags above are shared by all options. Leave the online price empty to use the option’s normal price.": "Chaque option est vendue avec son propre prix et son propre stock. Le titre, la description, les caractéristiques et les étiquettes ci-dessus sont communs à toutes les options. Laissez le prix en ligne vide pour utiliser le prix normal de l'option.",
+ "Sold online": "Vendu en ligne",
+ "Hide pictures": "Masquer les photos",
+ "Pictures": "Photos",
+ "Pictures of this option: shown first when the customer chooses it.": "Photos de cette option : affichées en premier quand le client la choisit."
 }
