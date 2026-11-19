@@ -90,6 +90,8 @@ export interface ShopTrack {
   loyaltyDiscount: number; pointsEarned: number;
   /** The invoice number once the order is completed (its PDF can then be downloaded), else null. */
   invoiceNumber: string | null;
+  /** The driver bringing the order, once it is out for delivery. */
+  driverName?: string | null; driverPhone?: string | null;
 }
 /** A customer account on the public shop (no passwords: a code by e-mail or text message proves the address or number). An account opened with a phone number has no e-mail. */
 export interface AccountProfile { email: string | null; phone: string | null; name: string | null; address: string | null; language: string; phoneVerified: boolean; points: number }
@@ -127,9 +129,12 @@ export interface StoreOrder {
   paymentStatus: string; paymentChannel: string | null; paymentReference: string | null; paidAmount: number | null; paidAt: string | null; refundedAt: string | null; refundReference: string | null;
   couponCode: string | null; discountAmount: number; feeWaived: number; refundedTotal: number;
   loyaltyPointsUsed: number; loyaltyDiscount: number; loyaltyPointsEarned: number;
+  driverId: number | null; driverName: string | null; driverPhone: string | null;
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
+/** A person who delivers orders (a simple list kept in the shop settings, not an employee record). openOrders = orders still to deliver. */
+export interface Driver { id: number; name: string; phone: string | null; notes: string | null; active: boolean; openOrders: number }
 export interface StoreSettings {
   enabled: boolean; paused: boolean; pauseMessage: string | null; shopName: string | null; introText: string | null; contactPhone: string | null;
   pickupAddress: string | null; pickupEnabled: boolean; deliveryEnabled: boolean; codEnabled: boolean; stockBuffer: number; minOrder: number;
@@ -332,9 +337,19 @@ export class OnlineStoreApiService {
   imageUrl(path: string): string { return `${API_BASE.replace(/\/api$/, '')}${path}`; }
 
   // ---- staff: orders
-  page(f: ListFilter, page: number, size: number): Observable<PageResult<StoreOrder>> {
-    return pagedList<StoreOrder>(this.http, `${this.base}/orders`, f, page, size, {});
+  /** driverId: 0 = delivery orders with no driver yet; another number = that driver's orders; null = all. */
+  page(f: ListFilter, page: number, size: number, driverId: number | null = null): Observable<PageResult<StoreOrder>> {
+    return pagedList<StoreOrder>(this.http, `${this.base}/orders`, f, page, size, driverId === null ? {} : { driverId: String(driverId) });
   }
+  // ---- drivers and delivery papers
+  drivers(): Observable<Driver[]> { return this.http.get<Driver[]>(`${this.base}/drivers`); }
+  saveDriver(id: number | null, body: { name: string; phone: string | null; notes: string | null; active: boolean }): Observable<Driver> {
+    return id ? this.http.put<Driver>(`${this.base}/drivers/${id}`, body) : this.http.post<Driver>(`${this.base}/drivers`, body);
+  }
+  deleteDriver(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/drivers/${id}`); }
+  assignDriver(id: number, driverId: number | null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/driver`, { driverId }); }
+  deliverySlip(id: number): Observable<Blob> { return this.http.get(`${this.base}/orders/${id}/delivery-slip`, { responseType: 'blob' }); }
+  deliveryRun(driverId: number): Observable<Blob> { return this.http.get(`${this.base}/delivery-run`, { params: { driverId }, responseType: 'blob' }); }
   // ---- information pages and the contact form
   infoLinks(lang: string): Observable<InfoLink[]> { return this.http.get<InfoLink[]>(`${this.pub}/info`, { params: { lang } }); }
   infoPage(slug: string, lang: string): Observable<InfoPage> { return this.http.get<InfoPage>(`${this.pub}/info/${slug}`, { params: { lang } }); }
@@ -356,7 +371,7 @@ export class OnlineStoreApiService {
   accept(id: number, overrideShortage: boolean): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/accept`, { overrideShortage }); }
   reject(id: number, reason: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/reject`, { reason }); }
   pack(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/pack`, {}); }
-  outForDelivery(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/out-for-delivery`, {}); }
+  outForDelivery(id: number, driverId: number | null = null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/out-for-delivery`, { driverId }); }
   readyForPickup(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/ready-for-pickup`, {}); }
   complete(id: number, body: { locationId?: number | null; collectPayment?: boolean; method?: string }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/complete`, body); }
   cancelOrder(id: number, note: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/cancel`, { note }); }

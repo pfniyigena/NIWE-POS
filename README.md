@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.52.0 - Online Store: drivers, delivery slips and run sheets
+
+A simple list of drivers in Shop settings; a driver can be chosen on each delivery order any time before delivery (and is required for "Out for delivery" when the shop has drivers). Each order has a printable PDF delivery slip, each driver a PDF run sheet (orders by area, cash to collect), a WhatsApp link sends the details to the driver, and the customer sees the driver's name and phone once the order is on its way. See `docs/online-store-delivery.md` and `RELEASE-NOTES-v1.52.0.md`. Database: migration V87.
+
 ### Version 1.51.1 - Online Store: answer a contact message inside the ERP
 
 "Reply by e-mail" in Online Store > Messages now opens a writing box; "Send the answer" e-mails the customer from the shop's e-mail (in their language, with their message quoted) and marks the message answered; the sent answer stays under the message. Database: migration V86. See `RELEASE-NOTES-v1.51.1.md`.

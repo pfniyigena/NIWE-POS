@@ -95,7 +95,8 @@ public final class OnlineStoreDtos {
     public record Track(String code, String status, String deliveryMethod, String name, String zoneName, BigDecimal subtotal,
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
-                        String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber) {
+                        String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber,
+                        String driverName, String driverPhone) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -203,7 +204,7 @@ public final class OnlineStoreDtos {
                            String paymentStatus, String paymentChannel, String paymentReference, BigDecimal paidAmount, Instant paidAt,
                            Instant refundedAt, String refundReference, String couponCode, BigDecimal discountAmount, BigDecimal feeWaived,
                            BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events,
-                           int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned) {
+                           int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned, Long driverId, String driverName, String driverPhone) {
     }
 
     public record RejectRequest(@NotNull @Size(min = 1, max = 160) String reason) {
@@ -211,6 +212,21 @@ public final class OnlineStoreDtos {
 
     /** overrideShortage: accept even when the stock does not cover the order (the sale order is then confirmed over-promised). */
     public record AcceptRequest(boolean overrideShortage) {
+    }
+
+    /** A driver of the shop; openOrders = delivery orders still to deliver that are assigned to this driver. */
+    public record DriverDto(Long id, String name, String phone, String notes, boolean active, long openOrders) {
+    }
+
+    public record DriverRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 200) String notes, Boolean active) {
+    }
+
+    /** driverId null takes the driver off the order. */
+    public record AssignDriverRequest(Long driverId) {
+    }
+
+    /** Out for delivery: an optional note and the driver (when none was assigned before). */
+    public record OutRequest(@Size(max = 200) String note, Long driverId) {
     }
 
     public record StatusNote(@Size(max = 200) String note) {

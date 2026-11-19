@@ -8,7 +8,7 @@ import { catchError } from 'rxjs/operators';
 import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
-import { OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
+import { Driver, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
@@ -44,6 +44,12 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           {{ t.label | translate }}<span class="so-tab-count" *ngIf="badge(t.key) > 0"> ({{ badge(t.key) }}<ng-container *ngIf="t.key === 'PLACED' && overdue > 0">, {{ overdue }} {{ 'late' | translate }}</ng-container>)</span>
         </button>
         <input class="form-control so-search" style="width:220px;" [placeholder]="'Search code, name, phone' | translate" [(ngModel)]="q" name="soq" (keyup.enter)="reload()" (blur)="reload()" />
+        <select *ngIf="drivers.length > 0" class="form-select so-driver-filter" style="width:200px;" [(ngModel)]="driverFilter" name="sodf" (ngModelChange)="reload()" [attr.aria-label]="'Driver' | translate">
+          <option [ngValue]="null">{{ 'All drivers' | translate }}</option>
+          <option [ngValue]="0">{{ 'Not assigned' | translate }}</option>
+          <option *ngFor="let d of drivers" [ngValue]="d.id">{{ d.name }}<ng-container *ngIf="d.openOrders > 0"> ({{ d.openOrders }})</ng-container></option>
+        </select>
+        <button *ngIf="driverFilter !== null" class="btn btn-sm btn-outline-secondary so-run" [disabled]="busy" (click)="runSheet()">🖨 {{ 'Run sheet' | translate }}</button>
       </div>
 
       <div class="card so-card mb-2" *ngFor="let o of list.rows" style="padding:0.75rem;" [style.border-left]="o.status === 'PLACED' && late(o) ? '4px solid #b91c1c' : ''">
@@ -74,6 +80,16 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           <li *ngIf="o.loyaltyPointsEarned > 0">{{ 'Loyalty points earned on this order: {p0}' | translate: { p0: o.loyaltyPointsEarned } }}</li>
           <li *ngIf="o.couponCode && o.feeWaived > 0">{{ 'Coupon {p0}: delivery fee waived ({p1})' | translate: { p0: o.couponCode, p1: (o.feeWaived | number: '1.0-2') } }}</li>
         </ul>
+        <div class="so-driver flex gap-2 mt-1" *ngIf="o.deliveryMethod === 'DELIVERY' && canAssign(o)" style="flex-wrap:wrap; align-items:center;">
+          <label class="text-muted" [attr.for]="'drv' + o.id">{{ 'Driver' | translate }}</label>
+          <select class="form-select so-driver-pick" style="width:200px;" [id]="'drv' + o.id" [ngModel]="o.driverId" (ngModelChange)="assign(o, $event)" [name]="'drv' + o.id" [disabled]="busy">
+            <option [ngValue]="null">{{ 'No driver yet' | translate }}</option>
+            <option *ngFor="let d of driversFor(o)" [ngValue]="d.id">{{ d.name }}<ng-container *ngIf="!d.active"> ({{ 'switched off' | translate }})</ng-container></option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary so-slip" [disabled]="busy" (click)="slip(o)">🖨 {{ 'Delivery slip' | translate }}</button>
+          <a class="so-wa-driver" *ngIf="driverLink(o)" [href]="driverLink(o)" target="_blank" rel="noopener" style="font-size:0.85rem; white-space:nowrap;">{{ 'Send to the driver on WhatsApp' | translate }}</a>
+        </div>
+        <div class="text-muted" *ngIf="o.deliveryMethod === 'DELIVERY' && !canAssign(o) && o.driverName" style="font-size:0.85rem;">{{ 'Driver: {p0}' | translate: { p0: o.driverName } }}<span *ngIf="o.driverPhone"> · {{ o.driverPhone }}</span></div>
         <div class="text-muted" *ngIf="o.rejectReason">{{ 'Reason: {p0}' | translate: { p0: (o.rejectReason) } }}</div>
 
         <div *ngIf="o.status === 'AWAITING_PAYMENT'" class="mt-2">
@@ -173,25 +189,86 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   multiWarehouse = false;
   fulfilOptions: LocationOption[] = [];
   methods: PaymentMethodOption[] = [];
-  list = new ListState<StoreOrder>((f, p, sz) => this.api.page(f, p, sz), 'Failed to load the online orders');
+  list = new ListState<StoreOrder>((f, p, sz) => this.api.page(f, p, sz, this.driverFilter), 'Failed to load the online orders');
   private poll: ReturnType<typeof setInterval> | null = null;
 
   constructor(public api: OnlineStoreApiService, private warehouseApi: WarehouseApiService, private storeSettingsApi: StoreSettingsApiService, private paymentMethodApi: PaymentMethodApiService) {}
+
+  drivers: Driver[] = [];
+  /** null = all orders, 0 = delivery orders without a driver, else one driver's orders. */
+  driverFilter: number | null = null;
 
   /** The country code of the shop's phone numbers, to turn 0788... into 250788... for a WhatsApp link. */
   private countryCode = '';
 
   /** A wa.me link that opens a WhatsApp chat with the customer of the order, with a short opening line the staff member can change before sending. */
   waLink(o: { customerPhone: string; customerName: string; code: string }): string | null {
-    let d = (o.customerPhone ?? '').replace(/[^0-9]/g, '');
+    const d = this.waNumber(o.customerPhone);
+    return d ? `https://wa.me/${d}?text=${encodeURIComponent(T('Hello {p0}, this is the shop about your order {p1}.', { p0: o.customerName, p1: o.code }))}` : null;
+  }
+
+  private waNumber(phone: string | null): string | null {
+    let d = (phone ?? '').replace(/[^0-9]/g, '');
     if (d.startsWith('0') && this.countryCode) d = this.countryCode + d.substring(1);
-    if (d.length < 8) return null;
-    return `https://wa.me/${d}?text=${encodeURIComponent(T('Hello {p0}, this is the shop about your order {p1}.', { p0: o.customerName, p1: o.code }))}`;
+    return d.length < 8 ? null : d;
+  }
+
+  /** A WhatsApp message to the order's driver with what he needs: who, where, how much to collect. */
+  driverLink(o: StoreOrder): string | null {
+    const d = this.waNumber(o.driverPhone);
+    if (!d) return null;
+    const collect = o.paymentStatus === 'PAID' ? T('nothing (already paid)') : String(o.total);
+    const where = (o.zoneName ? o.zoneName + ' — ' : '') + (o.customerAddress ?? '');
+    const text = T('Delivery {p0}: {p1}, {p2}. Address: {p3}. To collect: {p4}.', { p0: o.code, p1: o.customerName, p2: o.customerPhone, p3: where, p4: collect });
+    return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
+  }
+
+  /** The driver can be set or changed until the order is delivered. */
+  canAssign(o: StoreOrder): boolean {
+    return ['PLACED', 'ACCEPTED', 'PACKED', 'OUT_FOR_DELIVERY'].includes(o.status);
+  }
+
+  /** The drivers to pick from: those switched on, plus the order's current one even if switched off since. */
+  driversFor(o: StoreOrder): Driver[] {
+    return this.drivers.filter((d) => d.active || d.id === o.driverId);
+  }
+
+  assign(o: StoreOrder, driverId: number | null): void {
+    this.run(this.api.assignDriver(o.id, driverId));
+  }
+
+  private open(call: import('rxjs').Observable<Blob>): void {
+    this.busy = true;
+    this.error = null;
+    call.subscribe({
+      next: (b) => {
+        this.busy = false;
+        window.open(URL.createObjectURL(b), '_blank');
+      },
+      error: (e) => {
+        this.busy = false;
+        this.error = T('Could not open the file');
+        void e;
+      },
+    });
+  }
+
+  slip(o: StoreOrder): void {
+    this.open(this.api.deliverySlip(o.id));
+  }
+
+  runSheet(): void {
+    if (this.driverFilter !== null) this.open(this.api.deliveryRun(this.driverFilter));
+  }
+
+  private loadDrivers(): void {
+    this.api.drivers().pipe(catchError(() => of([] as Driver[]))).subscribe((d) => (this.drivers = d));
   }
 
   ngOnInit(): void {
     this.api.settings().subscribe({ next: (s) => (this.countryCode = (s.textCountryCode ?? '').replace(/[^0-9]/g, '')), error: () => {} });
     this.loadOptions();
+    this.loadDrivers();
     this.reload();
     this.poll = setInterval(() => {
       if (!this.busy) this.list.load();
@@ -253,6 +330,7 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   }
 
   reload(): void {
+    this.loadDrivers();
     const f = emptyFilter();
     f.q = this.q;
     f.status = this.tab;

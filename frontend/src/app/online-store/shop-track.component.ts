@@ -28,6 +28,7 @@ import { ShopAdComponent } from './shop-ad.component';
         <div class="card mb-3" style="padding:1rem; text-align:center;" [style.borderColor]="bad() ? '#dc2626' : t.status === 'COMPLETED' ? '#16a34a' : ''">
           <div class="st-stage" style="font-weight:700;">{{ stageTitle() | translate }}</div>
           <div class="st-reason mt-1" *ngIf="t.rejectReason" style="color:#b91c1c;">{{ t.rejectReason }}</div>
+          <div class="st-driver mt-1" *ngIf="t.status === 'OUT_FOR_DELIVERY' && t.driverName">{{ 'Your driver: {p0}' | translate: { p0: t.driverName } }}<ng-container *ngIf="t.driverPhone"> · <a [href]="'tel:' + t.driverPhone">{{ t.driverPhone }}</a></ng-container></div>
           <div class="flex gap-1 mt-2" *ngIf="!bad()" style="justify-content:center;">
             <span *ngFor="let s of steps()" [style.background]="s.reached ? '#16a34a' : '#d1d5db'" style="height:6px; flex:1; border-radius:3px;" [title]="s.label | translate"></span>
           </div>

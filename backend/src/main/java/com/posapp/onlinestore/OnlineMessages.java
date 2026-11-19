@@ -37,15 +37,25 @@ final class OnlineMessages {
     }
 
     /** A text written in English with {0}, {1} values; it is put into the customer's language only when the mail is sent. */
-    record Msg(String english, Object[] args, String suffix) {
+    record Msg(String english, Object[] args, String suffix, Msg next) {
         /** The same text followed by something that needs no translation (an address, say). */
         Msg plus(String more) {
-            return new Msg(english, args, suffix + (more == null ? "" : more));
+            return new Msg(english, args, suffix + (more == null ? "" : more), next);
+        }
+
+        /** The same text followed by another sentence that is translated too (put into the customer's language when the message is sent). */
+        Msg then(Msg other) {
+            return new Msg(english, args, suffix, next == null ? other : next.then(other));
+        }
+
+        /** The text in the language, the following sentences after it. */
+        String render(String lang) {
+            return I18n.tIn(lang, english, args) + suffix + (next == null ? "" : " " + next.render(lang));
         }
     }
 
     static Msg m(String english, Object... args) {
-        return new Msg(english, args, "");
+        return new Msg(english, args, "", null);
     }
 
     /** The mail goes in the language the customer chose in the shop (stored on the order), not the business language. */
@@ -54,7 +64,7 @@ final class OnlineMessages {
         if (o.getCustomerEmail() == null || o.getCustomerEmail().isBlank() || !mailService.isConfigured()) return;
         try {
             String subject = I18n.tIn(o.getLanguage(), subjectMsg.english(), subjectMsg.args());
-            String text = I18n.tIn(o.getLanguage(), textMsg.english(), textMsg.args()) + textMsg.suffix();
+            String text = textMsg.render(o.getLanguage());
             String shop = storeSettingsService.getSettingsEntity().getBusinessName();
             String link = linkParagraph("/shop/order/" + o.getCode(), I18n.tIn(o.getLanguage(), "View your order {0}", o.getCode()));
             String body = "<p>" + escape(text) + "</p>" + link + (shop == null || shop.isBlank() ? "" : "<p>" + escape(shop) + "</p>");
@@ -69,7 +79,7 @@ final class OnlineMessages {
         OnlineTextService t = texts;
         if (t == null || !o.isTextOptIn()) return;
         try {
-            t.orderUpdate(o, I18n.tIn(o.getLanguage(), textMsg.english(), textMsg.args()) + textMsg.suffix());
+            t.orderUpdate(o, textMsg.render(o.getLanguage()));
         } catch (RuntimeException e) {
             log.warn("Could not text online order {}: {}", o.getCode(), e.getMessage());
         }

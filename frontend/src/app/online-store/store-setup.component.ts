@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { Driver, OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -335,6 +335,31 @@ import { API_BASE } from '../core/constants';
           </tbody>
         </table>
       </div>
+
+      <div class="card mb-3 drivers-card" style="padding:1rem;">
+        <h4 class="mb-2">{{ 'Drivers' | translate }}</h4>
+        <p class="text-muted">{{ 'The people who deliver orders. On an order you choose the driver, print the delivery slip, and the customer sees the driver\'s name and phone once the order is on its way. A driver is not an employee record: just a name and a phone number.' | translate }}</p>
+        <table class="table-sm">
+          <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Phone' | translate }}</th><th>{{ 'Note' | translate }}</th><th>{{ 'Active' | translate }}</th><th class="text-end">{{ 'To deliver' | translate }}</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let d of drivers">
+              <td><input class="form-control" style="width:170px;" maxlength="80" [name]="'dn' + d.id" [(ngModel)]="d.name" /></td>
+              <td><input class="form-control" style="width:140px;" maxlength="40" [name]="'dp' + d.id" [(ngModel)]="d.phone" /></td>
+              <td><input class="form-control" style="width:200px;" maxlength="200" [name]="'dt' + d.id" [(ngModel)]="d.notes" /></td>
+              <td><input type="checkbox" [name]="'da' + d.id" [(ngModel)]="d.active" /></td>
+              <td class="text-end">{{ d.openOrders }}</td>
+              <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveDriver(d)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteDriver(d)">{{ 'Remove' | translate }}</button></td>
+            </tr>
+            <tr>
+              <td><input class="form-control" style="width:170px;" maxlength="80" name="newDriverName" [(ngModel)]="newDriver.name" [placeholder]="'New driver' | translate" /></td>
+              <td><input class="form-control" style="width:140px;" maxlength="40" name="newDriverPhone" [(ngModel)]="newDriver.phone" /></td>
+              <td><input class="form-control" style="width:200px;" maxlength="200" name="newDriverNotes" [(ngModel)]="newDriver.notes" /></td>
+              <td></td><td></td>
+              <td><button class="btn btn-sm btn-primary" type="button" (click)="addDriver()">{{ 'Add driver' | translate }}</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </app-shell>
   `,
 })
@@ -355,6 +380,8 @@ export class StoreSetupComponent implements OnInit {
   found: Product[] = [];
   search = '';
   newZone: { name: string; fee: number; minOrder: number } = { name: '', fee: 0, minOrder: 0 };
+  drivers: Driver[] = [];
+  newDriver: { name: string; phone: string; notes: string } = { name: '', phone: '', notes: '' };
   error: string | null = null;
   message: string | null = null;
   busy = false;
@@ -391,6 +418,7 @@ export class StoreSetupComponent implements OnInit {
     this.api.banners().subscribe({ next: (b) => (this.banners = b), error: () => {} });
     this.loadListings();
     this.loadZones();
+    this.loadDrivers();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });
   }
 
@@ -664,5 +692,26 @@ export class StoreSetupComponent implements OnInit {
   deleteZone(z: StoreZone): void {
     if (!confirm(T('Remove the area {p0}?', { p0: z.name }))) return;
     this.api.deleteZone(z.id).subscribe({ next: () => { this.loadZones(); this.ok('Removed'); }, error: (e) => this.fail(e, 'Could not remove the area') });
+  }
+
+  loadDrivers(): void {
+    this.api.drivers().subscribe({ next: (d) => (this.drivers = d), error: (e) => this.fail(e, 'Failed to load the drivers') });
+  }
+
+  addDriver(): void {
+    if (!this.newDriver.name.trim()) { this.error = T('Enter the driver\'s name.'); return; }
+    this.api.saveDriver(null, { name: this.newDriver.name, phone: this.newDriver.phone.trim() || null, notes: this.newDriver.notes.trim() || null, active: true }).subscribe({
+      next: () => { this.newDriver = { name: '', phone: '', notes: '' }; this.loadDrivers(); this.ok('Driver added'); },
+      error: (e) => this.fail(e, 'Could not add the driver'),
+    });
+  }
+
+  saveDriver(d: Driver): void {
+    this.api.saveDriver(d.id, { name: d.name, phone: d.phone, notes: d.notes, active: d.active }).subscribe({ next: () => { this.loadDrivers(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the driver') });
+  }
+
+  deleteDriver(d: Driver): void {
+    if (!confirm(T('Remove the driver {p0}?', { p0: d.name }))) return;
+    this.api.deleteDriver(d.id).subscribe({ next: () => { this.loadDrivers(); this.ok('Removed'); }, error: (e) => this.fail(e, 'Could not remove the driver') });
   }
 }

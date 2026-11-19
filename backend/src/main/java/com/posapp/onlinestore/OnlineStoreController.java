@@ -59,8 +59,8 @@ public class OnlineStoreController {
     @PreAuthorize(VIEW)
     @GetMapping("/orders")
     public ResponseEntity<List<OrderDto>> list(@RequestParam(required = false) String q, @RequestParam(required = false) String status,
-                                               @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
-        return ListPaging.of(orders.list(q, status), page, size);
+                                               @RequestParam(required = false) Long driverId, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
+        return ListPaging.of(orders.list(q, status, driverId), page, size);
     }
 
     @PreAuthorize(VIEW)
@@ -148,8 +148,8 @@ public class OnlineStoreController {
 
     @PreAuthorize(MANAGE)
     @PostMapping("/orders/{id}/out-for-delivery")
-    public OrderDto outForDelivery(@PathVariable Long id, @RequestBody(required = false) StatusNote request) {
-        return orders.outForDelivery(id, request == null ? null : request.note());
+    public OrderDto outForDelivery(@PathVariable Long id, @RequestBody(required = false) OutRequest request) {
+        return orders.outForDelivery(id, request == null ? null : request.note(), request == null ? null : request.driverId());
     }
 
     @PreAuthorize(MANAGE)

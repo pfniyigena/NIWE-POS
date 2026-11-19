@@ -37,6 +37,7 @@ import java.util.Set;
 public class OnlineOrderService {
 
     private final ShopLoyaltyService loyalty;
+    private final OnlineDriverRepository drivers;
 
     private static final Set<String> OPEN = Set.of("PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
 
@@ -52,7 +53,9 @@ public class OnlineOrderService {
 
     public OnlineOrderService(OnlineOrderRepository repository, OnlineStoreService storeService, CustomerRepository customerRepository,
                               SalesOrderService salesOrderService, InvoiceService invoiceService, StoreSettingsService storeSettingsService,
-                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, ShopLoyaltyService loyalty) {
+                              MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, ShopLoyaltyService loyalty,
+                              OnlineDriverRepository drivers) {
+        this.drivers = drivers;
         this.loyalty = loyalty;
         this.payments = payments;
         this.repository = repository;
@@ -92,11 +95,12 @@ public class OnlineOrderService {
     // ------------------------------------------------------------------ reading
 
     @Transactional(readOnly = true)
-    public List<OrderDto> list(String q, String status) {
+    public List<OrderDto> list(String q, String status, Long driverId) {
         String needle = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
         String wanted = status == null || status.isBlank() ? null : status.trim().toUpperCase(Locale.ROOT);
         return repository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(o -> wanted == null || (wanted.equals("OPEN") ? OPEN.contains(o.getStatus()) : wanted.equals("REFUND_DUE") ? o.getPaymentStatus().equals("REFUND_DUE") : o.getStatus().equals(wanted)))
+                .filter(o -> driverId == null || (driverId == 0 ? o.getDriverId() == null && "DELIVERY".equals(o.getDeliveryMethod()) : driverId.equals(o.getDriverId())))
                 .filter(o -> needle.isEmpty() || o.getCode().toLowerCase(Locale.ROOT).contains(needle)
                         || o.getCustomerName().toLowerCase(Locale.ROOT).contains(needle) || o.getCustomerPhone().contains(needle))
                 .map(OnlineOrderService::dto).toList();
@@ -254,15 +258,58 @@ public class OnlineOrderService {
     }
 
     @Transactional
-    public OrderDto outForDelivery(Long id, String note) {
+    public OrderDto outForDelivery(Long id, String note, Long driverId) {
         OnlineOrder o = getOrThrow(id);
         expect(o, "ACCEPTED", "PACKED");
         if (!o.getDeliveryMethod().equals("DELIVERY")) throw ApiException.badRequest(I18n.t("This is a pick-up order"));
+        if (driverId != null) setDriver(o, driverId);
+        // when the shop has drivers, somebody must be taking the order
+        if (o.getDriverId() == null && drivers.countByActiveTrue() > 0) throw ApiException.badRequest(I18n.t("Choose the driver who takes this order."));
         move(o, "OUT_FOR_DELIVERY", note);
         repository.save(o);
-        tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), paid(o) ? OnlineMessages.m("Your order {0} is on its way. It is already paid.", o.getCode())
-                : OnlineMessages.m("Your order {0} is on its way. Please keep {1} ready to pay on delivery.", o.getCode(), OnlineStoreService.money(o.getTotal())));
+        OnlineMessages.Msg text = paid(o) ? OnlineMessages.m("Your order {0} is on its way. It is already paid.", o.getCode())
+                : OnlineMessages.m("Your order {0} is on its way. Please keep {1} ready to pay on delivery.", o.getCode(), OnlineStoreService.money(o.getTotal()));
+        if (o.getDriverName() != null) {
+            text = text.then(o.getDriverPhone() != null ? OnlineMessages.m("Your driver is {0}, phone {1}.", o.getDriverName(), o.getDriverPhone())
+                    : OnlineMessages.m("Your driver is {0}.", o.getDriverName()));
+        }
+        tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), text);
         return dto(o);
+    }
+
+    /** Chooses (or, with null, removes) the driver of a delivery order that is not delivered yet. */
+    @Transactional
+    public OrderDto assignDriver(Long id, Long driverId) {
+        OnlineOrder o = getOrThrow(id);
+        expect(o, "PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY");
+        if (!"DELIVERY".equals(o.getDeliveryMethod())) throw ApiException.badRequest(I18n.t("This is a pick-up order"));
+        String before = o.getDriverName();
+        setDriver(o, driverId);
+        OnlineOrderEvent ev = new OnlineOrderEvent();
+        ev.setOnlineOrder(o);
+        ev.setStatus(o.getStatus());
+        ev.setNote(o.getDriverName() == null ? I18n.t("Driver removed") : I18n.t("Driver: {0}", o.getDriverName()));
+        ev.setByUser(user());
+        o.getEvents().add(ev);
+        repository.save(o);
+        auditLogService.record("ONLINE_ORDER_DRIVER", "Online order " + o.getCode() + ": driver " + (o.getDriverName() == null ? "removed (was " + before + ")" : o.getDriverName()), "OnlineOrder", o.getId());
+        return dto(o);
+    }
+
+    private void setDriver(OnlineOrder o, Long driverId) {
+        if (driverId == null) {
+            o.setDriverId(null);
+            o.setDriverName(null);
+            o.setDriverPhone(null);
+            o.setDriverAssignedAt(null);
+            return;
+        }
+        OnlineDriver d = drivers.findById(driverId).orElseThrow(() -> ApiException.notFound(I18n.t("Driver not found")));
+        if (!d.isActive() && !driverId.equals(o.getDriverId())) throw ApiException.badRequest(I18n.t("This driver is switched off."));
+        o.setDriverId(d.getId());
+        o.setDriverName(d.getName());
+        o.setDriverPhone(d.getPhone());
+        o.setDriverAssignedAt(java.time.Instant.now());
     }
 
     @Transactional
@@ -387,6 +434,6 @@ public class OnlineOrderService {
                 o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getRefundedTotal(),
                 o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList(),
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList(),
-                o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned());
+                o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone());
     }
 }

@@ -82,6 +82,11 @@ public class OnlineOrder extends BaseEntity {
     private Instant decidedAt;
     private String decidedBy;
     private String rejectReason;
+    /** The driver chosen for a delivery order (name and phone are copies, kept for the slip and the history). */
+    private Long driverId;
+    private String driverName;
+    private String driverPhone;
+    private Instant driverAssignedAt;
 
     @OneToMany(mappedBy = "onlineOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OnlineOrderLine> lines = new ArrayList<>();
