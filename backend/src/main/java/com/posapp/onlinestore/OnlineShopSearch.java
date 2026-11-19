@@ -31,6 +31,10 @@ public class OnlineShopSearch {
 
     /** The price the customer sees, as an expression: the online or normal price plus tax when the tax is added on top. */
     private static final String SHOWN = "(coalesce(l.onlinePrice, p.unitPrice) * (1 + case when t.id is not null and t.inclusive = false then coalesce(t.ratePercent, 0) / 100 else 0 end))";
+    private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = p and ps.location.active = true "
+            + "and (ps.location.type is null or ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)) "
+            + "- (select coalesce(sum(sl.quantityOrdered - sl.quantityFulfilled), 0) from SalesOrderLine sl where sl.product.id = p.id "
+            + "and sl.salesOrder.status in (com.posapp.salesorder.SalesOrderStatus.CONFIRMED, com.posapp.salesorder.SalesOrderStatus.PARTIALLY_FULFILLED)))";
     private static final String RATING = "(select coalesce(avg(r.rating), 0) from OnlineReview r where r.productId = p.id and r.status = 'APPROVED')";
     private static final String SOLD = "(select coalesce(sum(ol.quantity), 0) from OnlineOrderLine ol where ol.productId = p.id)";
 
@@ -46,7 +50,8 @@ public class OnlineShopSearch {
         return out;
     }
 
-    public Page<OnlineListing> search(Filter f, int page, int size) {
+    /** buffer: the shop's safety stock (Shop settings), taken off what may be sold, exactly as the stock word on the card does. */
+    public Page<OnlineListing> search(Filter f, int page, int size, int buffer) {
         StringBuilder from = new StringBuilder("from OnlineListing l join l.product p left join p.category c left join p.brand b left join p.taxRate t "
                 + "where l.listed = true and p.active = true");
         List<Object[]> params = new ArrayList<>();
@@ -75,8 +80,11 @@ public class OnlineShopSearch {
             from.append(" and ").append(SHOWN).append(" <= :maxPrice");
             params.add(new Object[]{"maxPrice", f.maxPrice()});
         }
-        // Availability is judged on the product's own stock figure; the exact "sellable now" still shows on the card and is checked again at checkout.
-        if (f.inStock()) from.append(" and (p.trackStock = false or p.service = true or p.stockQuantity > 0)");
+        // Same rule as the stock word on the card: sellable stock (active, undamaged locations) minus what confirmed orders promised minus the shop's buffer.
+        if (f.inStock()) {
+            from.append(" and (p.trackStock = false or p.service = true or ").append(SELLABLE).append(" - :buffer > 0)");
+            params.add(new Object[]{"buffer", java.math.BigDecimal.valueOf(Math.max(0, buffer))});
+        }
         if (f.minRating() >= 1) {
             from.append(" and ").append(RATING).append(" >= :minRating");
             params.add(new Object[]{"minRating", (double) Math.min(5, f.minRating())});

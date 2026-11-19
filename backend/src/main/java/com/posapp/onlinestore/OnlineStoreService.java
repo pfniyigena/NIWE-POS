@@ -221,7 +221,7 @@ public class OnlineStoreService {
         OnlineStoreSettings s = openSettings();
         int pageSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         int pageNo = Math.max(0, page);
-        org.springframework.data.domain.Page<OnlineListing> result = search.search(filter, pageNo, pageSize);
+        org.springframework.data.domain.Page<OnlineListing> result = search.search(filter, pageNo, pageSize, s.getStockBuffer());
         List<PublicProduct> items = new ArrayList<>();
         for (OnlineListing l : result.getContent()) items.add(publicProduct(l, s));
         return new PublicProductPage(items, pageNo, pageSize, result.getTotalElements(), result.getTotalPages());
@@ -235,7 +235,7 @@ public class OnlineStoreService {
         if (words.isEmpty() || String.join("", words).length() < 2) return new Suggestions(List.of(), List.of(), List.of());
         String needle = String.join(" ", words);
         List<PublicProduct> items = new ArrayList<>();
-        for (OnlineListing l : search.search(new OnlineShopSearch.Filter(needle, null, null, null, null, false, 0, null), 0, 6).getContent()) items.add(publicProduct(l, s));
+        for (OnlineListing l : search.search(new OnlineShopSearch.Filter(needle, null, null, null, null, false, 0, null), 0, 6, s.getStockBuffer()).getContent()) items.add(publicProduct(l, s));
         List<String> cats = listingRepository.findShopCategories().stream().filter(c -> c.toLowerCase().contains(words.get(0))).limit(3).toList();
         List<String> brands = listingRepository.findShopBrands().stream().filter(b -> b.toLowerCase().contains(words.get(0))).limit(3).toList();
         return new Suggestions(items, cats, brands);

@@ -15,7 +15,7 @@ Shop settings > Front page has two new settings:
 Everything else is automatic: category tile pictures come from the products' own pictures, "most popular" and "bought together" come from the online orders.
 
 ## Notes
-- The in-stock filter uses the stock figure of the product; checkout still checks the real sellable stock.
+- "In stock only" uses the same rule as the stock word on the card: sellable stock minus what confirmed orders promised minus the shop's buffer.
 - Price filters and sorting use the price the customer sees (tax added when it is on top).
 - Not built yet: wishlist, product variants (size, colour), bank card payments.
 
