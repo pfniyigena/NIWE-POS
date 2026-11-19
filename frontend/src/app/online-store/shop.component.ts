@@ -184,12 +184,7 @@ import { T } from '../core/i18n/t';
 
         <ng-container *ngIf="landing">
           <ng-container *ngFor="let r of rowsAfter; trackBy: trackRow"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
-          <section class="shop-recent" *ngIf="recent.length" style="margin-top:2rem;">
-            <h3 style="margin:0 0 0.75rem;">{{ 'Recently viewed' | translate }}</h3>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
-              <ng-container *ngFor="let p of recent"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
-            </div>
-          </section>
+          <ng-container *ngIf="recent.length"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: recentRow }"></ng-container></ng-container>
         </ng-container>
 
         <ng-container *ngIf="landing">
@@ -915,6 +910,8 @@ export class ShopComponent implements OnInit, OnDestroy {
   // ---- category tiles, quick view, recently viewed
   qv: ShopProduct | null = null;
   recent: ShopProduct[] = [];
+  /** The Recently viewed products as one more sliding row (same look and movement as the other rows). */
+  recentRow: { key: string; title: string; items: ShopProduct[] } = { key: 'recent', title: 'Recently viewed', items: [] };
 
   tileImg(u: string): string {
     return this.api.imageUrl(u) + '?w=320';
@@ -935,7 +932,7 @@ export class ShopComponent implements OnInit, OnDestroy {
       this.recent = [];
       return;
     }
-    this.api.recent(ids).subscribe({ next: (r) => (this.recent = r), error: () => (this.recent = []) });
+    this.api.recent(ids).subscribe({ next: (r) => { this.recent = r; this.recentRow = { key: 'recent', title: 'Recently viewed', items: r }; }, error: () => { this.recent = []; this.recentRow = { key: 'recent', title: 'Recently viewed', items: [] }; } });
   }
 
   // ---- suggestions while typing
