@@ -153,8 +153,10 @@ public class OnlineAdService {
     public AdDto save(Long id, AdForm in, MultipartFile file) throws IOException {
         if (in == null) throw ApiException.badRequest(I18n.t("Fill in the ad first."));
         OnlineAd a = id == null ? new OnlineAd() : ads.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Not found.")));
-        if (in.advertiserId() == null) throw ApiException.badRequest(I18n.t("Choose the advertiser."));
-        a.setAdvertiser(advertisers.findById(in.advertiserId()).orElseThrow(() -> ApiException.badRequest(I18n.t("Choose the advertiser."))));
+        // When an ad is changed and the form carries no advertiser, the ad keeps the one it has.
+        Long advertiserId = in.advertiserId() != null ? in.advertiserId() : (id != null && a.getAdvertiser() != null ? a.getAdvertiser().getId() : null);
+        if (advertiserId == null) throw ApiException.badRequest(I18n.t("Choose the advertiser."));
+        a.setAdvertiser(advertisers.findById(advertiserId).orElseThrow(() -> ApiException.badRequest(I18n.t("Choose the advertiser."))));
         String title = clean(in.title(), 120);
         if (title == null) throw ApiException.badRequest(I18n.t("Enter a title for the ad (staff see it, the shop does not)."));
         a.setTitle(title);

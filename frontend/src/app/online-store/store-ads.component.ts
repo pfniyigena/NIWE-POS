@@ -38,7 +38,7 @@ import { T } from '../core/i18n/t';
           <h4 class="mb-2">{{ editingAd ? ('Change the ad' | translate) : ('New ad' | translate) }}</h4>
           <div class="flex gap-3" style="flex-wrap:wrap;">
             <div class="form-group"><label class="form-label">{{ 'Advertiser' | translate }}</label>
-              <select class="form-select ad-advertiser" name="advertiser" [(ngModel)]="af.advertiserId">
+              <select class="form-select ad-advertiser" name="advertiser" [(ngModel)]="af.advertiserId" [compareWith]="sameId">
                 <option [ngValue]="null">—</option>
                 <option *ngFor="let a of advertisers" [ngValue]="a.id">{{ a.name }}{{ a.active ? '' : (' (' + ('off' | translate) + ')') }}</option>
               </select></div>
@@ -228,6 +228,11 @@ export class StoreAdsComponent implements OnInit {
     return { advertiserId: null, title: '', placements: ['HOME_TOP'], linkUrl: '', altText: '', startsOn: '', endsOn: '', active: true, fee: '', feeNote: '', feePaid: false };
   }
 
+  /** The advertiser list matches by number, whatever way the id arrives (number or text). */
+  sameId(a: unknown, b: unknown): boolean {
+    return a === b || (a != null && b != null && Number(a) === Number(b));
+  }
+
   imageSrc(path: string): string {
     return this.api.imageUrl(path);
   }
@@ -285,7 +290,9 @@ export class StoreAdsComponent implements OnInit {
     this.error = null;
     this.message = null;
     this.busy = true;
-    this.api.saveAd(this.editingAd?.id ?? null, { ...this.af, fee: this.af.fee === null ? '' : String(this.af.fee) }, this.file).subscribe({
+    // an ad that is being changed keeps its advertiser if the choice was lost
+    const advertiserId = this.af.advertiserId ?? this.editingAd?.advertiserId ?? null;
+    this.api.saveAd(this.editingAd?.id ?? null, { ...this.af, advertiserId, fee: this.af.fee === null ? '' : String(this.af.fee) }, this.file).subscribe({
       next: () => { this.busy = false; this.message = T('Ad saved'); this.resetAd(); this.load(); },
       error: (e) => { this.busy = false; this.fail(e, 'Could not save the ad'); },
     });
