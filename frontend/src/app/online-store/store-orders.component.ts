@@ -41,7 +41,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
 
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
         <button *ngFor="let t of tabs" class="btn btn-sm so-tab" [class.btn-primary]="tab === t.key" [class.btn-outline-secondary]="tab !== t.key" (click)="setTab(t.key)">
-          {{ t.label | translate }}<span *ngIf="t.key === 'PLACED' && pending > 0"> ({{ pending }}<ng-container *ngIf="overdue > 0">, {{ overdue }} {{ 'late' | translate }}</ng-container>)</span><span *ngIf="t.key === 'AWAITING_PAYMENT' && awaiting > 0"> ({{ awaiting }})</span><span *ngIf="t.key === 'REFUND_DUE' && refundsDue > 0"> ({{ refundsDue }})</span>
+          {{ t.label | translate }}<span class="so-tab-count" *ngIf="badge(t.key) > 0"> ({{ badge(t.key) }}<ng-container *ngIf="t.key === 'PLACED' && overdue > 0">, {{ overdue }} {{ 'late' | translate }}</ng-container>)</span>
         </button>
         <input class="form-control so-search" style="width:220px;" [placeholder]="'Search code, name, phone' | translate" [(ngModel)]="q" name="soq" (keyup.enter)="reload()" (blur)="reload()" />
       </div>
@@ -152,6 +152,12 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   alertMinutes = 0;
   awaiting = 0;
   refundsDue = 0;
+  /** How many orders each of the other tabs holds. */
+  openCount = 0;
+  completedCount = 0;
+  rejectedCount = 0;
+  cancelledCount = 0;
+  allCount = 0;
   /** Returns waiting for an answer or for the goods: the badge on the Returns button. */
   returnsWaiting = 0;
   /** Refunds to give and payments to look at: the badge on the Online payments button. */
@@ -227,6 +233,20 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     return labels[s] ?? s;
   }
 
+  /** The number of orders on a tab (shown in brackets after its name when there are some). */
+  badge(key: string): number {
+    switch (key) {
+      case 'PLACED': return this.pending;
+      case 'AWAITING_PAYMENT': return this.awaiting;
+      case 'OPEN': return this.openCount;
+      case 'REFUND_DUE': return this.refundsDue;
+      case 'COMPLETED': return this.completedCount;
+      case 'REJECTED': return this.rejectedCount;
+      case 'CANCELLED': return this.cancelledCount;
+      default: return this.allCount;
+    }
+  }
+
   setTab(t: string): void {
     this.tab = t;
     this.reload();
@@ -258,6 +278,11 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
         this.alertMinutes = r.alertMinutes ?? 0;
         this.awaiting = r.awaitingPayment ?? 0;
         this.refundsDue = r.refundsDue ?? 0;
+        this.openCount = r.open ?? 0;
+        this.completedCount = r.completed ?? 0;
+        this.rejectedCount = r.rejected ?? 0;
+        this.cancelledCount = r.cancelled ?? 0;
+        this.allCount = r.all ?? 0;
         this.attention = (r.refundsDue ?? 0) + (r.paymentsToReview ?? 0);
         this.returnsWaiting = (r.returnsRequested ?? 0) + (r.returnsToRefund ?? 0);
       },

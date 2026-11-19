@@ -119,6 +119,12 @@ public class OnlineOrderService {
         long overdue = minutes > 0 ? repository.countByStatusAndCreatedAtBefore("PLACED", java.time.Instant.now().minusSeconds(60L * minutes)) : 0;
         java.util.Map<String, Long> out = new java.util.LinkedHashMap<>(payments.attentionCounts());
         out.put("pending", repository.countByStatus("PLACED"));
+        // the numbers on the other tabs of Online orders
+        out.put("open", repository.countByStatusIn(OPEN));
+        out.put("completed", repository.countByStatus("COMPLETED"));
+        out.put("rejected", repository.countByStatus("REJECTED"));
+        out.put("cancelled", repository.countByStatus("CANCELLED"));
+        out.put("all", repository.count());
         out.put("overdue", overdue);
         out.put("alertMinutes", (long) minutes);
         return out;

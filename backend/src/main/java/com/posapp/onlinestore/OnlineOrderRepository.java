@@ -30,6 +30,8 @@ public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> 
 
     long countByStatus(String status);
 
+    long countByStatusIn(java.util.Collection<String> statuses);
+
     long countByStatusAndCreatedAtBefore(String status, Instant before);
 
     /** Orders still waiting for an answer that the shop has not been told about yet. */

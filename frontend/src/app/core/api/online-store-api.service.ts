@@ -146,7 +146,7 @@ export interface PaymentRow {
 }
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
-export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; reviewsPending?: number }
+export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; reviewsPending?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
 export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;

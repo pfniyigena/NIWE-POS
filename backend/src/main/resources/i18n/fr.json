@@ -1944,5 +1944,8 @@
  "You can save up to {0} addresses. Remove one first.": "Vous pouvez enregistrer jusqu'à {0} adresses. Supprimez-en une d'abord.",
  "Address not found": "Adresse introuvable",
  "Your wishlist is full.": "Votre liste de souhaits est pleine.",
- "The invoice is ready once your order is completed.": "La facture est disponible une fois votre commande terminée."
+ "The invoice is ready once your order is completed.": "La facture est disponible une fois votre commande terminée.",
+ "View your order {0}": "Voir votre commande {0}",
+ "Open order {0} in Online orders": "Ouvrir la commande {0} dans Commandes en ligne",
+ "Open Online orders": "Ouvrir Commandes en ligne"
 }

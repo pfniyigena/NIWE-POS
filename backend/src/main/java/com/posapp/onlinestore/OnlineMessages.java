@@ -20,6 +20,19 @@ final class OnlineMessages {
         texts = service;
     }
 
+    /** The address of the app (no trailing slash), set once at start-up by {@link OnlineMessageLinks}: the links in the e-mails start with it. */
+    private static volatile String frontendUrl = "";
+
+    static void frontendUrl(String url) {
+        frontendUrl = url == null ? "" : url.trim().replaceAll("/+$", "");
+    }
+
+    /** A link, as a paragraph, or nothing when the address of the app is not known. */
+    private static String linkParagraph(String path, String label) {
+        if (frontendUrl.isEmpty()) return "";
+        return "<p><a href=\"" + escape(frontendUrl + path) + "\">" + escape(label) + "</a></p>";
+    }
+
     private OnlineMessages() {
     }
 
@@ -43,7 +56,8 @@ final class OnlineMessages {
             String subject = I18n.tIn(o.getLanguage(), subjectMsg.english(), subjectMsg.args());
             String text = I18n.tIn(o.getLanguage(), textMsg.english(), textMsg.args()) + textMsg.suffix();
             String shop = storeSettingsService.getSettingsEntity().getBusinessName();
-            String body = "<p>" + escape(text) + "</p>" + (shop == null || shop.isBlank() ? "" : "<p>" + escape(shop) + "</p>");
+            String link = linkParagraph("/shop/order/" + o.getCode(), I18n.tIn(o.getLanguage(), "View your order {0}", o.getCode()));
+            String body = "<p>" + escape(text) + "</p>" + link + (shop == null || shop.isBlank() ? "" : "<p>" + escape(shop) + "</p>");
             mailService.send(o.getCustomerEmail(), subject, body, List.of());
         } catch (RuntimeException e) {
             log.warn("Could not e-mail online order {}: {}", o.getCode(), e.getMessage());
@@ -103,6 +117,7 @@ final class OnlineMessages {
             b.append("</p>");
             if (o.getNotes() != null && !o.getNotes().isBlank()) b.append("<p>Note: ").append(escape(o.getNotes())).append("</p>");
             b.append("<p>").append(escape(I18n.t("Open Online Store > Online orders to accept or reject it."))).append("</p>");
+            b.append(linkParagraph("/admin/online-store/orders", I18n.t("Open order {0} in Online orders", o.getCode())));
             mailService.send(to, I18n.t("New online order {0}", o.getCode()), b.toString(), List.of());
         } catch (RuntimeException e) {
             log.warn("Could not e-mail the shop about online order {}: {}", o.getCode(), e.getMessage());
@@ -138,6 +153,7 @@ final class OnlineMessages {
                         .append(", ").append(escape(OnlineStoreService.money(o.getTotal()))).append(" (").append(waited).append(" min)</li>");
             }
             b.append("</ul><p>").append(escape(I18n.t("Open Online Store > Online orders to accept or reject it."))).append("</p>");
+            b.append(linkParagraph("/admin/online-store/orders", I18n.t("Open Online orders")));
             mailService.send(to, I18n.t("Online orders are waiting for an answer"), b.toString(), List.of());
         } catch (RuntimeException e) {
             log.warn("Could not e-mail the shop about waiting online orders: {}", e.getMessage());
