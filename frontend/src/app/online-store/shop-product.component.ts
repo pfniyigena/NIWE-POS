@@ -8,6 +8,7 @@ import { recentIds, rememberProduct } from './recent';
 import { ShopRailComponent } from './shop-rail.component';
 import { WishlistService } from './wishlist.service';
 import { ShopAdComponent } from './shop-ad.component';
+import { ShopSeoService } from './shop-seo.service';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { T } from '../core/i18n/t';
 
@@ -223,7 +224,7 @@ export class ShopProductComponent implements OnChanges {
   origin = '50% 50%';
   lightbox = false;
   recent: ShopProduct[] = [];
-  constructor(private api: OnlineStoreApiService, private lang: LanguageService, public wish: WishlistService) {}
+  constructor(private api: OnlineStoreApiService, private lang: LanguageService, public wish: WishlistService, private seo: ShopSeoService) {}
 
   @HostListener('document:keydown.escape')
   esc(): void {
@@ -232,6 +233,31 @@ export class ShopProductComponent implements OnChanges {
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['productId'] && this.productId) this.load();
+  }
+
+  /** Title, description, share picture and Google product data of the open product. */
+  private shareData(r: ProductDetail): void {
+    const p = r.product;
+    const shopName = this.shop?.name ?? '';
+    const image = r.images?.[0] ?? p.imageUrl ?? null;
+    const sold = p.stock === 'SOLD_OUT';
+    const offer: Record<string, unknown> = {
+      '@type': 'Offer', price: String(p.price), priceCurrency: this.cur || this.shop?.currency || '',
+      availability: sold ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock', url: `${location.origin}/shop?product=${p.id}`,
+    };
+    this.seo.set({
+      title: shopName ? `${p.name} | ${shopName}` : p.name,
+      description: p.description || p.name,
+      image,
+      url: `/shop?product=${p.id}`,
+      type: 'product',
+      structured: {
+        '@context': 'https://schema.org', '@type': 'Product', name: p.name, ...(p.description ? { description: p.description } : {}),
+        ...(r.images?.length ? { image: r.images.map((i) => (/^https?:/.test(i) ? i : location.origin + i)) } : {}),
+        ...(r.brand ? { brand: { '@type': 'Brand', name: r.brand } } : {}), ...(p.category ? { category: p.category } : {}), offers: offer,
+        ...(r.rating?.count ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: r.rating.average, reviewCount: r.rating.count } } : {}),
+      },
+    });
   }
 
   private load(): void {
@@ -248,6 +274,7 @@ export class ShopProductComponent implements OnChanges {
       next: (r) => {
         if (mine !== this.seq) return;
         this.d = r;
+        this.shareData(r);
         this.chosen = [];
         const first = r.variants?.find((v) => v.id === r.selectedVariantId) ?? r.variants?.[0];
         if (r.options?.length && first) this.chosen = [...first.values];

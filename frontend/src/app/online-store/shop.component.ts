@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ShopSeoService } from './shop-seo.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -503,7 +504,20 @@ export class ShopComponent implements OnInit, OnDestroy {
   nlDone: string | null = null;
   nlError: string | null = null;
 
-  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService, public wish: WishlistService, private pwa: PwaService) {}
+  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService, public wish: WishlistService, private pwa: PwaService, private seo: ShopSeoService) {}
+
+  /** The shop's own title, description and share picture (the product page sets its own while it is open). */
+  private shopSeo(): void {
+    const s = this.shop;
+    if (!s) return;
+    this.seo.set({
+      title: s.page?.heroTitle && s.page.heroTitle !== s.name ? `${s.name} | ${s.page.heroTitle}` : s.name,
+      description: s.intro || s.page?.aboutText || s.name,
+      image: s.page?.heroImageUrl ?? null,
+      url: '/shop',
+      structured: { '@context': 'https://schema.org', '@type': 'OnlineStore', name: s.name, url: location.origin + '/shop', ...(s.phone ? { telephone: s.phone } : {}) },
+    });
+  }
 
   /** The landing sections (hero, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
   get landing(): boolean {
@@ -575,6 +589,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.seo.clear();
     if (this.cartTimer) clearTimeout(this.cartTimer);
     if (this.heroTimer) clearInterval(this.heroTimer);
   }
@@ -704,7 +719,10 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe((m) => {
       const v = Number(m.get('product'));
       this.viewId = Number.isInteger(v) && v > 0 ? v : null;
-      if (!this.viewId) this.loadRecent();
+      if (!this.viewId) {
+        this.loadRecent();
+        this.shopSeo();
+      }
     });
     this.api.shopAds().subscribe({ next: (a) => (this.ads = a), error: () => {} });
     this.loadInfoLinks();
@@ -712,6 +730,7 @@ export class ShopComponent implements OnInit, OnDestroy {
       next: (s) => {
         this.shop = s;
         this.pwa.useShopManifest(s.name, s.page?.brandColor ?? null);
+        if (!this.viewId) this.shopSeo();
         this.method = s.delivery ? 'DELIVERY' : 'PICKUP';
         if (!s.cash && s.payMethods.length > 0) this.payment = s.payMethods[0] as 'MOBILE_MONEY' | 'CARD';
         if (s.accounts && shopToken.get()) {

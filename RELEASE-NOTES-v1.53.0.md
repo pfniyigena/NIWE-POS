@@ -1,0 +1,10 @@
+# Release 1.53.0 - Online Store: share previews and search engines (SEO)
+
+- **Share previews**: when a shop link is pasted in WhatsApp, Facebook, Telegram, LinkedIn, X and similar, a card appears with the product picture, name, description and price. These apps do not run the shop app, so the web server sends them a small page built by the backend (`/api/public/store/seo/shop`, `.../seo/product/{id}`, `.../seo/info/{slug}`). People never see these pages. **One nginx rule is needed** (copy it from `docs/online-store-seo.md`); without it the shop works as before but links show no preview.
+- **Google**: each product page now carries Google product data (name, picture, brand, price in the shop currency, in stock / out of stock, average rating), so search results can show price, stock and stars. Google reads it both from the server page and from the app itself.
+- **Sitemap and robots.txt**: `/sitemap.xml` lists the shop, the information pages and every product shown on the shop (a product with options once); `/robots.txt` lets search engines read the shop and its pictures and keeps them out of staff screens, orders, carts, the API and the sign-in page.
+- **Browser tab and sharing tags inside the app**: the shop, each product and each information page now have a real title (for example "Drip Irrigation Kit | Test Shop"), description, canonical address and share picture; they are cleared when the visitor leaves the shop.
+- The addresses in previews and in the sitemap come from `app.frontend-url` (already used for the links in e-mails): it must be the public address of the shop.
+- No database change. French texts.
+
+Tested in the cloud (PostgreSQL, real server, headless browser): the crawler pages for the shop, a product with a picture, a product with options and a rating, a sold-out product, an information page and a missing product (404); sitemap and robots.txt; titles, tags and product data inside the app for the shop, a product, an information page and the contact page, cleared on leaving. Not tested: the nginx rule on a real server, the real WhatsApp / Facebook / Google tools, French screens.

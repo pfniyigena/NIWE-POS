@@ -1990,5 +1990,8 @@
  "Stops: {0} · cash to collect: {1}": "Arrêts : {0} · espèces à encaisser : {1}",
  "Handed over by": "Remis par",
  "Your driver is {0}, phone {1}.": "Votre livreur est {0}, téléphone {1}.",
- "Your driver is {0}.": "Votre livreur est {0}."
+ "Your driver is {0}.": "Votre livreur est {0}.",
+ "Shop online with {0}.": "Achetez en ligne chez {0}.",
+ "Out of stock": "Rupture de stock",
+ "Open in the shop": "Ouvrir dans la boutique"
 }

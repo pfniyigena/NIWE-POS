@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.53.0 - Online Store: share previews and search engines
+
+Links to the shop, a product or an information page now show a card (picture, name, description, price) in WhatsApp, Facebook and similar apps: the backend builds a small page for these crawlers (one nginx rule, in `docs/online-store-seo.md`). Product pages carry Google product data (price, stock, rating); `/sitemap.xml` and `/robots.txt` are served; the shop, products and information pages have real titles and descriptions inside the app. No database change. See `RELEASE-NOTES-v1.53.0.md`.
+
 ### Version 1.52.0 - Online Store: drivers, delivery slips and run sheets
 
 A simple list of drivers in Shop settings; a driver can be chosen on each delivery order any time before delivery (and is required for "Out for delivery" when the shop has drivers). Each order has a printable PDF delivery slip, each driver a PDF run sheet (orders by area, cash to collect), a WhatsApp link sends the details to the driver, and the customer sees the driver's name and phone once the order is on its way. See `docs/online-store-delivery.md` and `RELEASE-NOTES-v1.52.0.md`. Database: migration V87.

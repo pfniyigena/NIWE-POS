@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ShopSeoService } from './shop-seo.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -71,7 +72,7 @@ type Block = { h?: string; p?: string; ul?: string[] };
     </div>
   `,
 })
-export class ShopInfoComponent implements OnInit {
+export class ShopInfoComponent implements OnInit, OnDestroy {
   slug = '';
   page: InfoPage | null = null;
   blocks: Block[] = [];
@@ -83,7 +84,11 @@ export class ShopInfoComponent implements OnInit {
   busy = false;
   form = { name: '', email: '', phone: '', subject: '', message: '', orderCode: '', language: 'en', website: '' };
 
-  constructor(private api: OnlineStoreApiService, private route: ActivatedRoute, private lang: LanguageService) {}
+  constructor(private api: OnlineStoreApiService, private route: ActivatedRoute, private lang: LanguageService, private seo: ShopSeoService) {}
+
+  ngOnDestroy(): void {
+    this.seo.clear();
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((m) => {
@@ -102,12 +107,13 @@ export class ShopInfoComponent implements OnInit {
     this.form.language = lang;
     const order = this.route.snapshot.queryParamMap.get('order');
     if (order && !this.form.orderCode) this.form.orderCode = order;
-    this.api.shop().subscribe({ next: (s) => (this.shop = s), error: () => {} });
+    this.api.shop().subscribe({ next: (s) => { this.shop = s; if (this.slug === 'contact') this.seo.set({ title: `${T('Contact us')} | ${s.name}`, description: s.intro || s.name, url: '/shop/info/contact' }); }, error: () => {} });
     this.api.infoLinks(lang).subscribe({ next: (l) => (this.links = l), error: () => {} });
     if (this.slug === 'contact') return;
     this.api.infoPage(this.slug, lang).subscribe({
       next: (p) => {
         this.page = p;
+        this.seo.set({ title: this.shop ? `${p.title} | ${this.shop.name}` : p.title, description: p.body.replace(/^(##|-)\s*/gm, ''), url: `/shop/info/${p.slug}` });
         this.blocks = parse(p.body);
       },
       error: (e) => (this.error = e?.status === 404 ? T('This page is not available.') : (e?.error?.message ?? T('The shop is not available right now.'))),

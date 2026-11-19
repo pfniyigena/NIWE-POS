@@ -23,6 +23,11 @@ final class OnlineMessages {
     /** The address of the app (no trailing slash), set once at start-up by {@link OnlineMessageLinks}: the links in the e-mails start with it. */
     private static volatile String frontendUrl = "";
 
+    /** The address of the app as set at start-up (no trailing slash), or empty when unknown. */
+    static String baseUrl() {
+        return frontendUrl;
+    }
+
     static void frontendUrl(String url) {
         frontendUrl = url == null ? "" : url.trim().replaceAll("/+$", "");
     }
