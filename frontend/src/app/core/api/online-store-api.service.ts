@@ -92,13 +92,17 @@ export interface ShopTrack {
   invoiceNumber: string | null;
   /** The driver bringing the order, once it is out for delivery. */
   driverName?: string | null; driverPhone?: string | null;
+  /** The customer can confirm the goods (they are out for delivery or ready), and when and how it was confirmed. */
+  canConfirm?: boolean; receivedAt?: string | null; receivedVia?: string | null;
 }
+/** The delivery code to give to the driver (while the order is out or ready), or the reception details after. */
+export interface ShopReceipt { status: string; canConfirm: boolean; code: string | null; receivedAt: string | null; receivedVia: string | null; signedName: string | null }
 /** A customer account on the public shop (no passwords: a code by e-mail or text message proves the address or number). An account opened with a phone number has no e-mail. */
 export interface AccountProfile { email: string | null; phone: string | null; name: string | null; address: string | null; language: string; phoneVerified: boolean; points: number }
 /** A saved delivery address of the signed-in customer; zoneId is the delivery area it belongs to, when the shop has areas. */
 export interface ShopAddress { id: number; label: string; zoneId: number | null; address: string; isDefault: boolean }
 export interface AccountSession { token: string; profile: AccountProfile }
-export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string; invoiceNumber: string | null }
+export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string; invoiceNumber: string | null; receiptCode: string | null; canConfirm: boolean }
 /** A return of one of the customer's orders (My returns). */
 export interface AccountReturn { orderCode: string; data: { code: string; status: string; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null; refundReference: string | null; requestedAt: string; decidedAt: string | null; refundedAt: string | null; lines: { name: string; quantity: number; amount: number }[] } }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
@@ -132,6 +136,7 @@ export interface StoreOrder {
   couponCode: string | null; discountAmount: number; feeWaived: number; refundedTotal: number;
   loyaltyPointsUsed: number; loyaltyDiscount: number; loyaltyPointsEarned: number;
   driverId: number | null; driverName: string | null; driverPhone: string | null;
+  receivedAt: string | null; receivedVia: string | null; receivedBy: string | null; signedName: string | null; hasSignature: boolean; hasCode: boolean;
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
@@ -328,6 +333,10 @@ export class OnlineStoreApiService {
   invoicePdf(code: string, phone: string | null): Observable<Blob> {
     return this.http.post(`${this.pub}/orders/${encodeURIComponent(code)}/invoice`, { phone }, { headers: this.shopHeaders(), responseType: 'blob' });
   }
+  /** The delivery code (while the order is out or ready) or the reception details: needs the phone number of the order unless signed in. */
+  receiptInfo(code: string, phone: string | null): Observable<ShopReceipt> { return this.http.post<ShopReceipt>(`${this.pub}/orders/${encodeURIComponent(code)}/receipt`, { phone }, { headers: this.shopHeaders() }); }
+  /** "I received my order": completes the order. signature is a PNG data URL, or null. */
+  confirmReceived(code: string, body: { phone: string | null; signature: string | null; signedName: string | null }): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/received`, body, { headers: this.shopHeaders() }); }
   accountOrders(): Observable<AccountOrder[]> { return this.http.get<AccountOrder[]>(`${this.pub}/account/orders`, { headers: this.shopHeaders() }); }
   accountReturns(): Observable<AccountReturn[]> { return this.http.get<AccountReturn[]>(`${this.pub}/account/returns`, { headers: this.shopHeaders() }); }
   accountReorder(code: string): Observable<Reorder> { return this.http.get<Reorder>(`${this.pub}/account/orders/${encodeURIComponent(code)}/reorder`, { headers: this.shopHeaders() }); }
@@ -392,6 +401,9 @@ export class OnlineStoreApiService {
   pack(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/pack`, {}); }
   outForDelivery(id: number, driverId: number | null = null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/out-for-delivery`, { driverId }); }
   readyForPickup(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/ready-for-pickup`, {}); }
+  /** The goods are in the customer's hands: the delivery code the customer gave and/or the customer's signature (a PNG data URL). Completes the order. */
+  receive(id: number, body: { code?: string | null; signature?: string | null; signedName?: string | null; locationId?: number | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/receive`, body); }
+  orderSignature(id: number): Observable<Blob> { return this.http.get(`${this.base}/orders/${id}/signature`, { responseType: 'blob' }); }
   complete(id: number, body: { locationId?: number | null; collectPayment?: boolean; method?: string }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/complete`, body); }
   cancelOrder(id: number, note: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/cancel`, { note }); }
 

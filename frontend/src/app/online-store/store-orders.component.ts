@@ -7,6 +7,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
+import { SignaturePadComponent } from './signature-pad.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
 import { Driver, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
@@ -25,7 +26,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
 @Component({
   selector: 'app-store-orders',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, SignaturePadComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
@@ -138,6 +139,28 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           </select>
           <button class="btn btn-primary so-complete" [disabled]="busy" (click)="complete(o)">{{ (o.paymentStatus === 'PAID' ? 'Complete: hand over and invoice' : 'Complete: hand over, invoice and record payment') | translate }}</button>
           <button class="btn btn-outline-danger so-cancel" [disabled]="busy" (click)="cancel(o)">{{ 'Cancel order' | translate }}</button>
+        </div>
+
+        <!-- v1.56.0: the customer holds a code and can sign: either completes the order (stock out, invoice, cash recorded) -->
+        <div *ngIf="o.status === 'OUT_FOR_DELIVERY' || o.status === 'READY_FOR_PICKUP'" class="so-receive mt-2" style="border-top:1px dashed #9ca3af; padding-top:0.5rem;">
+          <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">{{ "Customer's delivery code" | translate }}</label>
+              <input class="form-control so-rcode" style="width:130px; letter-spacing:0.25em; font-weight:600;" maxlength="4" inputmode="numeric" autocomplete="off" [(ngModel)]="rcode[o.id]" [name]="'rcode' + o.id" placeholder="••••" />
+            </div>
+            <button class="btn btn-primary so-confirm-code" [disabled]="busy || !(rcode[o.id] || '').trim()" (click)="receive(o, true)">{{ 'Confirm with the code' | translate }}</button>
+            <button class="btn btn-outline-secondary so-sign-open" *ngIf="!sigOpen[o.id]" (click)="sigOpen[o.id] = true">✍ {{ 'The customer signs here' | translate }}</button>
+          </div>
+          <div *ngIf="sigOpen[o.id]" class="mt-2" style="max-width:420px;">
+            <app-signature-pad [height]="140" (signature)="sig[o.id] = $event"></app-signature-pad>
+            <input class="form-control mt-1 so-signed-name" maxlength="120" [(ngModel)]="sigName[o.id]" [name]="'sname' + o.id" [placeholder]="'Name of the person who signs (optional)' | translate" />
+            <button class="btn btn-primary mt-1 so-confirm-sign" [disabled]="busy || !sig[o.id]" (click)="receive(o, false)">{{ 'Confirm with the signature' | translate }}</button>
+          </div>
+          <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'The code is in the customer\\'s account and message; it is never shown here. After five wrong codes it is blocked for half an hour.' | translate }}</div>
+        </div>
+        <div *ngIf="o.receivedAt" class="so-received mt-2" style="font-size:0.9rem;">
+          ✔ {{ 'Received' | translate }} {{ o.receivedAt | date: 'short' }} · {{ receivedHow(o) | translate }}<span *ngIf="o.signedName"> · {{ o.signedName }}</span>
+          <button class="btn btn-sm btn-outline-secondary so-signature ml-2" *ngIf="o.hasSignature" style="margin-left:0.5rem;" (click)="showSignature(o)">{{ 'View signature' | translate }}</button>
         </div>
 
         <details class="mt-2" *ngIf="o.events.length > 1">
@@ -436,6 +459,30 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     const text = o.paymentStatus === 'PAID' ? 'Cancel order {p0}? The customer paid online, so a refund will be due.' : 'Cancel order {p0}? The stock it holds is released.';
     if (!confirm(T(text, { p0: o.code }))) return;
     this.run(this.api.cancelOrder(o.id, ''));
+  }
+
+  rcode: Record<number, string> = {};
+  sigOpen: Record<number, boolean> = {};
+  sig: Record<number, string | null> = {};
+  sigName: Record<number, string> = {};
+
+  /** The goods are in the customer's hands: the code the customer gave, or the signature drawn here. Completes the order. */
+  receive(o: StoreOrder, byCode: boolean): void {
+    if (this.multiWarehouse && (this.location[o.id] ?? null) === null) {
+      this.error = T('Choose the warehouse location the goods leave from.');
+      return;
+    }
+    const code = byCode ? (this.rcode[o.id] ?? '').trim() : '';
+    if (byCode && !code) return;
+    this.run(this.api.receive(o.id, { code: byCode ? code : null, signature: byCode ? null : this.sig[o.id] ?? null, signedName: byCode ? null : (this.sigName[o.id] ?? '').trim() || null, locationId: this.location[o.id] ?? null }));
+  }
+
+  receivedHow(o: StoreOrder): string {
+    return o.receivedVia === 'CODE' ? 'the customer\'s code was typed' : o.receivedVia === 'DRIVER' ? 'the customer signed on the phone' : 'the customer confirmed it in the shop';
+  }
+
+  showSignature(o: StoreOrder): void {
+    this.open(this.api.orderSignature(o.id));
   }
 
   complete(o: StoreOrder): void {

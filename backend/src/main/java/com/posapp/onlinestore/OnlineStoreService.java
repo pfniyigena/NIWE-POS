@@ -698,6 +698,7 @@ public class OnlineStoreService {
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
                 o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getInvoiceNumber(),
-                "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverName() : null, "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverPhone() : null);
+                "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverName() : null, "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverPhone() : null,
+                "OUT_FOR_DELIVERY".equals(o.getStatus()) || "READY_FOR_PICKUP".equals(o.getStatus()), o.getReceivedAt(), o.getReceivedVia());
     }
 }

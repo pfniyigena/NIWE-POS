@@ -2,18 +2,19 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopAd, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopTrack, shopToken } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, Shop, ShopAd, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopReceipt, ShopTrack, shopToken } from '../core/api/online-store-api.service';
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopAdComponent } from './shop-ad.component';
+import { SignaturePadComponent } from './signature-pad.component';
 
 /** Where a customer follows a shop order by its code. Refreshes by itself. */
 @Component({
   selector: 'app-shop-track',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent],
+  imports: [TranslatePipe, CommonModule, RouterLink, FormsModule, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, SignaturePadComponent],
   template: `
     <div class="st-page" style="max-width:520px; margin:0 auto; padding:1rem 0.75rem 3rem;">
       <div class="alert alert-danger st-error" *ngIf="error">{{ error }}</div>
@@ -31,6 +32,29 @@ import { ShopAdComponent } from './shop-ad.component';
           <div class="st-driver mt-1" *ngIf="t.status === 'OUT_FOR_DELIVERY' && t.driverName">{{ 'Your driver: {p0}' | translate: { p0: t.driverName } }}<ng-container *ngIf="t.driverPhone"> · <a [href]="'tel:' + t.driverPhone">{{ t.driverPhone }}</a></ng-container></div>
           <div class="flex gap-1 mt-2" *ngIf="!bad()" style="justify-content:center;">
             <span *ngFor="let s of steps()" [style.background]="s.reached ? '#16a34a' : '#d1d5db'" style="height:6px; flex:1; border-radius:3px;" [title]="s.label | translate"></span>
+          </div>
+        </div>
+
+        <!-- v1.56.0: the goods are out or ready: the delivery code, and "I received my order" -->
+        <div class="card mb-3 st-receive" *ngIf="t.canConfirm" style="padding:0.9rem;">
+          <h4 class="mb-1">{{ (t.deliveryMethod === 'DELIVERY' ? 'Your delivery code' : 'Your pick-up code') | translate }}</h4>
+          <div *ngIf="receipt?.code" class="st-receipt-code" style="text-align:center; font-size:2.2rem; font-weight:700; letter-spacing:0.3em;">{{ receipt?.code }}</div>
+          <p class="text-muted" style="font-size:0.85rem; margin:0.25rem 0 0.5rem;">{{ (t.deliveryMethod === 'DELIVERY' ? 'Give this code to the driver only when you hold your goods. It completes your order.' : 'Give this code at the counter only when you collect your goods. It completes your order.') | translate }}</p>
+          <div class="flex gap-2 align-center" *ngIf="!receipt?.code" style="flex-wrap:wrap;">
+            <input class="form-control st-receipt-phone" style="max-width:220px;" maxlength="40" inputmode="tel" name="recphone" [(ngModel)]="receiptPhone" [placeholder]="(signedIn ? 'Phone number of this order (not needed when you hold the order in your account)' : 'Phone number of this order') | translate" />
+            <button class="btn btn-outline-primary st-receipt-show" type="button" [disabled]="busy" (click)="showCode()">{{ 'Show my code' | translate }}</button>
+          </div>
+          <hr />
+          <div class="st-received-box">
+            <div style="font-weight:600;">{{ 'Already have your goods?' | translate }}</div>
+            <button class="btn btn-sm btn-outline-secondary mt-1 st-sign-open" type="button" *ngIf="!signing" (click)="signing = true">✍ {{ 'Sign to confirm (optional)' | translate }}</button>
+            <div *ngIf="signing" class="mt-1">
+              <app-signature-pad [height]="140" (signature)="signature = $event"></app-signature-pad>
+              <input class="form-control mt-1 st-signed-name" maxlength="120" name="signedname" [(ngModel)]="signedName" [placeholder]="'Your name (optional)' | translate" />
+            </div>
+            <div class="mt-1" *ngIf="!signedIn && !receipt?.code"><span class="text-muted" style="font-size:0.8rem;">{{ 'Your phone number above is needed to confirm.' | translate }}</span></div>
+            <div class="alert alert-danger mt-1 st-receipt-error" *ngIf="receiptError">{{ receiptError }}</div>
+            <button class="btn btn-success mt-2 st-received" style="width:100%;" type="button" [disabled]="busy" (click)="confirmReceived()">✔ {{ 'I received my order' | translate }}</button>
           </div>
         </div>
 
@@ -175,6 +199,14 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   invoicePhone = '';
   invoiceBusy = false;
   invoiceError: string | null = null;
+  /** The delivery code once the customer proved the order is theirs, and the confirmation ("I received my order"). */
+  receipt: ShopReceipt | null = null;
+  receiptPhone = '';
+  receiptError: string | null = null;
+  signing = false;
+  signature: string | null = null;
+  signedName = '';
+  private receiptTried = false;
   private code = '';
   private poll: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
@@ -211,6 +243,8 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
       next: (t) => {
         this.t = t;
         this.error = null;
+        // A signed-in customer proves the order is theirs by the account: the code is shown without asking for the phone number.
+        if (t.canConfirm && !this.receipt && this.signedIn && !this.receiptTried) { this.receiptTried = true; this.showCode(true); }
         if (t.status === 'COMPLETED' && !this.returning) this.loadReturns();
         if (t.status === 'COMPLETED' && !this.rvo) this.loadReviews();
         // The payment ways the shop offers are only needed once there is something to retry.
@@ -366,6 +400,29 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
 
   returnWhat(r: ShopReturn): string {
     return r.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ');
+  }
+
+  /** Shows the delivery code (the phone number of the order is asked unless the customer is signed in). */
+  showCode(quiet = false): void {
+    this.receiptError = null;
+    if (!this.signedIn && this.receiptPhone.trim().length < 6) { this.receiptError = T('Enter the phone number of this order.'); return; }
+    this.busy = true;
+    this.api.receiptInfo(this.code, this.receiptPhone.trim() || null).subscribe({
+      next: (r) => { this.busy = false; this.receipt = r; },
+      error: (e) => { this.busy = false; if (!quiet) this.receiptError = e?.error?.message ?? T('That did not work'); },
+    });
+  }
+
+  /** "I received my order": the order is completed (with the drawn signature when there is one). */
+  confirmReceived(): void {
+    this.receiptError = null;
+    if (!this.signedIn && this.receiptPhone.trim().length < 6) { this.receiptError = T('Enter the phone number of this order.'); return; }
+    if (!confirm(T('Confirm that you received your order {p0}?', { p0: this.code }))) return;
+    this.busy = true;
+    this.api.confirmReceived(this.code, { phone: this.receiptPhone.trim() || null, signature: this.signature, signedName: this.signedName.trim() || null }).subscribe({
+      next: (t) => { this.t = t; this.busy = false; this.receipt = null; this.signing = false; this.signature = null; this.load(); },
+      error: (e) => { this.busy = false; this.receiptError = e?.error?.message ?? T('That did not work'); },
+    });
   }
 
   bad(): boolean {

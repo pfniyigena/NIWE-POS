@@ -83,12 +83,16 @@ public class OnlineOrderService {
     }
 
     private void move(OnlineOrder o, String status, String note) {
+        move(o, status, note, user());
+    }
+
+    private void move(OnlineOrder o, String status, String note, String by) {
         o.setStatus(status);
         OnlineOrderEvent ev = new OnlineOrderEvent();
         ev.setOnlineOrder(o);
         ev.setStatus(status);
         ev.setNote(note);
-        ev.setByUser(user());
+        ev.setByUser(by);
         o.getEvents().add(ev);
     }
 
@@ -273,6 +277,8 @@ public class OnlineOrderService {
             text = text.then(o.getDriverPhone() != null ? OnlineMessages.m("Your driver is {0}, phone {1}.", o.getDriverName(), o.getDriverPhone())
                     : OnlineMessages.m("Your driver is {0}.", o.getDriverName()));
         }
+        text = text.then(OnlineMessages.m("Your delivery code is {0}. Give it to the driver only when you hold your goods.", receiptCode(o)));
+        repository.save(o);
         tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), text);
         return dto(o);
     }
@@ -322,14 +328,111 @@ public class OnlineOrderService {
         OnlineStoreSettings s = storeService.settings();
         tell(o, OnlineMessages.m("Your order {0} is ready", o.getCode()), (paid(o) ? OnlineMessages.m("Your order {0} is ready for pick-up. It is already paid.", o.getCode())
                 : OnlineMessages.m("Your order {0} is ready for pick-up. Please bring {1} to pay.", o.getCode(), OnlineStoreService.money(o.getTotal())))
-                .plus(s.getPickupAddress() == null ? "" : " " + s.getPickupAddress()));
+                .plus(s.getPickupAddress() == null ? "" : " " + s.getPickupAddress())
+                .then(OnlineMessages.m("Your pick-up code is {0}. Give it at the counter only when you collect your goods.", receiptCode(o))));
+        repository.save(o);
         return dto(o);
     }
 
     /** Hands the goods over: takes the stock out through the sale order, issues the invoice and records the cash. */
     @Transactional
     public OrderDto complete(Long id, CompleteRequest in, AppUser caller) {
+        return finish(getOrThrow(id), in, caller, user(), null);
+    }
+
+    /**
+     * The goods are in the customer's hands and the shop did not press "Complete" itself (v1.56.0). Checks the way it was confirmed, keeps who and when
+     * (and the signature), then completes like staff do: stock out, invoice, and the cash recorded as collected for an order paid on delivery.
+     * Wrong codes are counted even though the request is refused, so the counter survives the error (noRollbackFor).
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public OrderDto receive(Long id, ReceiveRequest in, AppUser caller) {
         OnlineOrder o = getOrThrow(id);
+        expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
+        String code = in == null || in.code() == null ? "" : in.code().trim();
+        String signature = in == null ? null : cleanSignature(in.signature());
+        if (code.isEmpty() && signature == null) throw ApiException.badRequest(I18n.t("Type the customer's delivery code, or have the customer sign."));
+        String via;
+        if (!code.isEmpty()) {
+            checkCode(o, code);
+            via = "CODE";
+        } else {
+            via = "DRIVER";
+        }
+        o.setReceivedVia(via);
+        o.setReceivedBy(user());
+        o.setReceivedAt(java.time.Instant.now());
+        o.setSignature(signature);
+        o.setSignedName(in == null || in.signedName() == null || in.signedName().isBlank() ? null : in.signedName().trim());
+        String how = via.equals("CODE") ? I18n.t("received: the customer's code was typed") : I18n.t("received: the customer signed on the phone");
+        try {
+            return finish(o, new CompleteRequest(in == null ? null : in.locationId(), true, "CASH"), caller, user(), how);
+        } catch (ApiException e) {
+            // refused (no sale order, say): the order is not received, whatever noRollbackFor keeps
+            o.setReceivedVia(null);
+            o.setReceivedBy(null);
+            o.setReceivedAt(null);
+            o.setSignature(null);
+            o.setSignedName(null);
+            throw e;
+        }
+    }
+
+    /** The customer tapped "I received my order" (the caller has already proved the order is theirs). */
+    @Transactional
+    public OrderDto receiveByCustomer(Long id, String signature, String signedName) {
+        OnlineOrder o = getOrThrow(id);
+        expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
+        o.setReceivedVia("CUSTOMER");
+        o.setReceivedBy("customer");
+        o.setReceivedAt(java.time.Instant.now());
+        o.setSignature(cleanSignature(signature));
+        o.setSignedName(signedName == null || signedName.isBlank() ? null : signedName.trim());
+        return finish(o, new CompleteRequest(null, true, "CASH"), null, "customer", I18n.t("received: the customer confirmed it"));
+    }
+
+    /** The drawn signature of an order as PNG bytes, or null. */
+    @Transactional(readOnly = true)
+    public byte[] signaturePng(Long id) {
+        String sig = getOrThrow(id).getSignature();
+        return sig == null ? null : java.util.Base64.getDecoder().decode(sig.substring(sig.indexOf(',') + 1));
+    }
+
+    private String receiptCode(OnlineOrder o) {
+        return o.ensureReceiptCode();
+    }
+
+    private void checkCode(OnlineOrder o, String typed) {
+        java.time.Instant now = java.time.Instant.now();
+        if (o.getReceiptFailures() >= 5 && o.getReceiptFailedAt() != null && o.getReceiptFailedAt().plusSeconds(1800).isAfter(now)) {
+            throw ApiException.badRequest(I18n.t("Too many wrong codes. Ask the customer to confirm in the shop, have the customer sign, or try again in half an hour."));
+        }
+        if (o.getReceiptCode() != null && o.getReceiptCode().equals(typed)) {
+            o.setReceiptFailures(0);
+            o.setReceiptFailedAt(null);
+            return;
+        }
+        o.setReceiptFailures(o.getReceiptFailedAt() != null && o.getReceiptFailedAt().plusSeconds(1800).isBefore(now) ? 1 : o.getReceiptFailures() + 1);
+        o.setReceiptFailedAt(now);
+        repository.save(o);
+        throw ApiException.badRequest(I18n.t("That code is not right."));
+    }
+
+    /** A drawn signature as sent by the browser: a PNG data URL of a sensible size. Anything else is refused; empty means no signature. */
+    static String cleanSignature(String in) {
+        if (in == null || in.isBlank()) return null;
+        String prefix = "data:image/png;base64,";
+        if (!in.startsWith(prefix) || in.length() > 200_000) throw ApiException.badRequest(I18n.t("The signature could not be read. Please sign again."));
+        try {
+            byte[] png = java.util.Base64.getDecoder().decode(in.substring(prefix.length()));
+            if (png.length < 100 || (png[0] & 0xFF) != 0x89 || png[1] != 'P' || png[2] != 'N' || png[3] != 'G') throw new IllegalArgumentException("not a png");
+        } catch (IllegalArgumentException e) {
+            throw ApiException.badRequest(I18n.t("The signature could not be read. Please sign again."));
+        }
+        return in;
+    }
+
+    private OrderDto finish(OnlineOrder o, CompleteRequest in, AppUser caller, String by, String how) {
         expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
         if (o.getSalesOrderId() == null) throw ApiException.badRequest(I18n.t("This order has no sale order"));
         SalesOrderDto so = salesOrderService.getById(o.getSalesOrderId());
@@ -374,7 +477,7 @@ public class OnlineOrderService {
             invoiceService.recordPayment(inv.id(), pay, caller);
         }
         invoiceService.emailIssued(inv.id());
-        move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs);
+        move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (how == null ? "" : ", " + how) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs, by);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
         int earned = loyalty.earn(o);
@@ -434,6 +537,7 @@ public class OnlineOrderService {
                 o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getRefundedTotal(),
                 o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList(),
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList(),
-                o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone());
+                o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone(),
+                o.getReceivedAt(), o.getReceivedVia(), o.getReceivedBy(), o.getSignedName(), o.getSignature() != null, o.getReceiptCode() != null);
     }
 }

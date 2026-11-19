@@ -96,7 +96,7 @@ public final class OnlineStoreDtos {
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
                         String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber,
-                        String driverName, String driverPhone) {
+                        String driverName, String driverPhone, boolean canConfirm, Instant receivedAt, String receivedVia) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -140,7 +140,7 @@ public final class OnlineStoreDtos {
     public record InvoiceRequest(@Size(max = 40) String phone) {
     }
 
-    public record AccountOrder(String code, String status, String deliveryMethod, BigDecimal total, Instant placedAt, int items, String paymentStatus, String invoiceNumber) {
+    public record AccountOrder(String code, String status, String deliveryMethod, BigDecimal total, Instant placedAt, int items, String paymentStatus, String invoiceNumber, String receiptCode, boolean canConfirm) {
     }
 
     /** A return of one of the signed-in customer's orders, for the portal's My returns page. */
@@ -208,7 +208,8 @@ public final class OnlineStoreDtos {
                            String paymentStatus, String paymentChannel, String paymentReference, BigDecimal paidAmount, Instant paidAt,
                            Instant refundedAt, String refundReference, String couponCode, BigDecimal discountAmount, BigDecimal feeWaived,
                            BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events,
-                           int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned, Long driverId, String driverName, String driverPhone) {
+                           int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned, Long driverId, String driverName, String driverPhone,
+                           Instant receivedAt, String receivedVia, String receivedBy, String signedName, boolean hasSignature, boolean hasCode) {
     }
 
     public record RejectRequest(@NotNull @Size(min = 1, max = 160) String reason) {
@@ -238,6 +239,24 @@ public final class OnlineStoreDtos {
 
     /** locationId: the warehouse location the goods leave from (needed when multi-warehouse is on). collectPayment: record the cash now. */
     public record CompleteRequest(Long locationId, Boolean collectPayment, String method) {
+    }
+
+    /**
+     * The goods are in the customer's hands (staff side, v1.56.0): the delivery code the customer gave, or the customer's signature drawn on this phone
+     * (a PNG data URL), or both. locationId is where the stock leaves from (the default when empty).
+     */
+    public record ReceiveRequest(@Size(max = 12) String code, @Size(max = 200000) String signature, @Size(max = 120) String signedName, Long locationId) {
+    }
+
+    /** What the customer sees of the reception of one order after proving it is theirs: the code to give, or when it was received. */
+    public record ReceiptInfo(String status, boolean canConfirm, String code, Instant receivedAt, String receivedVia, String signedName) {
+    }
+
+    /** The customer's proof (phone of the order; not needed when signed in) and, when they want, a signature. */
+    public record ReceiptProof(@Size(max = 40) String phone) {
+    }
+
+    public record CustomerReceivedRequest(@Size(max = 40) String phone, @Size(max = 200000) String signature, @Size(max = 120) String signedName) {
     }
 
     public record SettingsDto(boolean enabled, boolean paused, String pauseMessage, String shopName, String introText, String contactPhone,

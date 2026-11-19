@@ -133,11 +133,33 @@ public class OnlineDeliveryService {
             doc.add(sums);
 
             BigDecimal collect = toCollect(o);
-            Paragraph p = new Paragraph(collect.signum() > 0 ? I18n.t("To collect from the customer: {0}", PdfKit.amount(cur, collect))
+            Paragraph p = new Paragraph(collect.signum() > 0 ? (o.getReceivedAt() != null ? I18n.t("Collected from the customer: {0}", PdfKit.amount(cur, collect)) : I18n.t("To collect from the customer: {0}", PdfKit.amount(cur, collect)))
                     : I18n.t("Already paid online: nothing to collect."), PdfKit.bold(13));
             p.setSpacingBefore(14);
             doc.add(p);
-            PdfKit.signatures(doc, I18n.t("Driver"), I18n.t("Received by the customer"));
+            if (o.getReceivedAt() != null) {
+                String how = "CODE".equals(o.getReceivedVia()) ? I18n.t("the customer's code was typed") : "DRIVER".equals(o.getReceivedVia())
+                        ? I18n.t("the customer signed on the driver's phone") : I18n.t("the customer confirmed it in the shop");
+                Paragraph r = new Paragraph(I18n.t("Received on {0}: {1}", java.time.LocalDateTime.ofInstant(o.getReceivedAt(), java.time.ZoneId.systemDefault())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")), how) + (o.getSignedName() == null ? "" : " (" + o.getSignedName() + ")"), PdfKit.bold(11));
+                r.setSpacingBefore(10);
+                doc.add(r);
+                if (o.getSignature() != null) {
+                    try {
+                        byte[] png = java.util.Base64.getDecoder().decode(o.getSignature().substring(o.getSignature().indexOf(',') + 1));
+                        com.lowagie.text.Image img = com.lowagie.text.Image.getInstance(png);
+                        img.scaleToFit(220, 90);
+                        doc.add(img);
+                    } catch (Exception e) {
+                        // a signature that cannot be drawn is simply left out; the line above still says it was received
+                    }
+                }
+            } else {
+                Paragraph hint = new Paragraph(I18n.t("Ask the customer for the delivery code and type it in the app, or let the customer sign here or on the phone."), PdfKit.muted(9));
+                hint.setSpacingBefore(6);
+                doc.add(hint);
+                PdfKit.signatures(doc, I18n.t("Driver"), I18n.t("Received by the customer"));
+            }
         });
     }
 

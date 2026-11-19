@@ -384,7 +384,13 @@ public class ShopAccountService {
         ShopCustomer c = authenticate(token);
         return orders.findTop50ByShopCustomerIdOrderByCreatedAtDesc(c.getId()).stream()
                 .map(o -> new AccountOrder(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getTotal(), o.getCreatedAt(),
-                        o.getLines().stream().mapToInt(l -> l.getQuantity().intValue()).sum(), o.getPaymentStatus(), o.getInvoiceNumber())).toList();
+                        o.getLines().stream().mapToInt(l -> l.getQuantity().intValue()).sum(), o.getPaymentStatus(), o.getInvoiceNumber(),
+                        waiting(o) ? o.ensureReceiptCode() : null, waiting(o))).toList();
+    }
+
+    /** The goods are out for delivery or ready to collect: the customer can confirm them (and has a code to give). */
+    private static boolean waiting(OnlineOrder o) {
+        return "OUT_FOR_DELIVERY".equals(o.getStatus()) || "READY_FOR_PICKUP".equals(o.getStatus());
     }
 
     /** The id of the signed-in customer (401 when the token is not valid). */

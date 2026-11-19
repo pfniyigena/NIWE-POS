@@ -164,6 +164,22 @@ public class OnlineStoreController {
         return orders.complete(id, request, principal.getUser());
     }
 
+    /** The goods are in the customer's hands: the delivery code the customer gave and/or the customer's signature drawn on this phone. Completes the order. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/orders/{id}/receive")
+    public OrderDto receive(@PathVariable Long id, @RequestBody OnlineStoreDtos.ReceiveRequest request, @AuthenticationPrincipal AppUserPrincipal principal) {
+        return orders.receive(id, request, principal.getUser());
+    }
+
+    /** The signature the customer drew, as a PNG picture (404 when there is none). */
+    @PreAuthorize(VIEW)
+    @GetMapping("/orders/{id}/signature")
+    public org.springframework.http.ResponseEntity<byte[]> signature(@PathVariable Long id) {
+        byte[] png = orders.signaturePng(id);
+        if (png == null) return org.springframework.http.ResponseEntity.notFound().build();
+        return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.IMAGE_PNG).body(png);
+    }
+
     @PreAuthorize(MANAGE)
     @PostMapping("/orders/{id}/cancel")
     public OrderDto cancel(@PathVariable Long id, @RequestBody(required = false) StatusNote request) {

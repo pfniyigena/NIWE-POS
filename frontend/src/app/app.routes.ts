@@ -393,6 +393,7 @@ import { ShopNewsletterComponent } from './online-store/shop-newsletter.componen
 import { ShopInfoComponent } from './online-store/shop-info.component';
 import { StoreMessagesComponent } from './online-store/store-messages.component';
 import { StoreStockAlertsComponent } from './online-store/store-stock-alerts.component';
+import { StoreDriverComponent } from './online-store/store-driver.component';
 import { StorePagesComponent } from './online-store/store-pages.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
 import { QrPrintComponent } from './restaurant/qr-print.component';
@@ -1107,6 +1108,7 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/newsletters', component: StoreCampaignsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/messages', component: StoreMessagesComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/stock-alerts', component: StoreStockAlertsComponent, canActivate: [authGuard] },
+  { path: 'admin/online-store/driver', component: StoreDriverComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/pages', component: StorePagesComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/carts', component: StoreCartsComponent, canActivate: [authGuard] },
   { path: 'admin/online-store/loyalty', component: StoreLoyaltyComponent, canActivate: [authGuard] },

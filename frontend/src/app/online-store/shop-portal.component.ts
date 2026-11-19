@@ -77,8 +77,13 @@ export type PortalSection = (typeof PORTAL_SECTIONS)[number];
                 </div>
                 <strong>{{ o.total | shopMoney: currency }}</strong>
               </div>
+              <div class="portal-code mt-1" *ngIf="o.canConfirm && o.receiptCode" style="font-size:0.9rem;">
+                {{ (o.deliveryMethod === 'DELIVERY' ? 'Your delivery code' : 'Your pick-up code') | translate }}: <strong class="portal-code-value" style="font-size:1.2rem; letter-spacing:0.2em;">{{ o.receiptCode }}</strong>
+                <span class="text-muted" style="font-size:0.8rem;"> · {{ 'Give it only when you hold your goods.' | translate }}</span>
+              </div>
               <div class="flex gap-1 mt-1" style="flex-wrap:wrap;">
                 <a class="btn btn-sm btn-outline-secondary portal-track" [routerLink]="['/shop/order', o.code]">{{ 'Track' | translate }}</a>
+                <a class="btn btn-sm btn-success portal-received" *ngIf="o.canConfirm" [routerLink]="['/shop/order', o.code]">✔ {{ 'I received my order' | translate }}</a>
                 <button class="btn btn-sm btn-outline-primary portal-reorder" [disabled]="busy" (click)="reorder(o)">{{ 'Order again' | translate }}</button>
                 <button class="btn btn-sm btn-outline-secondary portal-invoice-btn" *ngIf="o.invoiceNumber" [disabled]="busy" (click)="invoice(o)">⬇ {{ 'Invoice' | translate }} {{ o.invoiceNumber }}</button>
               </div>

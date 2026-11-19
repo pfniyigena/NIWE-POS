@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.56.0 - Online Store: order reception
+
+An order out for delivery or ready for pick-up can be completed by whoever receives it: the customer taps "I received my order" (optional signature), the driver or counter staff types the customer's 4-digit delivery code, or the customer signs on the driver's phone (new screen Online Store > My deliveries). Each completes the order (stock out, invoice, cash recorded as collected for cash orders). The code is sent with the "on its way" message and shown in My account and on the order page; staff never see it. See `docs/online-store-reception.md` and `RELEASE-NOTES-v1.56.0.md`. Database: migration V89.
+
 ### Version 1.55.0 - Online Store: the customer portal
 
 The shop's 👤 button now opens a real "My account" area (`/shop/account`) with a menu and one page per entry: My orders (filters, Track, Order again, invoice PDF), My invoices, My wish list (Add to cart), My returns (status and refund of every return), My addresses, Loyalty points and My profile. On phones the menu becomes a row of tabs. The cart is kept while moving between the shop and the portal. See `docs/online-store-portal.md` and `RELEASE-NOTES-v1.55.0.md`. No database change.

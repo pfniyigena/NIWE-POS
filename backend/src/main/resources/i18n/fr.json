@@ -1999,5 +1999,22 @@
  "See it in the shop": "Le voir dans la boutique",
  "Stock can run out again: order soon. You asked to be told once, so you will not get more e-mails about this product.": "Le stock peut s'épuiser de nouveau : commandez vite. Vous avez demandé à être prévenu une seule fois, vous ne recevrez donc pas d'autres e-mails à propos de ce produit.",
  "{0} is back in stock": "{0} est de nouveau en stock",
- "{0} is back in stock.": "{0} est de nouveau en stock."
+ "{0} is back in stock.": "{0} est de nouveau en stock.",
+ "Your delivery code is {0}. Give it to the driver only when you hold your goods.": "Votre code de livraison est {0}. Ne le donnez au livreur que lorsque vous avez vos articles en main.",
+ "Your pick-up code is {0}. Give it at the counter only when you collect your goods.": "Votre code de retrait est {0}. Ne le donnez au comptoir que lorsque vous retirez vos articles.",
+ "Type the customer's delivery code, or have the customer sign.": "Saisissez le code de livraison du client, ou faites signer le client.",
+ "received: the customer's code was typed": "reçue : le code du client a été saisi",
+ "received: the customer signed on the phone": "reçue : le client a signé sur le téléphone",
+ "received: the customer confirmed it": "reçue : le client l'a confirmé",
+ "Too many wrong codes. Ask the customer to confirm in the shop, have the customer sign, or try again in half an hour.": "Trop de codes erronés. Demandez au client de confirmer dans la boutique, faites-le signer, ou réessayez dans une demi-heure.",
+ "That code is not right.": "Ce code n'est pas le bon.",
+ "The signature could not be read. Please sign again.": "La signature n'a pas pu être lue. Veuillez signer à nouveau.",
+ "This order is already complete.": "Cette commande est déjà terminée.",
+ "Your order is not on its way yet.": "Votre commande n'est pas encore en route.",
+ "the customer's code was typed": "le code du client a été saisi",
+ "the customer signed on the driver's phone": "le client a signé sur le téléphone du livreur",
+ "the customer confirmed it in the shop": "le client l'a confirmé dans la boutique",
+ "Received on {0}: {1}": "Reçue le {0} : {1}",
+ "Collected from the customer: {0}": "Encaissé auprès du client : {0}",
+ "Ask the customer for the delivery code and type it in the app, or let the customer sign here or on the phone.": "Demandez au client son code de livraison et saisissez-le dans l'application, ou faites-le signer ici ou sur le téléphone."
 }

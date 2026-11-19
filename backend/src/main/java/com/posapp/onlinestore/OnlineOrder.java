@@ -88,6 +88,31 @@ public class OnlineOrder extends BaseEntity {
     private String driverPhone;
     private Instant driverAssignedAt;
 
+    /** The 4-digit code the customer gives to the driver (or the counter) when the goods are in their hands. Made when the order goes out or is ready; never shown to staff. */
+    private String receiptCode;
+    /** Wrong codes typed since the last good one; after five the code is blocked for half an hour. */
+    private int receiptFailures;
+    private Instant receiptFailedAt;
+    /** When and how the goods were confirmed received: CUSTOMER (the customer tapped it), CODE (the code was typed) or DRIVER (the customer signed on the driver's phone). */
+    private Instant receivedAt;
+    private String receivedVia;
+    /** Who confirmed it: "customer", or the staff user whose screen was used. */
+    private String receivedBy;
+    private String signedName;
+    /** The drawn signature as a PNG data URL (data:image/png;base64,...). */
+    @jakarta.persistence.Column(columnDefinition = "text")
+    private String signature;
+
+    /** The delivery code, made on first use (orders that went out before v1.56.0 get theirs when the customer or the shop first needs it). */
+    public String ensureReceiptCode() {
+        if (receiptCode == null || receiptCode.isBlank()) {
+            receiptCode = String.format("%04d", new java.security.SecureRandom().nextInt(10000));
+            receiptFailures = 0;
+            receiptFailedAt = null;
+        }
+        return receiptCode;
+    }
+
     @OneToMany(mappedBy = "onlineOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OnlineOrderLine> lines = new ArrayList<>();
 
