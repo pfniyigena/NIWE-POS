@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.58.2 - Online Store: order number in accounting descriptions
+
+Accounting entries that come from an online order (delivery of the goods, the payment, a return, a cancelled paid invoice) end their description with the order number, for example "Payment received from Ada (online order 9FMMY2MC)". New postings only. See `RELEASE-NOTES-v1.58.2.md`. No database change.
+
 ### Version 1.58.1 - Online Store: staff re-issue a delivery code
 
 On an order that is out for delivery or ready for pick-up, staff can press "Send a new code to the customer": the old code stops working, the wrong-code counter starts again and the customer gets the new code by e-mail/text. Staff never see the code. See `RELEASE-NOTES-v1.58.1.md` and `docs/online-store-reception.md`. No database change.

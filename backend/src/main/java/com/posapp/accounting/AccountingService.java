@@ -76,6 +76,9 @@ public class AccountingService {
     private final AccountService accountService;
     private final AuditLogService auditLogService;
     private final com.posapp.controls.AccountingLockService lockService;
+    /** Adds the online order number to the description of what comes from the Online Store (v1.58.2). */
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineOrderRefs onlineRefs;
 
     public AccountingService(AccountRepository accountRepository, JournalEntryRepository journalEntryRepository,
                               CostCenterRepository costCenterRepository, AccountService accountService,
@@ -241,7 +244,7 @@ public class AccountingService {
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogsAmount, "Cost of goods sold", true);
         addIfPositive(lines, AccountService.INVENTORY, cogsAmount, "Inventory relief", false);
 
-        post("SALES_ORDER_FULFILLMENT", salesOrder.getId(), "Fulfilled sales order " + salesOrder.getOrderNumber(), null, lines, salesOrder.getBranchId());
+        post("SALES_ORDER_FULFILLMENT", salesOrder.getId(), "Fulfilled sales order " + salesOrder.getOrderNumber() + onlineRefs.forSalesOrder(salesOrder.getId()), null, lines, salesOrder.getBranchId());
     }
 
     /** Called from SalesOrderReturnService.processReturn. cogsReversal is computed by the caller for exactly the trackStock lines it actually restocked. */
@@ -254,7 +257,8 @@ public class AccountingService {
         addIfPositive(lines, AccountService.INVENTORY, cogsReversal, "Inventory restocked", true);
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogsReversal, "Cost of goods sold reversal", false);
 
-        post("SALES_ORDER_RETURN", salesOrderReturn.getId(), "Sales order return " + safe(salesOrderReturn.getReturnNumber()), null, lines,
+        post("SALES_ORDER_RETURN", salesOrderReturn.getId(), "Sales order return " + safe(salesOrderReturn.getReturnNumber())
+                + onlineRefs.forSalesOrder(salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getId() : null), null, lines,
                 salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getBranchId() : null);
     }
 
@@ -358,7 +362,7 @@ public class AccountingService {
             addIfPositive(lines, AccountService.CUSTOMER_CREDIT_PAYABLE, amountPaid, "Converted to customer credit", false);
         }
 
-        post("INVOICE_CANCELLED_PAID", invoice.getId(), "Cancelled paid invoice " + invoice.getInvoiceNumber(), null, lines, invoice.getBranchId());
+        post("INVOICE_CANCELLED_PAID", invoice.getId(), "Cancelled paid invoice " + invoice.getInvoiceNumber() + onlineRefs.forInvoice(invoice.getId(), invoice.getSalesOrderId()), null, lines, invoice.getBranchId());
     }
 
     // ---- Purchasing (com.posapp.inventory) ----
@@ -524,7 +528,18 @@ public class AccountingService {
         addIfPositive(lines, AccountService.CASH, payment.getAmount(), null, true);
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, payment.getAmount(), null, false);
 
-        post("CUSTOMER_PAYMENT", payment.getId(), "Payment received from " + payment.getCustomer().getName(), null, lines, payment.getBranchId());
+        post("CUSTOMER_PAYMENT", payment.getId(), "Payment received from " + payment.getCustomer().getName() + onlineRefsForPayment(payment), null, lines, payment.getBranchId());
+    }
+
+    /** The online order number of the invoice(s) a payment was applied to, as a description suffix (empty for anything else). */
+    private String onlineRefsForPayment(com.posapp.credit.CustomerPayment payment) {
+        if (payment.getAllocations() == null) return "";
+        for (com.posapp.credit.CustomerPaymentAllocation a : payment.getAllocations()) {
+            if (a.getInvoice() == null) continue;
+            String ref = onlineRefs.forInvoice(a.getInvoice().getId(), a.getInvoice().getSalesOrderId());
+            if (!ref.isEmpty()) return ref;
+        }
+        return "";
     }
 
     /** A customer payment taken back (a wrong payment reversed): Dr Accounts receivable / Cr Cash, the mirror of {@link #postCustomerPayment}. {@code amount} is positive. */
