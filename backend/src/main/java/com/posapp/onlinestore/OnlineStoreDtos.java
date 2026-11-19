@@ -46,7 +46,7 @@ public final class OnlineStoreDtos {
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
                              List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, List<ProviderDto> payProviders, boolean accounts, String currency, boolean coupons,
                              String textChannel, boolean cartReminders, boolean loyalty, int loyaltyMaxPercent, PublicPage page,
-                             List<String> brands, List<CategoryTile> categoryTiles) {
+                             List<String> brands, List<CategoryTile> categoryTiles, String whatsapp) {
     }
 
     /** A category of the shop with a picture (one of its products' pictures) and how many products it holds. */
@@ -95,7 +95,7 @@ public final class OnlineStoreDtos {
     public record Track(String code, String status, String deliveryMethod, String name, String zoneName, BigDecimal subtotal,
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
-                        String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned) {
+                        String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -126,6 +126,17 @@ public final class OnlineStoreDtos {
     }
 
     public record AccountProfileRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 240) String address, String language) {
+    }
+
+    /** A saved delivery address of the signed-in customer. */
+    public record AddressDto(Long id, String label, Long zoneId, String address, boolean isDefault) {
+    }
+
+    public record AddressRequest(@Size(max = 60) String label, Long zoneId, @Size(max = 240) String address, Boolean isDefault) {
+    }
+
+    /** The phone number of the order, needed to download its invoice unless the customer is signed in and the order is theirs. */
+    public record InvoiceRequest(@Size(max = 40) String phone) {
     }
 
     public record AccountOrder(String code, String status, String deliveryMethod, BigDecimal total, Instant placedAt, int items, String paymentStatus) {
@@ -215,7 +226,7 @@ public final class OnlineStoreDtos {
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
                               String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
-                              boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent) {
+                              boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent, String whatsappNumber) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)

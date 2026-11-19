@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShopMoneyPipe } from './shop-money.pipe';
-import { AccountOrder, AccountProfile, LoyaltyView, OnlineStoreApiService, Reorder, shopToken } from '../core/api/online-store-api.service';
+import { AccountOrder, AccountProfile, LoyaltyView, OnlineStoreApiService, Reorder, ShopAddress, shopToken } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
 
@@ -61,7 +61,7 @@ import { T } from '../core/i18n/t';
         <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control acc-address" maxlength="240" name="accaddr" [(ngModel)]="form.address" /></div>
         <div class="text-muted" *ngIf="!textChannel" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A saved phone number lets you sign in with it.' | translate }}</div>
         <div class="text-muted" *ngIf="textChannel" style="font-size:0.8rem;">{{ 'Saved details fill in your next order for you. A phone number you confirm by text message lets you sign in with it.' | translate }}</div>
-        <button class="btn btn-primary mt-2 mb-3 acc-save" [disabled]="busy" (click)="save()">{{ 'Save my details' | translate }}</button>
+        <button class="btn btn-primary mt-2 acc-save" [disabled]="busy" (click)="save()">{{ 'Save my details' | translate }}</button>
 
         <!-- The phone number: proved with a text message before it can be used to sign in -->
         <div class="mt-2 acc-phone-box" *ngIf="textChannel && profile.phone">
@@ -91,6 +91,31 @@ import { T } from '../core/i18n/t';
             <strong [style.color]="e.points < 0 ? '#b42318' : '#15803d'">{{ e.points > 0 ? '+' : '' }}{{ e.points }}</strong>
           </div>
         </ng-container>
+        <h5 class="mt-3">{{ 'My delivery addresses' | translate }}</h5>
+        <div class="text-muted acc-no-addr" *ngIf="addresses.length === 0" style="font-size:0.85rem;">{{ 'No saved address yet. Save one here, or tick "Save this address" when you order, and pick it next time in one tap.' | translate }}</div>
+        <div class="acc-addr flex justify-between" *ngFor="let a of addresses" style="padding:0.4rem 0; border-top:1px solid #e5e7eb; gap:0.5rem; flex-wrap:wrap;">
+          <div style="min-width:0;">
+            <strong>{{ a.label }}</strong><span class="badge acc-addr-default" *ngIf="a.isDefault" style="margin-left:0.4rem; color:#15803d;">{{ 'Default' | translate }}</span>
+            <div style="font-size:0.9rem;">{{ a.address }}<span class="text-muted" *ngIf="zoneName(a.zoneId)"> · {{ zoneName(a.zoneId) }}</span></div>
+          </div>
+          <div class="flex gap-1" style="flex-wrap:wrap; align-items:flex-start;">
+            <button class="btn btn-sm btn-outline-secondary acc-addr-edit" [disabled]="busy" (click)="editAddress(a)">{{ 'Edit' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary acc-addr-default-btn" *ngIf="!a.isDefault" [disabled]="busy" (click)="makeDefault(a)">{{ 'Make default' | translate }}</button>
+            <button class="btn btn-sm btn-outline-danger acc-addr-delete" [disabled]="busy" (click)="removeAddress(a)">{{ 'Remove' | translate }}</button>
+          </div>
+        </div>
+        <div class="card acc-addr-form mt-2" *ngIf="addrForm" style="padding:0.6rem;">
+          <div class="flex gap-2" style="flex-wrap:wrap;">
+            <div class="form-group"><label class="form-label">{{ 'Name (Home, Work…)' | translate }}</label><input class="form-control acc-addr-label" maxlength="60" name="addrlabel" [(ngModel)]="addrForm.label" /></div>
+            <div class="form-group" *ngIf="zones.length"><label class="form-label">{{ 'Delivery area' | translate }}</label>
+              <select class="form-select acc-addr-zone" name="addrzone" [(ngModel)]="addrForm.zoneId"><option [ngValue]="null">{{ 'Choose your area…' | translate }}</option><option *ngFor="let z of zones" [ngValue]="z.id">{{ z.name }}</option></select></div>
+          </div>
+          <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control acc-addr-text" maxlength="240" name="addrtext" [(ngModel)]="addrForm.address" /></div>
+          <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="addrdef" [(ngModel)]="addrForm.isDefault" /> {{ 'Use as my default address' | translate }}</label>
+          <div class="flex gap-2 mt-2"><button class="btn btn-sm btn-primary acc-addr-save" [disabled]="busy || !addrForm.address.trim()" (click)="saveAddress()">{{ 'Save address' | translate }}</button><button class="btn btn-sm btn-outline-secondary" (click)="addrForm = null">{{ 'Cancel' | translate }}</button></div>
+        </div>
+        <button class="btn btn-sm btn-outline-primary acc-addr-add mt-2" *ngIf="!addrForm" [disabled]="busy" (click)="newAddress()">{{ '+ Add an address' | translate }}</button>
+
         <h5 class="mt-3">{{ 'My orders' | translate }}</h5>
         <div class="text-muted" *ngIf="orders === null">{{ 'Loading…' | translate }}</div>
         <div class="text-muted acc-no-orders" *ngIf="orders && orders.length === 0">{{ 'No orders yet. Orders you place while signed in, and earlier ones sent with your e-mail address, appear here.' | translate }}</div>
@@ -128,6 +153,10 @@ export class ShopAccountComponent implements OnInit {
   @Input() textChannel: string | null = null;
   /** True when the shop has loyalty points on: the balance and history show. */
   @Input() loyalty = false;
+  /** The saved delivery addresses (the shop loads them), the delivery areas, and the new list after a change. */
+  @Input() addresses: ShopAddress[] = [];
+  @Input() zones: { id: number; name: string }[] = [];
+  @Output() addressesChange = new EventEmitter<ShopAddress[]>();
   @Output() profileChange = new EventEmitter<AccountProfile | null>();
   @Output() reordered = new EventEmitter<Reorder>();
   @Output() closed = new EventEmitter<void>();
@@ -144,11 +173,58 @@ export class ShopAccountComponent implements OnInit {
   form = { name: '', phone: '', address: '' };
   phoneCodeSent = false;
   phoneCode = '';
+  addrForm: { id: number | null; label: string; zoneId: number | null; address: string; isDefault: boolean } | null = null;
 
   constructor(private api: OnlineStoreApiService, private lang: LanguageService) {}
 
   ngOnInit(): void {
     if (this.profile) this.loaded();
+  }
+
+  zoneName(id: number | null): string {
+    return this.zones.find((z) => z.id === id)?.name ?? '';
+  }
+
+  newAddress(): void {
+    this.addrForm = { id: null, label: '', zoneId: null, address: '', isDefault: this.addresses.length === 0 };
+  }
+
+  editAddress(a: ShopAddress): void {
+    this.addrForm = { id: a.id, label: a.label, zoneId: a.zoneId, address: a.address, isDefault: a.isDefault };
+  }
+
+  private addressDone(list: ShopAddress[]): void {
+    this.busy = false;
+    this.addrForm = null;
+    this.addressesChange.emit(list);
+  }
+
+  saveAddress(): void {
+    const f = this.addrForm;
+    if (!f) return;
+    this.busy = true;
+    this.error = null;
+    const body = { label: f.label.trim(), zoneId: f.zoneId, address: f.address.trim(), isDefault: f.isDefault };
+    (f.id ? this.api.addressUpdate(f.id, body) : this.api.addressAdd(body)).subscribe({
+      next: (l) => this.addressDone(l),
+      error: (e) => { this.busy = false; this.error = this.msg(e, 'That did not work'); },
+    });
+  }
+
+  makeDefault(a: ShopAddress): void {
+    this.busy = true;
+    this.api.addressUpdate(a.id, { label: a.label, zoneId: a.zoneId, address: a.address, isDefault: true }).subscribe({
+      next: (l) => this.addressDone(l),
+      error: (e) => { this.busy = false; this.error = this.msg(e, 'That did not work'); },
+    });
+  }
+
+  removeAddress(a: ShopAddress): void {
+    this.busy = true;
+    this.api.addressDelete(a.id).subscribe({
+      next: (l) => this.addressDone(l),
+      error: (e) => { this.busy = false; this.error = this.msg(e, 'That did not work'); },
+    });
   }
 
   private msg(e: any, fallback: string): string {

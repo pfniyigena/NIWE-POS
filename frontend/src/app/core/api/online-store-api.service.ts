@@ -36,6 +36,8 @@ export interface Shop {
   loyaltyMaxPercent: number;
   /** The brands of the listed products, and the categories with a picture and a count (tiles of the front page). */
   brands: string[]; categoryTiles: ShopTile[];
+  /** The shop's WhatsApp number as digits (for a wa.me link), or null when none is set. */
+  whatsapp: string | null;
   /** The front page's wording, written by staff in Shop settings > Front page. */
   page: ShopPageContent;
 }
@@ -81,9 +83,13 @@ export interface ShopTrack {
   couponCode: string | null; discount: number; feeWaived: number;
   /** The part of discount that was paid with loyalty points, and the points this order earned. */
   loyaltyDiscount: number; pointsEarned: number;
+  /** The invoice number once the order is completed (its PDF can then be downloaded), else null. */
+  invoiceNumber: string | null;
 }
 /** A customer account on the public shop (no passwords: a code by e-mail or text message proves the address or number). An account opened with a phone number has no e-mail. */
 export interface AccountProfile { email: string | null; phone: string | null; name: string | null; address: string | null; language: string; phoneVerified: boolean; points: number }
+/** A saved delivery address of the signed-in customer; zoneId is the delivery area it belongs to, when the shop has areas. */
+export interface ShopAddress { id: number; label: string; zoneId: number | null; address: string; isDefault: boolean }
 export interface AccountSession { token: string; profile: AccountProfile }
 export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
@@ -126,7 +132,7 @@ export interface StoreSettings {
   onlinePaymentsEnabled: boolean; paymentProvider: string | null; paymentExpiryMinutes: number; accountsEnabled: boolean;
   textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null; returnWindowDays: number;
   cartRemindersEnabled: boolean;
-  loyaltyEnabled: boolean; loyaltyPointsPer100: number; loyaltyMaxPercent: number;
+  loyaltyEnabled: boolean; loyaltyPointsPer100: number; loyaltyMaxPercent: number; whatsappNumber: string | null;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED or SKIPPED; purpose is ORDER, OWNER, SIGNIN or TEST. */
@@ -282,6 +288,22 @@ export class OnlineStoreApiService {
   accountLoyalty(): Observable<LoyaltyView> { return this.http.get<LoyaltyView>(`${this.pub}/account/loyalty`, { headers: this.shopHeaders() }); }
   accountMe(): Observable<AccountProfile> { return this.http.get<AccountProfile>(`${this.pub}/account/me`, { headers: this.shopHeaders() }); }
   accountSave(p: { name: string | null; phone: string | null; address: string | null; language: string }): Observable<AccountProfile> { return this.http.put<AccountProfile>(`${this.pub}/account/me`, p, { headers: this.shopHeaders() }); }
+  // ---- customers: saved addresses, wishlist and the invoice
+  addressList(): Observable<ShopAddress[]> { return this.http.get<ShopAddress[]>(`${this.pub}/account/addresses`, { headers: this.shopHeaders() }); }
+  addressAdd(b: { label: string; zoneId: number | null; address: string; isDefault: boolean }): Observable<ShopAddress[]> { return this.http.post<ShopAddress[]>(`${this.pub}/account/addresses`, b, { headers: this.shopHeaders() }); }
+  addressUpdate(id: number, b: { label: string; zoneId: number | null; address: string; isDefault: boolean }): Observable<ShopAddress[]> { return this.http.put<ShopAddress[]>(`${this.pub}/account/addresses/${id}`, b, { headers: this.shopHeaders() }); }
+  addressDelete(id: number): Observable<ShopAddress[]> { return this.http.delete<ShopAddress[]>(`${this.pub}/account/addresses/${id}`, { headers: this.shopHeaders() }); }
+  /** The product ids on the signed-in customer's wishlist, newest first. */
+  wishIds(): Observable<number[]> { return this.http.get<number[]>(`${this.pub}/account/wishlist`, { headers: this.shopHeaders() }); }
+  wishAdd(id: number): Observable<number[]> { return this.http.put<number[]>(`${this.pub}/account/wishlist/${id}`, {}, { headers: this.shopHeaders() }); }
+  wishRemove(id: number): Observable<number[]> { return this.http.delete<number[]>(`${this.pub}/account/wishlist/${id}`, { headers: this.shopHeaders() }); }
+  wishMerge(ids: number[]): Observable<number[]> { return this.http.post<number[]>(`${this.pub}/account/wishlist/merge`, { ids }, { headers: this.shopHeaders() }); }
+  /** The products behind these ids, as the shop has them today (listed ones only), for the wishlist page. */
+  wished(ids: number[]): Observable<ShopProduct[]> { return this.http.get<ShopProduct[]>(`${this.pub}/wishlist`, { params: { ids: ids.join(',') } }); }
+  /** The invoice of a completed order (PDF). The phone number of the order is needed unless the customer is signed in and the order is theirs. */
+  invoicePdf(code: string, phone: string | null): Observable<Blob> {
+    return this.http.post(`${this.pub}/orders/${encodeURIComponent(code)}/invoice`, { phone }, { headers: this.shopHeaders(), responseType: 'blob' });
+  }
   accountOrders(): Observable<AccountOrder[]> { return this.http.get<AccountOrder[]>(`${this.pub}/account/orders`, { headers: this.shopHeaders() }); }
   accountReorder(code: string): Observable<Reorder> { return this.http.get<Reorder>(`${this.pub}/account/orders/${encodeURIComponent(code)}/reorder`, { headers: this.shopHeaders() }); }
   accountLogout(): Observable<void> { return this.http.post<void>(`${this.pub}/account/logout`, {}, { headers: this.shopHeaders() }); }

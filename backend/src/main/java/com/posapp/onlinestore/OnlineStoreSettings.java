@@ -19,6 +19,8 @@ public class OnlineStoreSettings extends BaseEntity {
     private String shopName;
     private String introText;
     private String contactPhone;
+    /** The shop's WhatsApp number (any way of writing it). Empty = the phone shown on the shop is used. */
+    private String whatsappNumber;
     /** Told by e-mail when a customer places an order. Empty = the business e-mail from Settings. */
     private String notifyEmail;
     /** An order that waits this many minutes as PLACED is reported to the shop by e-mail, once. 0 = never. */

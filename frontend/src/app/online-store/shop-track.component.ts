@@ -70,6 +70,15 @@ import { ShopAdComponent } from './shop-ad.component';
           <div class="text-muted" style="font-size:0.8rem;" *ngIf="t.payment?.method !== 'ONLINE'">{{ t.deliveryMethod === 'DELIVERY' ? ('Pay in cash when your order arrives.' | translate) : ('Pay in cash when you collect.' | translate) }}</div>
         </div>
 
+        <a class="btn btn-outline-secondary st-wa mb-3" *ngIf="shop?.whatsapp && t.status !== 'CANCELLED' && t.status !== 'REJECTED'" [href]="waOrder()" target="_blank" rel="noopener" style="width:100%;"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="fill:#25D366; vertical-align:-4px; margin-right:0.4rem;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>{{ 'Send this order to the shop on WhatsApp' | translate }}</a>
+
+        <div class="card mb-3 st-invoice" *ngIf="t.status === 'COMPLETED' && t.invoiceNumber" style="padding:0.75rem;">
+          <h4 class="mb-1">{{ 'Invoice {p0}' | translate: { p0: t.invoiceNumber } }}</h4>
+          <div class="form-group" *ngIf="!signedIn"><input class="form-control st-invoice-phone" style="max-width:260px;" maxlength="40" inputmode="tel" name="iphone" [(ngModel)]="invoicePhone" [placeholder]="'Phone number of this order' | translate" /></div>
+          <div class="alert alert-danger st-invoice-error" *ngIf="invoiceError">{{ invoiceError }}</div>
+          <div><button class="btn btn-outline-primary st-invoice-btn" type="button" [disabled]="invoiceBusy" (click)="downloadInvoice()">⬇ {{ invoiceBusy ? ('Preparing…' | translate) : ('Download invoice (PDF)' | translate) }}</button></div>
+        </div>
+
         <app-shop-ad *ngIf="ads.length" placement="ORDER" [ads]="ads"></app-shop-ad>
 
         <div class="card mb-3 st-returns" *ngIf="t.status === 'COMPLETED' && ro && (ro.returns.length || ro.allowed || ro.message)" style="padding:0.75rem;">
@@ -161,6 +170,10 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   reviewPhone = '';
   reviewError: Record<number, string | null> = {};
   reviewSent: string | null = null;
+  /** The invoice of a completed order, as a PDF: the phone number of the order is asked unless the customer is signed in. */
+  invoicePhone = '';
+  invoiceBusy = false;
+  invoiceError: string | null = null;
   private code = '';
   private poll: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
@@ -244,6 +257,44 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
 
   private loadReviews(): void {
     this.api.reviewOptions(this.code).subscribe({ next: (o) => (this.rvo = o), error: () => {} });
+  }
+
+  /** The order as a WhatsApp message to the shop (a wa.me link the customer sends from their own WhatsApp). */
+  waOrder(): string {
+    const t = this.t;
+    if (!t || !this.shop?.whatsapp) return '#';
+    const lines = t.lines.map((l) => `${l.quantity} x ${l.name}`).join('\n');
+    const text = `${T('Hello, about my order {p0}', { p0: t.code })}\n${lines}\n${T('Total')}: ${t.total} ${this.cur}`.trim();
+    return `https://wa.me/${this.shop.whatsapp}?text=${encodeURIComponent(text)}`;
+  }
+
+  downloadInvoice(): void {
+    this.invoiceError = null;
+    if (!this.signedIn && this.invoicePhone.trim().length < 6) { this.invoiceError = T('Enter the phone number of this order.'); return; }
+    this.invoiceBusy = true;
+    this.api.invoicePdf(this.code, this.invoicePhone.trim() || null).subscribe({
+      next: (blob) => {
+        this.invoiceBusy = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${this.code}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      },
+      error: (e) => {
+        this.invoiceBusy = false;
+        const fail = () => (this.invoiceError = T('That did not work'));
+        const body = e?.error;
+        if (body instanceof Blob) {
+          body.text().then((txt) => { try { this.invoiceError = JSON.parse(txt).message ?? T('That did not work'); } catch { fail(); } }).catch(fail);
+        } else {
+          this.invoiceError = body?.message ?? T('That did not work');
+        }
+      },
+    });
   }
 
   stars(r: number): string {

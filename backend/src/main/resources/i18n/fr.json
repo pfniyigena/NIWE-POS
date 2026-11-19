@@ -1937,5 +1937,12 @@
  "The picture must be a JPEG, PNG, WebP or GIF picture.": "La photo doit être une image JPEG, PNG, WebP ou GIF.",
  "Put the product on the shop first.": "Mettez d'abord le produit en vente sur la boutique.",
  "The shop colour must look like #1d4ed8.": "La couleur de la boutique doit ressembler à #1d4ed8.",
- "The delivery estimate must be from 0 to 60 days, the first number not above the second.": "La livraison estimée doit être de 0 à 60 jours, le premier nombre ne dépassant pas le second."
+ "The delivery estimate must be from 0 to 60 days, the first number not above the second.": "La livraison estimée doit être de 0 à 60 jours, le premier nombre ne dépassant pas le second.",
+ "Enter the delivery address.": "Saisissez l'adresse de livraison.",
+ "Home": "Maison",
+ "That delivery area does not exist.": "Cette zone de livraison n'existe pas.",
+ "You can save up to {0} addresses. Remove one first.": "Vous pouvez enregistrer jusqu'à {0} adresses. Supprimez-en une d'abord.",
+ "Address not found": "Adresse introuvable",
+ "Your wishlist is full.": "Votre liste de souhaits est pleine.",
+ "The invoice is ready once your order is completed.": "La facture est disponible une fois votre commande terminée."
 }

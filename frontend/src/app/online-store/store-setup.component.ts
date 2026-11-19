@@ -39,6 +39,8 @@ import { API_BASE } from '../core/constants';
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap;">
           <div class="form-group"><label class="form-label">{{ 'Shop name (empty = business name)' | translate }}</label><input class="form-control" name="shopName" maxlength="120" [(ngModel)]="s.shopName" /></div>
           <div class="form-group"><label class="form-label">{{ 'Phone shown on the shop' | translate }}</label><input class="form-control" name="phone" maxlength="40" [(ngModel)]="s.contactPhone" /></div>
+          <div class="form-group"><label class="form-label">{{ 'WhatsApp number of the shop (empty = the phone above)' | translate }}</label><input class="form-control st-whatsapp" name="whatsappNumber" maxlength="40" inputmode="tel" [(ngModel)]="s.whatsappNumber" />
+            <div class="text-muted" style="font-size:0.8rem;">{{ 'Customers can send their order to this number on WhatsApp from the order page.' | translate }}</div></div>
           <div class="form-group" style="min-width:260px;"><label class="form-label">{{ 'Pick-up address' | translate }}</label><input class="form-control" name="pickupAddress" maxlength="240" [(ngModel)]="s.pickupAddress" /></div>
         </div>
         <div class="form-group mt-2" style="max-width:420px;"><label class="form-label">{{ 'Send new-order e-mails to (empty = business e-mail)' | translate }}</label><input class="form-control" name="notifyEmail" type="email" maxlength="160" [(ngModel)]="s.notifyEmail" /></div>

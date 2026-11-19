@@ -59,6 +59,8 @@ public class ShopAccountService {
     private final List<ShopCodeChannel> channels;
     private final AuditLogService auditLogService;
     private final OnlineTextService texts;
+    private final ShopAddressRepository addressRepository;
+    private final ShopWishRepository wishRepository;
     private final String devCode;
     private final Environment environment;
 
@@ -67,9 +69,12 @@ public class ShopAccountService {
 
     public ShopAccountService(ShopCustomerRepository customers, ShopLoginCodeRepository codes, ShopSessionRepository sessions, OnlineOrderRepository orders,
                               OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository, OnlineStoreService storeService,
+                              ShopAddressRepository addressRepository, ShopWishRepository wishRepository,
                               List<ShopCodeChannel> channels, AuditLogService auditLogService, OnlineTextService texts,
                               @Value("${app.online-store.accounts.dev-code:}") String devCode, Environment environment, ShopLoyaltyService loyalty) {
         this.loyalty = loyalty;
+        this.addressRepository = addressRepository;
+        this.wishRepository = wishRepository;
         this.customers = customers;
         this.codes = codes;
         this.sessions = sessions;
@@ -416,6 +421,8 @@ public class ShopAccountService {
         orders.unlinkOrders(c.getId());
         sessions.deleteForCustomer(c.getId());
         loyalty.deleteFor(c.getId());
+        addressRepository.deleteForCustomer(c.getId());
+        wishRepository.deleteForCustomer(c.getId());
         customers.delete(c);
         auditLogService.record("SHOP_ACCOUNT_DELETED", "A shop account was deleted by its owner", "ShopCustomer", c.getId());
     }

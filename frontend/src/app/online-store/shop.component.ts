@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAd, ShopFilter, ShopSuggest, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAddress, ShopAd, ShopFilter, ShopSuggest, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
@@ -11,6 +11,7 @@ import { ShopAdComponent } from './shop-ad.component';
 import { ShopProductComponent } from './shop-product.component';
 import { ShopQuickViewComponent } from './shop-quick-view.component';
 import { recentIds } from './recent';
+import { WishlistService } from './wishlist.service';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -49,6 +50,7 @@ import { T } from '../core/i18n/t';
           </div>
         </div>
         <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <button *ngIf="step === 'shop' && !showAccount" class="btn btn-sm shop-wish-open" [class.btn-primary]="showWish" [class.btn-outline-secondary]="!showWish" [attr.aria-label]="'My wishlist' | translate" (click)="openWishlist()"><span [style.color]="showWish ? '#fff' : '#dc2626'">♥</span> {{ wish.count }}</button>
           <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
           <button *ngIf="count() > 0 && step === 'shop' && !showAccount" class="btn btn-sm btn-outline-secondary shop-cart-btn" (click)="checkout()">🛒 {{ count() }}</button>
           <button class="btn btn-sm" [class.btn-primary]="lang.current === 'en'" [class.btn-outline-secondary]="lang.current !== 'en'" (click)="lang.choose('en')">EN</button>
@@ -65,11 +67,23 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-paused mt-2" *ngIf="!shop.open">{{ shop.message || ('We are not taking orders right now.' | translate) }}</div>
 
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
-        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+        <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" [addresses]="addresses" [zones]="shop.zones" (addressesChange)="addresses = $event" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
+
+        <section class="shop-wishlist" *ngIf="step === 'shop' && !showAccount && !viewId && showWish" style="margin-top:1rem;">
+          <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+            <h3 style="margin:0;"><span style="color:#dc2626;">♥</span> {{ 'My wishlist' | translate }}</h3>
+            <button class="btn btn-sm btn-outline-secondary shop-wish-close" (click)="showWish = false">{{ 'Back to the shop' | translate }}</button>
+          </div>
+          <p class="text-muted shop-wish-empty" *ngIf="wishShown.length === 0 && !wishBusy">{{ 'Your wishlist is empty. Tap the heart on a product to keep it here.' | translate }}</p>
+          <p class="text-muted shop-wish-hint" *ngIf="!account && shop.accounts && wishShown.length > 0" style="font-size:0.85rem;">{{ 'It is kept in this browser. Sign in (👤 above) to keep your wishlist on every device.' | translate }}</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
+            <ng-container *ngFor="let p of wishShown"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
+          </div>
+        </section>
 
         <app-shop-product *ngIf="step === 'shop' && !showAccount && viewId" [productId]="viewId" [shop]="shop" [cur]="cur" [open]="shop.open" [cart]="cart" [ads]="adsFor('PRODUCT')" (change)="change($event.p, $event.by)"></app-shop-product>
 
-        <ng-container *ngIf="step === 'shop' && !showAccount && !viewId">
+        <ng-container *ngIf="step === 'shop' && !showAccount && !viewId && !showWish">
         <ng-container *ngIf="landing">
           <section class="shop-hero" style="margin-top:1rem; border-radius:14px; color:#fff; background-color:#1f2937; position:relative; overflow:hidden; min-height:300px; display:flex; align-items:center;"
                    (mouseenter)="heroHold = true" (mouseleave)="heroHold = false" (touchstart)="heroTouchStart($event)" (touchend)="heroTouchEnd($event)">
@@ -260,7 +274,16 @@ import { T } from '../core/i18n/t';
                 <option [ngValue]="null" disabled>{{ 'Choose your area…' | translate }}</option>
                 <option *ngFor="let z of shop.zones" [ngValue]="z.id">{{ z.name }} ({{ z.fee | shopMoney: cur }})</option>
               </select></div>
+            <div class="form-group shop-saved-addr" *ngIf="account && addresses.length"><label class="form-label">{{ 'My saved addresses' | translate }}</label>
+              <select class="form-select" style="max-width:320px;" name="savedaddr" [ngModel]="pickedAddr" (ngModelChange)="pickAddress($event)">
+                <option [ngValue]="null">{{ 'Choose a saved address…' | translate }}</option>
+                <option *ngFor="let a of addresses" [ngValue]="a.id">{{ a.label }}: {{ a.address }}</option>
+              </select></div>
             <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control shop-address" maxlength="240" name="caddr" [(ngModel)]="address" /></div>
+            <div class="form-group shop-save-addr" *ngIf="account && address.trim() && !addressSaved()">
+              <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="saveaddr" [(ngModel)]="saveAddr" /> {{ 'Save this address in my account' | translate }}</label>
+              <input *ngIf="saveAddr" class="form-control shop-addr-label mt-1" style="max-width:240px;" maxlength="60" name="addrlabel" [(ngModel)]="addrLabel" [placeholder]="'Name (Home, Work…)' | translate" />
+            </div>
           </ng-container>
           <div class="form-group"><label class="form-label">{{ 'Note for the shop (optional)' | translate }}</label><input class="form-control" maxlength="300" name="cnotes" [(ngModel)]="notes" /></div>
           <label class="flex gap-1 mb-2 shop-text-opt" *ngIf="shop.textChannel" style="align-items:flex-start;">
@@ -383,6 +406,7 @@ import { T } from '../core/i18n/t';
                 <div *ngIf="!p.imageUrl" style="width:100%; aspect-ratio:4/3; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2.2rem;">🛍️</div>
               </a>
               <span class="shop-offbadge" *ngIf="offPercent(p) > 0" style="position:absolute; left:6px; top:6px; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; font-weight:700;">-{{ offPercent(p) }}%</span>
+              <button type="button" class="shop-wish-btn" (click)="wish.toggle(p.id)" [attr.aria-label]="(wish.has(p.id) ? 'Remove from my wishlist' : 'Add to my wishlist') | translate" [attr.aria-pressed]="wish.has(p.id)" [style.color]="wish.has(p.id) ? '#dc2626' : '#6b7280'" style="position:absolute; right:6px; top:6px; border:0; border-radius:999px; width:30px; height:30px; background:rgba(255,255,255,0.92); cursor:pointer; font-size:1.1rem; line-height:1; padding:0;">{{ wish.has(p.id) ? '♥' : '♡' }}</button>
               <button type="button" class="shop-qv-btn" (click)="qv = p" [attr.aria-label]="'Quick view' | translate" style="position:absolute; right:6px; bottom:6px; border:0; border-radius:999px; background:rgba(17,24,39,0.72); color:#fff; font-size:0.72rem; padding:0.2rem 0.6rem; cursor:pointer;">👁 {{ 'Quick view' | translate }}</button>
             </div>
             <a class="shop-product-name" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" [title]="p.name" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em; line-height:1.3; margin-top:0.4rem; font-weight:600; color:inherit; text-decoration:none;">{{ p.name }}</a>
@@ -478,11 +502,11 @@ export class ShopComponent implements OnInit, OnDestroy {
   nlDone: string | null = null;
   nlError: string | null = null;
 
-  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService) {}
+  constructor(private api: OnlineStoreApiService, private router: Router, private route: ActivatedRoute, public lang: LanguageService, private publicSettings: PublicSettingsApiService, public wish: WishlistService) {}
 
   /** The landing sections (hero, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
   get landing(): boolean {
-    return this.step === 'shop' && !this.showAccount && !this.q.trim() && !this.category && !this.filtersActive;
+    return this.step === 'shop' && !this.showAccount && !this.showWish && !this.q.trim() && !this.category && !this.filtersActive;
   }
 
   /** Every row that has products, in the order the front page shows them. */
@@ -631,6 +655,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.closeProduct();
     this.step = 'shop';
     this.showAccount = false;
+    this.showWish = false;
     this.q = '';
     this.category = '';
     this.f = { brand: '', minPrice: null, maxPrice: null, inStock: false, minRating: 0, sort: '' };
@@ -717,12 +742,76 @@ export class ShopComponent implements OnInit, OnDestroy {
 
   /** The customer signed in, saved their details, or signed out. The order form is filled from the account, never over what was already typed. */
   accountChanged(p: AccountProfile | null): void {
+    const wasIn = !!this.account;
     this.account = p;
-    if (!p) return;
+    this.wish.setSignedIn(!!p);
+    if (!p) {
+      this.addresses = [];
+      this.pickedAddr = null;
+      return;
+    }
+    if (!wasIn) this.loadAddresses();
     if (!this.name.trim() && p.name) this.name = p.name;
     if (!this.phone.trim() && p.phone) this.phone = p.phone;
     if (!this.email.trim() && p.email) this.email = p.email;
     if (!this.address.trim() && p.address) this.address = p.address;
+  }
+
+  // ---- wishlist and saved addresses (v1.47.0)
+  showWish = false;
+  wishProducts: ShopProduct[] = [];
+  wishBusy = false;
+  addresses: ShopAddress[] = [];
+  pickedAddr: number | null = null;
+  saveAddr = false;
+  addrLabel = '';
+
+  /** The wishlist's products that are still hearted, in the order of the list (a heart removed on this page leaves it at once). */
+  get wishShown(): ShopProduct[] {
+    const byId = new Map(this.wishProducts.map((p) => [p.id, p]));
+    return this.wish.ids().map((id) => byId.get(id)).filter((p): p is ShopProduct => !!p);
+  }
+
+  openWishlist(): void {
+    this.showWish = !this.showWish;
+    this.closeProduct();
+    if (!this.showWish) return;
+    this.wishBusy = true;
+    const ids = this.wish.ids();
+    if (!ids.length) { this.wishProducts = []; this.wishBusy = false; return; }
+    this.api.wished(ids).subscribe({ next: (r) => { this.wishProducts = r; this.wishBusy = false; }, error: () => { this.wishProducts = []; this.wishBusy = false; } });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  private loadAddresses(): void {
+    this.api.addressList().subscribe({
+      next: (list) => {
+        this.addresses = list;
+        const d = list.find((a) => a.isDefault);
+        if (d && !this.address.trim()) this.useAddress(d);
+      },
+      error: () => (this.addresses = []),
+    });
+  }
+
+  private useAddress(a: ShopAddress): void {
+    this.pickedAddr = a.id;
+    this.address = a.address;
+    if (a.zoneId && this.shop?.zones.some((z) => z.id === a.zoneId)) this.zoneId = a.zoneId;
+  }
+
+  pickAddress(id: number | null): void {
+    this.pickedAddr = id;
+    const a = this.addresses.find((x) => x.id === id);
+    if (!a) return;
+    this.useAddress(a);
+    this.recheckCoupon();
+  }
+
+  /** True when the address typed is already one of the saved addresses, so there is nothing to offer to save. */
+  addressSaved(): boolean {
+    const t = this.address.trim().toLowerCase();
+    return this.addresses.some((a) => a.address.trim().toLowerCase() === t);
   }
 
   /** The cart behind the link of a reminder e-mail: today's prices go into the cart and the customer lands on the order form. */
@@ -1095,6 +1184,9 @@ export class ShopComponent implements OnInit, OnDestroy {
         next: (t) => {
           this.busy = false;
           this.ordered = true;
+          if (this.account && this.saveAddr && this.method === 'DELIVERY' && this.address.trim() && !this.addressSaved()) {
+            this.api.addressAdd({ label: this.addrLabel.trim() || T('Home'), zoneId: this.zoneId, address: this.address.trim(), isDefault: this.addresses.length === 0 }).subscribe({ error: () => {} });
+          }
           if (this.cartTimer) clearTimeout(this.cartTimer);
           // A card payment (or a provider that shows its own page) sends the customer there; otherwise the order page shows what to do next.
           if (t.payment?.status === 'AWAITING' && t.payment.redirectUrl) {

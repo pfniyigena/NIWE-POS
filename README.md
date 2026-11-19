@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.47.0 - Online Store: invoice download, address book, wishlist, WhatsApp
+
+A completed order has a "Download invoice (PDF)" button on its order page (the phone number of the order, or being signed in, is needed). Signed-in customers keep up to 10 delivery addresses and pick one at checkout. A heart on product cards and product pages builds a wishlist (kept in the browser for guests, in the account when signed in). Staff can set the shop's WhatsApp number; the order page offers "Send this order to the shop on WhatsApp" and Online orders has a WhatsApp link beside the customer's phone. Migration V82. See `docs/online-store-account-extras.md` and `RELEASE-NOTES-v1.47.0.md`.
+
 ### Version 1.46.0 - Online Store: ratings and reviews are separate
 
 The stars (the rating) count as soon as a customer who bought the product gives them; the words (the review) are optional and shown only after staff approve them. The shop says "ratings" for the stars and "reviews" for the words. The front page shows the shop's overall rating with the count per star, then the newest written reviews. Staff (Online Store > Reviews) approve or hide only the words, and can take an unfair rating out of the averages. Migration V81. See `docs/online-store-ratings-reviews.md` and `RELEASE-NOTES-v1.46.0.md`.

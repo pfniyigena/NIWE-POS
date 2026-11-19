@@ -52,7 +52,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
             <strong class="so-code">{{ o.code }}</strong>
             <span class="badge" style="margin-left:0.4rem;">{{ o.deliveryMethod === 'DELIVERY' ? ('Delivery' | translate) : ('Pick-up' | translate) }}</span>
             <span class="so-status text-muted" style="margin-left:0.4rem;">{{ statusLabel(o.status) | translate }}<ng-container *ngIf="o.decidedBy"> · {{ o.decidedBy }}</ng-container></span>
-            <div>{{ o.customerName }} · {{ o.customerPhone }}<span class="text-muted" *ngIf="o.customerEmail"> · {{ o.customerEmail }}</span></div>
+            <div>{{ o.customerName }} · {{ o.customerPhone }}<a class="so-wa" *ngIf="waLink(o)" [href]="waLink(o)" target="_blank" rel="noopener" style="margin-left:0.5rem; font-size:0.85rem; white-space:nowrap;" [title]="'Message this customer on WhatsApp' | translate"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" style="fill:#25D366; vertical-align:-3px; margin-right:0.25rem;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>WhatsApp</a><span class="text-muted" *ngIf="o.customerEmail"> · {{ o.customerEmail }}</span></div>
             <div class="text-muted" *ngIf="o.customerAddress">📍 {{ o.zoneName ? o.zoneName + ' — ' : '' }}{{ o.customerAddress }}</div>
             <div class="text-muted" *ngIf="o.notes">“{{ o.notes }}”</div>
           </div>
@@ -172,7 +172,19 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
 
   constructor(public api: OnlineStoreApiService, private warehouseApi: WarehouseApiService, private storeSettingsApi: StoreSettingsApiService, private paymentMethodApi: PaymentMethodApiService) {}
 
+  /** The country code of the shop's phone numbers, to turn 0788... into 250788... for a WhatsApp link. */
+  private countryCode = '';
+
+  /** A wa.me link that opens a WhatsApp chat with the customer of the order, with a short opening line the staff member can change before sending. */
+  waLink(o: { customerPhone: string; customerName: string; code: string }): string | null {
+    let d = (o.customerPhone ?? '').replace(/[^0-9]/g, '');
+    if (d.startsWith('0') && this.countryCode) d = this.countryCode + d.substring(1);
+    if (d.length < 8) return null;
+    return `https://wa.me/${d}?text=${encodeURIComponent(T('Hello {p0}, this is the shop about your order {p1}.', { p0: o.customerName, p1: o.code }))}`;
+  }
+
   ngOnInit(): void {
+    this.api.settings().subscribe({ next: (s) => (this.countryCode = (s.textCountryCode ?? '').replace(/[^0-9]/g, '')), error: () => {} });
     this.loadOptions();
     this.reload();
     this.poll = setInterval(() => {

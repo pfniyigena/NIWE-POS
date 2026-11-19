@@ -175,7 +175,20 @@ public class OnlineStoreService {
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
                 listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), payments.payOptions(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
-                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyMaxPercent(), page(s), listingRepository.findShopBrands(), tiles());
+                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyMaxPercent(), page(s), listingRepository.findShopBrands(), tiles(), whatsappDigits(s));
+    }
+
+    /**
+     * The shop's WhatsApp number as digits for a wa.me link: the WhatsApp number of the settings, else the phone shown on the shop. A number written with a
+     * leading 0 gets the country code of the text settings in front of it. Null when there is no usable number.
+     */
+    static String whatsappDigits(OnlineStoreSettings s) {
+        String raw = s.getWhatsappNumber() != null && !s.getWhatsappNumber().isBlank() ? s.getWhatsappNumber() : s.getContactPhone();
+        if (raw == null) return null;
+        String d = raw.replaceAll("[^0-9]", "");
+        String cc = s.getTextCountryCode() == null ? "" : s.getTextCountryCode().replaceAll("[^0-9]", "");
+        if (d.startsWith("0") && !cc.isEmpty()) d = cc + d.substring(1);
+        return d.length() < 8 ? null : d;
     }
 
     /** The front page's wording as the public sees it. */
@@ -618,6 +631,6 @@ public class OnlineStoreService {
         List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList();
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
-                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned());
+                o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getInvoiceNumber());
     }
 }

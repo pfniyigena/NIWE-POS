@@ -120,11 +120,21 @@ public class OnlineProductPageService {
     /** The products with these ids (comma separated, at most 12), in the same order, for "recently viewed". */
     @Transactional(readOnly = true)
     public List<PublicProduct> recent(String ids) {
+        return pick(ids, 12);
+    }
+
+    /** The products with these ids (comma separated, at most 60), in the same order, for the wishlist page. */
+    @Transactional(readOnly = true)
+    public List<PublicProduct> wished(String ids) {
+        return pick(ids, 60);
+    }
+
+    private List<PublicProduct> pick(String ids, int max) {
         OnlineStoreSettings s = store.settings();
         if (!s.isEnabled()) throw ApiException.notFound(I18n.t("This shop is not available."));
         List<OnlineListing> found = new ArrayList<>();
         for (String part : ids == null ? new String[0] : ids.split(",")) {
-            if (found.size() >= 12) break;
+            if (found.size() >= max) break;
             try {
                 listings.findByProductId(Long.parseLong(part.trim())).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).ifPresent(found::add);
             } catch (NumberFormatException ignored) {

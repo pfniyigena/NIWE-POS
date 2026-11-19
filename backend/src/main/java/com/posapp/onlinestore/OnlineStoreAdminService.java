@@ -118,6 +118,7 @@ public class OnlineStoreAdminService {
         s.setShopName(text(in.shopName(), 120));
         s.setIntroText(text(in.introText(), 300));
         s.setContactPhone(text(in.contactPhone(), 40));
+        s.setWhatsappNumber(text(in.whatsappNumber(), 40));
         String notify = text(in.notifyEmail(), 160);
         if (notify != null && !notify.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw ApiException.badRequest(I18n.t("The shop e-mail address does not look right"));
         s.setNotifyEmail(notify);
@@ -191,7 +192,7 @@ public class OnlineStoreAdminService {
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
                 s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
-                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent());
+                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent(), s.getWhatsappNumber());
     }
 
     // ------------------------------------------------------------------ listings
