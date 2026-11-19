@@ -110,7 +110,7 @@ import { T } from '../core/i18n/t';
           </section>
 
           <!-- Front page order: New arrivals, All products, Featured products, Best-selling (then special offers). -->
-          <ng-container *ngFor="let r of rowsBefore"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
+          <ng-container *ngFor="let r of rowsBefore; trackBy: trackRow"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
           <h3 id="shop-all" style="margin:2rem 0 0;">{{ 'All products' | translate }}</h3>
         </ng-container>
 
@@ -169,7 +169,7 @@ import { T } from '../core/i18n/t';
         </nav>
 
         <ng-container *ngIf="landing">
-          <ng-container *ngFor="let r of rowsAfter"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
+          <ng-container *ngFor="let r of rowsAfter; trackBy: trackRow"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
           <section class="shop-recent" *ngIf="recent.length" style="margin-top:2rem;">
             <h3 style="margin:0 0 0.75rem;">{{ 'Recently viewed' | translate }}</h3>
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
@@ -482,6 +482,11 @@ export class ShopComponent implements OnInit, OnDestroy {
       { key: 'best', title: 'Best-selling products', items: h.bestSellers },
       { key: 'offers', title: 'Special offers and discounts', items: h.offers },
     ].filter((r) => r.items.length > 0);
+  }
+
+  /** Keeps a row's screen elements alive between refreshes (the rows are rebuilt on every check), so a click on a card inside it is not lost. */
+  trackRow(_index: number, r: { key: string }): string {
+    return r.key;
   }
 
   /** The row above the product list: New arrivals. */
