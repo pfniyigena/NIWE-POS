@@ -1993,5 +1993,11 @@
  "Your driver is {0}.": "Votre livreur est {0}.",
  "Shop online with {0}.": "Achetez en ligne chez {0}.",
  "Out of stock": "Rupture de stock",
- "Open in the shop": "Ouvrir dans la boutique"
+ "Open in the shop": "Ouvrir dans la boutique",
+ "Give an e-mail address or a phone number so we can tell you.": "Indiquez une adresse e-mail ou un numéro de téléphone pour que nous puissions vous prévenir.",
+ "Good news: {0} is back in stock.": "Bonne nouvelle : {0} est de nouveau en stock.",
+ "See it in the shop": "Le voir dans la boutique",
+ "Stock can run out again: order soon. You asked to be told once, so you will not get more e-mails about this product.": "Le stock peut s'épuiser de nouveau : commandez vite. Vous avez demandé à être prévenu une seule fois, vous ne recevrez donc pas d'autres e-mails à propos de ce produit.",
+ "{0} is back in stock": "{0} est de nouveau en stock",
+ "{0} is back in stock.": "{0} est de nouveau en stock."
 }

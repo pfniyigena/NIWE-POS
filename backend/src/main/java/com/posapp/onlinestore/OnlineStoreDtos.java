@@ -450,4 +450,23 @@ public final class OnlineStoreDtos {
 
     public record ContactNoteRequest(@Size(max = 500) String note) {
     }
+
+    // ---- "tell me when it is back in stock" (v1.54.0)
+
+    /** website is a hidden field real visitors leave empty. An e-mail address and/or a phone number is needed. */
+    public record StockAlertRequest(@NotNull Long productId, @Size(max = 160) String email, @Size(max = 40) String phone, @Size(max = 2) String language,
+                                    @Size(max = 100) String website) {
+    }
+
+    /** SAVED = the shop will tell the customer; IN_STOCK = the product can be bought right now, nothing was saved. */
+    public record StockAlertResult(String state) {
+    }
+
+    public record StockAlertDto(Long id, Long productId, String productName, String email, String phone, String language, String status, Instant createdAt,
+                                Instant notifiedAt, String notifiedBy) {
+    }
+
+    /** A product customers are waiting for: how many people, and the stock word it has now (IN_STOCK, LOW, SOLD_OUT). */
+    public record StockDemandDto(Long productId, String productName, long waiting, String stock) {
+    }
 }

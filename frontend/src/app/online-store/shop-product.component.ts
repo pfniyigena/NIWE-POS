@@ -1,6 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { OnlineStoreApiService, ProductDetail, ProductVariant, Shop, ShopAd, ShopProduct } from '../core/api/online-store-api.service';
 import { LanguageService } from '../core/i18n/language.service';
@@ -19,7 +20,7 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop-product',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, RouterLink, ShopMoneyPipe, ShopAdComponent, ShopRailComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopMoneyPipe, ShopAdComponent, ShopRailComponent],
   template: `
     <div class="shop-pp" style="margin-top:0.75rem;">
       <a class="shop-pp-back" [routerLink]="[]" [queryParams]="{ product: null }" queryParamsHandling="merge" style="font-size:0.9rem;">← {{ 'Back to the shop' | translate }}</a>
@@ -83,6 +84,18 @@ import { T } from '../core/i18n/t';
                   <button class="btn btn-primary shop-pp-add" style="flex:1;" [disabled]="it.stock === 'SOLD_OUT' || !open" (click)="change.emit({ p: it, by: pick }); pick = 1">{{ it.stock === 'SOLD_OUT' && curVariant ? ('Out of stock' | translate) : ('Add to cart' | translate) }}</button>
                 </div>
               </ng-template>
+              <div class="shop-pp-alert mt-2" *ngIf="it.stock === 'SOLD_OUT'" (change)="$event.stopPropagation()" style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:0.6rem 0.75rem;">
+                <strong>{{ 'Tell me when it is back' | translate }}</strong>
+                <div *ngIf="alertDone" class="shop-pp-alert-done" style="color:#15803d; margin-top:0.3rem;">{{ alertDone | translate }}</div>
+                <ng-container *ngIf="!alertDone">
+                  <div class="text-muted" style="font-size:0.85rem;">{{ 'Leave your e-mail address or phone number: we tell you once, as soon as it can be ordered again.' | translate }}</div>
+                  <input class="form-control mt-1 shop-pp-alert-email" type="email" maxlength="160" [placeholder]="'E-mail address' | translate" [(ngModel)]="alertEmail" name="aem" />
+                  <input class="form-control mt-1 shop-pp-alert-phone" type="tel" maxlength="40" [placeholder]="'Phone number (optional)' | translate" [(ngModel)]="alertPhone" name="aph" />
+                  <input class="shop-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" [(ngModel)]="alertTrap" name="atrap" style="position:absolute; left:-5000px; width:1px; height:1px; opacity:0;" />
+                  <div *ngIf="alertError" class="shop-pp-alert-error" style="color:#b91c1c; font-size:0.85rem; margin-top:0.3rem;">{{ alertError }}</div>
+                  <button type="button" class="btn btn-outline-primary shop-pp-alert-btn mt-2" style="width:100%;" [disabled]="alertBusy" (click)="requestAlert()">{{ 'Tell me' | translate }}</button>
+                </ng-container>
+              </div>
               <button type="button" class="btn btn-outline-secondary shop-pp-wish mt-2" style="width:100%;" [attr.aria-pressed]="wish.has(x.product.id)" (click)="wish.toggle(x.product.id)"><span style="color:#dc2626; margin-right:0.4rem;">{{ wish.has(x.product.id) ? '♥' : '♡' }}</span>{{ (wish.has(x.product.id) ? 'In my wishlist' : 'Add to my wishlist') | translate }}</button>
               <a class="btn btn-outline-secondary shop-pp-wa mt-2" [href]="waLink(it)" target="_blank" rel="noopener" style="width:100%;"><svg class="shop-pp-wa-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="fill:#25D366; vertical-align:-4px; margin-right:0.4rem;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>{{ 'Share on WhatsApp' | translate }}</a>
             </div>
@@ -289,10 +302,47 @@ export class ShopProductComponent implements OnChanges {
     });
   }
 
+  // ---- "tell me when it is back": the box under a sold-out product or option
+  alertEmail = '';
+  alertPhone = '';
+  alertTrap = '';
+  alertBusy = false;
+  alertError: string | null = null;
+  /** The thank-you text once the request is saved (it is cleared when another option is chosen). */
+  alertDone: string | null = null;
+
+  requestAlert(): void {
+    const item = this.it;
+    if (!item) return;
+    this.alertError = null;
+    if (!this.alertEmail.trim() && this.alertPhone.replace(/\D/g, '').length < 6) {
+      this.alertError = T('Give an e-mail address or a phone number so we can tell you.');
+      return;
+    }
+    this.alertBusy = true;
+    this.api.requestStockAlert({ productId: item.id, email: this.alertEmail.trim() || null, phone: this.alertPhone.trim() || null, language: this.lang.current === 'fr' ? 'fr' : 'en', website: this.alertTrap }).subscribe({
+      next: (r) => {
+        this.alertBusy = false;
+        if (r.state === 'IN_STOCK') {
+          this.alertDone = 'It can be ordered again: refresh the page and add it to your cart.';
+          this.load();
+        } else {
+          this.alertDone = 'Thank you. We will tell you as soon as it is back.';
+        }
+      },
+      error: (e) => {
+        this.alertBusy = false;
+        this.alertError = e?.error?.message ?? T('That did not work');
+      },
+    });
+  }
+
   /** The option that matches the choices made, the item to buy and the pictures to show. */
   private refresh(): void {
     const x = this.d;
     if (!x) return;
+    this.alertDone = null;
+    this.alertError = null;
     this.curVariant = x.options?.length ? (x.variants ?? []).find((v) => v.values.every((val, i) => val === this.chosen[i])) ?? null : null;
     const v = this.curVariant;
     this.it = v ? { ...x.product, id: v.id, name: x.product.name + ' - ' + v.label, price: v.price, wasPrice: v.wasPrice, stock: v.stock, variants: 0, priceFrom: false } : x.product;

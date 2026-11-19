@@ -135,6 +135,9 @@ export interface StoreOrder {
 }
 /** A person who delivers orders (a simple list kept in the shop settings, not an employee record). openOrders = orders still to deliver. */
 export interface Driver { id: number; name: string; phone: string | null; notes: string | null; active: boolean; openOrders: number }
+/** A customer waiting for a sold-out product (staff view), and a product customers are waiting for. */
+export interface StockAlert { id: number; productId: number; productName: string; email: string | null; phone: string | null; language: string; status: string; createdAt: string; notifiedAt: string | null; notifiedBy: string | null }
+export interface StockDemand { productId: number; productName: string; waiting: number; stock: string }
 export interface StoreSettings {
   enabled: boolean; paused: boolean; pauseMessage: string | null; shopName: string | null; introText: string | null; contactPhone: string | null;
   pickupAddress: string | null; pickupEnabled: boolean; deliveryEnabled: boolean; codEnabled: boolean; stockBuffer: number; minOrder: number;
@@ -341,6 +344,19 @@ export class OnlineStoreApiService {
   page(f: ListFilter, page: number, size: number, driverId: number | null = null): Observable<PageResult<StoreOrder>> {
     return pagedList<StoreOrder>(this.http, `${this.base}/orders`, f, page, size, driverId === null ? {} : { driverId: String(driverId) });
   }
+  // ---- back-in-stock alerts
+  /** SAVED = the shop will tell the customer; IN_STOCK = it can be bought now. */
+  requestStockAlert(body: { productId: number; email: string | null; phone: string | null; language: string; website?: string }): Observable<{ state: string }> {
+    return this.http.post<{ state: string }>(`${this.pub}/stock-alerts`, body, { headers: this.shopHeaders() });
+  }
+  stockDemand(): Observable<StockDemand[]> { return this.http.get<StockDemand[]>(`${this.base}/stock-alerts/demand`); }
+  /** The filter's status (WAITING, NOTIFIED, FAILED or empty) and q apply; productId narrows to one product. */
+  stockAlerts(f: ListFilter, page: number, size: number, productId: number | null): Observable<PageResult<StockAlert>> {
+    return pagedList<StockAlert>(this.http, `${this.base}/stock-alerts`, f, page, size, productId === null ? {} : { productId: String(productId) });
+  }
+  stockAlertTold(id: number): Observable<StockAlert> { return this.http.post<StockAlert>(`${this.base}/stock-alerts/${id}/told`, {}); }
+  stockAlertDelete(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/stock-alerts/${id}`); }
+  stockAlertsNotify(): Observable<{ told: number }> { return this.http.post<{ told: number }>(`${this.base}/stock-alerts/notify`, {}); }
   // ---- drivers and delivery papers
   drivers(): Observable<Driver[]> { return this.http.get<Driver[]>(`${this.base}/drivers`); }
   saveDriver(id: number | null, body: { name: string; phone: string | null; notes: string | null; active: boolean }): Observable<Driver> {

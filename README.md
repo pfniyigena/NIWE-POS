@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.54.0 - Online Store: back-in-stock alerts
+
+A sold-out product (or option) on the product page has a "Tell me when it is back" box (e-mail and/or phone). Every five minutes the shop tells waiting customers once, by e-mail and by text message when texts are set up, as soon as the product can be sold again. New screen Online Store > Waiting customers: products customers wait for (what to restock), the people, a WhatsApp button, "Mark as told", "Tell them now". See `docs/online-store-stock-alerts.md` and `RELEASE-NOTES-v1.54.0.md`. Database: migration V88.
+
 ### Version 1.53.0 - Online Store: share previews and search engines
 
 Links to the shop, a product or an information page now show a card (picture, name, description, price) in WhatsApp, Facebook and similar apps: the backend builds a small page for these crawlers (one nginx rule, in `docs/online-store-seo.md`). Product pages carry Google product data (price, stock, rating); `/sitemap.xml` and `/robots.txt` are served; the shop, products and information pages have real titles and descriptions inside the app. No database change. See `RELEASE-NOTES-v1.53.0.md`.
