@@ -475,6 +475,8 @@ public class OnlineOrderService {
             pay.setMethod(in == null || in.method() == null || in.method().isBlank() ? "CASH" : in.method().trim());
             pay.setNote(I18n.t("Online order {0}", o.getCode()));
             invoiceService.recordPayment(inv.id(), pay, caller);
+            // cash taken by a driver is cash he must hand in (Online Store > Driver cash)
+            if ("DELIVERY".equals(o.getDeliveryMethod()) && "CASH".equalsIgnoreCase(pay.getMethod())) o.setCashCollected(inv.totalAmount());
         }
         invoiceService.emailIssued(inv.id());
         move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (how == null ? "" : ", " + how) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs, by);

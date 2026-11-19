@@ -9,6 +9,11 @@ import java.util.Optional;
 public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> {
     Optional<OnlineOrder> findByCode(String code);
 
+    /** Delivery cash the drivers have not handed in yet, and the latest settlements. */
+    java.util.List<OnlineOrder> findByCashCollectedGreaterThanAndCashSettledAtIsNullOrderByIdAsc(java.math.BigDecimal zero);
+
+    java.util.List<OnlineOrder> findTop200ByCashSettledAtIsNotNullOrderByCashSettledAtDesc();
+
     /** An order from that e-mail address was placed after the given time (an abandoned cart that was finished after all). */
     boolean existsByCustomerEmailIgnoreCaseAndCreatedAtAfter(String email, java.time.Instant after);
 

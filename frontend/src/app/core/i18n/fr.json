@@ -9454,5 +9454,22 @@
  "To collect": "À encaisser",
  "The customer signs": "Le client signe",
  "Order {p0} delivered. Invoice {p1}.": "Commande {p0} livrée. Facture {p1}.",
- "The code is in the customer's account and message; it is never shown here. After five wrong codes it is blocked for half an hour.": "Le code est dans le compte et le message du client ; il n'est jamais affiché ici. Après cinq codes erronés, il est bloqué pendant une demi-heure."
+ "The code is in the customer's account and message; it is never shown here. After five wrong codes it is blocked for half an hour.": "Le code est dans le compte et le message du client ; il n'est jamais affiché ici. Après cinq codes erronés, il est bloqué pendant une demi-heure.",
+ "Driver cash": "Espèces des livreurs",
+ "Cash taken by a driver at the door is recorded when the order is completed. It waits here until the driver hands it in: type what he handed in. A difference needs a reason and is posted to Cash over / short.": "Les espèces prises par un livreur à la porte sont enregistrées quand la commande est terminée. Elles attendent ici que le livreur les remette : saisissez ce qu'il a remis. Un écart exige un motif et est comptabilisé dans Écarts de caisse.",
+ "To hand in": "À remettre",
+ "No cash waiting to be handed in.": "Aucune espèce en attente de remise.",
+ "Handed in": "Remis",
+ "Reason if different": "Motif si différent",
+ "Required": "Obligatoire",
+ "Short": "Manque",
+ "Over": "Surplus",
+ "Select all": "Tout sélectionner",
+ "Settle the selected": "Régler la sélection",
+ "Nothing settled yet.": "Rien de réglé pour le moment.",
+ "The latest 200 settlements. A settlement cannot be undone here: correct a mistake with a journal entry.": "Les 200 derniers règlements. Un règlement ne peut pas être annulé ici : corrigez une erreur par une écriture comptable.",
+ "Order {p0}: write the reason for the difference.": "Commande {p0} : écrivez le motif de l'écart.",
+ "Settle {p0} orders? Collected {p1}, handed in {p2}. This cannot be undone here.": "Régler {p0} commandes ? Encaissé {p1}, remis {p2}. Cela ne peut pas être annulé ici.",
+ "Difference {p0} goes to Cash over / short.": "L'écart de {p0} va dans Écarts de caisse.",
+ "{p0} orders settled.": "{p0} commandes réglées."
 }

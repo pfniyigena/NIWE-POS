@@ -38,10 +38,12 @@ public class OnlineStoreController {
     private final CartReminderService cartReminders;
     private final ShopLoyaltyService loyalty;
     private final OnlineContactService contacts;
+    private final OnlineDriverCashService driverCash;
 
     public OnlineStoreController(OnlineOrderService orders, OnlineStoreAdminService admin, OnlinePaymentService payments, OnlineReturnService returns,
                                  OnlineReviewService reviews, NewsletterService newsletter, NewsletterCampaignService campaigns,
-                                 CartReminderService cartReminders, ShopLoyaltyService loyalty, OnlineContactService contacts) {
+                                 CartReminderService cartReminders, ShopLoyaltyService loyalty, OnlineContactService contacts, OnlineDriverCashService driverCash) {
+        this.driverCash = driverCash;
         this.contacts = contacts;
         this.loyalty = loyalty;
         this.cartReminders = cartReminders;
@@ -178,6 +180,21 @@ public class OnlineStoreController {
         byte[] png = orders.signaturePng(id);
         if (png == null) return org.springframework.http.ResponseEntity.notFound().build();
         return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.IMAGE_PNG).body(png);
+    }
+
+    // ---------------------------------------------------------------- driver cash (v1.57.0)
+
+    /** Delivery cash waiting to be handed in (by driver) and the latest settlements. driverId: 0 = nobody assigned. */
+    @PreAuthorize(VIEW)
+    @GetMapping("/driver-cash")
+    public OnlineStoreDtos.DriverCashDto driverCash(@RequestParam(required = false) Long driverId) {
+        return driverCash.list(driverId);
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/driver-cash/settle")
+    public java.util.Map<String, Integer> settleDriverCash(@jakarta.validation.Valid @RequestBody OnlineStoreDtos.CashSettleRequest request) {
+        return java.util.Map.of("settled", driverCash.settle(request));
     }
 
     @PreAuthorize(MANAGE)

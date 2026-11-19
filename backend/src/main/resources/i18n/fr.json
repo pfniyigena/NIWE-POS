@@ -2016,5 +2016,14 @@
  "the customer confirmed it in the shop": "le client l'a confirmé dans la boutique",
  "Received on {0}: {1}": "Reçue le {0} : {1}",
  "Collected from the customer: {0}": "Encaissé auprès du client : {0}",
- "Ask the customer for the delivery code and type it in the app, or let the customer sign here or on the phone.": "Demandez au client son code de livraison et saisissez-le dans l'application, ou faites-le signer ici ou sur le téléphone."
+ "Ask the customer for the delivery code and type it in the app, or let the customer sign here or on the phone.": "Demandez au client son code de livraison et saisissez-le dans l'application, ou faites-le signer ici ou sur le téléphone.",
+ "Choose the orders to settle.": "Choisissez les commandes à régler.",
+ "An order is listed twice.": "Une commande figure deux fois.",
+ "Order {0} has no cash to hand in.": "La commande {0} n'a pas d'espèces à remettre.",
+ "The cash of order {0} was already settled.": "Les espèces de la commande {0} ont déjà été réglées.",
+ "Enter the amount handed in for order {0}.": "Saisissez le montant remis pour la commande {0}.",
+ "Order {0}: the amount differs from the cash collected ({1}). Write the reason.": "Commande {0} : le montant diffère des espèces encaissées ({1}). Écrivez le motif.",
+ "Driver cash handed in: {0}": "Espèces du livreur remises : {0}",
+ "Driver cash handed in: {0} (difference {1})": "Espèces du livreur remises : {0} (écart {1})",
+ "Driver cash, order {0}{1}: collected {2}, handed in {3}": "Espèces du livreur, commande {0}{1} : encaissé {2}, remis {3}"
 }

@@ -238,6 +238,25 @@ public final class OnlineStoreDtos {
     }
 
     /** locationId: the warehouse location the goods leave from (needed when multi-warehouse is on). collectPayment: record the cash now. */
+    /** One delivery order's cash as the driver handed it in (v1.57.0). A note is needed when it differs from what was collected. */
+    public record CashSettleItem(@NotNull Long orderId, @NotNull BigDecimal amount, @Size(max = 200) String note) {
+    }
+
+    public record CashSettleRequest(@NotNull @Size(min = 1, max = 100) List<CashSettleItem> items) {
+    }
+
+    /** A delivery order whose cash is to be handed in (or was): expected = what was collected in cash. */
+    public record DriverCashRow(Long orderId, String code, Long driverId, String driverName, String customerName, Instant deliveredAt, BigDecimal expected,
+                                BigDecimal handedIn, BigDecimal difference, Instant settledAt, String settledBy, String note) {
+    }
+
+    /** What one driver (id 0 = nobody assigned) still has to hand in. */
+    public record DriverCashTotal(Long driverId, String driverName, int orders, BigDecimal expected) {
+    }
+
+    public record DriverCashDto(List<DriverCashRow> waiting, List<DriverCashRow> settled, List<DriverCashTotal> totals) {
+    }
+
     public record CompleteRequest(Long locationId, Boolean collectPayment, String method) {
     }
 

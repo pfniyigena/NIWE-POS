@@ -179,6 +179,18 @@ public class AccountingService {
         post("TILL_VARIANCE", sessionId, memo, null, lines, branchId);
     }
 
+    /** A delivery driver handed in {@code variance} more (positive) or less (negative) cash than the orders he delivered had collected (Online Store > Driver cash). */
+    @Transactional
+    public void postDriverCashVariance(Long orderId, BigDecimal variance, String memo, Long branchId) {
+        if (variance == null || variance.signum() == 0) return;
+        BigDecimal amount = variance.abs();
+        boolean over = variance.signum() > 0;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, amount, null, over);
+        addIfPositive(lines, AccountService.CASH_OVER_SHORT, amount, over ? "Driver cash over" : "Driver cash short", !over);
+        post("DRIVER_CASH_VARIANCE", orderId, memo, null, lines, branchId);
+    }
+
     // ---- Gift cards (com.posapp.giftcards) ----
 
     /**

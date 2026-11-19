@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.57.0 - Online Store: driver cash hand-in
+
+Cash a driver takes at the door is followed until he hands it in. New screen Online Store > Driver cash: per driver, the delivery orders completed with cash collected; staff type what was handed in, a difference needs a reason and is posted to Cash over / short (short = expense, over = income). Several orders can be settled at once. See `docs/online-store-driver-cash.md` and `RELEASE-NOTES-v1.57.0.md`. Database: migration V90.
+
 ### Version 1.56.0 - Online Store: order reception
 
 An order out for delivery or ready for pick-up can be completed by whoever receives it: the customer taps "I received my order" (optional signature), the driver or counter staff types the customer's 4-digit delivery code, or the customer signs on the driver's phone (new screen Online Store > My deliveries). Each completes the order (stock out, invoice, cash recorded as collected for cash orders). The code is sent with the "on its way" message and shown in My account and on the order page; staff never see it. See `docs/online-store-reception.md` and `RELEASE-NOTES-v1.56.0.md`. Database: migration V89.

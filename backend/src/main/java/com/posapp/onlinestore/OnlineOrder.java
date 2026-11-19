@@ -103,6 +103,17 @@ public class OnlineOrder extends BaseEntity {
     @jakarta.persistence.Column(columnDefinition = "text")
     private String signature;
 
+    /**
+     * Cash recorded when a delivery order was completed (the invoice total paid in cash on delivery): what the driver must hand in. Null when nothing
+     * was collected in cash (paid online, pick-up, another way to pay). Settled by staff: what was handed in, the difference and who/when.
+     */
+    private BigDecimal cashCollected;
+    private Instant cashSettledAt;
+    private String cashSettledBy;
+    private BigDecimal cashHandedIn;
+    private BigDecimal cashDifference;
+    private String cashNote;
+
     /** The delivery code, made on first use (orders that went out before v1.56.0 get theirs when the customer or the shop first needs it). */
     public String ensureReceiptCode() {
         if (receiptCode == null || receiptCode.isBlank()) {

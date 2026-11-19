@@ -141,6 +141,10 @@ export interface StoreOrder {
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
 /** A person who delivers orders (a simple list kept in the shop settings, not an employee record). openOrders = orders still to deliver. */
+/** Delivery cash a driver must hand in, per order (v1.57.0). */
+export interface DriverCashRow { orderId: number; code: string; driverId: number | null; driverName: string | null; customerName: string; deliveredAt: string; expected: number; handedIn: number | null; difference: number | null; settledAt: string | null; settledBy: string | null; note: string | null }
+export interface DriverCashTotal { driverId: number; driverName: string | null; orders: number; expected: number }
+export interface DriverCashData { waiting: DriverCashRow[]; settled: DriverCashRow[]; totals: DriverCashTotal[] }
 export interface Driver { id: number; name: string; phone: string | null; notes: string | null; active: boolean; openOrders: number }
 /** A customer waiting for a sold-out product (staff view), and a product customers are waiting for. */
 export interface StockAlert { id: number; productId: number; productName: string; email: string | null; phone: string | null; language: string; status: string; createdAt: string; notifiedAt: string | null; notifiedBy: string | null }
@@ -370,6 +374,8 @@ export class OnlineStoreApiService {
   stockAlertDelete(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/stock-alerts/${id}`); }
   stockAlertsNotify(): Observable<{ told: number }> { return this.http.post<{ told: number }>(`${this.base}/stock-alerts/notify`, {}); }
   // ---- drivers and delivery papers
+  driverCash(driverId: number | null): Observable<DriverCashData> { return this.http.get<DriverCashData>(`${this.base}/driver-cash`, { params: driverId === null ? {} : { driverId: String(driverId) } }); }
+  settleDriverCash(items: { orderId: number; amount: number; note: string | null }[]): Observable<{ settled: number }> { return this.http.post<{ settled: number }>(`${this.base}/driver-cash/settle`, { items }); }
   drivers(): Observable<Driver[]> { return this.http.get<Driver[]>(`${this.base}/drivers`); }
   saveDriver(id: number | null, body: { name: string; phone: string | null; notes: string | null; active: boolean }): Observable<Driver> {
     return id ? this.http.put<Driver>(`${this.base}/drivers/${id}`, body) : this.http.post<Driver>(`${this.base}/drivers`, body);
