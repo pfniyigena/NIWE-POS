@@ -198,6 +198,7 @@ import { API_BASE } from '../core/constants';
                 <div class="text-muted" style="font-size:0.8rem;">
                   {{ 'Price' | translate }}: {{ l.unitPrice | number: '1.0-2' }} · {{ 'Stock' | translate }}: {{ stockLabel(l.stock) | translate }}<span *ngIf="!l.hasImage"> · {{ 'No picture yet' | translate }}</span>
                 </div>
+                <div class="lst-shopprice" style="font-size:0.85rem; margin-top:0.15rem;"><strong>{{ 'Customers pay on the shop' | translate }}: {{ shopPrice(l) | number: '1.0-2' }}</strong><span class="text-muted" *ngIf="l.taxOnTopPercent"> ({{ 'the price {p0} plus {p1}% tax' | translate: { p0: (l.onlinePrice ?? l.unitPrice) | number: '1.0-2', p1: l.taxOnTopPercent } }})</span><span class="text-muted" *ngIf="!l.taxOnTopPercent"> ({{ 'no tax added' | translate }})</span></div>
                 <div class="lst-stock" style="font-size:0.8rem; margin-top:0.15rem;" [style.color]="l.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">
                   <ng-container *ngIf="l.stockInfo.tracked; else untracked">{{ 'In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − shop buffer {p2} = sellable now {p3}' | translate: { p0: l.stockInfo.inWarehouses, p1: l.stockInfo.reserved, p2: l.stockInfo.buffer, p3: l.stockInfo.sellable } }}</ng-container>
                   <ng-template #untracked>{{ 'Stock is not tracked for this product: the shop always shows it as in stock.' | translate }}</ng-template>
@@ -527,6 +528,12 @@ export class StoreSetupComponent implements OnInit {
 
   listingPages(): number {
     return Math.max(1, Math.ceil(this.filteredListings().length / this.listSize));
+  }
+
+  /** The price customers see on the shop for a listing: its online price (or the product price) with the tax added on top when the tax rate is not included. */
+  shopPrice(l: StoreListing): number {
+    const base = Number(l.onlinePrice ?? l.unitPrice) || 0;
+    return l.taxOnTopPercent ? Math.round(base * (1 + l.taxOnTopPercent / 100) * 100) / 100 : base;
   }
 
   pageListings(): StoreListing[] {

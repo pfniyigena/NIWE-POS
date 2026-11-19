@@ -145,6 +145,8 @@ export interface StoreListing {
   id: number; productId: number; productName: string; sku: string | null; category: string | null; unitPrice: number; listed: boolean;
   webTitle: string | null; webDescription: string | null; onlinePrice: number | null; sortOrder: number; hasImage: boolean; stock: string;
   featured: boolean; bestSeller: boolean; specialOffer: boolean; newArrival: boolean; stockInfo: StoreStockInfo;
+  /** The tax rate (percent) the shop adds on top of the price, or null when there is none or it is already in the price. */
+  taxOnTopPercent: number | null;
 }
 /** Why a product shows the stock it shows. tracked false = stock is not tracked for it, so the shop always shows it as in stock. */
 export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; buffer: number; sellable: number | null }

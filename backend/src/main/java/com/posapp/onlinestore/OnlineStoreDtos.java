@@ -265,7 +265,8 @@ public final class OnlineStoreDtos {
 
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,
                              String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock,
-                             boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival, StockInfo stockInfo) {
+                             boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival, StockInfo stockInfo,
+                             BigDecimal taxOnTopPercent) {
     }
 
     /**

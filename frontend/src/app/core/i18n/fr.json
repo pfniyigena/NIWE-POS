@@ -9270,5 +9270,8 @@
  "Count rating again": "Recompter la note",
  "Take this rating out of the averages? The words, if any, are not changed.": "Retirer cette note des moyennes ? Les mots, s'il y en a, ne sont pas modifiés.",
  "The rating no longer counts.": "La note ne compte plus.",
- "The rating counts again.": "La note compte de nouveau."
+ "The rating counts again.": "La note compte de nouveau.",
+ "Customers pay on the shop": "Les clients paient sur la boutique",
+ "the price {p0} plus {p1}% tax": "le prix {p0} plus {p1} % de taxe",
+ "no tax added": "aucune taxe ajoutée"
 }
