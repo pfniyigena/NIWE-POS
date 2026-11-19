@@ -16,7 +16,7 @@ export interface ProductReview { productName: string; reviewerName: string; rati
 export interface ProductDetail {
   product: ShopProduct; brand: string | null; images: string[]; specs: ProductSpec[];
   rating: { average: number; count: number; stars: number[] };
-  reviews: ProductReview[]; related: ShopProduct[];
+  reviews: ProductReview[]; related: ShopProduct[]; bought: ShopProduct[];
 }
 /** What staff edit for a product on the shop: extra pictures and specification rows. */
 export interface ListingImage { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
@@ -34,14 +34,22 @@ export interface Shop {
   /** True when signed-in customers earn and spend loyalty points; loyaltyMaxPercent is the share of the goods points may pay. */
   loyalty: boolean;
   loyaltyMaxPercent: number;
+  /** The brands of the listed products, and the categories with a picture and a count (tiles of the front page). */
+  brands: string[]; categoryTiles: ShopTile[];
   /** The front page's wording, written by staff in Shop settings > Front page. */
   page: ShopPageContent;
 }
+export interface ShopTile { name: string; imageUrl: string | null; count: number }
+/** What the visitor chose in the search box and the filter bar. */
+export interface ShopFilter { brand: string; minPrice: number | null; maxPrice: number | null; inStock: boolean; minRating: number; sort: string }
+export interface ShopSuggest { products: ShopProduct[]; categories: string[]; brands: string[] }
 export interface ShopLink { label: string; url: string }
 export interface ShopPageContent {
   announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
   heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
   footerLinks: ShopLink[]; socialLinks: ShopLink[];
+  /** The shop's colour (#rrggbb) and the estimated delivery time in days; empty when staff set none. */
+  brandColor: string | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null;
 }
 export interface ShopReview { productName: string; reviewerName: string; rating: number; text: string; at: string }
 /** The rows of the front page, chosen by staff, and the best approved reviews. */
@@ -145,6 +153,7 @@ export interface StorePageContent {
   announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
   heroButtonLink: string | null; heroImageUrl: string | null; aboutText: string | null; contactEmail: string | null; openingHours: string | null;
   footerLinks: string | null; socialLinks: string | null;
+  brandColor: string | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null;
 }
 export interface StoreBanner { id: number; fileName: string; sizeBytes: number; sortOrder: number; url: string }
 /** Advertising (v1.43.0): the businesses that pay for ads, their ads, the ads the shop shows today and the report. */
@@ -208,10 +217,18 @@ export class OnlineStoreApiService {
   // ---- customers
   shop(): Observable<Shop> { return this.http.get<Shop>(`${this.pub}/shop`); }
   /** One page of the catalogue (page starts at 0); search and category are applied by the server. */
-  products(page: number, size: number, q: string, category: string): Observable<ShopPage> {
+  products(page: number, size: number, q: string, category: string, f?: ShopFilter): Observable<ShopPage> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (q.trim()) params = params.set('q', q.trim());
     if (category) params = params.set('category', category);
+    if (f) {
+      if (f.brand) params = params.set('brand', f.brand);
+      if (f.minPrice !== null && f.minPrice !== undefined && `${f.minPrice}` !== '') params = params.set('minPrice', f.minPrice);
+      if (f.maxPrice !== null && f.maxPrice !== undefined && `${f.maxPrice}` !== '') params = params.set('maxPrice', f.maxPrice);
+      if (f.inStock) params = params.set('inStock', true);
+      if (f.minRating > 0) params = params.set('minRating', f.minRating);
+      if (f.sort) params = params.set('sort', f.sort);
+    }
     return this.http.get<ShopPage>(`${this.pub}/products`, { params });
   }
   /** A signed-in customer's order joins their account; a missing or stale token just makes it a guest order. */
@@ -387,6 +404,10 @@ export class OnlineStoreApiService {
   /** The ads the shop may show today, by space (HOME_TOP, PRODUCT, ORDER). */
   shopAds(): Observable<Record<string, ShopAd[]>> { return this.http.get<Record<string, ShopAd[]>>(`${this.pub}/ads`); }
   /** Tell the shop these ads were shown in this space (counted once per visitor and half hour). */
+  /** Suggestions while typing in the search box. */
+  suggest(q: string): Observable<ShopSuggest> { return this.http.get<ShopSuggest>(`${this.pub}/suggest`, { params: new HttpParams().set('q', q) }); }
+  /** The products with these ids (from the visitor's own browser), for "recently viewed". */
+  recent(ids: number[]): Observable<ShopProduct[]> { return this.http.get<ShopProduct[]>(`${this.pub}/recent`, { params: new HttpParams().set('ids', ids.join(',')) }); }
   productDetail(id: number): Observable<ProductDetail> { return this.http.get<ProductDetail>(`${this.pub}/products/${id}`); }
   adSeen(placement: string, ids: number[]): Observable<void> { return this.http.post<void>(`${this.pub}/ads/seen`, { placement, ids }); }
   reviewsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReview>> {

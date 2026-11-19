@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.45.0 - Online Store: better cards, search and filters, product page extras, category tiles
+
+Product cards are the same height with a two-line name, a discount badge, stars, "In stock / Out of stock" and a Quick view window. The search finds products by name, SKU, barcode, brand, category or description (every word typed must match), with suggestions while typing, and the list can be filtered by price, brand, rating and availability and sorted (newest, most popular, best rated, price). Recently viewed products are remembered in the visitor's own browser. The product page gets a zoom and full-screen view, a quantity selector, delivery information with an estimated date, Share on WhatsApp and "Frequently bought together". The home page has "Shop by category" tiles with pictures, and staff can set the shop's colour and the estimated delivery days (Shop settings > Front page). Not built (left for later): wishlist, product variants, bank card payments. Migration V80. See `docs/online-store-shop-experience.md` and `RELEASE-NOTES-v1.45.0.md`.
+
 ### Version 1.44.0 - Online Store: product page
 
 Every product on the shop now has its own page (an address customers can share: `/shop?product=ID`): bigger picture and a gallery of up to 5 more pictures, price and stock, full description, a specifications table (staff write rows like "Size: 5 kg"), the star rating with the approved reviews, and related products. Staff manage the pictures, description and specifications in Shop settings > Products on the shop > "Product page". Ratings stay as before: only buyers can review, from their completed order, and staff approve. Ads placed "above the product list" also show on product pages. Migration V79. See `docs/online-store-product-page.md` and `RELEASE-NOTES-v1.44.0.md`.

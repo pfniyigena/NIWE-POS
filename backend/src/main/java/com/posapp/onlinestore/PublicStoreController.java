@@ -45,10 +45,12 @@ public class PublicStoreController {
     private final OnlineReviewService reviews;
     private final NewsletterService newsletter;
     private final CartReminderService cartReminders;
+    private final OnlineProductPageService pages;
 
     public PublicStoreController(OnlineStoreService service, ModuleService moduleService, OnlinePaymentService payments, SimulatedPaymentProvider simulated,
                                  ShopAccountService accounts, OnlineReturnService returns, OnlineFrontService front, OnlineReviewService reviews,
-                                 NewsletterService newsletter, CartReminderService cartReminders) {
+                                 NewsletterService newsletter, CartReminderService cartReminders, OnlineProductPageService pages) {
+        this.pages = pages;
         this.cartReminders = cartReminders;
         this.front = front;
         this.reviews = reviews;
@@ -79,10 +81,27 @@ public class PublicStoreController {
     /** The catalogue, a page at a time. page starts at 0; size is capped; q searches the name; category is a category name from the shop's list. */
     @GetMapping("/products")
     public PublicProductPage products(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "16") int size,
-                                      @RequestParam(required = false) String q, @RequestParam(required = false) String category) {
+                                      @RequestParam(required = false) String q, @RequestParam(required = false) String category,
+                                      @RequestParam(required = false) String brand, @RequestParam(required = false) java.math.BigDecimal minPrice,
+                                      @RequestParam(required = false) java.math.BigDecimal maxPrice, @RequestParam(defaultValue = "false") boolean inStock,
+                                      @RequestParam(defaultValue = "0") int minRating, @RequestParam(required = false) String sort) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
-        PublicProductPage p = service.products(page, size, q, category);
+        PublicProductPage p = service.products(page, size, new OnlineShopSearch.Filter(q, category, brand, minPrice, maxPrice, inStock, minRating, sort));
         return new PublicProductPage(front.withRatings(p.items()), p.page(), p.size(), p.total(), p.totalPages());
+    }
+
+    /** Suggestions while the visitor types in the search box. */
+    @GetMapping("/suggest")
+    public Suggestions suggest(@RequestParam(defaultValue = "") String q) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return service.suggest(q);
+    }
+
+    /** The products a visitor looked at lately (their ids come from the visitor's own browser). Products no longer on the shop are left out. */
+    @GetMapping("/recent")
+    public java.util.List<OnlineStoreDtos.PublicProduct> recent(@RequestParam(defaultValue = "") String ids) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return pages.recent(ids);
     }
 
     /** The front page: the rows staff picked, the popular categories and the best approved reviews. */

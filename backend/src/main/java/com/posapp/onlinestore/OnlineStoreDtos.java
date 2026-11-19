@@ -31,7 +31,7 @@ public final class OnlineStoreDtos {
     /** The front page's wording. Anything empty is simply not shown. */
     public record PublicPage(String announcementText, String announcementLink, String heroTitle, String heroSubtitle, String heroButtonText,
                              String heroButtonLink, String heroImageUrl, String aboutText, String contactEmail, String openingHours,
-                             List<PublicLink> footerLinks, List<PublicLink> socialLinks) {
+                             List<PublicLink> footerLinks, List<PublicLink> socialLinks, String brandColor, Integer deliveryDaysMin, Integer deliveryDaysMax) {
     }
 
     public record PublicReview(String productName, String reviewerName, int rating, String text, Instant at) {
@@ -45,7 +45,16 @@ public final class OnlineStoreDtos {
     public record PublicShop(String name, String intro, String phone, String pickupAddress, boolean open, String message,
                              boolean pickup, boolean delivery, boolean cash, BigDecimal minOrder, BigDecimal freeDeliveryOver,
                              List<PublicZone> zones, List<String> categories, boolean payOnline, List<String> payMethods, List<ProviderDto> payProviders, boolean accounts, String currency, boolean coupons,
-                             String textChannel, boolean cartReminders, boolean loyalty, int loyaltyMaxPercent, PublicPage page) {
+                             String textChannel, boolean cartReminders, boolean loyalty, int loyaltyMaxPercent, PublicPage page,
+                             List<String> brands, List<CategoryTile> categoryTiles) {
+    }
+
+    /** A category of the shop with a picture (one of its products' pictures) and how many products it holds. */
+    public record CategoryTile(String name, String imageUrl, long count) {
+    }
+
+    /** What the search box offers while the visitor types. */
+    public record Suggestions(List<PublicProduct> products, List<String> categories, List<String> brands) {
     }
 
     /** One page of the catalogue. page starts at 0. */
@@ -337,7 +346,8 @@ public final class OnlineStoreDtos {
     public record PageContent(@Size(max = 200) String announcementText, @Size(max = 300) String announcementLink, @Size(max = 120) String heroTitle,
                               @Size(max = 300) String heroSubtitle, @Size(max = 40) String heroButtonText, @Size(max = 300) String heroButtonLink,
                               @Size(max = 300) String heroImageUrl, @Size(max = 400) String aboutText, @Size(max = 160) String contactEmail,
-                              @Size(max = 200) String openingHours, @Size(max = 1200) String footerLinks, @Size(max = 800) String socialLinks) {
+                              @Size(max = 200) String openingHours, @Size(max = 1200) String footerLinks, @Size(max = 800) String socialLinks,
+                              @Size(max = 7) String brandColor, Integer deliveryDaysMin, Integer deliveryDaysMax) {
     }
 
     // reviews

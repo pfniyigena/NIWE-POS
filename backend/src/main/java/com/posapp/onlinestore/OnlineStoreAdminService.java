@@ -247,7 +247,8 @@ public class OnlineStoreAdminService {
     public PageContent pageContent() {
         OnlineStoreSettings s = storeService.settings();
         return new PageContent(s.getAnnouncementText(), s.getAnnouncementLink(), s.getHeroTitle(), s.getHeroSubtitle(), s.getHeroButtonText(), s.getHeroButtonLink(),
-                s.getHeroImageUrl(), s.getAboutText(), s.getContactEmail(), s.getOpeningHours(), s.getFooterLinks(), s.getSocialLinks());
+                s.getHeroImageUrl(), s.getAboutText(), s.getContactEmail(), s.getOpeningHours(), s.getFooterLinks(), s.getSocialLinks(),
+                s.getBrandColor(), s.getDeliveryDaysMin(), s.getDeliveryDaysMax());
     }
 
     @Transactional
@@ -271,6 +272,16 @@ public class OnlineStoreAdminService {
         s.setOpeningHours(text(in.openingHours(), 200));
         s.setFooterLinks(lines(in.footerLinks(), 8, 1200, I18n.t("Footer links")));
         s.setSocialLinks(lines(in.socialLinks(), 6, 800, I18n.t("Social links")));
+        String color = text(in.brandColor(), 7);
+        if (color != null && !color.matches("^#[0-9a-fA-F]{6}$")) throw ApiException.badRequest(I18n.t("The shop colour must look like #1d4ed8."));
+        s.setBrandColor(color == null ? null : color.toLowerCase());
+        Integer dMin = in.deliveryDaysMin();
+        Integer dMax = in.deliveryDaysMax();
+        if (dMin == null && dMax != null) dMin = dMax;
+        if (dMax == null && dMin != null) dMax = dMin;
+        if (dMin != null && (dMin < 0 || dMax < dMin || dMax > 60)) throw ApiException.badRequest(I18n.t("The delivery estimate must be from 0 to 60 days, the first number not above the second."));
+        s.setDeliveryDaysMin(dMin);
+        s.setDeliveryDaysMax(dMax);
         settingsRepository.save(s);
         auditLogService.record("ONLINE_STORE_FRONT_PAGE", "Updated the wording of the shop's front page");
         return pageContent();

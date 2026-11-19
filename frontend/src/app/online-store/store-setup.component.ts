@@ -152,6 +152,21 @@ import { API_BASE } from '../core/constants';
             <input class="form-control" type="email" maxlength="160" name="fpMail" [(ngModel)]="pc.contactEmail" /></div>
           <div class="form-group" style="flex:1; min-width:220px;"><label class="form-label">{{ 'Opening hours (footer)' | translate }}</label>
             <input class="form-control" maxlength="200" name="fpHours" [(ngModel)]="pc.openingHours" /></div>
+        <div class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
+          <div class="form-group" style="min-width:220px;"><label class="form-label">{{ 'Shop colour (buttons and links)' | translate }}</label>
+            <div class="flex gap-1" style="align-items:center;">
+              <input type="color" class="fp-color-pick" style="width:44px; height:36px; padding:0; border:0; background:none;" name="fpColorPick" [ngModel]="pc.brandColor || '#1d4ed8'" (ngModelChange)="pc.brandColor = $event" />
+              <input class="form-control fp-color" maxlength="7" style="width:110px;" name="fpColor" [(ngModel)]="pc.brandColor" placeholder="#1d4ed8" />
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="pc.brandColor = null">{{ 'Standard' | translate }}</button>
+            </div></div>
+          <div class="form-group" style="min-width:260px;"><label class="form-label">{{ 'Estimated delivery, in days after the order is accepted' | translate }}</label>
+            <div class="flex gap-1" style="align-items:center;">
+              <input class="form-control fp-days-min" type="number" min="0" max="60" style="width:80px;" name="fpDMin" [(ngModel)]="pc.deliveryDaysMin" />
+              <span>–</span>
+              <input class="form-control fp-days-max" type="number" min="0" max="60" style="width:80px;" name="fpDMax" [(ngModel)]="pc.deliveryDaysMax" />
+              <span class="text-muted">{{ 'days' | translate }}</span>
+            </div></div>
+        </div>
         </div>
         <div class="form-group"><label class="form-label">{{ 'Footer links: one per line, written Label|address (at most 8). The address starts with / (a page of this site) or https://' | translate }}</label>
           <textarea class="form-control fp-links" rows="4" maxlength="1200" name="fpLinks" [(ngModel)]="pc.footerLinks" placeholder="Delivery|https://example.com/delivery"></textarea></div>

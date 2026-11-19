@@ -56,13 +56,15 @@ public class OnlineStoreService {
     /** Requests per connection in the last hour, to slow down scripts that fill the order list. */
     private final OnlineCouponService coupons;
     private final OnlineTextService texts;
+    private final OnlineShopSearch search;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
 
     public OnlineStoreService(OnlineStoreSettingsRepository settingsRepository, OnlineListingRepository listingRepository,
                               OnlineDeliveryZoneRepository zoneRepository, OnlineOrderRepository orderRepository,
                               StockReservationService stockReservationService, StoreSettingsService storeSettingsService,
                               MailService mailService, AuditLogService auditLogService, OnlinePaymentService payments, OnlineCouponService coupons,
-                              OnlineTextService texts, ShopLoyaltyService loyalty) {
+                              OnlineTextService texts, ShopLoyaltyService loyalty, OnlineShopSearch search) {
+        this.search = search;
         this.loyalty = loyalty;
         this.payments = payments;
         this.texts = texts;
@@ -173,14 +175,14 @@ public class OnlineStoreService {
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
                 listingRepository.findShopCategories(), !payments.payMethods(s).isEmpty(), payments.payMethods(s), payments.payOptions(s), s.isAccountsEnabled(), currencyCode(), coupons.anyActive(), texts.channel(),
-                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyMaxPercent(), page(s));
+                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyMaxPercent(), page(s), listingRepository.findShopBrands(), tiles());
     }
 
     /** The front page's wording as the public sees it. */
     static PublicPage page(OnlineStoreSettings s) {
         return new PublicPage(blank(s.getAnnouncementText()), blank(s.getAnnouncementLink()), blank(s.getHeroTitle()), blank(s.getHeroSubtitle()),
                 blank(s.getHeroButtonText()), blank(s.getHeroButtonLink()), blank(s.getHeroImageUrl()), blank(s.getAboutText()), blank(s.getContactEmail()),
-                blank(s.getOpeningHours()), links(s.getFooterLinks(), 8), links(s.getSocialLinks(), 6));
+                blank(s.getOpeningHours()), links(s.getFooterLinks(), 8), links(s.getSocialLinks(), 6), blank(s.getBrandColor()), s.getDeliveryDaysMin(), s.getDeliveryDaysMax());
     }
 
     private static String blank(String v) {
@@ -215,18 +217,37 @@ public class OnlineStoreService {
 
     /** One page of the catalogue, searched and filtered in the database so a shop with many products never sends them all at once. */
     @Transactional(readOnly = true)
-    public PublicProductPage products(int page, int size, String q, String category) {
+    public PublicProductPage products(int page, int size, OnlineShopSearch.Filter filter) {
         OnlineStoreSettings s = openSettings();
         int pageSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         int pageNo = Math.max(0, page);
-        String needle = q == null ? "" : q.trim().toLowerCase().replace("\\", "").replace("%", "").replace("_", "");
-        if (needle.length() > 60) needle = needle.substring(0, 60);
-        String cat = category == null ? "" : category.trim();
-        org.springframework.data.domain.Page<OnlineListing> result =
-                listingRepository.findShopPage(needle, cat, org.springframework.data.domain.PageRequest.of(pageNo, pageSize));
+        org.springframework.data.domain.Page<OnlineListing> result = search.search(filter, pageNo, pageSize);
         List<PublicProduct> items = new ArrayList<>();
         for (OnlineListing l : result.getContent()) items.add(publicProduct(l, s));
         return new PublicProductPage(items, pageNo, pageSize, result.getTotalElements(), result.getTotalPages());
+    }
+
+    /** What the search box offers while the visitor types: a few products, categories and brands that match. */
+    @Transactional(readOnly = true)
+    public Suggestions suggest(String q) {
+        OnlineStoreSettings s = openSettings();
+        List<String> words = OnlineShopSearch.words(q);
+        if (words.isEmpty() || String.join("", words).length() < 2) return new Suggestions(List.of(), List.of(), List.of());
+        String needle = String.join(" ", words);
+        List<PublicProduct> items = new ArrayList<>();
+        for (OnlineListing l : search.search(new OnlineShopSearch.Filter(needle, null, null, null, null, false, 0, null), 0, 6).getContent()) items.add(publicProduct(l, s));
+        List<String> cats = listingRepository.findShopCategories().stream().filter(c -> c.toLowerCase().contains(words.get(0))).limit(3).toList();
+        List<String> brands = listingRepository.findShopBrands().stream().filter(b -> b.toLowerCase().contains(words.get(0))).limit(3).toList();
+        return new Suggestions(items, cats, brands);
+    }
+
+    /** The categories with a picture and a count, for the tiles of the front page. */
+    List<CategoryTile> tiles() {
+        List<CategoryTile> out = new ArrayList<>();
+        for (Object[] r : listingRepository.findCategoryTiles()) {
+            out.add(new CategoryTile((String) r[0], r[2] == null ? null : "/api/public/store/products/" + ((Number) r[2]).longValue() + "/image", ((Number) r[1]).longValue()));
+        }
+        return out;
     }
 
     /** The currency the shop charges in (the business currency), shown next to every price on the public shop. */

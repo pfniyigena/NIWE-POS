@@ -1,8 +1,10 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { OnlineStoreApiService, ProductDetail, ShopAd, ShopProduct } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, ProductDetail, Shop, ShopAd, ShopProduct } from '../core/api/online-store-api.service';
+import { LanguageService } from '../core/i18n/language.service';
+import { recentIds, rememberProduct } from './recent';
 import { ShopAdComponent } from './shop-ad.component';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { T } from '../core/i18n/t';
@@ -25,13 +27,15 @@ import { T } from '../core/i18n/t';
       <ng-container *ngIf="d as x">
         <div class="shop-pp-main" style="margin-top:1rem; display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.25rem; align-items:start;">
           <div class="shop-pp-gallery">
-            <div style="background:#f3f4f6; border-radius:10px; display:flex; align-items:center; justify-content:center; min-height:260px; overflow:hidden;">
-              <img *ngIf="x.images.length" class="shop-pp-big" [src]="big(x.images[sel])" [alt]="x.product.name" style="width:100%; max-height:460px; object-fit:contain;" />
+            <div class="shop-pp-zoom" (mousemove)="zoomMove($event)" (mouseleave)="zoomOn = false" (click)="lightbox = true" [title]="'Click to enlarge' | translate"
+                 style="background:#f3f4f6; border-radius:10px; display:flex; align-items:center; justify-content:center; min-height:260px; overflow:hidden; cursor:zoom-in;">
+              <img *ngIf="x.images.length" class="shop-pp-big" [src]="big(x.images[sel])" [alt]="x.product.name" [style.transform]="zoomOn ? 'scale(2)' : 'none'" [style.transform-origin]="origin"
+                   style="width:100%; max-height:460px; object-fit:contain; transition:transform 0.12s;" />
               <span *ngIf="!x.images.length" style="font-size:4rem;">🛍️</span>
             </div>
             <div class="flex gap-1 mt-2" *ngIf="x.images.length > 1" style="flex-wrap:wrap;">
               <button type="button" class="shop-pp-thumb" *ngFor="let u of x.images; let i = index" (click)="sel = i" [attr.aria-label]="(i + 1) + ' / ' + x.images.length"
-                      [style.border]="i === sel ? '2px solid #1d4ed8' : '2px solid #e5e7eb'" style="padding:0; width:64px; height:64px; border-radius:8px; overflow:hidden; cursor:pointer; background:#fff;">
+                      [style.border]="i === sel ? '2px solid var(--shop-brand, #1d4ed8)' : '2px solid #e5e7eb'" style="padding:0; width:64px; height:64px; border-radius:8px; overflow:hidden; cursor:pointer; background:#fff;">
                 <img [src]="thumb(u)" alt="" style="width:100%; height:100%; object-fit:cover;" />
               </button>
             </div>
@@ -47,13 +51,32 @@ import { T } from '../core/i18n/t';
             <div class="mt-1 shop-pp-stock" [style.color]="x.product.stock === 'IN_STOCK' ? '#15803d' : x.product.stock === 'LOW' ? '#b45309' : '#6b7280'">
               {{ x.product.stock === 'IN_STOCK' ? ('In stock' | translate) : x.product.stock === 'LOW' ? ('Few left' | translate) : ('Sold out' | translate) }}
             </div>
-            <div class="mt-3" style="max-width:260px;">
+            <div class="mt-3" style="max-width:320px;">
               <div class="flex gap-1" *ngIf="qty(x.product) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
                 <button class="btn btn-outline-secondary shop-pp-minus" (click)="change.emit({ p: x.product, by: -1 })">−</button>
-                <span>{{ qty(x.product) }}</span>
+                <span>{{ qty(x.product) }} {{ 'in your cart' | translate }}</span>
                 <button class="btn btn-outline-secondary shop-pp-plus" (click)="change.emit({ p: x.product, by: 1 })" [disabled]="qty(x.product) >= 20">+</button>
               </div>
-              <ng-template #addBtn><button class="btn btn-primary shop-pp-add" style="width:100%;" [disabled]="x.product.stock === 'SOLD_OUT' || !open" (click)="change.emit({ p: x.product, by: 1 })">{{ 'Add to cart' | translate }}</button></ng-template>
+              <ng-template #addBtn>
+                <div class="flex gap-2" style="align-items:center;">
+                  <div class="flex gap-1 shop-pp-qty" style="align-items:center;">
+                    <button type="button" class="btn btn-outline-secondary shop-pp-qminus" [disabled]="pick <= 1" [attr.aria-label]="'Less' | translate" (click)="pick = pick - 1">−</button>
+                    <span class="shop-pp-qnum" style="min-width:1.8em; text-align:center;">{{ pick }}</span>
+                    <button type="button" class="btn btn-outline-secondary shop-pp-qplus" [disabled]="pick >= 20" [attr.aria-label]="'More' | translate" (click)="pick = pick + 1">+</button>
+                  </div>
+                  <button class="btn btn-primary shop-pp-add" style="flex:1;" [disabled]="x.product.stock === 'SOLD_OUT' || !open" (click)="change.emit({ p: x.product, by: pick }); pick = 1">{{ 'Add to cart' | translate }}</button>
+                </div>
+              </ng-template>
+              <a class="btn btn-outline-secondary shop-pp-wa mt-2" [href]="waLink(x.product)" target="_blank" rel="noopener" style="width:100%;">{{ 'Share on WhatsApp' | translate }}</a>
+            </div>
+
+            <div class="shop-pp-delivery mt-3" *ngIf="shop && (shop.delivery || shop.pickup)" style="font-size:0.9rem; border:1px solid rgba(128,128,128,0.3); border-radius:8px; padding:0.6rem 0.75rem;">
+              <strong>{{ 'Delivery' | translate }}</strong>
+              <div *ngIf="etaText() as eta" class="shop-pp-eta">🚚 {{ 'Estimated delivery' | translate }}: {{ eta }}</div>
+              <div *ngIf="shop.delivery && fromFee() !== null" class="shop-pp-fee">{{ 'Delivery from {p0}' | translate: { p0: (fromFee() | shopMoney: cur) } }}<ng-container *ngIf="shop.freeDeliveryOver"> · {{ 'free over {p0}' | translate: { p0: (shop.freeDeliveryOver | shopMoney: cur) } }}</ng-container></div>
+              <div *ngIf="shop.delivery && fromFee() === null">{{ 'Delivery available' | translate }}</div>
+              <div *ngIf="shop.pickup" class="shop-pp-pickup">🏬 {{ 'Pick up in store' | translate }}<ng-container *ngIf="shop.pickupAddress">: {{ shop.pickupAddress }}</ng-container></div>
+              <div class="text-muted" *ngIf="etaText()" style="font-size:0.78rem;">{{ 'The date counts from today, if the shop accepts your order today.' | translate }}</div>
             </div>
           </div>
         </div>
@@ -71,6 +94,23 @@ import { T } from '../core/i18n/t';
               <td style="padding:0.4rem 0;">{{ r.value }}</td>
             </tr>
           </table>
+        </section>
+
+        <section class="shop-pp-bought" style="margin-top:2rem;" *ngIf="x.bought.length">
+          <h3 style="margin:0 0 0.6rem;">{{ 'Frequently bought together' | translate }}</h3>
+          <div class="flex gap-2" style="flex-wrap:wrap; align-items:stretch;">
+            <ng-container *ngFor="let p of boughtAll(x); let i = index">
+              <span *ngIf="i > 0" style="align-self:center; font-size:1.4rem;">+</span>
+              <a class="card shop-pp-bt" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="padding:0.5rem; width:150px; color:inherit; text-decoration:none;">
+                <img *ngIf="p.imageUrl" [src]="thumb(p.imageUrl)" [alt]="p.name" loading="lazy" style="width:100%; height:90px; object-fit:cover; border-radius:6px;" />
+                <div *ngIf="!p.imageUrl" style="width:100%; height:90px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🛍️</div>
+                <div style="font-size:0.85rem; line-height:1.25; margin-top:0.25rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ p.name }}</div>
+                <strong style="font-size:0.9rem;">{{ p.price | shopMoney: cur }}</strong>
+              </a>
+            </ng-container>
+          </div>
+          <div class="mt-2"><strong class="shop-pp-bt-total">{{ boughtTotal(x) | shopMoney: cur }}</strong>
+            <button type="button" class="btn btn-primary shop-pp-bt-add" style="margin-left:0.75rem;" [disabled]="!open" (click)="addAll(x)">{{ 'Add all to cart' | translate }}</button></div>
         </section>
 
         <app-shop-ad *ngIf="ads.length" placement="PRODUCT" [ads]="ads"></app-shop-ad>
@@ -113,12 +153,33 @@ import { T } from '../core/i18n/t';
             </a>
           </div>
         </section>
+
+        <section class="shop-pp-recent" style="margin-top:2rem;" *ngIf="recent.length">
+          <h3 style="margin:0 0 0.6rem;">{{ 'Recently viewed' | translate }}</h3>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:0.75rem;">
+            <a class="card shop-pp-rv" *ngFor="let p of recent" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="padding:0.6rem; color:inherit; text-decoration:none;">
+              <img *ngIf="p.imageUrl" [src]="thumb(p.imageUrl)" [alt]="p.name" loading="lazy" style="width:100%; height:110px; object-fit:cover; border-radius:6px;" />
+              <div *ngIf="!p.imageUrl" style="width:100%; height:110px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
+              <div class="mt-1"><strong>{{ p.name }}</strong></div>
+              <div><strong>{{ p.price | shopMoney: cur }}</strong></div>
+            </a>
+          </div>
+        </section>
       </ng-container>
+
+      <div class="shop-pp-lightbox" *ngIf="lightbox && d && d.images.length" (click)="lightbox = false" style="position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:70; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <button type="button" class="shop-pp-lb-prev" *ngIf="d.images.length > 1" (click)="$event.stopPropagation(); step(-1)" [attr.aria-label]="'Previous picture' | translate" style="position:absolute; left:0.75rem; top:50%; width:44px; height:44px; border-radius:50%; border:0; font-size:1.4rem; cursor:pointer;">‹</button>
+        <img [src]="huge(d.images[sel])" [alt]="d.product.name" (click)="$event.stopPropagation()" style="max-width:100%; max-height:100%; object-fit:contain;" />
+        <button type="button" class="shop-pp-lb-next" *ngIf="d.images.length > 1" (click)="$event.stopPropagation(); step(1)" [attr.aria-label]="'Next picture' | translate" style="position:absolute; right:0.75rem; top:50%; width:44px; height:44px; border-radius:50%; border:0; font-size:1.4rem; cursor:pointer;">›</button>
+        <button type="button" class="shop-pp-lb-close" (click)="lightbox = false" [attr.aria-label]="'Close' | translate" style="position:absolute; right:0.9rem; top:0.6rem; border:0; background:none; color:#fff; font-size:2rem; cursor:pointer;">×</button>
+      </div>
     </div>
   `,
 })
 export class ShopProductComponent implements OnChanges {
   @Input() productId = 0;
+  /** The shop itself (delivery and pick-up details). */
+  @Input() shop: Shop | null = null;
   @Input() cur = '';
   @Input() open = true;
   /** The cart of the shop: product id to quantity. */
@@ -132,7 +193,19 @@ export class ShopProductComponent implements OnChanges {
   sel = 0;
   private seq = 0;
 
-  constructor(private api: OnlineStoreApiService) {}
+  /** How many the visitor is about to add. */
+  pick = 1;
+  zoomOn = false;
+  origin = '50% 50%';
+  lightbox = false;
+  recent: ShopProduct[] = [];
+
+  constructor(private api: OnlineStoreApiService, private lang: LanguageService) {}
+
+  @HostListener('document:keydown.escape')
+  esc(): void {
+    this.lightbox = false;
+  }
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['productId'] && this.productId) this.load();
@@ -143,10 +216,17 @@ export class ShopProductComponent implements OnChanges {
     this.d = null;
     this.error = null;
     this.sel = 0;
+    this.pick = 1;
+    this.lightbox = false;
+    this.recent = [];
     window.scrollTo({ top: 0 });
     this.api.productDetail(this.productId).subscribe({
       next: (r) => {
-        if (mine === this.seq) this.d = r;
+        if (mine !== this.seq) return;
+        this.d = r;
+        const before = recentIds().filter((i) => i !== this.productId);
+        rememberProduct(this.productId);
+        if (before.length) this.api.recent(before.slice(0, 8)).subscribe({ next: (list) => { if (mine === this.seq) this.recent = list; }, error: () => {} });
       },
       error: (e) => {
         if (mine === this.seq) this.error = e?.status === 404 ? T('This product is not available.') : (e?.error?.message ?? T('The shop is not available right now.'));
@@ -159,7 +239,63 @@ export class ShopProductComponent implements OnChanges {
   }
 
   big(u: string): string {
-    return this.api.imageUrl(u) + '?w=900';
+    return this.api.imageUrl(u) + '?w=1200';
+  }
+
+  huge(u: string): string {
+    return this.api.imageUrl(u) + '?w=1600';
+  }
+
+  zoomMove(e: MouseEvent): void {
+    const el = e.currentTarget as HTMLElement;
+    const r = el.getBoundingClientRect();
+    this.origin = `${((e.clientX - r.left) * 100) / r.width}% ${((e.clientY - r.top) * 100) / r.height}%`;
+    this.zoomOn = true;
+  }
+
+  step(by: number): void {
+    const n = this.d?.images.length ?? 0;
+    if (n > 1) this.sel = (this.sel + by + n) % n;
+  }
+
+  waLink(p: ShopProduct): string {
+    return 'https://wa.me/?text=' + encodeURIComponent(`${p.name} - ${window.location.href}`);
+  }
+
+  /** The cheapest delivery fee of the shop's zones, or null when it has no zone. */
+  fromFee(): number | null {
+    const z = this.shop?.zones ?? [];
+    return z.length ? Math.min(...z.map((x) => x.fee)) : null;
+  }
+
+  /** "Thu 26 Nov - Sat 28 Nov" from the delivery days staff set, counted from today; empty when staff set none. */
+  etaText(): string {
+    const page = this.shop?.page;
+    if (!this.shop?.delivery || page?.deliveryDaysMin === null || page?.deliveryDaysMin === undefined || page.deliveryDaysMax === null) return '';
+    const fmt = (days: number): string => {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toLocaleDateString(this.lang.current === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    };
+    const a = fmt(page.deliveryDaysMin);
+    const b = fmt(page.deliveryDaysMax);
+    return a === b ? a : `${a} – ${b}`;
+  }
+
+  /** This product and the ones often bought with it, in the order they are shown. */
+  boughtAll(x: ProductDetail): ShopProduct[] {
+    return [x.product, ...x.bought];
+  }
+
+  boughtTotal(x: ProductDetail): number {
+    return this.boughtAll(x).reduce((sum, p) => sum + p.price, 0);
+  }
+
+  /** Puts this product (when not in the cart yet) and the others that are not sold out into the cart. */
+  addAll(x: ProductDetail): void {
+    for (const p of this.boughtAll(x)) {
+      if (p.stock !== 'SOLD_OUT' && this.qty(p) === 0) this.change.emit({ p, by: 1 });
+    }
   }
 
   thumb(u: string): string {

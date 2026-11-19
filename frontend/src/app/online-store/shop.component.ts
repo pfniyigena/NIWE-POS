@@ -3,12 +3,14 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAd, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAd, ShopFilter, ShopSuggest, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopAdComponent } from './shop-ad.component';
 import { ShopProductComponent } from './shop-product.component';
+import { ShopQuickViewComponent } from './shop-quick-view.component';
+import { recentIds } from './recent';
 import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { T } from '../core/i18n/t';
@@ -20,9 +22,10 @@ import { T } from '../core/i18n/t';
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShopAccountComponent, ShopMoneyPipe, PayProviderPickerComponent, ShopAdComponent, ShopProductComponent, ShopQuickViewComponent],
+  host: { '[class.shop-branded]': '!!brand', '[style.--shop-brand]': 'brand' },
   template: `
-    <div class="shop-announce" *ngIf="shop?.page?.announcementText" style="background:#1d4ed8; color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
+    <div class="shop-announce" *ngIf="shop?.page?.announcementText" [style.background]="brand || '#1d4ed8'" style="color:#fff; text-align:center; padding:0.45rem 0.75rem; font-size:0.9rem;">
       <a *ngIf="shop?.page?.announcementLink; else announceText" class="shop-announce-link" style="color:#fff; text-decoration:underline; cursor:pointer;" (click)="openLink(shop?.page?.announcementLink)">{{ shop?.page?.announcementText }}</a>
       <ng-template #announceText>{{ shop?.page?.announcementText }}</ng-template>
     </div>
@@ -32,7 +35,19 @@ import { T } from '../core/i18n/t';
           <img *ngIf="logo" [src]="logo" alt="" class="shop-logo" style="height:36px; max-width:120px; object-fit:contain;" />
           <strong class="shop-name" style="font-size:1.2rem;">{{ shop.name }}</strong>
         </a>
-        <input *ngIf="step === 'shop' && !showAccount" class="form-control shop-search" style="flex:1; min-width:150px; max-width:420px;" [placeholder]="'Search' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" name="q" />
+        <div *ngIf="step === 'shop' && !showAccount" style="position:relative; flex:1; min-width:150px; max-width:420px;">
+          <input class="form-control shop-search" style="width:100%;" [placeholder]="'Search by name, SKU, brand or category' | translate" [ngModel]="q" (ngModelChange)="searchChanged($event)" (keydown.enter)="sugg = null" (keydown.escape)="sugg = null" (blur)="blurSuggest()" (focus)="suggest()" autocomplete="off" name="q" />
+          <div class="shop-sugg card" *ngIf="sugg && hasSuggestions()" style="position:absolute; left:0; right:0; top:100%; margin-top:2px; z-index:40; padding:0.3rem; max-height:70vh; overflow:auto; box-shadow:0 6px 18px rgba(0,0,0,0.18);">
+            <a class="shop-sugg-item shop-sugg-product" *ngFor="let p of sugg.products" (mousedown)="openSuggested(p)" style="display:flex; gap:0.5rem; align-items:center; padding:0.3rem 0.4rem; cursor:pointer; color:inherit; text-decoration:none; border-radius:6px;">
+              <img *ngIf="p.imageUrl" [src]="thumb(p)" alt="" style="width:36px; height:36px; object-fit:cover; border-radius:4px;" />
+              <span *ngIf="!p.imageUrl" style="width:36px; text-align:center;">🛍️</span>
+              <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ p.name }}</span>
+              <strong style="font-size:0.85rem;">{{ p.price | shopMoney: cur }}</strong>
+            </a>
+            <a class="shop-sugg-item shop-sugg-category" *ngFor="let c of sugg.categories" (mousedown)="suggestedCategory(c)" style="display:block; padding:0.3rem 0.4rem; cursor:pointer; color:inherit; text-decoration:none;">{{ 'In category' | translate }}: <strong>{{ c }}</strong></a>
+            <a class="shop-sugg-item shop-sugg-brand" *ngFor="let b of sugg.brands" (mousedown)="suggestedBrand(b)" style="display:block; padding:0.3rem 0.4rem; cursor:pointer; color:inherit; text-decoration:none;">{{ 'Brand' | translate }}: <strong>{{ b }}</strong></a>
+          </div>
+        </div>
         <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
           <button *ngIf="shop.accounts" class="btn btn-sm shop-account-btn" [class.btn-primary]="showAccount" [class.btn-outline-secondary]="!showAccount" (click)="showAccount = !showAccount">👤 {{ account ? (account.name || account.email || account.phone) : ('Sign in' | translate) }}</button>
           <button *ngIf="count() > 0 && step === 'shop' && !showAccount" class="btn btn-sm btn-outline-secondary shop-cart-btn" (click)="checkout()">🛒 {{ count() }}</button>
@@ -52,7 +67,7 @@ import { T } from '../core/i18n/t';
         <div class="alert alert-warning shop-reorder-note mt-2" *ngIf="reorderNote">{{ reorderNote }}</div>
         <app-shop-account *ngIf="showAccount && shop.accounts" [profile]="account" [currency]="cur" [textChannel]="shop.textChannel" [loyalty]="shop.loyalty" (profileChange)="accountChanged($event)" (reordered)="reordered($event)" (closed)="showAccount = false"></app-shop-account>
 
-        <app-shop-product *ngIf="step === 'shop' && !showAccount && viewId" [productId]="viewId" [cur]="cur" [open]="shop.open" [cart]="cart" [ads]="adsFor('PRODUCT')" (change)="change($event.p, $event.by)"></app-shop-product>
+        <app-shop-product *ngIf="step === 'shop' && !showAccount && viewId" [productId]="viewId" [shop]="shop" [cur]="cur" [open]="shop.open" [cart]="cart" [ads]="adsFor('PRODUCT')" (change)="change($event.p, $event.by)"></app-shop-product>
 
         <ng-container *ngIf="step === 'shop' && !showAccount && !viewId">
         <ng-container *ngIf="landing">
@@ -80,9 +95,23 @@ import { T } from '../core/i18n/t';
 
           <app-shop-ad *ngIf="adsFor('HOME_TOP').length" placement="HOME_TOP" [ads]="adsFor('HOME_TOP')"></app-shop-ad>
 
+          <section class="shop-tiles" *ngIf="shop.categoryTiles?.length" style="margin-top:2rem;">
+            <h3 style="margin:0 0 0.75rem;">{{ 'Shop by category' | translate }}</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:0.9rem;">
+              <button type="button" class="shop-tile" *ngFor="let t of shop.categoryTiles" (click)="tile(t.name)" style="border:0; padding:0; background:none; cursor:pointer; text-align:center; color:inherit;">
+                <div style="aspect-ratio:1/1; border-radius:14px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,0.12);">
+                  <img *ngIf="t.imageUrl" [src]="tileImg(t.imageUrl)" [alt]="t.name" loading="lazy" style="width:100%; height:100%; object-fit:cover;" />
+                  <span *ngIf="!t.imageUrl" style="font-size:2.4rem;">🛍️</span>
+                </div>
+                <div class="mt-1"><strong>{{ t.name }}</strong></div>
+                <div class="text-muted" style="font-size:0.8rem;">{{ '{p0} products' | translate: { p0: t.count } }}</div>
+              </button>
+            </div>
+          </section>
+
           <!-- Front page order: New arrivals, All products, Featured products, Best-selling (then special offers). -->
           <ng-container *ngFor="let r of rowsBefore"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
-          <h3 class="mt-4" id="shop-all">{{ 'All products' | translate }}</h3>
+          <h3 id="shop-all" style="margin:2rem 0 0;">{{ 'All products' | translate }}</h3>
         </ng-container>
 
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
@@ -90,13 +119,45 @@ import { T } from '../core/i18n/t';
           <button *ngFor="let c of shop.categories" class="btn btn-sm" [class.btn-primary]="category === c" [class.btn-outline-secondary]="category !== c" (click)="pickCategory(c)">{{ c }}</button>
         </div>
 
+        <div class="shop-filters flex gap-2 mt-3" style="flex-wrap:wrap; align-items:flex-end;">
+          <div><label class="form-label" style="font-size:0.78rem; margin:0;">{{ 'Sort by' | translate }}</label>
+            <select class="form-control shop-sort" name="fsort" [(ngModel)]="f.sort" (ngModelChange)="filtersChanged()">
+              <option value="">{{ 'Recommended' | translate }}</option>
+              <option value="newest">{{ 'Newest' | translate }}</option>
+              <option value="popular">{{ 'Most popular' | translate }}</option>
+              <option value="rating">{{ 'Best rated' | translate }}</option>
+              <option value="price_asc">{{ 'Price: low to high' | translate }}</option>
+              <option value="price_desc">{{ 'Price: high to low' | translate }}</option>
+            </select></div>
+          <div><label class="form-label" style="font-size:0.78rem; margin:0;">{{ 'Price' | translate }}</label>
+            <div class="flex gap-1" style="align-items:center;">
+              <input class="form-control shop-price-min" type="number" min="0" style="width:90px;" name="fmin" [placeholder]="'Min' | translate" [(ngModel)]="f.minPrice" (ngModelChange)="filtersChanged(true)" />
+              <span>–</span>
+              <input class="form-control shop-price-max" type="number" min="0" style="width:90px;" name="fmax" [placeholder]="'Max' | translate" [(ngModel)]="f.maxPrice" (ngModelChange)="filtersChanged(true)" />
+            </div></div>
+          <div *ngIf="shop.brands?.length"><label class="form-label" style="font-size:0.78rem; margin:0;">{{ 'Brand' | translate }}</label>
+            <select class="form-control shop-filter-brand" name="fbrand" [(ngModel)]="f.brand" (ngModelChange)="filtersChanged()">
+              <option value="">{{ 'All brands' | translate }}</option>
+              <option *ngFor="let b of shop.brands" [value]="b">{{ b }}</option>
+            </select></div>
+          <div><label class="form-label" style="font-size:0.78rem; margin:0;">{{ 'Rating' | translate }}</label>
+            <select class="form-control shop-rating-filter" name="frating" [(ngModel)]="f.minRating" (ngModelChange)="filtersChanged()">
+              <option [ngValue]="0">{{ 'Any rating' | translate }}</option>
+              <option [ngValue]="4">4 ★ {{ 'and up' | translate }}</option>
+              <option [ngValue]="3">3 ★ {{ 'and up' | translate }}</option>
+              <option [ngValue]="2">2 ★ {{ 'and up' | translate }}</option>
+            </select></div>
+          <label style="display:flex; align-items:center; gap:0.35rem; padding-bottom:0.45rem;"><input type="checkbox" class="shop-instock" name="fstock" [(ngModel)]="f.inStock" (ngModelChange)="filtersChanged()" /> {{ 'In stock only' | translate }}</label>
+          <button type="button" class="btn btn-sm btn-outline-secondary shop-clear" *ngIf="filtersActive || f.sort" (click)="clearFilters()">{{ 'Clear filters' | translate }}</button>
+        </div>
+
         <app-shop-ad *ngIf="adsFor('PRODUCT').length" placement="PRODUCT" [ads]="adsFor('PRODUCT')"></app-shop-ad>
         <div id="shop-top"></div>
         <div class="shop-grid mt-3" [style.opacity]="loading ? 0.5 : 1" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
           <ng-container *ngFor="let p of items"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
         </div>
-        <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && !q.trim() && !category">{{ 'Nothing is for sale yet. Please come back soon.' | translate }}</p>
-        <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && (q.trim() || category)">{{ 'No products match.' | translate }}</p>
+        <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && !q.trim() && !category && !filtersActive">{{ 'Nothing is for sale yet. Please come back soon.' | translate }}</p>
+        <p class="text-muted mt-3 shop-empty" *ngIf="!loading && items.length === 0 && (q.trim() || category || filtersActive)">{{ 'No products match.' | translate }}</p>
 
         <nav class="shop-pager flex justify-between align-center mt-3" *ngIf="totalPages > 1" style="flex-wrap:wrap; gap:0.5rem;">
           <span class="text-muted" style="font-size:0.85rem;">{{ 'Showing {p0}–{p1} of {p2}' | translate: { p0: firstShown(), p1: lastShown(), p2: total } }}</span>
@@ -109,10 +170,16 @@ import { T } from '../core/i18n/t';
 
         <ng-container *ngIf="landing">
           <ng-container *ngFor="let r of rowsAfter"><ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: r }"></ng-container></ng-container>
+          <section class="shop-recent" *ngIf="recent.length" style="margin-top:2rem;">
+            <h3 style="margin:0 0 0.75rem;">{{ 'Recently viewed' | translate }}</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.75rem;">
+              <ng-container *ngFor="let p of recent"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></ng-container>
+            </div>
+          </section>
         </ng-container>
 
         <ng-container *ngIf="landing">
-          <section class="shop-reviews mt-4">
+          <section class="shop-reviews" style="margin-top:2rem;">
             <h3>{{ 'Customer reviews' | translate }}</h3>
             <div *ngIf="home && home.reviews.length > 0; else noReviews">
               <div class="text-muted shop-reviews-avg" *ngIf="home.ratingAverage !== null" style="margin-bottom:0.5rem;"><span style="color:#d97706;">{{ stars(home.ratingAverage) }}</span> {{ home.ratingAverage }} / 5 · {{ '{p0} reviews' | translate: { p0: home.ratingCount } }}</div>
@@ -127,7 +194,7 @@ import { T } from '../core/i18n/t';
             <ng-template #noReviews><p class="text-muted shop-reviews-none">{{ 'No reviews yet. When your order is completed, you can review the products from your order page.' | translate }}</p></ng-template>
           </section>
 
-          <section class="shop-newsletter card mt-4" style="padding:1.25rem; text-align:center;">
+          <section class="shop-newsletter card" style="margin-top:2rem; padding:1.25rem; text-align:center;">
             <h3 style="margin-top:0;">{{ 'Newsletter' | translate }}</h3>
             <p class="text-muted">{{ 'Get news and offers by e-mail. We send you a message to confirm your address first.' | translate }}</p>
             <form class="flex gap-2" style="justify-content:center; flex-wrap:wrap;" (ngSubmit)="subscribe()">
@@ -283,12 +350,12 @@ import { T } from '../core/i18n/t';
     </footer>
 
       <ng-template #rowTpl let-r>
-          <section class="shop-row mt-4" [attr.data-row]="r.key">
+          <section class="shop-row" style="margin-top:2rem;" [attr.data-row]="r.key">
             <h3>{{ r.title | translate }}</h3>
             <div class="shop-carousel" style="position:relative;" (mouseenter)="hold(rail, true)" (mouseleave)="hold(rail, false)" (touchstart)="hold(rail, true)" (touchend)="hold(rail, false)" (focusin)="hold(rail, true)" (focusout)="hold(rail, false)">
               <button type="button" class="shop-car-prev" *ngIf="r.items.length > 4" [attr.aria-label]="'Previous products' | translate" (click)="railGo(rail, -1)" style="position:absolute; left:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">‹</button>
               <div #rail class="car-rail" [attr.data-rail]="r.key" style="display:flex; gap:0.75rem; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; padding:0.25rem 0.1rem 0.5rem; scrollbar-width:none;">
-                <div class="car-item" *ngFor="let p of r.items" style="flex:0 0 210px; scroll-snap-align:start;"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
+                <div class="car-item" *ngFor="let p of r.items" style="flex:0 0 210px; scroll-snap-align:start; display:flex;"><ng-container *ngTemplateOutlet="card; context: { $implicit: p }"></ng-container></div>
               </div>
               <button type="button" class="shop-car-next" *ngIf="r.items.length > 4" [attr.aria-label]="'Next products' | translate" (click)="railGo(rail, 1)" style="position:absolute; right:-6px; top:45%; z-index:2; width:36px; height:36px; border-radius:50%; border:1px solid #d1d5db; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2); font-size:1.3rem; cursor:pointer; line-height:1;">›</button>
             </div>
@@ -296,29 +363,41 @@ import { T } from '../core/i18n/t';
       </ng-template>
 
       <ng-template #card let-p>
-          <div class="card shop-product" style="padding:0.6rem;">
-            <a class="shop-product-link" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="display:block; color:inherit; text-decoration:none;">
-            <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; height:130px; object-fit:cover; border-radius:6px;" />
-            <div *ngIf="!p.imageUrl" style="width:100%; height:130px; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">🛍️</div>
-            <div class="mt-1"><strong>{{ p.name }}</strong><span class="shop-offer-badge" *ngIf="p.wasPrice" style="margin-left:0.3rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.35rem; font-size:0.7rem;">{{ 'Offer' | translate }}</span></div>
-            </a>
-            <div class="shop-rating" *ngIf="p.ratingCount > 0" style="color:#d97706; font-size:0.85rem;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }} <span class="text-muted">({{ p.ratingCount }})</span></div>
-            <div class="text-muted" style="font-size:0.8rem; min-height:2.2em;" *ngIf="p.description">{{ p.description | slice: 0 : 80 }}</div>
-            <div class="flex justify-between align-center mt-1">
-              <span><strong>{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.3rem;">{{ p.wasPrice | shopMoney: cur }}</s></span>
-              <span *ngIf="p.stock === 'LOW'" class="text-muted" style="font-size:0.75rem; color:#b45309;">{{ 'Few left' | translate }}</span>
-              <span *ngIf="p.stock === 'SOLD_OUT'" class="text-muted" style="font-size:0.75rem;">{{ 'Sold out' | translate }}</span>
+          <div class="card shop-product" style="padding:0.6rem; flex:1 1 auto; min-width:0; display:flex; flex-direction:column;">
+            <div style="position:relative;">
+              <a class="shop-product-link" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" style="display:block;">
+                <img *ngIf="p.imageUrl" [src]="img(p)" [alt]="p.name" loading="lazy" style="width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:6px; display:block;" />
+                <div *ngIf="!p.imageUrl" style="width:100%; aspect-ratio:4/3; border-radius:6px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2.2rem;">🛍️</div>
+              </a>
+              <span class="shop-offbadge" *ngIf="offPercent(p) > 0" style="position:absolute; left:6px; top:6px; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; font-weight:700;">-{{ offPercent(p) }}%</span>
+              <button type="button" class="shop-qv-btn" (click)="qv = p" [attr.aria-label]="'Quick view' | translate" style="position:absolute; right:6px; bottom:6px; border:0; border-radius:999px; background:rgba(17,24,39,0.72); color:#fff; font-size:0.72rem; padding:0.2rem 0.6rem; cursor:pointer;">👁 {{ 'Quick view' | translate }}</button>
             </div>
-            <div class="flex gap-1 mt-1" *ngIf="qty(p) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
-              <button class="btn btn-sm btn-outline-secondary" (click)="change(p, -1)">−</button>
-              <span>{{ qty(p) }}</span>
-              <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= 20">+</button>
+            <a class="shop-product-name" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" [title]="p.name" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em; line-height:1.3; margin-top:0.4rem; font-weight:600; color:inherit; text-decoration:none;">{{ p.name }}</a>
+            <div class="shop-rating" style="min-height:1.3em; font-size:0.85rem;">
+              <ng-container *ngIf="p.ratingCount > 0; else noStars"><span style="color:#d97706;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }}</span> <span class="text-muted">({{ p.ratingCount }})</span></ng-container>
+              <ng-template #noStars><span class="text-muted" style="font-size:0.78rem;">{{ 'No reviews yet' | translate }}</span></ng-template>
             </div>
-            <ng-template #addBtn><button class="btn btn-sm btn-primary mt-1 shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop?.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
+            <div style="margin-top:0.2rem;"><strong class="shop-price" style="font-size:1.15rem;">{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.4rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
+            <div class="shop-avail" style="font-size:0.8rem; min-height:1.2em;" [style.color]="p.stock === 'SOLD_OUT' ? '#b91c1c' : p.stock === 'LOW' ? '#b45309' : '#15803d'">
+              {{ p.stock === 'SOLD_OUT' ? ('Out of stock' | translate) : p.stock === 'LOW' ? ('Few left' | translate) : ('In stock' | translate) }}</div>
+            <div style="margin-top:auto; padding-top:0.5rem;">
+              <div class="flex gap-1" *ngIf="qty(p) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
+                <button class="btn btn-sm btn-outline-secondary" (click)="change(p, -1)">−</button>
+                <span>{{ qty(p) }}</span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= 20">+</button>
+              </div>
+              <ng-template #addBtn><button class="btn btn-sm btn-primary shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop?.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
+            </div>
           </div>
       </ng-template>
+
+      <app-shop-quick-view *ngIf="qv" [p]="qv" [cur]="cur" [open]="!!shop?.open" [cart]="cart" (change)="change($event.p, $event.by)" (closed)="qv = null"></app-shop-quick-view>
   `,
-  styles: ['.car-rail::-webkit-scrollbar { display: none; }'],
+  styles: [
+    '.car-rail::-webkit-scrollbar { display: none; }',
+    ':host(.shop-branded) ::ng-deep .btn-primary, :host(.shop-branded) ::ng-deep .btn-primary:hover { background: var(--shop-brand); border-color: var(--shop-brand); color: #fff; }',
+    '.shop-sugg-item:hover { background: rgba(128, 128, 128, 0.18); }',
+  ],
 })
 export class ShopComponent implements OnInit, OnDestroy {
   shop: Shop | null = null;
@@ -390,7 +469,7 @@ export class ShopComponent implements OnInit, OnDestroy {
 
   /** The landing sections (hero, rows, reviews, newsletter) show when the visitor is not searching or filtering. */
   get landing(): boolean {
-    return this.step === 'shop' && !this.showAccount && !this.q.trim() && !this.category;
+    return this.step === 'shop' && !this.showAccount && !this.q.trim() && !this.category && !this.filtersActive;
   }
 
   /** Every row that has products, in the order the front page shows them. */
@@ -536,6 +615,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.showAccount = false;
     this.q = '';
     this.category = '';
+    this.f = { brand: '', minPrice: null, maxPrice: null, inStock: false, minRating: 0, sort: '' };
     this.page = 0;
     this.load();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -588,6 +668,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe((m) => {
       const v = Number(m.get('product'));
       this.viewId = Number.isInteger(v) && v > 0 ? v : null;
+      if (!this.viewId) this.loadRecent();
     });
     this.api.shopAds().subscribe({ next: (a) => (this.ads = a), error: () => {} });
     this.api.shop().subscribe({
@@ -668,7 +749,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   load(scrollToTop = false): void {
     const mine = ++this.seq;
     this.loading = true;
-    this.api.products(this.page, this.size, this.q, this.category).subscribe({
+    this.api.products(this.page, this.size, this.q, this.category, this.f).subscribe({
       next: (r: ShopPage) => {
         if (mine !== this.seq) return;
         if (r.totalPages > 0 && r.page >= r.totalPages) {
@@ -690,6 +771,114 @@ export class ShopComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** The shop's own colour, when staff chose one. */
+  get brand(): string | null {
+    return this.shop?.page?.brandColor || null;
+  }
+
+  // ---- filters and sorting of the product list
+  f: ShopFilter = { brand: '', minPrice: null, maxPrice: null, inStock: false, minRating: 0, sort: '' };
+
+  /** True when a filter (not just the sort order) narrows the list: the front page's rows then step aside. */
+  get filtersActive(): boolean {
+    const n = (v: number | null): boolean => v !== null && v !== undefined && `${v}` !== '';
+    return !!this.f.brand || n(this.f.minPrice) || n(this.f.maxPrice) || this.f.inStock || this.f.minRating > 0;
+  }
+
+  filtersChanged(typing = false): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => {
+      this.page = 0;
+      this.load();
+    }, typing ? 450 : 0);
+  }
+
+  clearFilters(): void {
+    this.f = { brand: '', minPrice: null, maxPrice: null, inStock: false, minRating: 0, sort: '' };
+    this.page = 0;
+    this.load();
+  }
+
+  // ---- category tiles, quick view, recently viewed
+  qv: ShopProduct | null = null;
+  recent: ShopProduct[] = [];
+
+  tileImg(u: string): string {
+    return this.api.imageUrl(u) + '?w=320';
+  }
+
+  tile(name: string): void {
+    this.pickCategory(name);
+    window.scrollTo({ top: 0 });
+  }
+
+  offPercent(p: ShopProduct): number {
+    return p.wasPrice && p.wasPrice > p.price ? Math.round(((p.wasPrice - p.price) * 100) / p.wasPrice) : 0;
+  }
+
+  loadRecent(): void {
+    const ids = recentIds();
+    if (!ids.length) {
+      this.recent = [];
+      return;
+    }
+    this.api.recent(ids).subscribe({ next: (r) => (this.recent = r), error: () => (this.recent = []) });
+  }
+
+  // ---- suggestions while typing
+  sugg: ShopSuggest | null = null;
+  private suggTimer: ReturnType<typeof setTimeout> | null = null;
+  private suggSeq = 0;
+
+  hasSuggestions(): boolean {
+    return !!this.sugg && (this.sugg.products.length > 0 || this.sugg.categories.length > 0 || this.sugg.brands.length > 0);
+  }
+
+  suggest(): void {
+    if (this.suggTimer) clearTimeout(this.suggTimer);
+    const text = this.q.trim();
+    if (text.length < 2) {
+      this.sugg = null;
+      return;
+    }
+    const mine = ++this.suggSeq;
+    this.suggTimer = setTimeout(() => {
+      this.api.suggest(text).subscribe({ next: (r) => { if (mine === this.suggSeq) this.sugg = r; }, error: () => {} });
+    }, 250);
+  }
+
+  blurSuggest(): void {
+    setTimeout(() => (this.sugg = null), 150);
+  }
+
+  thumb(p: ShopProduct): string {
+    return this.api.imageUrl(p.imageUrl as string) + '?w=96';
+  }
+
+  openSuggested(p: ShopProduct): void {
+    this.sugg = null;
+    if (this.q) {
+      this.q = '';
+      this.load();
+    }
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { product: p.id }, queryParamsHandling: 'merge' });
+  }
+
+  suggestedCategory(c: string): void {
+    this.sugg = null;
+    this.q = '';
+    this.closeProduct();
+    this.pickCategory(c);
+  }
+
+  suggestedBrand(b: string): void {
+    this.sugg = null;
+    this.q = '';
+    this.closeProduct();
+    this.f.brand = b;
+    this.filtersChanged();
+  }
+
   /** Leaves a product page for the shop's own pages. */
   private closeProduct(): void {
     if (this.viewId) void this.router.navigate([], { relativeTo: this.route, queryParams: { product: null }, queryParamsHandling: 'merge' });
@@ -698,6 +887,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   searchChanged(v: string): void {
     this.q = v ?? '';
     this.closeProduct();
+    this.suggest();
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => {
       this.page = 0;

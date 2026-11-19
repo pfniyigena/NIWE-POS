@@ -23,6 +23,14 @@ public interface OnlineListingRepository extends JpaRepository<OnlineListing, Lo
             + "order by l.sortOrder asc, l.id asc")
     Page<OnlineListing> findShopPage(@Param("q") String q, @Param("category") String category, Pageable pageable);
 
+    @Query("select distinct b.name from OnlineListing l join l.product p join p.brand b where l.listed = true and p.active = true order by b.name")
+    List<String> findShopBrands();
+
+    /** Per category: name, number of products and the id of one product that has a picture (or null). */
+    @Query("select c.name, count(l), min(case when p.iconDataUrl is not null and p.iconDataUrl <> '' then p.id else null end) from OnlineListing l join l.product p join p.category c "
+            + "where l.listed = true and p.active = true group by c.name order by c.name")
+    List<Object[]> findCategoryTiles();
+
     @Query("select distinct c.name from OnlineListing l join l.product p join p.category c where l.listed = true and p.active = true order by c.name")
     List<String> findShopCategories();
 

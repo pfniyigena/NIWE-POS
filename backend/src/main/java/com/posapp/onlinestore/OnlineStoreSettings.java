@@ -79,4 +79,9 @@ public class OnlineStoreSettings extends BaseEntity {
     /** One link per line, written "Label|address". */
     private String footerLinks;
     private String socialLinks;
+    /** The shop's colour (#rrggbb) for buttons and links; empty = the standard colour. */
+    private String brandColor;
+    /** Estimated delivery, in days after the order is accepted (both empty = no estimate shown). */
+    private Integer deliveryDaysMin;
+    private Integer deliveryDaysMax;
 }

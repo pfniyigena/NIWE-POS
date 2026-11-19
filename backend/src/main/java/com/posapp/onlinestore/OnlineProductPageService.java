@@ -37,13 +37,15 @@ public class OnlineProductPageService {
 
     private final OnlineStoreService store;
     private final OnlineFrontService front;
+    private final OnlineShopSearch search;
     private final OnlineListingRepository listings;
     private final OnlineListingImageRepository images;
     private final OnlineReviewRepository reviews;
     private final AuditLogService audit;
 
     public OnlineProductPageService(OnlineStoreService store, OnlineFrontService front, OnlineListingRepository listings, OnlineListingImageRepository images,
-                                    OnlineReviewRepository reviews, AuditLogService audit) {
+                                    OnlineReviewRepository reviews, AuditLogService audit, OnlineShopSearch search) {
+        this.search = search;
         this.store = store;
         this.front = front;
         this.listings = listings;
@@ -71,7 +73,7 @@ public class OnlineProductPageService {
 
     /** images: the pictures of the gallery in order (the product's own first), as addresses a width can be added to with ?w=. */
     public record ProductDetail(PublicProduct product, String brand, List<String> images, List<SpecRow> specs, RatingSummary rating, List<PublicReview> reviews,
-                                List<PublicProduct> related) {
+                                List<PublicProduct> related, List<PublicProduct> bought) {
     }
 
     // ------------------------------------------------------------------ the public page
@@ -101,7 +103,35 @@ public class OnlineProductPageService {
         List<PublicReview> shownReviews = reviews.findShownForProduct(productId, PageRequest.of(0, REVIEWS_SHOWN)).stream()
                 .map(r -> new PublicReview(r.getProductName(), r.getReviewerName(), r.getRating(), r.getReviewText(), r.getCreatedAt())).toList();
         String brand = l.getProduct().getBrand() == null ? null : l.getProduct().getBrand().getName();
-        return new ProductDetail(product, brand, pictures, readSpecs(l.getSpecs()), rating, shownReviews, related(l, s));
+        return new ProductDetail(product, brand, pictures, readSpecs(l.getSpecs()), rating, shownReviews, related(l, s), bought(l, s));
+    }
+
+    /** Products often bought in the same orders (up to 3), left out when they are gone or sold out. */
+    private List<PublicProduct> bought(OnlineListing l, OnlineStoreSettings s) {
+        List<OnlineListing> picked = new ArrayList<>();
+        for (Long id : search.boughtTogether(l.getProduct().getId(), 8)) {
+            listings.findByProductId(id).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).ifPresent(x -> {
+                if (picked.size() < 3 && !"SOLD_OUT".equals(store.publicProduct(x, s).stock())) picked.add(x);
+            });
+        }
+        return front.withRatings(picked.stream().map(o -> store.publicProduct(o, s)).toList());
+    }
+
+    /** The products with these ids (comma separated, at most 12), in the same order, for "recently viewed". */
+    @Transactional(readOnly = true)
+    public List<PublicProduct> recent(String ids) {
+        OnlineStoreSettings s = store.settings();
+        if (!s.isEnabled()) throw ApiException.notFound(I18n.t("This shop is not available."));
+        List<OnlineListing> found = new ArrayList<>();
+        for (String part : ids == null ? new String[0] : ids.split(",")) {
+            if (found.size() >= 12) break;
+            try {
+                listings.findByProductId(Long.parseLong(part.trim())).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).ifPresent(found::add);
+            } catch (NumberFormatException ignored) {
+                // a bad id is simply skipped
+            }
+        }
+        return front.withRatings(found.stream().map(o -> store.publicProduct(o, s)).toList());
     }
 
     /** Other products of the same category first, then any others, never the product itself. */
