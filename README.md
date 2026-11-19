@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+### Version 1.58.0 - Online Store: failed and partial deliveries
+
+Staff can record that a delivery failed (reason, number of tries; the order goes back to Packed, the customer is told, the stock stays reserved) and that the customer took only part of the goods (invoice, stock and cash cover only what was kept; for an order paid online the difference becomes a refund to give back). Only staff record these, the driver's phone screen is unchanged, and staff cannot re-issue the delivery code. See `docs/online-store-delivery-problems.md` and `RELEASE-NOTES-v1.58.0.md`. Database: migration V91.
+
 ### Version 1.57.0 - Online Store: driver cash hand-in
 
 Cash a driver takes at the door is followed until he hands it in. New screen Online Store > Driver cash: per driver, the delivery orders completed with cash collected; staff type what was handed in, a difference needs a reason and is posted to Cash over / short (short = expense, over = income). Several orders can be settled at once. See `docs/online-store-driver-cash.md` and `RELEASE-NOTES-v1.57.0.md`. Database: migration V90.

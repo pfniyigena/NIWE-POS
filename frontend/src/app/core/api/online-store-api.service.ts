@@ -82,7 +82,7 @@ export interface ShopOrderPayload {
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
 export interface ShopTrack {
   code: string; status: string; deliveryMethod: string; name: string; zoneName: string | null; subtotal: number; deliveryFee: number; total: number;
-  rejectReason: string | null; placedAt: string; lines: { name: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  rejectReason: string | null; placedAt: string; lines: { name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null }[];
   history: { status: string; note: string | null; at: string }[];
   payment: ShopPayment;
   couponCode: string | null; discount: number; feeWaived: number;
@@ -127,6 +127,9 @@ export interface StoreCoupon {
 }
 export interface TestPayment { reference: string; amount: number; currency: string; method: string; state: string }
 
+/** What the customer kept of one product when the delivery is partial. */
+export interface KeptLine { productId: number; quantity: number }
+
 export interface StoreOrder {
   id: number; code: string; status: string; deliveryMethod: string; paymentMethod: string; customerName: string; customerPhone: string;
   customerEmail: string | null; customerAddress: string | null; zoneName: string | null; deliveryFee: number; notes: string | null;
@@ -137,7 +140,9 @@ export interface StoreOrder {
   loyaltyPointsUsed: number; loyaltyDiscount: number; loyaltyPointsEarned: number;
   driverId: number | null; driverName: string | null; driverPhone: string | null;
   receivedAt: string | null; receivedVia: string | null; receivedBy: string | null; signedName: string | null; hasSignature: boolean; hasCode: boolean;
-  lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  /** v1.58.0: tries that failed, the last reason, what was invoiced when only part was delivered, and what is still to give back for it. */
+  deliveryAttempts: number; lastFailureReason: string | null; lastFailureAt: string | null; deliveredTotal: number | null; refundDifference: number | null;
+  lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
 }
 /** A person who delivers orders (a simple list kept in the shop settings, not an employee record). openOrders = orders still to deliver. */
@@ -408,9 +413,13 @@ export class OnlineStoreApiService {
   outForDelivery(id: number, driverId: number | null = null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/out-for-delivery`, { driverId }); }
   readyForPickup(id: number): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/ready-for-pickup`, {}); }
   /** The goods are in the customer's hands: the delivery code the customer gave and/or the customer's signature (a PNG data URL). Completes the order. */
-  receive(id: number, body: { code?: string | null; signature?: string | null; signedName?: string | null; locationId?: number | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/receive`, body); }
+  receive(id: number, body: { code?: string | null; signature?: string | null; signedName?: string | null; locationId?: number | null; kept?: KeptLine[] | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/receive`, body); }
   orderSignature(id: number): Observable<Blob> { return this.http.get(`${this.base}/orders/${id}/signature`, { responseType: 'blob' }); }
-  complete(id: number, body: { locationId?: number | null; collectPayment?: boolean; method?: string }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/complete`, body); }
+  /** The driver could not hand the goods over: the order goes back to Packed with the reason. */
+  deliveryFailed(id: number, reason: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/delivery-failed`, { reason }); }
+  /** Gives back what an order paid online and delivered in part cost more than what was delivered. */
+  refundDifference(id: number, body: { manual: boolean; reference?: string | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/refund-difference`, body); }
+  complete(id: number, body: { locationId?: number | null; collectPayment?: boolean; method?: string; kept?: KeptLine[] | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/complete`, body); }
   cancelOrder(id: number, note: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/cancel`, { note }); }
 
   /** Gives the money back: manual = true records a refund made outside the system (reference required); otherwise the provider is asked. */

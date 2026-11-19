@@ -9471,5 +9471,21 @@
  "Order {p0}: write the reason for the difference.": "Commande {p0} : écrivez le motif de l'écart.",
  "Settle {p0} orders? Collected {p1}, handed in {p2}. This cannot be undone here.": "Régler {p0} commandes ? Encaissé {p1}, remis {p2}. Cela ne peut pas être annulé ici.",
  "Difference {p0} goes to Cash over / short.": "L'écart de {p0} va dans Écarts de caisse.",
- "{p0} orders settled.": "{p0} commandes réglées."
+ "{p0} orders settled.": "{p0} commandes réglées.",
+ "delivered {p0}": "livré : {p0}",
+ "Invoiced for the goods delivered: {p0}": "Facturé pour les marchandises livrées : {p0}",
+ "Delivery failed {p0} time(s). Last reason: {p1}": "Livraison échouée {p0} fois. Dernier motif : {p1}",
+ "Consider cancelling the order.": "Pensez à annuler la commande.",
+ "The customer takes only part of the goods": "Le client ne prend qu'une partie des marchandises",
+ "of {p0} × {p1}": "sur {p0} × {p1}",
+ "What is not delivered stays in the shop: the invoice, the stock and the cash to collect cover only what the customer takes. The delivery fee stays. If the customer paid online, the difference is then to be refunded.": "Ce qui n'est pas livré reste en boutique : la facture, le stock et l'argent à encaisser ne portent que sur ce que le client prend. Les frais de livraison restent. Si le client a payé en ligne, la différence est ensuite à rembourser.",
+ "Delivery failed": "Livraison échouée",
+ "Customer not at home": "Client absent",
+ "Customer refused the goods": "Le client a refusé la marchandise",
+ "Wrong or unreachable address": "Adresse erronée ou introuvable",
+ "Customer did not answer the phone": "Le client ne répond pas au téléphone",
+ "Back to packed, try again later": "Retour à « Emballée », réessayer plus tard",
+ "The order goes back to Packed with the reason. The customer is told and the stock stays reserved. Send it out again later, or cancel it.": "La commande repasse à « Emballée » avec le motif. Le client est prévenu et le stock reste réservé. Renvoyez-la plus tard, ou annulez-la.",
+ "Refund due for the goods not delivered: {p0}": "Remboursement dû pour les marchandises non livrées : {p0}",
+ "The customer paid online for more than was delivered. Give the difference back, then record it here.": "Le client a payé en ligne plus que ce qui a été livré. Rendez la différence, puis enregistrez-le ici."
 }

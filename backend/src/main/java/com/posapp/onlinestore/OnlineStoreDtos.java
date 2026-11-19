@@ -79,7 +79,7 @@ public final class OnlineStoreDtos {
     public record CouponResult(String code, String type, BigDecimal discount, BigDecimal feeWaived) {
     }
 
-    public record TrackLine(String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
+    public record TrackLine(String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal deliveredQuantity) {
     }
 
     public record TrackStep(String status, String note, Instant at) {
@@ -195,7 +195,7 @@ public final class OnlineStoreDtos {
 
     // ---------------------------------------------------------------- staff
 
-    public record OrderLineDto(Long productId, String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
+    public record OrderLineDto(Long productId, String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal deliveredQuantity) {
     }
 
     public record EventDto(String status, String note, String by, Instant at) {
@@ -209,7 +209,8 @@ public final class OnlineStoreDtos {
                            Instant refundedAt, String refundReference, String couponCode, BigDecimal discountAmount, BigDecimal feeWaived,
                            BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events,
                            int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned, Long driverId, String driverName, String driverPhone,
-                           Instant receivedAt, String receivedVia, String receivedBy, String signedName, boolean hasSignature, boolean hasCode) {
+                           Instant receivedAt, String receivedVia, String receivedBy, String signedName, boolean hasSignature, boolean hasCode,
+                           int deliveryAttempts, String lastFailureReason, Instant lastFailureAt, BigDecimal deliveredTotal, BigDecimal refundDifference) {
     }
 
     public record RejectRequest(@NotNull @Size(min = 1, max = 160) String reason) {
@@ -257,14 +258,23 @@ public final class OnlineStoreDtos {
     public record DriverCashDto(List<DriverCashRow> waiting, List<DriverCashRow> settled, List<DriverCashTotal> totals) {
     }
 
-    public record CompleteRequest(Long locationId, Boolean collectPayment, String method) {
+    public record CompleteRequest(Long locationId, Boolean collectPayment, String method, @Size(max = 200) List<KeptLine> kept) {
     }
 
     /**
      * The goods are in the customer's hands (staff side, v1.56.0): the delivery code the customer gave, or the customer's signature drawn on this phone
      * (a PNG data URL), or both. locationId is where the stock leaves from (the default when empty).
      */
-    public record ReceiveRequest(@Size(max = 12) String code, @Size(max = 200000) String signature, @Size(max = 120) String signedName, Long locationId) {
+    public record ReceiveRequest(@Size(max = 12) String code, @Size(max = 200000) String signature, @Size(max = 120) String signedName, Long locationId,
+                                 @Size(max = 200) List<KeptLine> kept) {
+    }
+
+    /** What the customer kept of one product when the delivery is partial (v1.58.0): the quantity delivered, never more than ordered. */
+    public record KeptLine(Long productId, BigDecimal quantity) {
+    }
+
+    /** The driver could not hand the goods over: why. */
+    public record FailedDeliveryRequest(@NotNull @Size(min = 3, max = 160) String reason) {
     }
 
     /** What the customer sees of the reception of one order after proving it is theirs: the code to give, or when it was received. */

@@ -2025,5 +2025,19 @@
  "Order {0}: the amount differs from the cash collected ({1}). Write the reason.": "Commande {0} : le montant diffère des espèces encaissées ({1}). Écrivez le motif.",
  "Driver cash handed in: {0}": "Espèces du livreur remises : {0}",
  "Driver cash handed in: {0} (difference {1})": "Espèces du livreur remises : {0} (écart {1})",
- "Driver cash, order {0}{1}: collected {2}, handed in {3}": "Espèces du livreur, commande {0}{1} : encaissé {2}, remis {3}"
+ "Driver cash, order {0}{1}: collected {2}, handed in {3}": "Espèces du livreur, commande {0}{1} : encaissé {2}, remis {3}",
+ "That item is not in this order.": "Cet article n'est pas dans cette commande.",
+ "The quantity delivered cannot be more than the quantity ordered.": "La quantité livrée ne peut pas dépasser la quantité commandée.",
+ "Nothing was delivered. Use \"Delivery failed\" instead.": "Rien n'a été livré. Utilisez « Livraison échouée ».",
+ "customer paid online {0}, invoice {1}: give back {2}": "le client a payé {0} en ligne, facture {1} : rendre {2}",
+ "delivered in part: {0}": "livraison partielle : {0}",
+ "Thank you. Your order {0} is complete, with part of the goods delivered. Invoice {1}.": "Merci. Votre commande {0} est terminée, avec une partie des marchandises livrée. Facture {1}.",
+ "You earned {0} loyalty points.": "Vous avez gagné {0} points de fidélité.",
+ "We will refund {0} to the account you paid with.": "Nous rembourserons {0} sur le compte avec lequel vous avez payé.",
+ "Write the reason the order could not be delivered.": "Écrivez pourquoi la commande n'a pas pu être livrée.",
+ "Delivery failed (attempt {0}): {1}": "Livraison échouée (tentative {0}) : {1}",
+ "About the delivery of your order {0}": "À propos de la livraison de votre commande {0}",
+ "We could not deliver your order {0}: {1}. We will contact you to arrange a new delivery.": "Nous n'avons pas pu livrer votre commande {0} : {1}. Nous vous contacterons pour convenir d'une nouvelle livraison.",
+ "We refunded {0} for the goods of your order {1} that were not delivered. Reference: {2}.": "Nous avons remboursé {0} pour les marchandises de votre commande {1} qui n'ont pas été livrées. Référence : {2}.",
+ "Part of the order was not delivered": "Une partie de la commande n'a pas été livrée"
 }

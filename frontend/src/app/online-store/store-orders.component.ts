@@ -9,7 +9,7 @@ import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
 import { SignaturePadComponent } from './signature-pad.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
-import { Driver, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
+import { Driver, KeptLine, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
@@ -74,7 +74,8 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           </div>
         </div>
         <ul style="margin:0.4rem 0; padding-left:1.1rem;">
-          <li *ngFor="let l of o.lines">{{ l.quantity }} × {{ l.name }} <span class="text-muted">({{ l.lineTotal | number: '1.0-2' }})</span></li>
+          <li *ngFor="let l of o.lines">{{ l.quantity }} × {{ l.name }} <span class="text-muted">({{ l.lineTotal | number: '1.0-2' }})</span><span class="so-part-line" *ngIf="l.deliveredQuantity !== null && l.deliveredQuantity < l.quantity" style="color:#b45309; font-weight:600;"> · {{ 'delivered {p0}' | translate: { p0: l.deliveredQuantity } }}</span></li>
+          <li class="so-delivered-total" *ngIf="o.deliveredTotal !== null">{{ 'Invoiced for the goods delivered: {p0}' | translate: { p0: (o.deliveredTotal | number: '1.0-2') } }}</li>
           <li *ngIf="o.deliveryFee > 0">{{ 'Delivery fee {p0}' | translate: { p0: (o.deliveryFee | number: '1.0-2') } }}</li>
           <li *ngIf="o.couponCode && o.discountAmount - o.loyaltyDiscount > 0">{{ 'Coupon {p0}: {p1} off the items' | translate: { p0: o.couponCode, p1: (o.discountAmount - o.loyaltyDiscount | number: '1.0-2') } }}</li>
           <li *ngIf="o.loyaltyPointsUsed > 0">{{ 'Loyalty points used: {p0} ({p1} off the items)' | translate: { p0: o.loyaltyPointsUsed, p1: (o.loyaltyDiscount | number: '1.0-2') } }}</li>
@@ -91,6 +92,9 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           <a class="so-wa-driver" *ngIf="driverLink(o)" [href]="driverLink(o)" target="_blank" rel="noopener" style="font-size:0.85rem; white-space:nowrap;">{{ 'Send to the driver on WhatsApp' | translate }}</a>
         </div>
         <div class="text-muted" *ngIf="o.deliveryMethod === 'DELIVERY' && !canAssign(o) && o.driverName" style="font-size:0.85rem;">{{ 'Driver: {p0}' | translate: { p0: o.driverName } }}<span *ngIf="o.driverPhone"> · {{ o.driverPhone }}</span></div>
+        <div class="so-attempts" *ngIf="o.deliveryAttempts > 0 && (o.status === 'PACKED' || o.status === 'OUT_FOR_DELIVERY')" style="color:#b45309; font-size:0.9rem;">
+          ⚠ {{ 'Delivery failed {p0} time(s). Last reason: {p1}' | translate: { p0: o.deliveryAttempts, p1: o.lastFailureReason } }}<span *ngIf="o.deliveryAttempts >= 3"> — {{ 'Consider cancelling the order.' | translate }}</span>
+        </div>
         <div class="text-muted" *ngIf="o.rejectReason">{{ 'Reason: {p0}' | translate: { p0: (o.rejectReason) } }}</div>
 
         <div *ngIf="o.status === 'AWAITING_PAYMENT'" class="mt-2">
@@ -105,6 +109,15 @@ interface LocationOption { id: number; label: string; type: string | null; prima
             <button class="btn btn-primary so-refund-provider" [disabled]="busy" (click)="refund(o, false)">{{ 'Refund through the provider' | translate }}</button>
             <input class="form-control so-refund-ref" style="width:200px;" maxlength="80" [placeholder]="'Reference of a refund you made yourself' | translate" [(ngModel)]="refundRef[o.id]" [name]="'rrf' + o.id" />
             <button class="btn btn-outline-secondary so-refund-manual" [disabled]="busy" (click)="refund(o, true)">{{ 'I refunded it myself' | translate }}</button>
+          </div>
+        </div>
+        <div *ngIf="(o.refundDifference ?? 0) > 0" class="so-refund-diff mt-2" style="border:1px solid #b45309; border-radius:6px; padding:0.6rem;">
+          <strong style="color:#b45309;">{{ 'Refund due for the goods not delivered: {p0}' | translate: { p0: (o.refundDifference | number: '1.0-2') } }}</strong>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'The customer paid online for more than was delivered. Give the difference back, then record it here.' | translate }}</div>
+          <div class="flex gap-2 mt-1" style="flex-wrap:wrap; align-items:flex-end;">
+            <button class="btn btn-primary so-diff-provider" [disabled]="busy" (click)="refundDiff(o, false)">{{ 'Refund through the provider' | translate }}</button>
+            <input class="form-control so-diff-ref" style="width:200px;" maxlength="80" [placeholder]="'Reference of a refund you made yourself' | translate" [(ngModel)]="refundRef[o.id]" [name]="'rdf' + o.id" />
+            <button class="btn btn-outline-secondary so-diff-manual" [disabled]="busy" (click)="refundDiff(o, true)">{{ 'I refunded it myself' | translate }}</button>
           </div>
         </div>
         <div class="text-muted mt-1 so-part-refund" *ngIf="o.paymentStatus === 'PAID' && o.refundedTotal > 0" style="font-size:0.85rem;">{{ 'Given back so far for returns: {p0} of {p1}' | translate: { p0: (o.refundedTotal | number: '1.0-2'), p1: (o.paidAmount | number: '1.0-2') } }}</div>
@@ -124,6 +137,28 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           <button class="btn btn-outline-danger so-cancel" [disabled]="busy" (click)="cancel(o)">{{ 'Cancel order' | translate }}</button>
         </div>
 
+        <div *ngIf="o.status === 'OUT_FOR_DELIVERY' || o.status === 'READY_FOR_PICKUP'" class="so-partial mt-2">
+          <label class="flex gap-1" style="align-items:center;"><input type="checkbox" class="so-part-toggle" [ngModel]="part[o.id] === true" (ngModelChange)="part[o.id] = $event" [name]="'part' + o.id" /> {{ 'The customer takes only part of the goods' | translate }}</label>
+          <div *ngIf="part[o.id]" class="so-part-box" style="margin:0.4rem 0 0 1.4rem;">
+            <div *ngFor="let l of o.lines; let i = index" class="flex gap-2" style="align-items:center; padding:0.15rem 0;">
+              <input type="number" class="form-control so-kept" style="width:90px;" min="0" [max]="l.quantity" step="any" [ngModel]="keptOf(o, i)" (ngModelChange)="setKept(o, i, $event)" [name]="'kept' + o.id + '-' + i" />
+              <span>{{ 'of {p0} × {p1}' | translate: { p0: l.quantity, p1: l.name } }}</span>
+            </div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ 'What is not delivered stays in the shop: the invoice, the stock and the cash to collect cover only what the customer takes. The delivery fee stays. If the customer paid online, the difference is then to be refunded.' | translate }}</div>
+          </div>
+        </div>
+        <div *ngIf="o.status === 'OUT_FOR_DELIVERY' && o.deliveryMethod === 'DELIVERY'" class="so-failed mt-2">
+          <button class="btn btn-sm btn-outline-warning so-fail-open" *ngIf="!failOpen[o.id]" (click)="failOpen[o.id] = true">{{ 'Delivery failed' | translate }}</button>
+          <div *ngIf="failOpen[o.id]" class="flex gap-2" style="flex-wrap:wrap; align-items:flex-end;">
+            <select class="form-select so-fail-reason" style="width:250px;" [ngModel]="failReason[o.id] || failReasons[0]" (ngModelChange)="failReason[o.id] = $event" [name]="'frs' + o.id">
+              <option *ngFor="let r of failReasons" [value]="r">{{ r | translate }}</option>
+            </select>
+            <input class="form-control so-fail-note" style="width:220px;" maxlength="100" [placeholder]="'Details (optional)' | translate" [(ngModel)]="failNote[o.id]" [name]="'fnt' + o.id" />
+            <button class="btn btn-warning so-fail-send" [disabled]="busy" (click)="failDelivery(o)">{{ 'Back to packed, try again later' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="failOpen[o.id] = false">{{ 'Cancel' | translate }}</button>
+          </div>
+          <div class="text-muted" *ngIf="failOpen[o.id]" style="font-size:0.8rem;">{{ 'The order goes back to Packed with the reason. The customer is told and the stock stays reserved. Send it out again later, or cancel it.' | translate }}</div>
+        </div>
         <div *ngIf="o.status === 'OUT_FOR_DELIVERY' || o.status === 'READY_FOR_PICKUP'" class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group" *ngIf="multiWarehouse || fulfilOptions.length > 1">
             <label class="form-label">{{ 'Take stock from' | translate }}</label>
@@ -461,6 +496,49 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     this.run(this.api.cancelOrder(o.id, ''));
   }
 
+  part: Record<number, boolean> = {};
+  keptQty: Record<number, Record<number, number>> = {};
+  failOpen: Record<number, boolean> = {};
+  failReason: Record<number, string> = {};
+  failNote: Record<number, string> = {};
+  failReasons = ['Customer not at home', 'Customer refused the goods', 'Wrong or unreachable address', 'Customer did not answer the phone', 'Other'];
+
+  /** The quantity of line i the customer takes (the whole quantity until staff change it). */
+  keptOf(o: StoreOrder, i: number): number {
+    return this.keptQty[o.id]?.[i] ?? o.lines[i].quantity;
+  }
+
+  setKept(o: StoreOrder, i: number, v: number | string | null): void {
+    const n = Math.min(Math.max(Number(v) || 0, 0), o.lines[i].quantity);
+    (this.keptQty[o.id] ??= {})[i] = n;
+  }
+
+  /** The quantities kept per product when "only part of the goods" is ticked, else null (everything is delivered). */
+  kept(o: StoreOrder): KeptLine[] | null {
+    if (!this.part[o.id]) return null;
+    const by = new Map<number, number>();
+    o.lines.forEach((l, i) => by.set(l.productId, (by.get(l.productId) ?? 0) + this.keptOf(o, i)));
+    return Array.from(by, ([productId, quantity]) => ({ productId, quantity }));
+  }
+
+  failDelivery(o: StoreOrder): void {
+    const reason = this.failReason[o.id] || this.failReasons[0];
+    const note = (this.failNote[o.id] ?? '').trim();
+    this.run(this.api.deliveryFailed(o.id, T(reason) + (note ? ': ' + note : '')), undefined);
+    this.failOpen[o.id] = false;
+    this.failNote[o.id] = '';
+  }
+
+  refundDiff(o: StoreOrder, manual: boolean): void {
+    const ref = (this.refundRef[o.id] ?? '').trim();
+    if (manual && ref.length < 3) {
+      this.error = T('Enter the reference of the refund you made (at least 3 characters)');
+      return;
+    }
+    if (!confirm(T(manual ? 'Record that you refunded {p0} for order {p1}?' : 'Refund {p0} for order {p1} through the payment provider?', { p0: String(o.refundDifference ?? ''), p1: o.code }))) return;
+    this.run(this.api.refundDifference(o.id, { manual, reference: manual ? ref : null }));
+  }
+
   rcode: Record<number, string> = {};
   sigOpen: Record<number, boolean> = {};
   sig: Record<number, string | null> = {};
@@ -474,7 +552,7 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     }
     const code = byCode ? (this.rcode[o.id] ?? '').trim() : '';
     if (byCode && !code) return;
-    this.run(this.api.receive(o.id, { code: byCode ? code : null, signature: byCode ? null : this.sig[o.id] ?? null, signedName: byCode ? null : (this.sigName[o.id] ?? '').trim() || null, locationId: this.location[o.id] ?? null }));
+    this.run(this.api.receive(o.id, { code: byCode ? code : null, signature: byCode ? null : this.sig[o.id] ?? null, signedName: byCode ? null : (this.sigName[o.id] ?? '').trim() || null, locationId: this.location[o.id] ?? null, kept: this.kept(o) }));
   }
 
   receivedHow(o: StoreOrder): string {
@@ -490,6 +568,6 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
       this.error = T('Choose the warehouse location the goods leave from.');
       return;
     }
-    this.run(this.api.complete(o.id, { locationId: this.location[o.id] ?? null, collectPayment: this.collect[o.id] !== false, method: this.method[o.id] || 'CASH' }));
+    this.run(this.api.complete(o.id, { locationId: this.location[o.id] ?? null, collectPayment: this.collect[o.id] !== false, method: this.method[o.id] || 'CASH', kept: this.kept(o) }));
   }
 }

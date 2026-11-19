@@ -88,6 +88,7 @@ public class OnlineOrderService {
 
     private void move(OnlineOrder o, String status, String note, String by) {
         o.setStatus(status);
+        if (note != null && note.length() > 200) note = note.substring(0, 197) + "...";
         OnlineOrderEvent ev = new OnlineOrderEvent();
         ev.setOnlineOrder(o);
         ev.setStatus(status);
@@ -103,7 +104,7 @@ public class OnlineOrderService {
         String needle = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
         String wanted = status == null || status.isBlank() ? null : status.trim().toUpperCase(Locale.ROOT);
         return repository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(o -> wanted == null || (wanted.equals("OPEN") ? OPEN.contains(o.getStatus()) : wanted.equals("REFUND_DUE") ? o.getPaymentStatus().equals("REFUND_DUE") : o.getStatus().equals(wanted)))
+                .filter(o -> wanted == null || (wanted.equals("OPEN") ? OPEN.contains(o.getStatus()) : wanted.equals("REFUND_DUE") ? o.getPaymentStatus().equals("REFUND_DUE") || (o.getRefundDifference() != null && o.getRefundDifference().signum() > 0) : o.getStatus().equals(wanted)))
                 .filter(o -> driverId == null || (driverId == 0 ? o.getDriverId() == null && "DELIVERY".equals(o.getDeliveryMethod()) : driverId.equals(o.getDriverId())))
                 .filter(o -> needle.isEmpty() || o.getCode().toLowerCase(Locale.ROOT).contains(needle)
                         || o.getCustomerName().toLowerCase(Locale.ROOT).contains(needle) || o.getCustomerPhone().contains(needle))
@@ -337,7 +338,7 @@ public class OnlineOrderService {
     /** Hands the goods over: takes the stock out through the sale order, issues the invoice and records the cash. */
     @Transactional
     public OrderDto complete(Long id, CompleteRequest in, AppUser caller) {
-        return finish(getOrThrow(id), in, caller, user(), null);
+        return finish(getOrThrow(id), in, caller, user(), null, in == null ? null : in.kept());
     }
 
     /**
@@ -366,7 +367,7 @@ public class OnlineOrderService {
         o.setSignedName(in == null || in.signedName() == null || in.signedName().isBlank() ? null : in.signedName().trim());
         String how = via.equals("CODE") ? I18n.t("received: the customer's code was typed") : I18n.t("received: the customer signed on the phone");
         try {
-            return finish(o, new CompleteRequest(in == null ? null : in.locationId(), true, "CASH"), caller, user(), how);
+            return finish(o, new CompleteRequest(in == null ? null : in.locationId(), true, "CASH", null), caller, user(), how, in == null ? null : in.kept());
         } catch (ApiException e) {
             // refused (no sale order, say): the order is not received, whatever noRollbackFor keeps
             o.setReceivedVia(null);
@@ -388,7 +389,7 @@ public class OnlineOrderService {
         o.setReceivedAt(java.time.Instant.now());
         o.setSignature(cleanSignature(signature));
         o.setSignedName(signedName == null || signedName.isBlank() ? null : signedName.trim());
-        return finish(o, new CompleteRequest(null, true, "CASH"), null, "customer", I18n.t("received: the customer confirmed it"));
+        return finish(o, new CompleteRequest(null, true, "CASH", null), null, "customer", I18n.t("received: the customer confirmed it"));
     }
 
     /** The drawn signature of an order as PNG bytes, or null. */
@@ -433,9 +434,65 @@ public class OnlineOrderService {
     }
 
     private OrderDto finish(OnlineOrder o, CompleteRequest in, AppUser caller, String by, String how) {
+        return finish(o, in, caller, by, how, null);
+    }
+
+    /** What a partial delivery left out: the part of the coupon/points discount that belonged to the goods not delivered, and the net value of the goods delivered. */
+    private record Partial(BigDecimal undeliveredDiscount, BigDecimal deliveredNet, String summary) {
+    }
+
+    /**
+     * The customer kept only some of the goods (v1.58.0). Checks the quantities kept per product, writes them on the order lines and lowers the sale order, so
+     * the invoice and the stock cover only what stayed with the customer. Returns null when everything was kept (a normal delivery).
+     */
+    private Partial applyKept(OnlineOrder o, SalesOrderDto so, List<KeptLine> kept) {
+        java.util.Map<Long, BigDecimal> ordered = new java.util.LinkedHashMap<>();
+        for (OnlineOrderLine l : o.getLines()) ordered.merge(l.getProductId(), l.getQuantity(), BigDecimal::add);
+        java.util.Map<Long, BigDecimal> keep = new java.util.LinkedHashMap<>(ordered);
+        for (KeptLine k : kept) {
+            if (k == null || k.productId() == null || k.quantity() == null || !ordered.containsKey(k.productId())) throw ApiException.badRequest(I18n.t("That item is not in this order."));
+            if (k.quantity().signum() < 0 || k.quantity().compareTo(ordered.get(k.productId())) > 0) throw ApiException.badRequest(I18n.t("The quantity delivered cannot be more than the quantity ordered."));
+            keep.put(k.productId(), k.quantity());
+        }
+        boolean all = ordered.entrySet().stream().allMatch(e -> keep.get(e.getKey()).compareTo(e.getValue()) == 0);
+        if (all) return null;
+        if (keep.values().stream().allMatch(q -> q.signum() == 0)) throw ApiException.badRequest(I18n.t("Nothing was delivered. Use \"Delivery failed\" instead."));
+        BigDecimal undeliveredDiscount = BigDecimal.ZERO;
+        BigDecimal deliveredNet = BigDecimal.ZERO;
+        StringBuilder summary = new StringBuilder();
+        java.util.Map<Long, BigDecimal> left = new java.util.LinkedHashMap<>(keep);
+        for (OnlineOrderLine l : o.getLines()) {
+            BigDecimal rem = left.get(l.getProductId());
+            BigDecimal d = rem.min(l.getQuantity());
+            left.put(l.getProductId(), rem.subtract(d));
+            l.setDeliveredQuantity(d);
+            BigDecimal disc = l.getDiscountAmount() == null ? BigDecimal.ZERO : l.getDiscountAmount();
+            BigDecimal ratioKept = l.getQuantity().signum() == 0 ? BigDecimal.ZERO : d.divide(l.getQuantity(), 8, java.math.RoundingMode.HALF_UP);
+            deliveredNet = deliveredNet.add(l.getLineTotal().subtract(disc).multiply(ratioKept));
+            undeliveredDiscount = undeliveredDiscount.add(disc.multiply(BigDecimal.ONE.subtract(ratioKept)));
+            if (d.compareTo(l.getQuantity()) < 0) {
+                if (summary.length() > 0) summary.append("; ");
+                summary.append(d.stripTrailingZeros().toPlainString()).append('/').append(l.getQuantity().stripTrailingZeros().toPlainString()).append(" ").append(l.getName());
+            }
+        }
+        java.util.Map<Long, BigDecimal> newQty = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, BigDecimal> rest = new java.util.LinkedHashMap<>(keep);
+        for (SalesOrderLineDto sl : so.lines()) {
+            if (!rest.containsKey(sl.productId())) continue;
+            BigDecimal q = rest.get(sl.productId()).min(sl.quantityOrdered());
+            rest.put(sl.productId(), rest.get(sl.productId()).subtract(q));
+            newQty.put(sl.id(), q);
+        }
+        salesOrderService.reduceQuantities(so.id(), newQty);
+        return new Partial(undeliveredDiscount.setScale(2, java.math.RoundingMode.HALF_UP), deliveredNet.setScale(2, java.math.RoundingMode.HALF_UP), summary.toString());
+    }
+
+    private OrderDto finish(OnlineOrder o, CompleteRequest in, AppUser caller, String by, String how, List<KeptLine> kept) {
         expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
         if (o.getSalesOrderId() == null) throw ApiException.badRequest(I18n.t("This order has no sale order"));
         SalesOrderDto so = salesOrderService.getById(o.getSalesOrderId());
+        Partial partial = kept == null || kept.isEmpty() ? null : applyKept(o, so, kept);
+        if (partial != null) so = salesOrderService.getById(o.getSalesOrderId());
         FulfillSalesOrderRequest fr = new FulfillSalesOrderRequest();
         fr.setLocationId(in == null ? null : in.locationId());
         List<FulfillSalesOrderRequest.FulfillLineEntry> entries = new ArrayList<>();
@@ -466,7 +523,10 @@ public class OnlineOrderService {
             pay.setMethod(o.getPaymentChannel());
             pay.setNote(I18n.t("Online payment {0}", o.getPaymentReference()));
             invoiceService.recordPayment(inv.id(), pay, caller);
-            if (o.getPaidAmount().compareTo(inv.totalAmount()) != 0) {
+            if (partial != null && o.getPaidAmount().compareTo(inv.totalAmount()) > 0) {
+                o.setRefundDifference(o.getPaidAmount().subtract(inv.totalAmount()));
+                differs = ", " + I18n.t("customer paid online {0}, invoice {1}: give back {2}", OnlineStoreService.money(o.getPaidAmount()), OnlineStoreService.money(inv.totalAmount()), OnlineStoreService.money(o.getRefundDifference()));
+            } else if (o.getPaidAmount().compareTo(inv.totalAmount()) != 0) {
                 differs = ", " + I18n.t("paid online {0} but the invoice is {1}: check the difference", OnlineStoreService.money(o.getPaidAmount()), OnlineStoreService.money(inv.totalAmount()));
             }
         } else if (collect && inv.totalAmount() != null && inv.totalAmount().signum() > 0) {
@@ -478,14 +538,61 @@ public class OnlineOrderService {
             // cash taken by a driver is cash he must hand in (Online Store > Driver cash)
             if ("DELIVERY".equals(o.getDeliveryMethod()) && "CASH".equalsIgnoreCase(pay.getMethod())) o.setCashCollected(inv.totalAmount());
         }
+        if (partial != null) o.setDeliveredTotal(inv.totalAmount());
         invoiceService.emailIssued(inv.id());
-        move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (how == null ? "" : ", " + how) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs, by);
+        move(o, "COMPLETED", I18n.t("Invoice {0}", inv.invoiceNumber()) + (how == null ? "" : ", " + how)
+                + (partial == null ? "" : ", " + I18n.t("delivered in part: {0}", partial.summary())) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs, by);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
-        int earned = loyalty.earn(o);
-        tell(o, OnlineMessages.m("Thank you for your order {0}", o.getCode()), earned > 0
-                ? OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}. You earned {2} loyalty points.", o.getCode(), inv.invoiceNumber(), earned)
-                : OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber()));
+        if (partial != null) loyalty.giveBackPart(o, partial.undeliveredDiscount());
+        int earned = partial == null ? loyalty.earn(o) : loyalty.earn(o, partial.deliveredNet());
+        OnlineMessages.Msg thanks = partial != null
+                ? OnlineMessages.m("Thank you. Your order {0} is complete, with part of the goods delivered. Invoice {1}.", o.getCode(), inv.invoiceNumber())
+                : earned > 0 ? OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}. You earned {2} loyalty points.", o.getCode(), inv.invoiceNumber(), earned)
+                : OnlineMessages.m("Thank you. Your order {0} is complete. Invoice {1}.", o.getCode(), inv.invoiceNumber());
+        if (partial != null && earned > 0) thanks = thanks.then(OnlineMessages.m("You earned {0} loyalty points.", earned));
+        if (partial != null && o.getRefundDifference() != null && o.getRefundDifference().signum() > 0) {
+            thanks = thanks.then(OnlineMessages.m("We will refund {0} to the account you paid with.", OnlineStoreService.money(o.getRefundDifference())));
+        }
+        tell(o, OnlineMessages.m("Thank you for your order {0}", o.getCode()), thanks);
+        return dto(o);
+    }
+
+    // ------------------------------------------------------------------ failed delivery (v1.58.0)
+
+    /**
+     * The driver came and could not hand the goods over (customer absent, refused, wrong address). The order goes back to PACKED with the reason and the
+     * number of tries; the stock stays reserved, the driver stays on the order, and staff send it out again or cancel it.
+     */
+    @Transactional
+    public OrderDto deliveryFailed(Long id, String reason) {
+        OnlineOrder o = getOrThrow(id);
+        expect(o, "OUT_FOR_DELIVERY");
+        String why = reason == null ? "" : reason.trim();
+        if (why.length() < 3) throw ApiException.badRequest(I18n.t("Write the reason the order could not be delivered."));
+        if (why.length() > 160) why = why.substring(0, 160);
+        o.setDeliveryAttempts(o.getDeliveryAttempts() + 1);
+        o.setLastFailureReason(why);
+        o.setLastFailureAt(java.time.Instant.now());
+        move(o, "PACKED", I18n.t("Delivery failed (attempt {0}): {1}", o.getDeliveryAttempts(), why));
+        repository.save(o);
+        auditLogService.record("ONLINE_ORDER_DELIVERY_FAILED", "Delivery of online order " + o.getCode() + " failed (attempt " + o.getDeliveryAttempts() + "): " + why, "OnlineOrder", o.getId());
+        tell(o, OnlineMessages.m("About the delivery of your order {0}", o.getCode()),
+                OnlineMessages.m("We could not deliver your order {0}: {1}. We will contact you to arrange a new delivery.", o.getCode(), why));
+        return dto(o);
+    }
+
+    /** Gives back what an order paid online and delivered in part cost more than what was delivered (the invoice). */
+    @Transactional
+    public OrderDto refundDifference(Long id, RefundRequest in) {
+        OnlineOrder o = getOrThrow(id);
+        BigDecimal due = o.getRefundDifference();
+        if (due == null || due.signum() <= 0) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
+        String ref = payments.refundPart(o, due, in != null && in.manual(), in == null ? null : in.reference(), in == null ? null : in.note());
+        o.setRefundDifference(null);
+        repository.save(o);
+        tell(o, OnlineMessages.m("Your refund for order {0}", o.getCode()),
+                OnlineMessages.m("We refunded {0} for the goods of your order {1} that were not delivered. Reference: {2}.", OnlineStoreService.money(due), o.getCode(), ref));
         return dto(o);
     }
 
@@ -537,9 +644,10 @@ public class OnlineOrderService {
                 o.getSalesOrderId(), o.getSalesOrderNumber(), o.getInvoiceId(), o.getInvoiceNumber(), o.getRejectReason(), o.getDecidedBy(), o.getDecidedAt(),
                 o.getCreatedAt(),
                 o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getRefundedTotal(),
-                o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal())).toList(),
+                o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal(), l.getDeliveredQuantity())).toList(),
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList(),
                 o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone(),
-                o.getReceivedAt(), o.getReceivedVia(), o.getReceivedBy(), o.getSignedName(), o.getSignature() != null, o.getReceiptCode() != null);
+                o.getReceivedAt(), o.getReceivedVia(), o.getReceivedBy(), o.getSignedName(), o.getSignature() != null, o.getReceiptCode() != null,
+                o.getDeliveryAttempts(), o.getLastFailureReason(), o.getLastFailureAt(), o.getDeliveredTotal(), o.getRefundDifference());
     }
 }

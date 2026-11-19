@@ -122,7 +122,6 @@ public class OnlinePaymentService {
     }
 
     public List<ProviderDto> providerList() {
-        // The pretend provider is listed only while it is usable (dev profile, switched on): a live shop shows just the real providers.
         return providers.stream().filter(p -> !com.posapp.onlinestore.payment.SimulatedPaymentProvider.CODE.equals(p.code()) || p.available())
                 .map(p -> new ProviderDto(p.code(), p.label(), p.available(), p.methods())).toList();
     }
@@ -537,7 +536,7 @@ public class OnlinePaymentService {
     @Transactional(readOnly = true)
     public Map<String, Long> attentionCounts() {
         long awaiting = orders.countByStatus("AWAITING_PAYMENT");
-        long due = orders.countByPaymentStatus("REFUND_DUE");
+        long due = orders.countByPaymentStatus("REFUND_DUE") + orders.countByRefundDifferenceGreaterThan(BigDecimal.ZERO);
         long review = payments.countByStatus("REVIEW");
         return Map.of("awaitingPayment", awaiting, "refundsDue", due, "paymentsToReview", review);
     }

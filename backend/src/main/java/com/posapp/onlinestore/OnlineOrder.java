@@ -114,6 +114,15 @@ public class OnlineOrder extends BaseEntity {
     private BigDecimal cashDifference;
     private String cashNote;
 
+    /** How many times the driver came and could not hand the goods over (customer absent, refused, wrong address). Each puts the order back to PACKED. */
+    private int deliveryAttempts;
+    private String lastFailureReason;
+    private Instant lastFailureAt;
+    /** Set when the customer kept only part of the goods: the invoice total of what was delivered. Null when everything was delivered. */
+    private BigDecimal deliveredTotal;
+    /** For an order paid online and delivered in part: what is still to give back to the customer (paid minus invoiced). Null or zero when nothing is due. */
+    private BigDecimal refundDifference;
+
     /** The delivery code, made on first use (orders that went out before v1.56.0 get theirs when the customer or the shop first needs it). */
     public String ensureReceiptCode() {
         if (receiptCode == null || receiptCode.isBlank()) {

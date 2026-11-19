@@ -350,6 +350,36 @@ public class SalesOrderService {
         return toDto(saved);
     }
 
+    /**
+     * The customer takes less than was ordered (Online Store, partial delivery): lowers the ordered quantity of the given lines (line id -> new quantity, never
+     * below what is already fulfilled). A line left at nothing is removed. What is no longer ordered stops being reserved, and the invoice built afterwards
+     * covers only what stays.
+     */
+    @Transactional
+    public SalesOrderDto reduceQuantities(Long id, java.util.Map<Long, BigDecimal> newQuantities) {
+        SalesOrder so = getEntityOrThrow(id);
+        if (so.getStatus() != SalesOrderStatus.CONFIRMED && so.getStatus() != SalesOrderStatus.PARTIALLY_FULFILLED) {
+            throw ApiException.badRequest("Cannot change sales order " + so.getOrderNumber() + " — it is " + so.getStatus());
+        }
+        StringBuilder what = new StringBuilder();
+        for (SalesOrderLine line : new java.util.ArrayList<>(so.getLines())) {
+            BigDecimal q = newQuantities.get(line.getId());
+            if (q == null) continue;
+            if (q.signum() < 0 || q.compareTo(line.getQuantityOrdered()) > 0 || q.compareTo(line.getQuantityFulfilled()) < 0) {
+                throw ApiException.badRequest("Cannot set " + Qty.str(q) + " of '" + line.getProductName() + "' on sales order " + so.getOrderNumber());
+            }
+            if (q.compareTo(line.getQuantityOrdered()) == 0) continue;
+            if (what.length() > 0) what.append(", ");
+            what.append(line.getProductName()).append(' ').append(Qty.str(line.getQuantityOrdered())).append("->").append(Qty.str(q));
+            if (q.signum() == 0) so.getLines().remove(line);
+            else line.setQuantityOrdered(q);
+        }
+        if (so.getLines().isEmpty()) throw ApiException.badRequest("A sales order needs at least one line");
+        SalesOrder saved = salesOrderRepository.save(so);
+        if (what.length() > 0) auditLogService.record("SALES_ORDER_REDUCED", "Reduced sales order " + saved.getOrderNumber() + " (" + what + ")", "SalesOrder", saved.getId());
+        return toDto(saved);
+    }
+
     /** Allowed any time before anything has actually been fulfilled — same "no undoing a real-world event" stance as PurchaseOrderService.cancel. */
     @Transactional
     public SalesOrderDto cancel(Long id) {

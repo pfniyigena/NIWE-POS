@@ -27,4 +27,6 @@ public class OnlineOrderLine extends BaseEntity {
     private BigDecimal lineTotal = BigDecimal.ZERO;
     /** The part of the order's coupon discount that falls on this line (lineTotal is before it). */
     private BigDecimal discountAmount = BigDecimal.ZERO;
+    /** What the customer kept when the delivery was partial (v1.58.0). Null = the whole quantity. */
+    private BigDecimal deliveredQuantity;
 }

@@ -166,6 +166,19 @@ public class OnlineStoreController {
         return orders.complete(id, request, principal.getUser());
     }
 
+    /** The driver could not hand the goods over (customer absent, refused, wrong address): the order goes back to packed. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/orders/{id}/delivery-failed")
+    public OrderDto deliveryFailed(@PathVariable Long id, @Valid @RequestBody OnlineStoreDtos.FailedDeliveryRequest request) {
+        return orders.deliveryFailed(id, request.reason());
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/orders/{id}/refund-difference")
+    public OrderDto refundDifference(@PathVariable Long id, @RequestBody(required = false) RefundRequest request) {
+        return orders.refundDifference(id, request);
+    }
+
     /** The goods are in the customer's hands: the delivery code the customer gave and/or the customer's signature drawn on this phone. Completes the order. */
     @PreAuthorize(MANAGE)
     @PostMapping("/orders/{id}/receive")

@@ -46,6 +46,8 @@ public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> 
 
     long countByPaymentStatus(String paymentStatus);
 
+    long countByRefundDifferenceGreaterThan(java.math.BigDecimal zero);
+
     List<OnlineOrder> findTop50ByShopCustomerIdOrderByCreatedAtDesc(Long shopCustomerId);
 
     /** A customer who proved an e-mail address gets the orders earlier placed as a guest with it. Orders already in an account are never moved. */
