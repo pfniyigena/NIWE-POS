@@ -9519,5 +9519,7 @@
  "Could not make the link": "Impossible de créer le lien",
  "Could not show the link": "Impossible d'afficher le lien",
  "Could not make a new PIN": "Impossible de créer un nouveau code PIN",
- "Could not switch the link off": "Impossible de désactiver le lien"
+ "Could not switch the link off": "Impossible de désactiver le lien",
+ "The fee is the amount the customer pays. The tax you choose (from your existing taxes) is the part of it that is tax, included in the fee, so the invoice always equals the order total. Without a choice the tax of the delivery product is used.": "Les frais sont le montant payé par le client. La taxe choisie (parmi vos taxes existantes) est la part de taxe, incluse dans les frais : la facture est donc toujours égale au total de la commande. Sans choix, la taxe du produit de livraison est utilisée.",
+ "The delivery product's tax": "La taxe du produit de livraison"
 }

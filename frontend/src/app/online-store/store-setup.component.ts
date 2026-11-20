@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { Driver, DriverAccess, OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -315,12 +315,19 @@ import { API_BASE } from '../core/constants';
       <div class="card mb-3" style="padding:1rem;">
         <h4 class="mb-2">{{ 'Delivery areas' | translate }}</h4>
         <p class="text-muted">{{ 'With no area the shop delivers anywhere for free. With areas, the customer must choose one and pays its fee.' | translate }}</p>
+        <p class="text-muted dz-taxhelp">{{ 'The fee is the amount the customer pays. The tax you choose (from your existing taxes) is the part of it that is tax, included in the fee, so the invoice always equals the order total. Without a choice the tax of the delivery product is used.' | translate }}</p>
         <table class="table-sm">
-          <thead><tr><th>{{ 'Area' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th><th class="text-end">{{ 'Minimum order' | translate }}</th><th>{{ 'Active' | translate }}</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Area' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th><th>{{ 'Tax' | translate }}</th><th class="text-end">{{ 'Minimum order' | translate }}</th><th>{{ 'Active' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let z of zones">
               <td><input class="form-control" style="width:200px;" maxlength="80" [name]="'zn' + z.id" [(ngModel)]="z.name" /></td>
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" [name]="'zf' + z.id" [(ngModel)]="z.fee" /></td>
+              <td>
+                <select class="form-select dz-tax" style="width:190px;" [name]="'zt' + z.id" [(ngModel)]="z.taxRateId">
+                  <option [ngValue]="null">{{ "The delivery product's tax" | translate }}</option>
+                  <option *ngFor="let t of taxOptions" [ngValue]="t.id">{{ taxLabel(t) }}</option>
+                </select>
+              </td>
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" [name]="'zm' + z.id" [(ngModel)]="z.minOrder" /></td>
               <td><input type="checkbox" [name]="'za' + z.id" [(ngModel)]="z.active" /></td>
               <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveZone(z)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteZone(z)">{{ 'Remove' | translate }}</button></td>
@@ -328,6 +335,12 @@ import { API_BASE } from '../core/constants';
             <tr>
               <td><input class="form-control" style="width:200px;" maxlength="80" name="newZoneName" [(ngModel)]="newZone.name" [placeholder]="'New area' | translate" /></td>
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" name="newZoneFee" [(ngModel)]="newZone.fee" /></td>
+              <td>
+                <select class="form-select dz-newtax" style="width:190px;" name="newZoneTax" [(ngModel)]="newZone.taxRateId">
+                  <option [ngValue]="null">{{ "The delivery product's tax" | translate }}</option>
+                  <option *ngFor="let t of taxOptions" [ngValue]="t.id">{{ taxLabel(t) }}</option>
+                </select>
+              </td>
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" name="newZoneMin" [(ngModel)]="newZone.minOrder" /></td>
               <td></td>
               <td><button class="btn btn-sm btn-primary" type="button" (click)="addZone()">{{ 'Add area' | translate }}</button></td>
@@ -406,7 +419,8 @@ export class StoreSetupComponent implements OnInit {
   serviceProducts: Product[] = [];
   found: Product[] = [];
   search = '';
-  newZone: { name: string; fee: number; minOrder: number } = { name: '', fee: 0, minOrder: 0 };
+  newZone: { name: string; fee: number; minOrder: number; taxRateId: number | null } = { name: '', fee: 0, minOrder: 0, taxRateId: null };
+  taxOptions: TaxOption[] = [];
   drivers: Driver[] = [];
   /** The link (and the PIN, just made) of a driver, shown under the table. */
   access: { driver: Driver; a: DriverAccess } | null = null;
@@ -704,12 +718,13 @@ export class StoreSetupComponent implements OnInit {
 
   loadZones(): void {
     this.api.zones().subscribe({ next: (z) => (this.zones = z), error: (e) => this.fail(e, 'Failed to load the delivery areas') });
+    this.api.taxOptions().subscribe({ next: (t) => (this.taxOptions = t), error: () => (this.taxOptions = []) });
   }
 
   addZone(): void {
     if (!this.newZone.name.trim()) { this.error = T('Give the area a name'); return; }
-    this.api.saveZone(null, { name: this.newZone.name, fee: this.newZone.fee || 0, minOrder: this.newZone.minOrder || 0, active: true }).subscribe({
-      next: () => { this.newZone = { name: '', fee: 0, minOrder: 0 }; this.loadZones(); this.ok('Area added'); },
+    this.api.saveZone(null, { name: this.newZone.name, fee: this.newZone.fee || 0, minOrder: this.newZone.minOrder || 0, taxRateId: this.newZone.taxRateId, active: true }).subscribe({
+      next: () => { this.newZone = { name: '', fee: 0, minOrder: 0, taxRateId: null }; this.loadZones(); this.ok('Area added'); },
       error: (e) => this.fail(e, 'Could not add the area'),
     });
   }
@@ -737,6 +752,11 @@ export class StoreSetupComponent implements OnInit {
 
   saveDriver(d: Driver): void {
     this.api.saveDriver(d.id, { name: d.name, phone: d.phone, notes: d.notes, active: d.active }).subscribe({ next: () => { this.loadDrivers(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the driver') });
+  }
+
+  /** A tax as the screen shows it: its name, with the rate added when the name does not already say it. */
+  taxLabel(t: TaxOption): string {
+    return t.name.includes('%') ? t.name : `${t.name} (${t.ratePercent}%)`;
   }
 
   makeLink(d: Driver): void {

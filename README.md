@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.59.1 - Online Store: a tax for each delivery area's fee
+
+Each delivery area has a Tax chosen from the existing taxes (Shop settings > Delivery areas). The fee is the amount the customer pays and the tax is included in it, so the invoice and the cash always equal the order total. Without a choice the delivery product's tax is used as before. New migration V93. See `RELEASE-NOTES-v1.59.1.md` and `docs/online-store-delivery-tax.md`.
+
 ## v1.59.0 - Online Store: delivery drivers without a login
 
 A driver gets a private link and a 4-digit PIN (Shop settings > Drivers > Give a link). On his phone he sees only his own orders that are out for delivery and completes each with the customer's delivery code, with no staff login (the customer signs only on his own page). Failed and partial deliveries stay with staff. Staff can show the link, make a new PIN or switch the link off. New migration V92. See `RELEASE-NOTES-v1.59.0.md` and `docs/online-store-driver-link.md`.

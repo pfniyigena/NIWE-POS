@@ -101,5 +101,17 @@ public class SalesOrderRequest {
         public void setUnitPrice(java.math.BigDecimal unitPrice) { this.unitPrice = unitPrice; }
         public java.math.BigDecimal getDiscountPercent() { return discountPercent; }
         public void setDiscountPercent(java.math.BigDecimal discountPercent) { this.discountPercent = discountPercent; }
+
+        /**
+         * v1.59.1 (optional): a tax of the ERP to put on this line instead of the product's own tax (the online shop uses it for the delivery fee), and
+         * whether the price already contains it. Empty = the product's tax, as always.
+         */
+        private Long taxRateId;
+        private Boolean taxIncluded;
+
+        public Long getTaxRateId() { return taxRateId; }
+        public void setTaxRateId(Long taxRateId) { this.taxRateId = taxRateId; }
+        public Boolean getTaxIncluded() { return taxIncluded; }
+        public void setTaxIncluded(Boolean taxIncluded) { this.taxIncluded = taxIncluded; }
     }
 }

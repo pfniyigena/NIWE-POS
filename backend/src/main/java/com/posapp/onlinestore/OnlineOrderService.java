@@ -197,6 +197,11 @@ public class OnlineOrderService {
             e.setProductId(s.getDeliveryProductId());
             e.setQuantityOrdered(BigDecimal.ONE);
             e.setUnitPrice(fee);
+            // v1.59.1: the fee is what the customer pays; the tax chosen for the area is the part of it that is tax (included), so invoice = order total
+            if (o.getDeliveryTaxRateId() != null) {
+                e.setTaxRateId(o.getDeliveryTaxRateId());
+                e.setTaxIncluded(true);
+            }
             lines.add(e);
         }
         req.setLines(lines);

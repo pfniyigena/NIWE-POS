@@ -327,6 +327,13 @@ public class OnlineStoreController {
         return admin.zones();
     }
 
+    /** The active taxes a delivery area can carry. */
+    @PreAuthorize(VIEW)
+    @GetMapping("/tax-options")
+    public List<OnlineStoreDtos.TaxOption> taxOptions() {
+        return admin.taxOptions();
+    }
+
     @PreAuthorize(MANAGE)
     @PostMapping("/zones")
     public ZoneDto createZone(@Valid @RequestBody ZoneRequest request) {

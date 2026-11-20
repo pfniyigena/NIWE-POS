@@ -227,7 +227,9 @@ export interface StoreCampaign { id: number; subject: string; body: string; butt
 export interface StoreCampaignForm { subject: string; body: string; buttonLabel: string; buttonLink: string; audience: 'ALL' | 'EN' | 'FR' }
 export interface StoreCampaignInfo { confirmedAll: number; confirmedEn: number; confirmedFr: number; mailConfigured: boolean; dailyLimit: number; sentLast24h: number; batchSize: number }
 export interface StoreDelivery { id: number; email: string; language: string; status: 'PENDING' | 'SENDING' | 'SENT' | 'FAILED' | 'SKIPPED'; error: string | null; sentAt: string | null }
-export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number }
+export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number; taxRateId: number | null }
+/** A tax of the ERP a delivery fee can carry (v1.59.1). */
+export interface TaxOption { id: number; code: string; name: string; ratePercent: number; inclusive: boolean }
 
 /** What the customer sees about a return: its status, what staff said and, once done, what was given back and how. */
 export interface ShopReturn {
@@ -578,6 +580,7 @@ export class OnlineStoreApiService {
   cancelCampaign(id: number): Observable<StoreCampaign> { return this.http.post<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}/cancel`, {}); }
   retryCampaign(id: number): Observable<StoreCampaign> { return this.http.post<StoreCampaign>(`${this.base}/newsletter/campaigns/${id}/retry`, {}); }
   zones(): Observable<StoreZone[]> { return this.http.get<StoreZone[]>(`${this.base}/zones`); }
+  taxOptions(): Observable<TaxOption[]> { return this.http.get<TaxOption[]>(`${this.base}/tax-options`); }
   saveZone(id: number | null, body: Partial<StoreZone>): Observable<StoreZone> {
     return id == null ? this.http.post<StoreZone>(`${this.base}/zones`, body) : this.http.put<StoreZone>(`${this.base}/zones/${id}`, body);
   }

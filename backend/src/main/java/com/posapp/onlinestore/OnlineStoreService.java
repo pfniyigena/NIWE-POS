@@ -587,6 +587,7 @@ public class OnlineStoreService {
         if (zone != null) {
             o.setZoneId(zone.getId());
             o.setZoneName(zone.getName());
+            o.setDeliveryTaxRateId(zone.getTaxRateId());
         }
         o.setDeliveryFee(fee);
         o.setNotes(clean(in.notes(), 300, I18n.t("The note"), false));

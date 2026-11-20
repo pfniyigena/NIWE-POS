@@ -360,7 +360,7 @@ public final class OnlineStoreDtos {
                                  BigDecimal onlinePrice, Integer sortOrder, Boolean featured, Boolean bestSeller, Boolean specialOffer, Boolean newArrival) {
     }
 
-    public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder) {
+    public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder, Long taxRateId) {
     }
 
     /** used = orders holding a use of it (not rejected or cancelled). */
@@ -373,7 +373,11 @@ public final class OnlineStoreDtos {
                                 Integer maxUses, Boolean oncePerCustomer, Boolean active) {
     }
 
-    public record ZoneRequest(@NotNull @Size(min = 1, max = 80) String name, BigDecimal fee, BigDecimal minOrder, Boolean active, Integer sortOrder) {
+    public record ZoneRequest(@NotNull @Size(min = 1, max = 80) String name, BigDecimal fee, BigDecimal minOrder, Boolean active, Integer sortOrder, Long taxRateId) {
+    }
+
+    /** A tax of the ERP that a delivery fee can carry. */
+    public record TaxOption(Long id, String code, String name, BigDecimal ratePercent, boolean inclusive) {
     }
 
     // ---------------------------------------------------------------- returns (public)

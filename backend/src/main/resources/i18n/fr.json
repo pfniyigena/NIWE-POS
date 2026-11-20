@@ -2051,5 +2051,7 @@
  "That PIN is not right.": "Ce code PIN n'est pas le bon.",
  "Type your PIN to continue.": "Saisissez votre code PIN pour continuer.",
  "This order is not yours to deliver.": "Cette commande ne vous est pas attribuée.",
- "Type the customer's delivery code.": "Saisissez le code de livraison du client."
+ "Type the customer's delivery code.": "Saisissez le code de livraison du client.",
+ "That tax does not exist.": "Cette taxe n'existe pas.",
+ "That tax is switched off. Choose another one.": "Cette taxe est désactivée. Choisissez-en une autre."
 }

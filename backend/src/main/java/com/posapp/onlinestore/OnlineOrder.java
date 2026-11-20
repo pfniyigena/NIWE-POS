@@ -53,6 +53,8 @@ public class OnlineOrder extends BaseEntity {
     private String customerAddress;
     private Long zoneId;
     private String zoneName;
+    /** v1.59.1: the tax of the delivery fee as it was when the order was placed (null = the delivery product's own tax). */
+    private Long deliveryTaxRateId;
     private BigDecimal deliveryFee = BigDecimal.ZERO;
     private String notes;
     private BigDecimal subtotal = BigDecimal.ZERO;

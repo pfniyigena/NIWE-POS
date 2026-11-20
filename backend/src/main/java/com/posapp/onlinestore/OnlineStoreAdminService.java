@@ -20,6 +20,8 @@ public class OnlineStoreAdminService {
     private final OnlineStoreSettingsRepository settingsRepository;
     private final OnlineListingRepository listingRepository;
     private final OnlineDeliveryZoneRepository zoneRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.tax.TaxRateRepository taxRates;
     private final CatalogService catalogService;
     private final AuditLogService auditLogService;
     private final OnlinePaymentService payments;
@@ -349,6 +351,13 @@ public class OnlineStoreAdminService {
         return zoneRepository.findAllByOrderBySortOrderAscNameAsc().stream().map(OnlineStoreAdminService::toDto).toList();
     }
 
+    /** The active taxes of the ERP, for the tax choice of a delivery area (the full tax list is for administrators only). */
+    @Transactional(readOnly = true)
+    public List<OnlineStoreDtos.TaxOption> taxOptions() {
+        return taxRates.findByActiveTrueOrderByNameAsc().stream()
+                .map(t -> new OnlineStoreDtos.TaxOption(t.getId(), t.getCode(), t.getName(), t.getRatePercent(), t.isInclusive())).toList();
+    }
+
     @Transactional
     public ZoneDto createZone(ZoneRequest in) {
         return save(new OnlineDeliveryZone(), in);
@@ -371,11 +380,19 @@ public class OnlineStoreAdminService {
         z.setMinOrder(money(in.minOrder(), I18n.t("The minimum order")));
         if (in.active() != null) z.setActive(in.active());
         if (in.sortOrder() != null) z.setSortOrder(in.sortOrder());
+        if (in.taxRateId() == null) {
+            z.setTaxRateId(null);
+        } else {
+            com.posapp.tax.TaxRate t = taxRates.findById(in.taxRateId()).orElseThrow(() -> ApiException.badRequest(I18n.t("That tax does not exist.")));
+            // keeping the tax an area already has is always allowed, even if it was switched off since; a new choice must be an active tax
+            if (!t.isActive() && !in.taxRateId().equals(z.getTaxRateId())) throw ApiException.badRequest(I18n.t("That tax is switched off. Choose another one."));
+            z.setTaxRateId(t.getId());
+        }
         return toDto(zoneRepository.save(z));
     }
 
     private static ZoneDto toDto(OnlineDeliveryZone z) {
-        return new ZoneDto(z.getId(), z.getName(), z.getFee(), z.getMinOrder(), z.isActive(), z.getSortOrder());
+        return new ZoneDto(z.getId(), z.getName(), z.getFee(), z.getMinOrder(), z.isActive(), z.getSortOrder(), z.getTaxRateId());
     }
 
     // ------------------------------------------------------------------ coupons

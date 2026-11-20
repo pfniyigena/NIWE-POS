@@ -17,4 +17,6 @@ public class OnlineDeliveryZone extends BaseEntity {
     private BigDecimal minOrder = BigDecimal.ZERO;
     private boolean active = true;
     private int sortOrder = 0;
+    /** v1.59.1: the tax (from the existing tax rates) that the fee carries; null = the delivery product's own tax. The fee is the amount the customer pays, tax included. */
+    private Long taxRateId;
 }

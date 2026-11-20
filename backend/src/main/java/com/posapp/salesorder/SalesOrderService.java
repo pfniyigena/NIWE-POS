@@ -65,6 +65,8 @@ import java.util.stream.Collectors;
 public class SalesOrderService {
 
     private final SalesOrderRepository salesOrderRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.tax.TaxRateRepository taxRateRepository;
     private final CustomerRepository customerRepository;
     private final CatalogService catalogService;
     private final StoreSettingsService storeSettingsService;
@@ -569,10 +571,15 @@ public class SalesOrderService {
             // snapshot the product's currently-assigned tax rate onto the line, same as
             // OrderService.buildLine does for a POS cart line.
             TaxRate taxRate = product.getTaxRate();
+            if (entry.getTaxRateId() != null) {
+                // v1.59.1: a tax chosen for this line (the online shop's delivery fee); a tax that no longer exists falls back to the product's own
+                TaxRate chosen = taxRateRepository.findById(entry.getTaxRateId()).orElse(null);
+                if (chosen != null) taxRate = chosen;
+            }
             if (taxRate != null) {
                 line.setTaxCode(taxRate.getCode());
                 line.setTaxRatePercent(taxRate.getRatePercent());
-                line.setTaxInclusive(taxRate.isInclusive());
+                line.setTaxInclusive(entry.getTaxRateId() != null && entry.getTaxIncluded() != null ? entry.getTaxIncluded() : taxRate.isInclusive());
             }
             return line;
         }).collect(Collectors.toList());
