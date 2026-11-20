@@ -394,6 +394,7 @@ import { ShopInfoComponent } from './online-store/shop-info.component';
 import { StoreMessagesComponent } from './online-store/store-messages.component';
 import { StoreStockAlertsComponent } from './online-store/store-stock-alerts.component';
 import { StoreDriverComponent } from './online-store/store-driver.component';
+import { DriverLinkComponent } from './online-store/driver-link.component';
 import { StoreDriverCashComponent } from './online-store/store-driver-cash.component';
 import { StorePagesComponent } from './online-store/store-pages.component';
 import { OnlineSetupComponent } from './restaurant/online-setup.component';
@@ -1118,6 +1119,8 @@ const baseRoutes: Routes = [
   { path: 'admin/online-store/reports', component: StoreReportListComponent, canActivate: [authGuard] },
   // v1.55.0: /shop and the customer portal (/shop/account, /shop/account/<section>) are one route, so the page and its cart stay while moving between them.
   { matcher: shopMatcher, component: ShopComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
+  // v1.59.0: a driver's private page (secret link + PIN, no staff login)
+  { path: 'driver/:token', component: DriverLinkComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/order/:code', component: ShopTrackComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/pay-test/:reference', component: ShopPayTestComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },
   { path: 'shop/info/:slug', component: ShopInfoComponent, canActivate: [publicModuleGuard('ONLINE_STORE')] },

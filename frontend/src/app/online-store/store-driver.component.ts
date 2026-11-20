@@ -5,20 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { ShellComponent } from '../shared/shell.component';
 import { emptyFilter } from '../core/api/list-state';
 import { Driver, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
-import { SignaturePadComponent } from './signature-pad.component';
 import { T } from '../core/i18n/t';
 
 const DRIVER_KEY = 'niwe.driver.id';
 
 /**
  * Online Store > My deliveries (v1.56.0): the screen of a delivery driver on his phone. It lists the orders that are out for delivery (his own, or
- * everybody's), with the customer's phone and address, what to collect, and for each one a way to hand over: the code the customer reads out, or the
- * customer's signature drawn on the phone. Either completes the order in the shop (stock out, invoice, cash recorded as collected).
+ * everybody's), with the customer's phone and address, what to collect, and for each one a way to hand over: the code the customer reads out (the
+ * customer signs only on his own page). It completes the order in the shop (stock out, invoice, cash recorded as collected).
  */
 @Component({
   selector: 'app-store-driver',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent, SignaturePadComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, ShellComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
@@ -55,15 +54,8 @@ const DRIVER_KEY = 'niwe.driver.id';
             <label class="form-label">{{ "Customer's delivery code" | translate }}</label>
             <div class="flex gap-2">
               <input class="form-control sd-code-input" style="width:140px; letter-spacing:0.3em; font-weight:700; font-size:1.2rem;" maxlength="4" inputmode="numeric" autocomplete="off" [(ngModel)]="code" name="sdcode" placeholder="••••" />
-              <button class="btn btn-primary sd-confirm-code" [disabled]="busy || !code.trim()" (click)="send(o, true)">{{ 'Confirm with the code' | translate }}</button>
+              <button class="btn btn-primary sd-confirm-code" [disabled]="busy || !code.trim()" (click)="send(o)">{{ 'Confirm with the code' | translate }}</button>
             </div>
-          </div>
-          <div class="text-muted" style="text-align:center; margin:0.4rem 0;">— {{ 'or' | translate }} —</div>
-          <div class="sd-sign-box">
-            <div style="font-weight:600; margin-bottom:0.3rem;">{{ 'The customer signs' | translate }}</div>
-            <app-signature-pad [height]="170" (signature)="signature = $event"></app-signature-pad>
-            <input class="form-control mt-1 sd-signed-name" maxlength="120" [(ngModel)]="signedName" name="sdname" [placeholder]="'Name of the person who signs (optional)' | translate" />
-            <button class="btn btn-success mt-2 sd-confirm-sign" style="width:100%;" [disabled]="busy || !signature" (click)="send(o, false)">✔ {{ 'Confirm with the signature' | translate }}</button>
           </div>
           <button class="btn btn-sm btn-outline-secondary mt-2" (click)="open = null">{{ 'Cancel' | translate }}</button>
         </div>
@@ -81,8 +73,6 @@ export class StoreDriverComponent implements OnInit, OnDestroy {
   message: string | null = null;
   open: number | null = null;
   code = '';
-  signature: string | null = null;
-  signedName = '';
   private poll: ReturnType<typeof setInterval> | null = null;
 
   constructor(private api: OnlineStoreApiService) {}
@@ -137,16 +127,14 @@ export class StoreDriverComponent implements OnInit, OnDestroy {
   start(o: StoreOrder): void {
     this.open = o.id;
     this.code = '';
-    this.signature = null;
-    this.signedName = '';
     this.message = null;
     this.error = null;
   }
 
-  send(o: StoreOrder, byCode: boolean): void {
+  send(o: StoreOrder): void {
     this.busy = true;
     this.error = null;
-    this.api.receive(o.id, { code: byCode ? this.code.trim() : null, signature: byCode ? null : this.signature, signedName: byCode ? null : this.signedName.trim() || null }).subscribe({
+    this.api.receive(o.id, { code: this.code.trim(), signature: null, signedName: null }).subscribe({
       next: (r) => {
         this.busy = false;
         this.open = null;

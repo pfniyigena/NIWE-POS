@@ -348,26 +348,34 @@ public class OnlineOrderService {
      */
     @Transactional(noRollbackFor = ApiException.class)
     public OrderDto receive(Long id, ReceiveRequest in, AppUser caller) {
+        return receiveAs(getOrThrow(id), in, caller, user());
+    }
+
+    /**
+     * A driver with a private link and PIN (v1.59.0, no staff login) gives the customer's code or signature. Only an order assigned to him; the stock
+     * location and partial delivery are not his to choose (a partial or failed delivery is recorded by staff).
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public OrderDto receiveByDriver(Long id, OnlineDriver driver, ReceiveRequest in) {
         OnlineOrder o = getOrThrow(id);
+        if (driver == null || !driver.getId().equals(o.getDriverId())) throw ApiException.badRequest(I18n.t("This order is not yours to deliver."));
+        return receiveAs(o, in, null, "Driver: " + driver.getName());
+    }
+
+    private OrderDto receiveAs(OnlineOrder o, ReceiveRequest in, AppUser caller, String by) {
         expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
+        // v1.59.0: staff and drivers hand over with the customer's code only; the customer signs only on his own page (receiveByCustomer)
         String code = in == null || in.code() == null ? "" : in.code().trim();
-        String signature = in == null ? null : cleanSignature(in.signature());
-        if (code.isEmpty() && signature == null) throw ApiException.badRequest(I18n.t("Type the customer's delivery code, or have the customer sign."));
-        String via;
-        if (!code.isEmpty()) {
-            checkCode(o, code);
-            via = "CODE";
-        } else {
-            via = "DRIVER";
-        }
-        o.setReceivedVia(via);
-        o.setReceivedBy(user());
+        if (code.isEmpty()) throw ApiException.badRequest(I18n.t("Type the customer's delivery code."));
+        checkCode(o, code);
+        o.setReceivedVia("CODE");
+        o.setReceivedBy(by);
         o.setReceivedAt(java.time.Instant.now());
-        o.setSignature(signature);
-        o.setSignedName(in == null || in.signedName() == null || in.signedName().isBlank() ? null : in.signedName().trim());
-        String how = via.equals("CODE") ? I18n.t("received: the customer's code was typed") : I18n.t("received: the customer signed on the phone");
+        o.setSignature(null);
+        o.setSignedName(null);
+        String how = I18n.t("received: the customer's code was typed");
         try {
-            return finish(o, new CompleteRequest(in == null ? null : in.locationId(), true, "CASH", null), caller, user(), how, in == null ? null : in.kept());
+            return finish(o, new CompleteRequest(in == null ? null : in.locationId(), true, "CASH", null), caller, by, how, in == null ? null : in.kept());
         } catch (ApiException e) {
             // refused (no sale order, say): the order is not received, whatever noRollbackFor keeps
             o.setReceivedVia(null);

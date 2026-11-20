@@ -2043,5 +2043,13 @@
  "A new code was sent to the customer": "Un nouveau code a été envoyé au client",
  "Your new code for order {0}": "Votre nouveau code pour la commande {0}",
  "Your new delivery code for order {0} is {1}. The old code no longer works. Give it to the driver only when you hold your goods.": "Votre nouveau code de livraison pour la commande {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au livreur que lorsque vous avez vos marchandises.",
- "Your new pick-up code for order {0} is {1}. The old code no longer works. Give it at the counter only when you collect your goods.": "Votre nouveau code de retrait pour la commande {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au comptoir que lorsque vous retirez vos marchandises."
+ "Your new pick-up code for order {0} is {1}. The old code no longer works. Give it at the counter only when you collect your goods.": "Votre nouveau code de retrait pour la commande {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au comptoir que lorsque vous retirez vos marchandises.",
+ "Switch the driver on before giving a link.": "Activez le livreur avant de lui donner un lien.",
+ "This driver has no link yet.": "Ce livreur n'a pas encore de lien.",
+ "This link is not valid any more. Ask the shop for a new one.": "Ce lien n'est plus valable. Demandez-en un nouveau à la boutique.",
+ "Too many wrong PINs. Try again in half an hour, or ask the shop for a new PIN.": "Trop de codes PIN erronés. Réessayez dans une demi-heure ou demandez un nouveau code PIN à la boutique.",
+ "That PIN is not right.": "Ce code PIN n'est pas le bon.",
+ "Type your PIN to continue.": "Saisissez votre code PIN pour continuer.",
+ "This order is not yours to deliver.": "Cette commande ne vous est pas attribuée.",
+ "Type the customer's delivery code.": "Saisissez le code de livraison du client."
 }

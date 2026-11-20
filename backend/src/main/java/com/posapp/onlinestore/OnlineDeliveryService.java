@@ -76,7 +76,7 @@ public class OnlineDeliveryService {
     }
 
     private static DriverDto dto(OnlineDriver d, long open) {
-        return new DriverDto(d.getId(), d.getName(), d.getPhone(), d.getNotes(), d.isActive(), open);
+        return new DriverDto(d.getId(), d.getName(), d.getPhone(), d.getNotes(), d.isActive(), open, d.getAccessToken() != null, d.getAccessLastUsedAt());
     }
 
     private static String blank(String v) {

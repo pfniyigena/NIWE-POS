@@ -30,3 +30,6 @@ Online Store > My deliveries (`/admin/online-store/driver`). Pick your name once
 
 ## Re-issuing the code (v1.58.1)
 When the customer lost the code, never received the message, or the code was blocked after five wrong tries, staff press **Send a new code to the customer** on the order (out for delivery or ready for pick-up). The old code stops working, the wrong-code counter starts again, and the customer receives the new code by e-mail/text and sees it on the order page. Staff never see the code. The history shows who re-issued it and the audit log records it.
+
+## Drivers without a staff login
+Since v1.59.0 a driver can type the code on his own phone with a private link and PIN: see `online-store-driver-link.md`. Also since v1.59.0 staff and drivers hand over with the code of the customer only: the customer signs only on his own page (My account / the order page).

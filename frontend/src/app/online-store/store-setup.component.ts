@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { Driver, OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { Driver, DriverAccess, OnlineStoreApiService, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -338,9 +338,10 @@ import { API_BASE } from '../core/constants';
 
       <div class="card mb-3 drivers-card" style="padding:1rem;">
         <h4 class="mb-2">{{ 'Drivers' | translate }}</h4>
-        <p class="text-muted">{{ 'The people who deliver orders. On an order you choose the driver, print the delivery slip, and the customer sees the driver\'s name and phone once the order is on its way. A driver is not an employee record: just a name and a phone number.' | translate }}</p>
+        <p class="text-muted">{{ 'The people who deliver orders. On an order you choose the driver, print the delivery slip, and the customer sees the driver\\'s name and phone once the order is on its way. A driver is not an employee record: just a name and a phone number.' | translate }}</p>
+        <div style="overflow-x:auto;">
         <table class="table-sm">
-          <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Phone' | translate }}</th><th>{{ 'Note' | translate }}</th><th>{{ 'Active' | translate }}</th><th class="text-end">{{ 'To deliver' | translate }}</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Name' | translate }}</th><th>{{ 'Phone' | translate }}</th><th>{{ 'Note' | translate }}</th><th>{{ 'Active' | translate }}</th><th class="text-end">{{ 'To deliver' | translate }}</th><th>{{ 'Link and PIN' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let d of drivers">
               <td><input class="form-control" style="width:170px;" maxlength="80" [name]="'dn' + d.id" [(ngModel)]="d.name" /></td>
@@ -348,17 +349,43 @@ import { API_BASE } from '../core/constants';
               <td><input class="form-control" style="width:200px;" maxlength="200" [name]="'dt' + d.id" [(ngModel)]="d.notes" /></td>
               <td><input type="checkbox" [name]="'da' + d.id" [(ngModel)]="d.active" /></td>
               <td class="text-end">{{ d.openOrders }}</td>
+              <td style="white-space:nowrap;">
+                <ng-container *ngIf="!d.accessOn"><button class="btn btn-sm btn-outline-primary dr-make" type="button" (click)="makeLink(d)">{{ 'Give a link' | translate }}</button></ng-container>
+                <ng-container *ngIf="d.accessOn">
+                  <span class="text-muted dr-on" style="font-size:0.8rem;">{{ d.accessLastUsedAt ? (('Last used' | translate) + ' ' + (d.accessLastUsedAt | date: 'short')) : ('Not used yet' | translate) }}</span>
+                  <button class="btn btn-sm btn-outline-secondary dr-show" type="button" (click)="showLink(d)">{{ 'Show link' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-secondary dr-pin" type="button" (click)="newPin(d)">{{ 'New PIN' | translate }}</button>
+                  <button class="btn btn-sm btn-outline-danger dr-off" type="button" (click)="linkOff(d)">{{ 'Switch off' | translate }}</button>
+                </ng-container>
+              </td>
               <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveDriver(d)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteDriver(d)">{{ 'Remove' | translate }}</button></td>
             </tr>
             <tr>
               <td><input class="form-control" style="width:170px;" maxlength="80" name="newDriverName" [(ngModel)]="newDriver.name" [placeholder]="'New driver' | translate" /></td>
               <td><input class="form-control" style="width:140px;" maxlength="40" name="newDriverPhone" [(ngModel)]="newDriver.phone" /></td>
               <td><input class="form-control" style="width:200px;" maxlength="200" name="newDriverNotes" [(ngModel)]="newDriver.notes" /></td>
-              <td></td><td></td>
+              <td></td><td></td><td></td>
               <td><button class="btn btn-sm btn-primary" type="button" (click)="addDriver()">{{ 'Add driver' | translate }}</button></td>
             </tr>
           </tbody>
         </table>
+        </div>
+        <div class="dr-access mt-3" *ngIf="access" style="border:1px solid #2563eb; border-radius:8px; padding:0.8rem;">
+          <strong>{{ 'Delivery link of {p0}' | translate: { p0: access.driver.name } }}</strong>
+          <p class="text-muted" style="margin:0.3rem 0;">{{ 'The driver opens this link on his phone and types his PIN. He sees only his own orders that are out for delivery, and confirms each with the customer\\'s code or signature. Send the PIN apart from the link.' | translate }}</p>
+          <div *ngIf="access.a.url" class="flex gap-2" style="flex-wrap:wrap; align-items:center;">
+            <input class="form-control dr-url" style="flex:1; min-width:240px;" readonly [value]="access.a.url" (focus)="$any($event.target).select()" />
+            <button class="btn btn-sm btn-outline-secondary dr-copy" type="button" (click)="copy(access.a.url)">{{ 'Copy' | translate }}</button>
+            <a class="btn btn-sm btn-outline-secondary dr-wa-link" *ngIf="waLink(access.driver, access.a, false) as w" [href]="w" target="_blank" rel="noopener">{{ 'Send the link on WhatsApp' | translate }}</a>
+          </div>
+          <div *ngIf="!access.a.url" class="alert alert-warning mt-2">{{ 'The address of the app is not set (app.frontend-url), so only the end of the link can be shown:' | translate }} <code>{{ access.a.path }}</code></div>
+          <div *ngIf="access.a.pin" class="mt-2 flex gap-2" style="align-items:center; flex-wrap:wrap;">
+            <span>{{ 'PIN' | translate }}:</span> <strong class="dr-pin-shown" style="font-size:1.6rem; letter-spacing:0.3em;">{{ access.a.pin }}</strong>
+            <a class="btn btn-sm btn-outline-secondary dr-wa-pin" *ngIf="waLink(access.driver, access.a, true) as w" [href]="w" target="_blank" rel="noopener">{{ 'Send the PIN on WhatsApp' | translate }}</a>
+            <span class="text-muted" style="font-size:0.85rem;">{{ 'Shown only now: write it down or send it. A new PIN can be made at any time.' | translate }}</span>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary mt-2" type="button" (click)="access = null">{{ 'Close' | translate }}</button>
+        </div>
       </div>
     </app-shell>
   `,
@@ -381,6 +408,8 @@ export class StoreSetupComponent implements OnInit {
   search = '';
   newZone: { name: string; fee: number; minOrder: number } = { name: '', fee: 0, minOrder: 0 };
   drivers: Driver[] = [];
+  /** The link (and the PIN, just made) of a driver, shown under the table. */
+  access: { driver: Driver; a: DriverAccess } | null = null;
   newDriver: { name: string; phone: string; notes: string } = { name: '', phone: '', notes: '' };
   error: string | null = null;
   message: string | null = null;
@@ -708,6 +737,39 @@ export class StoreSetupComponent implements OnInit {
 
   saveDriver(d: Driver): void {
     this.api.saveDriver(d.id, { name: d.name, phone: d.phone, notes: d.notes, active: d.active }).subscribe({ next: () => { this.loadDrivers(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the driver') });
+  }
+
+  makeLink(d: Driver): void {
+    if (d.accessOn && !confirm(T('Make a new link and PIN for {p0}? The old ones stop working.', { p0: d.name }))) return;
+    this.api.driverAccessMake(d.id).subscribe({ next: (a) => { this.access = { driver: d, a }; this.loadDrivers(); }, error: (e) => this.fail(e, 'Could not make the link') });
+  }
+
+  showLink(d: Driver): void {
+    this.api.driverAccessLink(d.id).subscribe({ next: (a) => (this.access = { driver: d, a }), error: (e) => this.fail(e, 'Could not show the link') });
+  }
+
+  newPin(d: Driver): void {
+    if (!confirm(T('Make a new PIN for {p0}? The old PIN stops working.', { p0: d.name }))) return;
+    this.api.driverAccessPin(d.id).subscribe({ next: (a) => { this.access = { driver: d, a }; this.loadDrivers(); }, error: (e) => this.fail(e, 'Could not make a new PIN') });
+  }
+
+  linkOff(d: Driver): void {
+    if (!confirm(T('Switch off the link of {p0}? He will not be able to open it any more.', { p0: d.name }))) return;
+    this.api.driverAccessOff(d.id).subscribe({ next: () => { this.access = null; this.loadDrivers(); this.ok('Link switched off'); }, error: (e) => this.fail(e, 'Could not switch the link off') });
+  }
+
+  copy(text: string): void {
+    try { void navigator.clipboard.writeText(text); this.ok('Copied'); } catch { this.error = T('Select the link and copy it.'); }
+  }
+
+  /** WhatsApp to the driver (his phone, written with the shop's country code) with the link, or with the PIN: sent apart on purpose. */
+  waLink(d: Driver, a: DriverAccess, pin: boolean): string | null {
+    let n = (d.phone ?? '').replace(/[^0-9]/g, '');
+    const cc = (this.s?.textCountryCode ?? '').replace(/[^0-9]/g, '');
+    if (n.startsWith('0') && cc) n = cc + n.substring(1);
+    if (n.length < 8) return null;
+    const text = pin ? T('Your PIN for the delivery page: {p0}', { p0: a.pin ?? '' }) : T('Your delivery page: {p0}', { p0: a.url ?? '' });
+    return `https://wa.me/${n}?text=${encodeURIComponent(text)}`;
   }
 
   deleteDriver(d: Driver): void {

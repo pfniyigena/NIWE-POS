@@ -155,6 +155,7 @@ public class OnlineSeoService {
                 + "Disallow: /shop/cart/\n"
                 + "Disallow: /shop/pay-test/\n"
                 + "Disallow: /shop/newsletter/\n"
+                + "Disallow: /driver/\n"
                 + "Disallow: /admin\n"
                 + "Disallow: /api/\n"
                 + "Disallow: /login\n"

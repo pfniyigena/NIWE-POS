@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.59.0 - Online Store: delivery drivers without a login
+
+A driver gets a private link and a 4-digit PIN (Shop settings > Drivers > Give a link). On his phone he sees only his own orders that are out for delivery and completes each with the customer's delivery code, with no staff login (the customer signs only on his own page). Failed and partial deliveries stay with staff. Staff can show the link, make a new PIN or switch the link off. New migration V92. See `RELEASE-NOTES-v1.59.0.md` and `docs/online-store-driver-link.md`.
+
 ### Version 1.58.2 - Online Store: order number in accounting descriptions
 
 Accounting entries that come from an online order (delivery of the goods, the payment, a return, a cancelled paid invoice) end their description with the order number, for example "Payment received from Ada (online order 9FMMY2MC)". New postings only. See `RELEASE-NOTES-v1.58.2.md`. No database change.

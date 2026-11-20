@@ -221,7 +221,7 @@ public final class OnlineStoreDtos {
     }
 
     /** A driver of the shop; openOrders = delivery orders still to deliver that are assigned to this driver. */
-    public record DriverDto(Long id, String name, String phone, String notes, boolean active, long openOrders) {
+    public record DriverDto(Long id, String name, String phone, String notes, boolean active, long openOrders, boolean accessOn, Instant accessLastUsedAt) {
     }
 
     public record DriverRequest(@Size(max = 80) String name, @Size(max = 40) String phone, @Size(max = 200) String notes, Boolean active) {

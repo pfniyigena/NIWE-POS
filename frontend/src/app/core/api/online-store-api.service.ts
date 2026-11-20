@@ -150,7 +150,13 @@ export interface StoreOrder {
 export interface DriverCashRow { orderId: number; code: string; driverId: number | null; driverName: string | null; customerName: string; deliveredAt: string; expected: number; handedIn: number | null; difference: number | null; settledAt: string | null; settledBy: string | null; note: string | null }
 export interface DriverCashTotal { driverId: number; driverName: string | null; orders: number; expected: number }
 export interface DriverCashData { waiting: DriverCashRow[]; settled: DriverCashRow[]; totals: DriverCashTotal[] }
-export interface Driver { id: number; name: string; phone: string | null; notes: string | null; active: boolean; openOrders: number }
+export interface Driver { id: number; name: string; phone: string | null; notes: string | null; active: boolean; openOrders: number; accessOn: boolean; accessLastUsedAt: string | null }
+/** The private link of a driver (v1.59.0); pin is only there when it was just made. */
+export interface DriverAccess { accessOn: boolean; url: string | null; path: string | null; pin: string | null; lastUsedAt: string | null }
+export interface DriverLine { name: string; quantity: number }
+export interface DriverJob { id: number; code: string; customerName: string; customerPhone: string; customerAddress: string | null; zoneName: string | null; notes: string | null; paid: boolean; total: number; toCollect: number; deliveryAttempts: number; lines: DriverLine[] }
+export interface DriverBoard { driverName: string; shopName: string | null; shopPhone: string | null; jobs: DriverJob[] }
+export interface DriverSession { session: string; driverName: string; expiresAt: string }
 /** A customer waiting for a sold-out product (staff view), and a product customers are waiting for. */
 export interface StockAlert { id: number; productId: number; productName: string; email: string | null; phone: string | null; language: string; status: string; createdAt: string; notifiedAt: string | null; notifiedBy: string | null }
 export interface StockDemand { productId: number; productName: string; waiting: number; stock: string }
@@ -386,6 +392,19 @@ export class OnlineStoreApiService {
     return id ? this.http.put<Driver>(`${this.base}/drivers/${id}`, body) : this.http.post<Driver>(`${this.base}/drivers`, body);
   }
   deleteDriver(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/drivers/${id}`); }
+  driverAccessMake(id: number): Observable<DriverAccess> { return this.http.post<DriverAccess>(`${this.base}/drivers/${id}/access`, {}); }
+  driverAccessLink(id: number): Observable<DriverAccess> { return this.http.get<DriverAccess>(`${this.base}/drivers/${id}/access`); }
+  driverAccessPin(id: number): Observable<DriverAccess> { return this.http.post<DriverAccess>(`${this.base}/drivers/${id}/access/pin`, {}); }
+  driverAccessOff(id: number): Observable<DriverAccess> { return this.http.delete<DriverAccess>(`${this.base}/drivers/${id}/access`); }
+  // ---- the driver's own page (no staff login: the secret link and the PIN)
+  driverLinkInfo(token: string): Observable<{ shopName: string | null }> { return this.http.get<{ shopName: string | null }>(`${API_BASE}/public/driver/${encodeURIComponent(token)}`); }
+  driverLogin(token: string, pin: string): Observable<DriverSession> { return this.http.post<DriverSession>(`${API_BASE}/public/driver/${encodeURIComponent(token)}/session`, { pin }); }
+  driverBoard(token: string, session: string): Observable<DriverBoard> {
+    return this.http.get<DriverBoard>(`${API_BASE}/public/driver/${encodeURIComponent(token)}/orders`, { headers: new HttpHeaders({ 'X-Driver-Session': session }) });
+  }
+  driverReceive(token: string, session: string, orderId: number, body: { code: string }): Observable<DriverBoard> {
+    return this.http.post<DriverBoard>(`${API_BASE}/public/driver/${encodeURIComponent(token)}/orders/${orderId}/receive`, body, { headers: new HttpHeaders({ 'X-Driver-Session': session }) });
+  }
   assignDriver(id: number, driverId: number | null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/driver`, { driverId }); }
   deliverySlip(id: number): Observable<Blob> { return this.http.get(`${this.base}/orders/${id}/delivery-slip`, { responseType: 'blob' }); }
   deliveryRun(driverId: number): Observable<Blob> { return this.http.get(`${this.base}/delivery-run`, { params: { driverId }, responseType: 'blob' }); }

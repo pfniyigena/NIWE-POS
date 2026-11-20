@@ -61,7 +61,7 @@ import { T } from '../core/i18n/t';
         <div class="mb-2">
           <label>{{ 'Message' | translate }}</label>
           <textarea class="form-control nc-f-body" rows="10" [(ngModel)]="form.body" name="body" maxlength="5000"></textarea>
-          <small class="text-muted">{{ 'A blank line starts a new paragraph. Plain text only. The shop name and each person\'s own unsubscribe link are added at the bottom.' | translate }}</small>
+          <small class="text-muted">{{ 'A blank line starts a new paragraph. Plain text only. The shop name and each person\\'s own unsubscribe link are added at the bottom.' | translate }}</small>
         </div>
         <div class="flex gap-2 mb-2" style="flex-wrap:wrap;">
           <div style="flex:1; min-width:200px;">

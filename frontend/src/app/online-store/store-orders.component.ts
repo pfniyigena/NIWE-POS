@@ -7,7 +7,6 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
-import { SignaturePadComponent } from './signature-pad.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
 import { Driver, KeptLine, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
@@ -26,7 +25,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
 @Component({
   selector: 'app-store-orders',
   standalone: true,
-  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent, SignaturePadComponent],
+  imports: [TranslatePipe, CommonModule, FormsModule, RouterLink, ShellComponent, PagerComponent],
   template: `
     <app-shell>
       <div class="alert alert-danger" *ngIf="error || list.error">{{ error || list.error }}</div>
@@ -183,13 +182,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
               <label class="form-label">{{ "Customer's delivery code" | translate }}</label>
               <input class="form-control so-rcode" style="width:130px; letter-spacing:0.25em; font-weight:600;" maxlength="4" inputmode="numeric" autocomplete="off" [(ngModel)]="rcode[o.id]" [name]="'rcode' + o.id" placeholder="••••" />
             </div>
-            <button class="btn btn-primary so-confirm-code" [disabled]="busy || !(rcode[o.id] || '').trim()" (click)="receive(o, true)">{{ 'Confirm with the code' | translate }}</button>
-            <button class="btn btn-outline-secondary so-sign-open" *ngIf="!sigOpen[o.id]" (click)="sigOpen[o.id] = true">✍ {{ 'The customer signs here' | translate }}</button>
-          </div>
-          <div *ngIf="sigOpen[o.id]" class="mt-2" style="max-width:420px;">
-            <app-signature-pad [height]="140" (signature)="sig[o.id] = $event"></app-signature-pad>
-            <input class="form-control mt-1 so-signed-name" maxlength="120" [(ngModel)]="sigName[o.id]" [name]="'sname' + o.id" [placeholder]="'Name of the person who signs (optional)' | translate" />
-            <button class="btn btn-primary mt-1 so-confirm-sign" [disabled]="busy || !sig[o.id]" (click)="receive(o, false)">{{ 'Confirm with the signature' | translate }}</button>
+            <button class="btn btn-primary so-confirm-code" [disabled]="busy || !(rcode[o.id] || '').trim()" (click)="receive(o)">{{ 'Confirm with the code' | translate }}</button>
           </div>
           <div class="text-muted mt-1" style="font-size:0.8rem;">{{ 'The code is in the customer\\'s account and message; it is never shown here. After five wrong codes it is blocked for half an hour.' | translate }}
             <button class="btn btn-sm btn-outline-secondary so-reissue" style="margin-left:0.5rem;" [disabled]="busy" (click)="reissue(o)">{{ 'Send a new code to the customer' | translate }}</button></div>
@@ -546,19 +539,16 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   }
 
   rcode: Record<number, string> = {};
-  sigOpen: Record<number, boolean> = {};
-  sig: Record<number, string | null> = {};
-  sigName: Record<number, string> = {};
 
-  /** The goods are in the customer's hands: the code the customer gave, or the signature drawn here. Completes the order. */
-  receive(o: StoreOrder, byCode: boolean): void {
+  /** The goods are in the customer's hands: the code the customer gave. Completes the order. (The customer signs only on his own page.) */
+  receive(o: StoreOrder): void {
     if (this.multiWarehouse && (this.location[o.id] ?? null) === null) {
       this.error = T('Choose the warehouse location the goods leave from.');
       return;
     }
-    const code = byCode ? (this.rcode[o.id] ?? '').trim() : '';
-    if (byCode && !code) return;
-    this.run(this.api.receive(o.id, { code: byCode ? code : null, signature: byCode ? null : this.sig[o.id] ?? null, signedName: byCode ? null : (this.sigName[o.id] ?? '').trim() || null, locationId: this.location[o.id] ?? null, kept: this.kept(o) }));
+    const code = (this.rcode[o.id] ?? '').trim();
+    if (!code) return;
+    this.run(this.api.receive(o.id, { code, signature: null, signedName: null, locationId: this.location[o.id] ?? null, kept: this.kept(o) }));
   }
 
   receivedHow(o: StoreOrder): string {
