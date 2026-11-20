@@ -2053,5 +2053,12 @@
  "This order is not yours to deliver.": "Cette commande ne vous est pas attribuée.",
  "Type the customer's delivery code.": "Saisissez le code de livraison du client.",
  "That tax does not exist.": "Cette taxe n'existe pas.",
- "That tax is switched off. Choose another one.": "Cette taxe est désactivée. Choisissez-en une autre."
+ "That tax is switched off. Choose another one.": "Cette taxe est désactivée. Choisissez-en une autre.",
+ "Code message: e-mail {0}, SMS {1}.": "Message du code : e-mail {0}, SMS {1}.",
+ "sent": "envoyé",
+ "failed": "échec",
+ "not sent": "non envoyé",
+ "waiting for an SMS company": "en attente d'une société SMS",
+ "none (no address)": "aucun (pas d'adresse)",
+ "not set up": "non configuré"
 }

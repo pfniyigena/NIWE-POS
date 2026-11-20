@@ -283,9 +283,10 @@ public class OnlineOrderService {
             text = text.then(o.getDriverPhone() != null ? OnlineMessages.m("Your driver is {0}, phone {1}.", o.getDriverName(), o.getDriverPhone())
                     : OnlineMessages.m("Your driver is {0}.", o.getDriverName()));
         }
-        text = text.then(OnlineMessages.m("Your delivery code is {0}. Give it to the driver only when you hold your goods.", receiptCode(o)));
+        String code = receiptCode(o);
+        text = text.then(OnlineMessages.m("Your delivery code is {0}. Give it to the driver only when you hold your goods.", code));
         repository.save(o);
-        tell(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), text);
+        tellCode(o, OnlineMessages.m("Your order {0} is on its way", o.getCode()), text, code);
         return dto(o);
     }
 
@@ -332,10 +333,11 @@ public class OnlineOrderService {
         move(o, "READY_FOR_PICKUP", note);
         repository.save(o);
         OnlineStoreSettings s = storeService.settings();
-        tell(o, OnlineMessages.m("Your order {0} is ready", o.getCode()), (paid(o) ? OnlineMessages.m("Your order {0} is ready for pick-up. It is already paid.", o.getCode())
+        String pickCode = receiptCode(o);
+        tellCode(o, OnlineMessages.m("Your order {0} is ready", o.getCode()), (paid(o) ? OnlineMessages.m("Your order {0} is ready for pick-up. It is already paid.", o.getCode())
                 : OnlineMessages.m("Your order {0} is ready for pick-up. Please bring {1} to pay.", o.getCode(), OnlineStoreService.money(o.getTotal())))
                 .plus(s.getPickupAddress() == null ? "" : " " + s.getPickupAddress())
-                .then(OnlineMessages.m("Your pick-up code is {0}. Give it at the counter only when you collect your goods.", receiptCode(o))));
+                .then(OnlineMessages.m("Your pick-up code is {0}. Give it at the counter only when you collect your goods.", pickCode)), pickCode);
         repository.save(o);
         return dto(o);
     }
@@ -430,9 +432,9 @@ public class OnlineOrderService {
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_CODE_REISSUED", "Re-issued the " + ("DELIVERY".equals(o.getDeliveryMethod()) ? "delivery" : "pick-up") + " code of online order " + o.getCode(), "OnlineOrder", o.getId());
         boolean delivery = "DELIVERY".equals(o.getDeliveryMethod());
-        tell(o, OnlineMessages.m("Your new code for order {0}", o.getCode()), delivery
+        tellCode(o, OnlineMessages.m("Your new code for order {0}", o.getCode()), delivery
                 ? OnlineMessages.m("Your new delivery code for order {0} is {1}. The old code no longer works. Give it to the driver only when you hold your goods.", o.getCode(), code)
-                : OnlineMessages.m("Your new pick-up code for order {0} is {1}. The old code no longer works. Give it at the counter only when you collect your goods.", o.getCode(), code));
+                : OnlineMessages.m("Your new pick-up code for order {0} is {1}. The old code no longer works. Give it at the counter only when you collect your goods.", o.getCode(), code), code);
         return dto(o);
     }
 
@@ -673,6 +675,18 @@ public class OnlineOrderService {
 
     private void tell(OnlineOrder o, OnlineMessages.Msg subject, OnlineMessages.Msg text) {
         OnlineMessages.send(mailService, storeSettingsService, o, subject, text);
+    }
+
+    /** A message with the delivery / pick-up code: by e-mail and by SMS (see {@link OnlineMessages#sendCode}); the order's history says how each went. */
+    private void tellCode(OnlineOrder o, OnlineMessages.Msg subject, OnlineMessages.Msg text, String code) {
+        String how = OnlineMessages.sendCode(mailService, storeSettingsService, o, subject, text, code);
+        OnlineOrderEvent ev = new OnlineOrderEvent();
+        ev.setOnlineOrder(o);
+        ev.setStatus(o.getStatus());
+        ev.setNote(how);
+        ev.setByUser(user());
+        o.getEvents().add(ev);
+        repository.save(o);
     }
 
     static OrderDto dto(OnlineOrder o) {

@@ -170,7 +170,7 @@ export interface StoreSettings {
   loyaltyEnabled: boolean; loyaltyPointsPer100: number; loyaltyMaxPercent: number; whatsappNumber: string | null;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
-/** status is SENT, FAILED or SKIPPED; purpose is ORDER, OWNER, SIGNIN or TEST. */
+/** status is SENT, FAILED, SKIPPED or QUEUED (waiting for an SMS company); purpose is ORDER, OWNER, SIGNIN, CODE or TEST. */
 export interface TextMessage { id: number; at: string; channel: string; to: string; purpose: string; body: string; status: string; provider: string | null; error: string | null; orderId: number | null }
 export interface TextPage { items: TextMessage[]; page: number; size: number; total: number; totalPages: number }
 export interface TextTestResult { status: string; error: string | null; to: string | null }

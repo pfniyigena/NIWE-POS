@@ -9521,5 +9521,12 @@
  "Could not make a new PIN": "Impossible de créer un nouveau code PIN",
  "Could not switch the link off": "Impossible de désactiver le lien",
  "The fee is the amount the customer pays. The tax you choose (from your existing taxes) is the part of it that is tax, included in the fee, so the invoice always equals the order total. Without a choice the tax of the delivery product is used.": "Les frais sont le montant payé par le client. La taxe choisie (parmi vos taxes existantes) est la part de taxe, incluse dans les frais : la facture est donc toujours égale au total de la commande. Sans choix, la taxe du produit de livraison est utilisée.",
- "The delivery product's tax": "La taxe du produit de livraison"
+ "The delivery product's tax": "La taxe du produit de livraison",
+ "Delivery code": "Code de livraison",
+ "Waiting for an SMS company": "En attente d'une société SMS",
+ "No SMS company is connected yet": "Aucune société SMS n'est encore connectée",
+ "Not a phone number": "Ce n'est pas un numéro de téléphone",
+ "The daily limit is reached": "La limite journalière est atteinte",
+ "Text messages are off": "Les SMS sont désactivés",
+ "The delivery and pick-up codes are always sent by SMS to the phone of the order (and by e-mail when the customer has an address), whatever the customer ticked. Until an SMS company is connected, these messages wait here as Waiting for an SMS company: nothing leaves the server yet.": "Les codes de livraison et de retrait sont toujours envoyés par SMS au téléphone de la commande (et par e-mail quand le client a une adresse), quoi que le client ait coché. Tant qu'aucune société SMS n'est connectée, ces messages attendent ici avec le statut « En attente d'une société SMS » : rien ne quitte encore le serveur."
 }

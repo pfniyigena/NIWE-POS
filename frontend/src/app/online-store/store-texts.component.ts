@@ -27,6 +27,7 @@ import { T } from '../core/i18n/t';
         </div>
       </div>
       <p class="text-muted">{{ 'Every text the shop sends is listed here, also the ones that failed or were not sent (a number that is not valid, or the daily limit). Choose the provider and the limits in the shop settings. A text goes to a customer only if they ticked the box at checkout, or asked for a sign-in code.' | translate }}</p>
+      <p class="text-muted tx-codehelp">{{ 'The delivery and pick-up codes are always sent by SMS to the phone of the order (and by e-mail when the customer has an address), whatever the customer ticked. Until an SMS company is connected, these messages wait here as Waiting for an SMS company: nothing leaves the server yet.' | translate }}</p>
 
       <form class="card mb-3" style="padding:1rem;" (ngSubmit)="sendTest()">
         <h4 class="mb-2">{{ 'Send a test message' | translate }}</h4>
@@ -52,7 +53,7 @@ import { T } from '../core/i18n/t';
                 <td>{{ purposeLabel(m.purpose) | translate }}</td>
                 <td style="max-width:420px;">{{ m.body }}</td>
                 <td><span class="badge" [ngClass]="m.status === 'SENT' ? 'badge-success' : m.status === 'FAILED' ? 'badge-danger' : 'badge-warning'">{{ statusLabel(m.status) | translate }}</span>
-                  <div class="text-muted" style="font-size:0.75rem;" *ngIf="m.error">{{ m.error }}</div></td>
+                  <div class="text-muted" style="font-size:0.75rem;" *ngIf="m.error">{{ m.error | translate }}</div></td>
               </tr>
             </tbody>
           </table>
@@ -125,6 +126,7 @@ export class StoreTextsComponent implements OnInit {
       case 'ORDER': return 'Order update';
       case 'OWNER': return 'Shop alert';
       case 'SIGNIN': return 'Sign-in code';
+      case 'CODE': return 'Delivery code';
       case 'TEST': return 'Test';
       default: return p;
     }
@@ -135,6 +137,7 @@ export class StoreTextsComponent implements OnInit {
       case 'SENT': return 'Sent';
       case 'FAILED': return 'Failed';
       case 'SKIPPED': return 'Not sent';
+      case 'QUEUED': return 'Waiting for an SMS company';
       default: return s;
     }
   }

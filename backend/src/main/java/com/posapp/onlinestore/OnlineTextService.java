@@ -1,6 +1,7 @@
 package com.posapp.onlinestore;
 
 import com.posapp.i18n.I18n;
+import com.posapp.onlinestore.text.BuiltInSmsSender;
 import com.posapp.onlinestore.text.TextProvider;
 import com.posapp.settings.StoreSettingsService;
 import jakarta.annotation.PostConstruct;
@@ -38,9 +39,11 @@ public class OnlineTextService {
     private final List<TextProvider> providers;
     private final StoreSettingsService storeSettingsService;
     private final TransactionTemplate ownTransaction;
+    private final BuiltInSmsSender builtIn;
 
     public OnlineTextService(OnlineTextMessageRepository messages, OnlineStoreSettingsRepository settingsRepository, List<TextProvider> providers,
-                             StoreSettingsService storeSettingsService, PlatformTransactionManager transactionManager) {
+                             StoreSettingsService storeSettingsService, PlatformTransactionManager transactionManager, BuiltInSmsSender builtIn) {
+        this.builtIn = builtIn;
         this.messages = messages;
         this.settingsRepository = settingsRepository;
         this.providers = providers;
@@ -50,7 +53,7 @@ public class OnlineTextService {
         this.ownTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /** What a send came to: SENT, FAILED or SKIPPED (not valid, over the limit). */
+    /** What a send came to: SENT, FAILED, SKIPPED (not valid, over the limit) or QUEUED (kept in the log, no SMS company connected yet). */
     public record Outcome(String status, String error) {
         public boolean sent() {
             return "SENT".equals(status);
@@ -154,9 +157,20 @@ public class OnlineTextService {
      * @param logBody what the log shows instead of the text (a sign-in code is never kept), or null to log the text
      */
     public Outcome send(String purpose, String phone, String body, String logBody, Long orderId) {
+        return send(purpose, phone, body, logBody, orderId, false);
+    }
+
+    /**
+     * @param always true for a message the customer must get whatever the settings say (a delivery code): when no provider is chosen it goes to the
+     *               built-in SMS sender instead of being dropped
+     */
+    private Outcome send(String purpose, String phone, String body, String logBody, Long orderId, boolean always) {
         OnlineStoreSettings s = settings();
         TextProvider p = provider(s);
-        if (p == null) return new Outcome("SKIPPED", "Text messages are off");
+        if (p == null) {
+            if (!always) return new Outcome("SKIPPED", "Text messages are off");
+            return builtIn(purpose, phone, cut(body == null ? "" : body), cut(logBody == null ? (body == null ? "" : body) : logBody), orderId, s);
+        }
         String channel = channelOf(s);
         String text = cut(body == null ? "" : body);
         String shown = cut(logBody == null ? text : logBody);
@@ -184,6 +198,26 @@ public class OnlineTextService {
         return new Outcome(r.ok() ? "SENT" : "FAILED", error);
     }
 
+    /** The built-in SMS sender: used when no provider is chosen, only for the messages that must always go. */
+    private Outcome builtIn(String purpose, String phone, String text, String shown, Long orderId, OnlineStoreSettings s) {
+        String to = toE164(phone, s == null ? "250" : s.getTextCountryCode());
+        if (to == null) {
+            record("SMS", phone == null ? "" : phone, purpose, shown, "SKIPPED", BuiltInSmsSender.CODE, null, "Not a phone number", orderId);
+            return new Outcome("SKIPPED", "Not a phone number");
+        }
+        boolean handedOver;
+        try {
+            handedOver = builtIn.deliver(to, text);
+        } catch (RuntimeException e) {
+            record("SMS", to, purpose, shown, "FAILED", BuiltInSmsSender.CODE, null, e.getMessage() == null ? "Not sent" : e.getMessage(), orderId);
+            return new Outcome("FAILED", e.getMessage());
+        }
+        String error = handedOver ? null : "No SMS company is connected yet";
+        String status = handedOver ? "SENT" : "QUEUED";
+        record("SMS", to, purpose, shown, status, BuiltInSmsSender.CODE, null, error, orderId);
+        return new Outcome(status, error);
+    }
+
     private void record(String channel, String to, String purpose, String body, String status, String provider, String ref, String error, Long orderId) {
         try {
             ownTransaction.executeWithoutResult(t -> {
@@ -208,6 +242,16 @@ public class OnlineTextService {
     public void orderUpdate(OnlineOrder o, String text) {
         if (!o.isTextOptIn() || o.getCustomerPhone() == null || o.getCustomerPhone().isBlank()) return;
         send("ORDER", o.getCustomerPhone(), withShop(text), null, o.getId());
+    }
+
+    /**
+     * A delivery / pick-up code for the customer, by text to the phone of the order: always, whatever the customer ticked at checkout (it is part of the
+     * delivery, not news), and also when no provider is chosen (the built-in SMS sender takes it). The log shows the message without the code.
+     */
+    public Outcome code(OnlineOrder o, String text, String code) {
+        if (o.getCustomerPhone() == null || o.getCustomerPhone().isBlank()) return new Outcome("SKIPPED", "Not a phone number");
+        String shown = code == null || code.isBlank() ? text : text.replace(code, "****");
+        return send("CODE", o.getCustomerPhone(), withShop(text), withShop(shown), o.getId(), true);
     }
 
     /** The shop owner's own phone (Online Store settings), told about new orders and orders waiting too long. */

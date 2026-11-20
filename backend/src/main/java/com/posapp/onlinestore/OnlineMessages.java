@@ -66,7 +66,41 @@ final class OnlineMessages {
     /** The mail goes in the language the customer chose in the shop (stored on the order), not the business language. */
     static void send(MailService mailService, StoreSettingsService storeSettingsService, OnlineOrder o, Msg subjectMsg, Msg textMsg) {
         textOrder(o, textMsg);
-        if (o.getCustomerEmail() == null || o.getCustomerEmail().isBlank() || !mailService.isConfigured()) return;
+        mail(mailService, storeSettingsService, o, subjectMsg, textMsg);
+    }
+
+    /**
+     * A message that carries the delivery / pick-up code: sent by e-mail (when the customer has an address) and by text to the phone of the order, both, so a
+     * customer with no e-mail gets it too. The text does not wait for the tick box at checkout. Never blocks or fails the order.
+     *
+     * @return what happened, in words for the order's history (in the business language)
+     */
+    static String sendCode(MailService mailService, StoreSettingsService storeSettingsService, OnlineOrder o, Msg subjectMsg, Msg textMsg, String code) {
+        String sms;
+        OnlineTextService t = texts;
+        if (t == null) {
+            sms = I18n.t("not set up");
+        } else {
+            try {
+                OnlineTextService.Outcome r = t.code(o, textMsg.render(o.getLanguage()), code);
+                sms = switch (r.status()) {
+                    case "SENT" -> I18n.t("sent");
+                    case "QUEUED" -> I18n.t("waiting for an SMS company");
+                    case "FAILED" -> I18n.t("failed");
+                    default -> I18n.t("not sent");
+                };
+            } catch (RuntimeException e) {
+                log.warn("Could not text the code of online order {}: {}", o.getCode(), e.getMessage());
+                sms = I18n.t("failed");
+            }
+        }
+        String mail = mail(mailService, storeSettingsService, o, subjectMsg, textMsg);
+        return I18n.t("Code message: e-mail {0}, SMS {1}.", mail, sms);
+    }
+
+    private static String mail(MailService mailService, StoreSettingsService storeSettingsService, OnlineOrder o, Msg subjectMsg, Msg textMsg) {
+        if (o.getCustomerEmail() == null || o.getCustomerEmail().isBlank()) return I18n.t("none (no address)");
+        if (!mailService.isConfigured()) return I18n.t("not set up");
         try {
             String subject = I18n.tIn(o.getLanguage(), subjectMsg.english(), subjectMsg.args());
             String text = textMsg.render(o.getLanguage());
@@ -74,8 +108,10 @@ final class OnlineMessages {
             String link = linkParagraph("/shop/order/" + o.getCode(), I18n.tIn(o.getLanguage(), "View your order {0}", o.getCode()));
             String body = "<p>" + escape(text) + "</p>" + link + (shop == null || shop.isBlank() ? "" : "<p>" + escape(shop) + "</p>");
             mailService.send(o.getCustomerEmail(), subject, body, List.of());
+            return I18n.t("sent");
         } catch (RuntimeException e) {
             log.warn("Could not e-mail online order {}: {}", o.getCode(), e.getMessage());
+            return I18n.t("failed");
         }
     }
 
