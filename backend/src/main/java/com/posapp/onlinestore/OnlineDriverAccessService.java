@@ -81,7 +81,15 @@ public class OnlineDriverAccessService {
                             boolean paid, BigDecimal total, BigDecimal toCollect, int deliveryAttempts, List<DriverLine> lines) {
     }
 
-    public record DriverBoard(String driverName, String shopName, String shopPhone, List<DriverJob> jobs) {
+    /** One order of the driver's cash: what he took at the door and, once staff settled it, what he handed in. */
+    public record DriverCashLine(String code, String customerName, Instant at, BigDecimal collected, BigDecimal handedIn, BigDecimal difference) {
+    }
+
+    /** The cash the driver holds: orders paid in cash at the door and not handed in yet, with the total, and his last settlements. */
+    public record DriverCash(BigDecimal holding, List<DriverCashLine> waiting, List<DriverCashLine> settled) {
+    }
+
+    public record DriverBoard(String driverName, String shopName, String shopPhone, List<DriverJob> jobs, DriverCash cash) {
     }
 
     public record DriverReceive(@Size(max = 12) String code) {
@@ -249,7 +257,17 @@ public class OnlineDriverAccessService {
                         o.getLines().stream().map(l -> new DriverLine(l.getName(), l.getQuantity())).toList()))
                 .toList();
         OnlineStoreSettings s = storeService.settings();
-        return new DriverBoard(d.getName(), s.getShopName(), s.getContactPhone(), jobs);
+        return new DriverBoard(d.getName(), s.getShopName(), s.getContactPhone(), jobs, cash(d));
+    }
+
+    /** His own cash only, never another driver's: what he holds (by the same list staff settle from) and his last ten settlements. */
+    private DriverCash cash(OnlineDriver d) {
+        List<DriverCashLine> waiting = orders.findByDriverIdAndCashCollectedGreaterThanAndCashSettledAtIsNullOrderByIdAsc(d.getId(), BigDecimal.ZERO).stream()
+                .map(o -> new DriverCashLine(o.getCode(), o.getCustomerName(), OnlineDriverCashService.deliveredAt(o), o.getCashCollected(), null, null)).toList();
+        List<DriverCashLine> settled = orders.findTop10ByDriverIdAndCashSettledAtIsNotNullOrderByCashSettledAtDesc(d.getId()).stream()
+                .map(o -> new DriverCashLine(o.getCode(), o.getCustomerName(), o.getCashSettledAt(), o.getCashCollected(), o.getCashHandedIn(), o.getCashDifference())).toList();
+        BigDecimal holding = waiting.stream().map(DriverCashLine::collected).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new DriverCash(holding, waiting, settled);
     }
 
     @Transactional

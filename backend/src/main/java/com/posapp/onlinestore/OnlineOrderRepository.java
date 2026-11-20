@@ -14,6 +14,11 @@ public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> 
 
     java.util.List<OnlineOrder> findTop200ByCashSettledAtIsNotNullOrderByCashSettledAtDesc();
 
+    /** One driver's cash: not handed in yet, and the latest settlements (v1.60.0, shown on his own page). */
+    java.util.List<OnlineOrder> findByDriverIdAndCashCollectedGreaterThanAndCashSettledAtIsNullOrderByIdAsc(Long driverId, java.math.BigDecimal zero);
+
+    java.util.List<OnlineOrder> findTop10ByDriverIdAndCashSettledAtIsNotNullOrderByCashSettledAtDesc(Long driverId);
+
     /** An order from that e-mail address was placed after the given time (an abandoned cart that was finished after all). */
     boolean existsByCustomerEmailIgnoreCaseAndCreatedAtAfter(String email, java.time.Instant after);
 

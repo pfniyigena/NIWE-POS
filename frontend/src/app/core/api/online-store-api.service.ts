@@ -155,7 +155,9 @@ export interface Driver { id: number; name: string; phone: string | null; notes:
 export interface DriverAccess { accessOn: boolean; url: string | null; path: string | null; pin: string | null; lastUsedAt: string | null }
 export interface DriverLine { name: string; quantity: number }
 export interface DriverJob { id: number; code: string; customerName: string; customerPhone: string; customerAddress: string | null; zoneName: string | null; notes: string | null; paid: boolean; total: number; toCollect: number; deliveryAttempts: number; lines: DriverLine[] }
-export interface DriverBoard { driverName: string; shopName: string | null; shopPhone: string | null; jobs: DriverJob[] }
+export interface DriverCashLine { code: string; customerName: string; at: string | null; collected: number; handedIn: number | null; difference: number | null }
+export interface DriverCash { holding: number; waiting: DriverCashLine[]; settled: DriverCashLine[] }
+export interface DriverBoard { driverName: string; shopName: string | null; shopPhone: string | null; jobs: DriverJob[]; cash: DriverCash }
 export interface DriverSession { session: string; driverName: string; expiresAt: string }
 /** A customer waiting for a sold-out product (staff view), and a product customers are waiting for. */
 export interface StockAlert { id: number; productId: number; productName: string; email: string | null; phone: string | null; language: string; status: string; createdAt: string; notifiedAt: string | null; notifiedBy: string | null }

@@ -46,6 +46,28 @@ import { T } from '../core/i18n/t';
           </div>
         </div>
         <div class="alert alert-success dl-done" *ngIf="message">{{ message }}</div>
+        <div class="card dl-cash mb-3" style="padding:0.9rem;">
+          <div class="flex justify-between align-center" style="gap:0.5rem;">
+            <strong>💵 {{ 'Cash I hold' | translate }}</strong>
+            <strong class="dl-holding" style="font-size:1.25rem;" [style.color]="board.cash.holding > 0 ? '#b45309' : '#15803d'">{{ board.cash.holding | number: '1.0-2' }}</strong>
+          </div>
+          <div class="text-muted" style="font-size:0.85rem;" *ngIf="board.cash.waiting.length === 0">{{ 'Nothing to hand in to the shop.' | translate }}</div>
+          <ng-container *ngIf="board.cash.waiting.length">
+            <div class="text-muted" style="font-size:0.85rem;">{{ 'Hand this cash in to the shop. It stays here until the shop records it.' | translate }}</div>
+            <div class="flex justify-between dl-cash-row" style="font-size:0.9rem; margin-top:0.3rem;" *ngFor="let c of board.cash.waiting">
+              <span>{{ c.code }} · {{ c.customerName }}<span class="text-muted" *ngIf="c.at"> · {{ c.at | date: 'dd/MM HH:mm' }}</span></span>
+              <strong>{{ c.collected | number: '1.0-2' }}</strong>
+            </div>
+          </ng-container>
+          <details *ngIf="board.cash.settled.length" class="dl-cash-done" style="margin-top:0.5rem;">
+            <summary class="text-muted" style="font-size:0.85rem; cursor:pointer;">{{ 'Handed in lately' | translate }}</summary>
+            <div class="flex justify-between" style="font-size:0.85rem; margin-top:0.25rem;" *ngFor="let c of board.cash.settled">
+              <span>{{ c.code }}<span class="text-muted" *ngIf="c.at"> · {{ c.at | date: 'dd/MM HH:mm' }}</span></span>
+              <span>{{ c.handedIn | number: '1.0-2' }}<span *ngIf="(c.difference ?? 0) !== 0" [style.color]="(c.difference ?? 0) < 0 ? '#b91c1c' : '#15803d'"> ({{ c.difference | number: '1.0-2' }})</span></span>
+            </div>
+          </details>
+        </div>
+
         <p class="text-muted dl-none" *ngIf="board.jobs.length === 0">{{ 'Nothing to deliver right now.' | translate }}</p>
 
         <div class="card dl-order mb-3" *ngFor="let o of board.jobs" style="padding:0.9rem;">

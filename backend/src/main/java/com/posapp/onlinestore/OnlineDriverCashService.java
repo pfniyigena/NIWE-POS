@@ -68,7 +68,7 @@ public class OnlineDriverCashService {
         return driverId == null || (driverId == 0 ? o.getDriverId() == null : driverId.equals(o.getDriverId()));
     }
 
-    private static Instant deliveredAt(OnlineOrder o) {
+    static Instant deliveredAt(OnlineOrder o) {
         if (o.getReceivedAt() != null) return o.getReceivedAt();
         return o.getEvents().stream().filter(e -> "COMPLETED".equals(e.getStatus())).map(OnlineOrderEvent::getCreatedAt).reduce((a, b) -> b).orElse(o.getUpdatedAt());
     }

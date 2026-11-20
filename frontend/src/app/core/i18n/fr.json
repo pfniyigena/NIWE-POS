@@ -9528,5 +9528,9 @@
  "Not a phone number": "Ce n'est pas un numéro de téléphone",
  "The daily limit is reached": "La limite journalière est atteinte",
  "Text messages are off": "Les SMS sont désactivés",
- "The delivery and pick-up codes are always sent by SMS to the phone of the order (and by e-mail when the customer has an address), whatever the customer ticked. Until an SMS company is connected, these messages wait here as Waiting for an SMS company: nothing leaves the server yet.": "Les codes de livraison et de retrait sont toujours envoyés par SMS au téléphone de la commande (et par e-mail quand le client a une adresse), quoi que le client ait coché. Tant qu'aucune société SMS n'est connectée, ces messages attendent ici avec le statut « En attente d'une société SMS » : rien ne quitte encore le serveur."
+ "The delivery and pick-up codes are always sent by SMS to the phone of the order (and by e-mail when the customer has an address), whatever the customer ticked. Until an SMS company is connected, these messages wait here as Waiting for an SMS company: nothing leaves the server yet.": "Les codes de livraison et de retrait sont toujours envoyés par SMS au téléphone de la commande (et par e-mail quand le client a une adresse), quoi que le client ait coché. Tant qu'aucune société SMS n'est connectée, ces messages attendent ici avec le statut « En attente d'une société SMS » : rien ne quitte encore le serveur.",
+ "Cash I hold": "Espèces que je détiens",
+ "Nothing to hand in to the shop.": "Rien à remettre à la boutique.",
+ "Hand this cash in to the shop. It stays here until the shop records it.": "Remettez cet argent à la boutique. Il reste ici tant que la boutique ne l'a pas enregistré.",
+ "Handed in lately": "Remis récemment"
 }

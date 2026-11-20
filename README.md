@@ -13,6 +13,10 @@ Each delivery area has a Tax chosen from the existing taxes (Shop settings > Del
 
 The delivery / pick-up code message (on its way, ready for pick-up, new code) now goes by e-mail **and** by SMS to the phone of the order, also for customers with no e-mail and whatever they ticked at checkout. Until an SMS company is connected, a built-in sender (`BuiltInSmsSender`, the one place to plug it in) keeps each SMS in the text log as "Waiting for an SMS company". The order's history shows how the code message went. The code is never written in the text log. Missing French texts for the code messages added. New migration V94. See `RELEASE-NOTES-v1.59.2.md` and `docs/online-store-delivery-code-sms.md`.
 
+## v1.60.0 - Online Store: the driver's cash balance on his own page
+
+The driver's private page now shows **Cash I hold**: the cash he took at the door that the shop has not recorded yet (total and order by order), and his last ten hand-ins with the difference. He sees only his own cash. No migration. See `RELEASE-NOTES-v1.60.0.md` and `docs/online-store-driver-cash-page.md`.
+
 ## v1.59.0 - Online Store: delivery drivers without a login
 
 A driver gets a private link and a 4-digit PIN (Shop settings > Drivers > Give a link). On his phone he sees only his own orders that are out for delivery and completes each with the customer's delivery code, with no staff login (the customer signs only on his own page). Failed and partial deliveries stay with staff. Staff can show the link, make a new PIN or switch the link off. New migration V92. See `RELEASE-NOTES-v1.59.0.md` and `docs/online-store-driver-link.md`.
