@@ -112,4 +112,7 @@ public class OnlineStoreSettings extends BaseEntity {
     /** A window can be booked until this many hours before it starts. */
     @jakarta.persistence.Column(name = "slot_notice_hours", nullable = false)
     private int slotNoticeHours = 2;
+    /** v1.69.0: the price list (Sales > Price lists) whose prices the shop uses for products without an online price. Empty = none. */
+    @jakarta.persistence.Column(name = "price_list_id")
+    private Long priceListId;
 }

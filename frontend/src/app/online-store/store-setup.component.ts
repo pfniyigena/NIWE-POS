@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay, ShopStockSetup } from '../core/api/online-store-api.service';
+import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay, ShopStockSetup, PriceListOption } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -45,6 +45,8 @@ import { API_BASE } from '../core/constants';
         </div>
         <div class="form-group mt-2" style="max-width:420px;"><label class="form-label">{{ 'Send new-order e-mails to (empty = business e-mail)' | translate }}</label><input class="form-control" name="notifyEmail" type="email" maxlength="160" [(ngModel)]="s.notifyEmail" /></div>
         <div class="form-group mt-2" style="max-width:420px;"><label class="form-label">{{ 'Alert by e-mail when an order waits this many minutes (0 = never)' | translate }}</label><input class="form-control" name="alertMinutes" type="number" min="0" max="1440" [(ngModel)]="s.unansweredAlertMinutes" /></div>
+        <p class="text-muted ss-offers-note" style="font-size:0.85rem; max-width:46rem; margin:0.5rem 0 0;">{{ 'A product with no online price takes the price of the price list above, then the best promotion for everybody (percent or amount off a product or a category, no coupon, group, limit or minimum). Changes in Sales show on the shop within two minutes.' | translate }}
+          <button class="btn btn-sm btn-outline-secondary ss-offers-now" type="button" (click)="refreshOffers()">{{ 'Apply now' | translate }}</button></p>
         <div class="form-group mt-2"><label class="form-label">{{ 'Welcome text' | translate }}</label><input class="form-control" name="intro" maxlength="300" [(ngModel)]="s.introText" /></div>
         <div class="form-group mt-2" *ngIf="s.paused"><label class="form-label">{{ 'Message shown while paused' | translate }}</label><input class="form-control" name="pauseMessage" maxlength="200" [(ngModel)]="s.pauseMessage" /></div>
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap;">
@@ -52,6 +54,11 @@ import { API_BASE } from '../core/constants';
           <div class="form-group"><label class="form-label">{{ 'Share kept for the till (%)' | translate }}</label><input class="form-control ss-till" type="number" min="0" max="100" style="width:140px;" name="tillShare" [(ngModel)]="s.tillSharePercent" /></div>
           <div class="form-group"><label class="form-label">{{ 'Do not sell goods with fewer days left than' | translate }}</label><input class="form-control ss-mindays" type="number" min="0" max="3650" style="width:140px;" name="minDays" [(ngModel)]="s.minDaysLeft" /></div>
           <div class="form-group"><label class="form-label">{{ 'Release unanswered orders after (hours, 0 = never)' | translate }}</label><input class="form-control ss-release" type="number" min="0" max="720" style="width:140px;" name="autoRelease" [(ngModel)]="s.autoReleaseHours" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Price list used by the shop' | translate }}</label>
+            <select class="form-select ss-pricelist" style="width:240px;" name="priceList" [(ngModel)]="s.priceListId">
+              <option [ngValue]="0">{{ 'None (normal prices)' | translate }}</option>
+              <option *ngFor="let o of priceLists" [ngValue]="o.id">{{ o.current ? o.name : o.name + ' (' + ('not in use today' | translate) + ')' }}</option>
+            </select></div>
           <div class="form-group"><label class="form-label">{{ 'Minimum order' | translate }}</label><input class="form-control" type="number" min="0" style="width:140px;" name="minOrder" [(ngModel)]="s.minOrder" /></div>
           <div class="form-group ss-shoploc" *ngIf="stockSetup?.multiWarehouse">
             <label class="form-label">{{ 'Stock the shop sells from' | translate }}</label>
@@ -217,6 +224,7 @@ import { API_BASE } from '../core/constants';
                   {{ 'Price' | translate }}: {{ l.unitPrice | number: '1.0-2' }} · {{ 'Stock' | translate }}: {{ stockLabel(l.stock) | translate }}<span *ngIf="!l.hasImage"> · {{ 'No picture yet' | translate }}</span>
                 </div>
                 <div class="lst-shopprice" *ngIf="!l.variantCount" style="font-size:0.85rem; margin-top:0.15rem;"><strong>{{ 'Customers pay on the shop' | translate }}: {{ shopPrice(l) | number: '1.0-2' }}</strong><span class="text-muted" *ngIf="l.taxOnTopPercent"> ({{ 'the price {p0} plus {p1}% tax' | translate: { p0: (l.onlinePrice ?? l.unitPrice) | number: '1.0-2', p1: l.taxOnTopPercent } }})</span><span class="text-muted" *ngIf="!l.taxOnTopPercent"> ({{ 'no tax added' | translate }})</span></div>
+                <div class="lst-offer" *ngIf="!l.variantCount && l.offerPrice !== null" style="font-size:0.8rem; margin-top:0.15rem; color:#15803d;">{{ 'Offer from Sales: {p0} ({p1})' | translate: { p0: (l.offerPrice | number: '1.0-2'), p1: l.offerNote } }}</div>
                 <div class="lst-stock" *ngIf="!l.variantCount" style="font-size:0.8rem; margin-top:0.15rem;" [style.color]="l.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">
                   <ng-container *ngIf="l.stockInfo.tracked; else untracked">{{ 'In sellable warehouse locations {p0} − expired or too close to expiry {p6} − reserved on confirmed orders {p1} − held for orders nobody answered yet {p2} − buffer {p3} − kept for the till {p4} = sellable now {p5}' | translate: { p0: l.stockInfo.inWarehouses, p1: l.stockInfo.reserved, p2: l.stockInfo.held, p3: l.stockInfo.buffer, p4: l.stockInfo.tillShare, p5: l.stockInfo.sellable, p6: l.stockInfo.expired } }}</ng-container>
                   <ng-template #untracked>{{ 'Stock is not tracked for this product: the shop always shows it as in stock.' | translate }}</ng-template>
@@ -231,6 +239,8 @@ import { API_BASE } from '../core/constants';
                 <input class="form-control" type="number" min="0" style="width:100%;" [name]="'p' + l.id" [(ngModel)]="l.onlinePrice" /></div>
               <div *ngIf="!l.variantCount"><label class="form-label" style="font-size:0.8rem;">{{ 'Buffer for this product' | translate }}</label>
                 <input class="form-control lst-buffer" type="number" min="0" max="1000" style="width:100%;" [name]="'b' + l.id" [(ngModel)]="l.stockBuffer" [placeholder]="'Shop-wide' | translate" /></div>
+              <div *ngIf="!l.variantCount && !l.variantParentId"><label class="form-label" style="font-size:0.8rem;">{{ 'Sold by (kg, m ...)' | translate }}</label>
+                <input class="form-control lst-measure" maxlength="12" style="width:100%;" [name]="'m' + l.id" [(ngModel)]="l.measureUnit" [placeholder]="'By the piece' | translate" /></div>
               <div><label class="form-label" style="font-size:0.8rem;">{{ 'Order' | translate }}</label>
                 <input class="form-control" type="number" style="width:100%;" [name]="'o' + l.id" [(ngModel)]="l.sortOrder" /></div>
             </div>
@@ -521,8 +531,9 @@ export class StoreSetupComponent implements OnInit {
   constructor(private api: OnlineStoreApiService, private catalog: CatalogApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => (this.s = s), error: (e) => this.fail(e, 'Failed to load the settings') });
+    this.api.settings().subscribe({ next: (s) => { s.priceListId = s.priceListId ?? 0; this.s = s; }, error: (e) => this.fail(e, 'Failed to load the settings') });
     this.api.providers().subscribe({ next: (p) => (this.providers = p), error: () => {} });
+    this.api.priceLists().subscribe({ next: (l) => (this.priceLists = l), error: () => {} });
     this.api.textProviders().subscribe({ next: (p) => (this.textProviders = p), error: () => {} });
     this.api.pageContent().subscribe({ next: (c) => (this.pc = c), error: () => {} });
     this.api.banners().subscribe({ next: (b) => (this.banners = b), error: () => {} });
@@ -738,7 +749,7 @@ export class StoreSetupComponent implements OnInit {
 
   /** The price customers see on the shop for a listing: its online price (or the product price) with the tax added on top when the tax rate is not included. */
   shopPrice(l: StoreListing): number {
-    const base = Number(l.onlinePrice ?? l.unitPrice) || 0;
+    const base = Number(l.onlinePrice ?? l.offerPrice ?? l.unitPrice) || 0;
     return l.taxOnTopPercent ? Math.round(base * (1 + l.taxOnTopPercent / 100) * 100) / 100 : base;
   }
 
@@ -781,7 +792,7 @@ export class StoreSetupComponent implements OnInit {
   }
 
   saveListing(l: StoreListing): void {
-    this.api.saveListing({ productId: l.productId, featured: l.featured, bestSeller: l.bestSeller, specialOffer: l.specialOffer, newArrival: l.newArrival, listed: l.listed, webTitle: l.webTitle, webDescription: l.webDescription, onlinePrice: l.onlinePrice === null || (l.onlinePrice as any) === '' ? null : l.onlinePrice, sortOrder: l.sortOrder, stockBuffer: this.bufferValue(l.stockBuffer) })
+    this.api.saveListing({ productId: l.productId, featured: l.featured, bestSeller: l.bestSeller, specialOffer: l.specialOffer, newArrival: l.newArrival, listed: l.listed, webTitle: l.webTitle, webDescription: l.webDescription, onlinePrice: l.onlinePrice === null || (l.onlinePrice as any) === '' ? null : l.onlinePrice, sortOrder: l.sortOrder, stockBuffer: this.bufferValue(l.stockBuffer), measureUnit: l.variantCount > 0 ? undefined : (l.measureUnit ?? '').trim() })
       .subscribe({ next: () => { this.loadListings(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the product') });
   }
 
@@ -817,6 +828,11 @@ export class StoreSetupComponent implements OnInit {
   windows: DeliveryWindow[] = [];
   slotSet: SlotSettings | null = null;
   stockSetup: ShopStockSetup | null = null;
+  priceLists: PriceListOption[] = [];
+
+  refreshOffers(): void {
+    this.api.refreshOffers().subscribe({ next: () => { this.loadListings(); this.ok('Prices worked out again'); }, error: (e) => this.fail(e, 'Could not work the prices out') });
+  }
 
   loadShopStock(): void {
     this.api.shopStock().subscribe({ next: (x) => (this.stockSetup = x), error: () => {} });

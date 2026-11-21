@@ -414,7 +414,7 @@ public class ShopAccountService {
                 gone.add(l.getName());
                 continue;
             }
-            lines.add(new ReorderLine(p, l.getQuantity().min(BigDecimal.valueOf(20))));
+            lines.add(new ReorderLine(p, l.getQuantity().min(BigDecimal.valueOf(p.measureUnit() != null ? 100 : 20))));
         }
         return new Reorder(lines, gone);
     }

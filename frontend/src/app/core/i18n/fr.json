@@ -9621,5 +9621,14 @@
  "All the units delivered are coming back: {p0}": "Toutes les unités livrées reviennent : {p0}",
  "Choose the {p0} serial numbers of {p1} that came back.": "Choisissez les numéros de série de {p1} qui sont revenus (quantité : {p0}).",
  "A shop order holds its units from the moment it is placed, until staff accept it (then the sale order keeps them) or it is cancelled. An order nobody answers is cancelled after the hours above and the customer is told, unless it was paid online: that one waits for staff. Batches that are expired, or have fewer days left than the setting above, are not offered. A product can have its own buffer in the list of products below; the share kept for the till is taken from what is available, rounded up.": "Une commande de la boutique retient ses unités dès qu'elle est passée, jusqu'à ce que le personnel l'accepte (la commande client les garde alors) ou qu'elle soit annulée. Une commande restée sans réponse est annulée après le nombre d'heures ci-dessus et le client en est informé, sauf si elle a été payée en ligne : celle-là attend le personnel. Les lots périmés, ou qui ont moins de jours restants que le réglage ci-dessus, ne sont pas proposés. Un produit peut avoir sa propre marge dans la liste des produits ci-dessous ; la part gardée pour la caisse est prise sur ce qui est disponible, arrondie vers le haut.",
- "Shop orders nobody has answered yet are counted against the stock, and customers waiting for a back-in-stock e-mail count as demand.": "Les commandes de la boutique sans réponse sont déduites du stock, et les clients qui attendent un e-mail de retour en stock comptent comme demande."
+ "Shop orders nobody has answered yet are counted against the stock, and customers waiting for a back-in-stock e-mail count as demand.": "Les commandes de la boutique sans réponse sont déduites du stock, et les clients qui attendent un e-mail de retour en stock comptent comme demande.",
+ "Price list used by the shop": "Liste de prix utilisée par la boutique",
+ "not in use today": "inactive aujourd'hui",
+ "A product with no online price takes the price of the price list above, then the best promotion for everybody (percent or amount off a product or a category, no coupon, group, limit or minimum). Changes in Sales show on the shop within two minutes.": "Un produit sans prix en ligne prend le prix de la liste de prix ci-dessus, puis la meilleure promotion ouverte à tous (pourcentage ou montant de remise sur un produit ou une catégorie, sans coupon, groupe, limite ni minimum). Les changements faits dans les Ventes apparaissent sur la boutique en deux minutes.",
+ "Apply now": "Appliquer maintenant",
+ "Offer from Sales: {p0} ({p1})": "Offre des Ventes : {p0} ({p1})",
+ "Sold by (kg, m ...)": "Vendu au (kg, m ...)",
+ "By the piece": "À la pièce",
+ "Prices worked out again": "Prix recalculés",
+ "Could not work the prices out": "Impossible de recalculer les prix"
 }

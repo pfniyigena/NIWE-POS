@@ -41,4 +41,13 @@ public class OnlineListing extends BaseEntity {
     /** v1.66.0: units kept back for this product only (empty = the shop-wide buffer). */
     @Column(name = "stock_buffer")
     private Integer stockBuffer;
+    /** v1.69.0: the price the ERP gives this product (price list, promotions) when staff set no online price; kept up to date by OnlineOffers. Empty = the normal price. */
+    @Column(name = "offer_price")
+    private BigDecimal offerPrice;
+    /** What the offer price comes from (the promotion or price list name), for staff. */
+    @Column(name = "offer_note")
+    private String offerNote;
+    /** v1.69.0: sold by weight or length: the unit shown ("kg", "m"); the customer may order decimal quantities. Empty = sold by the piece. */
+    @Column(name = "measure_unit")
+    private String measureUnit;
 }

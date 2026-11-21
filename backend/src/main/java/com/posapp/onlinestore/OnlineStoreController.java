@@ -313,6 +313,19 @@ public class OnlineStoreController {
         return ResponseEntity.noContent().build();
     }
 
+    /** v1.69.0: the price lists the shop may use (Shop settings), and "work the prices out again now" (otherwise they follow within two minutes). */
+    @PreAuthorize(VIEW)
+    @GetMapping("/price-lists")
+    public List<OnlineStoreDtos.PriceListOption> priceLists() {
+        return admin.priceLists();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/offers/refresh")
+    public java.util.Map<String, Integer> refreshOffers() {
+        return java.util.Map.of("changed", admin.refreshOffers());
+    }
+
     // ---------------------------------------------------------------- coupons
 
     @PreAuthorize(VIEW)

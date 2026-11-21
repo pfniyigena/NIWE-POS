@@ -21,7 +21,8 @@ public final class OnlineStoreDtos {
 
     /** stock is IN_STOCK, LOW or SOLD_OUT: never an exact number. */
     public record PublicProduct(Long id, String name, String description, BigDecimal price, String category, String imageUrl, String stock,
-                                 BigDecimal wasPrice, double rating, int ratingCount, int variants, boolean priceFrom) {
+                                 BigDecimal wasPrice, double rating, int ratingCount, int variants, boolean priceFrom,
+                                 String measureUnit) {
     }
 
     /** A link of the footer (label and address) written by staff in Shop settings. */
@@ -294,6 +295,10 @@ public final class OnlineStoreDtos {
     public record CustomerReceivedRequest(@Size(max = 40) String phone, @Size(max = 200000) String signature, @Size(max = 120) String signedName) {
     }
 
+    /** A price list the shop may use: current = switched on and inside its dates today. */
+    public record PriceListOption(Long id, String name, boolean current) {
+    }
+
     public record SettingsDto(boolean enabled, boolean paused, String pauseMessage, String shopName, String introText, String contactPhone,
                               String pickupAddress, boolean pickupEnabled, boolean deliveryEnabled, boolean codEnabled, int stockBuffer,
                               BigDecimal minOrder, BigDecimal freeDeliveryOver, int maxPendingPerPhone, int maxPerIpPerHour,
@@ -301,7 +306,7 @@ public final class OnlineStoreDtos {
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
                               String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
                               boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent, String whatsappNumber,
-                              Integer autoReleaseHours, Integer tillSharePercent, Integer minDaysLeft) {
+                              Integer autoReleaseHours, Integer tillSharePercent, Integer minDaysLeft, Long priceListId, String priceListName) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)
@@ -352,7 +357,8 @@ public final class OnlineStoreDtos {
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,
                              String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock,
                              boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival, StockInfo stockInfo,
-                             BigDecimal taxOnTopPercent, Long variantParentId, String variantLabel, String variantOptions, boolean variantOff, int variantCount, Integer stockBuffer) {
+                             BigDecimal taxOnTopPercent, Long variantParentId, String variantLabel, String variantOptions, boolean variantOff, int variantCount, Integer stockBuffer,
+                             BigDecimal offerPrice, String offerNote, String measureUnit) {
     }
 
     /**
@@ -367,7 +373,7 @@ public final class OnlineStoreDtos {
 
     public record ListingRequest(@NotNull Long productId, Boolean listed, @Size(max = 160) String webTitle, @Size(max = 2000) String webDescription,
                                  BigDecimal onlinePrice, Integer sortOrder, Boolean featured, Boolean bestSeller, Boolean specialOffer, Boolean newArrival,
-                                 Integer stockBuffer) {
+                                 Integer stockBuffer, String measureUnit) {
     }
 
     public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder, Long taxRateId, Integer deliveryDaysMin, Integer deliveryDaysMax) {

@@ -11,5 +11,5 @@ import lombok.Setter;
 public class OnlineCartLine extends BaseEntity {
     private Long cartId;
     private Long productId;
-    private int quantity = 1;
+    private java.math.BigDecimal quantity = java.math.BigDecimal.ONE;
 }

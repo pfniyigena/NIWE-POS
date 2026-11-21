@@ -2182,5 +2182,8 @@
  "Choose the {0} serial numbers of {1} that came back.": "Choisissez les numéros de série de {1} qui sont revenus (quantité : {0}).",
  "Serial numbers": "Numéros de série",
  "Automatic: online order {0}": "Automatique : commande en ligne {0}",
- "{0} carton(s) broken down into single units for this order": "{0} carton(s) ouvert(s) en unités pour cette commande"
+ "{0} carton(s) broken down into single units for this order": "{0} carton(s) ouvert(s) en unités pour cette commande",
+ "The quantity of {0} must be between {1} and {2} {3}": "La quantité de {0} doit être comprise entre {1} et {2} {3}",
+ "That price list does not exist": "Cette liste de prix n'existe pas",
+ "The unit must be 12 characters or fewer": "L'unité doit comporter 12 caractères au maximum"
 }

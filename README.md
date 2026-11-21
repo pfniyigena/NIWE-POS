@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.69.0 - Online Store: prices from Sales, products sold by weight or length
+
+A product with no online price follows the shop's price list (Shop settings) and the best promotion for everybody (percent/amount off a product or category; no coupon, group, limit or minimum). A product can be sold by weight or length (decimal quantities, "/ kg"). Migration V101. See `RELEASE-NOTES-v1.69.0.md` and `docs/online-store-offers-measures.md`.
+
 ## v1.68.0 - Online Store: cartons, warehouses, reorder
 
 The shop counts units that can be had by opening cartons (when breakdown is on in Inventory); cartons are opened automatically when an order is accepted or delivered. Reorder subtracts shop orders nobody has answered yet and counts customers waiting for a back-in-stock e-mail; the stock report has an "Online orders" column. No migration. See `RELEASE-NOTES-v1.68.0.md` and `docs/online-store-inventory-link.md`.

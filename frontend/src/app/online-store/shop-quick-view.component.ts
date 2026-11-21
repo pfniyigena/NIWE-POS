@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OnlineStoreApiService, ShopProduct } from '../core/api/online-store-api.service';
 import { ShopMoneyPipe } from './shop-money.pipe';
+import { qtyMax } from './shop-quantity';
 
 /** A quick look at a product in a window over the shop: picture, price, stock, a short description and add to cart, without leaving the list. */
 @Component({
@@ -23,7 +24,7 @@ import { ShopMoneyPipe } from './shop-money.pipe';
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="p.category">{{ p.category }}</div>
             <h3 class="shop-qv-name" style="margin:0.15rem 1.5rem 0.4rem 0;">{{ p.name }}</h3>
             <div *ngIf="p.ratingCount > 0" style="color:#d97706;">{{ stars(p.rating) }} <span class="text-muted">({{ p.ratingCount }})</span></div>
-            <div style="font-size:1.5rem; margin-top:0.4rem;"><strong>{{ p.price | shopMoney: cur }}</strong><s class="text-muted" *ngIf="p.wasPrice" style="font-size:0.95rem; margin-left:0.5rem;">{{ p.wasPrice | shopMoney: cur }}</s>
+            <div style="font-size:1.5rem; margin-top:0.4rem;"><strong>{{ p.price | shopMoney: cur }}</strong><span class="text-muted" *ngIf="p.measureUnit" style="font-size:0.95rem;"> / {{ p.measureUnit }}</span><s class="text-muted" *ngIf="p.wasPrice" style="font-size:0.95rem; margin-left:0.5rem;">{{ p.wasPrice | shopMoney: cur }}</s>
               <span *ngIf="discount() > 0" style="margin-left:0.5rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; vertical-align:middle;">-{{ discount() }}%</span></div>
             <div style="margin-top:0.25rem;" [style.color]="p.stock === 'SOLD_OUT' ? '#b91c1c' : p.stock === 'LOW' ? '#b45309' : '#15803d'">
               {{ p.stock === 'SOLD_OUT' ? ('Out of stock' | translate) : p.stock === 'LOW' ? ('Few left' | translate) : ('In stock' | translate) }}</div>
@@ -31,8 +32,8 @@ import { ShopMoneyPipe } from './shop-money.pipe';
             <div class="flex gap-2 mt-3" style="align-items:center; flex-wrap:wrap;">
               <div class="flex gap-1" *ngIf="qty() > 0; else addBtn" style="align-items:center;">
                 <button class="btn btn-outline-secondary" (click)="change.emit({ p: p, by: -1 })">−</button>
-                <span style="min-width:1.5em; text-align:center;">{{ qty() }}</span>
-                <button class="btn btn-outline-secondary" (click)="change.emit({ p: p, by: 1 })" [disabled]="qty() >= 20">+</button>
+                <span style="min-width:1.5em; text-align:center;">{{ qty() }} {{ p.measureUnit }}</span>
+                <button class="btn btn-outline-secondary" (click)="change.emit({ p: p, by: 1 })" [disabled]="qty() >= qtyMax(p)">+</button>
               </div>
               <ng-template #addBtn><button class="btn btn-primary shop-qv-add" [disabled]="p.stock === 'SOLD_OUT' || !open" (click)="change.emit({ p: p, by: 1 })">{{ 'Add to cart' | translate }}</button></ng-template>
               <a class="shop-qv-full" [routerLink]="[]" [queryParams]="{ product: p.id }" queryParamsHandling="merge" (click)="closed.emit()">{{ 'View full details' | translate }} →</a>
@@ -61,6 +62,8 @@ export class ShopQuickViewComponent {
   img(): string {
     return this.api.imageUrl(this.p.imageUrl as string) + '?w=700';
   }
+
+  qtyMax = qtyMax;
 
   qty(): number {
     return this.cart[this.p.id] ?? 0;

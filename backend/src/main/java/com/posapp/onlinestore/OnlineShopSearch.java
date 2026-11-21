@@ -35,7 +35,7 @@ public class OnlineShopSearch {
 
     /** The price the customer sees as an expression over the aliases of a listing (l), its product (p) and its tax rate (t). */
     private static String shown(String l, String p, String t) {
-        return "(coalesce(" + l + ".onlinePrice, " + p + ".unitPrice) * (1 + case when " + t + ".id is not null and " + t + ".inclusive = false then coalesce(" + t + ".ratePercent, 0) / 100 else 0 end))";
+        return "(coalesce(" + l + ".onlinePrice, " + l + ".offerPrice, " + p + ".unitPrice) * (1 + case when " + t + ".id is not null and " + t + ".inclusive = false then coalesce(" + t + ".ratePercent, 0) / 100 else 0 end))";
     }
 
     private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = %1$s and ps.location.active = true%2$s "

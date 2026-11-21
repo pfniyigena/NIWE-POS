@@ -102,12 +102,18 @@ public class CartReminderService {
         if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$") || email.length() > 160) return;
         List<PublicLine> given = in.lines() == null ? List.of() : in.lines();
         if (given.size() > MAX_LINES) throw ApiException.badRequest(I18n.t("That is too many different products for one order"));
-        Map<Long, Integer> wanted = new LinkedHashMap<>();
+        Map<Long, BigDecimal> wanted = new LinkedHashMap<>();
         for (PublicLine l : given) {
             if (l.productId() == null || l.quantity() == null) continue;
-            int q = Math.max(1, Math.min(MAX_QUANTITY, l.quantity().setScale(0, RoundingMode.DOWN).intValue()));
-            boolean onSale = listings.findByProductId(l.productId()).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).isPresent();
-            if (onSale) wanted.merge(l.productId(), q, (a, b) -> Math.min(MAX_QUANTITY, a + b));
+            OnlineListing listing = listings.findByProductId(l.productId()).filter(OnlineListing::isListed).filter(x -> x.getProduct().isActive()).orElse(null);
+            if (listing == null) continue;
+            // v1.69.0: a product sold by weight or length keeps its decimals (0.1 to 100); anything else is a whole number of pieces
+            boolean measured = OnlineStoreService.measureOf(listing) != null;
+            BigDecimal max = measured ? OnlineStoreService.MAX_MEASURE : BigDecimal.valueOf(MAX_QUANTITY);
+            BigDecimal min = measured ? OnlineStoreService.MIN_MEASURE : BigDecimal.ONE;
+            BigDecimal q = measured ? l.quantity().setScale(3, RoundingMode.DOWN) : l.quantity().setScale(0, RoundingMode.DOWN);
+            q = q.max(min).min(max);
+            wanted.merge(l.productId(), q, (a, b) -> a.add(b).min(max));
         }
         Instant now = Instant.now();
         OnlineCart c = carts.findByEmail(email).orElse(null);
@@ -127,9 +133,9 @@ public class CartReminderService {
             c.setEmail(email);
             c.setToken(newToken());
         } else {
-            Map<Long, Integer> before = new LinkedHashMap<>();
+            Map<Long, BigDecimal> before = new LinkedHashMap<>();
             for (OnlineCartLine l : cartLines.findByCartIdOrderByIdAsc(c.getId())) before.put(l.getProductId(), l.getQuantity());
-            changed = !before.equals(wanted);
+            changed = !sameQuantities(before, wanted);
             if (("DONE".equals(c.getStatus()) || "EXPIRED".equals(c.getStatus()) || "RECOVERED".equals(c.getStatus()))) {
                 Instant last = c.getSecondReminderAt() != null ? c.getSecondReminderAt() : c.getFirstReminderAt();
                 if (last == null || last.isBefore(now.minus(AGAIN_AFTER))) {
@@ -150,7 +156,7 @@ public class CartReminderService {
         c = carts.save(c);
         if (changed) {
             cartLines.deleteForCart(c.getId());
-            for (Map.Entry<Long, Integer> e : wanted.entrySet()) {
+            for (Map.Entry<Long, BigDecimal> e : wanted.entrySet()) {
                 OnlineCartLine l = new OnlineCartLine();
                 l.setCartId(c.getId());
                 l.setProductId(e.getKey());
@@ -158,6 +164,12 @@ public class CartReminderService {
                 cartLines.save(l);
             }
         }
+    }
+
+    private static boolean sameQuantities(Map<Long, BigDecimal> a, Map<Long, BigDecimal> b) {
+        if (!a.keySet().equals(b.keySet())) return false;
+        for (Map.Entry<Long, BigDecimal> e : a.entrySet()) if (e.getValue().compareTo(b.get(e.getKey())) != 0) return false;
+        return true;
     }
 
     /** The cart behind the link of a reminder, as it is on the shop today. */
@@ -301,7 +313,7 @@ public class CartReminderService {
                 gone.add(p.name());
                 continue;
             }
-            lines.add(new ReorderLine(p, BigDecimal.valueOf(l.getQuantity())));
+            lines.add(new ReorderLine(p, l.getQuantity()));
         }
         return new Built(lines, gone);
     }
@@ -317,7 +329,7 @@ public class CartReminderService {
         for (ReorderLine l : b.lines()) {
             BigDecimal line = l.product().price().multiply(l.quantity());
             total = total.add(line);
-            sb.append("<li>").append(escape(l.product().name())).append(" &times; ").append(l.quantity().toBigInteger()).append(" &mdash; ")
+            sb.append("<li>").append(escape(l.product().name())).append(" &times; ").append(l.quantity().stripTrailingZeros().toPlainString()).append(" &mdash; ")
                     .append(escape(money(line) + " " + currency)).append("</li>");
         }
         sb.append("</ul><p><strong>").append(escape(I18n.tIn(lang, "Total: {0}", money(total) + " " + currency))).append("</strong></p>");

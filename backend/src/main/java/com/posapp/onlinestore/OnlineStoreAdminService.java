@@ -29,6 +29,10 @@ public class OnlineStoreAdminService {
     private final OnlineTextService texts;
     private final OnlineOrderRepository orderRepository;
     private final OnlineVariants variants;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineOffers offers;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.pricing.PriceListRepository priceListRepository;
 
     public OnlineStoreAdminService(OnlineStoreService storeService, OnlineStoreSettingsRepository settingsRepository,
                                    OnlineListingRepository listingRepository, OnlineDeliveryZoneRepository zoneRepository,
@@ -162,6 +166,14 @@ public class OnlineStoreAdminService {
             if (in.minDaysLeft() < 0 || in.minDaysLeft() > 3650) throw ApiException.badRequest(I18n.t("The days left before expiry must be between 0 and 3650"));
             s.setMinDaysLeft(in.minDaysLeft());
         }
+        boolean priceListChanged = false;
+        if (in.priceListId() != null) {
+            // v1.69.0: 0 (or less) = no price list; otherwise it must exist
+            Long wanted = in.priceListId() <= 0 ? null : in.priceListId();
+            if (wanted != null && priceListRepository.findById(wanted).isEmpty()) throw ApiException.badRequest(I18n.t("That price list does not exist"));
+            priceListChanged = !java.util.Objects.equals(wanted, s.getPriceListId());
+            s.setPriceListId(wanted);
+        }
         if (in.tillSharePercent() != null) {
             if (in.tillSharePercent() < 0 || in.tillSharePercent() > 100) throw ApiException.badRequest(I18n.t("The share kept for the till must be between 0 and 100 percent"));
             s.setTillSharePercent(in.tillSharePercent());
@@ -190,8 +202,20 @@ public class OnlineStoreAdminService {
         if (in.returnWindowDays() < 0 || in.returnWindowDays() > 365) throw ApiException.badRequest(I18n.t("The return period must be between 0 and 365 days"));
         s.setReturnWindowDays(in.returnWindowDays());
         settingsRepository.save(s);
+        if (priceListChanged) offers.refresh();
         auditLogService.record("ONLINE_STORE_SETTINGS", "Updated the Online Store settings (" + (s.isEnabled() ? "on" : "off") + (s.isPaused() ? ", paused" : "") + ")");
         return toDto(s);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OnlineStoreDtos.PriceListOption> priceLists() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return priceListRepository.findAllByOrderByNameAsc().stream().map(x -> new OnlineStoreDtos.PriceListOption(x.getId(), x.getName(), x.isCurrent(today))).toList();
+    }
+
+    @Transactional
+    public int refreshOffers() {
+        return offers.refresh();
     }
 
     private SettingsDto toDto(OnlineStoreSettings s) {
@@ -209,7 +233,8 @@ public class OnlineStoreAdminService {
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
                 s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
                 s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent(), s.getWhatsappNumber(),
-                s.getAutoReleaseHours(), s.getTillSharePercent(), s.getMinDaysLeft());
+                s.getAutoReleaseHours(), s.getTillSharePercent(), s.getMinDaysLeft(), s.getPriceListId(),
+                s.getPriceListId() == null ? null : priceListRepository.findById(s.getPriceListId()).map(com.posapp.pricing.PriceList::getName).orElse(null));
     }
 
     // ------------------------------------------------------------------ listings
@@ -237,6 +262,7 @@ public class OnlineStoreAdminService {
             l.setOnlinePrice(in.onlinePrice());
             applyBuffer(l, in.stockBuffer());
             OnlineListing savedOption = listingRepository.save(l);
+            offers.refreshOne(savedOption);
             variants.sync(p.getVariantParentId());
             auditLogService.record("ONLINE_LISTING_SAVED", (l.isVariantOff() ? "Switched off " : "Offered ") + p.getName() + " on the online shop", "OnlineListing", savedOption.getId());
             return toDto(listingRepository.findById(savedOption.getId()).orElse(savedOption), storeService.settings().getStockBuffer());
@@ -248,12 +274,14 @@ public class OnlineStoreAdminService {
         if (in.onlinePrice() != null && in.onlinePrice().signum() < 0) throw ApiException.badRequest(I18n.t("The online price cannot be negative"));
         l.setOnlinePrice(in.onlinePrice());
         applyBuffer(l, in.stockBuffer());
+        if (!template) applyMeasure(l, in.measureUnit());
         if (in.sortOrder() != null) l.setSortOrder(in.sortOrder());
         if (in.featured() != null) l.setFeatured(in.featured());
         if (in.bestSeller() != null) l.setBestSeller(in.bestSeller());
         if (in.specialOffer() != null) l.setSpecialOffer(in.specialOffer());
         if (in.newArrival() != null) l.setNewArrival(in.newArrival());
         OnlineListing saved = listingRepository.save(l);
+        offers.refreshOne(saved);
         if (template) variants.sync(p.getId());
         auditLogService.record("ONLINE_LISTING_SAVED", (saved.isListed() ? "Listed " : "Unlisted ") + p.getName() + " on the online shop", "OnlineListing", saved.getId());
         return toDto(saved, storeService.settings().getStockBuffer());
@@ -264,6 +292,14 @@ public class OnlineStoreAdminService {
         if (wanted == null) return;
         if (wanted > 1000) throw ApiException.badRequest(I18n.t("The stock buffer must be between 0 and 1000"));
         l.setStockBuffer(wanted < 0 ? null : wanted);
+    }
+
+    /** v1.69.0: null = leave as it is, empty = sold by the piece again, otherwise the unit a product is sold by weight or length in ("kg", "m"). */
+    private static void applyMeasure(OnlineListing l, String wanted) {
+        if (wanted == null) return;
+        String u = wanted.trim();
+        if (u.length() > 12) throw ApiException.badRequest(I18n.t("The unit must be 12 characters or fewer"));
+        l.setMeasureUnit(u.isEmpty() ? null : u);
     }
 
     @Transactional
@@ -290,7 +326,8 @@ public class OnlineStoreAdminService {
                 l.isFeatured(), l.isBestSeller(), l.isSpecialOffer(), l.isNewArrival(), storeService.stockInfo(p, buffer),
                 p.getTaxRate() == null || p.getTaxRate().isInclusive() ? null : p.getTaxRate().getRatePercent(),
                 p.getVariantParentId(), p.getVariantLabel(), p.getVariantAttributes(), l.isVariantOff(),
-                p.getVariantAttributes() == null ? 0 : listingRepository.findAllGroupRows(p.getId()).size(), l.getStockBuffer());
+                p.getVariantAttributes() == null ? 0 : listingRepository.findAllGroupRows(p.getId()).size(), l.getStockBuffer(),
+                l.getOfferPrice(), l.getOfferNote(), l.getMeasureUnit());
     }
 
 

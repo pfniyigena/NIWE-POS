@@ -11,6 +11,7 @@ import { WishlistService } from './wishlist.service';
 import { ShopAdComponent } from './shop-ad.component';
 import { ShopSeoService } from './shop-seo.service';
 import { ShopMoneyPipe } from './shop-money.pipe';
+import { qtyMax } from './shop-quantity';
 import { T } from '../core/i18n/t';
 
 /**
@@ -50,7 +51,7 @@ import { T } from '../core/i18n/t';
             <h2 class="shop-pp-name" style="margin:0.15rem 0 0.4rem;">{{ x.product.name }}</h2>
             <div class="shop-pp-rating" *ngIf="x.rating.count > 0" style="color:#d97706;">{{ stars(x.rating.average) }} <span class="text-muted">{{ x.rating.average }} / 5 · {{ '{p0} ratings' | translate: { p0: x.rating.count } }}</span></div>
             <div class="text-muted shop-pp-norating" *ngIf="x.rating.count === 0" style="font-size:0.85rem;">{{ 'No ratings yet' | translate }}</div>
-            <div class="mt-2" style="font-size:1.6rem;"><strong class="shop-pp-price">{{ it.price | shopMoney: cur }}</strong><s class="text-muted shop-pp-was" *ngIf="it.wasPrice" style="font-size:1rem; margin-left:0.5rem;">{{ it.wasPrice | shopMoney: cur }}</s>
+            <div class="mt-2" style="font-size:1.6rem;"><strong class="shop-pp-price">{{ it.price | shopMoney: cur }}</strong><span class="text-muted shop-pp-per" *ngIf="it.measureUnit" style="font-size:1rem;"> / {{ it.measureUnit }}</span><s class="text-muted shop-pp-was" *ngIf="it.wasPrice" style="font-size:1rem; margin-left:0.5rem;">{{ it.wasPrice | shopMoney: cur }}</s>
               <span *ngIf="it.wasPrice" style="margin-left:0.5rem; background:#dc2626; color:#fff; border-radius:4px; padding:0 0.4rem; font-size:0.75rem; vertical-align:middle;">{{ 'Offer' | translate }}</span></div>
             <div class="mt-1 shop-pp-stock" [style.color]="it.stock === 'IN_STOCK' ? '#15803d' : it.stock === 'LOW' ? '#b45309' : '#6b7280'">
               {{ it.stock === 'IN_STOCK' ? ('In stock' | translate) : it.stock === 'LOW' ? ('Few left' | translate) : ('Sold out' | translate) }}
@@ -71,12 +72,12 @@ import { T } from '../core/i18n/t';
             <div class="mt-3" style="max-width:320px;">
               <div class="flex gap-1" *ngIf="qty(it) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
                 <button class="btn btn-outline-secondary shop-pp-minus" (click)="change.emit({ p: it, by: -1 })">−</button>
-                <span>{{ qty(it) }} {{ 'in your cart' | translate }}</span>
-                <button class="btn btn-outline-secondary shop-pp-plus" (click)="change.emit({ p: it, by: 1 })" [disabled]="qty(it) >= 20">+</button>
+                <span>{{ qty(it) }} {{ it.measureUnit }} {{ 'in your cart' | translate }}</span>
+                <button class="btn btn-outline-secondary shop-pp-plus" (click)="change.emit({ p: it, by: 1 })" [disabled]="qty(it) >= qtyMax(it)">+</button>
               </div>
               <ng-template #addBtn>
                 <div class="flex gap-2" style="align-items:center;">
-                  <div class="flex gap-1 shop-pp-qty" style="align-items:center;">
+                  <div class="flex gap-1 shop-pp-qty" *ngIf="!it.measureUnit" style="align-items:center;">
                     <button type="button" class="btn btn-outline-secondary shop-pp-qminus" [disabled]="pick <= 1" [attr.aria-label]="'Less' | translate" (click)="pick = pick - 1">−</button>
                     <span class="shop-pp-qnum" style="min-width:1.8em; text-align:center;">{{ pick }}</span>
                     <button type="button" class="btn btn-outline-secondary shop-pp-qplus" [disabled]="pick >= 20" [attr.aria-label]="'More' | translate" (click)="pick = pick + 1">+</button>
@@ -372,6 +373,8 @@ export class ShopProductComponent implements OnChanges {
     const i = name.lastIndexOf(' - ');
     return i >= 0 ? name.substring(i + 3) : name;
   }
+
+  qtyMax = qtyMax;
 
   qty(p: ShopProduct): number {
     return this.cart[p.id] ?? 0;

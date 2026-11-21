@@ -39,6 +39,9 @@ public class OnlineStoreService {
     private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int MAX_LINES = 40;
     private static final int MAX_QUANTITY = 20;
+    /** v1.69.0: the most of a product sold by weight or length one order may hold (and the fewest). */
+    static final BigDecimal MAX_MEASURE = BigDecimal.valueOf(100);
+    static final BigDecimal MIN_MEASURE = new BigDecimal("0.1");
     private static final int MAX_TOTAL_QUANTITY = 60;
     private static final int LOW_STOCK_AT = 5;
     private static final long HOUR = 3_600_000L;
@@ -118,7 +121,8 @@ public class OnlineStoreService {
     }
 
     static BigDecimal basePrice(OnlineListing l) {
-        return l.getOnlinePrice() != null ? l.getOnlinePrice() : l.getProduct().getUnitPrice();
+        if (l.getOnlinePrice() != null) return l.getOnlinePrice();
+        return l.getOfferPrice() != null ? l.getOfferPrice() : l.getProduct().getUnitPrice();   // v1.69.0: the ERP price list / promotions
     }
 
     /** Units the shop may still sell of this product, or null when stock is not tracked. */
@@ -312,7 +316,7 @@ public class OnlineStoreService {
         return new PublicProduct(p.getId(), displayName(l), description, shown(p, basePrice(l)),
                 p.getCategory() == null ? null : p.getCategory().getName(),
                 p.getIconDataUrl() == null || p.getIconDataUrl().isBlank() ? null : "/api/public/store/products/" + p.getId() + "/image",
-                stockLabel(sellable(p, s.getStockBuffer())), wasPrice(l, p), 0, 0, 0, false);
+                stockLabel(sellable(p, s.getStockBuffer())), wasPrice(l, p), 0, 0, 0, false, measureOf(l));
     }
 
     /** The name an order line and a cart line carry: the web title, plus the chosen option when the product has variants ("T-Shirt - Red / L"). */
@@ -350,13 +354,19 @@ public class OnlineStoreService {
                 : template != null && template.getDescription() != null ? template.getDescription() : first.getProduct().getDescription();
         Product catProduct = template != null && template.getCategory() != null ? template : first.getProduct();
         return new PublicProduct(group, title, description, min, catProduct.getCategory() == null ? null : catProduct.getCategory().getName(), picture, stock,
-                wasPrice(cheapest, cheapest.getProduct()), 0, 0, rows.size(), max.compareTo(min) > 0);
+                wasPrice(cheapest, cheapest.getProduct()), 0, 0, rows.size(), max.compareTo(min) > 0, null);
     }
 
-    /** The normal price, shown struck through, when staff set a lower online price. */
+    /** The normal price, shown struck through, when staff set a lower online price or the ERP gives a lower one (price list, promotion). */
     private static BigDecimal wasPrice(OnlineListing l, Product p) {
-        if (l.getOnlinePrice() == null || l.getOnlinePrice().compareTo(p.getUnitPrice()) >= 0) return null;
+        BigDecimal now = basePrice(l);
+        if (now == null || p.getUnitPrice() == null || now.compareTo(p.getUnitPrice()) >= 0) return null;
         return shown(p, p.getUnitPrice());
+    }
+
+    /** The unit a product is sold by when it is sold by weight or length ("kg"), otherwise null. */
+    static String measureOf(OnlineListing l) {
+        return l.getMeasureUnit() == null || l.getMeasureUnit().isBlank() ? null : l.getMeasureUnit();
     }
 
     /** Scaled copies already made, so a busy shop does not decode and shrink the same picture again for every visitor. */
@@ -513,32 +523,39 @@ public class OnlineStoreService {
         if (lines.size() > MAX_LINES) throw ApiException.badRequest(I18n.t("That is too many different products for one order"));
         // One line per product, however many times the browser sent it.
         Map<Long, BigDecimal> wanted = new LinkedHashMap<>();
-        BigDecimal totalQty = BigDecimal.ZERO;
         for (PublicLine l : lines) {
             BigDecimal q = l.quantity();
-            if (q == null || q.stripTrailingZeros().scale() > 0 || q.compareTo(BigDecimal.ONE) < 0 || q.compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) {
+            // v1.69.0: the range is checked per product below (whole numbers 1 to 20, or decimals for a product sold by weight or length)
+            if (q == null || q.signum() <= 0 || q.stripTrailingZeros().scale() > 3 || q.compareTo(MAX_MEASURE) > 0) {
                 throw ApiException.badRequest(I18n.t("Quantities must be whole numbers between 1 and {0}", MAX_QUANTITY));
             }
-            totalQty = totalQty.add(q);
             wanted.merge(l.productId(), q, BigDecimal::add);
         }
-        if (totalQty.compareTo(BigDecimal.valueOf(MAX_TOTAL_QUANTITY)) > 0) throw ApiException.badRequest(I18n.t("That is too many items for one order"));
 
         // v1.66.0: the products are locked while the stock is checked and the order saved, so two customers cannot take the last units together.
         shopStock.lockProducts(wanted.keySet());
         OnlineOrder o = new OnlineOrder();
         BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalQty = BigDecimal.ZERO;
         for (Map.Entry<Long, BigDecimal> e : wanted.entrySet()) {
             OnlineListing l = listingRepository.findByProductId(e.getKey()).filter(OnlineListing::isListed)
                     .filter(x -> x.getProduct().isActive()).orElseThrow(() -> ApiException.badRequest(I18n.t("A product in your order is no longer on sale")));
             Product p = l.getProduct();
             BigDecimal qty = e.getValue();
-            if (qty.compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) throw ApiException.badRequest(I18n.t("Quantities must be whole numbers between 1 and {0}", MAX_QUANTITY));
+            String measure = measureOf(l);
+            if (measure == null) {
+                if (qty.stripTrailingZeros().scale() > 0 || qty.compareTo(BigDecimal.ONE) < 0 || qty.compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) {
+                    throw ApiException.badRequest(I18n.t("Quantities must be whole numbers between 1 and {0}", MAX_QUANTITY));
+                }
+                totalQty = totalQty.add(qty);
+            } else if (qty.compareTo(MIN_MEASURE) < 0 || qty.compareTo(MAX_MEASURE) > 0) {
+                throw ApiException.badRequest(I18n.t("The quantity of {0} must be between {1} and {2} {3}", displayName(l), MIN_MEASURE.toPlainString(), MAX_MEASURE.toPlainString(), measure));
+            }
             BigDecimal sellable = sellable(p, s.getStockBuffer());
             if (sellable != null && qty.compareTo(sellable) > 0) {
                 String title = displayName(l);
                 throw ApiException.badRequest(sellable.signum() <= 0 ? I18n.t("{0} is sold out", title)
-                        : I18n.t("Only {0} of {1} left", sellable.setScale(0, RoundingMode.DOWN).toPlainString(), title));
+                        : I18n.t("Only {0} of {1} left", sellable.setScale(measure == null ? 0 : 1, RoundingMode.DOWN).toPlainString() + (measure == null ? "" : " " + measure), title));
             }
             BigDecimal base = basePrice(l);
             BigDecimal unit = shown(p, base);
@@ -553,6 +570,7 @@ public class OnlineStoreService {
             subtotal = subtotal.add(line.getLineTotal());
             o.getLines().add(line);
         }
+        if (totalQty.compareTo(BigDecimal.valueOf(MAX_TOTAL_QUANTITY)) > 0) throw ApiException.badRequest(I18n.t("That is too many items for one order"));
         if (s.getMinOrder() != null && subtotal.compareTo(s.getMinOrder()) < 0) {
             throw ApiException.badRequest(I18n.t("The minimum order is {0}", money(s.getMinOrder())));
         }
@@ -670,7 +688,7 @@ public class OnlineStoreService {
         BigDecimal subtotal = BigDecimal.ZERO;
         Map<Long, BigDecimal> wanted = new LinkedHashMap<>();
         for (PublicLine l : lines) {
-            if (l.quantity() == null || l.quantity().signum() <= 0 || l.quantity().compareTo(BigDecimal.valueOf(MAX_QUANTITY)) > 0) continue;
+            if (l.quantity() == null || l.quantity().signum() <= 0 || l.quantity().compareTo(MAX_MEASURE) > 0) continue;
             wanted.merge(l.productId(), l.quantity(), BigDecimal::add);
         }
         for (Map.Entry<Long, BigDecimal> e : wanted.entrySet()) {

@@ -21,6 +21,7 @@ import { LanguageService } from '../core/i18n/language.service';
 import { InfoLink } from '../core/api/online-store-api.service';
 import { T } from '../core/i18n/t';
 import { etaDates } from './delivery-eta';
+import { qtyAfter, qtyClamp, qtyMax } from './shop-quantity';
 
 /**
  * The public shop at /shop (no login). A visitor browses what the shop sells, fills a cart, and sends an order that waits for staff to accept it.
@@ -247,8 +248,10 @@ import { etaDates } from './delivery-eta';
             <span style="flex:1;">{{ l.p.name }}</span>
             <span class="flex gap-1" style="align-items:center;">
               <button class="btn btn-sm btn-outline-secondary" (click)="change(l.p, -1)">−</button>
-              <span style="min-width:1.5em; text-align:center;">{{ l.qty }}</span>
-              <button class="btn btn-sm btn-outline-secondary" (click)="change(l.p, 1)" [disabled]="l.qty >= 20">+</button>
+              <input *ngIf="l.p.measureUnit; else wholeQty" class="form-control form-control-sm so-qty-input" type="number" min="0.1" max="100" step="0.1" style="width:5.5em; text-align:center;" [value]="l.qty" (change)="setQty(l.p, $any($event.target).value)" />
+              <ng-template #wholeQty><span style="min-width:1.5em; text-align:center;">{{ l.qty }}</span></ng-template>
+              <span *ngIf="l.p.measureUnit" class="text-muted" style="font-size:0.8rem;">{{ l.p.measureUnit }}</span>
+              <button class="btn btn-sm btn-outline-secondary" (click)="change(l.p, 1)" [disabled]="l.qty >= qtyMax(l.p)">+</button>
             </span>
             <span style="min-width:4.5em; text-align:right;">{{ l.qty * l.p.price | shopMoney: cur }}</span>
           </div>
@@ -432,7 +435,7 @@ import { etaDates } from './delivery-eta';
               <ng-container *ngIf="p.ratingCount > 0; else noStars"><span style="color:#d97706;" [attr.aria-label]="p.rating + ' / 5'">{{ stars(p.rating) }}</span> <span class="text-muted">({{ p.ratingCount }})</span></ng-container>
               <ng-template #noStars><span class="text-muted" style="font-size:0.78rem;">{{ 'No ratings yet' | translate }}</span></ng-template>
             </div>
-            <div style="margin-top:0.2rem;"><span class="text-muted shop-from" *ngIf="p.priceFrom" style="font-size:0.8rem; margin-right:0.3rem;">{{ 'Starting at' | translate }}</span><strong class="shop-price" style="font-size:1.15rem;">{{ p.price | shopMoney: cur }}</strong><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.4rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
+            <div style="margin-top:0.2rem;"><span class="text-muted shop-from" *ngIf="p.priceFrom" style="font-size:0.8rem; margin-right:0.3rem;">{{ 'Starting at' | translate }}</span><strong class="shop-price" style="font-size:1.15rem;">{{ p.price | shopMoney: cur }}</strong><span class="text-muted shop-per" *ngIf="p.measureUnit" style="font-size:0.8rem;"> / {{ p.measureUnit }}</span><s class="text-muted shop-was" *ngIf="p.wasPrice" style="font-size:0.8rem; margin-left:0.4rem;">{{ p.wasPrice | shopMoney: cur }}</s></div>
             <div class="shop-avail" style="font-size:0.8rem; min-height:1.2em;" [style.color]="p.stock === 'SOLD_OUT' ? '#b91c1c' : p.stock === 'LOW' ? '#b45309' : '#15803d'">
               {{ p.stock === 'SOLD_OUT' ? ('Out of stock' | translate) : p.stock === 'LOW' ? ('Few left' | translate) : ('In stock' | translate) }}</div>
             <div style="margin-top:auto; padding-top:0.5rem;">
@@ -440,8 +443,8 @@ import { etaDates } from './delivery-eta';
               <ng-template #plainBtn>
               <div class="flex gap-1" *ngIf="qty(p) > 0; else addBtn" style="align-items:center; justify-content:space-between;">
                 <button class="btn btn-sm btn-outline-secondary" (click)="change(p, -1)">−</button>
-                <span>{{ qty(p) }}</span>
-                <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= 20">+</button>
+                <span>{{ qty(p) }} {{ p.measureUnit }}</span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="change(p, 1)" [disabled]="qty(p) >= qtyMax(p)">+</button>
               </div>
               <ng-template #addBtn><button class="btn btn-sm btn-primary shop-add" style="width:100%;" [disabled]="p.stock === 'SOLD_OUT' || !shop?.open" (click)="change(p, 1)">{{ 'Add to cart' | translate }}</button></ng-template>
               </ng-template>
@@ -949,7 +952,7 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.cart = {};
     this.cartProducts = {};
     for (const l of r.lines) {
-      this.cart[l.product.id] = Math.max(1, Math.min(20, Math.round(l.quantity)));
+      this.cart[l.product.id] = l.product.measureUnit ? Math.max(0.1, Math.min(100, Math.round(l.quantity * 1000) / 1000)) : Math.max(1, Math.min(20, Math.round(l.quantity)));
       this.cartProducts[l.product.id] = l.product;
     }
     this.reorderNote = r.unavailable.length > 0 ? T('Not added, because they are gone or sold out: {p0}', { p0: r.unavailable.join(', ') }) : null;
@@ -1141,7 +1144,11 @@ export class ShopComponent implements OnInit, OnDestroy {
   }
 
   change(p: ShopProduct, by: number): void {
-    const n = Math.max(0, Math.min(20, this.qty(p) + by));
+    this.setTo(p, qtyAfter(p, this.qty(p), by));
+  }
+
+  /** Puts exactly this quantity of the product in the cart (0 takes it out). */
+  private setTo(p: ShopProduct, n: number): void {
     if (n === 0) {
       delete this.cart[p.id];
       delete this.cartProducts[p.id];
@@ -1154,12 +1161,22 @@ export class ShopComponent implements OnInit, OnDestroy {
     this.cartChanged();
   }
 
+  /** The number typed in the cart for a product sold by weight or length. */
+  setQty(p: ShopProduct, raw: string): void {
+    const typed = Number(raw);
+    if (!isFinite(typed)) return;
+    this.setTo(p, qtyClamp(p, typed));
+  }
+
+  qtyMax = qtyMax;
+
   cartLines(): { p: ShopProduct; qty: number }[] {
     return Object.keys(this.cart).map((id) => ({ p: this.cartProducts[+id], qty: this.cart[+id] })).filter((l) => !!l.p && l.qty > 0);
   }
 
   count(): number {
-    return Object.values(this.cart).reduce((a, b) => a + b, 0);
+    // a product sold by weight or length counts as one item, however many kilos
+    return Object.keys(this.cart).reduce((a, id) => a + (this.cartProducts[+id]?.measureUnit ? 1 : this.cart[+id]), 0);
   }
 
   subtotal(): number {

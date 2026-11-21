@@ -10,7 +10,9 @@ export interface ShopProduct { id: number; name: string; description: string | n
   /** The normal price when staff set a lower online price (shown struck through); 0 stars and 0 reviews when nobody reviewed it. */
   wasPrice: number | null; rating: number; ratingCount: number;
   /** A product with sizes, colours or models: how many options it has (0 = a plain product); priceFrom = the options do not all cost the same, so the card says "From". */
-  variants?: number; priceFrom?: boolean }
+  variants?: number; priceFrom?: boolean;
+  /** Sold by weight or length: the unit ("kg", "m"); the customer may order decimal quantities. */
+  measureUnit?: string | null }
 /** One row of the specifications table of a product page. */
 export interface ProductSpec { label: string; value: string }
 export interface ProductReview { productName: string; reviewerName: string; rating: number; text: string | null; at: string }
@@ -189,7 +191,11 @@ export interface StoreSettings {
   autoReleaseHours: number; tillSharePercent: number;
   /** v1.67.0: batches with fewer days left than this before they expire are not sold on the shop (0 = only expired ones). */
   minDaysLeft: number;
+  /** v1.69.0: the price list whose prices the shop uses for products without an online price (send 0 for none). */
+  priceListId: number | null; priceListName: string | null;
 }
+/** A price list the shop may use; current = switched on and inside its dates today. */
+export interface PriceListOption { id: number; name: string; current: boolean }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED, SKIPPED or QUEUED (waiting for an SMS company); purpose is ORDER, OWNER, SIGNIN, CODE or TEST. */
 export interface TextMessage { id: number; at: string; channel: string; to: string; purpose: string; body: string; status: string; provider: string | null; error: string | null; orderId: number | null }
@@ -220,6 +226,8 @@ export interface StoreListing {
   variantParentId: number | null; variantLabel: string | null; variantOptions: string | null; variantOff: boolean; variantCount: number;
   /** v1.66.0: this product's own safety buffer; null = the shop-wide one. */
   stockBuffer: number | null;
+  /** v1.69.0: the price the ERP gives it (price list, promotion) when staff set no online price, and where it comes from; the unit when sold by weight or length. */
+  offerPrice: number | null; offerNote: string | null; measureUnit: string | null;
 }
 /** Why a product shows the stock it shows. tracked false = stock is not tracked for it, so the shop always shows it as in stock. */
 export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; held: number | null; buffer: number; tillShare: number | null; sellable: number | null; expired: number | null }
@@ -535,9 +543,11 @@ export class OnlineStoreApiService {
   // ---- staff: setup
   settings(): Observable<StoreSettings> { return this.http.get<StoreSettings>(`${this.base}/settings`); }
   saveSettings(s: StoreSettings): Observable<StoreSettings> { return this.http.put<StoreSettings>(`${this.base}/settings`, s); }
+  priceLists(): Observable<PriceListOption[]> { return this.http.get<PriceListOption[]>(`${this.base}/price-lists`); }
+  refreshOffers(): Observable<{ changed: number }> { return this.http.post<{ changed: number }>(`${this.base}/offers/refresh`, {}); }
   listings(): Observable<StoreListing[]> { return this.http.get<StoreListing[]>(`${this.base}/listings`); }
   saveListing(body: { productId: number; listed?: boolean; webTitle?: string | null; webDescription?: string | null; onlinePrice?: number | null; sortOrder?: number;
-    featured?: boolean; bestSeller?: boolean; specialOffer?: boolean; newArrival?: boolean; stockBuffer?: number | null }): Observable<StoreListing> {
+    featured?: boolean; bestSeller?: boolean; specialOffer?: boolean; newArrival?: boolean; stockBuffer?: number | null; measureUnit?: string | null }): Observable<StoreListing> {
     return this.http.post<StoreListing>(`${this.base}/listings`, body);
   }
   listingDetails(productId: number): Observable<ListingDetails> { return this.http.get<ListingDetails>(`${this.base}/listings/${productId}/details`); }

@@ -84,7 +84,7 @@ public class OnlineFrontService {
         for (OnlineStoreDtos.PublicProduct p : in) {
             double[] x = by.get(p.id());
             out.add(x == null ? p : new OnlineStoreDtos.PublicProduct(p.id(), p.name(), p.description(), p.price(), p.category(), p.imageUrl(), p.stock(),
-                    p.wasPrice(), round1(x[0]), (int) x[1], p.variants(), p.priceFrom()));
+                    p.wasPrice(), round1(x[0]), (int) x[1], p.variants(), p.priceFrom(), p.measureUnit()));
         }
         return out;
     }
