@@ -118,6 +118,12 @@ public class AccountService {
     public static final String DRIVER_CASH = "DRIVER_CASH";
     /** v1.71.0: what the payment providers keep from each payout (mobile money and card fees). */
     public static final String PAYMENT_FEES = "PAYMENT_FEES";
+    /** v1.73.0: what customers paid for delivery (net of tax). Kept apart from Sales Revenue so delivery income can be compared with delivery costs. */
+    public static final String DELIVERY_INCOME = "DELIVERY_INCOME";
+    /** v1.73.0: coupons and loyalty points given to online customers (net of tax). Sales Revenue shows the full price; this account shows what was given away. */
+    public static final String SALES_DISCOUNTS = "SALES_DISCOUNTS";
+    /** v1.73.0: loyalty points customers hold and may still spend: what the shop owes them in discounts. */
+    public static final String LOYALTY_LIABILITY = "LOYALTY_LIABILITY";
 
     /** Hotel module: income from room nights and other hotel services (room charges, late check-out, laundry...). Added to existing charts the same zero-migration way as {@link #CUSTOMER_CREDIT_PAYABLE}. */
     public static final String ROOM_REVENUE = "ROOM_REVENUE";
@@ -245,6 +251,12 @@ public class AccountService {
                     "Online Store: money paid online for orders not yet delivered. It becomes sales when the order is delivered and is paid back if the order is cancelled."),
             new ChartRow(PAYMENT_FEES, "5240", "Payment Provider Fees", AccountType.EXPENSE, true,
                     "Online Store: the fees mobile money and card providers keep when they pay out."),
+            new ChartRow(DELIVERY_INCOME, "4030", "Delivery Income", AccountType.REVENUE, true,
+                    "Online Store: what customers pay for delivery, net of tax."),
+            new ChartRow(SALES_DISCOUNTS, "4040", "Sales Discounts Given", AccountType.REVENUE, true,
+                    "Online Store: coupons and loyalty points given to customers, net of tax. A debit balance that lowers sales: Sales Revenue shows the full price."),
+            new ChartRow(LOYALTY_LIABILITY, "2820", "Loyalty Points Liability", AccountType.LIABILITY, true,
+                    "Online Store: loyalty points customers hold and may still spend (1 point = 1 currency unit)."),
             new ChartRow(OWNERS_EQUITY, "3000", "Owner's Equity", AccountType.EQUITY, false, null),
             new ChartRow("3100", "Share Capital", AccountType.EQUITY, false,
                     "Capital contributed by shareholders in exchange for equity — for an incorporated business."),
@@ -357,6 +369,12 @@ public class AccountService {
                     "Online Store: money paid online for orders not yet delivered."),
             new ChartRow(PAYMENT_FEES, "631", "Frais bancaires (Payment Provider Fees)", AccountType.EXPENSE, true,
                     "Online Store: the fees mobile money and card providers keep when they pay out."),
+            new ChartRow(DELIVERY_INCOME, "7071", "Ports et frais facturés (Delivery Income)", AccountType.REVENUE, true,
+                    "Online Store : ce que les clients paient pour la livraison, hors taxe."),
+            new ChartRow(SALES_DISCOUNTS, "7091", "Rabais, remises et ristournes accordés (Sales Discounts Given)", AccountType.REVENUE, true,
+                    "Online Store : coupons et points de fidélité accordés aux clients, hors taxe. Solde débiteur qui diminue les ventes."),
+            new ChartRow(LOYALTY_LIABILITY, "4198", "Clients, points de fidélité (Loyalty Points Liability)", AccountType.LIABILITY, true,
+                    "Online Store : points de fidélité détenus par les clients et pas encore dépensés."),
             new ChartRow(OWNERS_EQUITY, "101", "Capital social (Owner's Equity)", AccountType.EQUITY, false, null),
             new ChartRow("121", "Report à nouveau (Retained Earnings)", AccountType.EQUITY, false,
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),

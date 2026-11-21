@@ -211,6 +211,46 @@ public class AccountingService {
         post("DRIVER_CASH_SETTLEMENT", orderId, memo, null, lines, branchId);
     }
 
+    /**
+     * v1.73.0: an online order was delivered. The sale order books revenue after discounts and with the delivery fee inside it; this entry shows the two apart:
+     * what was given away in coupons and loyalty points (Dr Sales Discounts Given / Cr Sales Revenue, so revenue is the full price) and what the customer paid for
+     * delivery (Dr Sales Revenue / Cr Delivery Income). Amounts are net of tax. The total of income does not change.
+     */
+    @Transactional
+    public void postOnlineSaleSplit(Long onlineOrderId, BigDecimal discountNet, BigDecimal deliveryNet, String memo, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.SALES_DISCOUNTS, discountNet, "Coupons and points given", true);
+        addIfPositive(lines, AccountService.SALES_REVENUE, deliveryNet, "Delivery fee taken out of sales", true);
+        addIfPositive(lines, AccountService.SALES_REVENUE, discountNet, "Sales at the full price", false);
+        addIfPositive(lines, AccountService.DELIVERY_INCOME, deliveryNet, null, false);
+        post("ONLINE_SALE_SPLIT", onlineOrderId, memo, null, lines, branchId);
+    }
+
+    /** v1.73.0: goods of a discounted online order came back: the discount that belonged to them is no longer given. Dr Sales Revenue / Cr Sales Discounts Given (net of tax). */
+    @Transactional
+    public void postOnlineDiscountReversal(Long onlineReturnId, BigDecimal discountNet, String memo, Long branchId) {
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.SALES_REVENUE, discountNet, null, true);
+        addIfPositive(lines, AccountService.SALES_DISCOUNTS, discountNet, "Discount no longer given", false);
+        post("ONLINE_DISCOUNT_REVERSAL", onlineReturnId, memo, null, lines, branchId);
+    }
+
+    /**
+     * v1.73.0: loyalty points of online customers. {@code owed = true}: the shop owes more (points earned, or points given back): Dr Customer Rewards Expense /
+     * Cr Loyalty Points Liability. {@code owed = false}: the shop owes less (points spent on a delivered order, or earned points taken back after a return): Dr
+     * Loyalty Points Liability / Cr Customer Rewards Expense. One point is one currency unit. The cost of points that are spent shows in Sales Discounts Given, so the
+     * expense booked when they were earned is released then.
+     */
+    @Transactional
+    public void postLoyaltyPoints(String sourceType, Long sourceId, long points, boolean owed, String memo, Long branchId) {
+        if (points <= 0) return;
+        BigDecimal amount = BigDecimal.valueOf(points).setScale(2);
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, owed ? AccountService.REWARDS_EXPENSE : AccountService.LOYALTY_LIABILITY, amount, null, true);
+        addIfPositive(lines, owed ? AccountService.LOYALTY_LIABILITY : AccountService.REWARDS_EXPENSE, amount, null, false);
+        post(sourceType, sourceId, memo, null, lines, branchId);
+    }
+
     // ---- Gift cards (com.posapp.giftcards) ----
 
     /**
@@ -307,12 +347,12 @@ public class AccountingService {
 
     /** v1.71.0: the provider confirmed a customer's payment: the money is held for the order until it is delivered. Dr the provider's clearing account / Cr Online Customer Deposits. */
     @Transactional
-    public void postOnlinePaymentReceived(Long paymentId, BigDecimal amount, String channel, String memo) {
+    public void postOnlinePaymentReceived(Long paymentId, BigDecimal amount, String channel, String memo, Long branchId) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, clearingKey(channel), amount, null, true);
         addIfPositive(lines, AccountService.ONLINE_DEPOSITS, amount, null, false);
-        post("ONLINE_PAYMENT", paymentId, memo, null, lines, null);
+        post("ONLINE_PAYMENT", paymentId, memo, null, lines, branchId);
     }
 
     /**
@@ -320,13 +360,13 @@ public class AccountingService {
      * provider's clearing account (refund through the provider) or Cash and Bank (refunded by hand from the shop's own money).
      */
     @Transactional
-    public void postOnlineDepositRefund(Long orderId, BigDecimal amount, String channel, boolean manual, String memo) {
+    public void postOnlineDepositRefund(Long orderId, BigDecimal amount, String channel, boolean manual, String memo, Long branchId) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.ONLINE_DEPOSITS, amount, null, true);
         if (manual) addIfPositive(lines, AccountService.CASH, amount, "Refunded by hand", false);
         else addIfPositive(lines, clearingKey(channel), amount, "Refunded through the payment provider", false);
-        post("ONLINE_DEPOSIT_REFUND", orderId, memo, null, lines, null);
+        post("ONLINE_DEPOSIT_REFUND", orderId, memo, null, lines, branchId);
     }
 
     /**

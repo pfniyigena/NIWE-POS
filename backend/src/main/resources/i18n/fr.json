@@ -2190,5 +2190,12 @@
  "Choose mobile money or card": "Choisissez mobile money ou carte",
  "Enter the amount customers paid that this payout covers": "Saisissez le montant payé par les clients que ce versement couvre",
  "The fee must be zero or more, and less than the amount": "Les frais doivent être nuls ou positifs, et inférieurs au montant",
- "The payout date is in the future": "La date du versement est dans le futur"
+ "The payout date is in the future": "La date du versement est dans le futur",
+ "Discounts and delivery income of online order {0}": "Remises accordées et produits de livraison de la commande en ligne {0}",
+ "Discount of returned goods, return {0}": "Remise des marchandises retournées, retour {0}",
+ "Loyalty points spent": "Points de fidélité utilisés",
+ "Loyalty points earned": "Points de fidélité gagnés",
+ "Loyalty points given back after a return": "Points de fidélité rendus après un retour",
+ "Loyalty points taken back after a return": "Points de fidélité repris après un retour",
+ "Choose an active branch.": "Choisissez une succursale active."
 }

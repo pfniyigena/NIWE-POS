@@ -68,4 +68,11 @@ public class SalesOrderLine extends BaseEntity {
 
     /** Snapshot of the assigned rate's {@code inclusive} flag at add-line time — same reasoning as taxCode/taxRatePercent above. Null (not just false) for a tax-exempt line. */
     private Boolean taxInclusive;
+
+    /**
+     * v1.74.0: what the units fulfilled so far cost when they left stock (the product's cost price at each fulfilment, added up), and how many units that covers.
+     * A return takes the cost of the goods that were sold from here instead of the product's cost price today. Zero for lines fulfilled before this version.
+     */
+    private BigDecimal costTotal = BigDecimal.ZERO;
+    private BigDecimal costQuantity = BigDecimal.ZERO;
 }

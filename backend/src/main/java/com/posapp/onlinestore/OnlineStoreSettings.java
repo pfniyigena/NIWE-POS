@@ -115,4 +115,7 @@ public class OnlineStoreSettings extends BaseEntity {
     /** v1.69.0: the price list (Sales > Price lists) whose prices the shop uses for products without an online price. Empty = none. */
     @jakarta.persistence.Column(name = "price_list_id")
     private Long priceListId;
+    /** v1.74.0: the branch the online shop sells for: its sale orders, invoices and payments carry it. Empty = head office. */
+    @jakarta.persistence.Column(name = "branch_id")
+    private Long branchId;
 }

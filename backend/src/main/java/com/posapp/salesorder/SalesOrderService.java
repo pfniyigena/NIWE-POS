@@ -497,6 +497,9 @@ public class SalesOrderService {
                 if (line.getProduct().getCostPrice() != null) {
                     cogsAmount = cogsAmount.add(
                             line.getProduct().getCostPrice().multiply(entry.getQuantityFulfilled()));
+                    // v1.74.0: keep what these units cost, so a later return takes them back at that cost
+                    line.setCostTotal(line.getCostTotal().add(line.getProduct().getCostPrice().multiply(entry.getQuantityFulfilled())));
+                    line.setCostQuantity(line.getCostQuantity().add(entry.getQuantityFulfilled()));
                 }
                 // Task 6: "Stock Movement History" — one structured, dated row per product
                 // actually fulfilled, see SalesOrderFulfillment's own javadoc.

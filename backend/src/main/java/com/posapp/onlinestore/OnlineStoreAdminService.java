@@ -33,6 +33,8 @@ public class OnlineStoreAdminService {
     private OnlineOffers offers;
     @org.springframework.beans.factory.annotation.Autowired
     private com.posapp.pricing.PriceListRepository priceListRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.branch.BranchService branchService;
 
     public OnlineStoreAdminService(OnlineStoreService storeService, OnlineStoreSettingsRepository settingsRepository,
                                    OnlineListingRepository listingRepository, OnlineDeliveryZoneRepository zoneRepository,
@@ -174,6 +176,12 @@ public class OnlineStoreAdminService {
             priceListChanged = !java.util.Objects.equals(wanted, s.getPriceListId());
             s.setPriceListId(wanted);
         }
+        if (in.branchId() != null) {
+            // v1.74.0: 0 (or less) = head office; otherwise an active branch
+            Long wanted = in.branchId() <= 0 ? null : in.branchId();
+            if (wanted != null && branchService.listActive().stream().noneMatch(b -> b.id().equals(wanted))) throw ApiException.badRequest(I18n.t("Choose an active branch."));
+            s.setBranchId(wanted);
+        }
         if (in.tillSharePercent() != null) {
             if (in.tillSharePercent() < 0 || in.tillSharePercent() > 100) throw ApiException.badRequest(I18n.t("The share kept for the till must be between 0 and 100 percent"));
             s.setTillSharePercent(in.tillSharePercent());
@@ -207,6 +215,12 @@ public class OnlineStoreAdminService {
         return toDto(s);
     }
 
+    /** v1.74.0: the branches the shop may sell for. */
+    @Transactional(readOnly = true)
+    public List<OnlineStoreDtos.BranchOption> branches() {
+        return branchService.listActive().stream().map(b -> new OnlineStoreDtos.BranchOption(b.id(), b.name())).toList();
+    }
+
     @Transactional(readOnly = true)
     public List<OnlineStoreDtos.PriceListOption> priceLists() {
         java.time.LocalDate today = java.time.LocalDate.now();
@@ -234,7 +248,8 @@ public class OnlineStoreAdminService {
                 s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
                 s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent(), s.getWhatsappNumber(),
                 s.getAutoReleaseHours(), s.getTillSharePercent(), s.getMinDaysLeft(), s.getPriceListId(),
-                s.getPriceListId() == null ? null : priceListRepository.findById(s.getPriceListId()).map(com.posapp.pricing.PriceList::getName).orElse(null));
+                s.getPriceListId() == null ? null : priceListRepository.findById(s.getPriceListId()).map(com.posapp.pricing.PriceList::getName).orElse(null),
+                s.getBranchId(), s.getBranchId() == null ? null : branchService.listAll().stream().filter(b -> b.id().equals(s.getBranchId())).map(com.posapp.branch.dto.BranchDto::name).findFirst().orElse(null));
     }
 
     // ------------------------------------------------------------------ listings

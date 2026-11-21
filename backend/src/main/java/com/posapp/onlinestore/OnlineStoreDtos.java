@@ -295,6 +295,10 @@ public final class OnlineStoreDtos {
     public record CustomerReceivedRequest(@Size(max = 40) String phone, @Size(max = 200000) String signature, @Size(max = 120) String signedName) {
     }
 
+    /** A branch the online shop may sell for (Shop settings). */
+    public record BranchOption(Long id, String name) {
+    }
+
     /** A price list the shop may use: current = switched on and inside its dates today. */
     public record PriceListOption(Long id, String name, boolean current) {
     }
@@ -306,7 +310,7 @@ public final class OnlineStoreDtos {
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
                               String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
                               boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent, String whatsappNumber,
-                              Integer autoReleaseHours, Integer tillSharePercent, Integer minDaysLeft, Long priceListId, String priceListName) {
+                              Integer autoReleaseHours, Integer tillSharePercent, Integer minDaysLeft, Long priceListId, String priceListName, Long branchId, String branchName) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)

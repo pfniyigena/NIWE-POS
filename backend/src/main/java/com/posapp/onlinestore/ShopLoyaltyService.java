@@ -26,6 +26,8 @@ import java.util.Locale;
 public class ShopLoyaltyService {
 
     private final ShopLoyaltyEntryRepository entries;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineBooks books;
     private final ShopCustomerRepository customers;
     private final OnlineStoreSettingsRepository settingsRepository;
     private final AuditLogService auditLogService;
@@ -63,7 +65,12 @@ public class ShopLoyaltyService {
         e.setOnlineReturnId(returnId);
         e.setNote(note == null ? null : (note.length() > 200 ? note.substring(0, 200) : note));
         e.setCreatedBy(by);
-        return entries.save(e);
+        ShopLoyaltyEntry saved = entries.save(e);
+        // v1.73.0: the points the shop owes are in the books (a spent order's points are released when the order is delivered, see OnlineOrderService.finish)
+        if ("EARN".equals(kind)) books.loyalty("ONLINE_LOYALTY_EARN", saved.getId(), o, points, true, I18n.t("Loyalty points earned"));
+        else if ("RET_BACK".equals(kind)) books.loyalty("ONLINE_LOYALTY_RET_BACK", saved.getId(), o, points, true, I18n.t("Loyalty points given back after a return"));
+        else if ("RET_TAKE".equals(kind)) books.loyalty("ONLINE_LOYALTY_RET_TAKE", saved.getId(), o, -points, false, I18n.t("Loyalty points taken back after a return"));
+        return saved;
     }
 
     // ------------------------------------------------------------------ checkout
@@ -118,15 +125,16 @@ public class ShopLoyaltyService {
 
     /** Part of the order was not delivered: the points spent give back in proportion to the discount that belonged to the goods that stayed with the shop. */
     @Transactional
-    public void giveBackPart(OnlineOrder o, BigDecimal undeliveredDiscount) {
+    public int giveBackPart(OnlineOrder o, BigDecimal undeliveredDiscount) {
         BigDecimal discount = o.getDiscountAmount() == null ? BigDecimal.ZERO : o.getDiscountAmount();
-        if (o.getLoyaltyPointsUsed() <= 0 || o.getShopCustomerId() == null || o.getId() == null || discount.signum() <= 0 || undeliveredDiscount.signum() <= 0) return;
-        if (entries.existsByOnlineOrderIdAndKindAndOnlineReturnIdIsNull(o.getId(), "SPEND_BACK")) return;
+        if (o.getLoyaltyPointsUsed() <= 0 || o.getShopCustomerId() == null || o.getId() == null || discount.signum() <= 0 || undeliveredDiscount.signum() <= 0) return 0;
+        if (entries.existsByOnlineOrderIdAndKindAndOnlineReturnIdIsNull(o.getId(), "SPEND_BACK")) return 0;
         ShopCustomer c = customers.lockById(o.getShopCustomerId()).orElse(null);
-        if (c == null) return;
+        if (c == null) return 0;
         long back = undeliveredDiscount.multiply(o.getLoyaltyDiscount() == null ? BigDecimal.ZERO : o.getLoyaltyDiscount()).divide(discount, 0, RoundingMode.DOWN).longValue();
         back = Math.min(back, o.getLoyaltyPointsUsed());
         if (back > 0) apply(c, "SPEND_BACK", (int) back, o, null, I18n.t("Part of the order was not delivered"), user());
+        return (int) Math.max(0, back);
     }
 
     /** The order was cancelled or rejected: the points spent on it return. Safe to call twice. */

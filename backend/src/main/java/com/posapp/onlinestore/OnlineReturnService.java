@@ -43,6 +43,8 @@ public class OnlineReturnService {
 
     private final ShopLoyaltyService loyalty;
     @org.springframework.beans.factory.annotation.Autowired
+    private OnlineBooks books;
+    @org.springframework.beans.factory.annotation.Autowired
     private OnlineDriverRepository drivers;
 
     private static final Set<String> HOLDING = Set.of("REQUESTED", "APPROVED", "COLLECTED", "REFUNDED");
@@ -582,6 +584,7 @@ public class OnlineReturnService {
         boolean viaProvider = "ONLINE".equals(o.getPaymentMethod()) && !(in != null && in.manual());
         accounting.postOnlineRefund(r.getId(), leg, I18n.t("Refund for online return {0}", r.getCode()) + " (online order " + o.getCode() + ")",
                 viaProvider ? o.getPaymentChannel() : null, so.branchId());
+        books.returnProcessed(o, r, so);   // v1.73.0: the discount of the returned goods is no longer given
         r.setStatus("REFUNDED");
         r.setRefundAmount(amount);
         r.setRefundMethod(method);

@@ -1143,6 +1143,7 @@ export const FR: Record<string, string> = {
   "Branch Code": "Code agence",
   "Branch access": "Accès aux agences",
   "Branch not found": "Agence introuvable",
+  "Branch the shop sells for": "Succursale pour laquelle la boutique vend",
   "Branch:": "Agence :",
   "Branches": "Agences",
   "Brand": "Marque",

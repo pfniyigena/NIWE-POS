@@ -9643,5 +9643,6 @@
  "Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to Cash and Bank, the fee to Payment Provider Fees.": "Le brut est ce que les clients ont payé et que ce versement couvre. Les frais sont ce que le prestataire a retenu. La comptabilité retire le brut de ce que le prestataire vous doit : le reste va en Caisse et banque, les frais en Frais des prestataires de paiement.",
  "Enter the amount customers paid that this payout covers": "Saisissez le montant payé par les clients que ce versement couvre",
  "The fee must be zero or more, and less than the amount": "Les frais doivent être nuls ou positifs, et inférieurs au montant",
- "Payout recorded": "Versement enregistré"
+ "Payout recorded": "Versement enregistré",
+ "Branch the shop sells for": "Succursale pour laquelle la boutique vend"
 }

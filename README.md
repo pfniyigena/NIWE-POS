@@ -5,6 +5,14 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.74.0 - Online Store accounting: returns at the cost sold, and a branch for the online shop
+
+A return restocks Inventory at the cost the goods had when they were sold (kept on each sale order line), not at today's cost price. Online Store > Shop settings: "Branch the shop sells for"; the shop's sale orders, invoices and payments then carry that branch. Migration V104. This completes the 8 accounting gaps. See `RELEASE-NOTES-v1.74.0.md` and `docs/online-store-accounting.md`.
+
+## v1.73.0 (shipped together with v1.74.0) - Online Store accounting: discounts, delivery income and loyalty points
+
+A delivered online order now shows its coupon and points discount (Sales Discounts Given) and its delivery fee (Delivery Income) apart from Sales Revenue, which shows the full price. Loyalty points the shop owes are a liability (earned: expense and liability; spent: released; returns reverse them). No migration. See `RELEASE-NOTES-v1.73.0 (shipped together with v1.74.0).md` and `docs/online-store-accounting.md`.
+
 ## v1.72.0 - Online Store accounting: cash that drivers hold
 
 Cash collected by a delivery driver is booked to Cash with Drivers until he hands it in; the hand-in clears it into Cash and Bank, with a difference in Cash Over / Short (with the branch). Migration V103. See `RELEASE-NOTES-v1.72.0.md` and `docs/online-store-accounting.md`.

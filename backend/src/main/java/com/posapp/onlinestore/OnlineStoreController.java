@@ -328,6 +328,13 @@ public class OnlineStoreController {
         return ResponseEntity.noContent().build();
     }
 
+    /** v1.74.0: the branches the shop may sell for (Shop settings). */
+    @PreAuthorize(VIEW)
+    @GetMapping("/branches")
+    public List<OnlineStoreDtos.BranchOption> branches() {
+        return admin.branches();
+    }
+
     /** v1.69.0: the price lists the shop may use (Shop settings), and "work the prices out again now" (otherwise they follow within two minutes). */
     @PreAuthorize(VIEW)
     @GetMapping("/price-lists")

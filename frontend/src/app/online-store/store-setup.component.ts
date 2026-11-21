@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay, ShopStockSetup, PriceListOption } from '../core/api/online-store-api.service';
+import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay, ShopStockSetup, PriceListOption, BranchOption } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -58,6 +58,12 @@ import { API_BASE } from '../core/constants';
             <select class="form-select ss-pricelist" style="width:240px;" name="priceList" [(ngModel)]="s.priceListId">
               <option [ngValue]="0">{{ 'None (normal prices)' | translate }}</option>
               <option *ngFor="let o of priceLists" [ngValue]="o.id">{{ o.current ? o.name : o.name + ' (' + ('not in use today' | translate) + ')' }}</option>
+            </select></div>
+          <div class="form-group" *ngIf="branches.length > 1">
+            <label class="form-label">{{ 'Branch the shop sells for' | translate }}</label>
+            <select class="form-select ss-branch" style="width:240px;" name="shopBranch" [(ngModel)]="s.branchId">
+              <option [ngValue]="0">{{ 'Head office' | translate }}</option>
+              <option *ngFor="let b of branches" [ngValue]="b.id">{{ b.name }}</option>
             </select></div>
           <div class="form-group"><label class="form-label">{{ 'Minimum order' | translate }}</label><input class="form-control" type="number" min="0" style="width:140px;" name="minOrder" [(ngModel)]="s.minOrder" /></div>
           <div class="form-group ss-shoploc" *ngIf="stockSetup?.multiWarehouse">
@@ -531,8 +537,9 @@ export class StoreSetupComponent implements OnInit {
   constructor(private api: OnlineStoreApiService, private catalog: CatalogApiService) {}
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => { s.priceListId = s.priceListId ?? 0; this.s = s; }, error: (e) => this.fail(e, 'Failed to load the settings') });
+    this.api.settings().subscribe({ next: (s) => { s.priceListId = s.priceListId ?? 0; s.branchId = s.branchId ?? 0; this.s = s; }, error: (e) => this.fail(e, 'Failed to load the settings') });
     this.api.providers().subscribe({ next: (p) => (this.providers = p), error: () => {} });
+    this.api.branches().subscribe({ next: (l) => (this.branches = l), error: () => {} });
     this.api.priceLists().subscribe({ next: (l) => (this.priceLists = l), error: () => {} });
     this.api.textProviders().subscribe({ next: (p) => (this.textProviders = p), error: () => {} });
     this.api.pageContent().subscribe({ next: (c) => (this.pc = c), error: () => {} });
@@ -690,7 +697,7 @@ export class StoreSetupComponent implements OnInit {
     if (!this.s) return;
     this.busy = true;
     this.api.saveSettings(this.s).subscribe({
-      next: (s) => { this.s = s; this.busy = false; this.ok('Settings saved'); },
+      next: (s) => { s.branchId = s.branchId ?? 0; s.priceListId = s.priceListId ?? 0; this.s = s; this.busy = false; this.ok('Settings saved'); },
       error: (e) => { this.busy = false; this.fail(e, 'Could not save the settings'); },
     });
   }
@@ -829,6 +836,7 @@ export class StoreSetupComponent implements OnInit {
   slotSet: SlotSettings | null = null;
   stockSetup: ShopStockSetup | null = null;
   priceLists: PriceListOption[] = [];
+  branches: BranchOption[] = [];
 
   refreshOffers(): void {
     this.api.refreshOffers().subscribe({ next: () => { this.loadListings(); this.ok('Prices worked out again'); }, error: (e) => this.fail(e, 'Could not work the prices out') });

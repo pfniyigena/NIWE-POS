@@ -40,6 +40,8 @@ import java.util.Map;
  */
 @Service
 public class OnlinePaymentService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineBooks books;
 
     private final ShopLoyaltyService loyalty;
 
@@ -275,7 +277,7 @@ public class OnlinePaymentService {
         o.setPaidAt(now);
         // v1.71.0: the money is in the books from now on, held for the order (Online Customer Deposits) against the provider's clearing account.
         accounting.postOnlinePaymentReceived(pay.getId(), pay.getAmount(), pay.getMethod(),
-                "Online payment " + pay.getReference() + " (" + pay.getMethod() + ") (online order " + o.getCode() + ")");
+                "Online payment " + pay.getReference() + " (" + pay.getMethod() + ") (online order " + o.getCode() + ")", books.branchFor(o));
         o.setDepositLeft(pay.getAmount());
         String how = pay.getMethod().equals("CARD") ? I18n.t("card") : I18n.t("mobile money");
         switch (o.getStatus()) {
@@ -456,7 +458,7 @@ public class OnlinePaymentService {
         BigDecimal held = o.getDepositLeft() == null ? BigDecimal.ZERO : o.getDepositLeft();
         BigDecimal use = held.min(amount == null ? BigDecimal.ZERO : amount);
         if (use.signum() <= 0) return;
-        accounting.postOnlineDepositRefund(o.getId(), use, o.getPaymentChannel(), manual, "Online payment " + o.getPaymentReference() + " paid back (online order " + o.getCode() + ")");
+        accounting.postOnlineDepositRefund(o.getId(), use, o.getPaymentChannel(), manual, "Online payment " + o.getPaymentReference() + " paid back (online order " + o.getCode() + ")", books.branchFor(o));
         o.setDepositLeft(held.subtract(use));
     }
 

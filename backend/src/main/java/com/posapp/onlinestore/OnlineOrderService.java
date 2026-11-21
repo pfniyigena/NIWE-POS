@@ -43,6 +43,8 @@ public class OnlineOrderService {
     private com.posapp.tracking.TrackingService trackingService;
 
     private final ShopLoyaltyService loyalty;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineBooks books;
     private final OnlineDriverRepository drivers;
     @org.springframework.beans.factory.annotation.Autowired
     private OnlineSlotService slotService;
@@ -196,6 +198,7 @@ public class OnlineOrderService {
         Customer customer = customerFor(o);
         SalesOrderRequest req = new SalesOrderRequest();
         req.setCustomerId(customer.getId());
+        req.setBranchId(books.shopBranch());   // v1.74.0: null = head office
         req.setNotes(I18n.t("Online order {0}", o.getCode()) + " (" + o.getDeliveryMethod().toLowerCase(Locale.ROOT) + ")"
                 + (o.getCustomerAddress() == null ? "" : ", " + o.getCustomerAddress()) + (o.getNotes() == null ? "" : ": " + o.getNotes()));
         List<SalesOrderRequest.LineEntry> lines = new ArrayList<>();
@@ -741,7 +744,10 @@ public class OnlineOrderService {
                 + (partial == null ? "" : ", " + I18n.t("delivered in part: {0}", partial.summary())) + (collect ? "" : ", " + I18n.t("payment not collected")) + differs, by);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_COMPLETED", "Completed online order " + o.getCode() + " with invoice " + inv.invoiceNumber(), "OnlineOrder", o.getId());
-        if (partial != null) loyalty.giveBackPart(o, partial.undeliveredDiscount());
+        int givenBack = partial == null ? 0 : loyalty.giveBackPart(o, partial.undeliveredDiscount());
+        // v1.73.0: the books show the discount given and the delivery fee apart from sales, and release the loyalty points that were spent on this delivery
+        books.orderDelivered(o, so, storeService.settings().getDeliveryProductId());
+        books.loyalty("ONLINE_LOYALTY_SPENT", o.getId(), o, o.getLoyaltyPointsUsed() - givenBack, false, I18n.t("Loyalty points spent"));
         int earned = partial == null ? loyalty.earn(o) : loyalty.earn(o, partial.deliveredNet());
         OnlineMessages.Msg thanks = partial != null
                 ? OnlineMessages.m("Thank you. Your order {0} is complete, with part of the goods delivered. Invoice {1}.", o.getCode(), inv.invoiceNumber())

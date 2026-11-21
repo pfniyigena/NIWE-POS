@@ -142,9 +142,8 @@ public class SalesOrderReturnService {
         BigDecimal refundTotal = BigDecimal.ZERO;
         BigDecimal netTotal = BigDecimal.ZERO;
         BigDecimal taxTotal = BigDecimal.ZERO;
-        // Accounting's Inventory-restocked/COGS-reversal figure for trackStock lines only — the
-        // product's live costPrice, same "no cost snapshot on this line type" reasoning
-        // SalesOrderService.fulfillLines already uses; see AccountingService.postSalesOrderReturn.
+        // Accounting's Inventory-restocked/COGS-reversal figure for trackStock lines only: the cost the goods had when they were sold
+        // (v1.74.0, SalesOrderLine.costTotal), else the product's cost price today; see AccountingService.postSalesOrderReturn.
         BigDecimal cogsReversal = BigDecimal.ZERO;
         StringBuilder returnedDescription = new StringBuilder();
         for (ProcessSalesOrderReturnRequest.ReturnLineEntry entry : request.getLines()) {
@@ -202,7 +201,11 @@ public class SalesOrderReturnService {
                 returnLine.setStockAfter(returnLocation != null
                         ? warehouseService.getStockQuantity(line.getProduct(), returnLocation)
                         : line.getProduct().getStockQuantity());
-                if (line.getProduct().getCostPrice() != null) {
+                // v1.74.0: at the cost the goods had when they were sold (average of the fulfilments of this line); lines fulfilled before this version have no
+                // record of it and keep using the product's cost price today
+                if (line.getCostQuantity() != null && line.getCostQuantity().signum() > 0) {
+                    cogsReversal = cogsReversal.add(line.getCostTotal().multiply(entry.getQuantity()).divide(line.getCostQuantity(), 4, RoundingMode.HALF_UP));
+                } else if (line.getProduct().getCostPrice() != null) {
                     cogsReversal = cogsReversal.add(
                             line.getProduct().getCostPrice().multiply(entry.getQuantity()));
                 }

@@ -193,7 +193,11 @@ export interface StoreSettings {
   minDaysLeft: number;
   /** v1.69.0: the price list whose prices the shop uses for products without an online price (send 0 for none). */
   priceListId: number | null; priceListName: string | null;
+  /** v1.74.0: the branch the shop sells for (send 0 for head office). */
+  branchId: number | null; branchName: string | null;
 }
+/** A branch the shop may sell for. */
+export interface BranchOption { id: number; name: string }
 /** A price list the shop may use; current = switched on and inside its dates today. */
 export interface PriceListOption { id: number; name: string; current: boolean }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
@@ -550,6 +554,7 @@ export class OnlineStoreApiService {
   // ---- staff: setup
   settings(): Observable<StoreSettings> { return this.http.get<StoreSettings>(`${this.base}/settings`); }
   saveSettings(s: StoreSettings): Observable<StoreSettings> { return this.http.put<StoreSettings>(`${this.base}/settings`, s); }
+  branches(): Observable<BranchOption[]> { return this.http.get<BranchOption[]>(`${this.base}/branches`); }
   priceLists(): Observable<PriceListOption[]> { return this.http.get<PriceListOption[]>(`${this.base}/price-lists`); }
   refreshOffers(): Observable<{ changed: number }> { return this.http.post<{ changed: number }>(`${this.base}/offers/refresh`, {}); }
   listings(): Observable<StoreListing[]> { return this.http.get<StoreListing[]>(`${this.base}/listings`); }

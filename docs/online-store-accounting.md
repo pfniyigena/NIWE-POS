@@ -50,3 +50,32 @@ Before this release the cash a driver took at the door was counted as cash in ha
 - The settlement entry carries the branch of the order (before, the difference had none).
 - `online_order.driver_cash_booked` is what the books hold in Cash with Drivers for the order. Orders delivered before this version have none: their cash went to Cash and Bank at delivery, so settling them posts only the difference, as before.
 - The balance of Cash with Drivers is the cash drivers still have to hand in; it should agree with the "Waiting" total on the Driver cash screen. Migration V103; new account 1050 (Rwanda chart) / 5214 (Chad chart).
+
+## v1.73.0: discounts given, delivery income and loyalty points as accounts
+
+Until now the books held one figure, Sales Revenue, after discounts and with the delivery fee inside it, and loyalty points did not appear at all. Now, when an online order is delivered:
+
+| When | Entry (source type) | Debit | Credit |
+|---|---|---|---|
+| The order is delivered | `ONLINE_SALE_SPLIT` | Sales Discounts Given (coupon and points discount, net of tax), Sales Revenue (the delivery fee, net of tax) | Sales Revenue (the discount: so revenue is the full price), Delivery Income (the delivery fee) |
+| A customer earns points (order completed) | `ONLINE_LOYALTY_EARN` | Customer Rewards Expense | Loyalty Points Liability |
+| Points spent on the order are used (order delivered; only the delivered share on a partial delivery) | `ONLINE_LOYALTY_SPENT` | Loyalty Points Liability | Customer Rewards Expense |
+| A return is processed | `ONLINE_DISCOUNT_REVERSAL` | Sales Revenue | Sales Discounts Given (the discount that belonged to the returned goods) |
+| A return gives points back to the customer | `ONLINE_LOYALTY_RET_BACK` | Customer Rewards Expense | Loyalty Points Liability |
+| A return takes back points that the order earned | `ONLINE_LOYALTY_RET_TAKE` | Loyalty Points Liability | Customer Rewards Expense |
+
+- The split is a reclassification: the total of income for an order does not change. Revenue plus delivery income minus discounts equals the invoice before tax.
+- Amounts are before tax. The sale order already puts the VAT on the discounted price, so the split divides the discount and the fee by the product's (or the delivery area's) tax rate when prices include tax.
+- The cost of loyalty points shows once: as an expense when they are earned, and, when they are spent, as Sales Discounts Given (the expense is released then). So Customer Rewards Expense is the cost of points still held, and Loyalty Points Liability is what the shop owes in discounts (1 point = 1 currency unit).
+- Orders that are cancelled or rejected post nothing: the discount and the points are only booked when the goods are delivered. The free-delivery waiver of a coupon has no account of its own: the fee is simply smaller.
+- Points earned before this version are not in the liability. Their spending releases the liability, so Loyalty Points Liability can show a debit balance until an opening balance is posted by hand (a manual journal entry of the points customers hold, Dr Customer Rewards Expense / Cr Loyalty Points Liability).
+- New accounts (added to existing charts at start-up): 4030 Delivery Income, 4040 Sales Discounts Given, 2820 Loyalty Points Liability (Rwanda chart); 7071, 7091, 4198 (Chad chart). No migration.
+
+## v1.74.0: returns at the cost sold, and a branch for the online shop
+
+**Returns restock at the cost the goods were sold at.** Until now a return took the goods back into Inventory (and out of Cost of Goods Sold) at the product's cost price on the day of the return, so a cost that moved after the sale left a difference in the books. Now each sale order line keeps what its units cost when they left stock (`sales_order_line.cost_total` and `cost_quantity`, added at every fulfilment), and a return uses the average of that: Dr Inventory / Cr Cost of Goods Sold at the sold cost. Lines fulfilled before this version have no record, and keep using the cost price of the product today. This applies to every sale order return, not only online ones.
+
+**A branch for the online shop.** Online sale orders always went to head office. Online Store > Shop settings has a new choice, "Branch the shop sells for" (shown when the business has more than one branch). The sale order, its invoice, the sales, VAT, cost and payment entries, the deposit entries (money paid before delivery, and paid back) and the loyalty entries then carry that branch, so branch reports include the online shop. Head office stays the default. If the chosen branch is switched off later, new orders go to head office until another is chosen. Payouts from the providers stay unattributed (they concern the whole shop).
+
+- Migration V104: `sales_order_line.cost_total`, `cost_quantity`; `online_store_settings.branch_id`.
+- Orders accepted before the choice keep the branch they were given.
