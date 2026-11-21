@@ -83,4 +83,11 @@ public class OnlineDriverLinkController {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
         return access.receive(token, session, id, request, http.getRemoteAddr());
     }
+
+    @PostMapping("/api/public/driver/{token}/returns/{id}/collect")
+    public DriverBoard collect(@PathVariable String token, @PathVariable Long id, @Valid @RequestBody DriverReceive request,
+                               @RequestHeader(value = SESSION, required = false) String session, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return access.collect(token, session, id, request, http.getRemoteAddr());
+    }
 }

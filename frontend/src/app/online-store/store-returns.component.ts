@@ -8,7 +8,7 @@ import { catchError } from 'rxjs/operators';
 import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
-import { OnlineStoreApiService, StoreReturn } from '../core/api/online-store-api.service';
+import { Driver, OnlineStoreApiService, StoreReturn } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { Warehouse, WarehouseLocation } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -39,7 +39,7 @@ interface LocationOption { id: number; label: string }
 
       <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
         <button *ngFor="let t of tabs" class="btn btn-sm rt-tab" [class.btn-primary]="tab === t.key" [class.btn-outline-secondary]="tab !== t.key" (click)="setTab(t.key)">
-          {{ t.label | translate }}<span *ngIf="t.key === 'REQUESTED' && requested > 0"> ({{ requested }})</span><span *ngIf="t.key === 'APPROVED' && toRefund > 0"> ({{ toRefund }})</span>
+          {{ t.label | translate }}<span *ngIf="t.key === 'REQUESTED' && requested > 0"> ({{ requested }})</span><span *ngIf="t.key === 'APPROVED' && toRefund - collected > 0"> ({{ toRefund - collected }})</span><span *ngIf="t.key === 'COLLECTED' && collected > 0"> ({{ collected }})</span>
         </button>
         <input class="form-control rt-search" style="width:220px;" [placeholder]="'Search code, name, phone' | translate" [(ngModel)]="q" name="rtq" (keyup.enter)="reload()" (blur)="reload()" />
       </div>
@@ -65,13 +65,34 @@ interface LocationOption { id: number; label: string }
 
         <div *ngIf="r.status === 'REQUESTED'" class="flex gap-2 mt-2" style="flex-wrap:wrap; align-items:flex-end;">
           <input class="form-control rt-note" style="width:300px;" maxlength="300" [placeholder]="'Note for the customer (needed to refuse)' | translate" [(ngModel)]="note[r.id]" [name]="'rn' + r.id" />
+          <select *ngIf="r.collect && drivers.length" class="form-select rt-driver-approve" style="width:200px;" [(ngModel)]="pick[r.id]" [name]="'rd' + r.id" [attr.aria-label]="'Driver who collects the goods' | translate">
+            <option [ngValue]="null">{{ 'Driver: choose later' | translate }}</option>
+            <option *ngFor="let d of activeDrivers()" [ngValue]="d.id">{{ d.name }}</option>
+          </select>
           <button class="btn btn-primary rt-approve" [disabled]="busy" (click)="approve(r)">{{ 'Approve' | translate }}</button>
           <button class="btn btn-outline-danger rt-refuse" [disabled]="busy" (click)="refuse(r)">{{ 'Refuse' | translate }}</button>
         </div>
 
-        <div *ngIf="r.status === 'APPROVED'" class="rt-process mt-2" style="border:1px solid #1d4ed8; border-radius:6px; padding:0.6rem;">
-          <strong style="color:#1d4ed8;">{{ 'Waiting for the goods' | translate }}</strong>
-          <div class="text-muted" style="font-size:0.85rem;">{{ 'When the customer has brought the goods back, process the return: stock back, books, and the refund.' | translate }}</div>
+        <div *ngIf="r.collect && r.status === 'APPROVED'" class="rt-collect mt-2" style="border:1px solid #1d4ed8; border-radius:6px; padding:0.6rem;">
+          <strong style="color:#1d4ed8;">🛵 {{ 'A driver collects the goods' | translate }}</strong>
+          <div class="text-muted" style="font-size:0.85rem;">📍 {{ r.customerAddress }}</div>
+          <div class="flex gap-2 mt-1" style="flex-wrap:wrap; align-items:center;">
+            <select class="form-select rt-driver" style="width:220px;" [ngModel]="r.driverId" (ngModelChange)="setDriver(r, $event)" [name]="'rdr' + r.id" [disabled]="busy" [attr.aria-label]="'Driver who collects the goods' | translate">
+              <option [ngValue]="null">{{ 'No driver yet' | translate }}</option>
+              <option *ngFor="let d of driversFor(r)" [ngValue]="d.id">{{ d.name }}<ng-container *ngIf="!d.active"> ({{ 'switched off' | translate }})</ng-container></option>
+            </select>
+            <button class="btn btn-sm btn-outline-secondary rt-newcode" [disabled]="busy" (click)="newCode(r)">{{ 'New return code (send again)' | translate }}</button>
+          </div>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'The customer got the return code by text and e-mail and gives it to the driver. The driver confirms on his page; then check the goods and refund.' | translate }}</div>
+        </div>
+
+        <div *ngIf="r.status === 'COLLECTED'" class="rt-collected mt-2" style="font-size:0.9rem; color:#1d4ed8;">
+          ✔ {{ 'Collected by {p0}' | translate: { p0: r.driverName ?? r.collectedBy } }} · {{ r.collectedAt | date: 'short' }}
+        </div>
+
+        <div *ngIf="r.status === 'APPROVED' || r.status === 'COLLECTED'" class="rt-process mt-2" style="border:1px solid #1d4ed8; border-radius:6px; padding:0.6rem;">
+          <strong style="color:#1d4ed8;">{{ (r.status === 'COLLECTED' ? 'The goods are with the shop: check them' : r.collect ? 'When the driver has brought the goods and you checked them' : 'Waiting for the goods') | translate }}</strong>
+          <div class="text-muted" style="font-size:0.85rem;">{{ 'When the goods are back, process the return: stock back, books, and the refund.' | translate }}</div>
           <div class="flex gap-2 mt-1" style="flex-wrap:wrap; align-items:flex-end;">
             <div class="form-group" *ngIf="locations.length">
               <label class="form-label">{{ 'Put the goods back in' | translate }}</label>
@@ -89,7 +110,7 @@ interface LocationOption { id: number; label: string }
               <span class="text-muted">{{ 'The customer paid in cash: hand {p0} back.' | translate: { p0: (r.refundAmount | number: '1.0-2') } }}</span>
             </ng-template>
             <button class="btn btn-primary rt-process-btn" [disabled]="busy" (click)="process(r)">{{ 'Goods received: put back and refund' | translate }}</button>
-            <button class="btn btn-outline-danger rt-refuse" [disabled]="busy" (click)="refuse(r)">{{ 'Refuse' | translate }}</button>
+            <button *ngIf="r.status === 'APPROVED'" class="btn btn-outline-danger rt-refuse" [disabled]="busy" (click)="refuse(r)">{{ 'Refuse' | translate }}</button>
           </div>
           <input class="form-control mt-1 rt-note" style="max-width:420px;" maxlength="300" [placeholder]="'Note (optional; needed to refuse)' | translate" [(ngModel)]="note[r.id]" [name]="'rn' + r.id" />
         </div>
@@ -107,7 +128,8 @@ interface LocationOption { id: number; label: string }
 export class StoreReturnsComponent implements OnInit, OnDestroy {
   tabs = [
     { key: 'REQUESTED', label: 'Waiting' },
-    { key: 'APPROVED', label: 'To refund' },
+    { key: 'APPROVED', label: 'Approved' },
+    { key: 'COLLECTED', label: 'Collected' },
     { key: 'REFUNDED', label: 'Done' },
     { key: 'REFUSED', label: 'Refused' },
     { key: '', label: 'Everything' },
@@ -116,6 +138,9 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
   q = '';
   requested = 0;
   toRefund = 0;
+  collected = 0;
+  drivers: Driver[] = [];
+  pick: Record<number, number | null> = {};
   error: string | null = null;
   message: string | null = null;
   busy = false;
@@ -131,6 +156,7 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadLocations();
+    this.api.drivers().pipe(catchError(() => of([] as Driver[]))).subscribe((d) => (this.drivers = d));
     this.reload();
     this.poll = setInterval(() => {
       if (!this.busy) this.list.load();
@@ -158,11 +184,11 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
   }
 
   label(s: string): string {
-    return ({ REQUESTED: 'Waiting', APPROVED: 'Approved', REFUSED: 'Refused', REFUNDED: 'Done' } as Record<string, string>)[s] ?? s;
+    return ({ REQUESTED: 'Waiting', APPROVED: 'Approved', COLLECTED: 'Collected', REFUSED: 'Refused', REFUNDED: 'Done' } as Record<string, string>)[s] ?? s;
   }
 
   color(r: StoreReturn): string {
-    return r.status === 'REFUSED' ? '#b91c1c' : r.status === 'REFUNDED' ? '#15803d' : r.status === 'APPROVED' ? '#1d4ed8' : '#b45309';
+    return r.status === 'REFUSED' ? '#b91c1c' : r.status === 'REFUNDED' ? '#15803d' : r.status === 'APPROVED' || r.status === 'COLLECTED' ? '#1d4ed8' : '#b45309';
   }
 
   /** Money paid online is given back through the provider or by hand; cash on delivery is handed back in cash. */
@@ -192,6 +218,7 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
       next: (c) => {
         this.requested = c.returnsRequested ?? 0;
         this.toRefund = c.returnsToRefund ?? 0;
+        this.collected = c.returnsCollected ?? 0;
       },
       error: () => {},
     });
@@ -216,7 +243,7 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
   }
 
   approve(r: StoreReturn): void {
-    this.run(this.api.approveReturn(r.id, this.note[r.id] ?? ''), T('Return {p0} approved. The customer was told.', { p0: r.code }));
+    this.run(this.api.approveReturn(r.id, this.note[r.id] ?? '', r.collect ? (this.pick[r.id] ?? null) : null), T('Return {p0} approved. The customer was told.', { p0: r.code }));
   }
 
   refuse(r: StoreReturn): void {
@@ -226,6 +253,24 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
       return;
     }
     this.run(this.api.refuseReturn(r.id, note), T('Return {p0} refused. The customer was told.', { p0: r.code }));
+  }
+
+  activeDrivers(): Driver[] {
+    return this.drivers.filter((d) => d.active);
+  }
+
+  /** The drivers to pick from: those switched on, plus the return's current one even if switched off since. */
+  driversFor(r: StoreReturn): Driver[] {
+    return this.drivers.filter((d) => d.active || d.id === r.driverId);
+  }
+
+  setDriver(r: StoreReturn, driverId: number | null): void {
+    this.run(this.api.returnDriver(r.id, driverId), driverId === null ? T('Driver removed.') : T('Driver chosen.'));
+  }
+
+  newCode(r: StoreReturn): void {
+    if (!confirm(T('Make a new return code for {p0} and send it to the customer? The old code stops working.', { p0: r.code }))) return;
+    this.run(this.api.returnNewCode(r.id), T('New return code sent to the customer.'));
   }
 
   process(r: StoreReturn): void {

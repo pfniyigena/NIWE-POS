@@ -47,6 +47,8 @@ public class OnlineDriverAccessService {
     private final PasswordEncoder encoder;
     private final AuditLogService auditLogService;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineReturnService returnService;
 
     public OnlineDriverAccessService(OnlineDriverRepository drivers, OnlineOrderRepository orders, OnlineOrderService orderService,
                                      OnlineStoreService storeService, PasswordEncoder encoder, AuditLogService auditLogService) {
@@ -90,7 +92,12 @@ public class OnlineDriverAccessService {
     public record DriverCash(BigDecimal holding, List<DriverCashLine> waiting, List<DriverCashLine> settled) {
     }
 
-    public record DriverBoard(String driverName, String shopName, String shopPhone, List<DriverJob> jobs, DriverCash cash) {
+    /** One return the driver collects at the customer's address. The return code is never in it. */
+    public record DriverReturnJob(Long id, String code, String orderCode, String customerName, String customerPhone, String customerAddress, String zoneName,
+                                  String reason, List<DriverLine> lines) {
+    }
+
+    public record DriverBoard(String driverName, String shopName, String shopPhone, List<DriverJob> jobs, DriverCash cash, List<DriverReturnJob> returnJobs) {
     }
 
     public record DriverReceive(@Size(max = 12) String code) {
@@ -259,7 +266,10 @@ public class OnlineDriverAccessService {
                         OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd())))
                 .toList();
         OnlineStoreSettings s = storeService.settings();
-        return new DriverBoard(d.getName(), s.getShopName(), s.getContactPhone(), jobs, cash(d));
+        List<DriverReturnJob> back = returnService.toCollect(d.getId()).stream().map(r -> new DriverReturnJob(r.getId(), r.getCode(), r.getOnlineOrder().getCode(),
+                r.getOnlineOrder().getCustomerName(), r.getOnlineOrder().getCustomerPhone(), r.getOnlineOrder().getCustomerAddress(), r.getOnlineOrder().getZoneName(), r.getReason(),
+                r.getLines().stream().map(l -> new DriverLine(l.getName(), l.getQuantity())).toList())).toList();
+        return new DriverBoard(d.getName(), s.getShopName(), s.getContactPhone(), jobs, cash(d), back);
     }
 
     /** His own cash only, never another driver's: what he holds (by the same list staff settle from) and his last ten settlements. */
@@ -286,6 +296,15 @@ public class OnlineDriverAccessService {
         OnlineDriver d = signedIn(token, session, ip);
         throttle(ip, "receive", 200);
         orderService.receiveByDriver(orderId, d, new ReceiveRequest(in == null ? null : in.code(), null, null, null, null));
+        return board(d);
+    }
+
+    /** The customer's return code, given to this driver for goods he collects. Only his own approved returns; wrong codes are counted. */
+    @Transactional(noRollbackFor = ApiException.class)
+    public DriverBoard collect(String token, String session, Long returnId, DriverReceive in, String ip) {
+        OnlineDriver d = signedIn(token, session, ip);
+        throttle(ip, "collect", 200);
+        returnService.collectByDriver(returnId, d, in == null ? null : in.code());
         return board(d);
     }
 }

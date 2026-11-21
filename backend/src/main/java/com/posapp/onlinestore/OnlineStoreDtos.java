@@ -392,8 +392,10 @@ public final class OnlineStoreDtos {
     public record PublicReturnLine(String name, BigDecimal quantity, BigDecimal amount) {
     }
 
+    /** collection: a driver comes to the customer's address; pickupCode is only filled for the signed-in owner of the order. */
     public record PublicReturn(String code, String status, String reason, String staffNote, BigDecimal refundAmount, String refundMethod,
-                               String refundReference, Instant requestedAt, Instant decidedAt, Instant refundedAt, List<PublicReturnLine> lines) {
+                               String refundReference, Instant requestedAt, Instant decidedAt, Instant refundedAt, List<PublicReturnLine> lines,
+                               boolean collection, String pickupCode, String driverName, String driverPhone, Instant collectedAt) {
     }
 
     /** returnable is what may still be asked back on the line (what was bought, less what other returns already hold). */
@@ -420,10 +422,16 @@ public final class OnlineStoreDtos {
     public record ReturnDto(Long id, String code, Long orderId, String orderCode, String customerName, String customerPhone, String customerEmail,
                             String status, String reason, String staffNote, BigDecimal refundAmount, String refundMethod, String refundReference,
                             String paymentMethod, String paymentStatus, Instant requestedAt, String decidedBy, Instant decidedAt, String refundedBy,
-                            Instant refundedAt, String salesOrderReturnNumber, List<ReturnLineDto> lines) {
+                            Instant refundedAt, String salesOrderReturnNumber, List<ReturnLineDto> lines,
+                            boolean collect, String customerAddress, Long driverId, String driverName, String driverPhone, Instant collectedAt, String collectedBy,
+                            boolean hasCode) {
     }
 
-    public record ReturnDecision(@Size(max = 300) String note) {
+    /** driverId: who collects the goods (delivery orders), chosen now or later. */
+    public record ReturnDecision(@Size(max = 300) String note, Long driverId) {
+    }
+
+    public record ReturnDriverRequest(Long driverId) {
     }
 
     /** manual = the refund was made outside (mobile money, the provider's dashboard); reference is then required for money paid online. */

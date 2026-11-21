@@ -241,13 +241,27 @@ public class OnlineStoreController {
     @PreAuthorize(MANAGE)
     @PostMapping("/returns/{id}/approve")
     public ReturnDto returnApprove(@PathVariable Long id, @RequestBody(required = false) ReturnDecision request) {
-        return returns.approve(id, request == null ? null : request.note());
+        return returns.approve(id, request == null ? null : request.note(), request == null ? null : request.driverId());
     }
 
     @PreAuthorize(MANAGE)
     @PostMapping("/returns/{id}/refuse")
     public ReturnDto returnRefuse(@PathVariable Long id, @RequestBody(required = false) ReturnDecision request) {
         return returns.refuse(id, request == null ? null : request.note());
+    }
+
+    /** Chooses who collects an approved return (null removes the driver). */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/returns/{id}/driver")
+    public ReturnDto returnDriver(@PathVariable Long id, @RequestBody ReturnDriverRequest request) {
+        return returns.assignDriver(id, request.driverId());
+    }
+
+    /** A new return code, sent again to the customer. */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/returns/{id}/code")
+    public ReturnDto returnCode(@PathVariable Long id) {
+        return returns.reissueCode(id);
     }
 
     /** The goods are back: stock and books through the sale order return, and the money given back the way the customer paid. */

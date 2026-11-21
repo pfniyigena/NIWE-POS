@@ -42,8 +42,10 @@ import java.util.Set;
 public class OnlineReturnService {
 
     private final ShopLoyaltyService loyalty;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineDriverRepository drivers;
 
-    private static final Set<String> HOLDING = Set.of("REQUESTED", "APPROVED", "REFUNDED");
+    private static final Set<String> HOLDING = Set.of("REQUESTED", "APPROVED", "COLLECTED", "REFUNDED");
     private static final long HOUR = 3_600_000L;
 
     private final OnlineReturnRepository returns;
@@ -136,10 +138,24 @@ public class OnlineReturnService {
         return out;
     }
 
-    private static PublicReturn publicView(OnlineReturn r) {
+    /** ownerView: the signed-in owner of the order sees the return code; anyone else who only has the order code does not. */
+    private static PublicReturn publicView(OnlineReturn r, boolean ownerView) {
+        boolean collection = isCollection(r);
+        boolean showCode = ownerView && collection && "APPROVED".equals(r.getStatus()) && r.getPickupCode() != null;
         return new PublicReturn(r.getCode(), r.getStatus(), r.getReason(), r.getStaffNote(), r.getRefundAmount(), r.getRefundMethod(), r.getRefundReference(),
                 r.getCreatedAt(), r.getDecidedAt(), r.getRefundedAt(),
-                r.getLines().stream().map(l -> new PublicReturnLine(l.getName(), l.getQuantity(), l.getAmount())).toList());
+                r.getLines().stream().map(l -> new PublicReturnLine(l.getName(), l.getQuantity(), l.getAmount())).toList(),
+                collection, showCode ? r.getPickupCode() : null, collection ? r.getPickupDriverName() : null, collection ? r.getPickupDriverPhone() : null, r.getCollectedAt());
+    }
+
+    /** A delivered order has an address a driver can go to; a pick-up order's goods are brought back by the customer. */
+    static boolean collectable(OnlineOrder o) {
+        return "DELIVERY".equals(o.getDeliveryMethod()) && o.getCustomerAddress() != null && !o.getCustomerAddress().isBlank();
+    }
+
+    /** A return the shop collects at the customer's address: the order was delivered (not picked up at the shop) and a return code was made at approval. */
+    static boolean isCollection(OnlineReturn r) {
+        return r.getPickupCode() != null && !r.getPickupCode().isBlank();
     }
 
     // ------------------------------------------------------------------ the customer
@@ -149,7 +165,7 @@ public class OnlineReturnService {
     public List<OnlineStoreDtos.AccountReturn> forCustomer(Long shopCustomerId) {
         List<Long> ids = orders.findTop50ByShopCustomerIdOrderByCreatedAtDesc(shopCustomerId).stream().map(OnlineOrder::getId).toList();
         if (ids.isEmpty()) return List.of();
-        return returns.findByOnlineOrderIdInOrderByIdDesc(ids).stream().map(r -> new OnlineStoreDtos.AccountReturn(r.getOnlineOrder().getCode(), publicView(r))).toList();
+        return returns.findByOnlineOrderIdInOrderByIdDesc(ids).stream().map(r -> new OnlineStoreDtos.AccountReturn(r.getOnlineOrder().getCode(), publicView(r, true))).toList();
     }
 
     /** What can still be returned on an order and the returns already asked. The code is the key, like following an order. */
@@ -173,7 +189,7 @@ public class OnlineReturnService {
         if (why == null && !anything) why = I18n.t("Everything on this order has already been returned or asked back.");
         Instant done = completedAt(o);
         Instant last = done == null || s.getReturnWindowDays() <= 0 ? null : done.plus(Duration.ofDays(s.getReturnWindowDays()));
-        return new ReturnOptions(why == null, why, s.getReturnWindowDays(), last, lines, all.stream().map(OnlineReturnService::publicView).toList());
+        return new ReturnOptions(why == null, why, s.getReturnWindowDays(), last, lines, all.stream().map(x -> publicView(x, false)).toList());
     }
 
     /**
@@ -239,7 +255,7 @@ public class OnlineReturnService {
                 OnlineMessages.m("We received your return request {0} for order {1}. We will answer as soon as we can.", r.getCode(), o.getCode()));
         OnlineMessages.notifyShopNote(mailService, storeSettingsService, s, I18n.t("New return request {0}", r.getCode()),
                 I18n.t("{0} asked to return goods from order {1} (worth {2}): {3}. Open Online Store > Returns.", o.getCustomerName(), o.getCode(), OnlineStoreService.money(total), r.getReason()));
-        return publicView(r);
+        return publicView(r, owner);
     }
 
     // ------------------------------------------------------------------ staff
@@ -249,7 +265,7 @@ public class OnlineReturnService {
         String needle = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
         String wanted = status == null || status.isBlank() ? null : status.trim().toUpperCase(Locale.ROOT);
         return returns.findAllByOrderByCreatedAtDesc().stream()
-                .filter(r -> wanted == null || (wanted.equals("OPEN") ? r.getStatus().equals("REQUESTED") || r.getStatus().equals("APPROVED") : r.getStatus().equals(wanted)))
+                .filter(r -> wanted == null || (wanted.equals("OPEN") ? r.getStatus().equals("REQUESTED") || r.getStatus().equals("APPROVED") || r.getStatus().equals("COLLECTED") : r.getStatus().equals(wanted)))
                 .filter(r -> needle.isEmpty() || r.getCode().toLowerCase(Locale.ROOT).contains(needle)
                         || r.getOnlineOrder().getCode().toLowerCase(Locale.ROOT).contains(needle)
                         || r.getOnlineOrder().getCustomerName().toLowerCase(Locale.ROOT).contains(needle)
@@ -265,7 +281,8 @@ public class OnlineReturnService {
     /** How many returns wait for a decision and how many are approved and wait for the goods and the refund. */
     @Transactional(readOnly = true)
     public Map<String, Long> counts() {
-        return Map.of("returnsRequested", returns.countByStatus("REQUESTED"), "returnsToRefund", returns.countByStatus("APPROVED"));
+        long collected = returns.countByStatus("COLLECTED");
+        return Map.of("returnsRequested", returns.countByStatus("REQUESTED"), "returnsToRefund", returns.countByStatus("APPROVED") + collected, "returnsCollected", collected);
     }
 
     private OnlineReturn lock(Long id, String... allowed) {
@@ -276,21 +293,132 @@ public class OnlineReturnService {
 
     @Transactional
     public ReturnDto approve(Long id, String note) {
+        return approve(id, note, null);
+    }
+
+    /**
+     * Approves a return. A delivered order's goods are collected from the customer by a driver (no charge): a return code is made and sent by e-mail and
+     * text, and the driver (chosen now or later) hands in the code on his page. An order the customer picked up at the shop is brought back by him.
+     */
+    @Transactional
+    public ReturnDto approve(Long id, String note, Long driverId) {
         OnlineReturn r = lock(id, "REQUESTED");
         OnlineOrder o = r.getOnlineOrder();
+        boolean collect = collectable(o);
         r.setStatus("APPROVED");
         r.setStaffNote(clean(note));
         r.setDecidedAt(Instant.now());
         r.setDecidedBy(user());
+        if (collect && driverId != null) setDriver(r, driverId);
         returns.save(r);
         event(o, I18n.t("Return {0} approved", r.getCode()), user());
         orders.save(o);
         auditLogService.record("ONLINE_RETURN_APPROVED", "Approved return " + r.getCode() + " of online order " + o.getCode(), "OnlineReturn", r.getId());
         OnlineStoreSettings s = storeService.settings();
-        OnlineMessages.Msg text = OnlineMessages.m("Your return {0} for order {1} is approved. Please bring the goods back to us.", r.getCode(), o.getCode())
-                .plus((r.getStaffNote() == null ? "" : " " + r.getStaffNote()) + (s.getPickupAddress() == null || s.getPickupAddress().isBlank() ? "" : " " + s.getPickupAddress()));
-        OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your return {0} is approved", r.getCode()), text);
+        String extra = r.getStaffNote() == null ? "" : " " + r.getStaffNote();
+        if (collect) {
+            String code = r.ensurePickupCode();
+            returns.save(r);
+            OnlineMessages.Msg text = OnlineMessages.m("Your return {0} for order {1} is approved. A driver will come to collect the goods at {2}. No charge.", r.getCode(), o.getCode(), o.getCustomerAddress())
+                    .plus(extra)
+                    .then(OnlineMessages.m("Your return code is {0}. Give it to the driver only when you hand over the goods.", code));
+            String how = OnlineMessages.sendCode(mailService, storeSettingsService, o, OnlineMessages.m("Your return {0} is approved", r.getCode()), text, code);
+            event(o, how, user());
+            orders.save(o);
+        } else {
+            OnlineMessages.Msg text = OnlineMessages.m("Your return {0} for order {1} is approved. Please bring the goods back to us.", r.getCode(), o.getCode())
+                    .plus(extra + (s.getPickupAddress() == null || s.getPickupAddress().isBlank() ? "" : " " + s.getPickupAddress()));
+            OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Your return {0} is approved", r.getCode()), text);
+        }
         return dto(r);
+    }
+
+    private void setDriver(OnlineReturn r, Long driverId) {
+        if (driverId == null) {
+            r.setPickupDriverId(null);
+            r.setPickupDriverName(null);
+            r.setPickupDriverPhone(null);
+            return;
+        }
+        OnlineDriver d = drivers.findById(driverId).orElseThrow(() -> ApiException.notFound(I18n.t("Driver not found")));
+        if (!d.isActive() && !driverId.equals(r.getPickupDriverId())) throw ApiException.badRequest(I18n.t("This driver is switched off."));
+        r.setPickupDriverId(d.getId());
+        r.setPickupDriverName(d.getName());
+        r.setPickupDriverPhone(d.getPhone());
+    }
+
+    /** Chooses (or, with null, removes) the driver who collects an approved return. */
+    @Transactional
+    public ReturnDto assignDriver(Long id, Long driverId) {
+        OnlineReturn r = lock(id, "APPROVED");
+        if (!isCollection(r)) throw ApiException.badRequest(I18n.t("The customer brings this return back to the shop."));
+        OnlineOrder o = r.getOnlineOrder();
+        String before = r.getPickupDriverName();
+        setDriver(r, driverId);
+        returns.save(r);
+        event(o, driverId == null ? I18n.t("Return {0}: driver removed", r.getCode())
+                : I18n.t("Return {0}: {1} will collect the goods", r.getCode(), r.getPickupDriverName()) + (before == null ? "" : " (" + I18n.t("was {0}", before) + ")"), user());
+        orders.save(o);
+        auditLogService.record("ONLINE_RETURN_DRIVER", "Return " + r.getCode() + " of online order " + o.getCode() + ": driver " + (r.getPickupDriverName() == null ? "none" : r.getPickupDriverName()), "OnlineReturn", r.getId());
+        return dto(r);
+    }
+
+    /** A new return code, sent again by text and e-mail (the old one stops working; five wrong tries are forgiven). */
+    @Transactional
+    public ReturnDto reissueCode(Long id) {
+        OnlineReturn r = lock(id, "APPROVED");
+        if (!isCollection(r)) throw ApiException.badRequest(I18n.t("The customer brings this return back to the shop."));
+        OnlineOrder o = r.getOnlineOrder();
+        String code = r.reissuePickupCode();
+        returns.save(r);
+        String how = OnlineMessages.sendCode(mailService, storeSettingsService, o, OnlineMessages.m("Your new code for return {0}", r.getCode()),
+                OnlineMessages.m("Your new return code for {0} is {1}. The old code no longer works. Give it to the driver only when you hand over the goods.", r.getCode(), code), code);
+        event(o, I18n.t("Return {0}: new return code made", r.getCode()) + ". " + how, user());
+        orders.save(o);
+        return dto(r);
+    }
+
+    /**
+     * The driver collected the goods: he typed the customer's return code on his page. Only his own returns; five wrong codes lock it for half an hour
+     * (the lock counts like the delivery code's). The goods are then checked and refunded by staff as before.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public void collectByDriver(Long id, OnlineDriver driver, String typed) {
+        OnlineReturn r = returns.lockById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Return not found")));
+        if (driver == null || !driver.getId().equals(r.getPickupDriverId()) || !"APPROVED".equals(r.getStatus()) || !isCollection(r)) {
+            throw ApiException.badRequest(I18n.t("This return is not yours to collect."));
+        }
+        String code = typed == null ? "" : typed.trim();
+        if (code.isEmpty()) throw ApiException.badRequest(I18n.t("Type the customer's return code."));
+        Instant now = Instant.now();
+        if (r.getPickupFailures() >= 5 && r.getPickupFailedAt() != null && r.getPickupFailedAt().plusSeconds(1800).isAfter(now)) {
+            throw ApiException.badRequest(I18n.t("Too many wrong codes. Ask the shop for a new code, or try again in half an hour."));
+        }
+        if (!code.equals(r.getPickupCode())) {
+            r.setPickupFailures(r.getPickupFailedAt() != null && r.getPickupFailedAt().plusSeconds(1800).isBefore(now) ? 1 : r.getPickupFailures() + 1);
+            r.setPickupFailedAt(now);
+            returns.save(r);
+            throw ApiException.badRequest(I18n.t("That code is not right."));
+        }
+        OnlineOrder o = r.getOnlineOrder();
+        r.setStatus("COLLECTED");
+        r.setCollectedAt(now);
+        r.setCollectedBy("Driver: " + driver.getName());
+        r.setPickupFailures(0);
+        r.setPickupFailedAt(null);
+        returns.save(r);
+        event(o, I18n.t("Return {0}: goods collected by {1}", r.getCode(), driver.getName()), "Driver: " + driver.getName());
+        orders.save(o);
+        auditLogService.record("ONLINE_RETURN_COLLECTED", "Return " + r.getCode() + " of online order " + o.getCode() + " collected by driver " + driver.getName(), "OnlineReturn", r.getId());
+        OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("Return {0}: goods collected", r.getCode()),
+                OnlineMessages.m("Our driver collected the goods of your return {0} for order {1}. We will check them and refund you.", r.getCode(), o.getCode()));
+        OnlineMessages.notifyShopNote(mailService, storeSettingsService, storeService.settings(), I18n.t("Return {0}: goods collected", r.getCode()),
+                I18n.t("{0} collected the goods of return {1} (order {2}). Check them and refund: Online Store > Returns.", driver.getName(), r.getCode(), o.getCode()));
+    }
+
+    /** The returns an approved-for-collection driver still has to fetch. */
+    List<OnlineReturn> toCollect(Long driverId) {
+        return returns.findByStatusAndPickupDriverIdOrderByIdAsc("APPROVED", driverId);
     }
 
     @Transactional
@@ -318,7 +446,7 @@ public class OnlineReturnService {
      */
     @Transactional
     public ReturnDto process(Long id, ReturnProcess in) {
-        OnlineReturn r = lock(id, "APPROVED");
+        OnlineReturn r = lock(id, "APPROVED", "COLLECTED");
         OnlineOrder o = r.getOnlineOrder();
         if (o.getSalesOrderId() == null) throw ApiException.badRequest(I18n.t("This order has no sale order"));
 
@@ -418,6 +546,8 @@ public class OnlineReturnService {
         return new ReturnDto(r.getId(), r.getCode(), o.getId(), o.getCode(), o.getCustomerName(), o.getCustomerPhone(), o.getCustomerEmail(), r.getStatus(),
                 r.getReason(), r.getStaffNote(), r.getRefundAmount(), r.getRefundMethod(), r.getRefundReference(), o.getPaymentMethod(), o.getPaymentStatus(),
                 r.getCreatedAt(), r.getDecidedBy(), r.getDecidedAt(), r.getRefundedBy(), r.getRefundedAt(), r.getSalesOrderReturnNumber(),
-                r.getLines().stream().map(l -> new ReturnLineDto(l.getOnlineOrderLineId(), l.getName(), l.getQuantity(), l.getAmount())).toList());
+                r.getLines().stream().map(l -> new ReturnLineDto(l.getOnlineOrderLineId(), l.getName(), l.getQuantity(), l.getAmount())).toList(),
+                isCollection(r) || ("REQUESTED".equals(r.getStatus()) && collectable(o)), o.getCustomerAddress(), r.getPickupDriverId(), r.getPickupDriverName(), r.getPickupDriverPhone(), r.getCollectedAt(), r.getCollectedBy(),
+                r.getPickupCode() != null);
     }
 }

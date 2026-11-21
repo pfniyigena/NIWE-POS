@@ -20,6 +20,11 @@ public interface OnlineReturnRepository extends JpaRepository<OnlineReturn, Long
 
     long countByStatus(String status);
 
+    /** The goods a driver still has to collect. */
+    List<OnlineReturn> findByStatusAndPickupDriverIdOrderByIdAsc(String status, Long pickupDriverId);
+
+    long countByStatusAndPickupDriverId(String status, Long pickupDriverId);
+
     /** Staff decide or process under a lock, so two people cannot do it twice. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from OnlineReturn r where r.id = :id")

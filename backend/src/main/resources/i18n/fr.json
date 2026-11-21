@@ -2085,5 +2085,21 @@
  "The delivery of your order {0} is planned on {1}, between {2} and {3}.": "La livraison de votre commande {0} est prévue le {1}, entre {2} et {3}.",
  "Delivery planned on {0}, between {1} and {2}.": "Livraison prévue le {0}, entre {1} et {2}.",
  "Delivery time": "Heure de livraison",
- "As soon as possible": "Dès que possible"
+ "As soon as possible": "Dès que possible",
+ "The customer brings this return back to the shop.": "Le client rapporte ce retour à la boutique.",
+ "Return {0}: driver removed": "Retour {0} : chauffeur retiré",
+ "Return {0}: {1} will collect the goods": "Retour {0} : {1} récupérera les articles",
+ "was {0}": "était {0}",
+ "Return {0}: new return code made": "Retour {0} : nouveau code de retour créé",
+ "This return is not yours to collect.": "Ce retour n'est pas à vous de le récupérer.",
+ "Type the customer's return code.": "Saisissez le code de retour du client.",
+ "Too many wrong codes. Ask the shop for a new code, or try again in half an hour.": "Trop de codes erronés. Demandez un nouveau code à la boutique, ou réessayez dans une demi-heure.",
+ "Return {0}: goods collected by {1}": "Retour {0} : articles récupérés par {1}",
+ "Return {0}: goods collected": "Retour {0} : articles récupérés",
+ "Our driver collected the goods of your return {0} for order {1}. We will check them and refund you.": "Notre chauffeur a récupéré les articles de votre retour {0} pour la commande {1}. Nous les vérifierons et nous vous rembourserons.",
+ "{0} collected the goods of return {1} (order {2}). Check them and refund: Online Store > Returns.": "{0} a récupéré les articles du retour {1} (commande {2}). Vérifiez-les et remboursez : Boutique en ligne > Retours.",
+ "Your return {0} for order {1} is approved. A driver will come to collect the goods at {2}. No charge.": "Votre retour {0} pour la commande {1} est approuvé. Un chauffeur viendra récupérer les articles à {2}. Sans frais.",
+ "Your return code is {0}. Give it to the driver only when you hand over the goods.": "Votre code de retour est {0}. Ne le donnez au chauffeur qu'au moment de lui remettre les articles.",
+ "Your new code for return {0}": "Votre nouveau code pour le retour {0}",
+ "Your new return code for {0} is {1}. The old code no longer works. Give it to the driver only when you hand over the goods.": "Votre nouveau code de retour pour {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au chauffeur qu'au moment de lui remettre les articles."
 }

@@ -115,7 +115,9 @@ import { SignaturePadComponent } from './signature-pad.component';
             <div class="text-muted" style="font-size:0.85rem;">{{ returnWhat(r) }}</div>
             <div class="text-muted" style="font-size:0.85rem;" *ngIf="r.status === 'REQUESTED'">{{ 'We will answer as soon as we can.' | translate }}</div>
             <div *ngIf="r.staffNote" style="font-size:0.85rem;">{{ r.staffNote }}</div>
-            <div *ngIf="r.status === 'APPROVED'" style="font-size:0.85rem;">{{ 'Please bring the goods back to us. We refund you when we have them.' | translate }}</div>
+            <div *ngIf="r.status === 'APPROVED' && !r.collection" style="font-size:0.85rem;">{{ 'Please bring the goods back to us. We refund you when we have them.' | translate }}</div>
+            <div *ngIf="r.status === 'APPROVED' && r.collection" class="st-return-pick" style="font-size:0.85rem;">{{ 'A driver will come to collect the goods. No charge.' | translate }} {{ 'Your return code was sent to you by text and e-mail. Give it to the driver only when you hand over the goods.' | translate }}<span *ngIf="r.driverName"> {{ 'Driver: {p0}' | translate: { p0: r.driverName } }}</span></div>
+            <div *ngIf="r.status === 'COLLECTED'" class="st-return-got" style="font-size:0.85rem;">{{ 'Our driver has your goods. We will check them and refund you.' | translate }}</div>
             <div *ngIf="r.status === 'REFUNDED'" class="st-return-done" style="color:#15803d; font-size:0.85rem;">{{ (r.refundMethod === 'CASH' ? 'Handed back {p0} in cash.' : 'Refunded {p0}.') | translate: { p0: (r.refundAmount | shopMoney: cur) } }}<span *ngIf="r.refundReference && r.refundMethod !== 'CASH'"> {{ 'Reference {p0}' | translate: { p0: r.refundReference } }}</span></div>
           </div>
           <ng-container *ngIf="ro.allowed">
@@ -392,11 +394,11 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   }
 
   returnLabel(s: string): string {
-    return ({ REQUESTED: 'Waiting for an answer', APPROVED: 'Approved', REFUSED: 'Refused', REFUNDED: 'Refunded' } as Record<string, string>)[s] ?? s;
+    return ({ REQUESTED: 'Waiting for an answer', APPROVED: 'Approved', COLLECTED: 'Collected', REFUSED: 'Refused', REFUNDED: 'Refunded' } as Record<string, string>)[s] ?? s;
   }
 
   returnColor(r: ShopReturn): string {
-    return r.status === 'REFUSED' ? '#b91c1c' : r.status === 'REFUNDED' ? '#15803d' : r.status === 'APPROVED' ? '#1d4ed8' : '#b45309';
+    return r.status === 'REFUSED' ? '#b91c1c' : r.status === 'REFUNDED' ? '#15803d' : r.status === 'APPROVED' || r.status === 'COLLECTED' ? '#1d4ed8' : '#b45309';
   }
 
   returnWhat(r: ShopReturn): string {

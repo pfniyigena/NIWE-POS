@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { DriverBoard, DriverJob, OnlineStoreApiService } from '../core/api/online-store-api.service';
+import { DriverBoard, DriverJob, DriverReturnJob, OnlineStoreApiService } from '../core/api/online-store-api.service';
 import { T } from '../core/i18n/t';
 
 /**
@@ -99,6 +99,34 @@ import { T } from '../core/i18n/t';
           </div>
         </div>
 
+        <ng-container *ngIf="board.returnJobs.length">
+          <h3 class="dl-returns-title" style="margin:1rem 0 0.5rem;">↩ {{ 'Returns to collect' | translate }}</h3>
+          <div class="card dl-return mb-3" *ngFor="let r of board.returnJobs" style="padding:0.9rem; border-left:4px solid #1d4ed8;">
+            <div class="flex justify-between" style="gap:0.5rem; flex-wrap:wrap;">
+              <strong class="dl-rcode" style="font-size:1.1rem;">{{ r.code }}</strong>
+              <span class="text-muted">{{ 'Order {p0}' | translate: { p0: r.orderCode } }}</span>
+            </div>
+            <div style="margin-top:0.35rem;">
+              <div><strong>{{ r.customerName }}</strong> · <a [href]="'tel:' + r.customerPhone">📞 {{ r.customerPhone }}</a></div>
+              <div *ngIf="r.zoneName || r.customerAddress">📍 {{ r.zoneName }}<ng-container *ngIf="r.zoneName && r.customerAddress"> — </ng-container>{{ r.customerAddress }}
+                <a *ngIf="r.customerAddress" class="dl-rmap" style="margin-left:0.4rem;" target="_blank" rel="noopener" [href]="mapLinkOf(r.customerAddress, r.zoneName)">{{ 'Map' | translate }}</a></div>
+              <div class="text-muted" style="font-size:0.9rem;">“{{ r.reason }}”</div>
+              <ul style="margin:0.4rem 0 0; padding-left:1.1rem;"><li *ngFor="let l of r.lines">{{ l.quantity }} × {{ l.name }}</li></ul>
+            </div>
+            <button class="btn btn-primary mt-2 dl-collect-open" *ngIf="openReturn !== r.id" (click)="startReturn(r)">{{ 'Collect the goods' | translate }}</button>
+            <div *ngIf="openReturn === r.id" class="dl-collect-box mt-2" style="border-top:1px dashed #9ca3af; padding-top:0.6rem;">
+              <div class="form-group">
+                <label class="form-label">{{ "Customer's return code" | translate }}</label>
+                <div class="flex gap-2">
+                  <input class="form-control dl-rcode-input" style="width:140px; letter-spacing:0.3em; font-weight:700; font-size:1.2rem;" maxlength="4" inputmode="numeric" autocomplete="off" [(ngModel)]="code" name="dlrcode" placeholder="••••" />
+                  <button class="btn btn-primary dl-collect-confirm" [disabled]="busy || !code.trim()" (click)="collect(r)">{{ 'Confirm with the code' | translate }}</button>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-secondary mt-2" (click)="openReturn = null">{{ 'Cancel' | translate }}</button>
+            </div>
+          </div>
+        </ng-container>
+
         <p class="text-muted dl-help" style="font-size:0.85rem;">
           {{ 'The customer is not there, refuses, or keeps only part of the goods? Do not hand over: call the shop, who records it.' | translate }}
           <a *ngIf="board.shopPhone" [href]="'tel:' + board.shopPhone">📞 {{ board.shopPhone }}</a>
@@ -118,6 +146,7 @@ export class DriverLinkComponent implements OnInit, OnDestroy {
   error: string | null = null;
   message: string | null = null;
   open: number | null = null;
+  openReturn: number | null = null;
   code = '';
   private poll: ReturnType<typeof setInterval> | null = null;
 
@@ -138,7 +167,7 @@ export class DriverLinkComponent implements OnInit, OnDestroy {
       },
       error: () => { this.state = 'invalid'; },
     });
-    this.poll = setInterval(() => { if (this.state === 'board' && !this.busy && this.open === null) this.load(); }, 20000);
+    this.poll = setInterval(() => { if (this.state === 'board' && !this.busy && this.open === null && this.openReturn === null) this.load(); }, 20000);
   }
 
   ngOnDestroy(): void {
@@ -165,6 +194,7 @@ export class DriverLinkComponent implements OnInit, OnDestroy {
     this.session = '';
     this.board = null;
     this.open = null;
+    this.openReturn = null;
     try { localStorage.removeItem(this.key()); } catch { /* nothing kept */ }
     this.state = 'pin';
     this.error = message;
@@ -190,8 +220,39 @@ export class DriverLinkComponent implements OnInit, OnDestroy {
     return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([o.customerAddress, o.zoneName].filter(Boolean).join(', '));
   }
 
+  mapLinkOf(address: string | null, zone: string | null): string {
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([address, zone].filter(Boolean).join(', '));
+  }
+
+  startReturn(r: DriverReturnJob): void {
+    this.openReturn = r.id;
+    this.open = null;
+    this.code = '';
+    this.message = null;
+    this.error = null;
+  }
+
+  collect(r: DriverReturnJob): void {
+    this.busy = true;
+    this.error = null;
+    this.api.driverCollect(this.token, this.session, r.id, { code: this.code.trim() }).subscribe({
+      next: (b) => {
+        this.busy = false;
+        this.openReturn = null;
+        this.board = b;
+        this.message = T('Return {p0} collected. Bring the goods to the shop.', { p0: r.code });
+      },
+      error: (e) => {
+        this.busy = false;
+        if (e?.status === 403) this.signedOut(e?.error?.message ?? T('Type your PIN to continue.'));
+        else this.error = e?.error?.message ?? T('That did not work');
+      },
+    });
+  }
+
   start(o: DriverJob): void {
     this.open = o.id;
+    this.openReturn = null;
     this.code = '';
     this.message = null;
     this.error = null;

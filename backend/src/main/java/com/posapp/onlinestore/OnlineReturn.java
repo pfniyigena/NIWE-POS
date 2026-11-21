@@ -29,7 +29,7 @@ public class OnlineReturn extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "online_order_id", nullable = false)
     private OnlineOrder onlineOrder;
-    /** REQUESTED, APPROVED, REFUSED or REFUNDED. */
+    /** REQUESTED, APPROVED, COLLECTED (a driver has the goods), REFUSED or REFUNDED. */
     private String status = "REQUESTED";
     private String reason;
     /** What staff wrote when they decided (the reason of a refusal, or where to bring the goods). */
@@ -46,6 +46,40 @@ public class OnlineReturn extends BaseEntity {
     private Long salesOrderReturnId;
     private String salesOrderReturnNumber;
     private Long locationId;
+
+    /** v1.62.0: the driver who collects the goods from the customer (delivery orders only), and the return code the customer gives him. */
+    private Long pickupDriverId;
+    private String pickupDriverName;
+    private String pickupDriverPhone;
+    private String pickupCode;
+    private int pickupFailures = 0;
+    private Instant pickupFailedAt;
+    /** When the driver collected the goods, and who (COLLECTED: waiting to be checked and refunded). */
+    private Instant collectedAt;
+    private String collectedBy;
+
+    /** The return code, made when a return of a delivered order is approved. */
+    public String ensurePickupCode() {
+        if (pickupCode == null || pickupCode.isBlank()) {
+            pickupCode = String.format("%04d", new java.security.SecureRandom().nextInt(10000));
+            pickupFailures = 0;
+            pickupFailedAt = null;
+        }
+        return pickupCode;
+    }
+
+    /** A new return code, different from the one before; the wrong-code counter starts again. */
+    public String reissuePickupCode() {
+        String old = pickupCode;
+        String fresh;
+        do {
+            fresh = String.format("%04d", new java.security.SecureRandom().nextInt(10000));
+        } while (fresh.equals(old));
+        pickupCode = fresh;
+        pickupFailures = 0;
+        pickupFailedAt = null;
+        return fresh;
+    }
 
     @OneToMany(mappedBy = "onlineReturn", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")

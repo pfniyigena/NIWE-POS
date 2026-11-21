@@ -108,7 +108,7 @@ export interface ShopAddress { id: number; label: string; zoneId: number | null;
 export interface AccountSession { token: string; profile: AccountProfile }
 export interface AccountOrder { code: string; status: string; deliveryMethod: string; total: number; placedAt: string; items: number; paymentStatus: string; invoiceNumber: string | null; receiptCode: string | null; canConfirm: boolean }
 /** A return of one of the customer's orders (My returns). */
-export interface AccountReturn { orderCode: string; data: { code: string; status: string; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null; refundReference: string | null; requestedAt: string; decidedAt: string | null; refundedAt: string | null; lines: { name: string; quantity: number; amount: number }[] } }
+export interface AccountReturn { orderCode: string; data: { collection: boolean; pickupCode: string | null; driverName: string | null; driverPhone: string | null; collectedAt: string | null; code: string; status: string; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null; refundReference: string | null; requestedAt: string; decidedAt: string | null; refundedAt: string | null; lines: { name: string; quantity: number; amount: number }[] } }
 /** The products of an earlier order as the shop has them today; unavailable names what is gone or sold out. */
 export interface Reorder { lines: { product: ShopProduct; quantity: number }[]; unavailable: string[] }
 /** kind: EARN, SPEND, SPEND_BACK, RET_BACK, RET_TAKE or ADJUST; points is signed. */
@@ -169,7 +169,8 @@ export interface SlotSettings { enabled: boolean; required: boolean; daysAhead: 
 export interface ClosedDay { id: number; day: string; reason: string | null }
 export interface DriverCashLine { code: string; customerName: string; at: string | null; collected: number; handedIn: number | null; difference: number | null }
 export interface DriverCash { holding: number; waiting: DriverCashLine[]; settled: DriverCashLine[] }
-export interface DriverBoard { driverName: string; shopName: string | null; shopPhone: string | null; jobs: DriverJob[]; cash: DriverCash }
+export interface DriverReturnJob { id: number; code: string; orderCode: string; customerName: string; customerPhone: string; customerAddress: string | null; zoneName: string | null; reason: string; lines: DriverLine[] }
+export interface DriverBoard { driverName: string; shopName: string | null; shopPhone: string | null; jobs: DriverJob[]; cash: DriverCash; returnJobs: DriverReturnJob[] }
 export interface DriverSession { session: string; driverName: string; expiresAt: string }
 /** A customer waiting for a sold-out product (staff view), and a product customers are waiting for. */
 export interface StockAlert { id: number; productId: number; productName: string; email: string | null; phone: string | null; language: string; status: string; createdAt: string; notifiedAt: string | null; notifiedBy: string | null }
@@ -195,7 +196,7 @@ export interface PaymentRow {
 }
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
-export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; reviewsPending?: number; messagesNew?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
+export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; returnsCollected?: number; reviewsPending?: number; messagesNew?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
 /** Information pages (Terms, Privacy, Returns, Delivery) and the contact form. */
 export interface InfoLink { slug: string; title: string }
 export interface InfoPage { slug: string; title: string; body: string }
@@ -247,7 +248,8 @@ export interface TaxOption { id: number; code: string; name: string; ratePercent
 
 /** What the customer sees about a return: its status, what staff said and, once done, what was given back and how. */
 export interface ShopReturn {
-  code: string; status: 'REQUESTED' | 'APPROVED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null;
+  collection: boolean; pickupCode: string | null; driverName: string | null; driverPhone: string | null; collectedAt: string | null;
+  code: string; status: 'REQUESTED' | 'APPROVED' | 'COLLECTED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: string | null;
   refundReference: string | null; requestedAt: string; decidedAt: string | null; refundedAt: string | null; lines: { name: string; quantity: number; amount: number }[];
 }
 export interface ShopReturnLine { lineId: number; name: string; quantity: number; unitPaid: number; returnable: number }
@@ -255,9 +257,11 @@ export interface ShopReturnLine { lineId: number; name: string; quantity: number
 export interface ShopReturnOptions { allowed: boolean; message: string | null; windowDays: number; lastDay: string | null; lines: ShopReturnLine[]; returns: ShopReturn[] }
 export interface StoreReturn {
   id: number; code: string; orderId: number; orderCode: string; customerName: string; customerPhone: string; customerEmail: string | null;
-  status: 'REQUESTED' | 'APPROVED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: 'PROVIDER' | 'MANUAL' | 'CASH' | null;
+  status: 'REQUESTED' | 'APPROVED' | 'COLLECTED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: 'PROVIDER' | 'MANUAL' | 'CASH' | null;
   refundReference: string | null; paymentMethod: string; paymentStatus: string; requestedAt: string; decidedBy: string | null; decidedAt: string | null;
   refundedBy: string | null; refundedAt: string | null; salesOrderReturnNumber: string | null; lines: { lineId: number; name: string; quantity: number; amount: number }[];
+  /** v1.62.0: a driver collects the goods at the customer's address (delivery orders). */
+  collect: boolean; customerAddress: string | null; driverId: number | null; driverName: string | null; driverPhone: string | null; collectedAt: string | null; collectedBy: string | null; hasCode: boolean;
 }
 
 const TOKEN_KEY = 'niwe.shop.token';
@@ -433,6 +437,9 @@ export class OnlineStoreApiService {
   driverReceive(token: string, session: string, orderId: number, body: { code: string }): Observable<DriverBoard> {
     return this.http.post<DriverBoard>(`${API_BASE}/public/driver/${encodeURIComponent(token)}/orders/${orderId}/receive`, body, { headers: new HttpHeaders({ 'X-Driver-Session': session }) });
   }
+  driverCollect(token: string, session: string, returnId: number, body: { code: string }): Observable<DriverBoard> {
+    return this.http.post<DriverBoard>(`${API_BASE}/public/driver/${encodeURIComponent(token)}/returns/${returnId}/collect`, body, { headers: new HttpHeaders({ 'X-Driver-Session': session }) });
+  }
   assignDriver(id: number, driverId: number | null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/driver`, { driverId }); }
   deliverySlip(id: number): Observable<Blob> { return this.http.get(`${this.base}/orders/${id}/delivery-slip`, { responseType: 'blob' }); }
   deliveryRun(driverId: number): Observable<Blob> { return this.http.get(`${this.base}/delivery-run`, { params: { driverId }, responseType: 'blob' }); }
@@ -478,7 +485,9 @@ export class OnlineStoreApiService {
   returnsPage(f: ListFilter, page: number, size: number): Observable<PageResult<StoreReturn>> {
     return pagedList<StoreReturn>(this.http, `${this.base}/returns`, f, page, size, {});
   }
-  approveReturn(id: number, note: string): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/approve`, { note: note.trim() || null }); }
+  approveReturn(id: number, note: string, driverId: number | null = null): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/approve`, { note: note.trim() || null, driverId }); }
+  returnDriver(id: number, driverId: number | null): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/driver`, { driverId }); }
+  returnNewCode(id: number): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/code`, {}); }
   refuseReturn(id: number, note: string): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/refuse`, { note }); }
   /** The goods are back: stock and books through the sale order return, and the money given back the way the customer paid. */
   processReturn(id: number, body: { locationId: number | null; manual: boolean; reference: string | null; note: string | null }): Observable<StoreReturn> {

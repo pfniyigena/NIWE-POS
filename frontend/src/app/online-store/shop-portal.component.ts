@@ -143,6 +143,12 @@ export type PortalSection = (typeof PORTAL_SECTIONS)[number];
               </div>
               <ul style="margin:0.3rem 0; padding-left:1.1rem;"><li *ngFor="let l of r.data.lines">{{ l.quantity }} × {{ l.name }}</li></ul>
               <div class="text-muted" style="font-size:0.85rem;">{{ 'Reason: {p0}' | translate: { p0: r.data.reason } }}</div>
+              <div class="portal-return-pick" *ngIf="r.data.collection && r.data.status === 'APPROVED'" style="margin-top:0.3rem; border:1px solid #1d4ed8; border-radius:6px; padding:0.5rem;">
+                <div>{{ 'A driver will come to collect the goods. No charge.' | translate }}<span *ngIf="r.data.driverName"> {{ 'Driver: {p0}' | translate: { p0: r.data.driverName } }}<span *ngIf="r.data.driverPhone"> · {{ r.data.driverPhone }}</span></span></div>
+                <div *ngIf="r.data.pickupCode">{{ 'Your return code' | translate }}: <strong class="portal-return-code" style="letter-spacing:0.25em; font-size:1.2rem;">{{ r.data.pickupCode }}</strong></div>
+                <div class="text-muted" style="font-size:0.8rem;">{{ 'Give the code to the driver only when you hand over the goods.' | translate }}</div>
+              </div>
+              <div class="text-muted portal-return-got" *ngIf="r.data.status === 'COLLECTED'" style="font-size:0.85rem;">{{ 'Our driver has your goods. We will check them and refund you.' | translate }}</div>
               <div *ngIf="r.data.staffNote" class="text-muted" style="font-size:0.85rem;">{{ 'The shop says: {p0}' | translate: { p0: r.data.staffNote } }}</div>
             </div>
           </div>
@@ -211,7 +217,7 @@ export class ShopPortalComponent implements OnInit, OnChanges {
       case 'orders': return this.ordersIn('OPEN').length;
       case 'invoices': return this.invoiced().length;
       case 'wishlist': return this.wish.count;
-      case 'returns': return this.returns ? this.returns.filter((r) => r.data.status === 'REQUESTED' || r.data.status === 'APPROVED').length : 0;
+      case 'returns': return this.returns ? this.returns.filter((r) => r.data.status === 'REQUESTED' || r.data.status === 'APPROVED' || r.data.status === 'COLLECTED').length : 0;
       default: return 0;
     }
   }
@@ -260,11 +266,11 @@ export class ShopPortalComponent implements OnInit, OnChanges {
   }
 
   returnLabel(s: string): string {
-    return ({ REQUESTED: 'Waiting for an answer', APPROVED: 'Approved', REFUSED: 'Refused', REFUNDED: 'Refunded' } as Record<string, string>)[s] ?? s;
+    return ({ REQUESTED: 'Waiting for an answer', APPROVED: 'Approved', COLLECTED: 'Collected', REFUSED: 'Refused', REFUNDED: 'Refunded' } as Record<string, string>)[s] ?? s;
   }
 
   returnColor(s: string): string {
-    return s === 'REFUSED' ? '#b91c1c' : s === 'REFUNDED' ? '#15803d' : s === 'APPROVED' ? '#1d4ed8' : '#b45309';
+    return s === 'REFUSED' ? '#b91c1c' : s === 'REFUNDED' ? '#15803d' : s === 'APPROVED' || s === 'COLLECTED' ? '#1d4ed8' : '#b45309';
   }
 
   reorder(o: AccountOrder): void {

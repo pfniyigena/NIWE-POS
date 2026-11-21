@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.62.0 - Online Store: return pick-ups
+
+A return of a delivered order is collected from the customer by a driver, free of charge. Approving the return makes a 4-digit return code (sent by e-mail and text); staff choose the driver (now or later); the driver sees **Returns to collect** on his private page and confirms the collection with the code the customer gives him. New status **Collected**, new tab, and "Goods received: put back and refund" works from Approved or Collected as before. Returns of orders picked up at the shop are still brought back by the customer. Five wrong codes lock a return for half an hour; staff can make a new code. New migration V96. See `RELEASE-NOTES-v1.62.0.md` and `docs/online-store-return-pickups.md`.
+
 ## v1.61.0 - Online Store: delivery time slots
 
 Customers can choose a delivery day and a time window at checkout. The shop sets the windows (with a limit of orders per window and day, and the weekdays each one exists), days without deliveries, how many days ahead can be booked and the notice before a window starts (Shop settings > Delivery times). "As soon as possible" stays allowed unless the shop makes the choice compulsory. A full window cannot be chosen, even when two customers order at the same moment. The window shows on the order page, the confirmation messages, Online orders (staff can change it), the driver's page, the delivery slip and the run sheet (sorted by window). New migration V95. See `RELEASE-NOTES-v1.61.0.md` and `docs/online-store-delivery-slots.md`.
