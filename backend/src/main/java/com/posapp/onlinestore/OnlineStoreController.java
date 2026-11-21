@@ -34,6 +34,8 @@ public class OnlineStoreController {
     private final OnlineReturnService returns;
     @org.springframework.beans.factory.annotation.Autowired
     private OnlinePayoutService payouts;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineProviderAccountService providerAccountService;
     private final OnlineReviewService reviews;
     private final NewsletterService newsletter;
     private final NewsletterCampaignService campaigns;
@@ -329,6 +331,19 @@ public class OnlineStoreController {
     }
 
     /** v1.74.0: the branches the shop may sell for (Shop settings). */
+    /** v1.76.0: the accounts each payment provider uses (Online Store > Payments > Accounts by provider). */
+    @PreAuthorize(VIEW)
+    @GetMapping("/provider-accounts")
+    public OnlineProviderAccountService.View providerAccounts() {
+        return providerAccountService.view();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PutMapping("/provider-accounts/{code}")
+    public OnlineProviderAccountService.View saveProviderAccounts(@PathVariable String code, @Valid @RequestBody OnlineProviderAccountService.SaveRequest request) {
+        return providerAccountService.save(code, request);
+    }
+
     @PreAuthorize(VIEW)
     @GetMapping("/branches")
     public List<OnlineStoreDtos.BranchOption> branches() {

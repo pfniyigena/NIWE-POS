@@ -69,6 +69,8 @@ import java.util.List;
  */
 @Service
 public class AccountingService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineProviderAccounts providerAccounts;
 
     private static final Logger log = LoggerFactory.getLogger(AccountingService.class);
 
@@ -325,37 +327,16 @@ public class AccountingService {
                 salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getBranchId() : null);
     }
 
-    /**
-     * The ledger channel of an online payment: the provider that took it (v1.75.0: MTN, AIRTEL), CARD for a card, otherwise MOBILE_MONEY (a provider with no account of its
-     * own, and every payment made before v1.75.0).
-     */
-    public static String ledgerChannel(String provider, String method) {
-        if ("CARD".equalsIgnoreCase(method)) return "CARD";
-        if ("MTN_MOMO".equalsIgnoreCase(provider)) return "MTN";
-        if ("AIRTEL_MONEY".equalsIgnoreCase(provider)) return "AIRTEL";
-        return "MOBILE_MONEY";
+    /** The shared clearing account of a channel that has no provider account (CARD, otherwise mobile money). */
+    private static String sharedClearingKey(String channel) {
+        return "CARD".equalsIgnoreCase(channel) ? AccountService.ONLINE_CLEARING_CARD : AccountService.ONLINE_CLEARING_MOBILE;
     }
 
-    /** The clearing account of a ledger channel (what the provider still owes the shop). */
-    public static String clearingKey(String channel) {
-        if (channel == null) return AccountService.ONLINE_CLEARING_MOBILE;
-        return switch (channel.toUpperCase(java.util.Locale.ROOT)) {
-            case "CARD" -> AccountService.ONLINE_CLEARING_CARD;
-            case "MTN" -> AccountService.ONLINE_CLEARING_MTN;
-            case "AIRTEL" -> AccountService.ONLINE_CLEARING_AIRTEL;
-            default -> AccountService.ONLINE_CLEARING_MOBILE;
-        };
-    }
-
-    /** Where a ledger channel's payouts arrive: its own wallet or bank account (Cash and Bank for the channels that have none). */
-    public static String walletKey(String channel) {
-        if (channel == null) return AccountService.CASH;
-        return switch (channel.toUpperCase(java.util.Locale.ROOT)) {
-            case "CARD" -> AccountService.BANK_CARD;
-            case "MTN" -> AccountService.WALLET_MTN;
-            case "AIRTEL" -> AccountService.WALLET_AIRTEL;
-            default -> AccountService.CASH;
-        };
+    /** A line on the clearing account of an online payment channel: the provider's own account (v1.76.0: chosen in Accounts by provider), else the shared Card or Mobile Money one. */
+    private void addClearing(List<LineSpec> lines, String channel, BigDecimal amount, String description, boolean debit) {
+        Account own = providerAccounts.clearingOf(channel);
+        if (own != null) addAccountLine(lines, own, amount, description, debit, null);
+        else addIfPositive(lines, sharedClearingKey(channel), amount, description, debit);
     }
 
     /**
@@ -368,7 +349,7 @@ public class AccountingService {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, null, true);
-        if (clearingChannel != null) addIfPositive(lines, clearingKey(clearingChannel), amount, "Refunded through the payment provider", false);
+        if (clearingChannel != null) addClearing(lines, clearingChannel, amount, "Refunded through the payment provider", false);
         else addIfPositive(lines, AccountService.CASH, amount, "Cash handed back", false);
         post("ONLINE_REFUND", onlineReturnId, memo, null, lines, branchId);
     }
@@ -378,7 +359,7 @@ public class AccountingService {
     public void postOnlinePaymentReceived(Long paymentId, BigDecimal amount, String channel, String memo, Long branchId) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, clearingKey(channel), amount, null, true);
+        addClearing(lines, channel, amount, null, true);
         addIfPositive(lines, AccountService.ONLINE_DEPOSITS, amount, null, false);
         post("ONLINE_PAYMENT", paymentId, memo, null, lines, branchId);
     }
@@ -393,7 +374,7 @@ public class AccountingService {
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.ONLINE_DEPOSITS, amount, null, true);
         if (manual) addIfPositive(lines, AccountService.CASH, amount, "Refunded by hand", false);
-        else addIfPositive(lines, clearingKey(channel), amount, "Refunded through the payment provider", false);
+        else addClearing(lines, channel, amount, "Refunded through the payment provider", false);
         post("ONLINE_DEPOSIT_REFUND", orderId, memo, null, lines, branchId);
     }
 
@@ -406,9 +387,11 @@ public class AccountingService {
         if (gross == null || gross.compareTo(BigDecimal.ZERO) <= 0) return;
         BigDecimal net = gross.subtract(fee == null ? BigDecimal.ZERO : fee);
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, walletKey(channel), net, "Payout received", true);
+        Account payout = providerAccounts.payoutOf(channel);
+        if (payout != null) addAccountLine(lines, payout, net, "Payout received", true, null);
+        else addIfPositive(lines, AccountService.CASH, net, "Payout received", true);
         addIfPositive(lines, AccountService.PAYMENT_FEES, fee, "Provider fee", true);
-        addIfPositive(lines, clearingKey(channel), gross, null, false);
+        addClearing(lines, channel, gross, null, false);
         post("ONLINE_PAYOUT", payoutId, memo, when, lines, null);
     }
 
@@ -683,7 +666,7 @@ public class AccountingService {
             BigDecimal use = money.depositLeft().min(payment.getAmount()).max(BigDecimal.ZERO);
             addIfPositive(lines, AccountService.ONLINE_DEPOSITS, use, "Online payment applied", true);
             rest = payment.getAmount().subtract(use);
-            addIfPositive(lines, clearingKey(money.channel()), rest, null, true);
+            addClearing(lines, money.channel(), rest, null, true);
         } else if (money != null && "DELIVERY".equals(money.deliveryMethod()) && "CASH".equalsIgnoreCase(payment.getMethod())) {
             // v1.72.0: cash a delivery driver took at the door is not in the shop's hands yet: Cash with Drivers, until he hands it in (Online Store > Driver cash).
             addIfPositive(lines, AccountService.DRIVER_CASH, payment.getAmount(), "Collected by the driver", true);

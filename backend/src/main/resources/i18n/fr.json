@@ -2198,5 +2198,15 @@
  "Loyalty points given back after a return": "Points de fidélité rendus après un retour",
  "Loyalty points taken back after a return": "Points de fidélité repris après un retour",
  "Choose an active branch.": "Choisissez une succursale active.",
- "Choose the provider that paid out": "Choisissez le prestataire qui a effectué le versement"
+ "Choose the provider that paid out": "Choisissez le prestataire qui a effectué le versement",
+ "Enter a code for the new account": "Saisissez un code pour le nouveau compte",
+ "That account does not exist": "Ce compte n'existe pas",
+ "Choose an active asset account": "Choisissez un compte d'actif actif",
+ "That provider does not exist": "Ce prestataire n'existe pas",
+ "The clearing account and the payout account must be different": "Le compte à encaisser et le compte de versement doivent être différents",
+ "Choose an ordinary account for what the provider owes, or create a new one": "Choisissez un compte ordinaire pour ce que le prestataire doit, ou créez-en un nouveau",
+ "That account is already used by {0}": "Ce compte est déjà utilisé par {0}",
+ "That account is shared by the providers that have none of their own": "Ce compte est partagé par les prestataires qui n'ont pas de compte propre",
+ "Choose a wallet or bank account for the payouts, or create a new one": "Choisissez un compte de portefeuille ou de banque pour les versements, ou créez-en un nouveau",
+ "{0} still owes you {1}. Record its payouts first, then change the account.": "{0} vous doit encore {1}. Enregistrez d'abord ses versements, puis changez le compte."
 }

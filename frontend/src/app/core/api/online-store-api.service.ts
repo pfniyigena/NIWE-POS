@@ -213,8 +213,13 @@ export interface PaymentRow {
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
 /** v1.71.0: payouts from the payment providers. balance = what the provider still owes the shop (the clearing account of the books). */
-export interface PayoutBalance { channel: 'MTN' | 'AIRTEL' | 'CARD' | 'MOBILE_MONEY'; balance: number }
-export interface Payout { id: number; channel: string; gross: number; fee: number; net: number; reference: string | null; note: string | null; paidOn: string; createdBy: string | null }
+export interface PayoutBalance { channel: string; label: string | null; balance: number }
+export interface Payout { id: number; channel: string; label: string | null; gross: number; fee: number; net: number; reference: string | null; note: string | null; paidOn: string; createdBy: string | null }
+/** v1.76.0: the accounts a payment provider uses. */
+export interface ProviderAccountOption { id: number; code: string; name: string }
+export interface ProviderAccountRow { code: string; label: string; active: boolean; available: boolean; methods: string[]; clearing: ProviderAccountOption | null; payout: ProviderAccountOption | null; source: 'SET' | 'DEFAULT' | 'NONE'; clearingBalance: number }
+export interface ProviderAccountsView { providers: ProviderAccountRow[]; accounts: ProviderAccountOption[]; suggestedClearingCode: string | null; suggestedPayoutCode: string | null }
+export interface ProviderAccountsSave { clearingAccountId: number | null; newClearingName: string | null; newClearingCode: string | null; payoutAccountId: number | null; newPayoutName: string | null; newPayoutCode: string | null }
 export interface PayoutOverview { balances: PayoutBalance[]; payouts: Payout[]; feesToDate: number }
 export interface PayoutRequest { channel: string; gross: number; fee: number; paidOn: string | null; reference: string | null; note: string | null }
 export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; returnsCollected?: number; reviewsPending?: number; messagesNew?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
@@ -535,6 +540,8 @@ export class OnlineStoreApiService {
     return this.http.get<Reconciliation>(`${this.base}/payments`, { params });
   }
   payoutOverview(): Observable<PayoutOverview> { return this.http.get<PayoutOverview>(`${this.base}/payouts`); }
+  providerAccounts(): Observable<ProviderAccountsView> { return this.http.get<ProviderAccountsView>(`${this.base}/provider-accounts`); }
+  saveProviderAccounts(code: string, r: ProviderAccountsSave): Observable<ProviderAccountsView> { return this.http.put<ProviderAccountsView>(`${this.base}/provider-accounts/${encodeURIComponent(code)}`, r); }
   recordPayout(r: PayoutRequest): Observable<Payout> { return this.http.post<Payout>(`${this.base}/payouts`, r); }
   resolvePayment(id: number, note: string): Observable<void> { return this.http.post<void>(`${this.base}/payments/${id}/resolve`, { note }); }
   providers(): Observable<PaymentProvider[]> { return this.http.get<PaymentProvider[]>(`${this.base}/payment-providers`); }

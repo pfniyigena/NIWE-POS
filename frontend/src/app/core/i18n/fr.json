@@ -9647,5 +9647,17 @@
  "Branch the shop sells for": "Succursale pour laquelle la boutique vend",
  "still owed by the provider": "encore dû par l'opérateur",
  "Mobile money (earlier payments)": "Mobile money (paiements antérieurs)",
- "Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to the provider's own wallet or bank account, the fee to Payment Provider Fees.": "Le brut est ce que les clients ont payé et que ce versement couvre. Les frais sont ce que le prestataire a retenu. La comptabilité retire le brut de ce que le prestataire vous doit : le reste va sur le compte (portefeuille ou banque) propre au prestataire, les frais en Frais des prestataires de paiement."
+ "Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to the provider's own wallet or bank account, the fee to Payment Provider Fees.": "Le brut est ce que les clients ont payé et que ce versement couvre. Les frais sont ce que le prestataire a retenu. La comptabilité retire le brut de ce que le prestataire vous doit : le reste va sur le compte (portefeuille ou banque) propre au prestataire, les frais en Frais des prestataires de paiement.",
+ "Accounts by provider": "Comptes par prestataire",
+ "Choose the accounts each provider uses. Its payments and payouts are booked to them, so each balance can be matched to that provider's own statement. A provider with none uses the shared accounts, and its payouts arrive in Cash and Bank.": "Choisissez les comptes que chaque prestataire utilise. Ses paiements et ses versements y sont enregistrés, ce qui permet de rapprocher chaque solde du relevé du prestataire. Un prestataire sans compte utilise les comptes communs, et ses versements arrivent en Caisse et banque.",
+ "Provider": "Prestataire",
+ "What the provider still owes you": "Ce que le prestataire vous doit encore",
+ "Payouts arrive in": "Les versements arrivent sur",
+ "None (shared account)": "Aucun (compte commun)",
+ "None (Cash and Bank)": "Aucun (Caisse et banque)",
+ "Create a new account...": "Créer un nouveau compte...",
+ "Not switched on": "Pas activé",
+ "Accounts saved": "Comptes enregistrés",
+ "Clearing": "à encaisser",
+ "Wallet": "portefeuille"
 }

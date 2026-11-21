@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.76.0 - Online Store accounting: choose the accounts of each payment provider
+
+Online Store > Payments > Accounts by provider: for each payment provider, choose (or create) the account for what it still owes you and the wallet or bank account its payouts arrive in. Payouts are recorded per provider. Apply after v1.75.0. Migration V106. See `RELEASE-NOTES-v1.76.0.md` and `docs/online-store-accounting.md`.
+
 ## v1.75.0 - Online Store accounting: an account for each payment provider
 
 MTN, Airtel and card each have their own clearing account and their own wallet or bank account; Payouts records a payout per provider. Apply after v1.74.0. Migration V105. See `RELEASE-NOTES-v1.75.0.md` and `docs/online-store-accounting.md`.

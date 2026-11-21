@@ -39,7 +39,7 @@ public class OnlineOrder extends BaseEntity {
     private String paymentStatus = "NONE";
     /** MOBILE_MONEY or CARD, once paid. */
     private String paymentChannel;
-    /** v1.75.0: the ledger channel the payment was booked to (MTN, AIRTEL, CARD or MOBILE_MONEY); empty for orders paid before this version: they use the payment channel. */
+    /** v1.75.0: the ledger channel the payment was booked to (the provider's code, CARD or MOBILE_MONEY); empty for orders paid before this version: they use the payment channel. */
     private String clearingChannel;
     /** The provider's reference of the payment that was accepted. */
     private String paymentReference;

@@ -42,6 +42,8 @@ import java.util.Map;
 public class OnlinePaymentService {
     @org.springframework.beans.factory.annotation.Autowired
     private OnlineBooks books;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.accounting.OnlineProviderAccounts providerAccounts;
 
     private final ShopLoyaltyService loyalty;
 
@@ -276,7 +278,7 @@ public class OnlinePaymentService {
         o.setPaidAmount(pay.getAmount());
         o.setPaidAt(now);
         // v1.71.0: the money is in the books from now on, held for the order (Online Customer Deposits) against the provider's clearing account.
-        o.setClearingChannel(com.posapp.accounting.AccountingService.ledgerChannel(pay.getProvider(), pay.getMethod()));
+        o.setClearingChannel(providerAccounts.channelFor(pay.getProvider(), pay.getMethod()));
         accounting.postOnlinePaymentReceived(pay.getId(), pay.getAmount(), o.getClearingChannel(),
                 "Online payment " + pay.getReference() + " (" + pay.getMethod() + ") (online order " + o.getCode() + ")", books.branchFor(o));
         o.setDepositLeft(pay.getAmount());

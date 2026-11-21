@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, PaymentRow, PaymentSummary, PayoutOverview } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, PaymentRow, PaymentSummary, PayoutOverview, ProviderAccountRow, ProviderAccountsView } from '../core/api/online-store-api.service';
 import { T } from '../core/i18n/t';
 
 /**
@@ -47,6 +47,42 @@ import { T } from '../core/i18n/t';
       </div>
       <p class="text-muted" style="font-size:0.85rem;">{{ 'An online payment is recorded in the books when the provider confirms it: it is held for the order (Online customer deposits) against what the provider owes you. It becomes a payment on the invoice when the order is completed. A refund is possible until then; after the order is completed use a sales return. Record each payout from the provider below.' | translate }}</p>
 
+      <div class="card mb-3 sp-accounts" style="padding:0.8rem 1rem;" *ngIf="pa">
+        <h5 class="mb-1">{{ 'Accounts by provider' | translate }}</h5>
+        <p class="text-muted mb-2" style="font-size:0.8rem;">{{ 'Choose the accounts each provider uses. Its payments and payouts are booked to them, so each balance can be matched to that provider\'s own statement. A provider with none uses the shared accounts, and its payouts arrive in Cash and Bank.' | translate }}</p>
+        <table class="table-sm pa-table">
+          <thead><tr><th>{{ 'Provider' | translate }}</th><th>{{ 'What the provider still owes you' | translate }}</th><th>{{ 'Payouts arrive in' | translate }}</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let r of pa.providers" [class]="'pa-row pa-' + r.code">
+              <td><strong>{{ r.label }}</strong><br /><span class="text-muted" style="font-size:0.75rem;">{{ (r.active ? 'Switched on' : 'Not switched on') | translate }}</span></td>
+              <td>
+                <select class="form-select pa-clearing" style="min-width:220px;" [(ngModel)]="pe[r.code].clearing" [name]="'pc' + r.code">
+                  <option [ngValue]="0">{{ 'None (shared account)' | translate }}</option>
+                  <option *ngFor="let a of pa.accounts" [ngValue]="a.id">{{ a.code }} {{ a.name }}</option>
+                  <option [ngValue]="-1">{{ 'Create a new account...' | translate }}</option>
+                </select>
+                <div class="flex gap-1 mt-1" *ngIf="pe[r.code].clearing === -1">
+                  <input class="form-control pa-clearing-name" style="width:170px;" maxlength="120" [(ngModel)]="pe[r.code].clearingName" [name]="'pcn' + r.code" [placeholder]="'Name' | translate" />
+                  <input class="form-control pa-clearing-code" style="width:80px;" maxlength="20" [(ngModel)]="pe[r.code].clearingCode" [name]="'pcc' + r.code" [placeholder]="'Code' | translate" />
+                </div>
+              </td>
+              <td>
+                <select class="form-select pa-payout" style="min-width:220px;" [(ngModel)]="pe[r.code].payout" [name]="'pp' + r.code">
+                  <option [ngValue]="0">{{ 'None (Cash and Bank)' | translate }}</option>
+                  <option *ngFor="let a of pa.accounts" [ngValue]="a.id">{{ a.code }} {{ a.name }}</option>
+                  <option [ngValue]="-1">{{ 'Create a new account...' | translate }}</option>
+                </select>
+                <div class="flex gap-1 mt-1" *ngIf="pe[r.code].payout === -1">
+                  <input class="form-control pa-payout-name" style="width:170px;" maxlength="120" [(ngModel)]="pe[r.code].payoutName" [name]="'ppn' + r.code" [placeholder]="'Name' | translate" />
+                  <input class="form-control pa-payout-code" style="width:80px;" maxlength="20" [(ngModel)]="pe[r.code].payoutCode" [name]="'ppc' + r.code" [placeholder]="'Code' | translate" />
+                </div>
+              </td>
+              <td><button class="btn btn-sm btn-primary pa-save" [disabled]="busy" (click)="saveAccounts(r)">{{ 'Save' | translate }}</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="card mb-3 sp-payouts" style="padding:0.8rem 1rem;" *ngIf="payouts">
         <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.5rem;">
           <h5 class="mb-0">{{ 'Payouts from the providers' | translate }}</h5>
@@ -54,14 +90,14 @@ import { T } from '../core/i18n/t';
         </div>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
           <div class="card" style="padding:0.5rem 0.8rem; min-width:190px;" *ngFor="let b of payouts.balances">
-            <div class="text-muted" style="font-size:0.8rem;">{{ chanLabel(b.channel) }}: {{ 'still owed by the provider' | translate }}</div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ chanLabel(b.channel, b.label) }}: {{ 'still owed by the provider' | translate }}</div>
             <strong [class]="'sp-owed-' + b.channel">{{ b.balance | number: '1.0-2' }}</strong>
           </div>
         </div>
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group"><label class="form-label">{{ 'Way' | translate }}</label>
             <select class="form-select po-channel" [(ngModel)]="po.channel" name="poch" (ngModelChange)="suggest()">
-              <option *ngFor="let b of payouts.balances" [value]="b.channel">{{ chanLabel(b.channel) }}</option>
+              <option *ngFor="let b of payouts.balances" [value]="b.channel">{{ chanLabel(b.channel, b.label) }}</option>
             </select></div>
           <div class="form-group"><label class="form-label">{{ 'Paid by customers (gross)' | translate }}</label><input class="form-control po-gross" type="number" min="0" step="0.01" style="width:140px;" [(ngModel)]="po.gross" name="pogross" /></div>
           <div class="form-group"><label class="form-label">{{ 'Provider fee' | translate }}</label><input class="form-control po-fee" type="number" min="0" step="0.01" style="width:110px;" [(ngModel)]="po.fee" name="pofee" /></div>
@@ -74,7 +110,7 @@ import { T } from '../core/i18n/t';
         <table class="table-sm po-table" *ngIf="payouts.payouts.length">
           <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Way' | translate }}</th><th class="text-end">{{ 'Paid by customers (gross)' | translate }}</th><th class="text-end">{{ 'Provider fee' | translate }}</th><th class="text-end">{{ 'Reached the bank' | translate }}</th><th>{{ 'Reference' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
           <tbody><tr *ngFor="let p of payouts.payouts">
-            <td>{{ p.paidOn }}</td><td>{{ chanLabel(p.channel) }}</td>
+            <td>{{ p.paidOn }}</td><td>{{ chanLabel(p.channel, p.label) }}</td>
             <td class="text-end">{{ p.gross | number: '1.0-2' }}</td><td class="text-end">{{ p.fee | number: '1.0-2' }}</td><td class="text-end">{{ p.net | number: '1.0-2' }}</td>
             <td>{{ p.reference }}</td><td>{{ p.createdBy }}</td>
           </tr></tbody>
@@ -128,11 +164,14 @@ export class StorePaymentsComponent implements OnInit {
   loaded = false;
   payouts: PayoutOverview | null = null;
   /** v1.75.0: what each ledger channel is called (MTN and Airtel are brand names, the others are translated). */
-  chanLabel(c: string): string {
-    return c === 'MTN' ? 'MTN Mobile Money' : c === 'AIRTEL' ? 'Airtel Money' : c === 'CARD' ? T('Card') : T('Mobile money (earlier payments)');
+  chanLabel(c: string, label: string | null): string {
+    return label ? label : c === 'CARD' ? T('Card') : T('Mobile money (earlier payments)');
   }
 
-  po: { channel: string; gross: number | null; fee: number | null; paidOn: string; reference: string } = { channel: 'MTN', gross: null, fee: 0, paidOn: new Date().toISOString().slice(0, 10), reference: '' };
+  po: { channel: string; gross: number | null; fee: number | null; paidOn: string; reference: string } = { channel: '', gross: null, fee: 0, paidOn: new Date().toISOString().slice(0, 10), reference: '' };
+  /** v1.76.0: the accounts by provider, and what staff are choosing for each (0 = none, -1 = a new account). */
+  pa: ProviderAccountsView | null = null;
+  pe: Record<string, { clearing: number; payout: number; clearingName: string; clearingCode: string; payoutName: string; payoutCode: string }> = {};
   busy = false;
   error: string | null = null;
   message: string | null = null;
@@ -142,6 +181,40 @@ export class StorePaymentsComponent implements OnInit {
   ngOnInit(): void {
     this.load();
     this.loadPayouts();
+    this.loadAccounts();
+  }
+
+  loadAccounts(): void {
+    this.api.providerAccounts().subscribe({
+      next: (v) => {
+        this.pa = v;
+        for (const r of v.providers) {
+          this.pe[r.code] = { clearing: r.clearing?.id ?? 0, payout: r.payout?.id ?? 0, clearingName: r.label + ' ' + T('Clearing'), clearingCode: v.suggestedClearingCode ?? '', payoutName: r.label + ' ' + T('Wallet'), payoutCode: v.suggestedPayoutCode ?? '' };
+        }
+      },
+      error: () => (this.pa = null),
+    });
+  }
+
+  saveAccounts(r: ProviderAccountRow): void {
+    const e = this.pe[r.code];
+    this.busy = true;
+    this.error = null;
+    this.api.saveProviderAccounts(r.code, {
+      clearingAccountId: e.clearing > 0 ? e.clearing : null, newClearingName: e.clearing === -1 ? e.clearingName.trim() : null, newClearingCode: e.clearing === -1 ? e.clearingCode.trim() : null,
+      payoutAccountId: e.payout > 0 ? e.payout : null, newPayoutName: e.payout === -1 ? e.payoutName.trim() : null, newPayoutCode: e.payout === -1 ? e.payoutCode.trim() : null,
+    }).subscribe({
+      next: () => {
+        this.busy = false;
+        this.message = T('Accounts saved');
+        this.loadAccounts();
+        this.loadPayouts();
+      },
+      error: (er) => {
+        this.busy = false;
+        this.error = er?.error?.message ?? T('That did not work');
+      },
+    });
   }
 
   loadPayouts(): void {
@@ -156,6 +229,7 @@ export class StorePaymentsComponent implements OnInit {
 
   /** The balance the provider still owes is the usual amount of the next payout. */
   suggest(): void {
+    if (this.payouts && !this.payouts.balances.some((x) => x.channel === this.po.channel)) this.po.channel = this.payouts.balances[0]?.channel ?? '';
     const b = this.payouts?.balances.find((x) => x.channel === this.po.channel);
     if (b && b.balance > 0 && !this.po.gross) this.po.gross = b.balance;
   }

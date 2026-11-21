@@ -96,3 +96,19 @@ Until now all mobile money (MTN and Airtel) shared one clearing account, and eve
 - To move money from a provider's wallet to the main bank account, or to pay a supplier from it, post a transfer with a manual journal entry (or the usual payment screens) on those accounts.
 - A balance on the old shared mobile money account (payments before this version) is cleared with a payout of the channel "Mobile money (earlier payments)", which lands in Cash and Bank as before.
 - New accounts are added to existing charts at start-up. Migration V105 (`online_order.clearing_channel`; the payout channel check now allows MTN and AIRTEL).
+
+## v1.76.0: choose the accounts of each payment provider
+
+From v1.76.0 the accounts a provider uses are a setting, not fixed in the program. Online Store > Payments > Accounts by provider lists every payment provider (switched on or not) with two choices:
+
+- **What the provider still owes you** (the clearing account): payments the provider confirmed, until it pays them out.
+- **Payouts arrive in** (the payout account): the wallet or bank account the provider pays into. "None" means Cash and Bank.
+
+Each can be an existing asset account or a new one made on the spot ("Create a new account...", with a suggested name and the next free code). A provider with no accounts of its own is booked to the shared accounts, as before: Card Clearing for card payments, Mobile Money Clearing for the rest, and its payouts arrive in Cash and Bank.
+
+- MTN and Airtel show the accounts v1.75.0 made for them (1021/1011 and 1022/1012; Chad 5215/5217 and 5216/5218) until you change them.
+- The ledger channel of a payment is now the provider's code (MTN_MOMO, AIRTEL_MONEY, ...) when the provider has a clearing account, otherwise CARD or MOBILE_MONEY. It is stored on the order (`online_order.clearing_channel`) when the payment is confirmed, so a refund or a payment applied later goes to the account the money was booked to. v1.75.0 orders (channel MTN / AIRTEL) are moved to the provider codes by migration V106.
+- A clearing account can only belong to one provider, must be an ordinary asset account (not Cash and Bank or another system account), and cannot be changed while the provider still owes money on it: record its payouts first. A payout account can be shared by several providers (for example one bank account for all card payouts).
+- Online Store > Payments > Payouts lists a balance for every provider that has a clearing account, then Card, and records a payout against one of them. The net amount goes to that provider's payout account, the fee to Payment Provider Fees.
+- Adding a new provider to the program (the connection to its API) is separate work; once it exists it appears in this list and you choose its accounts here.
+- Migration V106: table `online_provider_account`.
