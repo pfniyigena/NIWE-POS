@@ -741,6 +741,44 @@ public class OnlineStoreService {
                 o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getInvoiceNumber(),
                 "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverName() : null, "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverPhone() : null,
                 "OUT_FOR_DELIVERY".equals(o.getStatus()) || "READY_FOR_PICKUP".equals(o.getStatus()), o.getReceivedAt(), o.getReceivedVia(),
-                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()), "DELIVERY".equals(o.getDeliveryMethod()) ? o.getEtaDaysMin() : null, "DELIVERY".equals(o.getDeliveryMethod()) ? o.getEtaDaysMax() : null);
+                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()), "DELIVERY".equals(o.getDeliveryMethod()) ? o.getEtaDaysMin() : null, "DELIVERY".equals(o.getDeliveryMethod()) ? o.getEtaDaysMax() : null,
+                canRebook(o));
+    }
+
+    /** After a failed visit the customer may choose a new delivery time himself, while the order waits (Packed) and windows are on. */
+    private boolean canRebook(OnlineOrder o) {
+        return "DELIVERY".equals(o.getDeliveryMethod()) && "PACKED".equals(o.getStatus()) && o.getDeliveryAttempts() > 0 && slotService.enabled();
+    }
+
+    /**
+     * The customer chooses a new delivery window after a failed visit (the old one was freed). Same checks as at checkout (free place, notice, days ahead);
+     * the order code is the key, like following or cancelling an order. The shop is told.
+     */
+    @Transactional
+    public Track chooseSlot(String code, SlotChange in, String ip) {
+        OnlineStoreSettings s = openSettings();
+        throttle("t:" + ip, 60);
+        OnlineOrder o = orderRepository.lockByCode(code == null ? "" : code.trim().toUpperCase()).orElseThrow(() -> ApiException.notFound(I18n.t("We could not find that order. Check the code.")));
+        if (!canRebook(o)) throw ApiException.badRequest(I18n.t("You can choose a new delivery time only after a delivery that did not work. Please call us to change it."));
+        if (in == null || in.slotId() == null || in.slotDate() == null || in.slotDate().isBlank()) throw ApiException.badRequest(I18n.t("Choose a delivery day and time"));
+        OnlineSlotService.Pick pick = slotService.pick(in.slotId(), in.slotDate(), "DELIVERY");
+        String before = OnlineSlotService.label(o.getSlotDate(), o.getSlotStart(), o.getSlotEnd());
+        o.setSlotDate(pick.date());
+        o.setSlotStart(pick.start());
+        o.setSlotEnd(pick.end());
+        String label = OnlineSlotService.label(pick.date(), pick.start(), pick.end());
+        OnlineOrderEvent ev = new OnlineOrderEvent();
+        ev.setOnlineOrder(o);
+        ev.setStatus(o.getStatus());
+        ev.setNote(I18n.t("The customer chose a new delivery time: {0}", label));
+        ev.setByUser("customer");
+        o.getEvents().add(ev);
+        orderRepository.save(o);
+        auditLogService.record("ONLINE_ORDER_SLOT", "Online order " + o.getCode() + ": the customer chose delivery time " + label + (before.isEmpty() ? "" : " (was " + before + ")"), "OnlineOrder", o.getId());
+        OnlineMessages.send(mailService, storeSettingsService, o, OnlineMessages.m("About the delivery of your order {0}", o.getCode()),
+                OnlineMessages.m("The delivery of your order {0} is planned on {1}, between {2} and {3}.", o.getCode(), OnlineSlotService.d(pick.date()), OnlineSlotService.t(pick.start()), OnlineSlotService.t(pick.end())));
+        OnlineMessages.notifyShopNote(mailService, storeSettingsService, s, I18n.t("New delivery time for order {0}", o.getCode()),
+                I18n.t("{0} chose a new delivery time for order {1}: {2}. Open Online Store > Online orders.", o.getCustomerName(), o.getCode(), label));
+        return track(o);
     }
 }

@@ -97,7 +97,7 @@ public final class OnlineStoreDtos {
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
                         String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber,
                         String driverName, String driverPhone, boolean canConfirm, Instant receivedAt, String receivedVia,
-                        String slotDate, String slotStart, String slotEnd, Integer etaMin, Integer etaMax) {
+                        String slotDate, String slotStart, String slotEnd, Integer etaMin, Integer etaMax, boolean canRebook) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */

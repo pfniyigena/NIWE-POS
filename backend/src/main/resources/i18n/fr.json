@@ -2106,5 +2106,12 @@
  "Estimated delivery: 1 day after we accept your order.": "Livraison estimée : 1 jour après l'acceptation de votre commande.",
  "Estimated delivery: {0} days after we accept your order.": "Livraison estimée : {0} jours après l'acceptation de votre commande.",
  "Estimated delivery: within {0} days after we accept your order.": "Livraison estimée : sous {0} jours après l'acceptation de votre commande.",
- "Estimated delivery: {0} to {1} days after we accept your order.": "Livraison estimée : de {0} à {1} jours après l'acceptation de votre commande."
+ "Estimated delivery: {0} to {1} days after we accept your order.": "Livraison estimée : de {0} à {1} jours après l'acceptation de votre commande.",
+ "You can choose a new delivery time only after a delivery that did not work. Please call us to change it.": "Vous ne pouvez choisir une nouvelle heure de livraison qu'après une livraison qui n'a pas abouti. Veuillez nous appeler pour la modifier.",
+ "The customer chose a new delivery time: {0}": "Le client a choisi une nouvelle heure de livraison : {0}",
+ "New delivery time for order {0}": "Nouvelle heure de livraison pour la commande {0}",
+ "{0} chose a new delivery time for order {1}: {2}. Open Online Store > Online orders.": "{0} a choisi une nouvelle heure de livraison pour la commande {1} : {2}. Ouvrez Boutique en ligne > Commandes en ligne.",
+ "Delivery time {0} freed: waiting for a new time": "Heure de livraison {0} libérée : en attente d'une nouvelle heure",
+ "We could not deliver your order {0}: {1}. Please open your order page and choose a new delivery time. If you prefer, we will contact you to arrange it.": "Nous n'avons pas pu livrer votre commande {0} : {1}. Veuillez ouvrir la page de votre commande et choisir une nouvelle heure de livraison. Si vous préférez, nous vous contacterons pour la fixer.",
+ "Choose a new delivery time first: the customer can choose one on his order page, or use Change time.": "Choisissez d'abord une nouvelle heure de livraison : le client peut en choisir une sur la page de sa commande, ou utilisez Changer l'heure."
 }

@@ -84,7 +84,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
         </ul>
         <div class="so-eta text-muted" *ngIf="o.deliveryMethod === 'DELIVERY' && etaText(o)" style="font-size:0.85rem;">🚚 {{ etaText(o) }}</div>
         <div class="so-slot mt-1" *ngIf="o.deliveryMethod === 'DELIVERY'" style="font-size:0.9rem;">
-          <span class="so-slot-text">⏰ <ng-container *ngIf="o.slotDate">{{ o.slotDate }}, {{ o.slotStart }}-{{ o.slotEnd }}</ng-container><ng-container *ngIf="!o.slotDate">{{ 'As soon as possible' | translate }}</ng-container></span>
+          <span class="so-slot-text">⏰ <ng-container *ngIf="o.slotDate">{{ o.slotDate }}, {{ o.slotStart }}-{{ o.slotEnd }}</ng-container><ng-container *ngIf="!o.slotDate && !waitingForTime(o)">{{ 'As soon as possible' | translate }}</ng-container><ng-container *ngIf="!o.slotDate && waitingForTime(o)"><strong class="so-slot-waiting" style="color:#b45309;">{{ 'Waiting for a new time (the customer was asked to choose)' | translate }}</strong></ng-container></span>
           <button *ngIf="canAssign(o) && windows.length" class="btn btn-sm btn-outline-secondary so-slot-change" style="margin-left:0.5rem;" [disabled]="busy" (click)="startSlot(o)">{{ 'Change time' | translate }}</button>
           <div *ngIf="slotEditing === o.id" class="so-slot-edit flex gap-2 mt-1" style="flex-wrap:wrap; align-items:center;">
             <input class="form-control so-slot-day" type="date" style="width:160px;" [name]="'sd' + o.id" [(ngModel)]="slotDay" />
@@ -317,6 +317,11 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   /** The estimate the customer was shown when he ordered (only while the order is not on its way or finished). */
   etaText(o: StoreOrder): string {
     return ['COMPLETED', 'CANCELLED', 'REJECTED', 'OUT_FOR_DELIVERY'].includes(o.status) ? '' : etaDaysText(o.etaMin, o.etaMax);
+  }
+
+  /** After a failed visit the old window is freed and the customer is asked to choose again. */
+  waitingForTime(o: StoreOrder): boolean {
+    return o.deliveryAttempts > 0 && o.status === 'PACKED' && this.windows.length > 0;
   }
 
   driversFor(o: StoreOrder): Driver[] {

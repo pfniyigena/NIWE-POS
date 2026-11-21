@@ -97,7 +97,7 @@ export interface ShopTrack {
   /** The customer can confirm the goods (they are out for delivery or ready), and when and how it was confirmed. */
   canConfirm?: boolean; receivedAt?: string | null; receivedVia?: string | null;
   /** The delivery window chosen at checkout (2026-11-24, 08:00, 11:00), or null. */
-  slotDate?: string | null; slotStart?: string | null; slotEnd?: string | null; etaMin?: number | null; etaMax?: number | null;
+  slotDate?: string | null; slotStart?: string | null; slotEnd?: string | null; etaMin?: number | null; etaMax?: number | null; canRebook?: boolean;
 }
 /** The delivery code to give to the driver (while the order is out or ready), or the reception details after. */
 export interface ShopReceipt { status: string; canConfirm: boolean; code: string | null; receivedAt: string | null; receivedVia: string | null; signedName: string | null }
@@ -476,6 +476,7 @@ export class OnlineStoreApiService {
   /** Gives back what an order paid online and delivered in part cost more than what was delivered. */
   refundDifference(id: number, body: { manual: boolean; reference?: string | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/refund-difference`, body); }
   complete(id: number, body: { locationId?: number | null; collectPayment?: boolean; method?: string; kept?: KeptLine[] | null }): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/complete`, body); }
+  chooseNewSlot(code: string, body: { slotId: number; slotDate: string }): Observable<ShopTrack> { return this.http.post<ShopTrack>(`${this.pub}/orders/${encodeURIComponent(code)}/slot`, body); }
   cancelOrder(id: number, note: string): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${id}/cancel`, { note }); }
 
   /** Gives the money back: manual = true records a refund made outside the system (reference required); otherwise the provider is asked. */

@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OnlineStoreApiService, Shop, ShopAd, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopReceipt, ShopTrack, shopToken } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, SlotBoard, SlotChoice, Shop, ShopAd, ShopReturn, ShopReturnOptions, ShopReviewItem, ShopReviewOptions, ShopReceipt, ShopTrack, shopToken } from '../core/api/online-store-api.service';
 import { FormsModule } from '@angular/forms';
 import { T } from '../core/i18n/t';
 import { ShopMoneyPipe } from './shop-money.pipe';
@@ -10,6 +10,7 @@ import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopAdComponent } from './shop-ad.component';
 import { SignaturePadComponent } from './signature-pad.component';
 import { etaDaysText } from './delivery-eta';
+import { LanguageService } from '../core/i18n/language.service';
 
 /** Where a customer follows a shop order by its code. Refreshes by itself. */
 @Component({
@@ -31,6 +32,24 @@ import { etaDaysText } from './delivery-eta';
           <div class="st-stage" style="font-weight:700;">{{ stageTitle() | translate }}</div>
           <div class="st-reason mt-1" *ngIf="t.rejectReason" style="color:#b91c1c;">{{ t.rejectReason }}</div>
           <div class="st-slot mt-1" *ngIf="t.deliveryMethod === 'DELIVERY' && t.slotDate && t.slotStart">⏰ {{ 'Delivery planned on {p0}, between {p1} and {p2}.' | translate: { p0: t.slotDate, p1: t.slotStart, p2: t.slotEnd } }}</div>
+          <div class="st-rebook mt-2" *ngIf="t.canRebook" style="text-align:left; border:1px solid #b45309; border-radius:6px; padding:0.6rem;">
+            <strong>{{ 'We could not deliver your order. Please choose a new delivery time.' | translate }}</strong>
+            <div class="text-muted" *ngIf="t.slotDate && t.slotStart" style="font-size:0.85rem;">{{ 'Delivery planned on {p0}, between {p1} and {p2}.' | translate: { p0: t.slotDate, p1: t.slotStart, p2: t.slotEnd } }}</div>
+            <div *ngIf="rebookBoard && rebookBoard.days.length">
+              <select class="form-select st-rebook-day mt-1" style="max-width:320px;" name="rbday" [(ngModel)]="rebookDay" (ngModelChange)="rebookId = null">
+                <option [ngValue]="null" disabled>{{ 'Choose a day…' | translate }}</option>
+                <option *ngFor="let d of rebookBoard.days" [ngValue]="d.date">{{ rebookDayLabel(d.date) }}</option>
+              </select>
+              <div class="flex gap-2 mt-1 st-rebook-list" style="flex-wrap:wrap;" *ngIf="rebookDay">
+                <button type="button" *ngFor="let c of rebookSlotsOf(rebookDay)" class="btn btn-sm st-rebook-slot" [ngClass]="rebookId === c.id ? 'btn-primary' : 'btn-outline-secondary'" [disabled]="!c.available" (click)="rebookId = c.id">
+                  {{ c.start }} - {{ c.end }}<span *ngIf="c.why === 'FULL'"> · {{ 'Full' | translate }}</span><span *ngIf="c.why === 'SOON'"> · {{ 'Too late' | translate }}</span>
+                </button>
+              </div>
+              <button class="btn btn-primary mt-2 st-rebook-send" type="button" [disabled]="busy || !rebookDay || !rebookId" (click)="rebook()">{{ 'Confirm this delivery time' | translate }}</button>
+            </div>
+            <div class="text-muted" *ngIf="rebookBoard && !rebookBoard.days.length" style="font-size:0.85rem;">{{ 'No delivery time is free right now. We will contact you to arrange it.' | translate }}</div>
+            <div class="alert alert-danger mt-1 st-rebook-error" *ngIf="rebookError">{{ rebookError }}</div>
+          </div>
           <div class="st-eta mt-1 text-muted" *ngIf="t.deliveryMethod === 'DELIVERY' && etaText(t)" style="font-size:0.9rem;">🚚 {{ etaText(t) }}</div>
           <div class="st-driver mt-1" *ngIf="t.status === 'OUT_FOR_DELIVERY' && t.driverName">{{ 'Your driver: {p0}' | translate: { p0: t.driverName } }}<ng-container *ngIf="t.driverPhone"> · <a [href]="'tel:' + t.driverPhone">{{ t.driverPhone }}</a></ng-container></div>
           <div class="flex gap-1 mt-2" *ngIf="!bad()" style="justify-content:center;">
@@ -216,7 +235,7 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
   private poll: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
 
-  constructor(private api: OnlineStoreApiService, private route: ActivatedRoute) {}
+  constructor(private api: OnlineStoreApiService, private route: ActivatedRoute, private lang: LanguageService) {}
 
   ngOnInit(): void {
     this.code = this.route.snapshot.paramMap.get('code') ?? '';
@@ -243,6 +262,39 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
     this.poll = setTimeout(() => this.load(), this.t?.payment?.status === 'AWAITING' ? 4000 : 15000);
   }
 
+  /** After a failed visit: the free windows, the choice, and the call. */
+  rebookBoard: SlotBoard | null = null;
+  rebookDay: string | null = null;
+  rebookId: number | null = null;
+  rebookError: string | null = null;
+
+  private loadRebook(): void {
+    this.api.deliverySlots().subscribe({ next: (b) => (this.rebookBoard = b), error: () => (this.rebookBoard = null) });
+  }
+
+  rebookSlotsOf(day: string | null): SlotChoice[] {
+    return this.rebookBoard?.days.find((d) => d.date === day)?.slots ?? [];
+  }
+
+  rebookDayLabel(day: string): string {
+    const d = new Date(day + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+    const text = d.toLocaleDateString(this.lang.current === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return diff === 0 ? T('Today') + ' · ' + text : diff === 1 ? T('Tomorrow') + ' · ' + text : text;
+  }
+
+  rebook(): void {
+    if (!this.rebookDay || !this.rebookId) return;
+    this.busy = true;
+    this.rebookError = null;
+    this.api.chooseNewSlot(this.code, { slotId: this.rebookId, slotDate: this.rebookDay }).subscribe({
+      next: (t) => { this.t = t; this.busy = false; this.rebookDay = null; this.rebookId = null; this.rebookBoard = null; if (t.canRebook) this.loadRebook(); },
+      error: (e) => { this.busy = false; this.rebookError = e?.error?.message ?? T('That did not work'); this.loadRebook(); this.rebookId = null; },
+    });
+  }
+
   private load(): void {
     this.api.track(this.code).subscribe({
       next: (t) => {
@@ -250,6 +302,8 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
         this.error = null;
         // A signed-in customer proves the order is theirs by the account: the code is shown without asking for the phone number.
         if (t.canConfirm && !this.receipt && this.signedIn && !this.receiptTried) { this.receiptTried = true; this.showCode(true); }
+        if (t.canRebook && !this.rebookBoard) this.loadRebook();
+        if (!t.canRebook && this.rebookBoard) this.rebookBoard = null;
         if (t.status === 'COMPLETED' && !this.returning) this.loadReturns();
         if (t.status === 'COMPLETED' && !this.rvo) this.loadReviews();
         // The payment ways the shop offers are only needed once there is something to retry.

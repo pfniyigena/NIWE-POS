@@ -9590,5 +9590,9 @@
  "Estimated delivery: 1 day after we accept your order.": "Livraison estimée : 1 jour après l'acceptation de votre commande.",
  "Estimated delivery: {p0} days after we accept your order.": "Livraison estimée : {p0} jours après l'acceptation de votre commande.",
  "Estimated delivery: within {p0} days after we accept your order.": "Livraison estimée : sous {p0} jours après l'acceptation de votre commande.",
- "Estimated delivery: {p0} to {p1} days after we accept your order.": "Livraison estimée : de {p0} à {p1} jours après l'acceptation de votre commande."
+ "Estimated delivery: {p0} to {p1} days after we accept your order.": "Livraison estimée : de {p0} à {p1} jours après l'acceptation de votre commande.",
+ "We could not deliver your order. Please choose a new delivery time.": "Nous n'avons pas pu livrer votre commande. Veuillez choisir une nouvelle heure de livraison.",
+ "Confirm this delivery time": "Confirmer cette heure de livraison",
+ "No delivery time is free right now. We will contact you to arrange it.": "Aucune heure de livraison n'est libre pour le moment. Nous vous contacterons pour la fixer.",
+ "Waiting for a new time (the customer was asked to choose)": "En attente d'une nouvelle heure (le client a été invité à choisir)"
 }

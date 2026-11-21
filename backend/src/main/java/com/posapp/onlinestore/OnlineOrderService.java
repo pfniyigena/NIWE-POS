@@ -274,6 +274,11 @@ public class OnlineOrderService {
         OnlineOrder o = getOrThrow(id);
         expect(o, "ACCEPTED", "PACKED");
         if (!o.getDeliveryMethod().equals("DELIVERY")) throw ApiException.badRequest(I18n.t("This is a pick-up order"));
+        // v1.64.0: when windows are compulsory, an order whose visit failed needs a new window first (the customer chooses one, or staff use Change time)
+        OnlineSlotService.SlotSettings ss = slotService.slotSettings();
+        if (ss.enabled() && ss.required() && o.getDeliveryAttempts() > 0 && o.getSlotDate() == null) {
+            throw ApiException.badRequest(I18n.t("Choose a new delivery time first: the customer can choose one on his order page, or use Change time."));
+        }
         if (driverId != null) setDriver(o, driverId);
         // when the shop has drivers, somebody must be taking the order
         if (o.getDriverId() == null && drivers.countByActiveTrue() > 0) throw ApiException.badRequest(I18n.t("Choose the driver who takes this order."));
@@ -647,10 +652,25 @@ public class OnlineOrderService {
         o.setLastFailureReason(why);
         o.setLastFailureAt(java.time.Instant.now());
         move(o, "PACKED", I18n.t("Delivery failed (attempt {0}): {1}", o.getDeliveryAttempts(), why));
+        // v1.64.0: the window of the failed visit is freed at once; the customer is asked to choose a new one (when delivery windows are on)
+        boolean rebook = slotService.enabled();
+        if (o.getSlotDate() != null) {
+            String old = OnlineSlotService.label(o.getSlotDate(), o.getSlotStart(), o.getSlotEnd());
+            o.setSlotDate(null);
+            o.setSlotStart(null);
+            o.setSlotEnd(null);
+            OnlineOrderEvent ev = new OnlineOrderEvent();
+            ev.setOnlineOrder(o);
+            ev.setStatus(o.getStatus());
+            ev.setNote(I18n.t("Delivery time {0} freed: waiting for a new time", old));
+            ev.setByUser(user());
+            o.getEvents().add(ev);
+        }
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_DELIVERY_FAILED", "Delivery of online order " + o.getCode() + " failed (attempt " + o.getDeliveryAttempts() + "): " + why, "OnlineOrder", o.getId());
-        tell(o, OnlineMessages.m("About the delivery of your order {0}", o.getCode()),
-                OnlineMessages.m("We could not deliver your order {0}: {1}. We will contact you to arrange a new delivery.", o.getCode(), why));
+        tell(o, OnlineMessages.m("About the delivery of your order {0}", o.getCode()), rebook
+                ? OnlineMessages.m("We could not deliver your order {0}: {1}. Please open your order page and choose a new delivery time. If you prefer, we will contact you to arrange it.", o.getCode(), why)
+                : OnlineMessages.m("We could not deliver your order {0}: {1}. We will contact you to arrange a new delivery.", o.getCode(), why));
         return dto(o);
     }
 

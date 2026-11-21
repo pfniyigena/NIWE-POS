@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.64.0 - Online Store: a new delivery time after a failed visit
+
+After a failed visit the old delivery window is freed at once and the customer is asked (message + his order page) to choose a new one from the free windows; staff are told, and Online orders shows "Waiting for a new time". If windows are compulsory the order cannot go out again without one (Change time works for staff). No migration. See `RELEASE-NOTES-v1.64.0.md` and `docs/online-store-new-time-after-failed-visit.md`.
+
 ## v1.63.0 - Online Store: delivery estimate per area
 
 Each delivery area can have its own estimated delivery days (Shop settings > Delivery areas > Delivery days); empty = the shop's estimate. The customer sees it at checkout once he picks his area, on the order page and in the "received" and "accepted" messages; staff see it on each delivery order. The estimate is kept on the order when placed. It works beside the delivery time slots without any link. New migration V97. See `RELEASE-NOTES-v1.63.0.md` and `docs/online-store-area-estimate.md`.

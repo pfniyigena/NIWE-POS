@@ -198,6 +198,13 @@ public class PublicStoreController {
         return service.trackByCode(code, ip(http));
     }
 
+    /** After a failed visit: the customer chooses a new delivery window. */
+    @PostMapping("/orders/{code}/slot")
+    public Track chooseSlot(@PathVariable String code, @RequestBody OnlineStoreDtos.SlotChange request, HttpServletRequest http) {
+        moduleService.requireEnabled(ModuleKey.ONLINE_STORE);
+        return service.chooseSlot(code, request, ip(http));
+    }
+
     @PostMapping("/orders/{code}/cancel")
     public Track cancel(@PathVariable String code, HttpServletRequest http) {
         moduleService.requireEnabled(ModuleKey.ONLINE_STORE);

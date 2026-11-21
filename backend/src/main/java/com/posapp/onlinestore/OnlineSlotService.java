@@ -218,6 +218,12 @@ public class OnlineSlotService {
         auditLogService.record("SHOP_DELIVERY_DAY_OPENED", "Deliveries possible again on " + c.getDay());
     }
 
+    /** Whether customers can choose delivery windows at all (the switch in Shop settings). */
+    @Transactional(readOnly = true)
+    public boolean enabled() {
+        return settings().isSlotsEnabled();
+    }
+
     // ------------------------------------------------------------------ customer: what can be chosen
 
     /** The days and windows the customer can see at checkout. Counts are never shown, only whether a window is still free. */
