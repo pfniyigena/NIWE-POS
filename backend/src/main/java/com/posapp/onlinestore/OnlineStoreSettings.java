@@ -60,6 +60,12 @@ public class OnlineStoreSettings extends BaseEntity {
     private boolean codEnabled = true;
     /** Units kept back from the shop for every product, so the last unit is not sold twice. */
     private int stockBuffer = 1;
+    /** v1.66.0: an order nobody answered (cash orders waiting for staff, orders waiting for a payment) is cancelled after this many hours and its stock freed. 0 = never. */
+    @jakarta.persistence.Column(name = "auto_release_hours", nullable = false)
+    private int autoReleaseHours = 24;
+    /** v1.66.0: percent of the available units of each product kept for the till, on top of the buffer (rounded up). 0 = none. */
+    @jakarta.persistence.Column(name = "till_share_percent", nullable = false)
+    private int tillSharePercent = 0;
     private BigDecimal minOrder = BigDecimal.ZERO;
     /** Delivery is free when the items come to at least this much; empty = never free. */
     private BigDecimal freeDeliveryOver;

@@ -261,6 +261,30 @@ public class OnlineOrderService {
         return dto(o);
     }
 
+    /**
+     * v1.66.0: an order nobody answered in time is cancelled by the system so the stock it holds is free again: an order still waiting for its payment, or a cash
+     * order staff never accepted. An order already paid online is never touched (the customer paid; staff must answer it). Returns whether it was cancelled.
+     */
+    @Transactional
+    public boolean autoRelease(Long id, int hours) {
+        OnlineOrder o = repository.findById(id).orElse(null);
+        if (o == null) return false;
+        boolean awaiting = "AWAITING_PAYMENT".equals(o.getStatus());
+        boolean cash = "PLACED".equals(o.getStatus()) && !"ONLINE".equals(o.getPaymentMethod()) && !"PAID".equals(o.getPaymentStatus());
+        if (!awaiting && !cash) return false;
+        String note = awaiting ? I18n.t("Cancelled automatically: the payment was not completed within {0} hours", hours)
+                : I18n.t("Cancelled automatically: the shop did not answer the order within {0} hours", hours);
+        move(o, "CANCELLED", note, "system");
+        payments.afterClosed(o);
+        loyalty.giveBackSpent(o);
+        repository.save(o);
+        auditLogService.record("ONLINE_ORDER_RELEASED", "Released online order " + o.getCode() + " after " + hours + " hours without an answer", "OnlineOrder", o.getId());
+        tell(o, OnlineMessages.m("Your order {0} is cancelled", o.getCode()), awaiting
+                ? OnlineMessages.m("Your order {0} was cancelled because the payment was not completed. You are welcome to order again.", o.getCode())
+                : OnlineMessages.m("Sorry, your order {0} was cancelled because we could not confirm it in time. You are welcome to order again or call us.", o.getCode()));
+        return true;
+    }
+
     // ------------------------------------------------------------------ moving along
 
     @Transactional

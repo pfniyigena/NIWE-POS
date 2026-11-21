@@ -38,4 +38,7 @@ public class OnlineListing extends BaseEntity {
     /** A variant of a template on the shop: staff switched this option off (it is not offered, but the rest of the product stays). */
     @Column(name = "variant_off", nullable = false)
     private boolean variantOff = false;
+    /** v1.66.0: units kept back for this product only (empty = the shop-wide buffer). */
+    @Column(name = "stock_buffer")
+    private Integer stockBuffer;
 }

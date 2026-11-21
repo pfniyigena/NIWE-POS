@@ -154,6 +154,14 @@ public class OnlineStoreAdminService {
         if (in.loyaltyMaxPercent() < 0 || in.loyaltyMaxPercent() > 100) throw ApiException.badRequest(I18n.t("The share of an order that points may pay must be between 0 and 100 percent"));
         s.setLoyaltyPointsPer100(in.loyaltyPointsPer100());
         s.setLoyaltyMaxPercent(in.loyaltyMaxPercent());
+        if (in.autoReleaseHours() != null) {
+            if (in.autoReleaseHours() < 0 || in.autoReleaseHours() > 720) throw ApiException.badRequest(I18n.t("The hours before an unanswered order is released must be between 0 and 720"));
+            s.setAutoReleaseHours(in.autoReleaseHours());
+        }
+        if (in.tillSharePercent() != null) {
+            if (in.tillSharePercent() < 0 || in.tillSharePercent() > 100) throw ApiException.badRequest(I18n.t("The share kept for the till must be between 0 and 100 percent"));
+            s.setTillSharePercent(in.tillSharePercent());
+        }
         s.setOnlinePaymentsEnabled(in.onlinePaymentsEnabled());
         // One provider, or several separated by commas: the customer then chooses at checkout.
         String prov = text(in.paymentProvider(), 200);
@@ -196,7 +204,8 @@ public class OnlineStoreAdminService {
                 s.getMaxPendingPerPhone(), s.getMaxPerIpPerHour(), s.getDeliveryProductId(), productName, s.getNotifyEmail(), s.getUnansweredAlertMinutes(),
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
                 s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
-                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent(), s.getWhatsappNumber());
+                s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent(), s.getWhatsappNumber(),
+                s.getAutoReleaseHours(), s.getTillSharePercent());
     }
 
     // ------------------------------------------------------------------ listings
@@ -222,6 +231,7 @@ public class OnlineStoreAdminService {
             if (in.listed() != null) l.setVariantOff(!in.listed());
             if (in.onlinePrice() != null && in.onlinePrice().signum() < 0) throw ApiException.badRequest(I18n.t("The online price cannot be negative"));
             l.setOnlinePrice(in.onlinePrice());
+            applyBuffer(l, in.stockBuffer());
             OnlineListing savedOption = listingRepository.save(l);
             variants.sync(p.getVariantParentId());
             auditLogService.record("ONLINE_LISTING_SAVED", (l.isVariantOff() ? "Switched off " : "Offered ") + p.getName() + " on the online shop", "OnlineListing", savedOption.getId());
@@ -233,6 +243,7 @@ public class OnlineStoreAdminService {
         l.setWebDescription(text(in.webDescription(), 2000));
         if (in.onlinePrice() != null && in.onlinePrice().signum() < 0) throw ApiException.badRequest(I18n.t("The online price cannot be negative"));
         l.setOnlinePrice(in.onlinePrice());
+        applyBuffer(l, in.stockBuffer());
         if (in.sortOrder() != null) l.setSortOrder(in.sortOrder());
         if (in.featured() != null) l.setFeatured(in.featured());
         if (in.bestSeller() != null) l.setBestSeller(in.bestSeller());
@@ -242,6 +253,13 @@ public class OnlineStoreAdminService {
         if (template) variants.sync(p.getId());
         auditLogService.record("ONLINE_LISTING_SAVED", (saved.isListed() ? "Listed " : "Unlisted ") + p.getName() + " on the online shop", "OnlineListing", saved.getId());
         return toDto(saved, storeService.settings().getStockBuffer());
+    }
+
+    /** v1.66.0: null = leave as it is, a negative number = back to the shop-wide buffer, otherwise this product's own buffer. */
+    private static void applyBuffer(OnlineListing l, Integer wanted) {
+        if (wanted == null) return;
+        if (wanted > 1000) throw ApiException.badRequest(I18n.t("The stock buffer must be between 0 and 1000"));
+        l.setStockBuffer(wanted < 0 ? null : wanted);
     }
 
     @Transactional
@@ -268,7 +286,7 @@ public class OnlineStoreAdminService {
                 l.isFeatured(), l.isBestSeller(), l.isSpecialOffer(), l.isNewArrival(), storeService.stockInfo(p, buffer),
                 p.getTaxRate() == null || p.getTaxRate().isInclusive() ? null : p.getTaxRate().getRatePercent(),
                 p.getVariantParentId(), p.getVariantLabel(), p.getVariantAttributes(), l.isVariantOff(),
-                p.getVariantAttributes() == null ? 0 : listingRepository.findAllGroupRows(p.getId()).size());
+                p.getVariantAttributes() == null ? 0 : listingRepository.findAllGroupRows(p.getId()).size(), l.getStockBuffer());
     }
 
 

@@ -9606,5 +9606,13 @@
  "Stock the shop sells from": "Stock vendu par la boutique",
  "Automatic: every Sales location outside the Main warehouse": "Automatique : tous les emplacements de vente hors de l'entrepôt principal",
  "No Sales location outside the Main warehouse yet. Make one in Inventory > Warehouses, or the shop has nothing to sell.": "Aucun emplacement de vente hors de l'entrepôt principal pour l'instant. Créez-en un dans Inventaire > Entrepôts, sinon la boutique n'a rien à vendre.",
- "Only the stock of this location is offered in the shop, and deliveries leave from it. Stock in the Main warehouse, Receiving or Storage locations is not offered.": "Seul le stock de cet emplacement est proposé dans la boutique, et les livraisons en partent. Le stock de l'entrepôt principal et des emplacements de réception ou de stockage n'est pas proposé."
+ "Only the stock of this location is offered in the shop, and deliveries leave from it. Stock in the Main warehouse, Receiving or Storage locations is not offered.": "Seul le stock de cet emplacement est proposé dans la boutique, et les livraisons en partent. Le stock de l'entrepôt principal et des emplacements de réception ou de stockage n'est pas proposé.",
+ "Share kept for the till (%)": "Part gardée pour la caisse (%)",
+ "Release unanswered orders after (hours, 0 = never)": "Libérer les commandes sans réponse après (heures, 0 = jamais)",
+ "In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − held for orders nobody answered yet {p2} − buffer {p3} − kept for the till {p4} = sellable now {p5}": "Dans les emplacements de vente {p0} − réservé par les commandes confirmées {p1} − retenu par les commandes pas encore traitées {p2} − marge {p3} − gardé pour la caisse {p4} = vendable maintenant {p5}",
+ "Buffer for this product": "Marge de ce produit",
+ "Shop-wide": "Celle de la boutique",
+ "Buffer": "Marge",
+ "Units kept back from every product": "Unités gardées sur chaque produit",
+ "A shop order holds its units from the moment it is placed, until staff accept it (then the sale order keeps them) or it is cancelled. An order nobody answers is cancelled after the hours above and the customer is told, unless it was paid online: that one waits for staff. A product can have its own buffer in the list of products below; the share kept for the till is taken from what is available, rounded up.": "Une commande de la boutique retient ses unités dès qu'elle est passée, jusqu'à ce que le personnel l'accepte (la commande client les garde alors) ou qu'elle soit annulée. Une commande restée sans réponse est annulée après le nombre d'heures ci-dessus et le client en est informé, sauf si elle a été payée en ligne : celle-là attend le personnel. Un produit peut avoir sa propre marge dans la liste des produits ci-dessous ; la part gardée pour la caisse est prise sur ce qui est disponible, arrondie vers le haut."
 }

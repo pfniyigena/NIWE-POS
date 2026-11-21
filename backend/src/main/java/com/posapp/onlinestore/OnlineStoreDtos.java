@@ -300,7 +300,8 @@ public final class OnlineStoreDtos {
                               Long deliveryProductId, String deliveryProductName, String notifyEmail,
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
                               String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
-                              boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent, String whatsappNumber) {
+                              boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent, String whatsappNumber,
+                              Integer autoReleaseHours, Integer tillSharePercent) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)
@@ -351,19 +352,21 @@ public final class OnlineStoreDtos {
     public record ListingDto(Long id, Long productId, String productName, String sku, String category, BigDecimal unitPrice, boolean listed,
                              String webTitle, String webDescription, BigDecimal onlinePrice, int sortOrder, boolean hasImage, String stock,
                              boolean featured, boolean bestSeller, boolean specialOffer, boolean newArrival, StockInfo stockInfo,
-                             BigDecimal taxOnTopPercent, Long variantParentId, String variantLabel, String variantOptions, boolean variantOff, int variantCount) {
+                             BigDecimal taxOnTopPercent, Long variantParentId, String variantLabel, String variantOptions, boolean variantOff, int variantCount, Integer stockBuffer) {
     }
 
     /**
      * Why a product shows the stock it shows: units in sellable warehouse locations, minus units promised on confirmed sales orders (reserved), minus the shop's
      * safety buffer, is what the shop may still sell. tracked = false: stock is not tracked for the product, so the shop always shows it as in stock (the other
-     * figures are then null).
+     * figures are then null). v1.66.0: held = units promised to shop orders staff have not answered yet; buffer = the one used for this product; tillShare =
+     * units kept for the till (a percentage of what is available).
      */
-    public record StockInfo(boolean tracked, BigDecimal inWarehouses, BigDecimal reserved, int buffer, BigDecimal sellable) {
+    public record StockInfo(boolean tracked, BigDecimal inWarehouses, BigDecimal reserved, BigDecimal held, int buffer, BigDecimal tillShare, BigDecimal sellable) {
     }
 
     public record ListingRequest(@NotNull Long productId, Boolean listed, @Size(max = 160) String webTitle, @Size(max = 2000) String webDescription,
-                                 BigDecimal onlinePrice, Integer sortOrder, Boolean featured, Boolean bestSeller, Boolean specialOffer, Boolean newArrival) {
+                                 BigDecimal onlinePrice, Integer sortOrder, Boolean featured, Boolean bestSeller, Boolean specialOffer, Boolean newArrival,
+                                 Integer stockBuffer) {
     }
 
     public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder, Long taxRateId, Integer deliveryDaysMin, Integer deliveryDaysMax) {

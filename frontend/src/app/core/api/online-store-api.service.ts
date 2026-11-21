@@ -185,6 +185,8 @@ export interface StoreSettings {
   textProvider: string | null; textChannel: string; textCountryCode: string; textDailyLimit: number; notifyPhone: string | null; returnWindowDays: number;
   cartRemindersEnabled: boolean;
   loyaltyEnabled: boolean; loyaltyPointsPer100: number; loyaltyMaxPercent: number; whatsappNumber: string | null;
+  /** v1.66.0: hours before an unanswered order is released (0 = never) and the percent of each product kept for the till. */
+  autoReleaseHours: number; tillSharePercent: number;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED, SKIPPED or QUEUED (waiting for an SMS company); purpose is ORDER, OWNER, SIGNIN, CODE or TEST. */
@@ -214,9 +216,11 @@ export interface StoreListing {
   taxOnTopPercent: number | null;
   /** Variants: an option has variantParentId (its product) and variantLabel; a product with options has variantOptions and variantCount; variantOff = this option is not sold online. */
   variantParentId: number | null; variantLabel: string | null; variantOptions: string | null; variantOff: boolean; variantCount: number;
+  /** v1.66.0: this product's own safety buffer; null = the shop-wide one. */
+  stockBuffer: number | null;
 }
 /** Why a product shows the stock it shows. tracked false = stock is not tracked for it, so the shop always shows it as in stock. */
-export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; buffer: number; sellable: number | null }
+export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; held: number | null; buffer: number; tillShare: number | null; sellable: number | null }
 /** Staff's wording of the front page (Shop settings > Front page). Links are one per line, written Label|address. */
 export interface StorePageContent {
   announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
@@ -527,7 +531,7 @@ export class OnlineStoreApiService {
   saveSettings(s: StoreSettings): Observable<StoreSettings> { return this.http.put<StoreSettings>(`${this.base}/settings`, s); }
   listings(): Observable<StoreListing[]> { return this.http.get<StoreListing[]>(`${this.base}/listings`); }
   saveListing(body: { productId: number; listed?: boolean; webTitle?: string | null; webDescription?: string | null; onlinePrice?: number | null; sortOrder?: number;
-    featured?: boolean; bestSeller?: boolean; specialOffer?: boolean; newArrival?: boolean }): Observable<StoreListing> {
+    featured?: boolean; bestSeller?: boolean; specialOffer?: boolean; newArrival?: boolean; stockBuffer?: number | null }): Observable<StoreListing> {
     return this.http.post<StoreListing>(`${this.base}/listings`, body);
   }
   listingDetails(productId: number): Observable<ListingDetails> { return this.http.get<ListingDetails>(`${this.base}/listings/${productId}/details`); }

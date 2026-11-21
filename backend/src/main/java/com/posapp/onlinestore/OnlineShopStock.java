@@ -46,6 +46,10 @@ public class OnlineShopStock {
     private WarehouseService warehouseService;
     @Autowired
     private StockReservationService stockReservationService;
+    @Autowired
+    private OnlineListingRepository listingRepository;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
 
     public record LocationDto(Long id, String label, boolean chosen) {
     }
@@ -102,10 +106,50 @@ public class OnlineShopStock {
         return total;
     }
 
-    /** On hand at the shop's locations minus what confirmed sale orders still owe. */
+    /**
+     * v1.66.0: units promised to shop orders that staff have not answered yet (waiting for a payment, or placed and not accepted). They have no sale order yet,
+     * so the shop holds them itself; once staff accept, the sale order reserves them instead.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal held(Product p) {
+        BigDecimal h = em.createQuery("select coalesce(sum(l.quantity), 0) from OnlineOrderLine l where l.productId = :id and l.onlineOrder.status in ('AWAITING_PAYMENT', 'PLACED')", BigDecimal.class)
+                .setParameter("id", p.getId()).getSingleResult();
+        return h == null ? BigDecimal.ZERO : h;
+    }
+
+    /** On hand at the shop's locations minus what confirmed sale orders still owe and what unanswered shop orders hold. */
     @Transactional(readOnly = true)
     public BigDecimal available(Product p) {
-        return onHand(p).subtract(stockReservationService.reserved(p));
+        return onHand(p).subtract(stockReservationService.reserved(p)).subtract(held(p));
+    }
+
+    /** The safety buffer of one product: its own when staff set one, otherwise the shop-wide one. */
+    @Transactional(readOnly = true)
+    public int bufferOf(Product p, int shopBuffer) {
+        return listingRepository.findByProductId(p.getId()).map(OnlineListing::getStockBuffer).filter(b -> b != null && b >= 0).orElse(shopBuffer);
+    }
+
+    /** The share (percent) of the available units kept for the till. */
+    @Transactional(readOnly = true)
+    public int tillPercent() {
+        return settingsRepository.findAll().stream().findFirst().map(OnlineStoreSettings::getTillSharePercent).orElse(0);
+    }
+
+    /** Units kept for the till out of {@code available}: the percentage, rounded up (none when nothing is available). */
+    public static BigDecimal tillShare(BigDecimal available, int percent) {
+        if (percent <= 0 || available == null || available.signum() <= 0) return BigDecimal.ZERO;
+        return available.multiply(BigDecimal.valueOf(percent)).divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.CEILING);
+    }
+
+    /**
+     * Two customers must not take the last units together: the products of an order are locked (always in the same order) while its stock is checked and
+     * the order saved, so the second customer sees what the first one took.
+     */
+    public void lockProducts(java.util.Collection<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) return;
+        List<Long> ids = new ArrayList<>(new java.util.TreeSet<>(productIds));
+        em.createQuery("select p.id from Product p where p.id in :ids order by p.id").setParameter("ids", ids)
+                .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).getResultList();
     }
 
     /** For the search query: a condition on the stock row alias {@code ps} that keeps only the shop's locations; empty when the old rule applies. */

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.66.0 - Online Store: stock held from checkout, buffer per product, share for the till
+
+A shop order now holds its units from the moment it is placed (before staff accept it) so two customers can no longer be sold the same last units; an order nobody answers is cancelled after N hours (default 24, setting; a cash order or one still waiting for its payment; an order paid online is never cancelled by it) and the customer is told. Each product can have its own safety buffer, and a percentage of the available units can be kept for the till. Migration V99. See `RELEASE-NOTES-v1.66.0.md` and `docs/online-store-held-stock.md`.
+
 ## v1.65.0 - Online Store: the stock the shop sells
 
 With multi-warehouse on, the shop now sells only from Sales locations outside the Main warehouse (one chosen in Shop settings, or all of them), and a delivery taken without a chosen location (driver's code, customer's tap) leaves from the shop's location instead of failing. A refused completion (not enough stock) now gives the reason instead of a 500 error. Migration V98. See `RELEASE-NOTES-v1.65.0.md` and `docs/online-store-shop-stock.md`.

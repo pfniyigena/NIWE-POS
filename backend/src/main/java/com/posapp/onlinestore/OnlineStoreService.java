@@ -122,15 +122,24 @@ public class OnlineStoreService {
     /** Units the shop may still sell of this product, or null when stock is not tracked. */
     BigDecimal sellable(Product p, int buffer) {
         if (!p.isTrackStock() || p.isService()) return null;
-        return shopStock.available(p).subtract(BigDecimal.valueOf(buffer));
+        BigDecimal available = shopStock.available(p);
+        return available.subtract(kept(p, available, buffer));
+    }
+
+    /** v1.66.0: what is kept back from the shop out of the available units: the product's buffer (or the shop-wide one) plus the share kept for the till. */
+    BigDecimal kept(Product p, BigDecimal available, int shopBuffer) {
+        return BigDecimal.valueOf(shopStock.bufferOf(p, shopBuffer)).add(OnlineShopStock.tillShare(available, shopStock.tillPercent()));
     }
 
     /** The figures behind the stock the shop shows for a product (Shop settings > Products on the shop). */
     OnlineStoreDtos.StockInfo stockInfo(Product p, int buffer) {
-        if (!p.isTrackStock() || p.isService()) return new OnlineStoreDtos.StockInfo(false, null, null, buffer, null);
+        if (!p.isTrackStock() || p.isService()) return new OnlineStoreDtos.StockInfo(false, null, null, null, buffer, null, null);
         BigDecimal reserved = stockReservationService.reserved(p);
+        BigDecimal held = shopStock.held(p);
         BigDecimal available = shopStock.available(p);
-        return new OnlineStoreDtos.StockInfo(true, available.add(reserved), reserved, buffer, available.subtract(BigDecimal.valueOf(buffer)));
+        int own = shopStock.bufferOf(p, buffer);
+        BigDecimal till = OnlineShopStock.tillShare(available, shopStock.tillPercent());
+        return new OnlineStoreDtos.StockInfo(true, available.add(reserved).add(held), reserved, held, own, till, available.subtract(BigDecimal.valueOf(own)).subtract(till));
     }
 
     static String stockLabel(BigDecimal sellable) {
@@ -512,6 +521,8 @@ public class OnlineStoreService {
         }
         if (totalQty.compareTo(BigDecimal.valueOf(MAX_TOTAL_QUANTITY)) > 0) throw ApiException.badRequest(I18n.t("That is too many items for one order"));
 
+        // v1.66.0: the products are locked while the stock is checked and the order saved, so two customers cannot take the last units together.
+        shopStock.lockProducts(wanted.keySet());
         OnlineOrder o = new OnlineOrder();
         BigDecimal subtotal = BigDecimal.ZERO;
         for (Map.Entry<Long, BigDecimal> e : wanted.entrySet()) {

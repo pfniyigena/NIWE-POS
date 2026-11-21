@@ -2171,5 +2171,11 @@
  "Choose a Sales location of a warehouse other than the Main one.": "Choisissez un emplacement de vente d'un entrepôt autre que l'entrepôt principal.",
  "Save the shop settings first.": "Enregistrez d'abord les paramètres de la boutique.",
  "We could not record this delivery just now. Please call the shop.": "Nous n'avons pas pu enregistrer cette livraison pour le moment. Veuillez appeler la boutique.",
- "The hand-over could not be recorded: {0}": "La remise n'a pas pu être enregistrée : {0}"
+ "The hand-over could not be recorded: {0}": "La remise n'a pas pu être enregistrée : {0}",
+ "The hours before an unanswered order is released must be between 0 and 720": "Le nombre d'heures avant la libération d'une commande sans réponse doit être compris entre 0 et 720",
+ "The share kept for the till must be between 0 and 100 percent": "La part gardée pour la caisse doit être comprise entre 0 et 100 pour cent",
+ "Cancelled automatically: the payment was not completed within {0} hours": "Annulée automatiquement : le paiement n'a pas été effectué dans les {0} heures",
+ "Cancelled automatically: the shop did not answer the order within {0} hours": "Annulée automatiquement : la boutique n'a pas répondu à la commande dans les {0} heures",
+ "Your order {0} was cancelled because the payment was not completed. You are welcome to order again.": "Votre commande {0} a été annulée car le paiement n'a pas été effectué. Vous pouvez commander de nouveau.",
+ "Sorry, your order {0} was cancelled because we could not confirm it in time. You are welcome to order again or call us.": "Désolé, votre commande {0} a été annulée car nous n'avons pas pu la confirmer à temps. Vous pouvez commander de nouveau ou nous appeler."
 }

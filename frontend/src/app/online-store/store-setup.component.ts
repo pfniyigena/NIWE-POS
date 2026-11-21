@@ -48,7 +48,9 @@ import { API_BASE } from '../core/constants';
         <div class="form-group mt-2"><label class="form-label">{{ 'Welcome text' | translate }}</label><input class="form-control" name="intro" maxlength="300" [(ngModel)]="s.introText" /></div>
         <div class="form-group mt-2" *ngIf="s.paused"><label class="form-label">{{ 'Message shown while paused' | translate }}</label><input class="form-control" name="pauseMessage" maxlength="200" [(ngModel)]="s.pauseMessage" /></div>
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap;">
-          <div class="form-group"><label class="form-label">{{ 'Units kept back for the till' | translate }}</label><input class="form-control" type="number" min="0" max="1000" style="width:140px;" name="buffer" [(ngModel)]="s.stockBuffer" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Units kept back from every product' | translate }}</label><input class="form-control" type="number" min="0" max="1000" style="width:140px;" name="buffer" [(ngModel)]="s.stockBuffer" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Share kept for the till (%)' | translate }}</label><input class="form-control ss-till" type="number" min="0" max="100" style="width:140px;" name="tillShare" [(ngModel)]="s.tillSharePercent" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Release unanswered orders after (hours, 0 = never)' | translate }}</label><input class="form-control ss-release" type="number" min="0" max="720" style="width:140px;" name="autoRelease" [(ngModel)]="s.autoReleaseHours" /></div>
           <div class="form-group"><label class="form-label">{{ 'Minimum order' | translate }}</label><input class="form-control" type="number" min="0" style="width:140px;" name="minOrder" [(ngModel)]="s.minOrder" /></div>
           <div class="form-group ss-shoploc" *ngIf="stockSetup?.multiWarehouse">
             <label class="form-label">{{ 'Stock the shop sells from' | translate }}</label>
@@ -63,6 +65,7 @@ import { API_BASE } from '../core/constants';
           <div class="form-group"><label class="form-label">{{ 'Orders waiting per phone' | translate }}</label><input class="form-control" type="number" min="1" max="50" style="width:140px;" name="pendingPhone" [(ngModel)]="s.maxPendingPerPhone" /></div>
           <div class="form-group"><label class="form-label">{{ 'Orders per connection per hour' | translate }}</label><input class="form-control" type="number" min="1" max="1000" style="width:140px;" name="perIp" [(ngModel)]="s.maxPerIpPerHour" /></div>
         </div>
+        <p class="text-muted ss-stock-note" style="font-size:0.85rem; max-width:44rem; margin:0.4rem 0 0;">{{ 'A shop order holds its units from the moment it is placed, until staff accept it (then the sale order keeps them) or it is cancelled. An order nobody answers is cancelled after the hours above and the customer is told, unless it was paid online: that one waits for staff. A product can have its own buffer in the list of products below; the share kept for the till is taken from what is available, rounded up.' | translate }}</p>
         <div class="form-group mt-2" style="max-width:420px;">
           <label class="form-label">{{ 'Service product for the delivery fee' | translate }}</label>
           <select class="form-select" name="deliveryProduct" [(ngModel)]="s.deliveryProductId">
@@ -214,7 +217,7 @@ import { API_BASE } from '../core/constants';
                 </div>
                 <div class="lst-shopprice" *ngIf="!l.variantCount" style="font-size:0.85rem; margin-top:0.15rem;"><strong>{{ 'Customers pay on the shop' | translate }}: {{ shopPrice(l) | number: '1.0-2' }}</strong><span class="text-muted" *ngIf="l.taxOnTopPercent"> ({{ 'the price {p0} plus {p1}% tax' | translate: { p0: (l.onlinePrice ?? l.unitPrice) | number: '1.0-2', p1: l.taxOnTopPercent } }})</span><span class="text-muted" *ngIf="!l.taxOnTopPercent"> ({{ 'no tax added' | translate }})</span></div>
                 <div class="lst-stock" *ngIf="!l.variantCount" style="font-size:0.8rem; margin-top:0.15rem;" [style.color]="l.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">
-                  <ng-container *ngIf="l.stockInfo.tracked; else untracked">{{ 'In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − shop buffer {p2} = sellable now {p3}' | translate: { p0: l.stockInfo.inWarehouses, p1: l.stockInfo.reserved, p2: l.stockInfo.buffer, p3: l.stockInfo.sellable } }}</ng-container>
+                  <ng-container *ngIf="l.stockInfo.tracked; else untracked">{{ 'In sellable warehouse locations {p0} − reserved on confirmed orders {p1} − held for orders nobody answered yet {p2} − buffer {p3} − kept for the till {p4} = sellable now {p5}' | translate: { p0: l.stockInfo.inWarehouses, p1: l.stockInfo.reserved, p2: l.stockInfo.held, p3: l.stockInfo.buffer, p4: l.stockInfo.tillShare, p5: l.stockInfo.sellable } }}</ng-container>
                   <ng-template #untracked>{{ 'Stock is not tracked for this product: the shop always shows it as in stock.' | translate }}</ng-template>
                 </div>
               </div>
@@ -225,6 +228,8 @@ import { API_BASE } from '../core/constants';
                 <input class="form-control" style="width:100%;" maxlength="160" [name]="'t' + l.id" [(ngModel)]="l.webTitle" [placeholder]="l.productName" /></div>
               <div *ngIf="!l.variantCount"><label class="form-label" style="font-size:0.8rem;">{{ 'Online price' | translate }}</label>
                 <input class="form-control" type="number" min="0" style="width:100%;" [name]="'p' + l.id" [(ngModel)]="l.onlinePrice" /></div>
+              <div *ngIf="!l.variantCount"><label class="form-label" style="font-size:0.8rem;">{{ 'Buffer for this product' | translate }}</label>
+                <input class="form-control lst-buffer" type="number" min="0" max="1000" style="width:100%;" [name]="'b' + l.id" [(ngModel)]="l.stockBuffer" [placeholder]="'Shop-wide' | translate" /></div>
               <div><label class="form-label" style="font-size:0.8rem;">{{ 'Order' | translate }}</label>
                 <input class="form-control" type="number" style="width:100%;" [name]="'o' + l.id" [(ngModel)]="l.sortOrder" /></div>
             </div>
@@ -243,6 +248,7 @@ import { API_BASE } from '../core/constants';
                   <div class="flex gap-2" style="flex-wrap:wrap; align-items:center;">
                     <div style="flex:1 1 160px; min-width:0;"><strong class="lst-opt-label">{{ o.variantLabel }}</strong><div class="text-muted" style="font-size:0.78rem;">{{ o.sku }} · {{ o.unitPrice | number: '1.0-2' }} · <span [style.color]="o.stock === 'SOLD_OUT' ? '#b91c1c' : '#4b5563'">{{ stockLabel(o.stock) | translate }}</span> ({{ o.stockInfo.sellable ?? '–' }})</div></div>
                     <input class="form-control lst-opt-price" type="number" min="0" style="width:120px;" [name]="'op' + o.id" [(ngModel)]="o.onlinePrice" [placeholder]="'Online price' | translate" />
+                    <input class="form-control lst-opt-buffer" type="number" min="0" max="1000" style="width:110px;" [name]="'ob' + o.id" [(ngModel)]="o.stockBuffer" [placeholder]="'Buffer' | translate" />
                     <label style="display:flex; align-items:center; gap:0.35rem;"><input type="checkbox" class="lst-opt-on" [name]="'ov' + o.id" [(ngModel)]="o.listed" /> {{ 'Sold online' | translate }}</label>
                     <button type="button" class="btn btn-sm btn-primary lst-opt-save" (click)="saveOption(o)">{{ 'Save' | translate }}</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary lst-opt-pics" (click)="toggleDetails(o)">{{ detailsFor === o.productId ? ('Hide pictures' | translate) : ('Pictures' | translate) }}</button>
@@ -699,12 +705,17 @@ export class StoreSetupComponent implements OnInit {
     return this.optionsOf(l).filter((o) => o.listed && o.stock !== 'SOLD_OUT').length;
   }
 
+  /** An empty buffer box means the shop-wide buffer (sent as -1). */
+  private bufferValue(v: number | string | null | undefined): number {
+    return v === null || v === undefined || v === '' ? -1 : Number(v);
+  }
+
   /** The product whose options are open. */
   optsFor: number | null = null;
 
   /** An option keeps its own online price and whether it is sold online; everything else is the product's. */
   saveOption(o: StoreListing): void {
-    this.api.saveListing({ productId: o.productId, listed: o.listed, onlinePrice: o.onlinePrice === null || (o.onlinePrice as any) === '' ? null : Number(o.onlinePrice) })
+    this.api.saveListing({ productId: o.productId, listed: o.listed, onlinePrice: o.onlinePrice === null || (o.onlinePrice as any) === '' ? null : Number(o.onlinePrice), stockBuffer: this.bufferValue(o.stockBuffer) })
       .subscribe({ next: () => { this.loadListings(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the product') });
   }
 
@@ -769,7 +780,7 @@ export class StoreSetupComponent implements OnInit {
   }
 
   saveListing(l: StoreListing): void {
-    this.api.saveListing({ productId: l.productId, featured: l.featured, bestSeller: l.bestSeller, specialOffer: l.specialOffer, newArrival: l.newArrival, listed: l.listed, webTitle: l.webTitle, webDescription: l.webDescription, onlinePrice: l.onlinePrice === null || (l.onlinePrice as any) === '' ? null : l.onlinePrice, sortOrder: l.sortOrder })
+    this.api.saveListing({ productId: l.productId, featured: l.featured, bestSeller: l.bestSeller, specialOffer: l.specialOffer, newArrival: l.newArrival, listed: l.listed, webTitle: l.webTitle, webDescription: l.webDescription, onlinePrice: l.onlinePrice === null || (l.onlinePrice as any) === '' ? null : l.onlinePrice, sortOrder: l.sortOrder, stockBuffer: this.bufferValue(l.stockBuffer) })
       .subscribe({ next: () => { this.loadListings(); this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save the product') });
   }
 
