@@ -730,7 +730,10 @@ public class OnlineOrderService {
             pay.setNote(I18n.t("Online order {0}", o.getCode()));
             invoiceService.recordPayment(inv.id(), pay, caller);
             // cash taken by a driver is cash he must hand in (Online Store > Driver cash)
-            if ("DELIVERY".equals(o.getDeliveryMethod()) && "CASH".equalsIgnoreCase(pay.getMethod())) o.setCashCollected(inv.totalAmount());
+            if ("DELIVERY".equals(o.getDeliveryMethod()) && "CASH".equalsIgnoreCase(pay.getMethod())) {
+                o.setCashCollected(inv.totalAmount());
+                o.setDriverCashBooked(inv.totalAmount());   // v1.72.0: the books hold it in Cash with Drivers (see AccountingService.postCustomerPayment)
+            }
         }
         if (partial != null) o.setDeliveredTotal(inv.totalAmount());
         invoiceService.emailIssued(inv.id());

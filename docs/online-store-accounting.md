@@ -36,3 +36,17 @@ Before this release a prepaid order was invisible in the books until the order w
 - A payment under review (wrong amount, or a second payment for an order already paid) is not posted until staff deal with it by hand.
 - The balances on the Payouts panel are the clearing accounts of the ledger (debits minus credits), so they always agree with the books. A provider that pays out net of its fee and of refunds: enter the gross the payout covers and the fee, and the rest reaches Cash and Bank.
 - New accounts (added to existing charts at start-up): 1020, 1030, 2810, 5240 (Rwanda chart); 5212, 5213, 4197, 631 (Chad chart). Migration V102 (`online_order.deposit_left`, table `online_payout`).
+
+## v1.72.0: cash that drivers hold
+
+Before this release the cash a driver took at the door was counted as cash in hand (Cash and Bank) at delivery, and only a difference was posted when he handed it in. Now:
+
+| When | Entry (source type) | Debit | Credit |
+|---|---|---|---|
+| A delivery order paid in cash is completed | `CUSTOMER_PAYMENT` | Cash with Drivers (1050) | Accounts Receivable |
+| Online Store > Driver cash: the driver hands in the cash | `DRIVER_CASH_SETTLEMENT` | Cash and Bank (what he handed in), Cash Over / Short (when short) | Cash with Drivers (what he collected), Cash Over / Short (when over) |
+
+- A pick-up order paid in cash at the shop still goes straight to Cash and Bank.
+- The settlement entry carries the branch of the order (before, the difference had none).
+- `online_order.driver_cash_booked` is what the books hold in Cash with Drivers for the order. Orders delivered before this version have none: their cash went to Cash and Bank at delivery, so settling them posts only the difference, as before.
+- The balance of Cash with Drivers is the cash drivers still have to hand in; it should agree with the "Waiting" total on the Driver cash screen. Migration V103; new account 1050 (Rwanda chart) / 5214 (Chad chart).

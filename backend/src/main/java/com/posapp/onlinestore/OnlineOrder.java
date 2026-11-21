@@ -49,6 +49,8 @@ public class OnlineOrder extends BaseEntity {
     private BigDecimal refundedTotal = BigDecimal.ZERO;
     /** v1.71.0: money paid online that sits in Online Customer Deposits (in the books) and has not yet been applied to the invoice or paid back. */
     private BigDecimal depositLeft = BigDecimal.ZERO;
+    /** v1.72.0: the cash a driver collected that the books hold in Cash with Drivers until he hands it in (0 for orders delivered before that version). */
+    private BigDecimal driverCashBooked = BigDecimal.ZERO;
     private String customerName;
     private String customerPhone;
     private String customerEmail;

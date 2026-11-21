@@ -114,6 +114,8 @@ public class AccountService {
     public static final String ONLINE_CLEARING_CARD = "ONLINE_CLEARING_CARD";
     /** v1.71.0: money online customers paid before their order was delivered: owed back in goods (or in money, when the order is cancelled). Not income until delivery. */
     public static final String ONLINE_DEPOSITS = "ONLINE_DEPOSITS";
+    /** v1.72.0: cash collected by delivery drivers and not yet handed in to the shop. */
+    public static final String DRIVER_CASH = "DRIVER_CASH";
     /** v1.71.0: what the payment providers keep from each payout (mobile money and card fees). */
     public static final String PAYMENT_FEES = "PAYMENT_FEES";
 
@@ -233,6 +235,8 @@ public class AccountService {
                     "Store credit owed back to customers — e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(GIFT_CARD_LIABILITY, "2880", "Gift Card Liability", AccountType.LIABILITY, true,
                     "Gift cards sold and not yet spent: owed to customers in goods, not income until spent."),
+            new ChartRow(DRIVER_CASH, "1050", "Cash with Drivers (online)", AccountType.ASSET, true,
+                    "Online Store: cash delivery drivers collected from customers and have not handed in yet. Settled in Online Store > Driver cash."),
             new ChartRow(ONLINE_CLEARING_MOBILE, "1020", "Mobile Money Clearing (online)", AccountType.ASSET, true,
                     "Online Store: money customers paid by mobile money that the provider has not paid out yet. Settle it in Online Store > Payments > Payouts."),
             new ChartRow(ONLINE_CLEARING_CARD, "1030", "Card Clearing (online)", AccountType.ASSET, true,
@@ -343,6 +347,8 @@ public class AccountService {
                     "SYSCOHADA's own account for a customer with a credit balance — store credit owed back, e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(GIFT_CARD_LIABILITY, "4195", "Clients, bons d'achat (Gift Card Liability)", AccountType.LIABILITY, true,
                     "Gift cards sold and not yet spent: owed to customers in goods, not income until spent."),
+            new ChartRow(DRIVER_CASH, "5214", "Espèces chez les livreurs (Cash with Drivers)", AccountType.ASSET, true,
+                    "Online Store: cash delivery drivers collected from customers and have not handed in yet."),
             new ChartRow(ONLINE_CLEARING_MOBILE, "5212", "Opérateurs mobile money à encaisser (Mobile Money Clearing)", AccountType.ASSET, true,
                     "Online Store: money customers paid by mobile money that the provider has not paid out yet."),
             new ChartRow(ONLINE_CLEARING_CARD, "5213", "Cartes bancaires à encaisser (Card Clearing)", AccountType.ASSET, true,

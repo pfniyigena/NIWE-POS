@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.72.0 - Online Store accounting: cash that drivers hold
+
+Cash collected by a delivery driver is booked to Cash with Drivers until he hands it in; the hand-in clears it into Cash and Bank, with a difference in Cash Over / Short (with the branch). Migration V103. See `RELEASE-NOTES-v1.72.0.md` and `docs/online-store-accounting.md`.
+
 ## v1.71.0 - Online Store accounting: online payments held, applied at delivery, cleared by provider payouts
 
 Money customers pay online is booked when the provider confirms it (clearing account per provider, Online Customer Deposits), released at delivery and cleared against the provider's payouts, with their fees (new Payouts panel). Migration V102. See `RELEASE-NOTES-v1.71.0.md` and `docs/online-store-accounting.md`.

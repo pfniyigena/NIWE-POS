@@ -196,6 +196,21 @@ public class AccountingService {
         post("DRIVER_CASH_VARIANCE", orderId, memo, null, lines, branchId);
     }
 
+    /**
+     * v1.72.0: a driver hands in the cash of one order (Online Store > Driver cash): Cash with Drivers is cleared for what he collected, Cash and Bank receives what he
+     * handed in, and a difference goes to Cash Over / Short (short: debit, over: credit).
+     */
+    @Transactional
+    public void postDriverCashSettlement(Long orderId, BigDecimal collected, BigDecimal handedIn, String memo, Long branchId) {
+        if (collected == null || collected.signum() <= 0) return;
+        BigDecimal diff = handedIn.subtract(collected);
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, handedIn, "Handed in by the driver", true);
+        addIfPositive(lines, AccountService.CASH_OVER_SHORT, diff.abs(), diff.signum() < 0 ? "Driver cash short" : "Driver cash over", diff.signum() < 0);
+        addIfPositive(lines, AccountService.DRIVER_CASH, collected, null, false);
+        post("DRIVER_CASH_SETTLEMENT", orderId, memo, null, lines, branchId);
+    }
+
     // ---- Gift cards (com.posapp.giftcards) ----
 
     /**
@@ -601,6 +616,9 @@ public class AccountingService {
             addIfPositive(lines, AccountService.ONLINE_DEPOSITS, use, "Online payment applied", true);
             rest = payment.getAmount().subtract(use);
             addIfPositive(lines, clearingKey(money.channel()), rest, null, true);
+        } else if (money != null && "DELIVERY".equals(money.deliveryMethod()) && "CASH".equalsIgnoreCase(payment.getMethod())) {
+            // v1.72.0: cash a delivery driver took at the door is not in the shop's hands yet: Cash with Drivers, until he hands it in (Online Store > Driver cash).
+            addIfPositive(lines, AccountService.DRIVER_CASH, payment.getAmount(), "Collected by the driver", true);
         } else {
             addIfPositive(lines, AccountService.CASH, payment.getAmount(), null, true);
         }

@@ -32,6 +32,8 @@ public class OnlineDriverCashService {
 
     private final OnlineOrderRepository orders;
     private final AccountingService accounting;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.salesorder.SalesOrderRepository salesOrders;
     private final AuditLogService auditLogService;
 
     public OnlineDriverCashService(OnlineOrderRepository orders, AccountingService accounting, AuditLogService auditLogService) {
@@ -112,10 +114,18 @@ public class OnlineDriverCashService {
             ev.setByUser(user());
             o.getEvents().add(ev);
             orders.save(o);
-            if (diff.signum() != 0) {
-                accounting.postDriverCashVariance(o.getId(), diff, I18n.t("Driver cash, order {0}{1}: collected {2}, handed in {3}", o.getCode(),
-                        o.getDriverName() == null ? "" : " (" + o.getDriverName() + ")", o.getCashCollected().toPlainString(), amount.toPlainString())
-                        + (note == null ? "" : " — " + note), null);
+            String memo = I18n.t("Driver cash, order {0}{1}: collected {2}, handed in {3}", o.getCode(),
+                    o.getDriverName() == null ? "" : " (" + o.getDriverName() + ")", o.getCashCollected().toPlainString(), amount.toPlainString())
+                    + (note == null ? "" : " — " + note);
+            Long branch = o.getSalesOrderId() == null ? null : salesOrders.findById(o.getSalesOrderId()).map(com.posapp.salesorder.SalesOrder::getBranchId).orElse(null);
+            if (o.getDriverCashBooked() != null && o.getDriverCashBooked().signum() > 0) {
+                // v1.72.0: the cash was booked to Cash with Drivers at delivery: clear it, receive what was handed in, and book any difference
+                accounting.postDriverCashSettlement(o.getId(), o.getDriverCashBooked(), amount, memo, branch);
+                o.setDriverCashBooked(BigDecimal.ZERO);
+                orders.save(o);
+            } else if (diff.signum() != 0) {
+                // delivered before v1.72.0: the cash went to Cash and Bank at delivery, so only the difference is booked
+                accounting.postDriverCashVariance(o.getId(), diff, memo, branch);
             }
             auditLogService.record("ONLINE_DRIVER_CASH", "Driver cash for online order " + o.getCode() + ": collected " + o.getCashCollected().toPlainString()
                     + ", handed in " + amount.toPlainString() + (diff.signum() == 0 ? "" : ", difference " + diff.toPlainString()), "OnlineOrder", o.getId());
