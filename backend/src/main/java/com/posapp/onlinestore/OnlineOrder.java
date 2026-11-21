@@ -51,6 +51,9 @@ public class OnlineOrder extends BaseEntity {
     private String customerPhone;
     private String customerEmail;
     private String customerAddress;
+    /** v1.63.0: the delivery estimate shown when the order was placed (days after acceptance); null = none. */
+    private Integer etaDaysMin;
+    private Integer etaDaysMax;
     private Long zoneId;
     private String zoneName;
     /** v1.59.1: the tax of the delivery fee as it was when the order was placed (null = the delivery product's own tax). */

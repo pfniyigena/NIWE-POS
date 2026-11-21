@@ -9,6 +9,7 @@ import { ShopMoneyPipe } from './shop-money.pipe';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
 import { ShopAdComponent } from './shop-ad.component';
 import { SignaturePadComponent } from './signature-pad.component';
+import { etaDaysText } from './delivery-eta';
 
 /** Where a customer follows a shop order by its code. Refreshes by itself. */
 @Component({
@@ -30,6 +31,7 @@ import { SignaturePadComponent } from './signature-pad.component';
           <div class="st-stage" style="font-weight:700;">{{ stageTitle() | translate }}</div>
           <div class="st-reason mt-1" *ngIf="t.rejectReason" style="color:#b91c1c;">{{ t.rejectReason }}</div>
           <div class="st-slot mt-1" *ngIf="t.deliveryMethod === 'DELIVERY' && t.slotDate && t.slotStart">⏰ {{ 'Delivery planned on {p0}, between {p1} and {p2}.' | translate: { p0: t.slotDate, p1: t.slotStart, p2: t.slotEnd } }}</div>
+          <div class="st-eta mt-1 text-muted" *ngIf="t.deliveryMethod === 'DELIVERY' && etaText(t)" style="font-size:0.9rem;">🚚 {{ etaText(t) }}</div>
           <div class="st-driver mt-1" *ngIf="t.status === 'OUT_FOR_DELIVERY' && t.driverName">{{ 'Your driver: {p0}' | translate: { p0: t.driverName } }}<ng-container *ngIf="t.driverPhone"> · <a [href]="'tel:' + t.driverPhone">{{ t.driverPhone }}</a></ng-container></div>
           <div class="flex gap-1 mt-2" *ngIf="!bad()" style="justify-content:center;">
             <span *ngFor="let s of steps()" [style.background]="s.reached ? '#16a34a' : '#d1d5db'" style="height:6px; flex:1; border-radius:3px;" [title]="s.label | translate"></span>
@@ -391,6 +393,11 @@ export class ShopTrackComponent implements OnInit, OnDestroy {
       },
       error: (e) => { this.busy = false; this.returnError = e?.error?.message ?? T('That did not work'); },
     });
+  }
+
+  /** The estimate shown when the order was placed (not for an order that is finished, turned down or already on its way). */
+  etaText(t: ShopTrack): string {
+    return ['COMPLETED', 'CANCELLED', 'REJECTED', 'OUT_FOR_DELIVERY'].includes(t.status) ? '' : etaDaysText(t.etaMin, t.etaMax);
   }
 
   returnLabel(s: string): string {

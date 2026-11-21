@@ -315,9 +315,10 @@ import { API_BASE } from '../core/constants';
       <div class="card mb-3" style="padding:1rem;">
         <h4 class="mb-2">{{ 'Delivery areas' | translate }}</h4>
         <p class="text-muted">{{ 'With no area the shop delivers anywhere for free. With areas, the customer must choose one and pays its fee.' | translate }}</p>
+        <p class="text-muted dz-daysnote">{{ 'Delivery days: how many days after we accept the order it arrives in this area. Leave empty to use the estimate of the whole shop (Front page).' | translate }}</p>
         <p class="text-muted dz-taxhelp">{{ 'The fee is the amount the customer pays. The tax you choose (from your existing taxes) is the part of it that is tax, included in the fee, so the invoice always equals the order total. Without a choice the tax of the delivery product is used.' | translate }}</p>
         <table class="table-sm">
-          <thead><tr><th>{{ 'Area' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th><th>{{ 'Tax' | translate }}</th><th class="text-end">{{ 'Minimum order' | translate }}</th><th>{{ 'Active' | translate }}</th><th></th></tr></thead>
+          <thead><tr><th>{{ 'Area' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th><th>{{ 'Tax' | translate }}</th><th class="text-end">{{ 'Minimum order' | translate }}</th><th>{{ 'Delivery days' | translate }}</th><th>{{ 'Active' | translate }}</th><th></th></tr></thead>
           <tbody>
             <tr *ngFor="let z of zones">
               <td><input class="form-control" style="width:200px;" maxlength="80" [name]="'zn' + z.id" [(ngModel)]="z.name" /></td>
@@ -329,6 +330,7 @@ import { API_BASE } from '../core/constants';
                 </select>
               </td>
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" [name]="'zm' + z.id" [(ngModel)]="z.minOrder" /></td>
+              <td style="white-space:nowrap;"><input class="form-control dz-dmin" type="number" min="0" max="60" style="width:70px; display:inline-block;" [name]="'zdn' + z.id" [(ngModel)]="z.deliveryDaysMin" [placeholder]="'from' | translate" /> – <input class="form-control dz-dmax" type="number" min="0" max="60" style="width:70px; display:inline-block;" [name]="'zdx' + z.id" [(ngModel)]="z.deliveryDaysMax" [placeholder]="'to' | translate" /></td>
               <td><input type="checkbox" [name]="'za' + z.id" [(ngModel)]="z.active" /></td>
               <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary" type="button" (click)="saveZone(z)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteZone(z)">{{ 'Remove' | translate }}</button></td>
             </tr>
@@ -342,6 +344,7 @@ import { API_BASE } from '../core/constants';
                 </select>
               </td>
               <td class="text-end"><input class="form-control" type="number" min="0" style="width:110px;" name="newZoneMin" [(ngModel)]="newZone.minOrder" /></td>
+              <td style="white-space:nowrap;"><input class="form-control dz-newdmin" type="number" min="0" max="60" style="width:70px; display:inline-block;" name="newZoneDmin" [(ngModel)]="newZone.deliveryDaysMin" [placeholder]="'from' | translate" /> – <input class="form-control dz-newdmax" type="number" min="0" max="60" style="width:70px; display:inline-block;" name="newZoneDmax" [(ngModel)]="newZone.deliveryDaysMax" [placeholder]="'to' | translate" /></td>
               <td></td>
               <td><button class="btn btn-sm btn-primary" type="button" (click)="addZone()">{{ 'Add area' | translate }}</button></td>
             </tr>
@@ -465,7 +468,7 @@ export class StoreSetupComponent implements OnInit {
   serviceProducts: Product[] = [];
   found: Product[] = [];
   search = '';
-  newZone: { name: string; fee: number; minOrder: number; taxRateId: number | null } = { name: '', fee: 0, minOrder: 0, taxRateId: null };
+  newZone: { name: string; fee: number; minOrder: number; taxRateId: number | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null } = { name: '', fee: 0, minOrder: 0, taxRateId: null, deliveryDaysMin: null, deliveryDaysMax: null };
   taxOptions: TaxOption[] = [];
   drivers: Driver[] = [];
   /** The link (and the PIN, just made) of a driver, shown under the table. */
@@ -770,8 +773,8 @@ export class StoreSetupComponent implements OnInit {
 
   addZone(): void {
     if (!this.newZone.name.trim()) { this.error = T('Give the area a name'); return; }
-    this.api.saveZone(null, { name: this.newZone.name, fee: this.newZone.fee || 0, minOrder: this.newZone.minOrder || 0, taxRateId: this.newZone.taxRateId, active: true }).subscribe({
-      next: () => { this.newZone = { name: '', fee: 0, minOrder: 0, taxRateId: null }; this.loadZones(); this.ok('Area added'); },
+    this.api.saveZone(null, { name: this.newZone.name, fee: this.newZone.fee || 0, minOrder: this.newZone.minOrder || 0, taxRateId: this.newZone.taxRateId, deliveryDaysMin: this.newZone.deliveryDaysMin, deliveryDaysMax: this.newZone.deliveryDaysMax, active: true }).subscribe({
+      next: () => { this.newZone = { name: '', fee: 0, minOrder: 0, taxRateId: null, deliveryDaysMin: null, deliveryDaysMax: null }; this.loadZones(); this.ok('Area added'); },
       error: (e) => this.fail(e, 'Could not add the area'),
     });
   }

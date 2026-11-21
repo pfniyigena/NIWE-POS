@@ -5,7 +5,7 @@ import { API_BASE } from '../constants';
 import { ListFilter, pagedList } from './list-state';
 import { PageResult } from './paged';
 
-export interface ShopZone { id: number; name: string; fee: number; minOrder: number }
+export interface ShopZone { id: number; name: string; fee: number; minOrder: number; daysMin: number | null; daysMax: number | null }
 export interface ShopProduct { id: number; name: string; description: string | null; price: number; category: string | null; imageUrl: string | null; stock: 'IN_STOCK' | 'LOW' | 'SOLD_OUT';
   /** The normal price when staff set a lower online price (shown struck through); 0 stars and 0 reviews when nobody reviewed it. */
   wasPrice: number | null; rating: number; ratingCount: number;
@@ -97,7 +97,7 @@ export interface ShopTrack {
   /** The customer can confirm the goods (they are out for delivery or ready), and when and how it was confirmed. */
   canConfirm?: boolean; receivedAt?: string | null; receivedVia?: string | null;
   /** The delivery window chosen at checkout (2026-11-24, 08:00, 11:00), or null. */
-  slotDate?: string | null; slotStart?: string | null; slotEnd?: string | null;
+  slotDate?: string | null; slotStart?: string | null; slotEnd?: string | null; etaMin?: number | null; etaMax?: number | null;
 }
 /** The delivery code to give to the driver (while the order is out or ready), or the reception details after. */
 export interface ShopReceipt { status: string; canConfirm: boolean; code: string | null; receivedAt: string | null; receivedVia: string | null; signedName: string | null }
@@ -149,7 +149,7 @@ export interface StoreOrder {
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
   /** The delivery window the customer chose (null = as soon as possible). */
-  slotDate: string | null; slotStart: string | null; slotEnd: string | null;
+  slotDate: string | null; slotStart: string | null; slotEnd: string | null; etaMin?: number | null; etaMax?: number | null;
 }
 /** A person who delivers orders (a simple list kept in the shop settings, not an employee record). openOrders = orders still to deliver. */
 /** Delivery cash a driver must hand in, per order (v1.57.0). */
@@ -242,7 +242,7 @@ export interface StoreCampaign { id: number; subject: string; body: string; butt
 export interface StoreCampaignForm { subject: string; body: string; buttonLabel: string; buttonLink: string; audience: 'ALL' | 'EN' | 'FR' }
 export interface StoreCampaignInfo { confirmedAll: number; confirmedEn: number; confirmedFr: number; mailConfigured: boolean; dailyLimit: number; sentLast24h: number; batchSize: number }
 export interface StoreDelivery { id: number; email: string; language: string; status: 'PENDING' | 'SENDING' | 'SENT' | 'FAILED' | 'SKIPPED'; error: string | null; sentAt: string | null }
-export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number; taxRateId: number | null }
+export interface StoreZone { id: number; name: string; fee: number; minOrder: number; active: boolean; sortOrder: number; taxRateId: number | null; deliveryDaysMin: number | null; deliveryDaysMax: number | null }
 /** A tax of the ERP a delivery fee can carry (v1.59.1). */
 export interface TaxOption { id: number; code: string; name: string; ratePercent: number; inclusive: boolean }
 

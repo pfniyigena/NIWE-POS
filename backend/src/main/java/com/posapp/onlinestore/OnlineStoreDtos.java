@@ -16,7 +16,7 @@ public final class OnlineStoreDtos {
 
     // ---------------------------------------------------------------- public shop
 
-    public record PublicZone(Long id, String name, BigDecimal fee, BigDecimal minOrder) {
+    public record PublicZone(Long id, String name, BigDecimal fee, BigDecimal minOrder, Integer daysMin, Integer daysMax) {
     }
 
     /** stock is IN_STOCK, LOW or SOLD_OUT: never an exact number. */
@@ -97,7 +97,7 @@ public final class OnlineStoreDtos {
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
                         String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber,
                         String driverName, String driverPhone, boolean canConfirm, Instant receivedAt, String receivedVia,
-                        String slotDate, String slotStart, String slotEnd) {
+                        String slotDate, String slotStart, String slotEnd, Integer etaMin, Integer etaMax) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -212,7 +212,7 @@ public final class OnlineStoreDtos {
                            int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned, Long driverId, String driverName, String driverPhone,
                            Instant receivedAt, String receivedVia, String receivedBy, String signedName, boolean hasSignature, boolean hasCode,
                            int deliveryAttempts, String lastFailureReason, Instant lastFailureAt, BigDecimal deliveredTotal, BigDecimal refundDifference,
-                           String slotDate, String slotStart, String slotEnd) {
+                           String slotDate, String slotStart, String slotEnd, Integer etaMin, Integer etaMax) {
     }
 
     /** Staff move a delivery order to a window; slotId null = back to "as soon as possible". */
@@ -366,7 +366,7 @@ public final class OnlineStoreDtos {
                                  BigDecimal onlinePrice, Integer sortOrder, Boolean featured, Boolean bestSeller, Boolean specialOffer, Boolean newArrival) {
     }
 
-    public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder, Long taxRateId) {
+    public record ZoneDto(Long id, String name, BigDecimal fee, BigDecimal minOrder, boolean active, int sortOrder, Long taxRateId, Integer deliveryDaysMin, Integer deliveryDaysMax) {
     }
 
     /** used = orders holding a use of it (not rejected or cancelled). */
@@ -379,7 +379,7 @@ public final class OnlineStoreDtos {
                                 Integer maxUses, Boolean oncePerCustomer, Boolean active) {
     }
 
-    public record ZoneRequest(@NotNull @Size(min = 1, max = 80) String name, BigDecimal fee, BigDecimal minOrder, Boolean active, Integer sortOrder, Long taxRateId) {
+    public record ZoneRequest(@NotNull @Size(min = 1, max = 80) String name, BigDecimal fee, BigDecimal minOrder, Boolean active, Integer sortOrder, Long taxRateId, Integer deliveryDaysMin, Integer deliveryDaysMax) {
     }
 
     /** A tax of the ERP that a delivery fee can carry. */

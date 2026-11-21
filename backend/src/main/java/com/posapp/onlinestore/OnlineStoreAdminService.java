@@ -380,6 +380,13 @@ public class OnlineStoreAdminService {
         z.setMinOrder(money(in.minOrder(), I18n.t("The minimum order")));
         if (in.active() != null) z.setActive(in.active());
         if (in.sortOrder() != null) z.setSortOrder(in.sortOrder());
+        Integer dMin = in.deliveryDaysMin();
+        Integer dMax = in.deliveryDaysMax();
+        if (dMin == null && dMax != null) dMin = dMax;
+        if (dMax == null && dMin != null) dMax = dMin;
+        if (dMin != null && (dMin < 0 || dMax < dMin || dMax > 60)) throw ApiException.badRequest(I18n.t("The delivery estimate must be from 0 to 60 days, the first number not above the second."));
+        z.setDeliveryDaysMin(dMin);
+        z.setDeliveryDaysMax(dMax);
         if (in.taxRateId() == null) {
             z.setTaxRateId(null);
         } else {
@@ -392,7 +399,7 @@ public class OnlineStoreAdminService {
     }
 
     private static ZoneDto toDto(OnlineDeliveryZone z) {
-        return new ZoneDto(z.getId(), z.getName(), z.getFee(), z.getMinOrder(), z.isActive(), z.getSortOrder(), z.getTaxRateId());
+        return new ZoneDto(z.getId(), z.getName(), z.getFee(), z.getMinOrder(), z.isActive(), z.getSortOrder(), z.getTaxRateId(), z.getDeliveryDaysMin(), z.getDeliveryDaysMax());
     }
 
     // ------------------------------------------------------------------ coupons

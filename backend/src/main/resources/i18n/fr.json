@@ -2101,5 +2101,10 @@
  "Your return {0} for order {1} is approved. A driver will come to collect the goods at {2}. No charge.": "Votre retour {0} pour la commande {1} est approuvé. Un chauffeur viendra récupérer les articles à {2}. Sans frais.",
  "Your return code is {0}. Give it to the driver only when you hand over the goods.": "Votre code de retour est {0}. Ne le donnez au chauffeur qu'au moment de lui remettre les articles.",
  "Your new code for return {0}": "Votre nouveau code pour le retour {0}",
- "Your new return code for {0} is {1}. The old code no longer works. Give it to the driver only when you hand over the goods.": "Votre nouveau code de retour pour {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au chauffeur qu'au moment de lui remettre les articles."
+ "Your new return code for {0} is {1}. The old code no longer works. Give it to the driver only when you hand over the goods.": "Votre nouveau code de retour pour {0} est {1}. L'ancien code ne fonctionne plus. Ne le donnez au chauffeur qu'au moment de lui remettre les articles.",
+ "Estimated delivery: the same day we accept your order.": "Livraison estimée : le jour même où nous acceptons votre commande.",
+ "Estimated delivery: 1 day after we accept your order.": "Livraison estimée : 1 jour après l'acceptation de votre commande.",
+ "Estimated delivery: {0} days after we accept your order.": "Livraison estimée : {0} jours après l'acceptation de votre commande.",
+ "Estimated delivery: within {0} days after we accept your order.": "Livraison estimée : sous {0} jours après l'acceptation de votre commande.",
+ "Estimated delivery: {0} to {1} days after we accept your order.": "Livraison estimée : de {0} à {1} jours après l'acceptation de votre commande."
 }

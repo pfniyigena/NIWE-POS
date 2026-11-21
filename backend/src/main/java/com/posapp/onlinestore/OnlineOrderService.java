@@ -733,6 +733,6 @@ public class OnlineOrderService {
                 o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone(),
                 o.getReceivedAt(), o.getReceivedVia(), o.getReceivedBy(), o.getSignedName(), o.getSignature() != null, o.getReceiptCode() != null,
                 o.getDeliveryAttempts(), o.getLastFailureReason(), o.getLastFailureAt(), o.getDeliveredTotal(), o.getRefundDifference(),
-                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()));
+                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()), o.getEtaDaysMin(), o.getEtaDaysMax());
     }
 }

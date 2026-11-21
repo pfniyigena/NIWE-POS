@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.63.0 - Online Store: delivery estimate per area
+
+Each delivery area can have its own estimated delivery days (Shop settings > Delivery areas > Delivery days); empty = the shop's estimate. The customer sees it at checkout once he picks his area, on the order page and in the "received" and "accepted" messages; staff see it on each delivery order. The estimate is kept on the order when placed. It works beside the delivery time slots without any link. New migration V97. See `RELEASE-NOTES-v1.63.0.md` and `docs/online-store-area-estimate.md`.
+
 ## v1.62.0 - Online Store: return pick-ups
 
 A return of a delivered order is collected from the customer by a driver, free of charge. Approving the return makes a 4-digit return code (sent by e-mail and text); staff choose the driver (now or later); the driver sees **Returns to collect** on his private page and confirms the collection with the code the customer gives him. New status **Collected**, new tab, and "Goods received: put back and refund" works from Approved or Collected as before. Returns of orders picked up at the shop are still brought back by the customer. Five wrong codes lock a return for half an hour; staff can make a new code. New migration V96. See `RELEASE-NOTES-v1.62.0.md` and `docs/online-store-return-pickups.md`.

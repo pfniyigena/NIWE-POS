@@ -9583,5 +9583,12 @@
  "Returns to collect": "Retours à récupérer",
  "Collect the goods": "Récupérer les articles",
  "Customer's return code": "Code de retour du client",
- "Return {p0} collected. Bring the goods to the shop.": "Retour {p0} récupéré. Rapportez les articles à la boutique."
+ "Return {p0} collected. Bring the goods to the shop.": "Retour {p0} récupéré. Rapportez les articles à la boutique.",
+ "Delivery days": "Jours de livraison",
+ "Delivery days: how many days after we accept the order it arrives in this area. Leave empty to use the estimate of the whole shop (Front page).": "Jours de livraison : combien de jours après l'acceptation de la commande elle arrive dans cette zone. Laissez vide pour utiliser l'estimation de toute la boutique (Page d'accueil).",
+ "Estimated delivery: the same day we accept your order.": "Livraison estimée : le jour même où nous acceptons votre commande.",
+ "Estimated delivery: 1 day after we accept your order.": "Livraison estimée : 1 jour après l'acceptation de votre commande.",
+ "Estimated delivery: {p0} days after we accept your order.": "Livraison estimée : {p0} jours après l'acceptation de votre commande.",
+ "Estimated delivery: within {p0} days after we accept your order.": "Livraison estimée : sous {p0} jours après l'acceptation de votre commande.",
+ "Estimated delivery: {p0} to {p1} days after we accept your order.": "Livraison estimée : de {p0} à {p1} jours après l'acceptation de votre commande."
 }

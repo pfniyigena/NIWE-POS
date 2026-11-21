@@ -14,6 +14,7 @@ import { StoreSettingsApiService } from '../core/api/store-settings-api.service'
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
 import { PaymentMethodOption, Warehouse, WarehouseLocation } from '../core/models';
 import { T } from '../core/i18n/t';
+import { etaDaysText } from './delivery-eta';
 
 interface LocationOption { id: number; label: string; type: string | null; primaryWarehouse: boolean }
 
@@ -81,6 +82,7 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           <li *ngIf="o.loyaltyPointsEarned > 0">{{ 'Loyalty points earned on this order: {p0}' | translate: { p0: o.loyaltyPointsEarned } }}</li>
           <li *ngIf="o.couponCode && o.feeWaived > 0">{{ 'Coupon {p0}: delivery fee waived ({p1})' | translate: { p0: o.couponCode, p1: (o.feeWaived | number: '1.0-2') } }}</li>
         </ul>
+        <div class="so-eta text-muted" *ngIf="o.deliveryMethod === 'DELIVERY' && etaText(o)" style="font-size:0.85rem;">🚚 {{ etaText(o) }}</div>
         <div class="so-slot mt-1" *ngIf="o.deliveryMethod === 'DELIVERY'" style="font-size:0.9rem;">
           <span class="so-slot-text">⏰ <ng-container *ngIf="o.slotDate">{{ o.slotDate }}, {{ o.slotStart }}-{{ o.slotEnd }}</ng-container><ng-container *ngIf="!o.slotDate">{{ 'As soon as possible' | translate }}</ng-container></span>
           <button *ngIf="canAssign(o) && windows.length" class="btn btn-sm btn-outline-secondary so-slot-change" style="margin-left:0.5rem;" [disabled]="busy" (click)="startSlot(o)">{{ 'Change time' | translate }}</button>
@@ -312,6 +314,11 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   }
 
   /** The drivers to pick from: those switched on, plus the order's current one even if switched off since. */
+  /** The estimate the customer was shown when he ordered (only while the order is not on its way or finished). */
+  etaText(o: StoreOrder): string {
+    return ['COMPLETED', 'CANCELLED', 'REJECTED', 'OUT_FOR_DELIVERY'].includes(o.status) ? '' : etaDaysText(o.etaMin, o.etaMax);
+  }
+
   driversFor(o: StoreOrder): Driver[] {
     return this.drivers.filter((d) => d.active || d.id === o.driverId);
   }

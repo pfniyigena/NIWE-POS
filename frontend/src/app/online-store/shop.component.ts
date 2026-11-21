@@ -20,6 +20,7 @@ import { ShopMoneyPipe } from './shop-money.pipe';
 import { LanguageService } from '../core/i18n/language.service';
 import { InfoLink } from '../core/api/online-store-api.service';
 import { T } from '../core/i18n/t';
+import { etaDates } from './delivery-eta';
 
 /**
  * The public shop at /shop (no login). A visitor browses what the shop sells, fills a cart, and sends an order that waits for staff to accept it.
@@ -275,7 +276,8 @@ import { T } from '../core/i18n/t';
               <select class="form-select" style="max-width:320px;" name="zone" [(ngModel)]="zoneId" (ngModelChange)="recheckCoupon()">
                 <option [ngValue]="null" disabled>{{ 'Choose your area…' | translate }}</option>
                 <option *ngFor="let z of shop.zones" [ngValue]="z.id">{{ z.name }} ({{ z.fee | shopMoney: cur }})</option>
-              </select></div>
+              </select>
+              <div class="shop-area-eta text-muted mt-1" *ngIf="zoneEta() as eta" style="font-size:0.9rem;">🚚 {{ 'Estimated delivery' | translate }}: {{ eta }}</div></div>
             <div class="form-group shop-saved-addr" *ngIf="account && addresses.length"><label class="form-label">{{ 'My saved addresses' | translate }}</label>
               <select class="form-select" style="max-width:320px;" name="savedaddr" [ngModel]="pickedAddr" (ngModelChange)="pickAddress($event)">
                 <option [ngValue]="null">{{ 'Choose a saved address…' | translate }}</option>
@@ -483,6 +485,12 @@ export class ShopComponent implements OnInit, OnDestroy {
   notes = '';
   website = '';
   zoneId: number | null = null;
+
+  /** The delivery estimate of the chosen area (its own days, or the shop's) as dates, empty when there is none. */
+  zoneEta(): string {
+    const z = this.shop?.zones.find((x) => x.id === this.zoneId);
+    return z ? etaDates(z.daysMin, z.daysMax, this.lang.current) : '';
+  }
   /** The delivery windows the shop offers (null until loaded), the day and the window the customer picked. */
   slotBoard: SlotBoard | null = null;
   slotDay: string | null = null;

@@ -174,7 +174,10 @@ public class OnlineStoreService {
         OnlineStoreSettings s = openSettings();
         String name = s.getShopName() != null && !s.getShopName().isBlank() ? s.getShopName() : storeSettingsService.getSettingsEntity().getBusinessName();
         List<PublicZone> zones = zoneRepository.findAllByOrderBySortOrderAscNameAsc().stream().filter(OnlineDeliveryZone::isActive)
-                .map(z -> new PublicZone(z.getId(), z.getName(), z.getFee(), z.getMinOrder())).toList();
+                .map(z -> {
+                    int[] eta = z.estimate(s.getDeliveryDaysMin(), s.getDeliveryDaysMax());
+                    return new PublicZone(z.getId(), z.getName(), z.getFee(), z.getMinOrder(), eta == null ? null : eta[0], eta == null ? null : eta[1]);
+                }).toList();
         boolean open = !s.isPaused();
         return new PublicShop(name, s.getIntroText(), s.getContactPhone(), s.getPickupAddress(), open, open ? null : s.getPauseMessage(),
                 s.isPickupEnabled(), s.isDeliveryEnabled(), s.isCodEnabled(), s.getMinOrder(), s.getFreeDeliveryOver(), zones,
@@ -594,6 +597,14 @@ public class OnlineStoreService {
             o.setZoneName(zone.getName());
             o.setDeliveryTaxRateId(zone.getTaxRateId());
         }
+        if (method.equals("DELIVERY")) {
+            int[] eta = zone != null ? zone.estimate(s.getDeliveryDaysMin(), s.getDeliveryDaysMax())
+                    : (s.getDeliveryDaysMin() != null && s.getDeliveryDaysMax() != null ? new int[]{s.getDeliveryDaysMin(), s.getDeliveryDaysMax()} : null);
+            if (eta != null) {
+                o.setEtaDaysMin(eta[0]);
+                o.setEtaDaysMax(eta[1]);
+            }
+        }
         o.setDeliveryFee(fee);
         if (slot != null) {
             o.setSlotDate(slot.date());
@@ -704,10 +715,23 @@ public class OnlineStoreService {
         return track(o);
     }
 
-    /** The sentence about the chosen delivery window, when the order has one. */
+    /** The sentences about the delivery: the chosen window and the estimate of the area, when the order has them. */
     static OnlineMessages.Msg withSlot(OnlineMessages.Msg msg, OnlineOrder o) {
-        if (o.getSlotDate() == null || o.getSlotStart() == null) return msg;
-        return msg.then(OnlineMessages.m("Delivery planned on {0}, between {1} and {2}.", OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd())));
+        if (o.getSlotDate() != null && o.getSlotStart() != null) {
+            msg = msg.then(OnlineMessages.m("Delivery planned on {0}, between {1} and {2}.", OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd())));
+        }
+        if ("DELIVERY".equals(o.getDeliveryMethod()) && o.getEtaDaysMin() != null && o.getEtaDaysMax() != null) {
+            msg = msg.then(etaMsg(o.getEtaDaysMin(), o.getEtaDaysMax()));
+        }
+        return msg;
+    }
+
+    /** "Estimated delivery: 1 to 2 days after we accept your order." in the customer's language, one wording per case. */
+    static OnlineMessages.Msg etaMsg(int min, int max) {
+        if (max == 0) return OnlineMessages.m("Estimated delivery: the same day we accept your order.");
+        if (min == max) return min == 1 ? OnlineMessages.m("Estimated delivery: 1 day after we accept your order.") : OnlineMessages.m("Estimated delivery: {0} days after we accept your order.", min);
+        if (min == 0) return OnlineMessages.m("Estimated delivery: within {0} days after we accept your order.", max);
+        return OnlineMessages.m("Estimated delivery: {0} to {1} days after we accept your order.", min, max);
     }
 
     private Track track(OnlineOrder o) {
@@ -717,6 +741,6 @@ public class OnlineStoreService {
                 o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getInvoiceNumber(),
                 "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverName() : null, "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverPhone() : null,
                 "OUT_FOR_DELIVERY".equals(o.getStatus()) || "READY_FOR_PICKUP".equals(o.getStatus()), o.getReceivedAt(), o.getReceivedVia(),
-                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()));
+                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()), "DELIVERY".equals(o.getDeliveryMethod()) ? o.getEtaDaysMin() : null, "DELIVERY".equals(o.getDeliveryMethod()) ? o.getEtaDaysMax() : null);
     }
 }
