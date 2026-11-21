@@ -315,6 +315,23 @@ p {
     padding: 0 12px;
     gap: 6px;
   }
+  /* v1.64.1: French texts are longer than English ones ("Se déconnecter"); the row wraps to a second line instead of pushing buttons off the screen. */
+  .topbar {
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .topbar .user-info {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+  .topbar .user-info .btn {
+    white-space: nowrap;
+  }
   .topbar .user-info .user-name {
     /* Frees up room for the Profile/Log out buttons next to the hamburger + brand on a narrow
        screen; the buttons themselves (who's who comes from being logged in as them) stay. */

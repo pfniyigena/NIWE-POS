@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.64.1 - French check of the recent screens
+
+A pass over the Online Store screens added in v1.59 to v1.64 with French selected, on a phone and on a desktop. Fixed: the language picker showed "English" while the screens were French; the top bar pushed "Se déconnecter" off a phone screen (it now wraps); the Delivery areas table ran out of its card; error messages that carried an English status word ("This order is completed...") now say it in French; about 70 server texts were missing in French (checkout errors, invoice and order labels, status words) and are added; "chauffeur" is now "livreur" everywhere, as on the other screens. No migration. See `RELEASE-NOTES-v1.64.1.md`.
+
 ## v1.64.0 - Online Store: a new delivery time after a failed visit
 
 After a failed visit the old delivery window is freed at once and the customer is asked (message + his order page) to choose a new one from the free windows; staff are told, and Online orders shows "Waiting for a new time". If windows are compulsory the order cannot go out again without one (Change time works for staff). No migration. See `RELEASE-NOTES-v1.64.0.md` and `docs/online-store-new-time-after-failed-visit.md`.

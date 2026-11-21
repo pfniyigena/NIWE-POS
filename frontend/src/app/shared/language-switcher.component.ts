@@ -11,7 +11,7 @@ import { LANGUAGES, LanguageService, Lang } from '../core/i18n/language.service'
   template: `
     <select class="form-select" style="width:auto; display:inline-block; padding:2px 6px; font-size:0.85rem;" [attr.aria-label]="'Language' | translate" [title]="'Language' | translate"
             [value]="lang.current" (change)="pick($any($event.target).value)">
-      <option *ngFor="let l of languages" [value]="l.code">{{ l.label }}</option>
+      <option *ngFor="let l of languages" [value]="l.code" [selected]="l.code === lang.current">{{ l.label }}</option>
     </select>
   `,
 })

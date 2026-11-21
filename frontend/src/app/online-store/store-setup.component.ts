@@ -317,6 +317,7 @@ import { API_BASE } from '../core/constants';
         <p class="text-muted">{{ 'With no area the shop delivers anywhere for free. With areas, the customer must choose one and pays its fee.' | translate }}</p>
         <p class="text-muted dz-daysnote">{{ 'Delivery days: how many days after we accept the order it arrives in this area. Leave empty to use the estimate of the whole shop (Front page).' | translate }}</p>
         <p class="text-muted dz-taxhelp">{{ 'The fee is the amount the customer pays. The tax you choose (from your existing taxes) is the part of it that is tax, included in the fee, so the invoice always equals the order total. Without a choice the tax of the delivery product is used.' | translate }}</p>
+        <div style="overflow-x:auto;">
         <table class="table-sm">
           <thead><tr><th>{{ 'Area' | translate }}</th><th class="text-end">{{ 'Fee' | translate }}</th><th>{{ 'Tax' | translate }}</th><th class="text-end">{{ 'Minimum order' | translate }}</th><th>{{ 'Delivery days' | translate }}</th><th>{{ 'Active' | translate }}</th><th></th></tr></thead>
           <tbody>
@@ -350,6 +351,7 @@ import { API_BASE } from '../core/constants';
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <div class="card mb-3 slots-card" style="padding:1rem;">

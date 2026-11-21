@@ -285,10 +285,22 @@ public class OnlineReturnService {
         return Map.of("returnsRequested", returns.countByStatus("REQUESTED"), "returnsToRefund", returns.countByStatus("APPROVED") + collected, "returnsCollected", collected);
     }
 
+    /** A return status in words, in the language of the person reading (used inside error messages). */
+    static String statusWord(String status) {
+        return switch (status == null ? "" : status) {
+            case "REQUESTED" -> I18n.t("waiting for an answer");
+            case "APPROVED" -> I18n.t("approved");
+            case "COLLECTED" -> I18n.t("collected");
+            case "REFUSED" -> I18n.t("refused");
+            case "REFUNDED" -> I18n.t("done");
+            default -> status == null ? "" : status.toLowerCase(Locale.ROOT);
+        };
+    }
+
     private OnlineReturn lock(Long id, String... allowed) {
         OnlineReturn r = returns.lockById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Return not found")));
         for (String a : allowed) if (r.getStatus().equals(a)) return r;
-        throw ApiException.badRequest(I18n.t("This return is {0}, so that is not possible now", r.getStatus().toLowerCase(Locale.ROOT)));
+        throw ApiException.badRequest(I18n.t("This return is {0}, so that is not possible now", statusWord(r.getStatus())));
     }
 
     @Transactional

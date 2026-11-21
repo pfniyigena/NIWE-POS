@@ -81,7 +81,7 @@ public class OnlineOrderService {
 
     private void expect(OnlineOrder o, String... allowed) {
         for (String a : allowed) if (o.getStatus().equals(a)) return;
-        throw ApiException.badRequest(I18n.t("This order is {0}, so that is not possible now", o.getStatus().toLowerCase(Locale.ROOT).replace('_', ' ')));
+        throw ApiException.badRequest(I18n.t("This order is {0}, so that is not possible now", statusWord(o.getStatus())));
     }
 
     private void move(OnlineOrder o, String status, String note) {
@@ -345,6 +345,22 @@ public class OnlineOrderService {
                     OnlineMessages.m("The delivery of your order {0} is planned on {1}, between {2} and {3}.", o.getCode(), OnlineSlotService.d(pick.date()), OnlineSlotService.t(pick.start()), OnlineSlotService.t(pick.end())));
         }
         return dto(o);
+    }
+
+    /** An order status in words, in the language of the person reading (used inside error messages). */
+    static String statusWord(String status) {
+        return switch (status == null ? "" : status) {
+            case "AWAITING_PAYMENT" -> I18n.t("waiting for payment");
+            case "PLACED" -> I18n.t("just placed");
+            case "ACCEPTED" -> I18n.t("accepted");
+            case "PACKED" -> I18n.t("packed");
+            case "OUT_FOR_DELIVERY" -> I18n.t("out for delivery");
+            case "READY_FOR_PICKUP" -> I18n.t("ready for pick-up");
+            case "COMPLETED" -> I18n.t("completed");
+            case "CANCELLED" -> I18n.t("cancelled");
+            case "REJECTED" -> I18n.t("rejected");
+            default -> status == null ? "" : status.toLowerCase(Locale.ROOT).replace('_', ' ');
+        };
     }
 
     private void setDriver(OnlineOrder o, Long driverId) {
