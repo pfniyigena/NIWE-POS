@@ -9602,5 +9602,9 @@
  "Failed to load the ads": "Échec du chargement des annonces",
  "Failed to load the newsletter list": "Échec du chargement de la liste de la lettre d'information",
  "Failed to load the reviews": "Échec du chargement des avis",
- "Sending": "Envoi en cours"
+ "Sending": "Envoi en cours",
+ "Stock the shop sells from": "Stock vendu par la boutique",
+ "Automatic: every Sales location outside the Main warehouse": "Automatique : tous les emplacements de vente hors de l'entrepôt principal",
+ "No Sales location outside the Main warehouse yet. Make one in Inventory > Warehouses, or the shop has nothing to sell.": "Aucun emplacement de vente hors de l'entrepôt principal pour l'instant. Créez-en un dans Inventaire > Entrepôts, sinon la boutique n'a rien à vendre.",
+ "Only the stock of this location is offered in the shop, and deliveries leave from it. Stock in the Main warehouse, Receiving or Storage locations is not offered.": "Seul le stock de cet emplacement est proposé dans la boutique, et les livraisons en partent. Le stock de l'entrepôt principal et des emplacements de réception ou de stockage n'est pas proposé."
 }

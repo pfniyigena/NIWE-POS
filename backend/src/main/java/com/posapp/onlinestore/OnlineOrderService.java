@@ -36,6 +36,10 @@ import java.util.Set;
 @Service
 public class OnlineOrderService {
 
+    /** v1.65.0: the stock location a delivery is taken from when nobody chose one. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineShopStock shopStock;
+
     private final ShopLoyaltyService loyalty;
     private final OnlineDriverRepository drivers;
     @org.springframework.beans.factory.annotation.Autowired
@@ -580,14 +584,54 @@ public class OnlineOrderService {
         return new Partial(undeliveredDiscount.setScale(2, java.math.RoundingMode.HALF_UP), deliveredNet.setScale(2, java.math.RoundingMode.HALF_UP), summary.toString());
     }
 
+    /** The lines a completion is going to take out of stock: everything left, or (partial delivery) only the part the customer keeps. */
+    private static List<FulfillSalesOrderRequest.FulfillLineEntry> planned(SalesOrderDto so, List<KeptLine> kept) {
+        java.util.Map<Long, BigDecimal> rest = new java.util.HashMap<>();
+        if (kept != null) for (KeptLine k : kept) if (k != null && k.productId() != null && k.quantity() != null) rest.merge(k.productId(), k.quantity(), BigDecimal::add);
+        List<FulfillSalesOrderRequest.FulfillLineEntry> out = new ArrayList<>();
+        for (SalesOrderLineDto l : so.lines()) {
+            BigDecimal left = l.quantityOrdered().subtract(l.quantityFulfilled());
+            if (left.signum() <= 0) continue;
+            BigDecimal take = left;
+            if (!rest.isEmpty() && rest.containsKey(l.productId())) {
+                take = left.min(rest.get(l.productId()).max(BigDecimal.ZERO));
+                rest.put(l.productId(), rest.get(l.productId()).subtract(take));
+            }
+            if (take.signum() <= 0) continue;
+            FulfillSalesOrderRequest.FulfillLineEntry e = new FulfillSalesOrderRequest.FulfillLineEntry();
+            e.setLineId(l.id());
+            e.setQuantityFulfilled(take);
+            out.add(e);
+        }
+        return out;
+    }
+
     private OrderDto finish(OnlineOrder o, CompleteRequest in, AppUser caller, String by, String how, List<KeptLine> kept) {
         expect(o, "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
         if (o.getSalesOrderId() == null) throw ApiException.badRequest(I18n.t("This order has no sale order"));
         SalesOrderDto so = salesOrderService.getById(o.getSalesOrderId());
+        // v1.65.0: the stock check comes first and for what is going to be taken (the kept part of a partial delivery), so a refusal ("not enough
+        // stock at the location") is a clear message and leaves nothing half done; the location is the shop's own when nobody chose one.
+        FulfillSalesOrderRequest fr = new FulfillSalesOrderRequest();
+        try {
+            fr.setLocationId(shopStock.locationFor(o, in == null ? null : in.locationId()));
+            fr.setLines(planned(so, kept));
+            if (!fr.getLines().isEmpty()) salesOrderService.checkFulfilment(so.id(), fr);
+        } catch (ApiException e) {
+            if (caller != null) throw e;
+            // the driver and the customer get a plain sentence; the reason is written in the order's history for staff
+            OnlineOrderEvent ev = new OnlineOrderEvent();
+            ev.setOnlineOrder(o);
+            ev.setStatus(o.getStatus());
+            String why = e.getMessage() == null ? "" : e.getMessage();
+            ev.setNote(I18n.t("The hand-over could not be recorded: {0}", why.length() > 200 ? why.substring(0, 200) : why));
+            ev.setByUser(by);
+            o.getEvents().add(ev);
+            repository.save(o);
+            throw ApiException.badRequest(I18n.t("We could not record this delivery just now. Please call the shop."));
+        }
         Partial partial = kept == null || kept.isEmpty() ? null : applyKept(o, so, kept);
         if (partial != null) so = salesOrderService.getById(o.getSalesOrderId());
-        FulfillSalesOrderRequest fr = new FulfillSalesOrderRequest();
-        fr.setLocationId(in == null ? null : in.locationId());
         List<FulfillSalesOrderRequest.FulfillLineEntry> entries = new ArrayList<>();
         for (SalesOrderLineDto l : so.lines()) {
             BigDecimal left = l.quantityOrdered().subtract(l.quantityFulfilled());

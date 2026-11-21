@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.65.0 - Online Store: the stock the shop sells
+
+With multi-warehouse on, the shop now sells only from Sales locations outside the Main warehouse (one chosen in Shop settings, or all of them), and a delivery taken without a chosen location (driver's code, customer's tap) leaves from the shop's location instead of failing. A refused completion (not enough stock) now gives the reason instead of a 500 error. Migration V98. See `RELEASE-NOTES-v1.65.0.md` and `docs/online-store-shop-stock.md`.
+
 ## v1.64.1 - French check of the recent screens
 
 A pass over the Online Store screens added in v1.59 to v1.64 with French selected, on a phone and on a desktop. Fixed: the language picker showed "English" while the screens were French; the top bar pushed "Se déconnecter" off a phone screen (it now wraps); the Delivery areas table ran out of its card; error messages that carried an English status word ("This order is completed...") now say it in French; about 70 server texts were missing in French (checkout errors, invoice and order labels, status words) and are added; "chauffeur" is now "livreur" everywhere, as on the other screens. No migration. See `RELEASE-NOTES-v1.64.1.md`.

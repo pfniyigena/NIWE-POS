@@ -396,15 +396,17 @@ public class SalesOrderService {
     }
 
     /**
-     * The stock-moving step: each entry bumps one line's {@code quantityFulfilled} and, in the
-     * same transaction, decrements the matching product's live stock by the same amount via
-     * {@link CatalogService#adjustStock} — gated by the store-wide "Allow negative stock" setting,
-     * same messaging convention as {@code OrderService.validateStockAvailability}. Accepts a
-     * partial fulfillment and can be called more than once against the same order.
+     * v1.65.0: the refusals {@link #fulfillLines} would give (status, location, stock), without changing anything. {@code noRollbackFor}: a plain
+     * refusal must not mark a caller's transaction rollback-only (the online shop completes an order from a transaction that has to commit its
+     * counters, and would otherwise end with "Transaction silently rolled back" instead of the real reason).
      */
-    @Transactional
-    public SalesOrderDto fulfillLines(Long id, FulfillSalesOrderRequest request) {
-        SalesOrder so = getEntityOrThrow(id);
+    @Transactional(readOnly = true, noRollbackFor = ApiException.class)
+    public void checkFulfilment(Long id, FulfillSalesOrderRequest request) {
+        checkFulfilment(getEntityOrThrow(id), request);
+    }
+
+    /** Status, location and stock checks of a fulfilment; returns the location goods leave from (null = legacy primary stock). */
+    private WarehouseLocation checkFulfilment(SalesOrder so, FulfillSalesOrderRequest request) {
         if (so.getStatus() != SalesOrderStatus.CONFIRMED && so.getStatus() != SalesOrderStatus.PARTIALLY_FULFILLED) {
             throw ApiException.badRequest("Cannot fulfill sales order " + so.getOrderNumber() + " — it is " + so.getStatus());
         }
@@ -439,6 +441,20 @@ public class SalesOrderService {
                 }
             }
         }
+        return fulfilLocation;
+    }
+
+    /**
+     * The stock-moving step: each entry bumps one line's {@code quantityFulfilled} and, in the
+     * same transaction, decrements the matching product's live stock by the same amount via
+     * {@link CatalogService#adjustStock} — gated by the store-wide "Allow negative stock" setting,
+     * same messaging convention as {@code OrderService.validateStockAvailability}. Accepts a
+     * partial fulfillment and can be called more than once against the same order.
+     */
+    @Transactional
+    public SalesOrderDto fulfillLines(Long id, FulfillSalesOrderRequest request) {
+        SalesOrder so = getEntityOrThrow(id);
+        WarehouseLocation fulfilLocation = checkFulfilment(so, request);
 
         StringBuilder fulfilledDescription = new StringBuilder();
         // Accounting's revenue/tax/COGS for exactly this call's fulfilled quantities — revenue

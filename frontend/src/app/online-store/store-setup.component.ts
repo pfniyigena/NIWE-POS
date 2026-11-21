@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay } from '../core/api/online-store-api.service';
+import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay, ShopStockSetup } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -50,6 +50,15 @@ import { API_BASE } from '../core/constants';
         <div class="flex gap-3 mt-2" style="flex-wrap:wrap;">
           <div class="form-group"><label class="form-label">{{ 'Units kept back for the till' | translate }}</label><input class="form-control" type="number" min="0" max="1000" style="width:140px;" name="buffer" [(ngModel)]="s.stockBuffer" /></div>
           <div class="form-group"><label class="form-label">{{ 'Minimum order' | translate }}</label><input class="form-control" type="number" min="0" style="width:140px;" name="minOrder" [(ngModel)]="s.minOrder" /></div>
+          <div class="form-group ss-shoploc" *ngIf="stockSetup?.multiWarehouse">
+            <label class="form-label">{{ 'Stock the shop sells from' | translate }}</label>
+            <select class="form-select ss-shoploc-select" style="width:280px;" name="shopLoc" [ngModel]="stockSetup!.locationId" (ngModelChange)="saveShopStock($event)">
+              <option [ngValue]="null">{{ 'Automatic: every Sales location outside the Main warehouse' | translate }}</option>
+              <option *ngFor="let o of stockSetup!.options" [ngValue]="o.id">{{ o.label }}</option>
+            </select>
+            <div class="text-muted ss-shoploc-none" style="font-size:0.85rem; max-width:34rem;" *ngIf="stockSetup!.options.length === 0">{{ 'No Sales location outside the Main warehouse yet. Make one in Inventory > Warehouses, or the shop has nothing to sell.' | translate }}</div>
+            <div class="text-muted" style="font-size:0.85rem; max-width:34rem;">{{ 'Only the stock of this location is offered in the shop, and deliveries leave from it. Stock in the Main warehouse, Receiving or Storage locations is not offered.' | translate }}</div>
+          </div>
           <div class="form-group"><label class="form-label">{{ 'Free delivery from' | translate }}</label><input class="form-control" type="number" min="0" style="width:140px;" name="freeFrom" [(ngModel)]="s.freeDeliveryOver" [placeholder]="'never' | translate" /></div>
           <div class="form-group"><label class="form-label">{{ 'Orders waiting per phone' | translate }}</label><input class="form-control" type="number" min="1" max="50" style="width:140px;" name="pendingPhone" [(ngModel)]="s.maxPendingPerPhone" /></div>
           <div class="form-group"><label class="form-label">{{ 'Orders per connection per hour' | translate }}</label><input class="form-control" type="number" min="1" max="1000" style="width:140px;" name="perIp" [(ngModel)]="s.maxPerIpPerHour" /></div>
@@ -514,6 +523,7 @@ export class StoreSetupComponent implements OnInit {
     this.loadZones();
     this.loadDrivers();
     this.loadSlots();
+    this.loadShopStock();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });
   }
 
@@ -794,6 +804,15 @@ export class StoreSetupComponent implements OnInit {
   dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   windows: DeliveryWindow[] = [];
   slotSet: SlotSettings | null = null;
+  stockSetup: ShopStockSetup | null = null;
+
+  loadShopStock(): void {
+    this.api.shopStock().subscribe({ next: (x) => (this.stockSetup = x), error: () => {} });
+  }
+
+  saveShopStock(id: number | null): void {
+    this.api.saveShopStock(id).subscribe({ next: (x) => { this.stockSetup = x; this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save') });
+  }
   closedDays: ClosedDay[] = [];
   closedDay = '';
   closedReason = '';

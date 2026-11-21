@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Deque;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,6 +51,9 @@ public class OnlineStoreService {
     private OnlineSlotService slotService;
     private final OnlineOrderRepository orderRepository;
     private final StockReservationService stockReservationService;
+    /** v1.65.0: which stock the shop sells (the shop's Sales location with multi-warehouse on). */
+    @Autowired
+    private OnlineShopStock shopStock;
     private final StoreSettingsService storeSettingsService;
     private final MailService mailService;
     private final AuditLogService auditLogService;
@@ -118,14 +122,14 @@ public class OnlineStoreService {
     /** Units the shop may still sell of this product, or null when stock is not tracked. */
     BigDecimal sellable(Product p, int buffer) {
         if (!p.isTrackStock() || p.isService()) return null;
-        return stockReservationService.available(p).subtract(BigDecimal.valueOf(buffer));
+        return shopStock.available(p).subtract(BigDecimal.valueOf(buffer));
     }
 
     /** The figures behind the stock the shop shows for a product (Shop settings > Products on the shop). */
     OnlineStoreDtos.StockInfo stockInfo(Product p, int buffer) {
         if (!p.isTrackStock() || p.isService()) return new OnlineStoreDtos.StockInfo(false, null, null, buffer, null);
         BigDecimal reserved = stockReservationService.reserved(p);
-        BigDecimal available = stockReservationService.available(p);
+        BigDecimal available = shopStock.available(p);
         return new OnlineStoreDtos.StockInfo(true, available.add(reserved), reserved, buffer, available.subtract(BigDecimal.valueOf(buffer)));
     }
 

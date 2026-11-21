@@ -2166,5 +2166,10 @@
  "approved": "approuvé",
  "collected": "collecté",
  "refused": "refusé",
- "done": "terminé"
+ "done": "terminé",
+ "The shop has no Sales location to sell from. In Inventory make a Sales location in a warehouse other than the Main one, then choose it in Shop settings.": "La boutique n'a aucun emplacement de vente d'où vendre. Dans Inventaire, créez un emplacement de vente dans un entrepôt autre que l'entrepôt principal, puis choisissez-le dans les paramètres de la boutique.",
+ "Choose a Sales location of a warehouse other than the Main one.": "Choisissez un emplacement de vente d'un entrepôt autre que l'entrepôt principal.",
+ "Save the shop settings first.": "Enregistrez d'abord les paramètres de la boutique.",
+ "We could not record this delivery just now. Please call the shop.": "Nous n'avons pas pu enregistrer cette livraison pour le moment. Veuillez appeler la boutique.",
+ "The hand-over could not be recorded: {0}": "La remise n'a pas pu être enregistrée : {0}"
 }

@@ -3,6 +3,7 @@ package com.posapp.onlinestore;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +23,9 @@ public class OnlineShopSearch {
 
     static final int MAX_WORDS = 5;
 
+    @Autowired
+    private OnlineShopStock shopStock;
+
     @PersistenceContext
     private EntityManager em;
 
@@ -34,7 +38,7 @@ public class OnlineShopSearch {
         return "(coalesce(" + l + ".onlinePrice, " + p + ".unitPrice) * (1 + case when " + t + ".id is not null and " + t + ".inclusive = false then coalesce(" + t + ".ratePercent, 0) / 100 else 0 end))";
     }
 
-    private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = %1$s and ps.location.active = true "
+    private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = %1$s and ps.location.active = true%2$s "
             + "and (ps.location.type is null or ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)) "
             + "- (select coalesce(sum(sl.quantityOrdered - sl.quantityFulfilled), 0) from SalesOrderLine sl where sl.product.id = %1$s.id "
             + "and sl.salesOrder.status in (com.posapp.salesorder.SalesOrderStatus.CONFIRMED, com.posapp.salesorder.SalesOrderStatus.PARTIALLY_FULFILLED)))";
@@ -96,7 +100,7 @@ public class OnlineShopSearch {
     }
 
     /** The WHERE conditions of a search for the listing, product, category, brand and tax rate under the given aliases. Parameters are collected once. */
-    private static String conditions(Filter f, int buffer, String l, String p, String c, String b, String t, List<Object[]> params, boolean collect) {
+    private String conditions(Filter f, int buffer, String l, String p, String c, String b, String t, List<Object[]> params, boolean collect) {
         StringBuilder w = new StringBuilder(l + ".listed = true and " + p + ".active = true");
         List<Object[]> sink = collect ? params : new ArrayList<>();
         if (f.category() != null && !f.category().isBlank()) {
@@ -126,7 +130,7 @@ public class OnlineShopSearch {
         }
         // Same rule as the stock word on the card: sellable stock (active, undamaged locations) minus what confirmed orders promised minus the shop's buffer.
         if (f.inStock()) {
-            w.append(" and (").append(p).append(".trackStock = false or ").append(p).append(".service = true or ").append(String.format(SELLABLE, p)).append(" - :buffer > 0)");
+            w.append(" and (").append(p).append(".trackStock = false or ").append(p).append(".service = true or ").append(String.format(SELLABLE, p, shopStock.searchCondition())).append(" - :buffer > 0)");
             sink.add(new Object[]{"buffer", java.math.BigDecimal.valueOf(Math.max(0, buffer))});
         }
         if (f.minRating() >= 1) {

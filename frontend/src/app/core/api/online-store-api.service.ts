@@ -166,6 +166,8 @@ export interface SlotDay { date: string; slots: SlotChoice[] }
 export interface SlotBoard { enabled: boolean; required: boolean; days: SlotDay[] }
 export interface DeliveryWindow { id: number; start: string; end: string; maxOrders: number; days: string; active: boolean; sortOrder: number }
 export interface SlotSettings { enabled: boolean; required: boolean; daysAhead: number; noticeHours: number }
+export interface ShopStockOption { id: number; label: string; chosen: boolean }
+export interface ShopStockSetup { multiWarehouse: boolean; locationId: number | null; options: ShopStockOption[]; note: string }
 export interface ClosedDay { id: number; day: string; reason: string | null }
 export interface DriverCashLine { code: string; customerName: string; at: string | null; collected: number; handedIn: number | null; difference: number | null }
 export interface DriverCash { holding: number; waiting: DriverCashLine[]; settled: DriverCashLine[] }
@@ -413,6 +415,8 @@ export class OnlineStoreApiService {
     return id ? this.http.put<DeliveryWindow>(`${this.base}/slots/${id}`, body) : this.http.post<DeliveryWindow>(`${this.base}/slots`, body);
   }
   deleteWindow(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/slots/${id}`); }
+  shopStock(): Observable<ShopStockSetup> { return this.http.get<ShopStockSetup>(`${this.base}/shop-stock`); }
+  saveShopStock(locationId: number | null): Observable<ShopStockSetup> { return this.http.put<ShopStockSetup>(`${this.base}/shop-stock`, { locationId }); }
   slotSettings(): Observable<SlotSettings> { return this.http.get<SlotSettings>(`${this.base}/slot-settings`); }
   saveSlotSettings(body: SlotSettings): Observable<SlotSettings> { return this.http.put<SlotSettings>(`${this.base}/slot-settings`, body); }
   closedDays(): Observable<ClosedDay[]> { return this.http.get<ClosedDay[]>(`${this.base}/closed-days`); }
