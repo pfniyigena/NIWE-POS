@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Manuels NIWE ERP</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
@@ -152,7 +154,7 @@ q.addEventListener('input',function(){
     out.push({p:p,s:esc(snip),score:score,w:words[0]});
   });
   out.sort(function(a,b){return b.score-a.score});out=out.slice(0,8);
-  if(!out.length){res.innerHTML='<a href="#home"><b>Aucun résultat</b><span>Essayez un autre mot, par exemple le nom d'un écran.</span></a>'}
+  if(!out.length){res.innerHTML='<a href="#home"><b>Aucun résultat</b><span>Essayez un autre mot, par exemple le nom d\'un écran.</span></a>'}
   else res.innerHTML=out.map(function(o){
     var m=D.nav.filter(function(x){return x.key===o.p.manual})[0];
     var s=o.s.replace(new RegExp('('+o.w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>');
