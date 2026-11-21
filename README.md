@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## Manuals and guides updated to v1.76.0
+
+The User Manual, Administrator Manual, Quick Start cards and the wiki (single HTML file) are brought up to v1.76.0, and four new documents are added for deploying the ERP to many customer businesses: the Installation and deployment guide, the Customer onboarding guide, the Release and upgrade notes for customers and the Support and troubleshooting guide. Word, PDF and the editable markdown sources (`niwe-manuals-source-v1.76.0.tgz`) are in `docs/manuals`. English only for now.
+
 ## v1.76.0 - Online Store accounting: choose the accounts of each payment provider
 
 Online Store > Payments > Accounts by provider: for each payment provider, choose (or create) the account for what it still owes you and the wallet or bank account its payouts arrive in. Payouts are recorded per provider. Apply after v1.75.0. Migration V106. See `RELEASE-NOTES-v1.76.0.md` and `docs/online-store-accounting.md`.
