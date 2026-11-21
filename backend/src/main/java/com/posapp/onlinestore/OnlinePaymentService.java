@@ -276,7 +276,8 @@ public class OnlinePaymentService {
         o.setPaidAmount(pay.getAmount());
         o.setPaidAt(now);
         // v1.71.0: the money is in the books from now on, held for the order (Online Customer Deposits) against the provider's clearing account.
-        accounting.postOnlinePaymentReceived(pay.getId(), pay.getAmount(), pay.getMethod(),
+        o.setClearingChannel(com.posapp.accounting.AccountingService.ledgerChannel(pay.getProvider(), pay.getMethod()));
+        accounting.postOnlinePaymentReceived(pay.getId(), pay.getAmount(), o.getClearingChannel(),
                 "Online payment " + pay.getReference() + " (" + pay.getMethod() + ") (online order " + o.getCode() + ")", books.branchFor(o));
         o.setDepositLeft(pay.getAmount());
         String how = pay.getMethod().equals("CARD") ? I18n.t("card") : I18n.t("mobile money");
@@ -458,7 +459,7 @@ public class OnlinePaymentService {
         BigDecimal held = o.getDepositLeft() == null ? BigDecimal.ZERO : o.getDepositLeft();
         BigDecimal use = held.min(amount == null ? BigDecimal.ZERO : amount);
         if (use.signum() <= 0) return;
-        accounting.postOnlineDepositRefund(o.getId(), use, o.getPaymentChannel(), manual, "Online payment " + o.getPaymentReference() + " paid back (online order " + o.getCode() + ")", books.branchFor(o));
+        accounting.postOnlineDepositRefund(o.getId(), use, o.ledgerChannel(), manual, "Online payment " + o.getPaymentReference() + " paid back (online order " + o.getCode() + ")", books.branchFor(o));
         o.setDepositLeft(held.subtract(use));
     }
 

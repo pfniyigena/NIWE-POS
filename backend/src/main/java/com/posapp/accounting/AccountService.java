@@ -118,6 +118,13 @@ public class AccountService {
     public static final String DRIVER_CASH = "DRIVER_CASH";
     /** v1.71.0: what the payment providers keep from each payout (mobile money and card fees). */
     public static final String PAYMENT_FEES = "PAYMENT_FEES";
+    /** v1.75.0: one clearing account and one wallet/bank account per payment provider, so each balance can be matched to that provider's own statement. */
+    public static final String ONLINE_CLEARING_MTN = "ONLINE_CLEARING_MTN";
+    public static final String ONLINE_CLEARING_AIRTEL = "ONLINE_CLEARING_AIRTEL";
+    /** v1.75.0: where the providers pay out to: the MTN wallet, the Airtel wallet, and the bank account that receives card settlements. */
+    public static final String WALLET_MTN = "WALLET_MTN";
+    public static final String WALLET_AIRTEL = "WALLET_AIRTEL";
+    public static final String BANK_CARD = "BANK_CARD";
     /** v1.73.0: what customers paid for delivery (net of tax). Kept apart from Sales Revenue so delivery income can be compared with delivery costs. */
     public static final String DELIVERY_INCOME = "DELIVERY_INCOME";
     /** v1.73.0: coupons and loyalty points given to online customers (net of tax). Sales Revenue shows the full price; this account shows what was given away. */
@@ -247,6 +254,16 @@ public class AccountService {
                     "Online Store: money customers paid by mobile money that the provider has not paid out yet. Settle it in Online Store > Payments > Payouts."),
             new ChartRow(ONLINE_CLEARING_CARD, "1030", "Card Clearing (online)", AccountType.ASSET, true,
                     "Online Store: card payments that the card provider has not paid out yet. Settle it in Online Store > Payments > Payouts."),
+            new ChartRow(ONLINE_CLEARING_MTN, "1021", "MTN Mobile Money Clearing (online)", AccountType.ASSET, true,
+                    "Online Store: money customers paid with MTN Mobile Money that MTN has not paid out yet. Settle it in Online Store > Payments > Payouts."),
+            new ChartRow(ONLINE_CLEARING_AIRTEL, "1022", "Airtel Money Clearing (online)", AccountType.ASSET, true,
+                    "Online Store: money customers paid with Airtel Money that Airtel has not paid out yet. Settle it in Online Store > Payments > Payouts."),
+            new ChartRow(WALLET_MTN, "1011", "MTN Mobile Money Wallet", AccountType.ASSET, true,
+                    "The shop's MTN Mobile Money account: where MTN pays out the online sales."),
+            new ChartRow(WALLET_AIRTEL, "1012", "Airtel Money Wallet", AccountType.ASSET, true,
+                    "The shop's Airtel Money account: where Airtel pays out the online sales."),
+            new ChartRow(BANK_CARD, "1013", "Bank (card settlements)", AccountType.ASSET, true,
+                    "The bank account that receives the card provider's payouts for online sales."),
             new ChartRow(ONLINE_DEPOSITS, "2810", "Online Customer Deposits", AccountType.LIABILITY, true,
                     "Online Store: money paid online for orders not yet delivered. It becomes sales when the order is delivered and is paid back if the order is cancelled."),
             new ChartRow(PAYMENT_FEES, "5240", "Payment Provider Fees", AccountType.EXPENSE, true,
@@ -365,6 +382,16 @@ public class AccountService {
                     "Online Store: money customers paid by mobile money that the provider has not paid out yet."),
             new ChartRow(ONLINE_CLEARING_CARD, "5213", "Cartes bancaires à encaisser (Card Clearing)", AccountType.ASSET, true,
                     "Online Store: card payments that the card provider has not paid out yet."),
+            new ChartRow(ONLINE_CLEARING_MTN, "5215", "MTN Mobile Money à encaisser (MTN Clearing)", AccountType.ASSET, true,
+                    "Online Store : paiements MTN Mobile Money que MTN n'a pas encore versés."),
+            new ChartRow(ONLINE_CLEARING_AIRTEL, "5216", "Airtel Money à encaisser (Airtel Clearing)", AccountType.ASSET, true,
+                    "Online Store : paiements Airtel Money qu'Airtel n'a pas encore versés."),
+            new ChartRow(WALLET_MTN, "5217", "Compte MTN Mobile Money (MTN Wallet)", AccountType.ASSET, true,
+                    "Le compte MTN Mobile Money de la boutique : là où MTN verse les ventes en ligne."),
+            new ChartRow(WALLET_AIRTEL, "5218", "Compte Airtel Money (Airtel Wallet)", AccountType.ASSET, true,
+                    "Le compte Airtel Money de la boutique : là où Airtel verse les ventes en ligne."),
+            new ChartRow(BANK_CARD, "5219", "Banque, règlements cartes (Bank, card settlements)", AccountType.ASSET, true,
+                    "Le compte bancaire qui reçoit les versements du prestataire de cartes pour les ventes en ligne."),
             new ChartRow(ONLINE_DEPOSITS, "4197", "Clients, avances commandes en ligne (Online Customer Deposits)", AccountType.LIABILITY, true,
                     "Online Store: money paid online for orders not yet delivered."),
             new ChartRow(PAYMENT_FEES, "631", "Frais bancaires (Payment Provider Fees)", AccountType.EXPENSE, true,

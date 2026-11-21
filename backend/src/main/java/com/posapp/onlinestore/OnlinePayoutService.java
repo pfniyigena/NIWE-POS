@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * v1.71.0: payouts from the payment providers. Money customers pay online sits in a clearing account per provider (mobile money, card) until the provider pays it to
- * the bank; staff record each payout here with the fee the provider kept, and the books move the gross amount out of the clearing account (net to Cash and Bank, fee
+ * v1.71.0: payouts from the payment providers. Money customers pay online sits in a clearing account per provider (MTN, Airtel, card) until the provider pays it to
+ * its wallet or bank account (v1.75.0: each has an account of its own); staff record each payout here with the fee the provider kept, and the books move the gross amount out of the clearing account (net to Cash and Bank, fee
  * to Payment Provider Fees). The balances shown are the clearing accounts of the ledger, so they agree with the books by construction.
  */
 @Service
@@ -66,9 +66,11 @@ public class OnlinePayoutService {
 
     @Transactional(readOnly = true)
     public PayoutOverview overview() {
-        List<ClearingBalance> balances = List.of(
-                new ClearingBalance("MOBILE_MONEY", balanceOf(com.posapp.accounting.AccountService.ONLINE_CLEARING_MOBILE)),
-                new ClearingBalance("CARD", balanceOf(com.posapp.accounting.AccountService.ONLINE_CLEARING_CARD)));
+        // v1.75.0: one balance per provider; the old shared mobile money account (payments before this version) is listed only while it still holds something
+        List<ClearingBalance> balances = new java.util.ArrayList<>();
+        for (String c : new String[]{"MTN", "AIRTEL", "CARD"}) balances.add(new ClearingBalance(c, balanceOf(AccountingService.clearingKey(c))));
+        BigDecimal other = balanceOf(AccountingService.clearingKey("MOBILE_MONEY"));
+        if (other.signum() != 0) balances.add(new ClearingBalance("MOBILE_MONEY", other));
         List<PayoutDto> rows = repository.findTop50ByOrderByPaidOnDescIdDesc().stream().map(OnlinePayoutService::dto).toList();
         BigDecimal fees = repository.findAll().stream().map(OnlinePayout::getFee).reduce(BigDecimal.ZERO, BigDecimal::add);
         return new PayoutOverview(balances, rows, fees);
@@ -77,7 +79,7 @@ public class OnlinePayoutService {
     @Transactional
     public PayoutDto record(PayoutRequest in) {
         String channel = in.channel() == null ? "" : in.channel().trim().toUpperCase(Locale.ROOT);
-        if (!channel.equals("MOBILE_MONEY") && !channel.equals("CARD")) throw ApiException.badRequest(I18n.t("Choose mobile money or card"));
+        if (!List.of("MTN", "AIRTEL", "CARD", "MOBILE_MONEY").contains(channel)) throw ApiException.badRequest(I18n.t("Choose the provider that paid out"));
         BigDecimal gross = in.gross() == null ? BigDecimal.ZERO : in.gross().setScale(2, java.math.RoundingMode.HALF_UP);
         BigDecimal fee = in.fee() == null ? BigDecimal.ZERO : in.fee().setScale(2, java.math.RoundingMode.HALF_UP);
         if (gross.signum() <= 0) throw ApiException.badRequest(I18n.t("Enter the amount customers paid that this payout covers"));
@@ -94,7 +96,7 @@ public class OnlinePayoutService {
         p.setPaidOn(day);
         p.setCreatedBy(user());
         repository.save(p);
-        String what = channel.equals("CARD") ? "card" : "mobile money";
+        String what = switch (channel) { case "CARD" -> "card"; case "MTN" -> "MTN"; case "AIRTEL" -> "Airtel"; default -> "mobile money"; };
         accounting.postOnlinePayout(p.getId(), channel, gross, fee, "Online payout (" + what + ")" + (p.getReference() == null ? "" : " " + p.getReference()), day.atTime(12, 0).toInstant(ZoneOffset.UTC));
         auditLogService.record("ONLINE_PAYOUT", "Payout of " + OnlineStoreService.money(gross) + " from " + what + ", fee " + OnlineStoreService.money(fee), "OnlinePayout", p.getId());
         return dto(p);

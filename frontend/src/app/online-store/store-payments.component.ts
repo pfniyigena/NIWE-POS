@@ -54,15 +54,14 @@ import { T } from '../core/i18n/t';
         </div>
         <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
           <div class="card" style="padding:0.5rem 0.8rem; min-width:190px;" *ngFor="let b of payouts.balances">
-            <div class="text-muted" style="font-size:0.8rem;">{{ (b.channel === 'CARD' ? 'Card: the provider still owes you' : 'Mobile money: the provider still owes you') | translate }}</div>
+            <div class="text-muted" style="font-size:0.8rem;">{{ chanLabel(b.channel) }}: {{ 'still owed by the provider' | translate }}</div>
             <strong [class]="'sp-owed-' + b.channel">{{ b.balance | number: '1.0-2' }}</strong>
           </div>
         </div>
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:flex-end;">
           <div class="form-group"><label class="form-label">{{ 'Way' | translate }}</label>
             <select class="form-select po-channel" [(ngModel)]="po.channel" name="poch" (ngModelChange)="suggest()">
-              <option value="MOBILE_MONEY">{{ 'Mobile money' | translate }}</option>
-              <option value="CARD">{{ 'Card' | translate }}</option>
+              <option *ngFor="let b of payouts.balances" [value]="b.channel">{{ chanLabel(b.channel) }}</option>
             </select></div>
           <div class="form-group"><label class="form-label">{{ 'Paid by customers (gross)' | translate }}</label><input class="form-control po-gross" type="number" min="0" step="0.01" style="width:140px;" [(ngModel)]="po.gross" name="pogross" /></div>
           <div class="form-group"><label class="form-label">{{ 'Provider fee' | translate }}</label><input class="form-control po-fee" type="number" min="0" step="0.01" style="width:110px;" [(ngModel)]="po.fee" name="pofee" /></div>
@@ -71,11 +70,11 @@ import { T } from '../core/i18n/t';
           <div class="form-group"><label class="form-label">{{ 'Reference' | translate }}</label><input class="form-control po-ref" maxlength="80" style="width:150px;" [(ngModel)]="po.reference" name="poref" /></div>
           <button class="btn btn-primary po-save" [disabled]="busy" (click)="savePayout()">{{ 'Record payout' | translate }}</button>
         </div>
-        <p class="text-muted mt-2 mb-2" style="font-size:0.8rem;">{{ 'Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to Cash and Bank, the fee to Payment Provider Fees.' | translate }}</p>
+        <p class="text-muted mt-2 mb-2" style="font-size:0.8rem;">{{ 'Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to the provider's own wallet or bank account, the fee to Payment Provider Fees.' | translate }}</p>
         <table class="table-sm po-table" *ngIf="payouts.payouts.length">
           <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Way' | translate }}</th><th class="text-end">{{ 'Paid by customers (gross)' | translate }}</th><th class="text-end">{{ 'Provider fee' | translate }}</th><th class="text-end">{{ 'Reached the bank' | translate }}</th><th>{{ 'Reference' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
           <tbody><tr *ngFor="let p of payouts.payouts">
-            <td>{{ p.paidOn }}</td><td>{{ p.channel === 'CARD' ? ('Card' | translate) : ('Mobile money' | translate) }}</td>
+            <td>{{ p.paidOn }}</td><td>{{ chanLabel(p.channel) }}</td>
             <td class="text-end">{{ p.gross | number: '1.0-2' }}</td><td class="text-end">{{ p.fee | number: '1.0-2' }}</td><td class="text-end">{{ p.net | number: '1.0-2' }}</td>
             <td>{{ p.reference }}</td><td>{{ p.createdBy }}</td>
           </tr></tbody>
@@ -128,7 +127,12 @@ export class StorePaymentsComponent implements OnInit {
   note: Record<number, string> = {};
   loaded = false;
   payouts: PayoutOverview | null = null;
-  po: { channel: string; gross: number | null; fee: number | null; paidOn: string; reference: string } = { channel: 'MOBILE_MONEY', gross: null, fee: 0, paidOn: new Date().toISOString().slice(0, 10), reference: '' };
+  /** v1.75.0: what each ledger channel is called (MTN and Airtel are brand names, the others are translated). */
+  chanLabel(c: string): string {
+    return c === 'MTN' ? 'MTN Mobile Money' : c === 'AIRTEL' ? 'Airtel Money' : c === 'CARD' ? T('Card') : T('Mobile money (earlier payments)');
+  }
+
+  po: { channel: string; gross: number | null; fee: number | null; paidOn: string; reference: string } = { channel: 'MTN', gross: null, fee: 0, paidOn: new Date().toISOString().slice(0, 10), reference: '' };
   busy = false;
   error: string | null = null;
   message: string | null = null;

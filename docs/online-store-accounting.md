@@ -79,3 +79,20 @@ Until now the books held one figure, Sales Revenue, after discounts and with the
 
 - Migration V104: `sales_order_line.cost_total`, `cost_quantity`; `online_store_settings.branch_id`.
 - Orders accepted before the choice keep the branch they were given.
+
+## v1.75.0: an account for each payment provider
+
+Until now all mobile money (MTN and Airtel) shared one clearing account, and every payout landed in Cash and Bank. Each provider now has its own clearing account (what the provider still owes the shop) and its own wallet or bank account (where it pays out to), so each balance can be matched to that provider's own statement.
+
+| Provider | Clearing account (Rwanda / Chad chart) | Wallet or bank account (Rwanda / Chad chart) |
+|---|---|---|
+| MTN Mobile Money | 1021 / 5215 | MTN Mobile Money Wallet 1011 / 5217 |
+| Airtel Money | 1022 / 5216 | Airtel Money Wallet 1012 / 5218 |
+| Card | 1030 / 5213 (as before) | Bank (card settlements) 1013 / 5219 |
+| Other mobile money (test provider, and payments made before this version) | 1020 / 5212 (as before) | Cash and Bank |
+
+- The provider that took a payment decides the account: `ONLINE_PAYMENT` debits that provider's clearing account (credit Online Customer Deposits). A refund through the provider, a deposit paid back and a payment applied at delivery use the same account. `online_order.clearing_channel` remembers it (MTN, AIRTEL, CARD or MOBILE_MONEY). Orders paid before this version have none and keep using the old accounts, so nothing moves.
+- Online Store > Payments > Payouts shows one balance per provider (the old shared mobile money balance appears only while it is not zero) and a payout is recorded against one provider: `ONLINE_PAYOUT` debits that provider's wallet or bank account (net) and Payment Provider Fees (fee), and credits its clearing account (gross).
+- To move money from a provider's wallet to the main bank account, or to pay a supplier from it, post a transfer with a manual journal entry (or the usual payment screens) on those accounts.
+- A balance on the old shared mobile money account (payments before this version) is cleared with a payout of the channel "Mobile money (earlier payments)", which lands in Cash and Bank as before.
+- New accounts are added to existing charts at start-up. Migration V105 (`online_order.clearing_channel`; the payout channel check now allows MTN and AIRTEL).

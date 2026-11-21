@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.75.0 - Online Store accounting: an account for each payment provider
+
+MTN, Airtel and card each have their own clearing account and their own wallet or bank account; Payouts records a payout per provider. Apply after v1.74.0. Migration V105. See `RELEASE-NOTES-v1.75.0.md` and `docs/online-store-accounting.md`.
+
 ## v1.74.0 - Online Store accounting: returns at the cost sold, and a branch for the online shop
 
 A return restocks Inventory at the cost the goods had when they were sold (kept on each sale order line), not at today's cost price. Online Store > Shop settings: "Branch the shop sells for"; the shop's sale orders, invoices and payments then carry that branch. Migration V104. This completes the 8 accounting gaps. See `RELEASE-NOTES-v1.74.0.md` and `docs/online-store-accounting.md`.

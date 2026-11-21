@@ -583,7 +583,7 @@ public class OnlineReturnService {
         }
         boolean viaProvider = "ONLINE".equals(o.getPaymentMethod()) && !(in != null && in.manual());
         accounting.postOnlineRefund(r.getId(), leg, I18n.t("Refund for online return {0}", r.getCode()) + " (online order " + o.getCode() + ")",
-                viaProvider ? o.getPaymentChannel() : null, so.branchId());
+                viaProvider ? o.ledgerChannel() : null, so.branchId());
         books.returnProcessed(o, r, so);   // v1.73.0: the discount of the returned goods is no longer given
         r.setStatus("REFUNDED");
         r.setRefundAmount(amount);

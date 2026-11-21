@@ -325,9 +325,37 @@ public class AccountingService {
                 salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getBranchId() : null);
     }
 
-    /** The clearing account of an online payment channel (CARD, otherwise mobile money). */
+    /**
+     * The ledger channel of an online payment: the provider that took it (v1.75.0: MTN, AIRTEL), CARD for a card, otherwise MOBILE_MONEY (a provider with no account of its
+     * own, and every payment made before v1.75.0).
+     */
+    public static String ledgerChannel(String provider, String method) {
+        if ("CARD".equalsIgnoreCase(method)) return "CARD";
+        if ("MTN_MOMO".equalsIgnoreCase(provider)) return "MTN";
+        if ("AIRTEL_MONEY".equalsIgnoreCase(provider)) return "AIRTEL";
+        return "MOBILE_MONEY";
+    }
+
+    /** The clearing account of a ledger channel (what the provider still owes the shop). */
     public static String clearingKey(String channel) {
-        return "CARD".equalsIgnoreCase(channel) ? AccountService.ONLINE_CLEARING_CARD : AccountService.ONLINE_CLEARING_MOBILE;
+        if (channel == null) return AccountService.ONLINE_CLEARING_MOBILE;
+        return switch (channel.toUpperCase(java.util.Locale.ROOT)) {
+            case "CARD" -> AccountService.ONLINE_CLEARING_CARD;
+            case "MTN" -> AccountService.ONLINE_CLEARING_MTN;
+            case "AIRTEL" -> AccountService.ONLINE_CLEARING_AIRTEL;
+            default -> AccountService.ONLINE_CLEARING_MOBILE;
+        };
+    }
+
+    /** Where a ledger channel's payouts arrive: its own wallet or bank account (Cash and Bank for the channels that have none). */
+    public static String walletKey(String channel) {
+        if (channel == null) return AccountService.CASH;
+        return switch (channel.toUpperCase(java.util.Locale.ROOT)) {
+            case "CARD" -> AccountService.BANK_CARD;
+            case "MTN" -> AccountService.WALLET_MTN;
+            case "AIRTEL" -> AccountService.WALLET_AIRTEL;
+            default -> AccountService.CASH;
+        };
     }
 
     /**
@@ -371,14 +399,14 @@ public class AccountingService {
 
     /**
      * v1.71.0: a payout from a payment provider reached the bank: the customers' money (gross) leaves the clearing account, the fee the provider kept is an expense, the
-     * rest is cash at the bank.
+     * rest is cash at the bank (v1.75.0: in the provider's own wallet or bank account).
      */
     @Transactional
     public void postOnlinePayout(Long payoutId, String channel, BigDecimal gross, BigDecimal fee, String memo, java.time.Instant when) {
         if (gross == null || gross.compareTo(BigDecimal.ZERO) <= 0) return;
         BigDecimal net = gross.subtract(fee == null ? BigDecimal.ZERO : fee);
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.CASH, net, "Payout received", true);
+        addIfPositive(lines, walletKey(channel), net, "Payout received", true);
         addIfPositive(lines, AccountService.PAYMENT_FEES, fee, "Provider fee", true);
         addIfPositive(lines, clearingKey(channel), gross, null, false);
         post("ONLINE_PAYOUT", payoutId, memo, when, lines, null);

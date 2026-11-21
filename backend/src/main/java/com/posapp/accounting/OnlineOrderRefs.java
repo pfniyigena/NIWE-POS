@@ -42,7 +42,7 @@ public class OnlineOrderRefs {
     public OnlineMoney moneyFor(Long invoiceId, Long salesOrderId) {
         try {
             java.util.List<OnlineMoney> found = jdbc.query(
-                    "select id, payment_method, payment_channel, deposit_left, delivery_method from online_order where sales_order_id = ? or invoice_id = ? order by id limit 1",
+                    "select id, payment_method, coalesce(clearing_channel, payment_channel), deposit_left, delivery_method from online_order where sales_order_id = ? or invoice_id = ? order by id limit 1",
                     (rs, i) -> new OnlineMoney(rs.getLong(1), "ONLINE".equals(rs.getString(2)), rs.getString(3),
                             rs.getBigDecimal(4) == null ? java.math.BigDecimal.ZERO : rs.getBigDecimal(4), rs.getString(5)),
                     salesOrderId == null ? -1L : salesOrderId, invoiceId == null ? -1L : invoiceId);

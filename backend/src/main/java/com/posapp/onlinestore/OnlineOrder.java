@@ -39,6 +39,8 @@ public class OnlineOrder extends BaseEntity {
     private String paymentStatus = "NONE";
     /** MOBILE_MONEY or CARD, once paid. */
     private String paymentChannel;
+    /** v1.75.0: the ledger channel the payment was booked to (MTN, AIRTEL, CARD or MOBILE_MONEY); empty for orders paid before this version: they use the payment channel. */
+    private String clearingChannel;
     /** The provider's reference of the payment that was accepted. */
     private String paymentReference;
     private BigDecimal paidAmount;
@@ -165,4 +167,9 @@ public class OnlineOrder extends BaseEntity {
     @OneToMany(mappedBy = "onlineOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt ASC, id ASC")
     private List<OnlineOrderEvent> events = new ArrayList<>();
+
+    /** The ledger channel whose clearing account holds this order's online payment. */
+    public String ledgerChannel() {
+        return clearingChannel != null && !clearingChannel.isBlank() ? clearingChannel : paymentChannel;
+    }
 }

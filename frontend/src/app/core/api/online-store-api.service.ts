@@ -213,7 +213,7 @@ export interface PaymentRow {
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
 /** v1.71.0: payouts from the payment providers. balance = what the provider still owes the shop (the clearing account of the books). */
-export interface PayoutBalance { channel: 'MOBILE_MONEY' | 'CARD'; balance: number }
+export interface PayoutBalance { channel: 'MTN' | 'AIRTEL' | 'CARD' | 'MOBILE_MONEY'; balance: number }
 export interface Payout { id: number; channel: string; gross: number; fee: number; net: number; reference: string | null; note: string | null; paidOn: string; createdBy: string | null }
 export interface PayoutOverview { balances: PayoutBalance[]; payouts: Payout[]; feesToDate: number }
 export interface PayoutRequest { channel: string; gross: number; fee: number; paidOn: string | null; reference: string | null; note: string | null }
