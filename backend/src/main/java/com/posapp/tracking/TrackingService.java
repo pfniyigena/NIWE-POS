@@ -382,8 +382,58 @@ public class TrackingService {
 
     private List<StockBatch> orderedBatches(Product product, WarehouseLocation location) {
         List<StockBatch> batches = new ArrayList<>(batchRepository.findByProductAndLocationAndQuantityGreaterThan(product, location, BigDecimal.ZERO));
-        batches.sort(BATCH_ORDER);
+        LocalDate minExpiry = TrackingContext.minExpiry();
+        if (minExpiry == null) {
+            batches.sort(BATCH_ORDER);
+        } else {
+            // v1.67.0 (online shop): goods the shop may sell first (earliest expiry first), then those too close to their expiry, then the expired ones
+            LocalDate today = LocalDate.now();
+            batches.sort(Comparator
+                    .comparing((StockBatch b) -> b.getExpiryDate() == null || !b.getExpiryDate().isBefore(minExpiry) ? 0 : b.getExpiryDate().isBefore(today) ? 2 : 1)
+                    .thenComparing(BATCH_ORDER));
+        }
         return batches;
+    }
+
+    /** v1.67.0: the serial numbers that left stock on a sale document (the sale order number), oldest first. */
+    @Transactional(readOnly = true)
+    public List<String> soldSerials(Product product, String saleRef) {
+        if (product == null || saleRef == null) return List.of();
+        List<String> out = new ArrayList<>();
+        for (StockSerial s : serialRepository.findByProductAndSoldRefAndStatusOrderByIdAsc(product, saleRef, SerialStatus.SOLD)) out.add(s.getSerialNumber());
+        return out;
+    }
+
+    /** v1.67.0: the serial numbers that left stock on a sale document, by product id, each product's as one "A, B" text. */
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, String> soldSerialsByProduct(String saleRef) {
+        java.util.Map<Long, List<String>> grouped = new java.util.LinkedHashMap<>();
+        if (saleRef != null) {
+            for (StockSerial s : serialRepository.findBySoldRefAndStatusOrderByIdAsc(saleRef, SerialStatus.SOLD)) {
+                grouped.computeIfAbsent(s.getProduct().getId(), k -> new ArrayList<>()).add(s.getSerialNumber());
+            }
+        }
+        java.util.Map<Long, String> out = new java.util.LinkedHashMap<>();
+        grouped.forEach((k, v) -> out.put(k, String.join(", ", v)));
+        return out;
+    }
+
+    /** v1.67.0: serial numbers that came back (a return): they must be units delivered on that sale document; they are in stock again at the location. */
+    @Transactional
+    public void restoreSerials(Product product, WarehouseLocation location, List<String> serials, String saleRef) {
+        if (serials == null || serials.isEmpty()) return;
+        for (String number : cleanSerials(product, serials)) {
+            StockSerial serial = serialRepository.findByProductAndSerialNumber(product, number)
+                    .orElseThrow(() -> ApiException.badRequest("Serial number '" + number + "' of '" + product.getName() + "' is not in the system"));
+            if (serial.getStatus() != SerialStatus.SOLD || saleRef == null || !saleRef.equals(serial.getSoldRef())) {
+                throw ApiException.badRequest("Serial number '" + number + "' of '" + product.getName() + "' was not delivered on this order");
+            }
+            serial.setStatus(SerialStatus.IN_STOCK);
+            serial.setLocation(location);
+            serial.setSoldAt(null);
+            serial.setSoldRef(null);
+            serialRepository.save(serial);
+        }
     }
 
     /** Serial-numbered goods are single units: a quantity such as 2.5 makes no sense for them. */

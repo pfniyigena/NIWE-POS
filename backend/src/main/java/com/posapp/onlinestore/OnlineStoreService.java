@@ -54,6 +54,8 @@ public class OnlineStoreService {
     /** v1.65.0: which stock the shop sells (the shop's Sales location with multi-warehouse on). */
     @Autowired
     private OnlineShopStock shopStock;
+    @Autowired
+    private com.posapp.tracking.TrackingService trackingService;
     private final StoreSettingsService storeSettingsService;
     private final MailService mailService;
     private final AuditLogService auditLogService;
@@ -133,13 +135,14 @@ public class OnlineStoreService {
 
     /** The figures behind the stock the shop shows for a product (Shop settings > Products on the shop). */
     OnlineStoreDtos.StockInfo stockInfo(Product p, int buffer) {
-        if (!p.isTrackStock() || p.isService()) return new OnlineStoreDtos.StockInfo(false, null, null, null, buffer, null, null);
+        if (!p.isTrackStock() || p.isService()) return new OnlineStoreDtos.StockInfo(false, null, null, null, buffer, null, null, null);
         BigDecimal reserved = stockReservationService.reserved(p);
         BigDecimal held = shopStock.held(p);
+        BigDecimal expired = shopStock.expired(p);
         BigDecimal available = shopStock.available(p);
         int own = shopStock.bufferOf(p, buffer);
         BigDecimal till = OnlineShopStock.tillShare(available, shopStock.tillPercent());
-        return new OnlineStoreDtos.StockInfo(true, available.add(reserved).add(held), reserved, held, own, till, available.subtract(BigDecimal.valueOf(own)).subtract(till));
+        return new OnlineStoreDtos.StockInfo(true, available.add(reserved).add(held).add(expired), reserved, held, own, till, available.subtract(BigDecimal.valueOf(own)).subtract(till), expired);
     }
 
     static String stockLabel(BigDecimal sellable) {
@@ -750,7 +753,8 @@ public class OnlineStoreService {
     }
 
     private Track track(OnlineOrder o) {
-        List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal(), l.getDeliveredQuantity())).toList();
+        Map<Long, String> serials = "COMPLETED".equals(o.getStatus()) && o.getSalesOrderNumber() != null ? trackingService.soldSerialsByProduct(o.getSalesOrderNumber()) : Map.of();
+        List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal(), l.getDeliveredQuantity(), serials.get(l.getProductId()))).toList();
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
                 o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getInvoiceNumber(),

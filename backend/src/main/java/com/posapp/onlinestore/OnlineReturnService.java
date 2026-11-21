@@ -58,6 +58,10 @@ public class OnlineReturnService {
     private final StoreSettingsService storeSettingsService;
     private final AuditLogService auditLogService;
     private final Map<String, Deque<Long>> byIp = new HashMap<>();
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.tracking.TrackingService trackingService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.catalog.CatalogService catalogService;
 
     public OnlineReturnService(OnlineReturnRepository returns, OnlineOrderRepository orders, OnlineStoreService storeService, SalesOrderService salesOrderService,
                                SalesOrderReturnService salesOrderReturns, OnlinePaymentService payments, MailService mailService,
@@ -452,6 +456,22 @@ public class OnlineReturnService {
         return dto(r);
     }
 
+    /** v1.67.0: for the lines of this return that are serial-numbered goods, the serial numbers delivered on the order (staff pick the ones that came back). */
+    @Transactional(readOnly = true)
+    public List<OnlineStoreDtos.SerialChoice> serialChoices(Long id) {
+        OnlineReturn r = returns.findById(id).orElseThrow(() -> ApiException.notFound(I18n.t("Return not found")));
+        OnlineOrder o = r.getOnlineOrder();
+        List<OnlineStoreDtos.SerialChoice> out = new ArrayList<>();
+        if (o.getSalesOrderNumber() == null) return out;
+        for (OnlineReturnLine rl : r.getLines()) {
+            com.posapp.catalog.Product p = catalogService.getProductOrThrow(rl.getProductId());
+            if (com.posapp.tracking.TrackingService.modeOf(p) != com.posapp.tracking.TrackingMode.SERIAL) continue;
+            List<String> delivered = trackingService.soldSerials(p, o.getSalesOrderNumber());
+            if (!delivered.isEmpty()) out.add(new OnlineStoreDtos.SerialChoice(rl.getOnlineOrderLineId(), rl.getName(), rl.getQuantity(), delivered));
+        }
+        return out;
+    }
+
     /**
      * The goods are back: puts them in stock through a sale order return (stock, revenue and credit figures follow the existing mechanism) and gives the
      * money back the way the customer paid. All or nothing: if the stock side or the refund fails, nothing is recorded.
@@ -486,11 +506,41 @@ public class OnlineReturnService {
         req.setSalesOrderId(so.id());
         req.setReason(I18n.t("Online return {0}: {1}", r.getCode(), r.getReason()));
         req.setLocationId(in == null ? null : in.locationId());
+        // v1.67.0: serial-numbered goods: the serial numbers that came back, as staff chose them. When the customer returns all the units delivered, they are taken
+        // all; when only some, staff must say which (otherwise the stock count and the serial list would not agree).
+        Map<Long, List<String>> chosen = new LinkedHashMap<>();
+        for (OnlineReturnLine rl : r.getLines()) {
+            com.posapp.catalog.Product p = catalogService.getProductOrThrow(rl.getProductId());
+            if (com.posapp.tracking.TrackingService.modeOf(p) != com.posapp.tracking.TrackingMode.SERIAL) continue;
+            List<String> delivered = trackingService.soldSerials(p, so.orderNumber());
+            if (delivered.isEmpty()) continue;
+            List<String> given = in == null || in.serials() == null ? null : in.serials().get(rl.getOnlineOrderLineId());
+            List<String> pick;
+            if (given != null && !given.isEmpty()) {
+                pick = given;
+            } else if (BigDecimal.valueOf(delivered.size()).compareTo(rl.getQuantity()) == 0) {
+                pick = delivered;
+            } else {
+                throw ApiException.badRequest(I18n.t("Choose the {0} serial numbers of {1} that came back.", rl.getQuantity().stripTrailingZeros().toPlainString(), rl.getName()));
+            }
+            if (BigDecimal.valueOf(pick.size()).compareTo(rl.getQuantity()) != 0) {
+                throw ApiException.badRequest(I18n.t("Choose the {0} serial numbers of {1} that came back.", rl.getQuantity().stripTrailingZeros().toPlainString(), rl.getName()));
+            }
+            chosen.computeIfAbsent(rl.getProductId(), k -> new ArrayList<>()).addAll(pick);
+        }
         List<ProcessSalesOrderReturnRequest.ReturnLineEntry> entries = new ArrayList<>();
         for (Map.Entry<Long, BigDecimal> g : give.entrySet()) {
             ProcessSalesOrderReturnRequest.ReturnLineEntry e = new ProcessSalesOrderReturnRequest.ReturnLineEntry();
             e.setLineId(g.getKey());
             e.setQuantity(g.getValue());
+            // the serial numbers go onto the sale order lines of that product, in order, as many as each line takes back
+            Long pid = so.lines().stream().filter(l -> l.id().equals(g.getKey())).map(SalesOrderLineDto::productId).findFirst().orElse(null);
+            List<String> pool = pid == null ? null : chosen.get(pid);
+            if (pool != null && !pool.isEmpty()) {
+                int n = g.getValue().intValue();
+                e.setSerialNumbers(new ArrayList<>(pool.subList(0, Math.min(n, pool.size()))));
+                pool.subList(0, Math.min(n, pool.size())).clear();
+            }
             entries.add(e);
         }
         req.setLines(entries);

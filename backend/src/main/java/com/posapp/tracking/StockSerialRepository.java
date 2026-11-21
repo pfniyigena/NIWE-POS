@@ -15,6 +15,10 @@ public interface StockSerialRepository extends JpaRepository<StockSerial, Long> 
 
     List<StockSerial> findByProductAndLocationAndStatusOrderByIdAsc(Product product, WarehouseLocation location, SerialStatus status);
 
+    List<StockSerial> findByProductAndSoldRefAndStatusOrderByIdAsc(Product product, String soldRef, SerialStatus status);
+
+    List<StockSerial> findBySoldRefAndStatusOrderByIdAsc(String soldRef, SerialStatus status);
+
     List<StockSerial> findByTransferIdAndProductOrderByIdAsc(Long transferId, Product product);
 
     @Query("select s from StockSerial s join fetch s.product left join fetch s.location l left join fetch l.warehouse order by s.id desc")

@@ -79,7 +79,7 @@ public final class OnlineStoreDtos {
     public record CouponResult(String code, String type, BigDecimal discount, BigDecimal feeWaived) {
     }
 
-    public record TrackLine(String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal deliveredQuantity) {
+    public record TrackLine(String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal deliveredQuantity, String serials) {
     }
 
     public record TrackStep(String status, String note, Instant at) {
@@ -196,7 +196,7 @@ public final class OnlineStoreDtos {
 
     // ---------------------------------------------------------------- staff
 
-    public record OrderLineDto(Long productId, String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal deliveredQuantity) {
+    public record OrderLineDto(Long productId, String name, BigDecimal quantity, BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal deliveredQuantity, String serials) {
     }
 
     public record EventDto(String status, String note, String by, Instant at) {
@@ -301,7 +301,7 @@ public final class OnlineStoreDtos {
                               int unansweredAlertMinutes, boolean onlinePaymentsEnabled, String paymentProvider, int paymentExpiryMinutes, boolean accountsEnabled,
                               String textProvider, String textChannel, String textCountryCode, int textDailyLimit, String notifyPhone, int returnWindowDays,
                               boolean cartRemindersEnabled, boolean loyaltyEnabled, int loyaltyPointsPer100, int loyaltyMaxPercent, String whatsappNumber,
-                              Integer autoReleaseHours, Integer tillSharePercent) {
+                              Integer autoReleaseHours, Integer tillSharePercent, Integer minDaysLeft) {
     }
 
     // ---------------------------------------------------------------- online payments (staff)
@@ -359,9 +359,10 @@ public final class OnlineStoreDtos {
      * Why a product shows the stock it shows: units in sellable warehouse locations, minus units promised on confirmed sales orders (reserved), minus the shop's
      * safety buffer, is what the shop may still sell. tracked = false: stock is not tracked for the product, so the shop always shows it as in stock (the other
      * figures are then null). v1.66.0: held = units promised to shop orders staff have not answered yet; buffer = the one used for this product; tillShare =
-     * units kept for the till (a percentage of what is available).
+     * units kept for the till (a percentage of what is available); expired (v1.67.0) = units of batches that are expired or too close to their expiry date for the shop.
      */
-    public record StockInfo(boolean tracked, BigDecimal inWarehouses, BigDecimal reserved, BigDecimal held, int buffer, BigDecimal tillShare, BigDecimal sellable) {
+    public record StockInfo(boolean tracked, BigDecimal inWarehouses, BigDecimal reserved, BigDecimal held, int buffer, BigDecimal tillShare, BigDecimal sellable,
+                            BigDecimal expired) {
     }
 
     public record ListingRequest(@NotNull Long productId, Boolean listed, @Size(max = 160) String webTitle, @Size(max = 2000) String webDescription,
@@ -438,7 +439,12 @@ public final class OnlineStoreDtos {
     }
 
     /** manual = the refund was made outside (mobile money, the provider's dashboard); reference is then required for money paid online. */
-    public record ReturnProcess(Long locationId, boolean manual, @Size(max = 80) String reference, @Size(max = 300) String note) {
+    public record ReturnProcess(Long locationId, boolean manual, @Size(max = 80) String reference, @Size(max = 300) String note,
+                                java.util.Map<Long, List<String>> serials) {
+    }
+
+    /** v1.67.0: a returned line of serial-numbered goods: the serial numbers delivered on the order, from which staff pick the ones that came back (keyed by lineId). */
+    public record SerialChoice(Long lineId, String name, BigDecimal quantity, List<String> delivered) {
     }
 
     // ---------------------------------------------------------------- front page (v1.35.0)

@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.67.0 - Online Store: expiry dates and serial numbers
+
+The shop no longer sells batches that are expired, or have fewer days left than the new "Do not sell goods with fewer days left than" setting (default 0); deliveries take long-dated batches first. Serial-numbered goods: the serial numbers delivered are shown on the customer's order page, on staff's order and printed on the invoice, and when a return comes back staff tick which serial numbers returned (they are in stock again). Migration V100. See `RELEASE-NOTES-v1.67.0.md` and `docs/online-store-expiry-serials.md`.
+
 ## v1.66.0 - Online Store: stock held from checkout, buffer per product, share for the till
 
 A shop order now holds its units from the moment it is placed (before staff accept it) so two customers can no longer be sold the same last units; an order nobody answers is cancelled after N hours (default 24, setting; a cash order or one still waiting for its payment; an order paid online is never cancelled by it) and the customer is told. Each product can have its own safety buffer, and a percentage of the available units can be kept for the till. Migration V99. See `RELEASE-NOTES-v1.66.0.md` and `docs/online-store-held-stock.md`.

@@ -61,6 +61,8 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final SalesOrderService salesOrderService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.tracking.TrackingService trackingService;
     private final CatalogService catalogService;
     private final AuditLogService auditLogService;
     private final CustomerRepository customerRepository;
@@ -255,6 +257,15 @@ public class InvoiceService {
      * javadoc — voiding doesn't free the order up for a replacement) — shared by {@link #generate}
      * and {@link #generateDraftFromSalesOrder}, which differ only in the {@code status} they hand in.
      */
+    /** v1.67.0: the serial numbers that left stock on the sale order are printed with the line (several lines of one product repeat the same list; rare). */
+    private String withSerials(String description, Product product, String saleOrderNumber) {
+        if (com.posapp.tracking.TrackingService.modeOf(product) != com.posapp.tracking.TrackingMode.SERIAL) return description;
+        List<String> serials = trackingService.soldSerials(product, saleOrderNumber);
+        if (serials.isEmpty()) return description;
+        String text = com.posapp.i18n.I18n.t("Serial numbers") + ": " + String.join(", ", serials);
+        return description == null || description.isBlank() ? text : description + "\n" + text;
+    }
+
     private Invoice buildFromSalesOrder(Long salesOrderId, InvoiceStatus status) {
         SalesOrderDto so = salesOrderService.getById(salesOrderId);
         if ("DRAFT".equals(so.status()) || "CANCELLED".equals(so.status())) {
@@ -295,7 +306,7 @@ public class InvoiceService {
             if (lineDto.productId() != null) {
                 Product product = catalogService.getProductOrThrow(lineDto.productId());
                 line.setProduct(product);
-                line.setDescription(product.getDescription());
+                line.setDescription(withSerials(product.getDescription(), product, so.orderNumber()));
             }
             line.setProductName(lineDto.productName());
             line.setQuantity(lineDto.quantityOrdered());

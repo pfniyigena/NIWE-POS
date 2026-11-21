@@ -44,5 +44,10 @@ public class ProcessSalesOrderReturnRequest {
         public void setLineId(Long lineId) { this.lineId = lineId; }
         public BigDecimal getQuantity() { return quantity; }
         public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
+
+        /** Serial-numbered products (v1.67.0): the serial numbers of the units that came back; they go back in stock. Empty = they stay as sold. */
+        private java.util.List<String> serialNumbers;
+        public java.util.List<String> getSerialNumbers() { return serialNumbers; }
+        public void setSerialNumbers(java.util.List<String> serialNumbers) { this.serialNumbers = serialNumbers; }
     }
 }

@@ -117,10 +117,30 @@ public class OnlineShopStock {
         return h == null ? BigDecimal.ZERO : h;
     }
 
-    /** On hand at the shop's locations minus what confirmed sale orders still owe and what unanswered shop orders hold. */
+    /** v1.67.0: the first expiry date the shop will sell: today plus the "min days left" setting. Batches expiring before it are not sold online. */
+    @Transactional(readOnly = true)
+    public java.time.LocalDate expiryCut() {
+        int days = settingsRepository.findAll().stream().findFirst().map(OnlineStoreSettings::getMinDaysLeft).orElse(0);
+        return java.time.LocalDate.now().plusDays(Math.max(0, days));
+    }
+
+    /**
+     * v1.67.0: units of batch-tracked goods at the shop's locations that are expired, or have fewer days left than the shop's setting. They stay in the stock
+     * but the shop does not offer them (staff can still sell or write them off). Stock that was never given a batch is never held back.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal expired(Product p) {
+        if (com.posapp.tracking.TrackingService.modeOf(p) != com.posapp.tracking.TrackingMode.BATCH) return BigDecimal.ZERO;
+        BigDecimal sum = em.createQuery("select coalesce(sum(b.quantity), 0) from StockBatch b where b.product.id = :id and b.quantity > 0 and b.expiryDate < :cut "
+                + "and b.location.active = true and (b.location.type is null or b.location.type <> com.posapp.warehouse.LocationType.DAMAGED)" + searchCondition("b"), BigDecimal.class)
+                .setParameter("id", p.getId()).setParameter("cut", expiryCut()).getSingleResult();
+        return sum == null ? BigDecimal.ZERO : sum;
+    }
+
+    /** On hand at the shop's locations minus what is expired, what confirmed sale orders still owe and what unanswered shop orders hold. */
     @Transactional(readOnly = true)
     public BigDecimal available(Product p) {
-        return onHand(p).subtract(stockReservationService.reserved(p)).subtract(held(p));
+        return onHand(p).subtract(expired(p)).subtract(stockReservationService.reserved(p)).subtract(held(p));
     }
 
     /** The safety buffer of one product: its own when staff set one, otherwise the shop-wide one. */
@@ -155,10 +175,16 @@ public class OnlineShopStock {
     /** For the search query: a condition on the stock row alias {@code ps} that keeps only the shop's locations; empty when the old rule applies. */
     @Transactional(readOnly = true)
     public String searchCondition() {
+        return searchCondition("ps");
+    }
+
+    /** The same condition for another alias of a row that has a location (the batches use b). */
+    @Transactional(readOnly = true)
+    public String searchCondition(String alias) {
         if (!multiWarehouse()) return "";
         List<WarehouseLocation> l = locations();
-        if (l.isEmpty()) return " and ps.location.id = -1";
-        StringBuilder sb = new StringBuilder(" and ps.location.id in (");
+        if (l.isEmpty()) return " and " + alias + ".location.id = -1";
+        StringBuilder sb = new StringBuilder(" and " + alias + ".location.id in (");
         for (int i = 0; i < l.size(); i++) sb.append(i == 0 ? "" : ",").append(l.get(i).getId().longValue());
         return sb.append(")").toString();
     }

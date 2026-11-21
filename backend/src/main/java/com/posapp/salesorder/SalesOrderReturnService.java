@@ -40,6 +40,8 @@ public class SalesOrderReturnService {
     /** Multi-warehouse phase 3 — where returned goods go back, and the last fulfilment's location as the default. */
     private final WarehouseService warehouseService;
     private final SalesOrderFulfillmentRepository salesOrderFulfillmentRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.tracking.TrackingService trackingService;
 
     public SalesOrderReturnService(SalesOrderReturnRepository salesOrderReturnRepository,
                                     SalesOrderReturnLineRepository salesOrderReturnLineRepository,
@@ -176,6 +178,16 @@ public class SalesOrderReturnService {
                         ? warehouseService.getStockQuantity(line.getProduct(), returnLocation)
                         : line.getProduct().getStockQuantity();
                 catalogService.adjustStock(line.getProduct(), entry.getQuantity(), returnLocation);
+                if (entry.getSerialNumbers() != null && !entry.getSerialNumbers().isEmpty()
+                        && com.posapp.tracking.TrackingService.modeOf(line.getProduct()) == com.posapp.tracking.TrackingMode.SERIAL) {
+                    // v1.67.0: the units that came back are in stock again under their own serial numbers
+                    if (BigDecimal.valueOf(trackingService.cleanSerials(line.getProduct(), entry.getSerialNumbers()).size()).compareTo(entry.getQuantity()) != 0) {
+                        throw ApiException.badRequest("'" + line.getProductName() + "': " + Qty.str(entry.getQuantity()) + " returned but " + entry.getSerialNumbers().size() + " serial number(s) given");
+                    }
+                    WarehouseLocation back = returnLocation != null ? returnLocation
+                            : warehouseService.resolveCanonicalSalesLocation(warehouseService.getDefaultWarehouseOrThrow());
+                    trackingService.restoreSerials(line.getProduct(), back, entry.getSerialNumbers(), so.getOrderNumber());
+                }
                 returnLine.setStockBefore(stockBefore);
                 returnLine.setStockAfter(returnLocation != null
                         ? warehouseService.getStockQuantity(line.getProduct(), returnLocation)

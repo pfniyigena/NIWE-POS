@@ -8,7 +8,7 @@ import { catchError } from 'rxjs/operators';
 import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
-import { Driver, OnlineStoreApiService, StoreReturn } from '../core/api/online-store-api.service';
+import { Driver, OnlineStoreApiService, SerialChoice, StoreReturn } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { Warehouse, WarehouseLocation } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -101,6 +101,13 @@ interface LocationOption { id: number; label: string }
                 <option *ngFor="let l of locations" [ngValue]="l.id">{{ l.label }}</option>
               </select>
             </div>
+            <div class="rt-serials" *ngFor="let c of choicesOf(r)" style="flex-basis:100%; border:1px dashed #9ca3af; border-radius:6px; padding:0.4rem;">
+              <div style="font-size:0.9rem;"><strong>{{ c.name }}</strong> · {{ 'Serial numbers that came back ({p0} of {p1})' | translate: { p0: c.quantity, p1: c.delivered.length } }}</div>
+              <div *ngIf="c.delivered.length === c.quantity" class="text-muted" style="font-size:0.8rem;">{{ 'All the units delivered are coming back: {p0}' | translate: { p0: c.delivered.join(', ') } }}</div>
+              <div *ngIf="c.delivered.length !== c.quantity" class="flex gap-2" style="flex-wrap:wrap;">
+                <label *ngFor="let n of c.delivered" class="flex gap-1" style="align-items:center;"><input type="checkbox" class="rt-serial" [checked]="isPicked(r, c, n)" (change)="togglePick(r, c, n)" /> {{ n }}</label>
+              </div>
+            </div>
             <ng-container *ngIf="online(r); else cash">
               <label class="flex gap-1" style="align-items:center;"><input type="radio" [name]="'rw' + r.id" [value]="false" [(ngModel)]="manual[r.id]" /> {{ 'Refund through the provider' | translate }}</label>
               <label class="flex gap-1" style="align-items:center;"><input type="radio" [name]="'rw' + r.id" [value]="true" [(ngModel)]="manual[r.id]" /> {{ 'I refunded it myself' | translate }}</label>
@@ -148,6 +155,10 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
   ref: Record<number, string> = {};
   manual: Record<number, boolean> = {};
   location: Record<number, number | null> = {};
+  /** v1.67.0: serial-numbered goods of a return: what was delivered (loaded once per return) and the ones staff ticked as back. */
+  private serialChoices: Record<number, SerialChoice[]> = {};
+  private serialAsked: Record<number, boolean> = {};
+  private picked: Record<number, Record<number, string[]>> = {};
   locations: LocationOption[] = [];
   list = new ListState<StoreReturn>((f, p, sz) => this.api.returnsPage(f, p, sz), 'Failed to load the returns');
   private poll: ReturnType<typeof setInterval> | null = null;
@@ -273,7 +284,35 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
     this.run(this.api.returnNewCode(r.id), T('New return code sent to the customer.'));
   }
 
+  choicesOf(r: StoreReturn): SerialChoice[] {
+    if (!this.serialAsked[r.id] && (r.status === 'APPROVED' || r.status === 'COLLECTED')) {
+      this.serialAsked[r.id] = true;
+      this.api.returnSerials(r.id).pipe(catchError(() => of([] as SerialChoice[]))).subscribe((c) => (this.serialChoices[r.id] = c));
+    }
+    return this.serialChoices[r.id] ?? [];
+  }
+
+  isPicked(r: StoreReturn, c: SerialChoice, n: string): boolean {
+    return (this.picked[r.id]?.[c.lineId] ?? []).includes(n);
+  }
+
+  togglePick(r: StoreReturn, c: SerialChoice, n: string): void {
+    const all = (this.picked[r.id] ??= {});
+    const cur = all[c.lineId] ?? [];
+    all[c.lineId] = cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n];
+  }
+
   process(r: StoreReturn): void {
+    const serials: Record<number, string[]> = {};
+    for (const c of this.choicesOf(r)) {
+      if (c.delivered.length === c.quantity) continue;
+      const got = this.picked[r.id]?.[c.lineId] ?? [];
+      if (got.length !== c.quantity) {
+        this.error = T('Choose the {p0} serial numbers of {p1} that came back.', { p0: String(c.quantity), p1: c.name });
+        return;
+      }
+      serials[c.lineId] = got;
+    }
     const manual = this.online(r) && this.manual[r.id] === true;
     const ref = (this.ref[r.id] ?? '').trim();
     if (manual && ref.length < 3) {
@@ -284,7 +323,7 @@ export class StoreReturnsComponent implements OnInit, OnDestroy {
       : manual ? 'Put the goods of return {p0} back in stock and record that you refunded {p1} yourself?'
         : 'Put the goods of return {p0} back in stock and refund {p1} through the payment provider?';
     if (!confirm(T(text, { p0: r.code, p1: String(r.refundAmount) }))) return;
-    this.run(this.api.processReturn(r.id, { locationId: this.location[r.id] ?? null, manual, reference: manual ? ref : null, note: (this.note[r.id] ?? '').trim() || null }),
+    this.run(this.api.processReturn(r.id, { locationId: this.location[r.id] ?? null, manual, reference: manual ? ref : null, note: (this.note[r.id] ?? '').trim() || null, serials: Object.keys(serials).length ? serials : null }),
       T('Return {p0} done. The customer was told.', { p0: r.code }));
   }
 }

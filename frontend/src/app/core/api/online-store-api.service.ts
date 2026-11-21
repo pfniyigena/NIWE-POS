@@ -84,7 +84,7 @@ export interface ShopOrderPayload {
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
 export interface ShopTrack {
   code: string; status: string; deliveryMethod: string; name: string; zoneName: string | null; subtotal: number; deliveryFee: number; total: number;
-  rejectReason: string | null; placedAt: string; lines: { name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null }[];
+  rejectReason: string | null; placedAt: string; lines: { name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null; serials?: string | null }[];
   history: { status: string; note: string | null; at: string }[];
   payment: ShopPayment;
   couponCode: string | null; discount: number; feeWaived: number;
@@ -146,7 +146,7 @@ export interface StoreOrder {
   receivedAt: string | null; receivedVia: string | null; receivedBy: string | null; signedName: string | null; hasSignature: boolean; hasCode: boolean;
   /** v1.58.0: tries that failed, the last reason, what was invoiced when only part was delivered, and what is still to give back for it. */
   deliveryAttempts: number; lastFailureReason: string | null; lastFailureAt: string | null; deliveredTotal: number | null; refundDifference: number | null;
-  lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null }[];
+  lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null; serials?: string | null }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
   /** The delivery window the customer chose (null = as soon as possible). */
   slotDate: string | null; slotStart: string | null; slotEnd: string | null; etaMin?: number | null; etaMax?: number | null;
@@ -187,6 +187,8 @@ export interface StoreSettings {
   loyaltyEnabled: boolean; loyaltyPointsPer100: number; loyaltyMaxPercent: number; whatsappNumber: string | null;
   /** v1.66.0: hours before an unanswered order is released (0 = never) and the percent of each product kept for the till. */
   autoReleaseHours: number; tillSharePercent: number;
+  /** v1.67.0: batches with fewer days left than this before they expire are not sold on the shop (0 = only expired ones). */
+  minDaysLeft: number;
 }
 export interface TextProvider { code: string; label: string; available: boolean; channels: string[] }
 /** status is SENT, FAILED, SKIPPED or QUEUED (waiting for an SMS company); purpose is ORDER, OWNER, SIGNIN, CODE or TEST. */
@@ -220,7 +222,7 @@ export interface StoreListing {
   stockBuffer: number | null;
 }
 /** Why a product shows the stock it shows. tracked false = stock is not tracked for it, so the shop always shows it as in stock. */
-export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; held: number | null; buffer: number; tillShare: number | null; sellable: number | null }
+export interface StoreStockInfo { tracked: boolean; inWarehouses: number | null; reserved: number | null; held: number | null; buffer: number; tillShare: number | null; sellable: number | null; expired: number | null }
 /** Staff's wording of the front page (Shop settings > Front page). Links are one per line, written Label|address. */
 export interface StorePageContent {
   announcementText: string | null; announcementLink: string | null; heroTitle: string | null; heroSubtitle: string | null; heroButtonText: string | null;
@@ -261,6 +263,8 @@ export interface ShopReturn {
 export interface ShopReturnLine { lineId: number; name: string; quantity: number; unitPaid: number; returnable: number }
 /** allowed is false with a message saying why not (period over, not completed, everything already asked back). */
 export interface ShopReturnOptions { allowed: boolean; message: string | null; windowDays: number; lastDay: string | null; lines: ShopReturnLine[]; returns: ShopReturn[] }
+/** A line of a return that is serial-numbered goods: the serial numbers delivered on the order, from which staff pick the ones that came back. */
+export interface SerialChoice { lineId: number; name: string; quantity: number; delivered: string[] }
 export interface StoreReturn {
   id: number; code: string; orderId: number; orderCode: string; customerName: string; customerPhone: string; customerEmail: string | null;
   status: 'REQUESTED' | 'APPROVED' | 'COLLECTED' | 'REFUSED' | 'REFUNDED'; reason: string; staffNote: string | null; refundAmount: number; refundMethod: 'PROVIDER' | 'MANUAL' | 'CASH' | null;
@@ -499,7 +503,9 @@ export class OnlineStoreApiService {
   returnNewCode(id: number): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/code`, {}); }
   refuseReturn(id: number, note: string): Observable<StoreReturn> { return this.http.post<StoreReturn>(`${this.base}/returns/${id}/refuse`, { note }); }
   /** The goods are back: stock and books through the sale order return, and the money given back the way the customer paid. */
-  processReturn(id: number, body: { locationId: number | null; manual: boolean; reference: string | null; note: string | null }): Observable<StoreReturn> {
+  /** v1.67.0: the serial numbers delivered for the serial-numbered lines of a return. */
+  returnSerials(id: number): Observable<SerialChoice[]> { return this.http.get<SerialChoice[]>(`${this.base}/returns/${id}/serials`); }
+  processReturn(id: number, body: { locationId: number | null; manual: boolean; reference: string | null; note: string | null; serials?: Record<number, string[]> | null }): Observable<StoreReturn> {
     return this.http.post<StoreReturn>(`${this.base}/returns/${id}/process`, body);
   }
 

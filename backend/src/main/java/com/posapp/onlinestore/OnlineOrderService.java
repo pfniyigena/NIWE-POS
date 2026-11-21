@@ -39,6 +39,8 @@ public class OnlineOrderService {
     /** v1.65.0: the stock location a delivery is taken from when nobody chose one. */
     @org.springframework.beans.factory.annotation.Autowired
     private OnlineShopStock shopStock;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.tracking.TrackingService trackingService;
 
     private final ShopLoyaltyService loyalty;
     private final OnlineDriverRepository drivers;
@@ -114,7 +116,7 @@ public class OnlineOrderService {
                 .filter(o -> driverId == null || (driverId == 0 ? o.getDriverId() == null && "DELIVERY".equals(o.getDeliveryMethod()) : driverId.equals(o.getDriverId())))
                 .filter(o -> needle.isEmpty() || o.getCode().toLowerCase(Locale.ROOT).contains(needle)
                         || o.getCustomerName().toLowerCase(Locale.ROOT).contains(needle) || o.getCustomerPhone().contains(needle))
-                .map(OnlineOrderService::dto).toList();
+                .map(x -> plain(x, java.util.Map.of())).toList();
     }
 
     @Transactional(readOnly = true)
@@ -667,7 +669,13 @@ public class OnlineOrderService {
         }
         if (!entries.isEmpty()) {
             fr.setLines(entries);
-            salesOrderService.fulfillLines(so.id(), fr);
+            // v1.67.0: goods the shop may sell leave first (long-dated batches before those near their expiry date or expired); serial numbers are taken oldest first
+            com.posapp.tracking.TrackingContext.setMinExpiry(shopStock.expiryCut());
+            try {
+                salesOrderService.fulfillLines(so.id(), fr);
+            } finally {
+                com.posapp.tracking.TrackingContext.setMinExpiry(null);
+            }
         }
         // No e-mail yet: it goes out below, after the payment is recorded, so the invoice the customer receives is not marked unpaid.
         InvoiceDto inv = invoiceService.generateWithoutEmail(so.id());
@@ -826,13 +834,20 @@ public class OnlineOrderService {
         repository.save(o);
     }
 
-    static OrderDto dto(OnlineOrder o) {
+    /** v1.67.0: the order with the serial numbers that were delivered on it (serial-numbered goods). */
+    private OrderDto dto(OnlineOrder o) {
+        java.util.Map<Long, String> serials = "COMPLETED".equals(o.getStatus()) && o.getSalesOrderNumber() != null
+                ? trackingService.soldSerialsByProduct(o.getSalesOrderNumber()) : java.util.Map.of();
+        return plain(o, serials);
+    }
+
+    static OrderDto plain(OnlineOrder o, java.util.Map<Long, String> serials) {
         return new OrderDto(o.getId(), o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getPaymentMethod(), o.getCustomerName(), o.getCustomerPhone(),
                 o.getCustomerEmail(), o.getCustomerAddress(), o.getZoneName(), o.getDeliveryFee(), o.getNotes(), o.getSubtotal(), o.getTotal(), o.getLanguage(),
                 o.getSalesOrderId(), o.getSalesOrderNumber(), o.getInvoiceId(), o.getInvoiceNumber(), o.getRejectReason(), o.getDecidedBy(), o.getDecidedAt(),
                 o.getCreatedAt(),
                 o.getPaymentStatus(), o.getPaymentChannel(), o.getPaymentReference(), o.getPaidAmount(), o.getPaidAt(), o.getRefundedAt(), o.getRefundReference(), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getRefundedTotal(),
-                o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal(), l.getDeliveredQuantity())).toList(),
+                o.getLines().stream().map(l -> new OrderLineDto(l.getProductId(), l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal(), l.getDeliveredQuantity(), serials.get(l.getProductId()))).toList(),
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList(),
                 o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone(),
                 o.getReceivedAt(), o.getReceivedVia(), o.getReceivedBy(), o.getSignedName(), o.getSignature() != null, o.getReceiptCode() != null,

@@ -158,6 +158,10 @@ public class OnlineStoreAdminService {
             if (in.autoReleaseHours() < 0 || in.autoReleaseHours() > 720) throw ApiException.badRequest(I18n.t("The hours before an unanswered order is released must be between 0 and 720"));
             s.setAutoReleaseHours(in.autoReleaseHours());
         }
+        if (in.minDaysLeft() != null) {
+            if (in.minDaysLeft() < 0 || in.minDaysLeft() > 3650) throw ApiException.badRequest(I18n.t("The days left before expiry must be between 0 and 3650"));
+            s.setMinDaysLeft(in.minDaysLeft());
+        }
         if (in.tillSharePercent() != null) {
             if (in.tillSharePercent() < 0 || in.tillSharePercent() > 100) throw ApiException.badRequest(I18n.t("The share kept for the till must be between 0 and 100 percent"));
             s.setTillSharePercent(in.tillSharePercent());
@@ -205,7 +209,7 @@ public class OnlineStoreAdminService {
                 s.isOnlinePaymentsEnabled(), s.getPaymentProvider(), s.getPaymentExpiryMinutes(), s.isAccountsEnabled(),
                 s.getTextProvider(), s.getTextChannel(), s.getTextCountryCode(), s.getTextDailyLimit(), s.getNotifyPhone(), s.getReturnWindowDays(),
                 s.isCartRemindersEnabled(), s.isLoyaltyEnabled(), s.getLoyaltyPointsPer100(), s.getLoyaltyMaxPercent(), s.getWhatsappNumber(),
-                s.getAutoReleaseHours(), s.getTillSharePercent());
+                s.getAutoReleaseHours(), s.getTillSharePercent(), s.getMinDaysLeft());
     }
 
     // ------------------------------------------------------------------ listings

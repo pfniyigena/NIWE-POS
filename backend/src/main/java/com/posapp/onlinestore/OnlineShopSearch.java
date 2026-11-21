@@ -43,7 +43,10 @@ public class OnlineShopSearch {
             + "- (select coalesce(sum(sl.quantityOrdered - sl.quantityFulfilled), 0) from SalesOrderLine sl where sl.product.id = %1$s.id "
             + "and sl.salesOrder.status in (com.posapp.salesorder.SalesOrderStatus.CONFIRMED, com.posapp.salesorder.SalesOrderStatus.PARTIALLY_FULFILLED)) "
             // v1.66.0: shop orders staff have not answered yet hold their units too
-            + "- (select coalesce(sum(ol0.quantity), 0) from OnlineOrderLine ol0 where ol0.productId = %1$s.id and ol0.onlineOrder.status in ('AWAITING_PAYMENT', 'PLACED')))";
+            + "- (select coalesce(sum(ol0.quantity), 0) from OnlineOrderLine ol0 where ol0.productId = %1$s.id and ol0.onlineOrder.status in ('AWAITING_PAYMENT', 'PLACED')) "
+            // v1.67.0: batches that are expired, or too close to their expiry date for the shop, are not sold
+            + "- (select coalesce(sum(eb.quantity), 0) from StockBatch eb where eb.product = %1$s and eb.quantity > 0 and eb.expiryDate < :expiryCut and eb.location.active = true%3$s "
+            + "and (eb.location.type is null or eb.location.type <> com.posapp.warehouse.LocationType.DAMAGED)))";
     /** A product with variants is rated and counted as one product: the ratings and the sales of all its variants. */
     private static final String SAME_GROUP = "coalesce(q.variantParentId, q.id) = coalesce(p.variantParentId, p.id)";
     private static final String RATING = "(select coalesce(avg(r.rating), 0) from OnlineReview r where r.ratingCounted = true "
@@ -132,10 +135,11 @@ public class OnlineShopSearch {
         }
         // Same rule as the stock word on the card: sellable stock (active, undamaged locations) minus what confirmed orders promised minus the shop's buffer.
         if (f.inStock()) {
-            String avail = String.format(SELLABLE, p, shopStock.searchCondition());
+            String avail = String.format(SELLABLE, p, shopStock.searchCondition(), shopStock.searchCondition("eb"));
             w.append(" and (").append(p).append(".trackStock = false or ").append(p).append(".service = true or ").append(avail).append(" - coalesce(").append(l)
                     .append(".stockBuffer, :buffer) - ceiling(").append(avail).append(" * :till / 100.0) > 0)");
             sink.add(new Object[]{"buffer", Math.max(0, buffer)});
+            sink.add(new Object[]{"expiryCut", shopStock.expiryCut()});
             sink.add(new Object[]{"till", java.math.BigDecimal.valueOf(Math.max(0, shopStock.tillPercent()))});
         }
         if (f.minRating() >= 1) {

@@ -15,7 +15,18 @@ public final class TrackingContext {
     private static final ThreadLocal<Map<Long, List<String>>> SERIALS = new ThreadLocal<>();
     private static final ThreadLocal<String> SALE_REFERENCE = new ThreadLocal<>();
 
+    /** v1.67.0: set by the online shop while it delivers: batches with at least this expiry date are used first (the others, then expired ones, last). */
+    private static final ThreadLocal<java.time.LocalDate> MIN_EXPIRY = new ThreadLocal<>();
+
     private TrackingContext() {}
+
+    public static void setMinExpiry(java.time.LocalDate date) {
+        if (date == null) MIN_EXPIRY.remove(); else MIN_EXPIRY.set(date);
+    }
+
+    public static java.time.LocalDate minExpiry() {
+        return MIN_EXPIRY.get();
+    }
 
     public static void begin(String saleReference, Map<Long, List<String>> serialsByProduct) {
         SALE_REFERENCE.set(saleReference);

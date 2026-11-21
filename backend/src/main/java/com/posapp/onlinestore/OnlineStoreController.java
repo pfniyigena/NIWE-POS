@@ -232,6 +232,13 @@ public class OnlineStoreController {
         return ListPaging.of(returns.list(q, status), page, size);
     }
 
+    /** v1.67.0: the serial numbers delivered for the serial-numbered lines of a return (staff choose the ones that came back). */
+    @PreAuthorize(VIEW)
+    @GetMapping("/returns/{id}/serials")
+    public List<OnlineStoreDtos.SerialChoice> returnSerials(@PathVariable Long id) {
+        return returns.serialChoices(id);
+    }
+
     @PreAuthorize(VIEW)
     @GetMapping("/returns/{id}")
     public ReturnDto returnGet(@PathVariable Long id) {

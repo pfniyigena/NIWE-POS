@@ -63,6 +63,9 @@ public class OnlineStoreSettings extends BaseEntity {
     /** v1.66.0: an order nobody answered (cash orders waiting for staff, orders waiting for a payment) is cancelled after this many hours and its stock freed. 0 = never. */
     @jakarta.persistence.Column(name = "auto_release_hours", nullable = false)
     private int autoReleaseHours = 24;
+    /** v1.67.0: batches with fewer days left than this before their expiry date are not sold by the shop (0 = only expired batches are held back). */
+    @jakarta.persistence.Column(name = "min_days_left", nullable = false)
+    private int minDaysLeft = 0;
     /** v1.66.0: percent of the available units of each product kept for the till, on top of the buffer (rounded up). 0 = none. */
     @jakarta.persistence.Column(name = "till_share_percent", nullable = false)
     private int tillSharePercent = 0;
