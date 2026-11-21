@@ -8,7 +8,7 @@ import { catchError } from 'rxjs/operators';
 import { ShellComponent } from '../shared/shell.component';
 import { PagerComponent } from '../shared/pager.component';
 import { ListState, emptyFilter } from '../core/api/list-state';
-import { Driver, KeptLine, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
+import { DeliveryWindow, Driver, KeptLine, OnlineStoreApiService, StoreOrder } from '../core/api/online-store-api.service';
 import { WarehouseApiService } from '../core/api/warehouse-api.service';
 import { StoreSettingsApiService } from '../core/api/store-settings-api.service';
 import { PaymentMethodApiService } from '../core/api/payment-method-api.service';
@@ -81,6 +81,19 @@ interface LocationOption { id: number; label: string; type: string | null; prima
           <li *ngIf="o.loyaltyPointsEarned > 0">{{ 'Loyalty points earned on this order: {p0}' | translate: { p0: o.loyaltyPointsEarned } }}</li>
           <li *ngIf="o.couponCode && o.feeWaived > 0">{{ 'Coupon {p0}: delivery fee waived ({p1})' | translate: { p0: o.couponCode, p1: (o.feeWaived | number: '1.0-2') } }}</li>
         </ul>
+        <div class="so-slot mt-1" *ngIf="o.deliveryMethod === 'DELIVERY'" style="font-size:0.9rem;">
+          <span class="so-slot-text">⏰ <ng-container *ngIf="o.slotDate">{{ o.slotDate }}, {{ o.slotStart }}-{{ o.slotEnd }}</ng-container><ng-container *ngIf="!o.slotDate">{{ 'As soon as possible' | translate }}</ng-container></span>
+          <button *ngIf="canAssign(o) && windows.length" class="btn btn-sm btn-outline-secondary so-slot-change" style="margin-left:0.5rem;" [disabled]="busy" (click)="startSlot(o)">{{ 'Change time' | translate }}</button>
+          <div *ngIf="slotEditing === o.id" class="so-slot-edit flex gap-2 mt-1" style="flex-wrap:wrap; align-items:center;">
+            <input class="form-control so-slot-day" type="date" style="width:160px;" [name]="'sd' + o.id" [(ngModel)]="slotDay" />
+            <select class="form-select so-slot-win" style="width:180px;" [name]="'sw' + o.id" [(ngModel)]="slotWin">
+              <option [ngValue]="null">{{ 'As soon as possible' | translate }}</option>
+              <option *ngFor="let w of windows" [ngValue]="w.id">{{ w.start }} - {{ w.end }}</option>
+            </select>
+            <button class="btn btn-sm btn-primary so-slot-save" [disabled]="busy || (slotWin !== null && !slotDay)" (click)="saveSlot(o)">{{ 'Save' | translate }}</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="slotEditing = null">{{ 'Cancel' | translate }}</button>
+          </div>
+        </div>
         <div class="so-driver flex gap-2 mt-1" *ngIf="o.deliveryMethod === 'DELIVERY' && canAssign(o)" style="flex-wrap:wrap; align-items:center;">
           <label class="text-muted" [attr.for]="'drv' + o.id">{{ 'Driver' | translate }}</label>
           <select class="form-select so-driver-pick" style="width:200px;" [id]="'drv' + o.id" [ngModel]="o.driverId" (ngModelChange)="assign(o, $event)" [name]="'drv' + o.id" [disabled]="busy">
@@ -247,6 +260,11 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
   constructor(public api: OnlineStoreApiService, private warehouseApi: WarehouseApiService, private storeSettingsApi: StoreSettingsApiService, private paymentMethodApi: PaymentMethodApiService) {}
 
   drivers: Driver[] = [];
+  /** Delivery windows of the shop, and the order whose time is being changed. */
+  windows: DeliveryWindow[] = [];
+  slotEditing: number | null = null;
+  slotWin: number | null = null;
+  slotDay = '';
   /** null = all orders, 0 = delivery orders without a driver, else one driver's orders. */
   driverFilter: number | null = null;
 
@@ -273,6 +291,19 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
     const where = (o.zoneName ? o.zoneName + ' — ' : '') + (o.customerAddress ?? '');
     const text = T('Delivery {p0}: {p1}, {p2}. Address: {p3}. To collect: {p4}.', { p0: o.code, p1: o.customerName, p2: o.customerPhone, p3: where, p4: collect });
     return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
+  }
+
+  startSlot(o: StoreOrder): void {
+    this.slotEditing = o.id;
+    this.slotDay = o.slotDate ?? '';
+    this.slotWin = this.windows.find((w) => w.start === o.slotStart && w.end === o.slotEnd)?.id ?? null;
+  }
+
+  saveSlot(o: StoreOrder): void {
+    const win = this.slotWin;
+    const day = this.slotDay;
+    this.slotEditing = null;
+    this.run(this.api.changeOrderSlot(o.id, win, win === null ? null : day));
   }
 
   /** The driver can be set or changed until the order is delivered. */
@@ -315,6 +346,7 @@ export class StoreOrdersComponent implements OnInit, OnDestroy {
 
   private loadDrivers(): void {
     this.api.drivers().pipe(catchError(() => of([] as Driver[]))).subscribe((d) => (this.drivers = d));
+    this.api.windows().pipe(catchError(() => of([] as DeliveryWindow[]))).subscribe((w) => (this.windows = w.filter((x) => x.active)));
   }
 
   ngOnInit(): void {

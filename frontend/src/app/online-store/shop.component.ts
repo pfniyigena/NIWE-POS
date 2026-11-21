@@ -5,7 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAddress, ShopAd, ShopFilter, ShopSuggest, ShopHome, ShopPayProvider, ShopPage, ShopProduct, shopToken } from '../core/api/online-store-api.service';
+import { AccountProfile, CouponCheckResult, OnlineStoreApiService, Reorder, Shop, ShopAddress, ShopAd, ShopFilter, ShopSuggest, ShopHome, ShopPayProvider, ShopPage, ShopProduct, SlotBoard, SlotChoice, shopToken } from '../core/api/online-store-api.service';
 import { PublicSettingsApiService } from '../core/api/public-settings-api.service';
 import { ShopAccountComponent } from './shop-account.component';
 import { PayProviderPickerComponent } from './pay-provider-picker.component';
@@ -282,6 +282,20 @@ import { T } from '../core/i18n/t';
                 <option *ngFor="let a of addresses" [ngValue]="a.id">{{ a.label }}: {{ a.address }}</option>
               </select></div>
             <div class="form-group"><label class="form-label">{{ 'Delivery address' | translate }}</label><input class="form-control shop-address" maxlength="240" name="caddr" [(ngModel)]="address" /></div>
+            <div class="form-group shop-slots" *ngIf="slotBoard && slotBoard.enabled && slotBoard.days.length">
+              <label class="form-label">{{ 'Delivery time' | translate }}<span *ngIf="slotBoard.required"> *</span></label>
+              <select class="form-select shop-slot-day" style="max-width:320px;" name="slotday" [(ngModel)]="slotDay" (ngModelChange)="slotId = null">
+                <option *ngIf="!slotBoard.required" [ngValue]="null">{{ 'As soon as possible' | translate }}</option>
+                <option *ngIf="slotBoard.required" [ngValue]="null" disabled>{{ 'Choose a day…' | translate }}</option>
+                <option *ngFor="let d of slotBoard.days" [ngValue]="d.date">{{ dayLabel(d.date) }}</option>
+              </select>
+              <div class="flex gap-2 mt-1 shop-slot-list" style="flex-wrap:wrap;" *ngIf="slotDay">
+                <button type="button" *ngFor="let c of slotsOf(slotDay)" class="btn btn-sm shop-slot" [ngClass]="slotId === c.id ? 'btn-primary' : 'btn-outline-secondary'" [disabled]="!c.available" (click)="slotId = c.id">
+                  {{ c.start }} - {{ c.end }}<span *ngIf="c.why === 'FULL'"> · {{ 'Full' | translate }}</span><span *ngIf="c.why === 'SOON'"> · {{ 'Too late' | translate }}</span>
+                </button>
+              </div>
+              <div class="text-muted" style="font-size:0.85rem;" *ngIf="!slotDay">{{ 'We bring it as soon as possible after we accept your order.' | translate }}</div>
+            </div>
             <div class="form-group shop-save-addr" *ngIf="account && address.trim() && !addressSaved()">
               <label class="flex gap-1" style="align-items:center;"><input type="checkbox" name="saveaddr" [(ngModel)]="saveAddr" /> {{ 'Save this address in my account' | translate }}</label>
               <input *ngIf="saveAddr" class="form-control shop-addr-label mt-1" style="max-width:240px;" maxlength="60" name="addrlabel" [(ngModel)]="addrLabel" [placeholder]="'Name (Home, Work…)' | translate" />
@@ -469,6 +483,10 @@ export class ShopComponent implements OnInit, OnDestroy {
   notes = '';
   website = '';
   zoneId: number | null = null;
+  /** The delivery windows the shop offers (null until loaded), the day and the window the customer picked. */
+  slotBoard: SlotBoard | null = null;
+  slotDay: string | null = null;
+  slotId: number | null = null;
   /** How the customer pays: cash on delivery or at pick-up, or online. */
   payment: 'CASH' | 'MOBILE_MONEY' | 'CARD' = 'CASH';
   payPhone = '';
@@ -798,6 +816,7 @@ export class ShopComponent implements OnInit, OnDestroy {
         this.pwa.useShopManifest(s.name, s.page?.brandColor ?? null);
         if (!this.viewId) this.shopSeo();
         this.method = s.delivery ? 'DELIVERY' : 'PICKUP';
+        this.loadSlots();
         if (!s.cash && s.payMethods.length > 0) this.payment = s.payMethods[0] as 'MOBILE_MONEY' | 'CARD';
         if (s.accounts && shopToken.get()) {
           // A stale token is simply dropped: the customer shops as a guest.
@@ -1236,8 +1255,37 @@ export class ShopComponent implements OnInit, OnDestroy {
     return way === 'CASH' ? [] : (this.shop?.payProviders ?? []).filter((p) => p.methods.includes(way));
   }
 
+  /** The delivery windows (none when the shop does not use them, or when they cannot be read: the order is then simply "as soon as possible"). */
+  loadSlots(): void {
+    this.api.deliverySlots().subscribe({
+      next: (b) => {
+        this.slotBoard = b;
+        if (this.slotDay && !b.days.some((d) => d.date === this.slotDay && d.slots.some((c) => c.id === this.slotId && c.available))) { this.slotId = null; }
+        if (this.slotDay && !b.days.some((d) => d.date === this.slotDay)) this.slotDay = null;
+      },
+      error: () => { this.slotBoard = null; },
+    });
+  }
+
+  slotsOf(day: string | null): SlotChoice[] {
+    return this.slotBoard?.days.find((d) => d.date === day)?.slots ?? [];
+  }
+
+  dayLabel(day: string): string {
+    const d = new Date(day + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+    const text = d.toLocaleDateString(this.lang.current === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return diff === 0 ? T('Today') + ' · ' + text : diff === 1 ? T('Tomorrow') + ' · ' + text : text;
+  }
+
   place(): void {
     this.orderError = null;
+    if (this.method === 'DELIVERY' && this.slotBoard?.enabled && this.slotBoard.days.length) {
+      if (this.slotBoard.required && (!this.slotDay || !this.slotId)) { this.orderError = T('Choose a delivery day and time'); return; }
+      if (this.slotDay && !this.slotId) { this.orderError = T('Choose a time for that day, or choose As soon as possible.'); return; }
+    }
     if (this.payment === 'MOBILE_MONEY' && !this.paySame && !this.payPhone.trim()) {
       this.orderError = T('Enter the mobile money number to pay from');
       return;
@@ -1255,6 +1303,8 @@ export class ShopComponent implements OnInit, OnDestroy {
         pointsToUse: this.pointsUsed() || null,
         paymentProvider: provider,
         textUpdates: !!this.shop?.textChannel && this.textUpdates,
+        slotId: this.method === 'DELIVERY' && this.slotDay ? this.slotId : null,
+        slotDate: this.method === 'DELIVERY' && this.slotDay && this.slotId ? this.slotDay : null,
       })
       .subscribe({
         next: (t) => {
@@ -1274,6 +1324,7 @@ export class ShopComponent implements OnInit, OnDestroy {
         error: (e) => {
           this.busy = false;
           this.orderError = e?.error?.message ?? T('We could not send your order. Please try again.');
+          if (this.slotDay) this.loadSlots();
           setTimeout(() => document.getElementById('order-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         },
       });

@@ -46,6 +46,8 @@ public class OnlineStoreService {
     private final OnlineStoreSettingsRepository settingsRepository;
     private final OnlineListingRepository listingRepository;
     private final OnlineDeliveryZoneRepository zoneRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineSlotService slotService;
     private final OnlineOrderRepository orderRepository;
     private final StockReservationService stockReservationService;
     private final StoreSettingsService storeSettingsService;
@@ -484,6 +486,9 @@ public class OnlineStoreService {
             }
         }
 
+        // The delivery window (when the shop uses them): checked and kept now, the window is locked until this order is saved.
+        OnlineSlotService.Pick slot = slotService.pick(in.slotId(), in.slotDate(), method);
+
         List<PublicLine> lines = in.lines() == null ? List.of() : in.lines();
         if (lines.isEmpty()) throw ApiException.badRequest(I18n.t("Add something to your order first"));
         if (lines.size() > MAX_LINES) throw ApiException.badRequest(I18n.t("That is too many different products for one order"));
@@ -590,6 +595,11 @@ public class OnlineStoreService {
             o.setDeliveryTaxRateId(zone.getTaxRateId());
         }
         o.setDeliveryFee(fee);
+        if (slot != null) {
+            o.setSlotDate(slot.date());
+            o.setSlotStart(slot.start());
+            o.setSlotEnd(slot.end());
+        }
         o.setNotes(clean(in.notes(), 300, I18n.t("The note"), false));
         o.setSubtotal(subtotal);
         o.setTotal(subtotal.subtract(discount).add(fee));
@@ -611,7 +621,7 @@ public class OnlineStoreService {
         } else {
             OnlineMessages.send(mailService, storeSettingsService, saved,
                     OnlineMessages.m("We received your order {0}", saved.getCode()),
-                    OnlineMessages.m("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())));
+                    withSlot(OnlineMessages.m("Thank you, {0}. We received your order {1} for {2}. We will confirm it shortly. You can follow it with this code.", name, saved.getCode(), money(saved.getTotal())), saved));
             OnlineMessages.notifyShop(mailService, storeSettingsService, s, saved);
         }
         return track(saved);
@@ -694,12 +704,19 @@ public class OnlineStoreService {
         return track(o);
     }
 
+    /** The sentence about the chosen delivery window, when the order has one. */
+    static OnlineMessages.Msg withSlot(OnlineMessages.Msg msg, OnlineOrder o) {
+        if (o.getSlotDate() == null || o.getSlotStart() == null) return msg;
+        return msg.then(OnlineMessages.m("Delivery planned on {0}, between {1} and {2}.", OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd())));
+    }
+
     private Track track(OnlineOrder o) {
         List<TrackLine> lines = o.getLines().stream().map(l -> new TrackLine(l.getName(), l.getQuantity(), l.getUnitPrice(), l.getLineTotal(), l.getDeliveredQuantity())).toList();
         List<TrackStep> steps = o.getEvents().stream().map(e -> new TrackStep(e.getStatus(), e.getNote(), e.getCreatedAt())).toList();
         return new Track(o.getCode(), o.getStatus(), o.getDeliveryMethod(), o.getCustomerName(), o.getZoneName(), o.getSubtotal(), o.getDeliveryFee(),
                 o.getTotal(), o.getRejectReason(), o.getCreatedAt(), lines, steps, payments.info(o), o.getCouponCode(), o.getDiscountAmount(), o.getFeeWaived(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getInvoiceNumber(),
                 "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverName() : null, "OUT_FOR_DELIVERY".equals(o.getStatus()) ? o.getDriverPhone() : null,
-                "OUT_FOR_DELIVERY".equals(o.getStatus()) || "READY_FOR_PICKUP".equals(o.getStatus()), o.getReceivedAt(), o.getReceivedVia());
+                "OUT_FOR_DELIVERY".equals(o.getStatus()) || "READY_FOR_PICKUP".equals(o.getStatus()), o.getReceivedAt(), o.getReceivedVia(),
+                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()));
     }
 }

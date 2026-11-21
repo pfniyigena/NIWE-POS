@@ -14,6 +14,13 @@ public interface OnlineOrderRepository extends JpaRepository<OnlineOrder, Long> 
 
     java.util.List<OnlineOrder> findTop200ByCashSettledAtIsNotNullOrderByCashSettledAtDesc();
 
+    /** Orders that hold a place in a delivery window (everything except rejected and cancelled ones). */
+    long countBySlotDateAndSlotStartAndStatusNotIn(java.time.LocalDate day, java.time.LocalTime start, java.util.Collection<String> statuses);
+
+    @org.springframework.data.jpa.repository.Query("select o.slotDate, o.slotStart, count(o) from OnlineOrder o where o.slotDate between :from and :to and o.status not in :statuses group by o.slotDate, o.slotStart")
+    java.util.List<Object[]> slotLoad(@org.springframework.data.repository.query.Param("from") java.time.LocalDate from, @org.springframework.data.repository.query.Param("to") java.time.LocalDate to,
+                                      @org.springframework.data.repository.query.Param("statuses") java.util.Collection<String> statuses);
+
     /** One driver's cash: not handed in yet, and the latest settlements (v1.60.0, shown on his own page). */
     java.util.List<OnlineOrder> findByDriverIdAndCashCollectedGreaterThanAndCashSettledAtIsNullOrderByIdAsc(Long driverId, java.math.BigDecimal zero);
 

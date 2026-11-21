@@ -107,6 +107,7 @@ public class OnlineDeliveryService {
                     {I18n.t("Phone"), o.getCustomerPhone()},
                     {I18n.t("Address"), o.getCustomerAddress()},
                     {I18n.t("Area"), o.getZoneName()},
+                    {I18n.t("Delivery time"), o.getSlotDate() == null ? I18n.t("As soon as possible") : OnlineSlotService.label(o.getSlotDate(), o.getSlotStart(), o.getSlotEnd())},
                     {I18n.t("Note"), o.getNotes()},
                     {I18n.t("Driver"), o.getDriverName() == null ? "" : o.getDriverName() + (o.getDriverPhone() == null ? "" : " · " + o.getDriverPhone())},
                     {I18n.t("Placed"), o.getCreatedAt() == null ? "" : java.time.LocalDate.ofInstant(o.getCreatedAt(), java.time.ZoneId.systemDefault()).format(I18n.shortDay())},
@@ -189,7 +190,9 @@ public class OnlineDeliveryService {
         List<OnlineOrder> list = orders.findAllByOrderByCreatedAtDesc().stream()
                 .filter(o -> "DELIVERY".equals(o.getDeliveryMethod()) && TO_DELIVER.contains(o.getStatus()))
                 .filter(o -> driverId == 0 ? o.getDriverId() == null : driverId.equals(o.getDriverId()))
-                .sorted(Comparator.comparing((OnlineOrder o) -> o.getZoneName() == null ? "" : o.getZoneName()).thenComparing(OnlineOrder::getCreatedAt)).toList();
+                .sorted(Comparator.comparing((OnlineOrder o) -> o.getSlotDate() == null ? java.time.LocalDate.MAX : o.getSlotDate())
+                        .thenComparing(o -> o.getSlotStart() == null ? java.time.LocalTime.MAX : o.getSlotStart())
+                        .thenComparing((OnlineOrder o) -> o.getZoneName() == null ? "" : o.getZoneName()).thenComparing(OnlineOrder::getCreatedAt)).toList();
         String cur = storeService.currencyCode();
         BigDecimal cash = list.stream().map(OnlineDeliveryService::toCollect).reduce(BigDecimal.ZERO, BigDecimal::add);
         return kit.build(true, I18n.t("Delivery run sheet") + " · " + who, doc -> {
@@ -207,7 +210,7 @@ public class OnlineDeliveryService {
                 n++;
                 StringBuilder goods = new StringBuilder();
                 for (OnlineOrderLine l : o.getLines()) goods.append(goods.length() == 0 ? "" : "\n").append(qty(l.getQuantity())).append(" × ").append(l.getName());
-                String addr = (o.getZoneName() == null ? "" : o.getZoneName() + "\n") + PdfKit.nz(o.getCustomerAddress()) + (o.getNotes() == null || o.getNotes().isBlank() ? "" : "\n“" + o.getNotes() + "”");
+                String addr = (o.getSlotDate() == null ? "" : "⏰ " + OnlineSlotService.label(o.getSlotDate(), o.getSlotStart(), o.getSlotEnd()) + "\n") + (o.getZoneName() == null ? "" : o.getZoneName() + "\n") + PdfKit.nz(o.getCustomerAddress()) + (o.getNotes() == null || o.getNotes().isBlank() ? "" : "\n“" + o.getNotes() + "”");
                 BigDecimal c = toCollect(o);
                 t.addCell(PdfKit.cell(String.valueOf(n), PdfKit.plain(9), Element.ALIGN_LEFT, null));
                 t.addCell(PdfKit.cell(o.getCode(), PdfKit.bold(9), Element.ALIGN_LEFT, null));

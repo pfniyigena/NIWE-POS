@@ -68,7 +68,7 @@ public final class OnlineStoreDtos {
                                @Size(max = 240) String address, String method, Long zoneId, @Size(max = 300) String notes,
                                String language, String website, @Valid List<PublicLine> lines,
                                String payment, @Size(max = 40) String payPhone, @Size(max = 40) String couponCode, Boolean textUpdates, Integer pointsToUse,
-                               @Size(max = 30) String paymentProvider) {
+                               @Size(max = 30) String paymentProvider, Long slotId, @Size(max = 10) String slotDate) {
     }
 
     /** "Apply" at checkout: only asks what the code is worth now; the order asks again when it is placed. */
@@ -96,7 +96,8 @@ public final class OnlineStoreDtos {
                         BigDecimal deliveryFee, BigDecimal total, String rejectReason, Instant placedAt,
                         List<TrackLine> lines, List<TrackStep> history, PaymentInfo payment,
                         String couponCode, BigDecimal discount, BigDecimal feeWaived, BigDecimal loyaltyDiscount, int pointsEarned, String invoiceNumber,
-                        String driverName, String driverPhone, boolean canConfirm, Instant receivedAt, String receivedVia) {
+                        String driverName, String driverPhone, boolean canConfirm, Instant receivedAt, String receivedVia,
+                        String slotDate, String slotStart, String slotEnd) {
     }
 
     /** The customer pays again (or with another way) for an order that is waiting for payment. */
@@ -210,7 +211,12 @@ public final class OnlineStoreDtos {
                            BigDecimal refundedTotal, List<OrderLineDto> lines, List<EventDto> events,
                            int loyaltyPointsUsed, BigDecimal loyaltyDiscount, int loyaltyPointsEarned, Long driverId, String driverName, String driverPhone,
                            Instant receivedAt, String receivedVia, String receivedBy, String signedName, boolean hasSignature, boolean hasCode,
-                           int deliveryAttempts, String lastFailureReason, Instant lastFailureAt, BigDecimal deliveredTotal, BigDecimal refundDifference) {
+                           int deliveryAttempts, String lastFailureReason, Instant lastFailureAt, BigDecimal deliveredTotal, BigDecimal refundDifference,
+                           String slotDate, String slotStart, String slotEnd) {
+    }
+
+    /** Staff move a delivery order to a window; slotId null = back to "as soon as possible". */
+    public record SlotChange(Long slotId, @Size(max = 10) String slotDate) {
     }
 
     public record RejectRequest(@NotNull @Size(min = 1, max = 160) String reason) {

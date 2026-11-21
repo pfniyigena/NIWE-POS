@@ -5,17 +5,21 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
-## v1.59.1 - Online Store: a tax for each delivery area's fee
+## v1.61.0 - Online Store: delivery time slots
 
-Each delivery area has a Tax chosen from the existing taxes (Shop settings > Delivery areas). The fee is the amount the customer pays and the tax is included in it, so the invoice and the cash always equal the order total. Without a choice the delivery product's tax is used as before. New migration V93. See `RELEASE-NOTES-v1.59.1.md` and `docs/online-store-delivery-tax.md`.
+Customers can choose a delivery day and a time window at checkout. The shop sets the windows (with a limit of orders per window and day, and the weekdays each one exists), days without deliveries, how many days ahead can be booked and the notice before a window starts (Shop settings > Delivery times). "As soon as possible" stays allowed unless the shop makes the choice compulsory. A full window cannot be chosen, even when two customers order at the same moment. The window shows on the order page, the confirmation messages, Online orders (staff can change it), the driver's page, the delivery slip and the run sheet (sorted by window). New migration V95. See `RELEASE-NOTES-v1.61.0.md` and `docs/online-store-delivery-slots.md`.
+
+## v1.60.0 - Online Store: the driver's cash balance on his own page
+
+The driver's private page now shows **Cash I hold**: the cash he took at the door that the shop has not recorded yet (total and order by order), and his last ten hand-ins with the difference. He sees only his own cash. No migration. See `RELEASE-NOTES-v1.60.0.md` and `docs/online-store-driver-cash-page.md`.
 
 ## v1.59.2 - Online Store: delivery and pick-up codes by SMS and e-mail
 
 The delivery / pick-up code message (on its way, ready for pick-up, new code) now goes by e-mail **and** by SMS to the phone of the order, also for customers with no e-mail and whatever they ticked at checkout. Until an SMS company is connected, a built-in sender (`BuiltInSmsSender`, the one place to plug it in) keeps each SMS in the text log as "Waiting for an SMS company". The order's history shows how the code message went. The code is never written in the text log. Missing French texts for the code messages added. New migration V94. See `RELEASE-NOTES-v1.59.2.md` and `docs/online-store-delivery-code-sms.md`.
 
-## v1.60.0 - Online Store: the driver's cash balance on his own page
+## v1.59.1 - Online Store: a tax for each delivery area's fee
 
-The driver's private page now shows **Cash I hold**: the cash he took at the door that the shop has not recorded yet (total and order by order), and his last ten hand-ins with the difference. He sees only his own cash. No migration. See `RELEASE-NOTES-v1.60.0.md` and `docs/online-store-driver-cash-page.md`.
+Each delivery area has a Tax chosen from the existing taxes (Shop settings > Delivery areas). The fee is the amount the customer pays and the tax is included in it, so the invoice and the cash always equal the order total. Without a choice the delivery product's tax is used as before. New migration V93. See `RELEASE-NOTES-v1.59.1.md` and `docs/online-store-delivery-tax.md`.
 
 ## v1.59.0 - Online Store: delivery drivers without a login
 

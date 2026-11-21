@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider } from '../core/api/online-store-api.service';
+import { Driver, DriverAccess, OnlineStoreApiService, TaxOption, StoreBanner, StorePageContent, PaymentProvider, StoreListing, ListingDetails, ProductSpec, StoreSettings, StoreZone, TextProvider, DeliveryWindow, SlotSettings, ClosedDay } from '../core/api/online-store-api.service';
 import { CatalogApiService } from '../core/api/catalog-api.service';
 import { Product } from '../core/models';
 import { T } from '../core/i18n/t';
@@ -349,6 +349,52 @@ import { API_BASE } from '../core/constants';
         </table>
       </div>
 
+      <div class="card mb-3 slots-card" style="padding:1rem;">
+        <h4 class="mb-2">{{ 'Delivery times' | translate }}</h4>
+        <p class="text-muted">{{ 'Let customers choose a day and a time window for their delivery. Each window takes a limited number of orders per day; a full window cannot be chosen. Only delivery orders use windows.' | translate }}</p>
+        <div class="flex gap-3 mb-2" style="flex-wrap:wrap; align-items:flex-end;" *ngIf="slotSet">
+          <label class="flex gap-1" style="align-items:center;"><input type="checkbox" class="sl-enabled" name="slEnabled" [(ngModel)]="slotSet.enabled" /> {{ 'Customers choose a delivery time' | translate }}</label>
+          <label class="flex gap-1" style="align-items:center;"><input type="checkbox" class="sl-required" name="slRequired" [(ngModel)]="slotSet.required" /> {{ 'They must choose one (otherwise As soon as possible is allowed)' | translate }}</label>
+          <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Days ahead' | translate }}</label><input class="form-control sl-ahead" type="number" min="0" max="60" style="width:90px;" name="slAhead" [(ngModel)]="slotSet.daysAhead" /></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">{{ 'Notice (hours before the window starts)' | translate }}</label><input class="form-control sl-notice" type="number" min="0" max="72" style="width:90px;" name="slNotice" [(ngModel)]="slotSet.noticeHours" /></div>
+          <button class="btn btn-primary sl-save-set" type="button" (click)="saveSlotSettings()">{{ 'Save' | translate }}</button>
+        </div>
+        <div style="overflow-x:auto;">
+        <table class="table-sm">
+          <thead><tr><th>{{ 'From' | translate }}</th><th>{{ 'To' | translate }}</th><th class="text-end">{{ 'Orders per day' | translate }}</th><th>{{ 'Days' | translate }}</th><th>{{ 'Active' | translate }}</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let w of windows" class="sl-row">
+              <td><input class="form-control" type="time" style="width:150px;" [name]="'ws' + w.id" [(ngModel)]="w.start" /></td>
+              <td><input class="form-control" type="time" style="width:150px;" [name]="'we' + w.id" [(ngModel)]="w.end" /></td>
+              <td class="text-end"><input class="form-control" type="number" min="0" max="1000" style="width:100px;" [name]="'wm' + w.id" [(ngModel)]="w.maxOrders" [placeholder]="'0 = no limit' | translate" /></td>
+              <td style="white-space:nowrap;"><button type="button" *ngFor="let n of dayNames; let i = index" class="btn btn-sm" style="padding:0.1rem 0.35rem; margin-right:2px;" [ngClass]="w.days[i] === '1' ? 'btn-primary' : 'btn-outline-secondary'" (click)="w.days = flipDay(w.days, i)">{{ n | translate }}</button></td>
+              <td><input type="checkbox" [name]="'wa' + w.id" [(ngModel)]="w.active" /></td>
+              <td style="white-space:nowrap;"><button class="btn btn-sm btn-primary sl-save" type="button" (click)="saveWindow(w)">{{ 'Save' | translate }}</button> <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteWindow(w)">{{ 'Remove' | translate }}</button></td>
+            </tr>
+            <tr>
+              <td><input class="form-control sl-new-start" type="time" style="width:150px;" name="nwStart" [(ngModel)]="newWindow.start" /></td>
+              <td><input class="form-control sl-new-end" type="time" style="width:150px;" name="nwEnd" [(ngModel)]="newWindow.end" /></td>
+              <td class="text-end"><input class="form-control" type="number" min="0" max="1000" style="width:100px;" name="nwMax" [(ngModel)]="newWindow.maxOrders" /></td>
+              <td style="white-space:nowrap;"><button type="button" *ngFor="let n of dayNames; let i = index" class="btn btn-sm" style="padding:0.1rem 0.35rem; margin-right:2px;" [ngClass]="newWindow.days[i] === '1' ? 'btn-primary' : 'btn-outline-secondary'" (click)="newWindow.days = flipDay(newWindow.days, i)">{{ n | translate }}</button></td>
+              <td></td>
+              <td><button class="btn btn-sm btn-primary sl-add" type="button" (click)="addWindow()">{{ 'Add window' | translate }}</button></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <h5 class="mt-3 mb-1">{{ 'Days without deliveries' | translate }}</h5>
+        <div class="flex gap-2 mb-2" style="flex-wrap:wrap; align-items:center;">
+          <input class="form-control sl-closed-day" type="date" style="width:170px;" name="cdDay" [(ngModel)]="closedDay" />
+          <input class="form-control" maxlength="80" style="width:220px;" name="cdReason" [(ngModel)]="closedReason" [placeholder]="'Reason (optional)' | translate" />
+          <button class="btn btn-sm btn-primary sl-closed-add" type="button" (click)="addClosedDay()" [disabled]="!closedDay">{{ 'Close this day' | translate }}</button>
+        </div>
+        <div class="text-muted" *ngIf="!closedDays.length">{{ 'No closed days.' | translate }}</div>
+        <div class="flex gap-2 sl-closed" style="flex-wrap:wrap;">
+          <span *ngFor="let c of closedDays" class="badge badge-secondary" style="font-size:0.85rem; padding:0.35rem 0.55rem;">{{ c.day }}<ng-container *ngIf="c.reason"> · {{ c.reason }}</ng-container>
+            <a href="javascript:void(0)" style="margin-left:0.4rem;" (click)="removeClosedDay(c)">✕</a></span>
+        </div>
+      </div>
+
       <div class="card mb-3 drivers-card" style="padding:1rem;">
         <h4 class="mb-2">{{ 'Drivers' | translate }}</h4>
         <p class="text-muted">{{ 'The people who deliver orders. On an order you choose the driver, print the delivery slip, and the customer sees the driver\\'s name and phone once the order is on its way. A driver is not an employee record: just a name and a phone number.' | translate }}</p>
@@ -462,6 +508,7 @@ export class StoreSetupComponent implements OnInit {
     this.loadListings();
     this.loadZones();
     this.loadDrivers();
+    this.loadSlots();
     this.catalog.searchProducts(null, null).subscribe({ next: (all) => (this.serviceProducts = all.filter((p) => (p as any).service && p.active)), error: () => {} });
   }
 
@@ -736,6 +783,62 @@ export class StoreSetupComponent implements OnInit {
   deleteZone(z: StoreZone): void {
     if (!confirm(T('Remove the area {p0}?', { p0: z.name }))) return;
     this.api.deleteZone(z.id).subscribe({ next: () => { this.loadZones(); this.ok('Removed'); }, error: (e) => this.fail(e, 'Could not remove the area') });
+  }
+
+  // ---- delivery times (windows, limits, closed days)
+  dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  windows: DeliveryWindow[] = [];
+  slotSet: SlotSettings | null = null;
+  closedDays: ClosedDay[] = [];
+  closedDay = '';
+  closedReason = '';
+  newWindow = { start: '08:00', end: '11:00', maxOrders: 0, days: '1111111' };
+
+  loadSlots(): void {
+    this.api.windows().subscribe({ next: (w) => (this.windows = w), error: (e) => this.fail(e, 'Failed to load the delivery windows') });
+    this.api.slotSettings().subscribe({ next: (s) => (this.slotSet = s), error: () => {} });
+    this.api.closedDays().subscribe({ next: (c) => (this.closedDays = c), error: () => {} });
+  }
+
+  flipDay(days: string, i: number): string {
+    const a = days.split('');
+    a[i] = a[i] === '1' ? '0' : '1';
+    return a.join('');
+  }
+
+  saveSlotSettings(): void {
+    if (!this.slotSet) return;
+    this.api.saveSlotSettings(this.slotSet).subscribe({ next: (s) => { this.slotSet = s; this.ok('Saved'); }, error: (e) => this.fail(e, 'Could not save') });
+  }
+
+  addWindow(): void {
+    this.api.saveWindow(null, { ...this.newWindow, active: true, sortOrder: this.windows.length + 1 }).subscribe({
+      next: () => { this.loadSlots(); this.ok('Window added'); },
+      error: (e) => this.fail(e, 'Could not add the window'),
+    });
+  }
+
+  saveWindow(w: DeliveryWindow): void {
+    this.api.saveWindow(w.id, { start: w.start, end: w.end, maxOrders: w.maxOrders || 0, days: w.days, active: w.active, sortOrder: w.sortOrder }).subscribe({
+      next: () => { this.loadSlots(); this.ok('Saved'); },
+      error: (e) => this.fail(e, 'Could not save the window'),
+    });
+  }
+
+  deleteWindow(w: DeliveryWindow): void {
+    if (!confirm(T('Remove the window {p0}?', { p0: w.start + ' - ' + w.end }))) return;
+    this.api.deleteWindow(w.id).subscribe({ next: () => { this.loadSlots(); this.ok('Removed'); }, error: (e) => this.fail(e, 'Could not remove the window') });
+  }
+
+  addClosedDay(): void {
+    this.api.addClosedDay(this.closedDay, this.closedReason.trim() || null).subscribe({
+      next: () => { this.closedDay = ''; this.closedReason = ''; this.loadSlots(); this.ok('Day closed'); },
+      error: (e) => this.fail(e, 'Could not close the day'),
+    });
+  }
+
+  removeClosedDay(c: ClosedDay): void {
+    this.api.removeClosedDay(c.id).subscribe({ next: () => { this.loadSlots(); this.ok('Removed'); }, error: (e) => this.fail(e, 'Could not remove') });
   }
 
   loadDrivers(): void {

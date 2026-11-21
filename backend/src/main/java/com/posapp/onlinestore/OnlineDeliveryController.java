@@ -63,6 +63,13 @@ public class OnlineDeliveryController {
         return orders.assignDriver(id, request.driverId());
     }
 
+    /** Move a delivery order to another delivery window (slotId null = as soon as possible). */
+    @PreAuthorize(MANAGE)
+    @PostMapping("/api/online-store/orders/{id}/slot")
+    public OrderDto changeSlot(@PathVariable Long id, @RequestBody SlotChange request) {
+        return orders.changeSlot(id, request);
+    }
+
     @PreAuthorize(VIEW)
     @GetMapping("/api/online-store/orders/{id}/delivery-slip")
     public ResponseEntity<byte[]> slip(@PathVariable Long id) {

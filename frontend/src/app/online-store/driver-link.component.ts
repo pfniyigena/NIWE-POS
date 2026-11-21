@@ -75,6 +75,7 @@ import { T } from '../core/i18n/t';
             <strong class="dl-code" style="font-size:1.15rem;">{{ o.code }}</strong>
             <strong class="dl-collect" [style.color]="o.paid ? '#15803d' : '#b45309'">{{ o.paid ? ('Already paid' | translate) : (('To collect' | translate) + ': ' + (o.toCollect | number: '1.0-2')) }}</strong>
           </div>
+          <div class="dl-slot" *ngIf="o.slotDate && o.slotStart" style="margin-top:0.25rem; font-weight:600;">⏰ {{ o.slotDate | date: 'dd/MM' }} · {{ o.slotStart }} - {{ o.slotEnd }}</div>
           <div style="margin-top:0.35rem;">
             <div><strong>{{ o.customerName }}</strong> · <a class="dl-call" [href]="'tel:' + o.customerPhone">📞 {{ o.customerPhone }}</a></div>
             <div *ngIf="o.zoneName || o.customerAddress">📍 {{ o.zoneName }}<ng-container *ngIf="o.zoneName && o.customerAddress"> — </ng-container>{{ o.customerAddress }}

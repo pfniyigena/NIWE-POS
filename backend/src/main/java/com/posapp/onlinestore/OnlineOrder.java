@@ -56,6 +56,10 @@ public class OnlineOrder extends BaseEntity {
     /** v1.59.1: the tax of the delivery fee as it was when the order was placed (null = the delivery product's own tax). */
     private Long deliveryTaxRateId;
     private BigDecimal deliveryFee = BigDecimal.ZERO;
+    /** v1.61.0: the delivery window the customer chose (all three empty = as soon as possible). */
+    private java.time.LocalDate slotDate;
+    private java.time.LocalTime slotStart;
+    private java.time.LocalTime slotEnd;
     private String notes;
     private BigDecimal subtotal = BigDecimal.ZERO;
     private BigDecimal total = BigDecimal.ZERO;

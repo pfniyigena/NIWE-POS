@@ -89,4 +89,16 @@ public class OnlineStoreSettings extends BaseEntity {
     /** Product rows (Featured, Best sellers, ...) slide by themselves; off = the visitor slides them with the arrows or a swipe. */
     @jakarta.persistence.Column(name = "auto_slide_rows", nullable = false)
     private boolean autoSlideRows = false;
+    /** v1.61.0: customers choose a delivery window at checkout. */
+    @jakarta.persistence.Column(name = "slots_enabled", nullable = false)
+    private boolean slotsEnabled = false;
+    /** The window must be chosen (off = "as soon as possible" is allowed). */
+    @jakarta.persistence.Column(name = "slots_required", nullable = false)
+    private boolean slotsRequired = false;
+    /** How many days after today a window can be booked. */
+    @jakarta.persistence.Column(name = "slot_days_ahead", nullable = false)
+    private int slotDaysAhead = 7;
+    /** A window can be booked until this many hours before it starts. */
+    @jakarta.persistence.Column(name = "slot_notice_hours", nullable = false)
+    private int slotNoticeHours = 2;
 }

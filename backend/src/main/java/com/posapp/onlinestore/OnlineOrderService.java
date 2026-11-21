@@ -38,6 +38,8 @@ public class OnlineOrderService {
 
     private final ShopLoyaltyService loyalty;
     private final OnlineDriverRepository drivers;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlineSlotService slotService;
 
     private static final Set<String> OPEN = Set.of("PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY", "READY_FOR_PICKUP");
 
@@ -216,7 +218,7 @@ public class OnlineOrderService {
         move(o, "ACCEPTED", I18n.t("Sale order {0} created", so.orderNumber()));
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_ACCEPTED", "Accepted online order " + o.getCode() + " as sale order " + so.orderNumber(), "OnlineOrder", o.getId());
-        tell(o, OnlineMessages.m("Your order {0} is accepted", o.getCode()), OnlineMessages.m("Good news: your order {0} is accepted and we are preparing it.", o.getCode()));
+        tell(o, OnlineMessages.m("Your order {0} is accepted", o.getCode()), OnlineStoreService.withSlot(OnlineMessages.m("Good news: your order {0} is accepted and we are preparing it.", o.getCode()), o));
         return dto(o);
     }
 
@@ -306,6 +308,37 @@ public class OnlineOrderService {
         o.getEvents().add(ev);
         repository.save(o);
         auditLogService.record("ONLINE_ORDER_DRIVER", "Online order " + o.getCode() + ": driver " + (o.getDriverName() == null ? "removed (was " + before + ")" : o.getDriverName()), "OnlineOrder", o.getId());
+        return dto(o);
+    }
+
+    /**
+     * Staff move a delivery order to another delivery window (or back to "as soon as possible"): the customer asked, a visit failed, the shop is late.
+     * The limit of the window does not stop staff; the customer is told.
+     */
+    @Transactional
+    public OrderDto changeSlot(Long id, SlotChange in) {
+        OnlineOrder o = getOrThrow(id);
+        expect(o, "PLACED", "ACCEPTED", "PACKED", "OUT_FOR_DELIVERY");
+        if (!"DELIVERY".equals(o.getDeliveryMethod())) throw ApiException.badRequest(I18n.t("This is a pick-up order"));
+        OnlineSlotService.Pick pick = slotService.staffPick(in == null ? null : in.slotId(), in == null ? null : in.slotDate());
+        String before = OnlineSlotService.label(o.getSlotDate(), o.getSlotStart(), o.getSlotEnd());
+        o.setSlotDate(pick == null ? null : pick.date());
+        o.setSlotStart(pick == null ? null : pick.start());
+        o.setSlotEnd(pick == null ? null : pick.end());
+        OnlineOrderEvent ev = new OnlineOrderEvent();
+        ev.setOnlineOrder(o);
+        ev.setStatus(o.getStatus());
+        ev.setNote(pick == null ? I18n.t("Delivery time removed: as soon as possible") : I18n.t("Delivery time: {0}", OnlineSlotService.label(pick.date(), pick.start(), pick.end())));
+        ev.setByUser(user());
+        o.getEvents().add(ev);
+        repository.save(o);
+        auditLogService.record("ONLINE_ORDER_SLOT", "Online order " + o.getCode() + ": delivery time " + (pick == null ? "removed" : OnlineSlotService.label(pick.date(), pick.start(), pick.end())) + (before.isEmpty() ? "" : " (was " + before + ")"), "OnlineOrder", o.getId());
+        if (pick == null) {
+            tell(o, OnlineMessages.m("About the delivery of your order {0}", o.getCode()), OnlineMessages.m("The delivery time of your order {0} is no longer fixed. We will bring it as soon as possible.", o.getCode()));
+        } else {
+            tell(o, OnlineMessages.m("About the delivery of your order {0}", o.getCode()),
+                    OnlineMessages.m("The delivery of your order {0} is planned on {1}, between {2} and {3}.", o.getCode(), OnlineSlotService.d(pick.date()), OnlineSlotService.t(pick.start()), OnlineSlotService.t(pick.end())));
+        }
         return dto(o);
     }
 
@@ -699,6 +732,7 @@ public class OnlineOrderService {
                 o.getEvents().stream().map(e -> new EventDto(e.getStatus(), e.getNote(), e.getByUser(), e.getCreatedAt())).toList(),
                 o.getLoyaltyPointsUsed(), o.getLoyaltyDiscount(), o.getLoyaltyPointsEarned(), o.getDriverId(), o.getDriverName(), o.getDriverPhone(),
                 o.getReceivedAt(), o.getReceivedVia(), o.getReceivedBy(), o.getSignedName(), o.getSignature() != null, o.getReceiptCode() != null,
-                o.getDeliveryAttempts(), o.getLastFailureReason(), o.getLastFailureAt(), o.getDeliveredTotal(), o.getRefundDifference());
+                o.getDeliveryAttempts(), o.getLastFailureReason(), o.getLastFailureAt(), o.getDeliveredTotal(), o.getRefundDifference(),
+                OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd()));
     }
 }

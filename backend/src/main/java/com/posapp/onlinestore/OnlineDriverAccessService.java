@@ -78,7 +78,8 @@ public class OnlineDriverAccessService {
 
     /** One delivery of the driver. The delivery code is never in it. */
     public record DriverJob(Long id, String code, String customerName, String customerPhone, String customerAddress, String zoneName, String notes,
-                            boolean paid, BigDecimal total, BigDecimal toCollect, int deliveryAttempts, List<DriverLine> lines) {
+                            boolean paid, BigDecimal total, BigDecimal toCollect, int deliveryAttempts, List<DriverLine> lines,
+                            String slotDate, String slotStart, String slotEnd) {
     }
 
     /** One order of the driver's cash: what he took at the door and, once staff settled it, what he handed in. */
@@ -254,7 +255,8 @@ public class OnlineDriverAccessService {
                 .filter(o -> d.getId().equals(o.getDriverId()) && "DELIVERY".equals(o.getDeliveryMethod()))
                 .map(o -> new DriverJob(o.getId(), o.getCode(), o.getCustomerName(), o.getCustomerPhone(), o.getCustomerAddress(), o.getZoneName(), o.getNotes(),
                         "PAID".equals(o.getPaymentStatus()), o.getTotal(), OnlineDeliveryService.toCollect(o), o.getDeliveryAttempts(),
-                        o.getLines().stream().map(l -> new DriverLine(l.getName(), l.getQuantity())).toList()))
+                        o.getLines().stream().map(l -> new DriverLine(l.getName(), l.getQuantity())).toList(),
+                        OnlineSlotService.d(o.getSlotDate()), OnlineSlotService.t(o.getSlotStart()), OnlineSlotService.t(o.getSlotEnd())))
                 .toList();
         OnlineStoreSettings s = storeService.settings();
         return new DriverBoard(d.getName(), s.getShopName(), s.getContactPhone(), jobs, cash(d));

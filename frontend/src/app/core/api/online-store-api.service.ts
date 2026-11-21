@@ -77,6 +77,8 @@ export interface ShopOrderPayload {
   pointsToUse?: number | null;
   /** The provider chosen when the shop offers several (MTN_MOMO, AIRTEL_MONEY); null for cash. */
   paymentProvider?: string | null;
+  /** The delivery window chosen at checkout (a window of the shop and a day); both null = as soon as possible. */
+  slotId?: number | null; slotDate?: string | null;
 }
 /** What the customer sees about paying: method COD or ONLINE; status NONE, AWAITING, FAILED, PAID, REFUND_DUE or REFUNDED. */
 export interface ShopPayment { method: string; status: string; channel: string | null; redirectUrl: string | null; canRetry: boolean; expiresAt: string | null; paidAmount: number | null }
@@ -94,6 +96,8 @@ export interface ShopTrack {
   driverName?: string | null; driverPhone?: string | null;
   /** The customer can confirm the goods (they are out for delivery or ready), and when and how it was confirmed. */
   canConfirm?: boolean; receivedAt?: string | null; receivedVia?: string | null;
+  /** The delivery window chosen at checkout (2026-11-24, 08:00, 11:00), or null. */
+  slotDate?: string | null; slotStart?: string | null; slotEnd?: string | null;
 }
 /** The delivery code to give to the driver (while the order is out or ready), or the reception details after. */
 export interface ShopReceipt { status: string; canConfirm: boolean; code: string | null; receivedAt: string | null; receivedVia: string | null; signedName: string | null }
@@ -144,6 +148,8 @@ export interface StoreOrder {
   deliveryAttempts: number; lastFailureReason: string | null; lastFailureAt: string | null; deliveredTotal: number | null; refundDifference: number | null;
   lines: { productId: number; name: string; quantity: number; unitPrice: number; lineTotal: number; deliveredQuantity: number | null }[];
   events: { status: string; note: string | null; by: string | null; at: string }[];
+  /** The delivery window the customer chose (null = as soon as possible). */
+  slotDate: string | null; slotStart: string | null; slotEnd: string | null;
 }
 /** A person who delivers orders (a simple list kept in the shop settings, not an employee record). openOrders = orders still to deliver. */
 /** Delivery cash a driver must hand in, per order (v1.57.0). */
@@ -154,7 +160,13 @@ export interface Driver { id: number; name: string; phone: string | null; notes:
 /** The private link of a driver (v1.59.0); pin is only there when it was just made. */
 export interface DriverAccess { accessOn: boolean; url: string | null; path: string | null; pin: string | null; lastUsedAt: string | null }
 export interface DriverLine { name: string; quantity: number }
-export interface DriverJob { id: number; code: string; customerName: string; customerPhone: string; customerAddress: string | null; zoneName: string | null; notes: string | null; paid: boolean; total: number; toCollect: number; deliveryAttempts: number; lines: DriverLine[] }
+export interface DriverJob { slotDate: string | null; slotStart: string | null; slotEnd: string | null; id: number; code: string; customerName: string; customerPhone: string; customerAddress: string | null; zoneName: string | null; notes: string | null; paid: boolean; total: number; toCollect: number; deliveryAttempts: number; lines: DriverLine[] }
+export interface SlotChoice { id: number; start: string; end: string; available: boolean; why: 'FULL' | 'SOON' | null }
+export interface SlotDay { date: string; slots: SlotChoice[] }
+export interface SlotBoard { enabled: boolean; required: boolean; days: SlotDay[] }
+export interface DeliveryWindow { id: number; start: string; end: string; maxOrders: number; days: string; active: boolean; sortOrder: number }
+export interface SlotSettings { enabled: boolean; required: boolean; daysAhead: number; noticeHours: number }
+export interface ClosedDay { id: number; day: string; reason: string | null }
 export interface DriverCashLine { code: string; customerName: string; at: string | null; collected: number; handedIn: number | null; difference: number | null }
 export interface DriverCash { holding: number; waiting: DriverCashLine[]; settled: DriverCashLine[] }
 export interface DriverBoard { driverName: string; shopName: string | null; shopPhone: string | null; jobs: DriverJob[]; cash: DriverCash }
@@ -391,6 +403,18 @@ export class OnlineStoreApiService {
   // ---- drivers and delivery papers
   driverCash(driverId: number | null): Observable<DriverCashData> { return this.http.get<DriverCashData>(`${this.base}/driver-cash`, { params: driverId === null ? {} : { driverId: String(driverId) } }); }
   settleDriverCash(items: { orderId: number; amount: number; note: string | null }[]): Observable<{ settled: number }> { return this.http.post<{ settled: number }>(`${this.base}/driver-cash/settle`, { items }); }
+  deliverySlots(): Observable<SlotBoard> { return this.http.get<SlotBoard>(`${this.pub}/delivery-slots`); }
+  windows(): Observable<DeliveryWindow[]> { return this.http.get<DeliveryWindow[]>(`${this.base}/slots`); }
+  saveWindow(id: number | null, body: { start: string; end: string; maxOrders: number; days: string; active: boolean; sortOrder: number }): Observable<DeliveryWindow> {
+    return id ? this.http.put<DeliveryWindow>(`${this.base}/slots/${id}`, body) : this.http.post<DeliveryWindow>(`${this.base}/slots`, body);
+  }
+  deleteWindow(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/slots/${id}`); }
+  slotSettings(): Observable<SlotSettings> { return this.http.get<SlotSettings>(`${this.base}/slot-settings`); }
+  saveSlotSettings(body: SlotSettings): Observable<SlotSettings> { return this.http.put<SlotSettings>(`${this.base}/slot-settings`, body); }
+  closedDays(): Observable<ClosedDay[]> { return this.http.get<ClosedDay[]>(`${this.base}/closed-days`); }
+  addClosedDay(day: string, reason: string | null): Observable<ClosedDay> { return this.http.post<ClosedDay>(`${this.base}/closed-days`, { day, reason }); }
+  removeClosedDay(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/closed-days/${id}`); }
+  changeOrderSlot(orderId: number, slotId: number | null, slotDate: string | null): Observable<StoreOrder> { return this.http.post<StoreOrder>(`${this.base}/orders/${orderId}/slot`, { slotId, slotDate }); }
   drivers(): Observable<Driver[]> { return this.http.get<Driver[]>(`${this.base}/drivers`); }
   saveDriver(id: number | null, body: { name: string; phone: string | null; notes: string | null; active: boolean }): Observable<Driver> {
     return id ? this.http.put<Driver>(`${this.base}/drivers/${id}`, body) : this.http.post<Driver>(`${this.base}/drivers`, body);
