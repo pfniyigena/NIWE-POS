@@ -62,6 +62,12 @@ public class OnlineReturnService {
     private com.posapp.tracking.TrackingService trackingService;
     @org.springframework.beans.factory.annotation.Autowired
     private com.posapp.catalog.CatalogService catalogService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.accounting.AccountingService accounting;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.credit.CustomerCreditService customerCredit;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.salesorder.SalesOrderRepository salesOrderRepository;
 
     public OnlineReturnService(OnlineReturnRepository returns, OnlineOrderRepository orders, OnlineStoreService storeService, SalesOrderService salesOrderService,
                                SalesOrderReturnService salesOrderReturns, OnlinePaymentService payments, MailService mailService,
@@ -562,6 +568,19 @@ public class OnlineReturnService {
             method = "CASH";
             ref = in == null ? null : clean(in.reference());
         }
+        // v1.70.0: the money that left, in the books. The sale order return above credited Accounts Receivable with what the customer is owed back; this clears it against the cash
+        // handed back or the refund sent through the payment provider. A cash order whose payment was never collected has nothing to hand back (the credit just reduces what is owed).
+        BigDecimal leg = amount;
+        if (!"ONLINE".equals(o.getPaymentMethod())) {
+            BigDecimal collected = salesOrderRepository.findById(o.getSalesOrderId()).map(customerCredit::amountPaidForSalesOrder).orElse(BigDecimal.ZERO);
+            BigDecimal handedBack = BigDecimal.ZERO;
+            for (OnlineReturn x : returns.findByOnlineOrderIdOrderByIdAsc(o.getId())) {
+                if (!x.getId().equals(r.getId()) && "REFUNDED".equals(x.getStatus()) && "CASH".equals(x.getRefundMethod())) handedBack = handedBack.add(x.getRefundAmount());
+            }
+            leg = amount.min(collected.subtract(handedBack).max(BigDecimal.ZERO));
+        }
+        accounting.postOnlineRefund(r.getId(), leg, I18n.t("Refund for online return {0}", r.getCode()) + " (online order " + o.getCode() + ")",
+                "ONLINE".equals(o.getPaymentMethod()), so.branchId());
         r.setStatus("REFUNDED");
         r.setRefundAmount(amount);
         r.setRefundMethod(method);

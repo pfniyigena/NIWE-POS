@@ -2185,5 +2185,6 @@
  "{0} carton(s) broken down into single units for this order": "{0} carton(s) ouvert(s) en unités pour cette commande",
  "The quantity of {0} must be between {1} and {2} {3}": "La quantité de {0} doit être comprise entre {1} et {2} {3}",
  "That price list does not exist": "Cette liste de prix n'existe pas",
- "The unit must be 12 characters or fewer": "L'unité doit comporter 12 caractères au maximum"
+ "The unit must be 12 characters or fewer": "L'unité doit comporter 12 caractères au maximum",
+ "Refund for online return {0}": "Remboursement du retour en ligne {0}"
 }

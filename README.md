@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.70.0 - Online Store accounting: returns post the VAT and the refund
+
+A return now reverses the VAT as well as the net sale, and the money handed back to the customer (cash or provider) is posted. `refundTotal` of a sale order return includes the tax. See `RELEASE-NOTES-v1.70.0.md` and `docs/online-store-accounting.md`.
+
 ## v1.69.0 - Online Store: prices from Sales, products sold by weight or length
 
 A product with no online price follows the shop's price list (Shop settings) and the best promotion for everybody (percent/amount off a product or category; no coupon, group, limit or minimum). A product can be sold by weight or length (decimal quantities, "/ kg"). Migration V101. See `RELEASE-NOTES-v1.69.0.md` and `docs/online-store-offers-measures.md`.

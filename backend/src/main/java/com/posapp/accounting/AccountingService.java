@@ -247,19 +247,38 @@ public class AccountingService {
         post("SALES_ORDER_FULFILLMENT", salesOrder.getId(), "Fulfilled sales order " + salesOrder.getOrderNumber() + onlineRefs.forSalesOrder(salesOrder.getId()), null, lines, salesOrder.getBranchId());
     }
 
-    /** Called from SalesOrderReturnService.processReturn. cogsReversal is computed by the caller for exactly the trackStock lines it actually restocked. */
+    /**
+     * Called from SalesOrderReturnService.processReturn. v1.70.0: the net sale and the VAT are reversed separately (before, the whole refund was taken off revenue at the
+     * net price and the VAT stayed on the VAT account); what the customer is owed back (net + VAT) goes to Accounts Receivable. cogsReversal is computed by the caller for
+     * exactly the trackStock lines it actually restocked.
+     */
     @Transactional
-    public void postSalesOrderReturn(com.posapp.salesorder.SalesOrderReturn salesOrderReturn, BigDecimal refundTotal, BigDecimal cogsReversal) {
-        if (refundTotal.compareTo(BigDecimal.ZERO) <= 0) return;
+    public void postSalesOrderReturn(com.posapp.salesorder.SalesOrderReturn salesOrderReturn, BigDecimal netRefund, BigDecimal taxRefund, BigDecimal cogsReversal) {
+        BigDecimal total = netRefund.add(taxRefund);
+        if (total.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.SALES_REVENUE, refundTotal, "Revenue reversal", true);
-        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, refundTotal, null, false);
+        addIfPositive(lines, AccountService.SALES_REVENUE, netRefund, "Revenue reversal", true);
+        addIfPositive(lines, AccountService.TAX_PAYABLE, taxRefund, "VAT reversal", true);
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, total, null, false);
         addIfPositive(lines, AccountService.INVENTORY, cogsReversal, "Inventory restocked", true);
         addIfPositive(lines, AccountService.COST_OF_GOODS_SOLD, cogsReversal, "Cost of goods sold reversal", false);
 
         post("SALES_ORDER_RETURN", salesOrderReturn.getId(), "Sales order return " + safe(salesOrderReturn.getReturnNumber())
                 + onlineRefs.forSalesOrder(salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getId() : null), null, lines,
                 salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getBranchId() : null);
+    }
+
+    /**
+     * v1.70.0: money handed back to an online customer for a return (cash at the door or the shop, or sent back through the payment provider). The return itself already
+     * credited Accounts Receivable; this clears that credit against the money that left. {@code online} is true when the customer had paid through a payment provider.
+     */
+    @Transactional
+    public void postOnlineRefund(Long onlineReturnId, BigDecimal amount, String memo, boolean online, Long branchId) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, null, true);
+        addIfPositive(lines, AccountService.CASH, amount, online ? "Refunded through the payment provider" : "Cash handed back", false);
+        post("ONLINE_REFUND", onlineReturnId, memo, null, lines, branchId);
     }
 
     // ---- Invoices (com.posapp.invoice) ----

@@ -12,6 +12,7 @@ import com.posapp.warehouse.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.posapp.common.TaxMath;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -139,6 +140,8 @@ public class SalesOrderReturnService {
         }
 
         BigDecimal refundTotal = BigDecimal.ZERO;
+        BigDecimal netTotal = BigDecimal.ZERO;
+        BigDecimal taxTotal = BigDecimal.ZERO;
         // Accounting's Inventory-restocked/COGS-reversal figure for trackStock lines only — the
         // product's live costPrice, same "no cost snapshot on this line type" reasoning
         // SalesOrderService.fulfillLines already uses; see AccountingService.postSalesOrderReturn.
@@ -157,10 +160,17 @@ public class SalesOrderReturnService {
                         + "' — only " + Qty.str(remaining) + " remaining (of " + Qty.str(line.getQuantityFulfilled()) + " fulfilled, " + Qty.str(alreadyReturned) + " already returned)");
             }
 
-            BigDecimal lineRefund = line.getUnitPrice()
-                    .multiply(entry.getQuantity())
-                    .setScale(2, RoundingMode.HALF_UP);
+            // v1.70.0: the same figures the fulfilment posted for these units: line / order discount first, then the tax (on top or inside the price).
+            // The refund is the customer's money back, tax included; the books reverse the net sale and the VAT separately (see postSalesOrderReturn).
+            boolean inclusive = Boolean.TRUE.equals(line.getTaxInclusive());
+            BigDecimal discountPercent = TaxMath.effectiveDiscountPercent(so.getDiscountPercent(), line.getDiscountPercent());
+            BigDecimal grossReturned = TaxMath.applyDiscount(line.getUnitPrice().multiply(entry.getQuantity()), discountPercent);
+            BigDecimal taxReturned = TaxMath.taxOnAmount(grossReturned, line.getTaxRatePercent(), inclusive).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal netReturned = TaxMath.netOfTax(grossReturned, taxReturned, inclusive).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lineRefund = netReturned.add(taxReturned);
             refundTotal = refundTotal.add(lineRefund);
+            netTotal = netTotal.add(netReturned);
+            taxTotal = taxTotal.add(taxReturned);
 
             SalesOrderReturnLine returnLine = new SalesOrderReturnLine();
             returnLine.setSalesOrderReturn(salesOrderReturn);
@@ -211,7 +221,7 @@ public class SalesOrderReturnService {
 
         // Fourier: "all...Sale...module will be integrated when accounting is enabled" — see
         // AccountingService.postSalesOrderReturn's own javadoc.
-        accountingService.postSalesOrderReturn(saved, refundTotal, cogsReversal.setScale(2, RoundingMode.HALF_UP));
+        accountingService.postSalesOrderReturn(saved, netTotal, taxTotal, cogsReversal.setScale(2, RoundingMode.HALF_UP));
 
         return SalesOrderReturnDto.from(saved);
     }
