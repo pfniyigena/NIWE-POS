@@ -47,7 +47,9 @@ import java.util.List;
  * sites): every non-store-credit tender (cash, card, mobile money, whatever an admin has set up as
  * a {@code PaymentMethodEntity}) posts to the one {@code CASH} account — this app has no per-method
  * bank/clearing sub-accounts, so a card payment is treated the same as cash for GL purposes rather
- * than modeling card-network settlement delay. Inventory is one pooled asset account, matching
+ * than modeling card-network settlement delay. (v1.71.0 exception: money customers pay through the
+ * Online Store's payment providers is held in a clearing account per provider until the provider's payout
+ * is recorded, see {@link #postOnlinePaymentReceived} and {@link #postOnlinePayout}.) Inventory is one pooled asset account, matching
  * {@code Product}'s own single {@code stockQuantity}/{@code costPrice} pair — there's no separate
  * raw-material/WIP/finished-goods split, so a Manufacturing Order's material consumption and
  * finished-goods output are a wash within that one account (see {@link #postManufacturingRun}) and
@@ -268,17 +270,63 @@ public class AccountingService {
                 salesOrderReturn.getSalesOrder() != null ? salesOrderReturn.getSalesOrder().getBranchId() : null);
     }
 
+    /** The clearing account of an online payment channel (CARD, otherwise mobile money). */
+    public static String clearingKey(String channel) {
+        return "CARD".equalsIgnoreCase(channel) ? AccountService.ONLINE_CLEARING_CARD : AccountService.ONLINE_CLEARING_MOBILE;
+    }
+
     /**
-     * v1.70.0: money handed back to an online customer for a return (cash at the door or the shop, or sent back through the payment provider). The return itself already
-     * credited Accounts Receivable; this clears that credit against the money that left. {@code online} is true when the customer had paid through a payment provider.
+     * v1.70.0: money handed back to an online customer for a return. The return itself already credited Accounts Receivable; this clears that credit against the money
+     * that left. {@code clearingChannel} is the provider channel when the refund went back through the payment provider (v1.71.0: it comes out of the provider's
+     * clearing account), null when cash was handed back or the shop refunded by hand from its own money.
      */
     @Transactional
-    public void postOnlineRefund(Long onlineReturnId, BigDecimal amount, String memo, boolean online, Long branchId) {
+    public void postOnlineRefund(Long onlineReturnId, BigDecimal amount, String memo, String clearingChannel, Long branchId) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
         List<LineSpec> lines = new ArrayList<>();
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, amount, null, true);
-        addIfPositive(lines, AccountService.CASH, amount, online ? "Refunded through the payment provider" : "Cash handed back", false);
+        if (clearingChannel != null) addIfPositive(lines, clearingKey(clearingChannel), amount, "Refunded through the payment provider", false);
+        else addIfPositive(lines, AccountService.CASH, amount, "Cash handed back", false);
         post("ONLINE_REFUND", onlineReturnId, memo, null, lines, branchId);
+    }
+
+    /** v1.71.0: the provider confirmed a customer's payment: the money is held for the order until it is delivered. Dr the provider's clearing account / Cr Online Customer Deposits. */
+    @Transactional
+    public void postOnlinePaymentReceived(Long paymentId, BigDecimal amount, String channel, String memo) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, clearingKey(channel), amount, null, true);
+        addIfPositive(lines, AccountService.ONLINE_DEPOSITS, amount, null, false);
+        post("ONLINE_PAYMENT", paymentId, memo, null, lines, null);
+    }
+
+    /**
+     * v1.71.0: money held for an order is paid back (the order was cancelled or rejected, or part of the goods was not delivered). Dr Online Customer Deposits / Cr the
+     * provider's clearing account (refund through the provider) or Cash and Bank (refunded by hand from the shop's own money).
+     */
+    @Transactional
+    public void postOnlineDepositRefund(Long orderId, BigDecimal amount, String channel, boolean manual, String memo) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.ONLINE_DEPOSITS, amount, null, true);
+        if (manual) addIfPositive(lines, AccountService.CASH, amount, "Refunded by hand", false);
+        else addIfPositive(lines, clearingKey(channel), amount, "Refunded through the payment provider", false);
+        post("ONLINE_DEPOSIT_REFUND", orderId, memo, null, lines, null);
+    }
+
+    /**
+     * v1.71.0: a payout from a payment provider reached the bank: the customers' money (gross) leaves the clearing account, the fee the provider kept is an expense, the
+     * rest is cash at the bank.
+     */
+    @Transactional
+    public void postOnlinePayout(Long payoutId, String channel, BigDecimal gross, BigDecimal fee, String memo, java.time.Instant when) {
+        if (gross == null || gross.compareTo(BigDecimal.ZERO) <= 0) return;
+        BigDecimal net = gross.subtract(fee == null ? BigDecimal.ZERO : fee);
+        List<LineSpec> lines = new ArrayList<>();
+        addIfPositive(lines, AccountService.CASH, net, "Payout received", true);
+        addIfPositive(lines, AccountService.PAYMENT_FEES, fee, "Provider fee", true);
+        addIfPositive(lines, clearingKey(channel), gross, null, false);
+        post("ONLINE_PAYOUT", payoutId, memo, when, lines, null);
     }
 
     // ---- Invoices (com.posapp.invoice) ----
@@ -544,10 +592,31 @@ public class AccountingService {
     @Transactional
     public void postCustomerPayment(com.posapp.credit.CustomerPayment payment) {
         List<LineSpec> lines = new ArrayList<>();
-        addIfPositive(lines, AccountService.CASH, payment.getAmount(), null, true);
+        // v1.71.0: a payment applied to an online order the customer already paid online is not new money: the part held in Online Customer Deposits is released,
+        // and anything above it goes to the provider's clearing account (an order paid before this version has no deposit). Everything else lands in Cash.
+        BigDecimal rest = payment.getAmount();
+        com.posapp.accounting.OnlineOrderRefs.OnlineMoney money = onlineMoneyForPayment(payment);
+        if (money != null && money.prepaid()) {
+            BigDecimal use = money.depositLeft().min(payment.getAmount()).max(BigDecimal.ZERO);
+            addIfPositive(lines, AccountService.ONLINE_DEPOSITS, use, "Online payment applied", true);
+            rest = payment.getAmount().subtract(use);
+            addIfPositive(lines, clearingKey(money.channel()), rest, null, true);
+        } else {
+            addIfPositive(lines, AccountService.CASH, payment.getAmount(), null, true);
+        }
         addIfPositive(lines, AccountService.ACCOUNTS_RECEIVABLE, payment.getAmount(), null, false);
 
         post("CUSTOMER_PAYMENT", payment.getId(), "Payment received from " + payment.getCustomer().getName() + onlineRefsForPayment(payment), null, lines, payment.getBranchId());
+    }
+
+    private com.posapp.accounting.OnlineOrderRefs.OnlineMoney onlineMoneyForPayment(com.posapp.credit.CustomerPayment payment) {
+        if (payment.getAllocations() == null) return null;
+        for (com.posapp.credit.CustomerPaymentAllocation a : payment.getAllocations()) {
+            if (a.getInvoice() == null) continue;
+            com.posapp.accounting.OnlineOrderRefs.OnlineMoney m = onlineRefs.moneyFor(a.getInvoice().getId(), a.getInvoice().getSalesOrderId());
+            if (m != null) return m;
+        }
+        return null;
     }
 
     /** The online order number of the invoice(s) a payment was applied to, as a description suffix (empty for anything else). */

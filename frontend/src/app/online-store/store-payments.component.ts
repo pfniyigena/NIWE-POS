@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ShellComponent } from '../shared/shell.component';
-import { OnlineStoreApiService, PaymentRow, PaymentSummary } from '../core/api/online-store-api.service';
+import { OnlineStoreApiService, PaymentRow, PaymentSummary, PayoutOverview } from '../core/api/online-store-api.service';
 import { T } from '../core/i18n/t';
 
 /**
@@ -45,7 +45,42 @@ import { T } from '../core/i18n/t';
         <div class="card" style="padding:0.6rem 0.9rem; min-width:150px;" [style.borderColor]="sum.toReview > 0 ? '#b91c1c' : ''"><div class="text-muted" style="font-size:0.8rem;">{{ 'To review' | translate }}</div><strong class="sp-review">{{ sum.toReview }}</strong></div>
         <div class="card" style="padding:0.6rem 0.9rem; min-width:150px;"><div class="text-muted" style="font-size:0.8rem;">{{ 'Failed or expired' | translate }}</div><strong>{{ sum.failed }}</strong></div>
       </div>
-      <p class="text-muted" style="font-size:0.85rem;">{{ 'An online payment is recorded in the books (as a payment on the invoice) when the order is completed. Until then it is held for the order. A refund is possible until then; after the order is completed use a sales return.' | translate }}</p>
+      <p class="text-muted" style="font-size:0.85rem;">{{ 'An online payment is recorded in the books when the provider confirms it: it is held for the order (Online customer deposits) against what the provider owes you. It becomes a payment on the invoice when the order is completed. A refund is possible until then; after the order is completed use a sales return. Record each payout from the provider below.' | translate }}</p>
+
+      <div class="card mb-3 sp-payouts" style="padding:0.8rem 1rem;" *ngIf="payouts">
+        <div class="flex justify-between align-center" style="flex-wrap:wrap; gap:0.5rem;">
+          <h5 class="mb-0">{{ 'Payouts from the providers' | translate }}</h5>
+          <span class="text-muted" style="font-size:0.85rem;">{{ 'Fees paid so far' | translate }}: <strong class="sp-fees">{{ payouts.feesToDate | number: '1.0-2' }}</strong></span>
+        </div>
+        <div class="flex gap-2 mt-2" style="flex-wrap:wrap;">
+          <div class="card" style="padding:0.5rem 0.8rem; min-width:190px;" *ngFor="let b of payouts.balances">
+            <div class="text-muted" style="font-size:0.8rem;">{{ (b.channel === 'CARD' ? 'Card: the provider still owes you' : 'Mobile money: the provider still owes you') | translate }}</div>
+            <strong [class]="'sp-owed-' + b.channel">{{ b.balance | number: '1.0-2' }}</strong>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:flex-end;">
+          <div class="form-group"><label class="form-label">{{ 'Way' | translate }}</label>
+            <select class="form-select po-channel" [(ngModel)]="po.channel" name="poch" (ngModelChange)="suggest()">
+              <option value="MOBILE_MONEY">{{ 'Mobile money' | translate }}</option>
+              <option value="CARD">{{ 'Card' | translate }}</option>
+            </select></div>
+          <div class="form-group"><label class="form-label">{{ 'Paid by customers (gross)' | translate }}</label><input class="form-control po-gross" type="number" min="0" step="0.01" style="width:140px;" [(ngModel)]="po.gross" name="pogross" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Provider fee' | translate }}</label><input class="form-control po-fee" type="number" min="0" step="0.01" style="width:110px;" [(ngModel)]="po.fee" name="pofee" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Reached the bank' | translate }}</label><div class="po-net" style="padding:0.45rem 0;"><strong>{{ (po.gross || 0) - (po.fee || 0) | number: '1.0-2' }}</strong></div></div>
+          <div class="form-group"><label class="form-label">{{ 'Date' | translate }}</label><input class="form-control po-date" type="date" [(ngModel)]="po.paidOn" name="podate" /></div>
+          <div class="form-group"><label class="form-label">{{ 'Reference' | translate }}</label><input class="form-control po-ref" maxlength="80" style="width:150px;" [(ngModel)]="po.reference" name="poref" /></div>
+          <button class="btn btn-primary po-save" [disabled]="busy" (click)="savePayout()">{{ 'Record payout' | translate }}</button>
+        </div>
+        <p class="text-muted mt-2 mb-2" style="font-size:0.8rem;">{{ 'Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to Cash and Bank, the fee to Payment Provider Fees.' | translate }}</p>
+        <table class="table-sm po-table" *ngIf="payouts.payouts.length">
+          <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Way' | translate }}</th><th class="text-end">{{ 'Paid by customers (gross)' | translate }}</th><th class="text-end">{{ 'Provider fee' | translate }}</th><th class="text-end">{{ 'Reached the bank' | translate }}</th><th>{{ 'Reference' | translate }}</th><th>{{ 'By' | translate }}</th></tr></thead>
+          <tbody><tr *ngFor="let p of payouts.payouts">
+            <td>{{ p.paidOn }}</td><td>{{ p.channel === 'CARD' ? ('Card' | translate) : ('Mobile money' | translate) }}</td>
+            <td class="text-end">{{ p.gross | number: '1.0-2' }}</td><td class="text-end">{{ p.fee | number: '1.0-2' }}</td><td class="text-end">{{ p.net | number: '1.0-2' }}</td>
+            <td>{{ p.reference }}</td><td>{{ p.createdBy }}</td>
+          </tr></tbody>
+        </table>
+      </div>
 
       <table class="table-sm sp-table" *ngIf="rows.length">
         <thead><tr><th>{{ 'Date' | translate }}</th><th>{{ 'Order' | translate }}</th><th>{{ 'Way' | translate }}</th><th class="text-end">{{ 'Amount' | translate }}</th><th>{{ 'Payment' | translate }}</th><th>{{ 'Order status' | translate }}</th><th>{{ 'Needs attention' | translate }}</th></tr></thead>
@@ -92,6 +127,8 @@ export class StorePaymentsComponent implements OnInit {
   rows: PaymentRow[] = [];
   note: Record<number, string> = {};
   loaded = false;
+  payouts: PayoutOverview | null = null;
+  po: { channel: string; gross: number | null; fee: number | null; paidOn: string; reference: string } = { channel: 'MOBILE_MONEY', gross: null, fee: 0, paidOn: new Date().toISOString().slice(0, 10), reference: '' };
   busy = false;
   error: string | null = null;
   message: string | null = null;
@@ -100,6 +137,52 @@ export class StorePaymentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadPayouts();
+  }
+
+  loadPayouts(): void {
+    this.api.payoutOverview().subscribe({
+      next: (o) => {
+        this.payouts = o;
+        this.suggest();
+      },
+      error: () => (this.payouts = null),
+    });
+  }
+
+  /** The balance the provider still owes is the usual amount of the next payout. */
+  suggest(): void {
+    const b = this.payouts?.balances.find((x) => x.channel === this.po.channel);
+    if (b && b.balance > 0 && !this.po.gross) this.po.gross = b.balance;
+  }
+
+  savePayout(): void {
+    const gross = Number(this.po.gross ?? 0);
+    const fee = Number(this.po.fee ?? 0);
+    if (!(gross > 0)) {
+      this.error = T('Enter the amount customers paid that this payout covers');
+      return;
+    }
+    if (fee < 0 || fee >= gross) {
+      this.error = T('The fee must be zero or more, and less than the amount');
+      return;
+    }
+    this.busy = true;
+    this.error = null;
+    this.api.recordPayout({ channel: this.po.channel, gross, fee, paidOn: this.po.paidOn || null, reference: this.po.reference.trim() || null, note: null }).subscribe({
+      next: () => {
+        this.busy = false;
+        this.message = T('Payout recorded');
+        this.po.gross = null;
+        this.po.fee = 0;
+        this.po.reference = '';
+        this.loadPayouts();
+      },
+      error: (e) => {
+        this.busy = false;
+        this.error = e?.error?.message ?? T('That did not work');
+      },
+    });
   }
 
   load(): void {

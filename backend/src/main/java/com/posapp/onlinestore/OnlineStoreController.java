@@ -32,6 +32,8 @@ public class OnlineStoreController {
     private final OnlineStoreAdminService admin;
     private final OnlinePaymentService payments;
     private final OnlineReturnService returns;
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnlinePayoutService payouts;
     private final OnlineReviewService reviews;
     private final NewsletterService newsletter;
     private final NewsletterCampaignService campaigns;
@@ -95,6 +97,19 @@ public class OnlineStoreController {
                                          @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
                                          @RequestParam(required = false) String status) {
         return orders.reconciliation(from, to, status);
+    }
+
+    /** v1.71.0: what each payment provider still owes the shop (the clearing accounts) and the payouts recorded so far. */
+    @PreAuthorize(VIEW)
+    @GetMapping("/payouts")
+    public OnlinePayoutService.PayoutOverview payoutOverview() {
+        return payouts.overview();
+    }
+
+    @PreAuthorize(MANAGE)
+    @PostMapping("/payouts")
+    public OnlinePayoutService.PayoutDto recordPayout(@Valid @RequestBody OnlinePayoutService.PayoutRequest request) {
+        return payouts.record(request);
     }
 
     @PreAuthorize(MANAGE)

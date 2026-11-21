@@ -562,7 +562,7 @@ public class OnlineReturnService {
             amount = amount.min(left);
             if (amount.signum() <= 0) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
             boolean manual = in != null && in.manual();
-            ref = payments.refundPart(o, amount, manual, in == null ? null : in.reference(), I18n.t("Return {0}", r.getCode()));
+            ref = payments.refundPart(o, amount, manual, in == null ? null : in.reference(), I18n.t("Return {0}", r.getCode()), false);
             method = manual ? "MANUAL" : "PROVIDER";
         } else {
             method = "CASH";
@@ -579,8 +579,9 @@ public class OnlineReturnService {
             }
             leg = amount.min(collected.subtract(handedBack).max(BigDecimal.ZERO));
         }
+        boolean viaProvider = "ONLINE".equals(o.getPaymentMethod()) && !(in != null && in.manual());
         accounting.postOnlineRefund(r.getId(), leg, I18n.t("Refund for online return {0}", r.getCode()) + " (online order " + o.getCode() + ")",
-                "ONLINE".equals(o.getPaymentMethod()), so.branchId());
+                viaProvider ? o.getPaymentChannel() : null, so.branchId());
         r.setStatus("REFUNDED");
         r.setRefundAmount(amount);
         r.setRefundMethod(method);

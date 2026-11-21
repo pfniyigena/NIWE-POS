@@ -47,6 +47,8 @@ public class OnlineOrder extends BaseEntity {
     private String refundReference;
     /** How much of the money paid online has been given back so far (the whole of it, or part of it for returned goods). */
     private BigDecimal refundedTotal = BigDecimal.ZERO;
+    /** v1.71.0: money paid online that sits in Online Customer Deposits (in the books) and has not yet been applied to the invoice or paid back. */
+    private BigDecimal depositLeft = BigDecimal.ZERO;
     private String customerName;
     private String customerPhone;
     private String customerEmail;

@@ -9630,5 +9630,18 @@
  "Sold by (kg, m ...)": "Vendu au (kg, m ...)",
  "By the piece": "À la pièce",
  "Prices worked out again": "Prix recalculés",
- "Could not work the prices out": "Impossible de recalculer les prix"
+ "Could not work the prices out": "Impossible de recalculer les prix",
+ "An online payment is recorded in the books when the provider confirms it: it is held for the order (Online customer deposits) against what the provider owes you. It becomes a payment on the invoice when the order is completed. A refund is possible until then; after the order is completed use a sales return. Record each payout from the provider below.": "Un paiement en ligne est enregistré dans la comptabilité dès que l'opérateur le confirme : il est mis de côté pour la commande (Acomptes clients en ligne), face à ce que l'opérateur vous doit. Il devient un paiement sur la facture quand la commande est terminée. Un remboursement est possible jusque-là ; après la fin de la commande, utilisez un retour de vente. Enregistrez ci-dessous chaque versement de l'opérateur.",
+ "Payouts from the providers": "Versements des opérateurs de paiement",
+ "Fees paid so far": "Frais payés à ce jour",
+ "Card: the provider still owes you": "Carte : le prestataire vous doit encore",
+ "Mobile money: the provider still owes you": "Mobile money : l'opérateur vous doit encore",
+ "Paid by customers (gross)": "Payé par les clients (brut)",
+ "Provider fee": "Frais du prestataire",
+ "Reached the bank": "Arrivé à la banque",
+ "Record payout": "Enregistrer le versement",
+ "Gross is what customers paid that this payout covers. The fee is what the provider kept. The books move the gross out of what the provider owes you: the rest to Cash and Bank, the fee to Payment Provider Fees.": "Le brut est ce que les clients ont payé et que ce versement couvre. Les frais sont ce que le prestataire a retenu. La comptabilité retire le brut de ce que le prestataire vous doit : le reste va en Caisse et banque, les frais en Frais des prestataires de paiement.",
+ "Enter the amount customers paid that this payout covers": "Saisissez le montant payé par les clients que ce versement couvre",
+ "The fee must be zero or more, and less than the amount": "Les frais doivent être nuls ou positifs, et inférieurs au montant",
+ "Payout recorded": "Versement enregistré"
 }

@@ -108,6 +108,15 @@ public class AccountService {
     /** Balance left on expired gift cards that the store released from what it owes. */
     public static final String GIFT_CARD_BREAKAGE = "GIFT_CARD_BREAKAGE";
 
+    /** v1.71.0: money customers paid through MTN/Airtel mobile money that the provider has not yet paid out to the bank. Cleared by Online Store > Payments > Payouts. */
+    public static final String ONLINE_CLEARING_MOBILE = "ONLINE_CLEARING_MOBILE";
+    /** v1.71.0: card payments taken by the shop's card provider and not yet paid out to the bank. */
+    public static final String ONLINE_CLEARING_CARD = "ONLINE_CLEARING_CARD";
+    /** v1.71.0: money online customers paid before their order was delivered: owed back in goods (or in money, when the order is cancelled). Not income until delivery. */
+    public static final String ONLINE_DEPOSITS = "ONLINE_DEPOSITS";
+    /** v1.71.0: what the payment providers keep from each payout (mobile money and card fees). */
+    public static final String PAYMENT_FEES = "PAYMENT_FEES";
+
     /** Hotel module: income from room nights and other hotel services (room charges, late check-out, laundry...). Added to existing charts the same zero-migration way as {@link #CUSTOMER_CREDIT_PAYABLE}. */
     public static final String ROOM_REVENUE = "ROOM_REVENUE";
     /** Hotel module: money received from a guest before it is applied to their bill (booking deposits). Cleared against the guest's bill at check-out, or refunded. */
@@ -224,6 +233,14 @@ public class AccountService {
                     "Store credit owed back to customers — e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(GIFT_CARD_LIABILITY, "2880", "Gift Card Liability", AccountType.LIABILITY, true,
                     "Gift cards sold and not yet spent: owed to customers in goods, not income until spent."),
+            new ChartRow(ONLINE_CLEARING_MOBILE, "1020", "Mobile Money Clearing (online)", AccountType.ASSET, true,
+                    "Online Store: money customers paid by mobile money that the provider has not paid out yet. Settle it in Online Store > Payments > Payouts."),
+            new ChartRow(ONLINE_CLEARING_CARD, "1030", "Card Clearing (online)", AccountType.ASSET, true,
+                    "Online Store: card payments that the card provider has not paid out yet. Settle it in Online Store > Payments > Payouts."),
+            new ChartRow(ONLINE_DEPOSITS, "2810", "Online Customer Deposits", AccountType.LIABILITY, true,
+                    "Online Store: money paid online for orders not yet delivered. It becomes sales when the order is delivered and is paid back if the order is cancelled."),
+            new ChartRow(PAYMENT_FEES, "5240", "Payment Provider Fees", AccountType.EXPENSE, true,
+                    "Online Store: the fees mobile money and card providers keep when they pay out."),
             new ChartRow(OWNERS_EQUITY, "3000", "Owner's Equity", AccountType.EQUITY, false, null),
             new ChartRow("3100", "Share Capital", AccountType.EQUITY, false,
                     "Capital contributed by shareholders in exchange for equity — for an incorporated business."),
@@ -326,6 +343,14 @@ public class AccountService {
                     "SYSCOHADA's own account for a customer with a credit balance — store credit owed back, e.g. from cancelling a paid invoice and crediting the customer instead of refunding cash."),
             new ChartRow(GIFT_CARD_LIABILITY, "4195", "Clients, bons d'achat (Gift Card Liability)", AccountType.LIABILITY, true,
                     "Gift cards sold and not yet spent: owed to customers in goods, not income until spent."),
+            new ChartRow(ONLINE_CLEARING_MOBILE, "5212", "Opérateurs mobile money à encaisser (Mobile Money Clearing)", AccountType.ASSET, true,
+                    "Online Store: money customers paid by mobile money that the provider has not paid out yet."),
+            new ChartRow(ONLINE_CLEARING_CARD, "5213", "Cartes bancaires à encaisser (Card Clearing)", AccountType.ASSET, true,
+                    "Online Store: card payments that the card provider has not paid out yet."),
+            new ChartRow(ONLINE_DEPOSITS, "4197", "Clients, avances commandes en ligne (Online Customer Deposits)", AccountType.LIABILITY, true,
+                    "Online Store: money paid online for orders not yet delivered."),
+            new ChartRow(PAYMENT_FEES, "631", "Frais bancaires (Payment Provider Fees)", AccountType.EXPENSE, true,
+                    "Online Store: the fees mobile money and card providers keep when they pay out."),
             new ChartRow(OWNERS_EQUITY, "101", "Capital social (Owner's Equity)", AccountType.EQUITY, false, null),
             new ChartRow("121", "Report à nouveau (Retained Earnings)", AccountType.EQUITY, false,
                     "Accumulated profit/loss carried forward from prior periods — posted by the year-end closing entry."),

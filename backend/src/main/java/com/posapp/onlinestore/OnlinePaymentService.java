@@ -56,6 +56,8 @@ public class OnlinePaymentService {
     private final MailService mailService;
     private final StoreSettingsService storeSettingsService;
     private final AuditLogService auditLogService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.posapp.accounting.AccountingService accounting;
 
     public OnlinePaymentService(OnlinePaymentRepository payments, OnlinePaymentWebhookRepository webhooks, OnlineOrderRepository orders,
                                 OnlineStoreSettingsRepository settingsRepository, List<PaymentProvider> providers, MailService mailService,
@@ -271,6 +273,10 @@ public class OnlinePaymentService {
         o.setPaymentReference(pay.getReference());
         o.setPaidAmount(pay.getAmount());
         o.setPaidAt(now);
+        // v1.71.0: the money is in the books from now on, held for the order (Online Customer Deposits) against the provider's clearing account.
+        accounting.postOnlinePaymentReceived(pay.getId(), pay.getAmount(), pay.getMethod(),
+                "Online payment " + pay.getReference() + " (" + pay.getMethod() + ") (online order " + o.getCode() + ")");
+        o.setDepositLeft(pay.getAmount());
         String how = pay.getMethod().equals("CARD") ? I18n.t("card") : I18n.t("mobile money");
         switch (o.getStatus()) {
             case "AWAITING_PAYMENT" -> {
@@ -405,6 +411,7 @@ public class OnlinePaymentService {
         OnlineOrder o = orders.findById(orderId).orElseThrow(() -> ApiException.notFound(I18n.t("Online order not found")));
         if (!"REFUND_DUE".equals(o.getPaymentStatus())) throw ApiException.badRequest(I18n.t("There is no refund due on this order"));
         String ref = giveBack(o, o.getPaidAmount(), manual, reference, note);
+        returnDeposit(o, o.getPaidAmount(), manual);
         o.setPaymentStatus("REFUNDED");
         o.setRefundedAt(Instant.now());
         o.setRefundReference(ref);
@@ -421,14 +428,16 @@ public class OnlinePaymentService {
     /**
      * Gives back part of what the customer paid online, for a return of some of the goods (see OnlineReturnService). The order stays as it is, with the
      * total given back so far noted on it; once everything that was paid is back, the payment becomes REFUNDED. Returns the refund reference. The
-     * customer is not told here: the return's own message does that.
+     * customer is not told here: the return's own message does that. fromDeposit: the money paid back is money still held for the order (goods not delivered);
+     * false for a return, whose refund is posted with the return itself.
      */
     @Transactional
-    public String refundPart(OnlineOrder o, BigDecimal amount, boolean manual, String reference, String note) {
+    public String refundPart(OnlineOrder o, BigDecimal amount, boolean manual, String reference, String note, boolean fromDeposit) {
         if (!"PAID".equals(o.getPaymentStatus()) || o.getPaidAmount() == null) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
         BigDecimal left = o.getPaidAmount().subtract(o.getRefundedTotal() == null ? BigDecimal.ZERO : o.getRefundedTotal());
         if (amount == null || amount.signum() <= 0 || amount.compareTo(left) > 0) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
         String ref = giveBack(o, amount, manual, reference, note);
+        if (fromDeposit) returnDeposit(o, amount, manual);
         BigDecimal total = (o.getRefundedTotal() == null ? BigDecimal.ZERO : o.getRefundedTotal()).add(amount);
         o.setRefundedTotal(total);
         if (total.compareTo(o.getPaidAmount()) >= 0) {
@@ -440,6 +449,15 @@ public class OnlinePaymentService {
         orders.save(o);
         audit("ONLINE_PAYMENT_REFUNDED", "Refunded online order " + o.getCode() + " " + OnlineStoreService.money(amount) + " for a return (" + ref + ")", o);
         return ref;
+    }
+
+    /** v1.71.0: money held for the order is paid back: out of Online Customer Deposits, from the provider's clearing account or (refunded by hand) from Cash and Bank. An order paid before this version has nothing held. */
+    private void returnDeposit(OnlineOrder o, BigDecimal amount, boolean manual) {
+        BigDecimal held = o.getDepositLeft() == null ? BigDecimal.ZERO : o.getDepositLeft();
+        BigDecimal use = held.min(amount == null ? BigDecimal.ZERO : amount);
+        if (use.signum() <= 0) return;
+        accounting.postOnlineDepositRefund(o.getId(), use, o.getPaymentChannel(), manual, "Online payment " + o.getPaymentReference() + " paid back (online order " + o.getCode() + ")");
+        o.setDepositLeft(held.subtract(use));
     }
 
     /** The refund itself: by the provider, or the reference of one staff made by hand. Returns the reference. Throws when it cannot be done. */

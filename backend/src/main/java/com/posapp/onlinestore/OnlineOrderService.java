@@ -714,6 +714,9 @@ public class OnlineOrderService {
             pay.setMethod(o.getPaymentChannel());
             pay.setNote(I18n.t("Online payment {0}", o.getPaymentReference()));
             invoiceService.recordPayment(inv.id(), pay, caller);
+            // v1.71.0: the books took this much out of Online Customer Deposits (see AccountingService.postCustomerPayment); the rest stays held until it is paid back
+            BigDecimal held = o.getDepositLeft() == null ? BigDecimal.ZERO : o.getDepositLeft();
+            o.setDepositLeft(held.subtract(held.min(amount)));
             if (partial != null && o.getPaidAmount().compareTo(inv.totalAmount()) > 0) {
                 o.setRefundDifference(o.getPaidAmount().subtract(inv.totalAmount()));
                 differs = ", " + I18n.t("customer paid online {0}, invoice {1}: give back {2}", OnlineStoreService.money(o.getPaidAmount()), OnlineStoreService.money(inv.totalAmount()), OnlineStoreService.money(o.getRefundDifference()));
@@ -794,7 +797,7 @@ public class OnlineOrderService {
         OnlineOrder o = getOrThrow(id);
         BigDecimal due = o.getRefundDifference();
         if (due == null || due.signum() <= 0) throw ApiException.badRequest(I18n.t("There is nothing left to refund on this order"));
-        String ref = payments.refundPart(o, due, in != null && in.manual(), in == null ? null : in.reference(), in == null ? null : in.note());
+        String ref = payments.refundPart(o, due, in != null && in.manual(), in == null ? null : in.reference(), in == null ? null : in.note(), true);
         o.setRefundDifference(null);
         repository.save(o);
         tell(o, OnlineMessages.m("Your refund for order {0}", o.getCode()),

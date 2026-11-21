@@ -35,6 +35,24 @@ public class OnlineOrderRefs {
         return lookup("select code from online_order where invoice_id = ?", invoiceId);
     }
 
+    /** What accounting needs to know about the online order of an invoice: how it was paid and how much online money is still held for it (null for anything else). */
+    public record OnlineMoney(Long orderId, boolean prepaid, String channel, java.math.BigDecimal depositLeft) {
+    }
+
+    public OnlineMoney moneyFor(Long invoiceId, Long salesOrderId) {
+        try {
+            java.util.List<OnlineMoney> found = jdbc.query(
+                    "select id, payment_method, payment_channel, deposit_left from online_order where sales_order_id = ? or invoice_id = ? order by id limit 1",
+                    (rs, i) -> new OnlineMoney(rs.getLong(1), "ONLINE".equals(rs.getString(2)), rs.getString(3),
+                            rs.getBigDecimal(4) == null ? java.math.BigDecimal.ZERO : rs.getBigDecimal(4)),
+                    salesOrderId == null ? -1L : salesOrderId, invoiceId == null ? -1L : invoiceId);
+            return found.isEmpty() ? null : found.get(0);
+        } catch (DataAccessException e) {
+            log.warn("Could not look up the online payment of an invoice: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private String lookup(String sql, Long id) {
         try {
             java.util.List<String> codes = jdbc.queryForList(sql, String.class, id);

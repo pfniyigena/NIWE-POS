@@ -2186,5 +2186,9 @@
  "The quantity of {0} must be between {1} and {2} {3}": "La quantité de {0} doit être comprise entre {1} et {2} {3}",
  "That price list does not exist": "Cette liste de prix n'existe pas",
  "The unit must be 12 characters or fewer": "L'unité doit comporter 12 caractères au maximum",
- "Refund for online return {0}": "Remboursement du retour en ligne {0}"
+ "Refund for online return {0}": "Remboursement du retour en ligne {0}",
+ "Choose mobile money or card": "Choisissez mobile money ou carte",
+ "Enter the amount customers paid that this payout covers": "Saisissez le montant payé par les clients que ce versement couvre",
+ "The fee must be zero or more, and less than the amount": "Les frais doivent être nuls ou positifs, et inférieurs au montant",
+ "The payout date is in the future": "La date du versement est dans le futur"
 }

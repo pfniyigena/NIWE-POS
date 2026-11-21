@@ -208,6 +208,11 @@ export interface PaymentRow {
 }
 export interface PaymentSummary { paid: number; inBooks: number; held: number; refundDue: number; refunded: number; toReview: number; failed: number; stuck: number }
 export interface Reconciliation { summary: PaymentSummary; rows: PaymentRow[] }
+/** v1.71.0: payouts from the payment providers. balance = what the provider still owes the shop (the clearing account of the books). */
+export interface PayoutBalance { channel: 'MOBILE_MONEY' | 'CARD'; balance: number }
+export interface Payout { id: number; channel: string; gross: number; fee: number; net: number; reference: string | null; note: string | null; paidOn: string; createdBy: string | null }
+export interface PayoutOverview { balances: PayoutBalance[]; payouts: Payout[]; feesToDate: number }
+export interface PayoutRequest { channel: string; gross: number; fee: number; paidOn: string | null; reference: string | null; note: string | null }
 export interface PendingCounts { pending: number; overdue: number; alertMinutes: number; awaitingPayment?: number; refundsDue?: number; paymentsToReview?: number; returnsRequested?: number; returnsToRefund?: number; returnsCollected?: number; reviewsPending?: number; messagesNew?: number; open?: number; completed?: number; rejected?: number; cancelled?: number; all?: number }
 /** Information pages (Terms, Privacy, Returns, Delivery) and the contact form. */
 export interface InfoLink { slug: string; title: string }
@@ -525,6 +530,8 @@ export class OnlineStoreApiService {
     if (status) params = params.set('status', status);
     return this.http.get<Reconciliation>(`${this.base}/payments`, { params });
   }
+  payoutOverview(): Observable<PayoutOverview> { return this.http.get<PayoutOverview>(`${this.base}/payouts`); }
+  recordPayout(r: PayoutRequest): Observable<Payout> { return this.http.post<Payout>(`${this.base}/payouts`, r); }
   resolvePayment(id: number, note: string): Observable<void> { return this.http.post<void>(`${this.base}/payments/${id}/resolve`, { note }); }
   providers(): Observable<PaymentProvider[]> { return this.http.get<PaymentProvider[]>(`${this.base}/payment-providers`); }
 

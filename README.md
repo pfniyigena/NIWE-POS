@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.71.0 - Online Store accounting: online payments held, applied at delivery, cleared by provider payouts
+
+Money customers pay online is booked when the provider confirms it (clearing account per provider, Online Customer Deposits), released at delivery and cleared against the provider's payouts, with their fees (new Payouts panel). Migration V102. See `RELEASE-NOTES-v1.71.0.md` and `docs/online-store-accounting.md`.
+
 ## v1.70.0 - Online Store accounting: returns post the VAT and the refund
 
 A return now reverses the VAT as well as the net sale, and the money handed back to the customer (cash or provider) is posted. `refundTotal` of a sale order return includes the tax. See `RELEASE-NOTES-v1.70.0.md` and `docs/online-store-accounting.md`.
