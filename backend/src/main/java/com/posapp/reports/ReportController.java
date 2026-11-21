@@ -450,10 +450,10 @@ public class ReportController {
                                              @RequestParam(defaultValue = "json") String format) {
         List<StockValuationRow> rows = reportService.stockValuation(categoryId, warehouseId, allWarehouses, branchId);
         if (isDownload(format)) {
-            List<String> headers = List.of("SKU", "Product", "Category", "Stock qty", "Reserved", "In transit", "Unit cost", "Stock value", "Status");
+            List<String> headers = List.of("SKU", "Product", "Category", "Stock qty", "Reserved", "In transit", "Online orders", "Unit cost", "Stock value", "Status");
             List<List<String>> body = new ArrayList<>();
             for (StockValuationRow r : rows) {
-                body.add(List.of(orDash(r.sku()), r.productName(), r.categoryName(), String.valueOf(r.stockQuantity()), String.valueOf(r.reserved()), String.valueOf(r.inTransit()), money(r.unitCost()), money(r.stockValue()), r.status()));
+                body.add(List.of(orDash(r.sku()), r.productName(), r.categoryName(), String.valueOf(r.stockQuantity()), String.valueOf(r.reserved()), String.valueOf(r.inTransit()), String.valueOf(r.onlineOrders()), money(r.unitCost()), money(r.stockValue()), r.status()));
             }
             return export("Stock On Hand And Valuation", headers, body, format);
         }

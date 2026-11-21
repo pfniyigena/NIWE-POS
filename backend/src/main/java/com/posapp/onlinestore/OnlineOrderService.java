@@ -213,6 +213,15 @@ public class OnlineOrderService {
             lines.add(e);
         }
         req.setLines(lines);
+        // v1.68.0: single units the order needs that exist only as cartons are made now (a normal packaging breakdown), so the sale order can reserve them
+        try {
+            java.util.Map<Long, BigDecimal> need = new java.util.LinkedHashMap<>();
+            for (OnlineOrderLine l : o.getLines()) need.merge(l.getProductId(), l.getQuantity(), BigDecimal::add);
+            int broken = shopStock.breakDownFor(need, o.getCode(), false, null);
+            if (broken > 0) move(o, o.getStatus(), I18n.t("{0} carton(s) broken down into single units for this order", broken));
+        } catch (ApiException ignored) {
+            // the normal stock check below says what is missing
+        }
         SalesOrderDto so = salesOrderService.createDraft(req);
         // A 409 here means the stock does not cover the order; staff may accept anyway (the sale order is then over-promised) or reject.
         salesOrderService.confirm(so.id(), overrideShortage);
@@ -642,7 +651,20 @@ public class OnlineOrderService {
         try {
             fr.setLocationId(shopStock.locationFor(o, in == null ? null : in.locationId()));
             fr.setLines(planned(so, kept));
-            if (!fr.getLines().isEmpty()) salesOrderService.checkFulfilment(so.id(), fr);
+            if (!fr.getLines().isEmpty()) {
+                // v1.68.0: cartons are broken down here too when the single units are not at the delivery location (stock moved since the order was accepted)
+                try {
+                    java.util.Map<Long, BigDecimal> need = new java.util.LinkedHashMap<>();
+                    for (FulfillSalesOrderRequest.FulfillLineEntry en : fr.getLines()) {
+                        SalesOrderLineDto sl = so.lines().stream().filter(x -> x.id().equals(en.getLineId())).findFirst().orElse(null);
+                        if (sl != null && sl.productId() != null) need.merge(sl.productId(), en.getQuantityFulfilled(), BigDecimal::add);
+                    }
+                    shopStock.breakDownFor(need, o.getCode(), true, fr.getLocationId());
+                } catch (ApiException ignored) {
+                    // the stock check below says what is missing
+                }
+                salesOrderService.checkFulfilment(so.id(), fr);
+            }
         } catch (ApiException e) {
             if (caller != null) throw e;
             // the driver and the customer get a plain sentence; the reason is written in the order's history for staff

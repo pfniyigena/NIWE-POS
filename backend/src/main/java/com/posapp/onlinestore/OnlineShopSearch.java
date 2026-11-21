@@ -39,7 +39,7 @@ public class OnlineShopSearch {
     }
 
     private static final String SELLABLE = "((select coalesce(sum(ps.quantity), 0) from ProductStock ps where ps.product = %1$s and ps.location.active = true%2$s "
-            + "and (ps.location.type is null or ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED)) "
+            + "and (ps.location.type is null or ps.location.type <> com.posapp.warehouse.LocationType.DAMAGED))%4$s "
             + "- (select coalesce(sum(sl.quantityOrdered - sl.quantityFulfilled), 0) from SalesOrderLine sl where sl.product.id = %1$s.id "
             + "and sl.salesOrder.status in (com.posapp.salesorder.SalesOrderStatus.CONFIRMED, com.posapp.salesorder.SalesOrderStatus.PARTIALLY_FULFILLED)) "
             // v1.66.0: shop orders staff have not answered yet hold their units too
@@ -135,7 +135,7 @@ public class OnlineShopSearch {
         }
         // Same rule as the stock word on the card: sellable stock (active, undamaged locations) minus what confirmed orders promised minus the shop's buffer.
         if (f.inStock()) {
-            String avail = String.format(SELLABLE, p, shopStock.searchCondition(), shopStock.searchCondition("eb"));
+            String avail = String.format(SELLABLE, p, shopStock.searchCondition(), shopStock.searchCondition("eb"), shopStock.breakableSql(p));
             w.append(" and (").append(p).append(".trackStock = false or ").append(p).append(".service = true or ").append(avail).append(" - coalesce(").append(l)
                     .append(".stockBuffer, :buffer) - ceiling(").append(avail).append(" * :till / 100.0) > 0)");
             sink.add(new Object[]{"buffer", Math.max(0, buffer)});

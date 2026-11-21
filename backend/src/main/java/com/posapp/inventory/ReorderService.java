@@ -55,6 +55,9 @@ public class ReorderService {
         Map<Long, BigDecimal> onHand = warehouseService.sellableQuantitiesByProduct(null);
         Map<Long, BigDecimal> onOrder = outstandingOnOrder();
         Map<Long, BigDecimal> reserved = stockReservationService.reservedByProduct();
+        // v1.68.0: orders placed on the online shop that nobody has accepted yet already hold stock, and customers waiting for a sold-out product are demand too.
+        Map<Long, BigDecimal> online = stockReservationService.pendingOnlineByProduct();
+        Map<Long, Long> waiting = stockReservationService.waitingByProduct();
         // Stock on the road between branches will arrive, so it counts like stock on order.
         for (Object[] row : stockTransferRepository.inTransitByProduct()) {
             onOrder.merge(((Number) row[0]).longValue(), Qty.dec(row[1]), BigDecimal::add);
@@ -65,15 +68,17 @@ public class ReorderService {
             BigDecimal level = p.getReorderLevel();
             BigDecimal max = p.getMaxStockLevel() != null ? Qty.max(p.getMaxStockLevel(), level) : level.multiply(BigDecimal.valueOf(2));
             // Stock promised to customers on confirmed sales orders is not really ours to count.
-            BigDecimal have = onHand.getOrDefault(p.getId(), BigDecimal.ZERO).subtract(reserved.getOrDefault(p.getId(), BigDecimal.ZERO));
+            BigDecimal held = online.getOrDefault(p.getId(), BigDecimal.ZERO);
+            long waits = waiting.getOrDefault(p.getId(), 0L);
+            BigDecimal have = onHand.getOrDefault(p.getId(), BigDecimal.ZERO).subtract(reserved.getOrDefault(p.getId(), BigDecimal.ZERO)).subtract(held);
             BigDecimal due = onOrder.getOrDefault(p.getId(), BigDecimal.ZERO);
-            BigDecimal position = have.add(due);
+            BigDecimal position = have.add(due).subtract(BigDecimal.valueOf(waits));
             if (position.compareTo(level) > 0) continue;
             BigDecimal suggested = Qty.max(max.subtract(position), BigDecimal.ONE);
             result.add(new ReorderSuggestionDto(p.getId(), p.getSku(), p.getName(),
-                    p.getCategory() != null ? p.getCategory().getName() : null, have, due, level, max, suggested));
+                    p.getCategory() != null ? p.getCategory().getName() : null, have, due, level, max, suggested, held, waits));
         }
-        result.sort(Comparator.comparing((ReorderSuggestionDto r) -> r.onHand().add(r.onOrder()).subtract(r.reorderLevel())));
+        result.sort(Comparator.comparing((ReorderSuggestionDto r) -> r.onHand().add(r.onOrder()).subtract(BigDecimal.valueOf(r.waitingCustomers())).subtract(r.reorderLevel())));
         return result;
     }
 

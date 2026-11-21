@@ -2180,5 +2180,7 @@
  "Sorry, your order {0} was cancelled because we could not confirm it in time. You are welcome to order again or call us.": "Désolé, votre commande {0} a été annulée car nous n'avons pas pu la confirmer à temps. Vous pouvez commander de nouveau ou nous appeler.",
  "The days left before expiry must be between 0 and 3650": "Le nombre de jours restants avant péremption doit être compris entre 0 et 3650",
  "Choose the {0} serial numbers of {1} that came back.": "Choisissez les numéros de série de {1} qui sont revenus (quantité : {0}).",
- "Serial numbers": "Numéros de série"
+ "Serial numbers": "Numéros de série",
+ "Automatic: online order {0}": "Automatique : commande en ligne {0}",
+ "{0} carton(s) broken down into single units for this order": "{0} carton(s) ouvert(s) en unités pour cette commande"
 }

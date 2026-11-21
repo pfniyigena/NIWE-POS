@@ -3505,6 +3505,10 @@ export interface ReorderSuggestion {
   reorderLevel: number;
   maxStockLevel: number;
   suggestedQuantity: number;
+  /** Units asked for by shop orders nobody has answered yet (they hold stock but are not yet reserved). */
+  onlineOrders: number;
+  /** Customers waiting for a back-in-stock e-mail on this product. */
+  waitingCustomers: number;
 }
 
 /** What a supplier charges for a product — mirrors the backend's SupplierPriceDto. */

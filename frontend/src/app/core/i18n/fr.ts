@@ -7328,6 +7328,7 @@ export const FR: Record<string, string> = {
   "Shop is open to the public": "La boutique est ouverte au public",
   "Shop name (empty = business name)": "Nom de la boutique (vide = nom de l'entreprise)",
   "Shop now": "Acheter maintenant",
+  "Shop orders nobody has answered yet are counted against the stock, and customers waiting for a back-in-stock e-mail count as demand.": "Les commandes de la boutique sans réponse sont déduites du stock, et les clients qui attendent un e-mail de retour en stock comptent comme demande.",
   "Shop pages": "Pages de la boutique",
   "Shop settings": "Paramètres de la boutique",
   "Shop-wide": "Celle de la boutique",

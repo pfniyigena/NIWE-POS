@@ -453,6 +453,7 @@ export const REPORT_DEFS: ReportDef[] = [
       { key: 'stockQuantity', label: 'Stock qty', format: 'int' },
       { key: 'reserved', label: 'Reserved', format: 'int' },
       { key: 'inTransit', label: 'In transit', format: 'int' },
+      { key: 'onlineOrders', label: 'Online orders', format: 'int' },
       { key: 'unitCost', label: 'Unit cost', format: 'money' },
       { key: 'stockValue', label: 'Stock value', format: 'money' },
       { key: 'status', label: 'Status', format: 'text' },

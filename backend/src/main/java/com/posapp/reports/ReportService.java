@@ -722,6 +722,7 @@ public class ReportService {
                 : warehouseId != null ? warehouseService.effectiveLowStockThreshold(warehouseService.getEntityOrThrow(warehouseId))
                 : warehouseService.primaryLowStockThreshold();
         java.util.Map<Long, BigDecimal> reservedByProduct = stockReservationService.reservedByProduct();
+        java.util.Map<Long, BigDecimal> onlineByProduct = stockReservationService.pendingOnlineByProduct();
         java.util.Map<Long, BigDecimal> inTransitByProduct = new java.util.HashMap<>();
         for (Object[] row : stockTransferRepository.inTransitByProduct()) {
             inTransitByProduct.put(((Number) row[0]).longValue(), Qty.dec(row[1]));
@@ -741,7 +742,8 @@ public class ReportService {
                     quantity, product.getCostPrice(), value,
                     quantity.compareTo(threshold) < 0 ? "Low stock" : "OK",
                     reservedByProduct.getOrDefault(product.getId(), BigDecimal.ZERO),
-                    inTransitByProduct.getOrDefault(product.getId(), BigDecimal.ZERO)));
+                    inTransitByProduct.getOrDefault(product.getId(), BigDecimal.ZERO),
+                    onlineByProduct.getOrDefault(product.getId(), BigDecimal.ZERO)));
         }
         rows.sort(Comparator.comparing(StockValuationRow::stockValue).reversed());
         return rows;

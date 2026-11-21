@@ -5,6 +5,10 @@ A standalone point-of-sale application: **Angular** frontend, **Spring Boot** RE
 it doesn't depend on that codebase or database at all, and can be developed, deployed, and scaled
 independently.
 
+## v1.68.0 - Online Store: cartons, warehouses, reorder
+
+The shop counts units that can be had by opening cartons (when breakdown is on in Inventory); cartons are opened automatically when an order is accepted or delivered. Reorder subtracts shop orders nobody has answered yet and counts customers waiting for a back-in-stock e-mail; the stock report has an "Online orders" column. No migration. See `RELEASE-NOTES-v1.68.0.md` and `docs/online-store-inventory-link.md`.
+
 ## v1.67.0 - Online Store: expiry dates and serial numbers
 
 The shop no longer sells batches that are expired, or have fewer days left than the new "Do not sell goods with fewer days left than" setting (default 0); deliveries take long-dated batches first. Serial-numbered goods: the serial numbers delivered are shown on the customer's order page, on staff's order and printed on the invoice, and when a return comes back staff tick which serial numbers returned (they are in stock again). Migration V100. See `RELEASE-NOTES-v1.67.0.md` and `docs/online-store-expiry-serials.md`.

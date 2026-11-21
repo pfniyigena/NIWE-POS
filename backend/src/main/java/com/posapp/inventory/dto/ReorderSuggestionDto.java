@@ -11,6 +11,10 @@ public record ReorderSuggestionDto(
         BigDecimal onOrder,
         BigDecimal reorderLevel,
         BigDecimal maxStockLevel,
-        BigDecimal suggestedQuantity
+        BigDecimal suggestedQuantity,
+        /** v1.68.0: units promised to online orders nobody has accepted yet (already taken off onHand). */
+        BigDecimal onlineOrders,
+        /** v1.68.0: customers waiting for the product to come back (added to what is needed). */
+        long waitingCustomers
 ) {
 }

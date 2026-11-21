@@ -23,6 +23,8 @@ public record StockValuationRow(
         /** Quantity promised on confirmed / part-delivered sales orders (not subtracted from {@code stockQuantity}). */
         BigDecimal reserved,
         /** Units on the road between branches (dispatched, not yet received) — not part of {@code stockQuantity}. */
-        BigDecimal inTransit
+        BigDecimal inTransit,
+        /** v1.68.0: units promised to online shop orders nobody has accepted yet (not yet on a sale order, not subtracted from {@code stockQuantity}). */
+        BigDecimal onlineOrders
 ) {
 }

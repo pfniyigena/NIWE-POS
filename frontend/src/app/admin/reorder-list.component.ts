@@ -33,6 +33,9 @@ interface Row extends ReorderSuggestion {
       <p class="text-muted mb-3" style="font-size:0.85rem;">
         {{ 'Products whose sellable stock plus open purchase orders is at or below their reorder level. Set the level on each product\\'s form.' | translate }}
       </p>
+      <p class="text-muted mb-3 rl-online-note" style="font-size:0.85rem;">
+        {{ 'Shop orders nobody has answered yet are counted against the stock, and customers waiting for a back-in-stock e-mail count as demand.' | translate }}
+      </p>
       <table>
         <thead>
           <tr>
@@ -42,6 +45,8 @@ interface Row extends ReorderSuggestion {
             <th>{{ 'Category' | translate }}</th>
             <th class="text-end">{{ 'On hand' | translate }}</th>
             <th class="text-end">{{ 'On order' | translate }}</th>
+            <th class="text-end">{{ 'Online orders' | translate }}</th>
+            <th class="text-end">{{ 'Waiting customers' | translate }}</th>
             <th class="text-end">{{ 'Reorder level' | translate }}</th>
             <th class="text-end">{{ 'Max' | translate }}</th>
             <th class="text-end" style="width:120px;">{{ 'Order qty' | translate }}</th>
@@ -55,12 +60,14 @@ interface Row extends ReorderSuggestion {
             <td>{{ r.categoryName }}</td>
             <td class="text-end">{{ r.onHand }}</td>
             <td class="text-end">{{ r.onOrder }}</td>
+            <td class="text-end">{{ r.onlineOrders }}</td>
+            <td class="text-end">{{ r.waitingCustomers }}</td>
             <td class="text-end">{{ r.reorderLevel }}</td>
             <td class="text-end">{{ r.maxStockLevel }}</td>
             <td class="text-end"><input class="form-control text-end" type="number" step="any" min="0.0001" [(ngModel)]="r.quantity" [name]="'q' + r.productId" /></td>
           </tr>
           <tr *ngIf="rows.length === 0 && loaded">
-            <td colspan="9" class="text-muted">{{ 'Nothing needs reordering.' | translate }}</td>
+            <td colspan="11" class="text-muted">{{ 'Nothing needs reordering.' | translate }}</td>
           </tr>
         </tbody>
       </table>
